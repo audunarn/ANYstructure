@@ -19,3 +19,7 @@ Pressures on external hull (or any other generic location) is defined by specify
 You can optimize single plate/stiffener field or multiple.
 
 PLEASE CONTRIBUTE.
+
+Screenshot:
+
+![picture](https://docs.google.com/uc?id=1-f8N5KvMomEB0wfP9DV49axCiR63sObr)
