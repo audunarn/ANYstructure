@@ -1,5 +1,5 @@
 # ANYstructure
-![Logo](https://googledrive.com/host/ANYstructure/ANYstructure.jpg)
+![Logo](https://docs.google.com/uc?id=1h0y3763tcvXQzxqX3B8p91UzNo9cEb6C)
 
 Start application by running main_application.py
 
