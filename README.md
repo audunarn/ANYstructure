@@ -1,5 +1,6 @@
 # ANYstructure
-![Logo](http://francky.me/images/quora001.png)
+![Logo](https://googledrive.com/host/ANYstructure/ANYstructure.jpg)
+
 Start application by running main_application.py
 
 GUI based steel structure calculation tool.
