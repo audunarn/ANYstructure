@@ -12,4 +12,6 @@ Compartments (tank pressures) are created automatically.
 
 Pressures on external hull (or any other generic location) is defined by specifying equations.
 
+Start application by running main_application.py
+
 PLEASE CONTRIBUTE.
