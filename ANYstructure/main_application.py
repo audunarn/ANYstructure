@@ -33,7 +33,7 @@ class Application():
         :param parent:
         '''
         super(Application, self).__init__()
-        root.wm_title('SEVAN | SevScant')
+        root.wm_title('| ANYstructure |')
         self._parent = parent
         parent.protocol("WM_DELETE_WINDOW", self.close_main_window)
 
