@@ -1,5 +1,5 @@
 # ANYstructure
-![Logo](https://docs.google.com/uc?id=1h0y3763tcvXQzxqX3B8p91UzNo9cEb6C)
+![Logo](https://docs.google.com/uc?id=1AWu0Twqd3tQKjUKPWXBFVwosUZTvlq4t)
 
 Start application by running main_application.py
 
