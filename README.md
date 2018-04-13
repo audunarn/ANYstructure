@@ -20,6 +20,6 @@ You can optimize single plate/stiffener field or multiple.
 
 PLEASE CONTRIBUTE. For windows executable (.exe) version for non-coders, please contact me at audunarn@gmail.com) or use pyinstaller.
 
-Screenshot (this example can be loaded from "file ship_section_example.txt"):
+Screenshot (this example can be loaded from file "ship_section_example.txt"):
 
 ![picture](https://docs.google.com/uc?id=1AWu0Twqd3tQKjUKPWXBFVwosUZTvlq4t)
