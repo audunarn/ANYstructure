@@ -118,7 +118,7 @@ class CreateGridWindow():
         ani = animation.FuncAnimation(fig, update, data_gen, interval=50)
         fm = plt.get_current_fig_manager()
 
-        #fm.window.activateWindow() #TODO
+        #fm.window.activateWindow()
         #fm.window.raise_()
         plt.axis('off')
         plt.suptitle('Compartments returned from search operation displayed below', fontsize=20, color='red')
@@ -262,7 +262,7 @@ class CreateGridWindow():
                                         all_grids.append(copy.deepcopy(self._grid.get_matrix()))
 
                         #finding corners on diagonal cells
-                        for neighbor in [item for item in neighbors if item not in four_neighbors]: #TODO now this is not working
+                        for neighbor in [item for item in neighbors if item not in four_neighbors]:
                             if self._grid.get_value(neighbor[0], neighbor[1]) == -1:
                                 no_of_barriers += 1
                             else:
