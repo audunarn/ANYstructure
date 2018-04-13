@@ -1,5 +1,5 @@
 # ANYstructure
-![Logo](https://docs.google.com/uc?id=1AWu0Twqd3tQKjUKPWXBFVwosUZTvlq4t)
+![Logo](https://docs.google.com/uc?id=1h0y3763tcvXQzxqX3B8p91UzNo9cEb6C)
 
 Start application by running main_application.py
 
@@ -22,4 +22,4 @@ PLEASE CONTRIBUTE. For windows version (.exe) please contact me at audunarn@gmai
 
 Screenshot:
 
-![picture](https://docs.google.com/uc?id=1-f8N5KvMomEB0wfP9DV49axCiR63sObr)
+![picture](https://docs.google.com/uc?id=1AWu0Twqd3tQKjUKPWXBFVwosUZTvlq4t)
