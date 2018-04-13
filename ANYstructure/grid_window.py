@@ -118,8 +118,8 @@ class CreateGridWindow():
         ani = animation.FuncAnimation(fig, update, data_gen, interval=50)
         fm = plt.get_current_fig_manager()
 
-        fm.window.activateWindow()
-        fm.window.raise_()
+        #fm.window.activateWindow() #TODO
+        #fm.window.raise_()
         plt.axis('off')
         plt.suptitle('Compartments returned from search operation displayed below', fontsize=20, color='red')
         plt.show()
@@ -194,7 +194,7 @@ class CreateGridWindow():
         '''
         Bredth first search method.
 
-        Searcing evry 20th pixel for empty places in the grid. When a empty cell is found, the search starts.
+        Searcing every 20th pixel for empty places in the grid. When a empty cell is found, the search starts.
         The search ends when no more empty cells are found in the boudnary regions (circular expansion of search).
 
         USE GRID CONVENSION HERE. NOT POINTS.
@@ -238,11 +238,12 @@ class CreateGridWindow():
                         cells += 1
                         anim_count += 1
 
+                        four_neighbors = self._grid.four_neighbors(current_cell[0], current_cell[1])
                         neighbors = self._grid.eight_neighbors(current_cell[0], current_cell[1])
 
                         #doing serach operations and looking for corners
                         no_of_barriers = 0
-                        for neighbor in neighbors[0:4]:
+                        for neighbor in four_neighbors:
                             if self._grid.get_value(neighbor[0], neighbor[1]) == -1:
                                 no_of_barriers += 1
                             else:
@@ -261,7 +262,7 @@ class CreateGridWindow():
                                         all_grids.append(copy.deepcopy(self._grid.get_matrix()))
 
                         #finding corners on diagonal cells
-                        for neighbor in neighbors[4:]:
+                        for neighbor in [item for item in neighbors if item not in four_neighbors]: #TODO now this is not working
                             if self._grid.get_value(neighbor[0], neighbor[1]) == -1:
                                 no_of_barriers += 1
                             else:

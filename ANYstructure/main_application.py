@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import os,sys
+import os,string
 import tkinter as tk
 from tkinter import filedialog
 from tkinter import messagebox
@@ -43,20 +43,31 @@ class Application():
         else:
             self._global_shrink = 1
         self._global_shrink = 1
+        self._root = root
 
         # Main frame for the application
         self._main_fr = tk.Frame(parent, height=int(990*self._global_shrink), width=int(1920*self._global_shrink))
         self._main_fr.pack()
 
         # Top open/save/new
-        self._menu = tk.Menu(parent)
-        parent.config(menu=self._menu)
+        menu = tk.Menu(parent)
+        parent.config(menu=menu)
         # menu, canvas, etc.
-        self._sub_menu = tk.Menu(self._menu)
-        self._menu.add_cascade(label='File', menu=self._sub_menu)
-        self._sub_menu.add_command(label='New project', command=self.reset)
-        self._sub_menu.add_command(label='Save project', command=self.savefile)
-        self._sub_menu.add_command(label='Open project', command=self.openfile)
+        sub_menu = tk.Menu(menu)
+        menu.add_cascade(label='File', menu=sub_menu)
+        sub_menu.add_command(label='New project', command=self.reset)
+        sub_menu.add_command(label='Save project', command=self.savefile)
+        sub_menu.add_command(label='Open project', command=self.openfile)
+
+        undo_redo = tk.Menu(menu)
+        menu.add_cascade(label='Geometry', menu=undo_redo)
+        undo_redo.add_command(label='Undo geometry action (CTRL-Z)', command=self.undo)
+        #undo_redo.add_command(label='Redo geometry action (CTRL-Y)', command=self.redo)
+        undo_redo.add_command(label='Copy selected point (CTRL-C)', command=self.copy_point)
+        undo_redo.add_command(label='Move selected point (CTRL-M)', command=self.move_point)
+        undo_redo.add_command(label='New line (right click two points) (CTRL-Q)', command=self.new_line)
+        undo_redo.add_command(label='Assign structure properties (from clicked line (CTRL-S)',
+                              command=self.new_structure)
 
         base_canvas_dim = [1000,720]  #do not modify this, sets the "orignal" canvas dimensions.
         self._canvas_dim = [int(base_canvas_dim[0] *self._global_shrink),
@@ -152,7 +163,9 @@ class Application():
         self._options_type = [op_typ for op_typ in self._default_stresses.keys()]
         self._point_options= ['fixed','free']
         self._load_window_couter = 1 # this is used to create the naming of the tanks in the load window
+        self._logger = {'added': list(), 'deleted': list()}  # used to log operations for geometry operations, to be used for undo/redo
 
+        self._p1_p2_select = False
         self._line_is_active = False # True when a line is clicked
         self._active_line = '' # Name of the clicked point
         self._point_is_active = False # True when a point is clicked
@@ -1044,9 +1057,11 @@ class Application():
                                              self.get_point_canvas_coord(key)[1] - 14, text='pt.'+str(get_num(key)),
                                              font=self._text_size["Text 10 bold"], fill = 'red')
                 #printing the coordinates of the point
-                self._main_canvas.create_text(self.get_point_canvas_coord(key)[0], self.get_point_canvas_coord(key)[1] - 25,
-                                             text='(' + str(self.get_point_actual_coord(key)[0]) + ' , ' + str(
-                                                 self.get_point_actual_coord(key)[1]) + ')', font="Text 10", fill = 'red')
+                self._main_canvas.create_text(self.get_point_canvas_coord(key)[0],
+                                              self.get_point_canvas_coord(key)[1] - 25,
+                                             text='(' + str(round(self.get_point_actual_coord(key)[0],2)) + ' , ' +
+                                                  str(round(self.get_point_actual_coord(key)[1],2)) + ')',
+                                              font="Text 10", fill = 'red')
 
             else:
                 self._main_canvas.create_oval(self.get_point_canvas_coord(key)[0] - pt_size,
@@ -1057,12 +1072,15 @@ class Application():
                 self._main_canvas.create_text(self.get_point_canvas_coord(key)[0] - 5,
                                              self.get_point_canvas_coord(key)[1] - 14, text='pt.'+str(get_num(key)))
                 #printing the coordinates of the point
-                self._main_canvas.create_text(self.get_point_canvas_coord(key)[0]+20, self.get_point_canvas_coord(key)[1] - 25,
-                                             text='(' + str(self.get_point_actual_coord(key)[0]) + ' , ' + str(
-                                                 self.get_point_actual_coord(key)[1]) + ')', font="Text 6")
+                self._main_canvas.create_text(self.get_point_canvas_coord(key)[0]+20,
+                                              self.get_point_canvas_coord(key)[1] - 25,
+                                             text='(' + str(round(self.get_point_actual_coord(key)[0],2)) + ' , ' +
+                                                  str(round(self.get_point_actual_coord(key)[1],2)) + ')',
+                                              font="Text 6")
 
         # drawing the line dictionary.
         if len(self._line_dict) != 0:
+
             for line, value in self._line_dict.items():
 
                 coord1 = self.get_point_canvas_coord('point' + str(value[0]))
@@ -1404,7 +1422,7 @@ class Application():
         except TclError:
             messagebox.showinfo(title='Input error', message='Input must be a number. Dots used not comma.')
 
-    def new_point(self,copy=False,move=False):
+    def new_point(self,copy=False,move=False, redo = None):
         '''
         Adds a point number and coordinates to the point dictionary. Type is 'p1' = [x0,y0]
         '''
@@ -1413,8 +1431,10 @@ class Application():
                 x_coord = self._new_point_x.get()/1000 + self._point_dict[self._active_point][0]
                 y_coord = self._new_point_y.get()/1000 + self._point_dict[self._active_point][1]
             elif move:
-                x_coord = self._new_point_x.get()/1000 + self._point_dict[self._active_point][0]
-                y_coord = self._new_point_y.get()/1000 + self._point_dict[self._active_point][1]
+                x_coord = self._new_point_x.get()/1000 + self._point_dict[self._active_point][0] \
+                    if redo is None else redo[0]
+                y_coord = self._new_point_y.get()/1000 + self._point_dict[self._active_point][1]\
+                    if redo is None else redo[1]
             else:
                 x_coord = (self._new_point_x.get() / 1000)
                 y_coord = (self._new_point_y.get() / 1000)
@@ -1422,7 +1442,7 @@ class Application():
             # Finding name of the new point
             current_point = ''
             if move:
-                current_point = self._active_point
+                current_point, current_coords = self._active_point, self._point_dict[self._active_point]
             else:
                 found_name = False
                 if len(self._point_dict) == 0:
@@ -1442,17 +1462,23 @@ class Application():
 
             if [x_coord,y_coord] not in self._point_dict.values():
                 self._point_dict[current_point] = [x_coord, y_coord]
+                self._active_point = current_point
+                if move:
+                    self.logger(point=current_point, move_coords=(current_coords,[x_coord, y_coord])) #TODO
+                else:
+                    self.logger(point=current_point, move_coords=None)
+
             self.update_frame()
         except TclError:
             messagebox.showinfo(title='Input error', message='Input must be a number. Dots used not comma.')
 
-    def move_point(self):
+    def move_point(self, event = None, redo = None):
         '''
         Moving a point.
         :return: 
         '''
         if self._point_is_active:
-            self.new_point(move=True) # doing the actual moving
+            self.new_point(move=True, redo=redo) # doing the actual moving
             for line,data in self._line_dict.items():
                 # updating the span and deleting compartments (if not WT)
                 if get_num(self._active_point) in data:
@@ -1469,7 +1495,7 @@ class Application():
         else:
             messagebox.showinfo(title='Input error', message='A point must be selected (right click).')
 
-    def copy_point(self):
+    def copy_point(self, event = None):
         '''
         Using the same input as new point, but with separate button.
         :return: 
@@ -1479,20 +1505,24 @@ class Application():
         else:
             messagebox.showinfo(title='Input error', message='A point must be selected (right click).')
 
-    def new_line(self):
+    def new_line(self, event = None, redo = None):
         '''
         Adds line to line dictionary. Type is 'line1' = [p1,p2]
         '''
+
         try:
+
             # if's ensure that the new line does not exist already and that the point input is not an invalid point.
-            first_point = 'point' + str(self._new_line_p1.get())
-            second_point = 'point' + str(self._new_line_p2.get())
+            if redo is None:
+                first_point, second_point = 'point' + str(self._new_line_p1.get()), \
+                                            'point' + str(self._new_line_p2.get())
+            else:
+                first_point, second_point = redo
+            first_point_num, second_point_num = get_num(first_point), get_num(second_point)
 
             if first_point in self._point_dict.keys() and second_point in self._point_dict.keys() \
                     and first_point != second_point:
-
-                line_str = self.make_point_point_line_string(self._new_line_p1.get(), self._new_line_p2.get())[0]
-                line_str_rev = self.make_point_point_line_string(self._new_line_p1.get(), self._new_line_p2.get())[1]
+                line_str, line_str_rev  = self.make_point_point_line_string(first_point_num, second_point_num)
 
                 if line_str and line_str_rev not in self._line_point_to_point_string:
                     name = False
@@ -1503,9 +1533,10 @@ class Application():
                             name = True
                         counter += 1
 
-                    self._line_dict[current_name] = [self._new_line_p1.get(), self._new_line_p2.get()]
+                    self._line_dict[current_name] = [first_point_num, second_point_num]
 
                     self.update_frame()
+                    self.logger(line=[current_name, redo])
 
                     # making stings from two points difining the lines, e.g. for line 1 string could be 'p1p2' and 'p2p1'
                     self._line_point_to_point_string.append(line_str)
@@ -1515,7 +1546,7 @@ class Application():
         except TclError:
             messagebox.showinfo(title='Input error', message='Input must be a line number.')
 
-    def new_structure(self):
+    def new_structure(self, event = None):
         '''
         This method maps the structure to the line when clicking "add structure to line" button. 
         The result is put in a dictionary. Key is line name and value is the structure object.
@@ -1741,19 +1772,19 @@ class Application():
         current_tank.set_acceleration(self._accelerations_dict)
         current_tank.set_density(self._new_density.get())
 
-    def delete_line(self):
+    def delete_line(self, event = None, undo = None):
         '''
         Deleting line and line properties.
         :return:
         '''
         try:
-            if 'line'+self._ent_delete_line.get() in self._line_dict.keys():
-                line = 'line' + str(self._ent_delete_line.get())
+            if 'line'+self._ent_delete_line.get() in self._line_dict.keys() or undo is not None:
+                line = 'line' + str(self._ent_delete_line.get()) if undo is None else undo
                 point_str = 'p' + str(self._line_dict[line][0]) + 'p' + str(self._line_dict[line][1])
                 point_str_rev = 'p' + str(self._line_dict[line][1]) + 'p' + str(self._line_dict[line][0])
 
                 if line in self._line_dict.keys():
-                    self._line_dict.pop('line' + str(self._ent_delete_line.get()))
+                    self._line_dict.pop(line)
                     if line in self._line_to_struc.keys():
                         self._line_to_struc.pop('line' + str(self._ent_delete_line.get()))
                     self._line_point_to_point_string.pop(self._line_point_to_point_string.index(point_str))
@@ -1765,12 +1796,12 @@ class Application():
         except TclError:
             messagebox.showinfo(title='Input error', message='Input must be a number. Dots used not comma.')
 
-    def delete_point(self):
+    def delete_point(self, event = None, undo = None):
         '''
         Deleting point and connected lines.
         '''
         try:
-            point = 'point' + str(self._ent_delete_point.get())
+            point = 'point' + str(self._ent_delete_point.get()) if undo is None else undo
 
             if point in self._point_dict.keys():
                 line_to_delete = []
@@ -2076,6 +2107,7 @@ class Application():
         :param point2:
         :return:
         '''
+
         return ['p' + str(point1) + 'p' + str(point2), 'p' + str(point2) + 'p' + str(point1)]
 
     def reset(self):
@@ -2106,6 +2138,14 @@ class Application():
         self._main_canvas.bind('<Button-3>', self.button_3_click)
         self._main_canvas.bind("<B2-Motion>", self.button_2_click_and_drag)
         self._main_canvas.bind("<MouseWheel>", self.mouse_scroll)
+        self._root.bind('<Control-z>', self.undo)
+        #self._root.bind('<Control-y>', self.redo)
+        self._root.bind('<Control-p>', self.delete_point)
+        self._root.bind('<Control-l>', self.delete_line)
+        self._root.bind('<Control-c>', self.copy_point)
+        self._root.bind('<Control-m>', self.move_point)
+        self._root.bind('<Control-q>', self.new_line)
+        self._root.bind('<Control-s>', self.new_structure)
 
     def mouse_scroll(self,event):
         self._canvas_scale +=  event.delta/50
@@ -2129,7 +2169,7 @@ class Application():
             state = None
         self.draw_canvas(state=state)
 
-    def button_1_click(self, event):
+    def button_1_click(self, event = None):
         '''
         When clicking the right button, this method is called.
         method is referenced in
@@ -2165,11 +2205,9 @@ class Application():
                     if x_check in click_x_range and y_check in click_y_range:
                         self._line_is_active = True
                         self._active_line = key
-                        # self._main_canvas.delete('all')
-                        # self.draw_canvas()
-                        # self._main_canvas.create_line([coord1x, coord1y], [coord2x, coord2y], width=10)
                         stop = True
                         break
+                    self._new_delete_line.set(get_num(key))
 
         if self._line_is_active and self._active_line not in self._line_to_struc.keys():
             p1 = self._point_dict['point'+str(self._line_dict[self._active_line][0])]
@@ -2221,7 +2259,7 @@ class Application():
                                             +'dynamic loaded: ' + str(acc[1])+' , '
                                             +'dynamic ballast: ' + str(acc[2]), font = self._text_size['Text 8 bold'])
 
-    def button_3_click(self, event):
+    def button_3_click(self, event = None):
         '''
         Identifies enclosed compartments in the canvas.
         :return:
@@ -2241,6 +2279,15 @@ class Application():
                 self._point_is_active = True
                 #self._pt_frame.place(x=point_coord[0] + 20, y=point_coord[1] - 120)
                 #self.draw_point_frame(point_coord)
+                self._new_delete_point.set(get_num(point))
+                if not self._p1_p2_select:
+                    self._new_line_p1.set(get_num(point))
+                    self._p1_p2_select = True
+                else:
+                    self._new_line_p2.set(get_num(point))
+                    self._p1_p2_select = False
+
+
         self.update_frame()
 
     def draw_point_frame(self):
@@ -2647,6 +2694,46 @@ class Application():
             self._parent.destroy()
         else:
             self._parent.destroy()
+
+    def logger(self, line = None, point = None, move_coords = None):
+        ''' Log to be used for undo and redo. '''
+
+        if line is not None:
+            self._logger['added'].append([line[0], self._line_dict[line[0]]])
+        elif point is not None and move_coords is None:
+            self._logger['added'].append([point, None])
+        elif point is not None and move_coords is not None:
+            self._logger['added'].append([point, move_coords])
+        else:
+            pass
+
+    def undo(self, event = None):
+        ''' Method to undo and redo. '''
+        if len(self._logger['added']) > 0:
+            current = self._logger['added'].pop(-1)
+
+            if 'point' in current[0] and current[1] is None:
+                if current[0] not in self._logger['deleted']:
+                    self._logger['deleted'].append(current)
+                self.delete_point(undo=current[0])
+            elif 'point' in current[0] and current[1] is not None:
+                self.move_point(redo=current[1][0])
+            elif 'line' in current[0]:
+                if current[0] not in [line[0] for line in self._logger['deleted']]:
+                    self._logger['deleted'].append(current)
+                self.delete_line(undo=current[0])
+
+    def redo(self, event = None):
+        ''' Method to undo and redo. '''
+        if len(self._logger['deleted']) > 0:
+            current = self._logger['deleted'].pop(-1)
+            if 'point' in current[0] and current[1] is None:
+                self.new_point(redo=current[0])
+            elif 'point' in current[0] and current[1] is not None:
+                self.move_point(redo=current[1][1])
+            elif 'line' in current[0]:
+                self.new_line(redo=['point'+str(num) for num in current[1]])
+
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
