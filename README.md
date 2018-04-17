@@ -23,6 +23,8 @@ For windows executable (.exe) version for non-coders, please contact me at audun
 Note that I am looking for contributions. Non-coders can verify, make documentation, suggest improvements etc. Point
 is: please do more than just use the tool and stay silent :)
 
+Please like, share or comment on LinkedIn: https://www.linkedin.com/in/audun-arnesen-nyhus-6aa17118/
+
 Screenshot (this example can be loaded from file "ship_section_example.txt"):
 
 ![picture](https://docs.google.com/uc?id=1AWu0Twqd3tQKjUKPWXBFVwosUZTvlq4t)
