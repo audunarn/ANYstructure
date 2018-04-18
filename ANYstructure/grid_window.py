@@ -1,7 +1,7 @@
 import math
 import make_queue as queue
 import make_stack
-from matplotlib.backends import backend_qt5agg
+#from matplotlib.backends import backend_qt5agg
 from matplotlib import pyplot as plt
 import numpy as np
 from collections import deque

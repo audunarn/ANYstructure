@@ -103,7 +103,7 @@ class LetterMaker(object):
                   """<font size="12"> Time : </font>""" + '<font size="12">' + time_now + '</font>' + '<br/>'
         p = Paragraph(address, self.styles["Normal"])
         # add a logo and size it
-        logo = Image("Sevan.png")
+        logo = Image("ANYstructure_logo.jpg")
         logo.drawHeight = 1 * inch
         logo.drawWidth = 2.5 * inch
         data = [[p, logo]]

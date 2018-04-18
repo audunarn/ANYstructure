@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import os,string
+import os
 import tkinter as tk
 from tkinter import filedialog
 from tkinter import messagebox
