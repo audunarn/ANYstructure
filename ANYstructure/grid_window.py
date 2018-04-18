@@ -8,7 +8,7 @@ from collections import deque
 import copy
 import matplotlib.animation as animation
 
-import test_data_ex as test
+import example_data as test
 import matplotlib
 
 

@@ -2,7 +2,7 @@ import tkinter as tk
 from calc_loads import *
 from tkinter import messagebox
 from helper import *
-import test_data_ex as test
+import example_data as test
 
 class CreateLoadWindow():
     '''

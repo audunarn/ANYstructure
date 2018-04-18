@@ -6,7 +6,7 @@ from reportlab.platypus import Spacer
 from reportlab.lib.styles import  ParagraphStyle
 from reportlab.platypus import Paragraph, SimpleDocTemplate
 from PIL import Image
-import test_data_ex as test
+import example_data as test
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import mm, inch

@@ -1,6 +1,6 @@
 # This is fatigue properties are defined.
 import tkinter as tk
-import test_data_ex as test
+import example_data as test
 import SN_curve_parameters as sn
 
 
