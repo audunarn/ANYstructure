@@ -1,3 +1,4 @@
 # References to all tests
+import pytest
 
-from tests import test_something
+from ANYstructure.tests import test_something
