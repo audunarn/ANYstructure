@@ -24,6 +24,7 @@ Note that I am looking for contributions. Non-coders can verify, make documentat
 is: please do more than just use the tool and stay silent :)
 
 EXE-link: https://drive.google.com/drive/folders/1fEJsDxhqMiq29NoPuYxGYNSnPnuwSnt8?usp=sharing
+
 Please like, share or comment on LinkedIn: https://www.linkedin.com/in/audun-arnesen-nyhus-6aa17118/
 
 Screenshot (this example can be loaded from file "ship_section_example.txt"):
