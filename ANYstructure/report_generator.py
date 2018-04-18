@@ -6,7 +6,7 @@ from reportlab.platypus import Spacer
 from reportlab.lib.styles import  ParagraphStyle
 from reportlab.platypus import Paragraph, SimpleDocTemplate
 from PIL import Image
-import test_data_ex as test
+import example_data as test
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import mm, inch
@@ -103,7 +103,7 @@ class LetterMaker(object):
                   """<font size="12"> Time : </font>""" + '<font size="12">' + time_now + '</font>' + '<br/>'
         p = Paragraph(address, self.styles["Normal"])
         # add a logo and size it
-        logo = Image("Sevan.png")
+        logo = Image("ANYstructure_logo.jpg")
         logo.drawHeight = 1 * inch
         logo.drawWidth = 2.5 * inch
         data = [[p, logo]]

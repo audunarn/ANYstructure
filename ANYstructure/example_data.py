@@ -1,6 +1,6 @@
 ### Tests are runned here
 
-import calc_structure as calc_structure
+import calc_structure
 import make_grid_numpy as grid
 import calc_loads as load
 import random

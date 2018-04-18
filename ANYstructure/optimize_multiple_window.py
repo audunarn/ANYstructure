@@ -6,7 +6,7 @@ import optimize as op
 import numpy as np
 import time
 from tkinter import messagebox
-import test_data_ex as test
+import example_data as test
 from helper import *
 
 

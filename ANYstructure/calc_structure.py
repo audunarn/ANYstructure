@@ -1093,7 +1093,7 @@ class CalcFatigue(Structure):
         return self._design_life
 
 if __name__ == '__main__':
-    import test_data_ex as test
+    import example_data as test
     print('Fatigue test: ')
     my_test = CalcFatigue(test.obj_dict, test.fat_obj_dict)
     print('Total damage: ',my_test.get_total_damage(int_press=(0,0,0), ext_press=(50000, 60000,0)))

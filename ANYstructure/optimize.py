@@ -9,7 +9,7 @@ from pyswarm import pso
 import copy
 #from opt_problem import MyProblem
 from multiprocessing import Pool, cpu_count
-import test_data_ex as test
+import example_data as test
 
 
 def run_optmizataion(initial_structure_obj=None, min_var=None,max_var=None,lateral_pressure=None,
