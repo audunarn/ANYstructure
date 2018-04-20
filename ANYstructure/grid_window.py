@@ -1,16 +1,13 @@
 import math
-import make_queue as queue
-import make_stack
+import ANYstructure.make_queue as queue
+import ANYstructure.make_stack as make_stack
 #from matplotlib.backends import backend_qt5agg
 from matplotlib import pyplot as plt
 import numpy as np
 from collections import deque
 import copy
 import matplotlib.animation as animation
-
-import example_data as test
-import matplotlib
-
+import ANYstructure.example_data as test
 
 def dist(p, q):
     return math.sqrt((p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2)

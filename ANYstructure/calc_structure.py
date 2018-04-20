@@ -3,7 +3,7 @@ from scipy.special import gammaln
 from scipy.stats import gamma as gammadist
 import numpy as np
 
-import SN_curve_parameters as snc
+import ANYstructure.SN_curve_parameters as snc
 
 class Structure():
     '''

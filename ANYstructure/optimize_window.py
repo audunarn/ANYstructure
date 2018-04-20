@@ -1,11 +1,11 @@
 # This is where the optimization is done.
 import tkinter as tk
 from _tkinter import TclError
-import optimize as op
+import ANYstructure.optimize as op
 import numpy as np
 import time
 from tkinter import messagebox
-import example_data as test
+import ANYstructure.example_data as test
 
 class CreateOptimizeWindow():
     '''

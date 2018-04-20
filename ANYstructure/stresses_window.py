@@ -1,6 +1,6 @@
 # This is where the optimization is done.
 import tkinter as tk
-import example_data as test
+import ANYstructure.example_data as test
 from _tkinter import TclError
 
 
