@@ -7,9 +7,9 @@ pip install anystructure
 
 After installing on PIP:
 
-"import ANYstructure.__main__ as run"
+import ANYstructure.\_\_main\_\_ as run
 
-"run.main()"
+run.main()
 
 ------------------------------------------------------------------------
 
