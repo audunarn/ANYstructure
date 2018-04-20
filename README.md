@@ -5,11 +5,9 @@ Download OR install using:
 ------------------------------------------------------------------------
 pip install anystructure
 
-After installing on PIP:
+After installing on PIP run ANYstructure (.exe) in the command line to execute the app.
 
-import ANYstructure.\_\_main\_\_ as run
-
-run.main()
+Alternatively users can import ANYstructure./_/_.main./_/_ and run main().
 
 ------------------------------------------------------------------------
 
