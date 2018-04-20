@@ -4,21 +4,21 @@ import tkinter as tk
 from tkinter import filedialog
 from tkinter import messagebox
 import json
-from calc_loads import *
-from calc_structure import *
-import load_window as load_window
-import make_grid_numpy as grid
-import grid_window as grid_window
-from helper import *
+from ANYstructure.calc_loads import *
+from ANYstructure.calc_structure import *
+import ANYstructure.load_window as load_window
+import ANYstructure.make_grid_numpy as grid
+import ANYstructure.grid_window as grid_window
+from ANYstructure.helper import *
 import math, decimal
-import optimize_window as opw
-import optimize_multiple_window as opwmult
-import pl_stf_window as struc
-import stresses_window as stress
-import fatigue_window as fatigue
+import ANYstructure.optimize_window as opw
+import ANYstructure.optimize_multiple_window as opwmult
+import ANYstructure.pl_stf_window as struc
+import ANYstructure.stresses_window as stress
+import ANYstructure.fatigue_window as fatigue
 from _tkinter import TclError
 import multiprocessing
-from report_generator import LetterMaker
+from ANYstructure.report_generator import LetterMaker
 import time
 
 class Application():
