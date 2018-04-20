@@ -23,7 +23,7 @@ setup(
     name='ANYstructure',  # Required
     url = 'https://github.com/audunarn/ANYstructure',
     entry_points={'gui_scripts': ['run_me = ANYstructure.__main__:main']},
-    version='0.1.15',  # Required
+    version='0.1.17',  # Required
     description='A offshore structure plate field optimization tool',  # Required
     author='Audun Arnesen Nyhus',  # Optional
     author_email='audunarn@gmail.com',  # Optional
@@ -34,6 +34,6 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Topic :: Scientific/Engineering'],
     keywords='dnv-gl-os-c101 naval_architecture',  # Optional
-    packages=find_packages(exclude=['contrib', 'docs', 'tests']),  # Required
-    include_package_data=True
+    include_package_data=True,
+    packages=['ANYstructure'],  # Required
 )
