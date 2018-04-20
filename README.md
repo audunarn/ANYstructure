@@ -6,10 +6,13 @@ Download OR install using:
 pip install anystructure
 
 After installing on PIP:
+'''
 
 import ANYstructure.__main__ as run
 
 run.main()
+
+'''
 ------------------------------------------------------------------------
 
 GUI based steel structure calculation tool.
