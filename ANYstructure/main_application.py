@@ -33,17 +33,16 @@ class Application():
         :param parent:
         '''
         super(Application, self).__init__()
-        root.wm_title('| ANYstructure |')
+        parent.wm_title('| ANYstructure |')
         self._parent = parent
         parent.protocol("WM_DELETE_WINDOW", self.close_main_window)
 
         # If the resolution of the screen is below 2000, items are multiplied by global_shrink.
-        if root.winfo_screenwidth() < 2000:
+        if parent.winfo_screenwidth() < 2000:
             self._global_shrink = 0.96
         else:
             self._global_shrink = 1
         self._global_shrink = 1
-        self._root = root
 
         # Main frame for the application
         self._main_fr = tk.Frame(parent, height=int(990*self._global_shrink), width=int(1920*self._global_shrink))
@@ -2138,14 +2137,14 @@ class Application():
         self._main_canvas.bind('<Button-3>', self.button_3_click)
         self._main_canvas.bind("<B2-Motion>", self.button_2_click_and_drag)
         self._main_canvas.bind("<MouseWheel>", self.mouse_scroll)
-        self._root.bind('<Control-z>', self.undo)
-        #self._root.bind('<Control-y>', self.redo)
-        self._root.bind('<Control-p>', self.delete_point)
-        self._root.bind('<Control-l>', self.delete_line)
-        self._root.bind('<Control-c>', self.copy_point)
-        self._root.bind('<Control-m>', self.move_point)
-        self._root.bind('<Control-q>', self.new_line)
-        self._root.bind('<Control-s>', self.new_structure)
+        self._parent.bind('<Control-z>', self.undo)
+        #self._parent.bind('<Control-y>', self.redo)
+        self._parent.bind('<Control-p>', self.delete_point)
+        self._parent.bind('<Control-l>', self.delete_line)
+        self._parent.bind('<Control-c>', self.copy_point)
+        self._parent.bind('<Control-m>', self.move_point)
+        self._parent.bind('<Control-q>', self.new_line)
+        self._parent.bind('<Control-s>', self.new_structure)
 
     def mouse_scroll(self,event):
         self._canvas_scale +=  event.delta/50
