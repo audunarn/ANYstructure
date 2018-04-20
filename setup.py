@@ -32,6 +32,7 @@ setup(
     # specification here:
     # https://packaging.python.org/specifications/core-metadata/#name
     name='ANYstructure',  # Required
+    url = 'https://github.com/audunarn/ANYstructure',
 
     # Versions should comply with PEP 440:
     # https://www.python.org/dev/peps/pep-0440/
@@ -39,7 +40,7 @@ setup(
     # For a discussion on single-sourcing the version across setup.py and the
     # project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='0.1.0',  # Required
+    version='0.1.1',  # Required
 
     # This is a one-line description or tagline of what your project does. This
     # corresponds to the "Summary" metadata field:
@@ -66,7 +67,7 @@ setup(
     #
     # This field corresponds to the "Description-Content-Type" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#description-content-type-optional
-    long_description_content_type='text/markdown',  # Optional (see note above)
+    long_description_content_type='Structural calculation and optimization according to DNVGL-OS-C101',  # Optional (see note above)
 
     # This should be a valid link to your project's main homepage.
     #
@@ -87,23 +88,11 @@ setup(
     # For a list of valid classifiers, see
     # https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[  # Optional
-        # How mature is this project? Common values are
-        #   3 - Alpha
-        #   4 - Beta
-        #   5 - Production/Stable
         'Development Status :: 3 - Alpha',
-
-        # Indicate who your project is intended for
-        'Intended Audience :: Naval architects',
-        'Topic :: Software Development :: Engineering tools',
-
-        # Pick your license as you wish
-        'License :: GPL-3.0',
-
-        # Specify the Python versions you support here. In particular, ensure
-        # that you indicate whether you support Python 2, Python 3 or both.
-
+        'Environment :: Console',
+        'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
         'Programming Language :: Python :: 3.6',
+        'Topic :: Scientific/Engineering',
     ],
 
     # This field adds keywords for your project which will appear on the
@@ -121,7 +110,6 @@ setup(
     #
     #   py_modules=["my_module"],
     #
-    packages=find_packages(exclude=['contrib', 'docs', 'tests']),  # Required
+    packages=find_packages(exclude=['contrib', 'docs', 'tests'])  # Required
 
-    },
 )
