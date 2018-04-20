@@ -3,7 +3,7 @@
 
 Download OR install using:
 ------------------------------------------------------------------------
-pip install anystructure
+__pip install anystructure__
 
 After installing on PIP run ANYstructure (.exe) in the command line to execute the app.
 
