@@ -1,7 +1,13 @@
 # ANYstructure
 ![Logo](https://docs.google.com/uc?id=1h0y3763tcvXQzxqX3B8p91UzNo9cEb6C)
 
-Start application by running main_application.py
+Install using:
+pip install anystructure
+
+After installing on PIP:
+
+import ANYstructure.__main__ as run
+run.main()
 
 GUI based steel structure calculation tool.
  
