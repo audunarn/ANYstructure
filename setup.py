@@ -22,9 +22,9 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 setup(
     name='ANYstructure',  # Required
     url = 'https://github.com/audunarn/ANYstructure',
-    entry_points={'gui_scripts': ['run_me = ANYstructure.__main__:main']},
-    version='0.1.17',  # Required
-    description='A offshore structure plate field optimization tool',  # Required
+    entry_points={'gui_scripts': ['ANYstructure = ANYstructure.__main__:main']},
+    version='0.1.20',  # Required
+    description='An plate field optimization tool for offshore structures according to DNVGL standards',  # Required
     author='Audun Arnesen Nyhus',  # Optional
     author_email='audunarn@gmail.com',  # Optional
     classifiers=[  # Optional
@@ -33,7 +33,9 @@ setup(
         'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
         'Programming Language :: Python :: 3.6',
         'Topic :: Scientific/Engineering'],
-    keywords='dnv-gl-os-c101 naval_architecture',  # Optional
+    keywords='dnv-gl-os-c101 naval_architecture structural_engineering',  # Optional
     include_package_data=True,
-    packages=['ANYstructure'],  # Required
+    packages=['ANYstructure'],
+    install_requires=['scipy', 'numpy', 'pyswarm', 'matplotlib','reportlab==3.4.0']
+    # Required
 )
