@@ -25,8 +25,8 @@ Loads are combined according to DNVGL-OS-C101.
 Installation
 ------------
 
-The easiest way to install the package is via ``pip``::
-vg
+The easiest way to install the package is via pip::
+
     $ pip install anystructure
 
 Usage
