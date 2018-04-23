@@ -33,7 +33,8 @@ Usage
 -----
 
 An entry point is defined. After installing on PIP, just type "ANYstructure" in the command window.
-Alternatively run /_/_main/_/_.py
+
+Alternatively run \_\_main\_\_.py
 
 Documentation
 -------------
