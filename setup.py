@@ -19,12 +19,17 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 # Arguments marked as "Required" below must be included for upload to PyPI.
 # Fields marked as "Optional" may be commented out.
 
+def readme():
+    with open('README.rst') as file:
+        return file.read()
+
 setup(
     name='ANYstructure',  # Required
     url = 'https://github.com/audunarn/ANYstructure',
     entry_points={'gui_scripts': ['ANYstructure = ANYstructure.__main__:main']},
     version='0.1.20',  # Required
     description='An plate field optimization tool for offshore structures according to DNVGL standards',  # Required
+    long_description = readme(),
     author='Audun Arnesen Nyhus',  # Optional
     author_email='audunarn@gmail.com',  # Optional
     classifiers=[  # Optional
