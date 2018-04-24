@@ -668,7 +668,7 @@ class CalcScantlings(Structure):
 
         Cxs = (alphap-0.22)/math.pow(alphap,2) if alphap > 0.673 else 1 # reduction factor longitudinal
         # eq7.16, reduction factor transverse, compression (positive) else tension
-        print(1-math.pow(sigySd/sigyR,2)+ci*((sigxSd*sigySd)/(Cxs*fy*sigyR)))
+
         Cys = math.sqrt(1-math.pow(sigySd/sigyR,2) + ci*((sigxSd*sigySd)/(Cxs*fy*sigyR))) if sigySd >= 0 \
             else min(0.5*(math.sqrt(4-3*math.pow(sigySd/fy,2))+sigySd/fy),1) #ok, checked
 
@@ -1079,7 +1079,7 @@ class CalcFatigue(Structure):
         self._fraction, self.fatigue_dict['Fraction'] = fatigue_dict['Fraction'], fatigue_dict['Fraction']
         self._case_order, self.fatigue_dict['Order'] = fatigue_dict['Order'], fatigue_dict['Order']
         self._dff, self.fatigue_dict['DFF'] = fatigue_dict['DFF'], fatigue_dict['DFF']
-        print(self.fatigue_dict)
+
 
     def get_fatigue_properties(self):
         ''' Returning properties as a dictionary '''

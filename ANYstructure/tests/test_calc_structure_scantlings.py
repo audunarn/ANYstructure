@@ -10,11 +10,12 @@ def scantling_cls():
 
 def test_eff_moment_of_intertia(scantling_cls):
     pressure = 200
-    item1 = scantling_cls[0].get_moment_of_intertia(efficent_se=scantling_cls.get_plate_efficent_b(
+
+    item1 = scantling_cls[0].get_moment_of_intertia(efficent_se=scantling_cls[0].get_plate_efficent_b(
             design_lat_press=pressure))
-    item2 = scantling_cls[1].get_moment_of_intertia(efficent_se=scantling_cls.get_plate_efficent_b(
+    item2 = scantling_cls[1].get_moment_of_intertia(efficent_se=scantling_cls[1].get_plate_efficent_b(
             design_lat_press=pressure))
-    item3 = scantling_cls[2].get_moment_of_intertia(efficent_se=scantling_cls.get_plate_efficent_b(
+    item3 = scantling_cls[2].get_moment_of_intertia(efficent_se=scantling_cls[2].get_plate_efficent_b(
             design_lat_press=pressure))
     assert item1 == 0.0001954533465023375
     assert item2 == 0.0003855085228421317
