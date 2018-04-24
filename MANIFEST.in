@@ -1,0 +1,25 @@
+include LICENSE
+include README.md
+include README.rst
+include ANYstructure\fls_button.gif
+include ANYstructure\img_axial_stresses.gif
+include ANYstructure\img_ext_pressure_button.gif
+include ANYstructure\img_ext_pressure_button_def.gif
+include ANYstructure\img_fixation_parameters.gif
+include ANYstructure\img_generate_report.gif
+include ANYstructure\img_int_pressure_button.gif
+include ANYstructure\img_int_pressure_button_search.gif
+include ANYstructure\img_multi_opt.gif
+include ANYstructure\img_optimize.gif
+include ANYstructure\img_plate_and_stiffener.gif
+include ANYstructure\img_stf_button.gif
+include ANYstructure\img_stiffener.gif
+include ANYstructure\img_stress_button.gif
+include ANYstructure\img_T_L_FB.gif
+include ANYstructure\img_title.gif
+include ANYstructure\img_transverse_stress.gif
+include ANYstructure\ANYstructure_logo.jpg
+include ANYstructure\current_comps_NONE.png
+include ANYstructure\ship_section_example.txt
+
+

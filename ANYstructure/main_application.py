@@ -4,21 +4,21 @@ import tkinter as tk
 from tkinter import filedialog
 from tkinter import messagebox
 import json
-from calc_loads import *
-from calc_structure import *
-import load_window as load_window
-import make_grid_numpy as grid
-import grid_window as grid_window
-from helper import *
+from ANYstructure.calc_loads import *
+from ANYstructure.calc_structure import *
+import ANYstructure.load_window as load_window
+import ANYstructure.make_grid_numpy as grid
+import ANYstructure.grid_window as grid_window
+from ANYstructure.helper import *
 import math, decimal
-import optimize_window as opw
-import optimize_multiple_window as opwmult
-import pl_stf_window as struc
-import stresses_window as stress
-import fatigue_window as fatigue
+import ANYstructure.optimize_window as opw
+import ANYstructure.optimize_multiple_window as opwmult
+import ANYstructure.pl_stf_window as struc
+import ANYstructure.stresses_window as stress
+import ANYstructure.fatigue_window as fatigue
 from _tkinter import TclError
 import multiprocessing
-from report_generator import LetterMaker
+from ANYstructure.report_generator import LetterMaker
 import time
 
 class Application():
@@ -33,18 +33,17 @@ class Application():
         :param parent:
         '''
         super(Application, self).__init__()
-        root.wm_title('| ANYstructure |')
+        parent.wm_title('| ANYstructure |')
         self._parent = parent
         parent.protocol("WM_DELETE_WINDOW", self.close_main_window)
 
         # If the resolution of the screen is below 2000, items are multiplied by global_shrink.
-        if root.winfo_screenwidth() < 2000:
+        if parent.winfo_screenwidth() < 2000:
             self._global_shrink = 0.96
         else:
             self._global_shrink = 1
         self._global_shrink = 1
-        self._root = root
-
+        self._root_dir = os.path.dirname(__file__)+'/'
         # Main frame for the application
         self._main_fr = tk.Frame(parent, height=int(990*self._global_shrink), width=int(1920*self._global_shrink))
         self._main_fr.pack()
@@ -190,7 +189,7 @@ class Application():
 
         # --- main header image ---
         try:
-            photo = tk.PhotoImage(file="img_title.gif")
+            photo = tk.PhotoImage(file=self._root_dir+"img_title.gif")
             label = tk.Label(self._main_fr,image=photo)
             label.image = photo  # keep a reference!
             label.place(x=10, y=10)
@@ -428,14 +427,14 @@ class Application():
         self._ent_pressure_side.place(x=10 + 7.6 * delta_x, y=prop_vert_start + 5.5 * delta_y)
 
         try:
-            photo_stf = tk.PhotoImage(file="img_stf_button.gif")
+            photo_stf = tk.PhotoImage(file=self._root_dir+"img_stf_button.gif")
             stf_button = tk.Button(self._main_fr,image = photo_stf,command=self.on_open_structure_window)
             stf_button.image = photo_stf
             stf_button.place(x=10,y=prop_vert_start)
         except TclError:
             tk.Button(self._main_fr, text='STF.', command=self.on_open_structure_window).place(x=10,y=prop_vert_start)
         try:
-            photo_stress = tk.PhotoImage(file="img_stress_button.gif")
+            photo_stress = tk.PhotoImage(file=self._root_dir+"img_stress_button.gif")
             stress_button = tk.Button(self._main_fr,image = photo_stress,command=self.on_open_stresses_window)
             stress_button.image = photo_stress
             stress_button.place(x=10,y=prop_vert_start+3*delta_y)
@@ -444,7 +443,7 @@ class Application():
                 .place(x=10,y=prop_vert_start+3*delta_y)
 
         try:
-            photo_fls = tk.PhotoImage(file="fls_button.gif")
+            photo_fls = tk.PhotoImage(file=self._root_dir+"fls_button.gif")
             fls_button = tk.Button(self._main_fr,image = photo_fls,command=self.on_open_fatigue_window)
             fls_button.image = photo_fls
             fls_button.place(x=10,y=prop_vert_start+6*delta_y)
@@ -520,7 +519,7 @@ class Application():
         # --- button to create compartments and define external pressures ---
 
         try:
-            photo_int = tk.PhotoImage(file="img_int_pressure_button.gif")
+            photo_int = tk.PhotoImage(file=self._root_dir+"img_int_pressure_button.gif")
             self._int_button = tk.Button(self._main_fr,image = photo_int,command=self.grid_find_tanks)
             self._int_button.image = photo_int
             self._int_button.place(x=10, y=load_vert_start+0*delta_y)
@@ -535,7 +534,7 @@ class Application():
         show_compartment.place(x=10, y=load_vert_start+2*delta_y)
 
         try:
-            photo_ext = tk.PhotoImage(file="img_ext_pressure_button.gif")
+            photo_ext = tk.PhotoImage(file=self._root_dir+"img_ext_pressure_button.gif")
             self._ext_button = tk.Button(self._main_fr,image=photo_ext, command = self.on_show_loads)
             self._ext_button.image = photo_ext
             self._ext_button.place(x=ent_x+delta_x*1.5, y=load_vert_start+0*delta_y)
@@ -611,7 +610,7 @@ class Application():
         tk.Label(self._main_fr,text='Optimize selected line/structure (right click line):',
                  font = self._text_size['Text 9 bold'],fg='black').place(x=lc_x, y=lc_y - 7 * lc_y_delta)
         try:
-            photo_opt = tk.PhotoImage(file="img_optimize.gif")
+            photo_opt = tk.PhotoImage(file=self._root_dir+"img_optimize.gif")
             opt_button = tk.Button(self._main_fr,image=photo_opt, command = self.on_optimize)
             opt_button.image = photo_opt
             opt_button.place(x=lc_x, y=lc_y - 6 * lc_y_delta)
@@ -619,7 +618,7 @@ class Application():
             tk.Button(self._main_fr, text='Optimize', command=self.on_optimize_multiple)\
                 .place(x=lc_x, y=lc_y - 6 * lc_y_delta)
         try:
-            photo_opt = tk.PhotoImage(file="img_multi_opt.gif")
+            photo_opt = tk.PhotoImage(file=self._root_dir+"img_multi_opt.gif")
             opt_button_mult = tk.Button(self._main_fr,image=photo_opt, command = self.on_optimize_multiple)
             opt_button_mult.image = photo_opt
             opt_button_mult.place(x=lc_x+delta_x*4, y=lc_y - 6 * lc_y_delta)
@@ -627,7 +626,7 @@ class Application():
             tk.Button(self._main_fr, text='MultiOptimize', command=self.on_optimize_multiple).place(x=lc_x + delta_x*5,
                                                                                            y=lc_y - 6 * lc_y_delta)
         try:
-            photo_report = tk.PhotoImage(file="img_generate_report.gif")
+            photo_report = tk.PhotoImage(file=self._root_dir+"img_generate_report.gif")
             report_button = tk.Button(self._main_fr,image=photo_report, command = self.report_generate)
             report_button.image = photo_report
             report_button.place(x=1600,y=0)
@@ -774,7 +773,7 @@ class Application():
 
         #setting the button to red
         try:
-            photo_int = tk.PhotoImage(file="img_int_pressure_button_search.gif")
+            photo_int = tk.PhotoImage(file=self._root_dir+"img_int_pressure_button_search.gif")
             self._int_button.config(image = photo_int)
             self._int_button.image = photo_int
         except TclError:
@@ -840,7 +839,7 @@ class Application():
                         self._new_load_comb_dict[name][1].set(self._load_factors_dict[combination][2])
                         self._new_load_comb_dict[name][2].set(1)
         try:
-            photo_int = tk.PhotoImage(file="img_int_pressure_button.gif")
+            photo_int = tk.PhotoImage(file=self._root_dir+"img_int_pressure_button.gif")
             self._int_button.config(image = photo_int)
             self._int_button.image = photo_int
         except TclError:
@@ -2138,14 +2137,14 @@ class Application():
         self._main_canvas.bind('<Button-3>', self.button_3_click)
         self._main_canvas.bind("<B2-Motion>", self.button_2_click_and_drag)
         self._main_canvas.bind("<MouseWheel>", self.mouse_scroll)
-        self._root.bind('<Control-z>', self.undo)
-        #self._root.bind('<Control-y>', self.redo)
-        self._root.bind('<Control-p>', self.delete_point)
-        self._root.bind('<Control-l>', self.delete_line)
-        self._root.bind('<Control-c>', self.copy_point)
-        self._root.bind('<Control-m>', self.move_point)
-        self._root.bind('<Control-q>', self.new_line)
-        self._root.bind('<Control-s>', self.new_structure)
+        self._parent.bind('<Control-z>', self.undo)
+        #self._parent.bind('<Control-y>', self.redo)
+        self._parent.bind('<Control-p>', self.delete_point)
+        self._parent.bind('<Control-l>', self.delete_line)
+        self._parent.bind('<Control-c>', self.copy_point)
+        self._parent.bind('<Control-m>', self.move_point)
+        self._parent.bind('<Control-q>', self.new_line)
+        self._parent.bind('<Control-s>', self.new_structure)
 
     def mouse_scroll(self,event):
         self._canvas_scale +=  event.delta/50
@@ -2505,7 +2504,7 @@ class Application():
         '''
 
         try:
-            photo_ext = tk.PhotoImage(file="img_ext_pressure_button_def.gif")
+            photo_ext = tk.PhotoImage(file=self._root_dir+"img_ext_pressure_button_def.gif")
             self._ext_button.config(image = photo_ext)
             self._ext_button.image = photo_ext
         except TclError:
@@ -2567,7 +2566,7 @@ class Application():
         :return:
         '''
         try:
-            photo_ext = tk.PhotoImage(file="img_ext_pressure_button.gif")
+            photo_ext = tk.PhotoImage(file=self._root_dir+"img_ext_pressure_button.gif")
             self._ext_button.config(image = photo_ext)
             self._ext_button.image = photo_ext
         except TclError:
@@ -2675,7 +2674,7 @@ class Application():
         :return:
         '''
         try:
-            photo_ext = tk.PhotoImage(file="img_ext_pressure_button.gif")
+            photo_ext = tk.PhotoImage(file=self._root_dir+"img_ext_pressure_button.gif")
             self._ext_button.config(image = photo_ext)
             self._ext_button.image = photo_ext
         except TclError:

@@ -1,8 +1,7 @@
 ### Tests are runned here
 
-import calc_structure
-import make_grid_numpy as grid
-import calc_loads as load
+import ANYstructure.make_grid_numpy as grid
+import ANYstructure.calc_loads as load
 import random
 
 obj_dict = {'mat_yield': [355e6, 'Pa'], 'span': [4, 'm'], 'spacing': [0.75, 'm'],

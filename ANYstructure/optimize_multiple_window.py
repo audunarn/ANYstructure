@@ -2,12 +2,12 @@
 import tkinter as tk
 from _tkinter import TclError
 from tkinter.ttk import Progressbar
-import optimize as op
+import ANYstructure.optimize as op
 import numpy as np
 import time
 from tkinter import messagebox
-import example_data as test
-from helper import *
+import ANYstructure.example_data as test
+from ANYstructure.helper import *
 
 
 class CreateOptimizeMultipleWindow():
