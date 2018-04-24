@@ -1,7 +1,8 @@
-### Tests are runned here
+# This scripts provide dtat to be used for testing the code
 
 import ANYstructure.make_grid_numpy as grid
 import ANYstructure.calc_loads as load
+import ANYstructure.calc_structure as calc_structure
 import random
 
 obj_dict = {'mat_yield': [355e6, 'Pa'], 'span': [4, 'm'], 'spacing': [0.75, 'm'],
@@ -220,7 +221,7 @@ def get_grid_coord_from_points_coords(point_coord):
     return (row,col)
 
 if __name__ == '__main__':
-    print(get_random_coloer())
+    print(get_random_color())
 
 
 

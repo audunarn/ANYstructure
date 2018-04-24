@@ -4,7 +4,7 @@ import time
 from reportlab.lib.enums import TA_LEFT
 from reportlab.platypus import Spacer
 from reportlab.lib.styles import  ParagraphStyle
-from reportlab.platypus import Paragraph, SimpleDocTemplate
+from reportlab.platypus import SimpleDocTemplate
 from PIL import Image
 import ANYstructure.example_data as test
 from reportlab.lib.pagesizes import letter, A4
@@ -14,7 +14,6 @@ from reportlab.pdfgen import canvas
 from reportlab.platypus import Image, Paragraph, Table
 from time import strftime, gmtime
 import os
-from reportlab.platypus import PageTemplate, BaseDocTemplate, NextPageTemplate, PageBreak
 
 def create_report(input_data):
     '''
@@ -103,7 +102,7 @@ class LetterMaker(object):
                   """<font size="12"> Time : </font>""" + '<font size="12">' + time_now + '</font>' + '<br/>'
         p = Paragraph(address, self.styles["Normal"])
         # add a logo and size it
-        logo = Image("ANYstructure_logo.jpg")
+        logo = Image(self.data['path'] + '\\images\\' + 'ANYstructure_logo.jpg')
         logo.drawHeight = 1 * inch
         logo.drawWidth = 2.5 * inch
         data = [[p, logo]]
@@ -120,25 +119,25 @@ class LetterMaker(object):
         h_start = 130
         for name, obj in self.data['compartments'].items():
             
-            ptext = '<font size="9" color = "black">' + 'Name: '+ name + ', content: ' \
+            ptext = '<font size="7" color = "black">' + 'Name: '+ name + ', content: ' \
                     + obj.get_content() + '</font>'
             self.createParagraph(ptext, h_start, voffset + 100 + delta)
 
-            delta += 4
-            ptext = '<font size="9" color = "black">' + 'Min. elevation: ' + str(obj.get_lowest_elevation()) + \
+            delta += 3
+            ptext = '<font size="7" color = "black">' + 'Min. elevation: ' + str(obj.get_lowest_elevation()) + \
                     ', Max. elevation: ' + str(obj.get_highest_elevation()) + '</font>'
             self.createParagraph(ptext, h_start, voffset + 100 + delta)
 
-            delta += 4
-            ptext = '<font size="9" color = "black">' + 'Applied overpressure: ' + str(obj.get_overpressure()) + \
+            delta += 3
+            ptext = '<font size="7" color = "black">' + 'Applied overpressure: ' + str(obj.get_overpressure()) + \
                     '</font>'
             self.createParagraph(ptext, h_start, voffset + 100 + delta)
 
-            delta += 4
-            ptext = '<font size="9" color = "black">'+'(a_stat, a_dyn_loa, a_dyn_bal): ' + \
+            delta += 3
+            ptext = '<font size="7" color = "black">'+'(a_stat, a_dyn_loa, a_dyn_bal): ' + \
                     str(obj.get_accelerations()) + '</font>'
             self.createParagraph(ptext, h_start, voffset + 100 + delta)
-            delta += 6
+            delta += 4
         try:
             self.c.drawImage('current_comps.png', 10,50, width=350, height=250)
         except OSError:
