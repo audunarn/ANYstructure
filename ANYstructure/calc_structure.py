@@ -1112,7 +1112,7 @@ if __name__ == '__main__':
     # print(my_buc.get_net_effective_plastic_section_modulus())
     for example in [test.obj_dict, test.obj_dict2, test.obj_dict_L]:
         my_test = CalcScantlings(example)
-
+        pressure = 200
         # print('SHEAR CENTER: ',my_test.get_shear_center())
         # print('SECTION MOD: ',my_test.get_section_modulus())
         # print('SECTION MOD FLANGE: ', my_test.get_section_modulus()[0])
@@ -1124,8 +1124,10 @@ if __name__ == '__main__':
         # print('CROSS AREA', my_test.get_cross_section_area())
         # print()
 
-        print('EFFICIENT MOMENT OF INTERTIA: ',my_test.get_moment_of_intertia(efficent_se=my_test.get_plate_efficent_b(design_lat_press=200)))
-        print('Se: ',my_test.calculate_buckling_all(design_lat_press=0,checked_side='s'))
-        print('Se: ', my_test.calculate_buckling_all(design_lat_press=0, checked_side='p'))
-        print('MINIMUM PLATE THICKNESS',my_test.get_dnv_min_thickness(400))
-        print('MINIMUM SECTION MOD.', my_test.get_dnv_min_section_modulus(400)*1000**3)
+        print('EFFICIENT MOMENT OF INTERTIA: ',my_test.get_moment_of_intertia(efficent_se=my_test.get_plate_efficent_b(
+            design_lat_press=pressure)))
+        print('Se: ',my_test.calculate_buckling_all(design_lat_press=pressure,checked_side='s'))
+        print('Se: ', my_test.calculate_buckling_all(design_lat_press=pressure, checked_side='p'))
+        print('MINIMUM PLATE THICKNESS',my_test.get_dnv_min_thickness(pressure))
+        print('MINIMUM SECTION MOD.', my_test.get_dnv_min_section_modulus(pressure))
+        print()
