@@ -1080,7 +1080,6 @@ class CalcFatigue(Structure):
         self._case_order, self.fatigue_dict['Order'] = fatigue_dict['Order'], fatigue_dict['Order']
         self._dff, self.fatigue_dict['DFF'] = fatigue_dict['DFF'], fatigue_dict['DFF']
 
-
     def get_fatigue_properties(self):
         ''' Returning properties as a dictionary '''
         return self.fatigue_dict
@@ -1111,8 +1110,11 @@ if __name__ == '__main__':
     # print(my_buc.calculate_slamming_stiffener(1000000))
     # print(my_buc.get_net_effective_plastic_section_modulus())
     for example in [test.obj_dict, test.obj_dict2, test.obj_dict_L]:
-        my_test = CalcScantlings(example)
-        pressure = 200
+        # my_test = CalcScantlings(example)
+        my_test = CalcFatigue(example, test.fat_obj_dict)
+        print('Total damage: ', my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(50000, 60000, 0)))
+        print(my_test.get_fatigue_properties())
+        # pressure = 200
         # print('SHEAR CENTER: ',my_test.get_shear_center())
         # print('SECTION MOD: ',my_test.get_section_modulus())
         # print('SECTION MOD FLANGE: ', my_test.get_section_modulus()[0])
@@ -1123,11 +1125,11 @@ if __name__ == '__main__':
         # print('PROPERTIES', my_test.get_structure_prop())
         # print('CROSS AREA', my_test.get_cross_section_area())
         # print()
-
-        print('EFFICIENT MOMENT OF INTERTIA: ',my_test.get_moment_of_intertia(efficent_se=my_test.get_plate_efficent_b(
-            design_lat_press=pressure)))
-        print('Se: ',my_test.calculate_buckling_all(design_lat_press=pressure,checked_side='s'))
-        print('Se: ', my_test.calculate_buckling_all(design_lat_press=pressure, checked_side='p'))
-        print('MINIMUM PLATE THICKNESS',my_test.get_dnv_min_thickness(pressure))
-        print('MINIMUM SECTION MOD.', my_test.get_dnv_min_section_modulus(pressure))
-        print()
+    #
+    #     print('EFFICIENT MOMENT OF INTERTIA: ',my_test.get_moment_of_intertia(efficent_se=my_test.get_plate_efficent_b(
+    #         design_lat_press=pressure)))
+    #     print('Se: ',my_test.calculate_buckling_all(design_lat_press=pressure,checked_side='s'))
+    #     print('Se: ', my_test.calculate_buckling_all(design_lat_press=pressure, checked_side='p'))
+    #     print('MINIMUM PLATE THICKNESS',my_test.get_dnv_min_thickness(pressure))
+    #     print('MINIMUM SECTION MOD.', my_test.get_dnv_min_section_modulus(pressure))
+    #     print()
