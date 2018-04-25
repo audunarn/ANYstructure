@@ -6,6 +6,7 @@ class Loads():
     '''
 
     def __init__(self, main_load_dict):
+
         self.main_load_dict = main_load_dict
         self.static_draft = main_load_dict['static_draft']
         self.poly_third = main_load_dict['poly_third']
@@ -15,7 +16,6 @@ class Loads():
         self.manual_press = main_load_dict['man_press']
         self.load_condition = main_load_dict['load_condition']
         self.name_of_load = main_load_dict['name_of_load']
-
         try:
             self.limit_state = main_load_dict['limit_state']
         except KeyError:
@@ -30,7 +30,6 @@ class Loads():
         self.dynamic_pressure = 0
         self.static_pressure = 0
         self.is_external = True
-
 
     def __str__(self):
         string = str('Properties selected load is:'+
@@ -70,7 +69,6 @@ class Loads():
             psl = 0
 
         return max(press, psl)
-
 
     def __calculate_poly_value(self, variable):
         '''
@@ -134,6 +132,7 @@ class Tanks():
     '''
 
     def __init__(self, tank_dict):
+
         self.properties = tank_dict
         self.compartment_number = tank_dict['comp_no']
         self.cells = tank_dict['cells']
@@ -238,7 +237,6 @@ class Tanks():
         elevation = coordinates[1]
         return pressure *((self.get_highest_elevation()-elevation)/
                           (self.get_highest_elevation()-self.get_lowest_elevation()))
-
 
     def get_calculated_pressure(self, coordinates, acceleration):
         '''
@@ -496,4 +494,8 @@ class Combination():
         self.tank_dict = value
 
 if __name__ == '__main__':
-    pass
+    import ANYstructure.example_data as ex
+
+    for load, type in zip([Loads(ex.load_bottom), Loads(ex.load_side), Loads(ex.load_static), Loads(ex.load_slamming)],
+                          ['BOTTOM', 'SIDE_SHELL', '', '']):
+        print(load.get_calculated_pressure((10,10), 3, type))

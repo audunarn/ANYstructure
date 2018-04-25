@@ -76,6 +76,41 @@ comp3 = {'acc': {'static': 9.81, 'dyn_ballast': 3.0, 'dyn_loaded': 3.0}, 'max_el
 comp4 = {'acc': {'static': 9.81, 'dyn_ballast': 3.0, 'dyn_loaded': 3.0}, 'max_el': 29.5, 'added_press': 25000.0,
          'cells': 19072, 'density': 1025.0, 'content': 'ballast', 'comp_no': 4, 'min_el': 0.0}
 
+load_side = {'poly_third': 0.0, 'poly_second': 303.0, 'poly_first': -3750.0, 'poly_const': 153000.0,
+             'load_condition': 'ballast', 'structure_type': None, 'man_press': None, 'static_draft': None,
+             'name_of_load': 'ballast_side', 'limit_state': 'ULS'}
+load_bottom = {'poly_third': 0.0, 'poly_second': 31.0, 'poly_first': -83.0, 'poly_const': 45800.0,
+               'load_condition': 'ballast', 'structure_type': None, 'man_press': None, 'static_draft': None,
+               'name_of_load': 'ballast_bottom', 'limit_state': 'ULS'}
+load_static = {'poly_third': None, 'poly_second': None, 'poly_first': None, 'poly_const': None,
+               'load_condition': 'ballast', 'structure_type': None, 'man_press': None, 'static_draft': 15.0,
+               'name_of_load': 'ballast_static', 'limit_state': 'ULS'}
+load_slamming = {'poly_third': 0, 'poly_second': 0, 'poly_first': 0, 'poly_const': 1000000.0,
+                 'load_condition': 'slamming', 'structure_type': None, 'man_press': None, 'static_draft': None,
+                 'name_of_load': 'slamming', 'limit_state': None}
+
+ex_comp1 = {'comp_no': 2, 'cells': 32829, 'min_el': 2.5, 'max_el': 30.9, 'content': '', 'added_press': 25000.0,
+            'acc': {'static': 9.81, 'dyn_loaded': 3.0, 'dyn_ballast': 3.0}, 'density': 1025.0,
+            'all_types': ['BOTTOM', 'BBS', 'BBT', 'HOPPER', 'SIDE_SHELL', 'INNER_SIDE', 'FRAME', 'FRAME_WT',
+                          'SSS', 'MD', 'GENERAL_INTERNAL_WT', 'GENERAL_INTERNAL_NONWT', 'INTERNAL_1_MPA',
+                          'INTERNAL_LOW_STRESS_WT']}
+ex_comp2 = {'comp_no': 3, 'cells': 62530, 'min_el': 2.5, 'max_el': 30.900000000000002, 'content': '',
+            'added_press': 25000.0, 'acc': {'static': 9.81, 'dyn_loaded': 3.0, 'dyn_ballast': 3.0},
+            'density': 1025.0, 'all_types': ['BOTTOM', 'BBS', 'BBT', 'HOPPER', 'SIDE_SHELL', 'INNER_SIDE', 'FRAME',
+                                             'FRAME_WT', 'SSS', 'MD', 'GENERAL_INTERNAL_WT', 'GENERAL_INTERNAL_NONWT',
+                                             'INTERNAL_1_MPA', 'INTERNAL_LOW_STRESS_WT']}
+ex_comp3 = {'comp_no': 4, 'cells': 14559, 'min_el': 0.0, 'max_el': 30.900000000000002, 'content': '',
+            'added_press': 25000.0, 'acc': {'static': 9.81, 'dyn_loaded': 3.0, 'dyn_ballast': 3.0},
+            'density': 1025.0, 'all_types': ['BOTTOM', 'BBS', 'BBT', 'HOPPER', 'SIDE_SHELL', 'INNER_SIDE',
+                                             'FRAME', 'FRAME_WT', 'SSS', 'MD', 'GENERAL_INTERNAL_WT',
+                                             'GENERAL_INTERNAL_NONWT', 'INTERNAL_1_MPA', 'INTERNAL_LOW_STRESS_WT']}
+ex_comp4 = {'comp_no': 5, 'cells': 2785, 'min_el': 0.0, 'max_el': 2.5, 'content': '', 'added_press': 25000.0,
+            'acc': {'static': 9.81, 'dyn_loaded': 3.0, 'dyn_ballast': 3.0}, 'density': 1025.0,
+            'all_types': ['BOTTOM', 'BBS', 'BBT', 'HOPPER', 'SIDE_SHELL', 'INNER_SIDE', 'FRAME', 'FRAME_WT',
+                          'SSS', 'MD', 'GENERAL_INTERNAL_WT', 'GENERAL_INTERNAL_NONWT', 'INTERNAL_1_MPA',
+                          'INTERNAL_LOW_STRESS_WT']}
+
+
 def get_slamming_pressure():
     return 1000000
 
