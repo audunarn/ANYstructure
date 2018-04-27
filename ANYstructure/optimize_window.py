@@ -24,9 +24,9 @@ class CreateOptimizeWindow():
             image_dir = os.path.dirname(__file__)+'\\images\\'
         else:
             self.app = app
-            self._initial_structure_obj = self.app._line_to_struc[app._active_line][0]
-            self._initial_calc_obj = self.app._line_to_struc[app._active_line][1]
-            self._fatigue_object = self.app._line_to_struc[app._active_line][2]
+            self._initial_structure_obj = app._line_to_struc[app._active_line][0]
+            self._initial_calc_obj = app._line_to_struc[app._active_line][1]
+            self._fatigue_object = app._line_to_struc[app._active_line][2]
             try:
                 self._fatigue_pressure = app.get_fatigue_pressures(app._active_line,
                                                                    self._fatigue_object.get_accelerations())
@@ -548,7 +548,6 @@ class CreateOptimizeWindow():
                           self._fatigue_pressure['p_ext']['part']),
                          (self._fatigue_pressure['p_int']['loaded'],self._fatigue_pressure['p_int']['ballast'],
                           self._fatigue_pressure['p_int']['part']))
-
         else:
             fat_press = None
 

@@ -728,7 +728,6 @@ if __name__ == '__main__':
     fp = test.get_fatigue_pressures()
     fat_press = ((fp['p_ext']['loaded'],fp['p_ext']['ballast'],fp['p_ext']['part']),
                  (fp['p_int']['loaded'],fp['p_int']['ballast'],fp['p_int']['part']))
-
     x0 = [obj_dict['spacing'][0], obj_dict['plate_thk'][0], obj_dict['stf_web_height'][0], obj_dict['stf_web_thk'][0],
           obj_dict['stf_flange_width'][0], obj_dict['stf_flange_thk'][0], obj_dict['span'][0], 10]
     obj = calc.Structure(obj_dict)
@@ -765,7 +764,6 @@ if __name__ == '__main__':
     #     print('Weight: ', value[0],' with length: ', len(value[1]))
     # print('Resulting weight is: ', calc_weight((opt.get_s(),opt.get_pl_thk(),opt.get_web_h(),opt.get_web_thk(),
     #                                             opt.get_fl_w(),opt.get_fl_thk(),opt.get_span(),10)))
-
     #
     # t2 = time.time()
     # print(run_optmizataion(obj,
