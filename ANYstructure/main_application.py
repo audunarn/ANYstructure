@@ -68,6 +68,8 @@ class Application():
         undo_redo.add_command(label='Assign structure properties (from clicked line (CTRL-S)',
                               command=self.new_structure)
 
+        menu.add_command(label='Open documentation', command=self.open_documentation)
+
         base_canvas_dim = [1000,720]  #do not modify this, sets the "orignal" canvas dimensions.
         self._canvas_dim = [int(base_canvas_dim[0] *self._global_shrink),
                            int(base_canvas_dim[1] *self._global_shrink)]
@@ -250,11 +252,11 @@ class Application():
 
         tk.Button(self._main_fr, text='Delete line',bg='green', fg='yellow',
                                          font=self._text_size['Text 9 bold'],command=self.delete_line,
-                                         width = int(8*self._global_shrink)).place(x=ent_x-delta_x*2, y=del_start)
+                                         width = int(9*self._global_shrink)).place(x=ent_x-delta_x*2, y=del_start)
 
         tk.Button(self._main_fr, text='Delete point',bg='green', fg='yellow',
                                           font=self._text_size['Text 9 bold'],command=self.delete_point,
-                                          width = int(10*self._global_shrink)).place(x=ent_x+2*delta_x, y=del_start)
+                                          width = int(11*self._global_shrink)).place(x=ent_x+2*delta_x, y=del_start)
 
         # --- structure type information ---
         prop_vert_start = 370* self._global_shrink
@@ -263,6 +265,9 @@ class Application():
                  font=self._text_size['Text 9 bold']).place(x=10, y=prop_vert_start-1.2*delta_y)
         def show_message():
             messagebox.showinfo(title='Structure type',message='Types - sets default stresses (sigy1/sigy2/sigx/tauxy)'
+                                                               '\n FOR DYNAMIC EQUATION THE FOLLOWING APPLIES'
+                                                               '\n    X (horizontal) used for BOTTOM, BBT, HOPPER, MD'
+                                                               '\n    Y (vertical) used for BBS, SIDE_SHELL, SSS'
                                                                '\n'
                                                                '\n Bottom (100/100/50/5) :              BOTTOM '
                                                                '\n Bilge box side (70/70/30/3) :        BBS '
@@ -1360,7 +1365,10 @@ class Application():
         '''
         to_report_gen ={}
         # Compartments, make
-
+        save_file = filedialog.asksaveasfile(mode="w", defaultextension=".pdf")
+        if save_file is None:  # ask saveasfile return `None` if dialog closed with "cancel".
+            return
+        filename = save_file.name
         if self._line_dict == {}:
             tk.messagebox.showerror('No lines', 'No lines defined. Cannot make report.')
             return
@@ -1394,9 +1402,6 @@ class Application():
 
         to_report_gen['path'] = self._root_dir
 
-        user = os.getlogin()
-        time_name = time.strftime("%d_%m_%Y")+'_'+time.strftime("%H_%M_%S")
-        filename = 'Report_'+user+'_'+time_name+'.pdf'
         doc = LetterMaker(filename, "Section results", 10, to_report_gen)
         doc.createDocument()
         doc.savePDF()
@@ -2732,6 +2737,10 @@ class Application():
                 self.move_point(redo=current[1][1])
             elif 'line' in current[0]:
                 self.new_line(redo=['point'+str(num) for num in current[1]])
+
+    def open_documentation(self):
+        ''' Open the documentation pdf. '''
+        os.startfile('ANYstructure_documentation.pdf')
 
 
 if __name__ == '__main__':
