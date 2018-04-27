@@ -462,8 +462,8 @@ class CreateLoadWindow():
 
         for line in self.app._line_dict.keys():
             self.make_load_comb_dict(line,'manual')
-
-        self.app.on_close_load_window(self._load_objects, self._load_count, self._load_comb_dict)
+        if self._load_objects is not None:
+            self.app.on_close_load_window(self._load_objects, self._load_count, self._load_comb_dict)
         self._frame.destroy()
 
     def on_closing(self):
