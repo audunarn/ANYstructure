@@ -1,12 +1,7 @@
 """
 Grid class
 """
-import numpy
 
-EMPTY = 0
-FULL = 1
-BARRIER = -1
-CORNER = -2
 import numpy as np
 
 class Grid:
@@ -15,19 +10,16 @@ class Grid:
     Includes boundary handling
     """
 
+
     def __init__(self, grid_height, grid_width):
         """
         Initializes grid to be empty, take height and width of grid as parameters
         Indexed by rows (left to right), then by columns (top to bottom)
         """
-        self._grid_height = int(grid_height)
-        self._grid_width = int(grid_width)
-
-        #print(self._grid_height, self._grid_width)
+        self._grid_height = grid_height
+        self._grid_width = grid_width
         self._cells = np.zeros((self._grid_height,self._grid_width))
-        #print('LEN CELLS ', len(self._cells))
-
-
+        self.empty, self.full, self.barrier, self.corner = 0, 1, -1, -2
 
     def __str__(self):
         """
@@ -82,13 +74,13 @@ class Grid:
         """
         Set cell with index (row, col) to be empty
         """
-        self._cells[row][col] = EMPTY
+        self._cells[row][col] = self.empty
 
     def set_full(self, row, col):
         """
         Set cell with index (row, col) to be full
         """
-        self._cells[row][col] = FULL
+        self._cells[row][col] = self.full
 
     def set_value(self, row, col, value):
         """
@@ -100,25 +92,25 @@ class Grid:
         """
         Set cell with index (row, col) to be full
         """
-        self._cells[row][col] = BARRIER
+        self._cells[row][col] = self.barrier
 
     def is_empty(self, row, col):
         """
         Checks whether cell with index (row, col) is empty
         """
-        return self._cells[row][col] == EMPTY
+        return self._cells[row][col] == self.empty
 
     def is_full(self, row, col):
         """
         Checks whether cell with index (row, col) is empty
         """
-        return self._cells[row][col] == FULL
+        return self._cells[row][col] == self.full
 
     def is_barrier(self, row, col):
         """
         Checks whether cell with index (row, col) is empty
         """
-        return self._cells[row][col] == BARRIER
+        return self._cells[row][col] == self.barrier
 
     def is_corner(self,point):
         '''
@@ -126,7 +118,8 @@ class Grid:
         :param point:
         :return:
         '''
-        return [self.get_value(item[0],item[1]) for item  in self.eight_neighbors(point[0],point[1])].count(BARRIER)  > 4
+        return [self.get_value(item[0],item[1]) for item in
+                self.eight_neighbors(point[0],point[1])].count(self.barrier) > 4
 
     def four_neighbors(self, row, col):
         """
@@ -183,14 +176,12 @@ class Grid:
     def get_points_along_line(self,start, end):
         """Bresenham's Line Algorithm
         Produces a list of tuples from start and end
-
-        >>> points1 = get_line((0, 0), (3, 4))
-        >>> points2 = get_line((3, 4), (0, 0))
-        >>> assert(set(points1) == set(points2))
-        >>> print points1
-        [(0, 0), (1, 1), (1, 2), (2, 3), (3, 4)]
-        >>> print points2
-        [(3, 4), (2, 3), (1, 2), (1, 1), (0, 0)]
+            points1 = get_line((0, 0), (3, 4))
+            points2 = get_line((3, 4), (0, 0))
+            assert(set(points1) == set(points2))
+            print points1
+            [(0, 0), (1, 1), (1, 2), (2, 3), (3, 4)]
+            [(3, 4), (2, 3), (1, 2), (1, 1), (0, 0)]
         """
         # Setup initial conditions
         x1 = int(start[0])
@@ -283,6 +274,7 @@ class Grid:
         :param value:
         :return:
         '''
+        # TODO this is not very numpy-like
         highest = (self.get_grid_height(),0)
         for row in range(self.get_grid_height()):
             for col in range(self.get_grid_width()):
@@ -296,6 +288,7 @@ class Grid:
         :param value:
         :return:
         '''
+        # TODO this is not very numpy-like
         lowest = (0,0)
 
         for row in range(self.get_grid_height()):
@@ -310,6 +303,7 @@ class Grid:
         :param value:
         :return:
         '''
+        # TODO this is not very numpy-like
         counter = 0
         for row in range(self.get_grid_height()):
             for col in range(self.get_grid_width()):
@@ -331,8 +325,3 @@ class Grid:
         :return:
         '''
         return self._cells.tolist()
-
-
-my_test = Grid(1000,1500)
-
-

@@ -347,6 +347,7 @@ def any_find_min_weight_var(var):
 
     return min(map(calc_weight))
 
+
 def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True,True, True, True),
                         fat_dict = None, fat_press = None, slamming_press = 0):
     '''
@@ -390,8 +391,6 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
     if chk[5] and slamming_press != 0:
         if calc_object[0].check_all_slamming(slamming_press) is False:
             return False
-
-
 
     return x
 
@@ -729,7 +728,6 @@ if __name__ == '__main__':
     fp = test.get_fatigue_pressures()
     fat_press = ((fp['p_ext']['loaded'],fp['p_ext']['ballast'],fp['p_ext']['part']),
                  (fp['p_int']['loaded'],fp['p_int']['ballast'],fp['p_int']['part']))
-
     x0 = [obj_dict['spacing'][0], obj_dict['plate_thk'][0], obj_dict['stf_web_height'][0], obj_dict['stf_web_thk'][0],
           obj_dict['stf_flange_width'][0], obj_dict['stf_flange_thk'][0], obj_dict['span'][0], 10]
     obj = calc.Structure(obj_dict)
@@ -737,21 +735,17 @@ if __name__ == '__main__':
     calc_object = calc.CalcScantlings(obj_dict)
     upper_bounds = np.array([0.6, 0.01, 0.3, 0.01, 0.05, 0.01, 3.5, 10])
     lower_bounds = np.array([0.8, 0.025, 0.5, 0.022, 0.25, 0.03, 3.5, 10])
+    deltas = np.array([0.02, 0.002, 0.01, 0.002, 0.02, 0.002])
     geo_opt_obj = test.get_geo_opt_object()
     geo_opt_press = test.get_geo_opt_presure()
     print('Initial x is:', x0)
-    print('Initial constraint ok? ', True if any_constraints_all(x0,obj,271.124,calc_weight(x0),
+    print('Initial constraint ok? ', True if any_constraints_all(x0,obj,lat_press,calc_weight(x0),
                                                                  fat_dict=fat_obj.get_fatigue_properties(),
                                                                  fat_press=fat_press) is not False else False)
     print('Initial weight is:', calc_weight(x0))
     #
     t2 = time.time()
-    opt = run_optmizataion(obj,
-                           np.array([0.6, 0.01, 0.3, 0.01, 0.05, 0.01, 3.5, 10]),
-                           np.array([0.8, 0.025, 0.5, 0.022, 0.25, 0.03, 3.5, 10]),
-                           lat_press,
-                           deltas=np.array([0.02, 0.002, 0.01, 0.002, 0.02, 0.002]),
-                           algorithm='anysmart',
+    opt = run_optmizataion(obj, upper_bounds, lower_bounds, lat_press, deltas, algorithm='anysmart',
                            fatigue_obj=fat_obj, fat_press_ext_int=fat_press)[0]
     print('Consumed time is: ', time.time()-t2)
 
@@ -770,7 +764,6 @@ if __name__ == '__main__':
     #     print('Weight: ', value[0],' with length: ', len(value[1]))
     # print('Resulting weight is: ', calc_weight((opt.get_s(),opt.get_pl_thk(),opt.get_web_h(),opt.get_web_thk(),
     #                                             opt.get_fl_w(),opt.get_fl_thk(),opt.get_span(),10)))
-
     #
     # t2 = time.time()
     # print(run_optmizataion(obj,

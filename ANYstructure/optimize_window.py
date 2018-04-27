@@ -3,7 +3,7 @@ import tkinter as tk
 from _tkinter import TclError
 import ANYstructure.optimize as op
 import numpy as np
-import time
+import time, os
 from tkinter import messagebox
 import ANYstructure.example_data as test
 
@@ -21,11 +21,12 @@ class CreateOptimizeWindow():
             self._fatigue_object = test.get_fatigue_object()
             self._fatigue_pressure = test.get_fatigue_pressures()
             self._slamming_pressure = test.get_slamming_pressure()
+            image_dir = os.path.dirname(__file__)+'\\images\\'
         else:
             self.app = app
-            self._initial_structure_obj = self.app._line_to_struc[app._active_line][0]
-            self._initial_calc_obj = self.app._line_to_struc[app._active_line][1]
-            self._fatigue_object = self.app._line_to_struc[app._active_line][2]
+            self._initial_structure_obj = app._line_to_struc[app._active_line][0]
+            self._initial_calc_obj = app._line_to_struc[app._active_line][1]
+            self._fatigue_object = app._line_to_struc[app._active_line][2]
             try:
                 self._fatigue_pressure = app.get_fatigue_pressures(app._active_line,
                                                                    self._fatigue_object.get_accelerations())
@@ -43,6 +44,7 @@ class CreateOptimizeWindow():
                     self._slamming_pressure = self.app.get_highest_pressure(self.app._active_line)['slamming']
             except KeyError:
                 self._slamming_pressure = 0
+            image_dir = app._root_dir +'\\images\\'
 
         self._frame = master
         self._frame.wm_title("Optimize structure")
@@ -405,7 +407,7 @@ class CreateOptimizeWindow():
         self.initial_weight = op.calc_weight([self._spacing,self._pl_thk,self._stf_web_h,self._stf_web_thk,
                                               self._fl_w,self._fl_thk,self._new_span.get(),self._new_width_lg.get()])
 
-        photo = tk.PhotoImage(file="img_plate_and_stiffener.gif")
+        photo = tk.PhotoImage(file=image_dir+"img_plate_and_stiffener.gif")
         label = tk.Label(self._frame,image=photo)
         label.image = photo  # keep a reference!
         label.place(x=550, y=300)
@@ -546,7 +548,6 @@ class CreateOptimizeWindow():
                           self._fatigue_pressure['p_ext']['part']),
                          (self._fatigue_pressure['p_int']['loaded'],self._fatigue_pressure['p_int']['ballast'],
                           self._fatigue_pressure['p_int']['part']))
-
         else:
             fat_press = None
 

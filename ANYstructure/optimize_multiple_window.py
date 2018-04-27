@@ -4,7 +4,7 @@ from _tkinter import TclError
 from tkinter.ttk import Progressbar
 import ANYstructure.optimize as op
 import numpy as np
-import time
+import time, os
 from tkinter import messagebox
 import ANYstructure.example_data as test
 from ANYstructure.helper import *
@@ -24,6 +24,10 @@ class CreateOptimizeMultipleWindow():
             self._point_dict = test.get_point_dict()
             self._canvas_scale = 25
             self._line_to_struc = test.get_line_to_struc()
+            self._slamming_pressure = test.get_slamming_pressure()
+            self._fatigue_pressure = test.get_fatigue_pressures()
+            self._fatigue_object = test.get_fatigue_object()
+            image_dir = os.path.dirname(__file__)+'\\images\\'
         else:
             self.app = app
             self._load_objects = app._load_dict
@@ -33,6 +37,8 @@ class CreateOptimizeMultipleWindow():
             self._point_dict = app._point_dict
             self._canvas_scale = app._canvas_scale
             self._line_to_struc = app._line_to_struc
+            image_dir = app._root_dir + '\\images\\'
+
         self._frame = master
         self._frame.wm_title("Optimize structure")
         self._frame.geometry('1800x950')
@@ -113,6 +119,7 @@ class CreateOptimizeMultipleWindow():
         self._ent_delta_web_thk = tk.Entry(self._frame, textvariable=self._new_delta_web_thk, width=ent_w)
         self._ent_delta_fl_w = tk.Entry(self._frame, textvariable=self._new_delta_fl_w, width=ent_w)
         self._ent_delta_fl_thk = tk.Entry(self._frame, textvariable=self._new_delta_fl_thk, width=ent_w)
+
 
         pso_width = 10
         self._ent_swarm_size = tk.Entry(self._frame,textvariable=self._new_swarm_size, width = pso_width)
@@ -220,7 +227,6 @@ class CreateOptimizeMultipleWindow():
         self._new_minstep.set(1e-8)
         self._new_minfunc.set(1e-8)
 
-
         self._new_delta_spacing.trace('w', self.update_running_time)
         self._new_delta_pl_thk.trace('w', self.update_running_time)
         self._new_delta_web_h.trace('w', self.update_running_time)
@@ -264,11 +270,14 @@ class CreateOptimizeMultipleWindow():
         self._new_check_shear_area = tk.BooleanVar()
         self._new_check_buckling = tk.BooleanVar()
         self._new_check_fatigue = tk.BooleanVar()
+        self._new_check_slamming = tk.BooleanVar()
+
         self._new_check_sec_mod.set(True)
         self._new_check_min_pl_thk.set(True)
         self._new_check_shear_area.set(True)
         self._new_check_buckling.set(True)
         self._new_check_fatigue.set(True)
+        self._new_check_slamming.set(True)
         start_y = 140
         tk.Label(self._frame, text='Check for minimum section modulus').place(x=start_x + dx * 10.5, y=start_y + 14 * dy)
         tk.Label(self._frame, text='Check for minimum plate thk.').place(x=start_x + dx * 10.5, y=start_y + 15 * dy)
@@ -281,6 +290,7 @@ class CreateOptimizeMultipleWindow():
         tk.Checkbutton(self._frame, variable=self._new_check_shear_area).place(x=start_x + dx * 13, y=start_y + 16 * dy)
         tk.Checkbutton(self._frame, variable=self._new_check_buckling).place(x=start_x + dx * 13, y=start_y + 17 * dy)
         tk.Checkbutton(self._frame, variable=self._new_check_fatigue).place(x=start_x + dx * 13, y=start_y + 18 * dy)
+        tk.Checkbutton(self._frame, variable=self._new_check_slamming).place(x=start_x + dx * 13, y=start_y + 19 * dy)
 
         # ----------------------------------END OF OPTIMIZE SINGLE COPY-----------------------------------------------
         self.progress_count = tk.IntVar()
@@ -370,34 +380,51 @@ class CreateOptimizeMultipleWindow():
 
         self.progress_bar.config(maximum=len(self._active_lines))
         self._opt_actual_running_time.config(text='')
+        
         contraints = (self._new_check_sec_mod.get(), self._new_check_min_pl_thk.get(),
                       self._new_check_shear_area.get(), self._new_check_buckling.get(),
-                      self._new_check_fatigue.get())
+                      self._new_check_fatigue.get(), self._new_check_slamming.get())
+        
         self.pso_parameters = (self._new_swarm_size.get(),self._new_omega.get(),self._new_phip.get(),
                                self._new_phig.get(),self._new_maxiter.get(),self._new_minstep.get(),
                                self._new_minfunc.get())
+        
         self.progress_count.set(0)
         counter = 0
+        
         for line in self._active_lines:
             init_obj = self._line_to_struc[line][0]
 
             if __name__ == '__main__':
                 lateral_press = 200 #for testing
                 fat_obj = test.get_fatigue_object()
-                fp = test.get_fatigue_pressures()
+                fat_press = test.get_fatigue_pressures()
+                slamming_pressure = test.get_slamming_pressure()
 
             else:
                 lateral_press = self.app.get_highest_pressure(line)['normal']/1000
-                fat_obj = self._line_to_struc[line][2]
-                if fat_obj is not None:
-                    fp = self.app.get_fatigue_pressures(line, accelerations=fat_obj.get_accelerations())
-                else:
-                    fp = {}
-                    fp['p_ext']['loaded'], fp['p_ext']['ballast'], fp['p_ext']['part'] = 0,0,0
-                    fp['p_int']['loaded'], fp['p_int']['ballast'], fp['p_int']['part'] = 0,0,0
 
-            fat_press = ((fp['p_ext']['loaded'], fp['p_ext']['ballast'], fp['p_ext']['part']),
-                         (fp['p_int']['loaded'], fp['p_int']['ballast'], fp['p_int']['part']))
+                fat_obj = self.app._line_to_struc[line][2]
+                if fat_obj is not None:
+                    try:
+                        fat_press = self.app.get_fatigue_pressures(line, fat_obj.get_accelerations())
+                    except AttributeError:
+                        fat_press = None
+                else:
+                    fat_press = {'p_ext':{'loaded':0,'ballast':0,'part':0}, 'p_int':{'loaded':0, 'ballast':0,'part':0}}
+
+                try:
+                    if self.app.get_highest_pressure(line)['slamming'] is None:
+                        slamming_pressure = 0
+                    else:
+                        slamming_pressure = self.app.get_highest_pressure(line)['slamming']
+                except KeyError:
+                    slamming_pressure = 0
+
+            fat_press = ((fat_press['p_ext']['loaded'], fat_press['p_ext']['ballast'],
+                          fat_press['p_ext']['part']),
+                         (fat_press['p_int']['loaded'], fat_press['p_int']['ballast'],
+                          fat_press['p_int']['part']))
 
             self._opt_resutls[line] = op.run_optmizataion(init_obj, self.get_lower_bounds(init_obj),
                                                           self.get_upper_bounds(init_obj),
@@ -408,7 +435,8 @@ class CreateOptimizeMultipleWindow():
                                                           const_chk=contraints,
                                                           pso_options=self.pso_parameters,
                                                           fatigue_obj=fat_obj,
-                                                          fat_press_ext_int=fat_press)
+                                                          fat_press_ext_int=fat_press,
+                                                          slamming_press=slamming_pressure)
             counter += 1
             self.progress_count.set(counter)
             self.progress_bar.update_idletasks()

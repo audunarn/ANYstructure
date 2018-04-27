@@ -2,12 +2,12 @@
 import tkinter as tk
 from _tkinter import TclError
 from tkinter.ttk import Progressbar
-import optimize as op
+import ANYstructure.optimize as op
 import numpy as np
 import time
 from tkinter import messagebox
-import example_data as test
-from helper import *
+import ANYstructure.example_data as test
+from ANYstructure.helper import *
 import copy
 
 class CreateOptimizeMultipleWindow():
@@ -374,7 +374,8 @@ class CreateOptimizeMultipleWindow():
 
 
         contraints = (self._new_check_sec_mod.get(), self._new_check_min_pl_thk.get(),
-                      self._new_check_shear_area.get(), self._new_check_buckling.get())
+                      self._new_check_shear_area.get(), self._new_check_buckling.get(),
+                      False, False)
 
         self.pso_parameters = (self._new_swarm_size.get(), self._new_omega.get(), self._new_phip.get(),
                                self._new_phig.get(),self._new_maxiter.get(), self._new_minstep.get(),
@@ -392,13 +393,14 @@ class CreateOptimizeMultipleWindow():
                     self._opt_structure[line]))['normal'] / 1000)
 
         [print(obj.get_structure_prop()) for obj in init_objects]
+        print(contraints)
+
         print(
         op.run_optmizataion(initial_structure_obj=init_objects,min_var=self.get_lower_bounds(),
                             max_var=self.get_upper_bounds(),lateral_pressure=lateral_press,deltas=self.get_deltas(),
                             algorithm='pso',side='p',const_chk = contraints,pso_options = self.pso_parameters,
                             is_geometric=True,fatigue_obj=None, fat_press_ext_int=None,min_max_span=(1,6),
                             tot_len=self.opt_get_length(),frame_height=self.opt_get_distance(),frame_cross_a=0.0122))
-
 
     def opt_get_fractions(self):
         ''' Finding initial number of fractions '''

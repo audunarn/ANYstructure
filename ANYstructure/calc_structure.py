@@ -666,9 +666,10 @@ class CalcScantlings(Structure):
 
         ci = 1-s/(120*t) if (s/t)<=120 else 0 # checked not calculated with example
 
-        Cxs = (alphap-0.22)/math.pow(alphap,2) if alphap>0.673 else 1 # reduction factor longitudinal
+        Cxs = (alphap-0.22)/math.pow(alphap,2) if alphap > 0.673 else 1 # reduction factor longitudinal
         # eq7.16, reduction factor transverse, compression (positive) else tension
-        Cys = math.sqrt(1-math.pow(sigySd/sigyR,2)+ci*((sigxSd*sigySd)/(Cxs*fy*sigyR))) if sigySd >= 0 \
+
+        Cys = math.sqrt(1-math.pow(sigySd/sigyR,2) + ci*((sigxSd*sigySd)/(Cxs*fy*sigyR))) if sigySd >= 0 \
             else min(0.5*(math.sqrt(4-3*math.pow(sigySd/fy,2))+sigySd/fy),1) #ok, checked
 
         #7.7.3 Resistance parameters for stiffeners
@@ -735,8 +736,10 @@ class CalcScantlings(Structure):
         if not sigySd<=sigyRd:
             return [float('inf'),0,0,0,0]
 
-        try: psi = sigy2Sd/sigy1Sd # eq. 7.11 checked, if input is 0, the psi is set to 1
-        except ZeroDivisionError: psi = 1
+        try:
+            psi = sigy2Sd/sigy1Sd # eq. 7.11 checked, if input is 0, the psi is set to 1
+        except ZeroDivisionError:
+            psi = 1
 
         Is = self.get_moment_of_intertia()  # moment of intertia full plate width
         Ip = math.pow(t,3)*s/10.9 # checked not calculated with example
@@ -1076,7 +1079,6 @@ class CalcFatigue(Structure):
         self._fraction, self.fatigue_dict['Fraction'] = fatigue_dict['Fraction'], fatigue_dict['Fraction']
         self._case_order, self.fatigue_dict['Order'] = fatigue_dict['Order'], fatigue_dict['Order']
         self._dff, self.fatigue_dict['DFF'] = fatigue_dict['DFF'], fatigue_dict['DFF']
-        print(self.fatigue_dict)
 
     def get_fatigue_properties(self):
         ''' Returning properties as a dictionary '''
@@ -1093,31 +1095,41 @@ class CalcFatigue(Structure):
         return self._design_life
 
 if __name__ == '__main__':
-    import example_data as test
-    print('Fatigue test: ')
-    my_test = CalcFatigue(test.obj_dict, test.fat_obj_dict)
-    print('Total damage: ',my_test.get_total_damage(int_press=(0,0,0), ext_press=(50000, 60000,0)))
-    print('')
-    print('Buckling test: ')
+    import ANYstructure.example_data as test
 
-    my_buc = test.get_structure_calc_object()
-
-    #print(my_buc.calculate_buckling_all(design_lat_press=100))
-    print(my_buc.calculate_slamming_plate(1000000))
-    print(my_buc.calculate_slamming_stiffener(1000000))
-    print(my_buc.get_net_effective_plastic_section_modulus())
-
-    # print(my_test)
+    # print('Fatigue test: ')
+    # my_test = CalcFatigue(test.obj_dict, test.fat_obj_dict)
+    # print('Total damage: ',my_test.get_total_damage(int_press=(0,0,0), ext_press=(50000, 60000,0)))
+    # print('')
+    # print('Buckling test: ')
     #
-    # print('SHEAR CENTER: ',my_test.get_shear_center())
-    # print('SECTION MOD: ',my_test.get_section_modulus())
-    # print('SECTION MOD FLANGE: ', my_test.get_section_modulus()[0]*100*100*100)
-    # print('SHEAR AREA: ', my_test.get_shear_area())
-    # print('PLASTIC SECTION MOD: ',my_test.get_plasic_section_modulus()*1000**3)
-    #print('MOMENT OF INTERTIA: ',my_test.get_moment_of_intertia(stf_type='T')*1000**4)
-    #print('EFFICIENT MOMENT OF INTERTIA: ',my_test.get_moment_of_intertia(
-    #     efficent_se=my_test.get_plate_efficent_b(design_lat_press=400))*1000**4)
-    #print('Se: ',my_test.calculate_buckling_all(design_lat_press=0,checked_side='s'))
-    #print('Se: ', my_test.calculate_buckling_all(design_lat_press=0, checked_side='p'))
-    # print('MINIMUM PLATE THICKNESS',my_test.get_dnv_min_thickness(400))
-    # print('MINIMUM SECTION MOD.', my_test.get_dnv_min_section_modulus(400)*1000**3)
+    # my_buc = test.get_structure_calc_object()
+    #
+    # #print(my_buc.calculate_buckling_all(design_lat_press=100))
+    # print(my_buc.calculate_slamming_plate(1000000))
+    # print(my_buc.calculate_slamming_stiffener(1000000))
+    # print(my_buc.get_net_effective_plastic_section_modulus())
+    for example in [test.obj_dict, test.obj_dict2, test.obj_dict_L]:
+        # my_test = CalcScantlings(example)
+        my_test = CalcFatigue(example, test.fat_obj_dict)
+        print('Total damage: ', my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(50000, 60000, 0)))
+        print(my_test.get_fatigue_properties())
+        # pressure = 200
+        # print('SHEAR CENTER: ',my_test.get_shear_center())
+        # print('SECTION MOD: ',my_test.get_section_modulus())
+        # print('SECTION MOD FLANGE: ', my_test.get_section_modulus()[0])
+        # print('SHEAR AREA: ', my_test.get_shear_area())
+        # print('PLASTIC SECTION MOD: ',my_test.get_plasic_section_modulus())
+        # print('MOMENT OF INTERTIA: ',my_test.get_moment_of_intertia())
+        # print('WEIGHT', my_test.get_weight())
+        # print('PROPERTIES', my_test.get_structure_prop())
+        # print('CROSS AREA', my_test.get_cross_section_area())
+        # print()
+    #
+    #     print('EFFICIENT MOMENT OF INTERTIA: ',my_test.get_moment_of_intertia(efficent_se=my_test.get_plate_efficent_b(
+    #         design_lat_press=pressure)))
+    #     print('Se: ',my_test.calculate_buckling_all(design_lat_press=pressure,checked_side='s'))
+    #     print('Se: ', my_test.calculate_buckling_all(design_lat_press=pressure, checked_side='p'))
+    #     print('MINIMUM PLATE THICKNESS',my_test.get_dnv_min_thickness(pressure))
+    #     print('MINIMUM SECTION MOD.', my_test.get_dnv_min_section_modulus(pressure))
+    #     print()
