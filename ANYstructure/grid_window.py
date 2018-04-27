@@ -14,7 +14,7 @@ def dist(p, q):
 
 class CreateGridWindow():
 
-    def __init__(self, grid, canvas_dim, to_draw,canvas_origo):
+    def __init__(self, grid, canvas_dim, to_draw, canvas_origo):
 
         self._grid = grid
         self._parent_dimensions = canvas_dim
@@ -121,72 +121,6 @@ class CreateGridWindow():
         plt.suptitle('Compartments returned from search operation displayed below', fontsize=20, color='red')
         plt.show()
 
-    def search_grid_for_tanks(self):
-        '''
-        Identifying tanks in the grid.
-        :return:
-        '''
-
-        search_count = 0
-        corners = make_stack.Stack()
-
-        for point in self.all_points:
-            start = point
-            stack = make_stack.Stack()
-            stack.push_item(start)
-
-            # Checking to see if start is inside barrier
-            while self._grid.is_barrier(start[0],start[1]):
-                start = [start[0], start[1]]
-                stack.pop_item()
-                if start[0]+1 < self._parent_dimensions[0]:
-                    start[0] += 1
-                else:
-                    start[0] -= 1
-                if start[1]+1 < self._parent_dimensions[1]:
-                    start[1] += 1
-                else:
-                    start[1] -= 1
-                if not self._grid.is_barrier(start[0],start[1]):
-                    start = tuple(start)
-                    stack.push_item(start)
-
-            # Starting the search if the cell has not already been used as basis
-            count = 0
-            while len(stack) != 0 or count < self._parent_dimensions[0]*self._parent_dimensions[1]:
-                start = stack.pop_item()
-                if self._grid.is_empty(start[0], start[1]):
-                    nighbors = self._grid.four_neighbors(start[0], start[1])
-                    barriers = [self._grid.is_barrier(nighbor[0],nighbor[1]) for nighbor in nighbors]
-
-                    # saving corners
-                    if barriers == 2:
-                        corners.push_item(start)
-
-                    #[stack.push_item(nighbor) for nighbor in nighbors if self._grid.is_empty(nighbor[0], nighbor[1])]
-                    for nighbor in nighbors:
-                        barriers = [self._grid.is_barrier(nighbor[0],nighbor[1]) for nighbor in nighbors]
-                        if self._grid.is_empty(nighbor[0], nighbor[1]) and barriers.count(True) != 0:
-                            stack.push_item(nighbor)
-                            self._grid.set_full(nighbor[0], nighbor[1])
-                    count += 1
-
-    def search_dfs(self):
-        '''
-        Depth first search method.
-        :return:
-        '''
-        start = (0,0)
-        stack = make_stack.Stack()
-        stack.push_item(start)
-
-        while len(stack) != 0:
-            cell = stack.pop_item()
-            if self._grid.is_empty(cell[0], cell[1]):
-                self._grid.set_full(cell[0], cell[1])
-                for item in self._grid.four_neighbors(cell[0], cell[1]):
-                    stack.push_item(item)
-
     def search_bfs(self, animate = False):
         '''
         Bredth first search method.
@@ -213,6 +147,7 @@ class CreateGridWindow():
 
         for startrow in range(0, self._child_dimensions[1], 20):
             for startcol in range(0, self._child_dimensions[0], 20):
+
                 if self._grid.is_empty(startrow,startcol):
                     el_max = ''
                     el_min = ''
@@ -276,11 +211,20 @@ class CreateGridWindow():
         return {'compartments': compartments, 'grids':all_grids}
 
 if __name__ == '__main__':
-    import tkinter as tk
+    import time
+    import ANYstructure.make_grid_numpy as mgn
+    t1 = time.time()
 
-    my_app = CreateGridWindow(test.get_grid_empty(),[1000, 720],test.get_to_draw(),(50,670))
+    canvas_dim = [10, 10]
+    canvas_origo = (10, 0)
+    to_draw = {'line1': ((2, 2), (2, 7)), 'line2': ((2, 7), (7, 7)),
+               'line3': ((7, 7), (7, 2)), 'line4': ((7, 2), (2, 2))}
+
+    my_app = CreateGridWindow(mgn.Grid(10,10),canvas_dim,to_draw,canvas_origo)
     results = my_app.search_bfs(animate=True)
     my_app.animate_grid(grids_to_animate=results['grids'])
+    print(results)
+    print('Time', time.time()-t1)
 
 
 

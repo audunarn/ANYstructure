@@ -187,7 +187,7 @@ def get_grid_empty():
     origo = (50,670)
     base_canvas_dim = [1000,720]
     grid_return = grid.Grid(origo[1] + 1, base_canvas_dim[0] - origo[0] + 1)
-    return  grid_return
+    return grid_return
 
 def get_to_draw():
     to_return = {}
