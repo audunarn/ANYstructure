@@ -19,7 +19,7 @@ import ANYstructure.fatigue_window as fatigue
 from _tkinter import TclError
 import multiprocessing
 from ANYstructure.report_generator import LetterMaker
-import time
+import os.path
 
 class Application():
     '''
@@ -43,7 +43,7 @@ class Application():
         else:
             self._global_shrink = 1
 
-        self._root_dir = os.path.dirname(__file__)+'/'
+        self._root_dir = os.path.dirname(os.path.abspath(__file__))
         # Main frame for the application
         self._main_fr = tk.Frame(parent, height=int(990*self._global_shrink), width=int(1920*self._global_shrink))
         self._main_fr.pack()
@@ -184,7 +184,7 @@ class Application():
         delta_x = 50*self._global_shrink
 
         # --- slider (used to zoom) ----
-        tk.Label(self._main_fr, text='Slide to zoom').place(x=ent_x+delta_x*6.5, y=delta_y)
+        tk.Label(self._main_fr, text='Slide to zoom (or use mouse wheel)').place(x=ent_x+delta_x*6.5, y=delta_y)
         self._slider = tk.Scale(self._main_fr,from_=60,to = 1, command=self.slider_used)
         self._slider.set(self._canvas_scale)
         self._slider.place(x=ent_x+delta_x*6.5, y= delta_y*2)
@@ -194,7 +194,7 @@ class Application():
             photo = tk.PhotoImage(file=self._root_dir + '\\images\\' + "img_title.gif")
             label = tk.Label(self._main_fr,image=photo)
             label.image = photo  # keep a reference!
-            label.place(x=10, y=10)
+            label.place(x=2, y=10)
         except TclError: # If the image is not located in the folder
             label = tk.Label(self._main_fr, text='DNVGL-OS-C101 based calculations')
             label.place(x=10, y=10)
@@ -291,7 +291,7 @@ class Application():
         tk.Label(self._main_fr, text='Select structure type ->', font=self._text_size['Text 8'])\
             .place(x=100, y=prop_vert_start + 8 * delta_y)
         self.add_stucture = tk.Button(self._main_fr, text='Add structure to line', command=self.new_structure,
-                                      font = self._text_size['Text 8 bold'], fg = 'yellow', bg = 'green', 
+                                      font = self._text_size['Text 8 bold'], fg = 'yellow', bg = 'green',
                                       width = 18, height = 2)
         self.add_stucture.place(x=types_start+6*delta_x, y=prop_vert_start+delta_y*10+10)
 
@@ -475,12 +475,12 @@ class Application():
         tk.Button(self._main_fr, text="Set compartment\n""properties.",command = self.update_tank,
                                             font=self._text_size['Text 8 bold'], bg = 'white', fg = 'blue')\
             .place(x=ent_x+delta_x*3, y=load_vert_start + delta_y * 5)
-        
+
         tk.Button(self._main_fr, text="Delete all tanks", command=self.delete_all_tanks,
                   font=self._text_size['Text 8 bold'], bg = 'white', fg = 'blue')\
             .place(x=ent_x+delta_x*3, y=load_vert_start + delta_y * 7)
         self._new_content_type = tk.StringVar()
-        
+
         self._ent_content_type = tk.OptionMenu(self._main_fr, self._new_content_type, *self._tank_options)
         ent_width = 10
         self._new_overpresure = tk.DoubleVar()
@@ -570,7 +570,7 @@ class Application():
             .place(x=lc_x + delta_x*4.2, y=lc_y - 3 * lc_y_delta)
         tk.Entry(self._main_fr, textvariable = self._new_dyn_acc_ballast,width = 10)\
             .place(x=lc_x + delta_x*4.2, y=lc_y - 2 * lc_y_delta)
-        tk.Button(self._main_fr, text = 'Set\naccelerations', command = self.create_accelerations, 
+        tk.Button(self._main_fr, text = 'Set\naccelerations', command = self.create_accelerations,
                   font = self._text_size['Text 8 bold'],
                   fg = 'yellow',bg = 'green').place(x=lc_x + delta_x*6, y=lc_y - 3 * lc_y_delta)
 
@@ -717,7 +717,7 @@ class Application():
 
                 name = ('manual', self._active_line, 'manual')  # tuple to identify combinations on line
                 if name in self._new_load_comb_dict.keys():
-                    self._manual_created.append(tk.Label(self._main_fr, text='Manual (pressure/LF)', 
+                    self._manual_created.append(tk.Label(self._main_fr, text='Manual (pressure/LF)',
                                                         font=self._text_size['Text 8 bold']))
                     self._manual_created.append(
                         tk.Entry(self._main_fr, textvariable=self._new_load_comb_dict[name][0], width=15))
@@ -731,11 +731,11 @@ class Application():
 
             #printing the results
             results = self.calculate_all_load_combinations_for_line(self._active_line)
-            self._result_label_dnva.config(text = 'DNV a [Pa]: ' + str(results['dnva']), 
+            self._result_label_dnva.config(text = 'DNV a [Pa]: ' + str(results['dnva']),
                                           font = self._text_size['Text 7'])
-            self._result_label_dnvb.config(text = 'DNV b [Pa]: ' + str(results['dnvb']), 
+            self._result_label_dnvb.config(text = 'DNV b [Pa]: ' + str(results['dnvb']),
                                           font = self._text_size['Text 7'])
-            self._result_label_tanktest.config(text = 'TT [Pa]: ' + str(results['tanktest']), 
+            self._result_label_tanktest.config(text = 'TT [Pa]: ' + str(results['tanktest']),
                                               font = self._text_size['Text 7'])
 
             try:
@@ -895,7 +895,7 @@ class Application():
         state = self.get_color_and_calc_state()
         self.draw_canvas(state=state)
         self.draw_prop()
-        
+
     def get_color_and_calc_state(self, current_line = None, active_line_only = False):
         ''' Return calculations and colors for line and results. '''
         return_dict = {'colors': {}, 'section_modulus': {}, 'thickness': {}, 'shear_area': {}, 'buckling': {},
@@ -1214,9 +1214,9 @@ class Application():
             return
 
         self._result_canvas.delete('all')
-        
+
         if self._line_is_active:
-            
+
             if self._active_line in self._line_to_struc:
                 x, y, dx, dy = 20, 15, 15, 14
                 m3_to_mm3 = float(math.pow(1000,3))
@@ -1479,7 +1479,7 @@ class Application():
     def move_point(self, event = None, redo = None):
         '''
         Moving a point.
-        :return: 
+        :return:
         '''
         if self._point_is_active:
             self.new_point(move=True, redo=redo) # doing the actual moving
@@ -1502,7 +1502,7 @@ class Application():
     def copy_point(self, event = None):
         '''
         Using the same input as new point, but with separate button.
-        :return: 
+        :return:
         '''
         if self._point_is_active:
             self.new_point(copy=True)
@@ -1552,7 +1552,7 @@ class Application():
 
     def new_structure(self, event = None):
         '''
-        This method maps the structure to the line when clicking "add structure to line" button. 
+        This method maps the structure to the line when clicking "add structure to line" button.
         The result is put in a dictionary. Key is line name and value is the structure object.
         :return:
         '''
@@ -2544,7 +2544,7 @@ class Application():
     def on_optimize_multiple(self):
         '''
         Used to optimize in batch mode.
-        :return: 
+        :return:
         '''
         try:
             [self.get_highest_pressure(line)['normal'] for line in self._line_to_struc.keys()]

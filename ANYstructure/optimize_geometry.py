@@ -398,7 +398,7 @@ class CreateOptimizeMultipleWindow():
         print(
         op.run_optmizataion(initial_structure_obj=init_objects,min_var=self.get_lower_bounds(),
                             max_var=self.get_upper_bounds(),lateral_pressure=lateral_press,deltas=self.get_deltas(),
-                            algorithm='pso',side='p',const_chk = contraints,pso_options = self.pso_parameters,
+                            algorithm='anysmart',side='p',const_chk = contraints,pso_options = self.pso_parameters,
                             is_geometric=True,fatigue_obj=None, fat_press_ext_int=None,min_max_span=(1,6),
                             tot_len=self.opt_get_length(),frame_height=self.opt_get_distance(),frame_cross_a=0.0122))
 

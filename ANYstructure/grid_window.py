@@ -1,7 +1,7 @@
 import math
 import ANYstructure.make_queue as queue
 import ANYstructure.make_stack as make_stack
-#from matplotlib.backends import backend_qt5agg
+from matplotlib.backends import backend_qt5agg
 from matplotlib import pyplot as plt
 import numpy as np
 from collections import deque
