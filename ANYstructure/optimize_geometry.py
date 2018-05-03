@@ -399,7 +399,7 @@ class CreateOptimizeMultipleWindow():
         op.run_optmizataion(initial_structure_obj=init_objects,min_var=self.get_lower_bounds(),
                             max_var=self.get_upper_bounds(),lateral_pressure=lateral_press,deltas=self.get_deltas(),
                             algorithm='anysmart',side='p',const_chk = contraints,pso_options = self.pso_parameters,
-                            is_geometric=True,fatigue_obj=None, fat_press_ext_int=None,min_max_span=(1,6),
+                            is_geometric=True,fatigue_obj=None, fat_press_ext_int=None,min_max_span=(2,6),
                             tot_len=self.opt_get_length(),frame_height=self.opt_get_distance(),frame_cross_a=0.0122))
 
     def opt_get_fractions(self):
@@ -450,8 +450,8 @@ class CreateOptimizeMultipleWindow():
                 if dist(coord,current) <= 0.1:
                     if self._line_to_struc[key][0].get_structure_type() not in ('GENERAL_INTERNAL_NONWT', 'FRAME'):
                         return key
-                    else:
-                        return None
+                    # else:
+                    #     return None
 
     def opt_get_distance(self):
         ''' Getting the largest disctance between the two lines to be optimized. '''
@@ -464,8 +464,8 @@ class CreateOptimizeMultipleWindow():
         ''' Getting the length of the lines to be optimized. '''
         if len(self._active_points)==4:
             return dist(self._point_dict[self._active_points[0]],self._point_dict[self._active_points[1]])
-        else:
-            return None
+        # else:
+        #     return None
 
     def opt_get_fraction_bounds(self, max_len = 6, min_len = 2):
         ''' Return the fraction bounds(basis upper/lower) to be considered. '''
