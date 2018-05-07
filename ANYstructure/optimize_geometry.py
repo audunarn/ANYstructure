@@ -1071,5 +1071,5 @@ class CreateOptGeoWindow():
 
 if __name__ == '__main__':
     root = tk.Tk()
-    my_app = CreateOptimizeMultipleWindow(master=root)
+    my_app = CreateOptGeoWindow(master=root)
     root.mainloop()
