@@ -10,13 +10,13 @@ import ANYstructure.example_data as test
 from ANYstructure.helper import *
 import copy
 
-class CreateOptimizeMultipleWindow():
+class CreateOptGeoWindow():
     '''
     This class initiates the MultiOpt window.
     '''
 
     def __init__(self, master, app=None):
-        super(CreateOptimizeMultipleWindow, self).__init__()
+        super(CreateOptGeoWindow, self).__init__()
         if __name__ == '__main__':
             self._load_objects = {}
             self._load_comb_dict = {}
