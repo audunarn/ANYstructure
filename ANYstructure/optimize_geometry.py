@@ -389,8 +389,9 @@ class CreateOptGeoWindow():
             if __name__ == '__main__':
                 lateral_press.append(200)  # for testing
             else:
-                lateral_press.append(self.app.get_highest_pressure(self.opt_find_closest_orig_line(
-                    self._opt_structure[line]))['normal'] / 1000)
+                p1, p2 = self._opt_structure[line]
+                closet_line = self.opt_find_closest_orig_line([(p2[0]-p1[0])*0.5, (p2[1]-p1[1])*0.5])
+                lateral_press.append(self.app.get_highest_pressure(closet_line)['normal'] / 1000)
 
         [print(obj.get_structure_prop()) for obj in init_objects]
         print(contraints)
@@ -425,6 +426,7 @@ class CreateOptGeoWindow():
 
         vector = [pt2[0] - pt1[0], pt2[1] - pt1[1]]
         point = [pt1[0]+vector[0]*0.5,pt1[1]+vector[1]*0.5]
+
         objects = [copy.deepcopy(x) if x != None else None for x in
                    self._line_to_struc[self.opt_find_closest_orig_line(point)]]
 
@@ -450,8 +452,8 @@ class CreateOptGeoWindow():
                 if dist(coord,current) <= 0.1:
                     if self._line_to_struc[key][0].get_structure_type() not in ('GENERAL_INTERNAL_NONWT', 'FRAME'):
                         return key
-                    # else:
-                    #     return None
+                    else:
+                        return None
 
     def opt_get_distance(self):
         ''' Getting the largest disctance between the two lines to be optimized. '''
