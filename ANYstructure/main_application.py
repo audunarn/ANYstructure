@@ -69,8 +69,10 @@ class Application():
         undo_redo.add_command(label='New line (right click two points) (CTRL-Q)', command=self.new_line)
         undo_redo.add_command(label='Assign structure properties (from clicked line (CTRL-S)',
                               command=self.new_structure)
-
-        menu.add_command(label='Open documentation', command=self.open_documentation)
+        sub_help = tk.Menu(menu)
+        menu.add_cascade(label='Help', menu = sub_help)
+        sub_help.add_command(label = 'Open documentation', command = self.open_documentation)
+        sub_help.add_command(label = 'Open example file', command = self.open_example)
 
         base_canvas_dim = [1000,720]  #do not modify this, sets the "orignal" canvas dimensions.
         self._canvas_dim = [int(base_canvas_dim[0] *self._global_shrink),
@@ -2460,6 +2462,10 @@ class Application():
 
         imp_file.close()
         self.update_frame()
+
+    def open_example(self):
+        ''' Open the example file. To be used in help menu. '''
+        self.openfile(defined = 'ship_section_example.txt')
 
     def on_open_structure_window(self):
         '''
