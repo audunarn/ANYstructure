@@ -74,6 +74,10 @@ class Application():
         sub_help.add_command(label = 'Open documentation', command = self.open_documentation)
         sub_help.add_command(label = 'Open example file', command = self.open_example)
 
+        sub_report = tk.Menu(menu)
+        menu.add_cascade(label = 'Reporting', menu = sub_report)
+        sub_report.add_command(label = 'Generate PDF report', command = self.report_generate)
+
         base_canvas_dim = [1000,720]  #do not modify this, sets the "orignal" canvas dimensions.
         self._canvas_dim = [int(base_canvas_dim[0] *self._global_shrink),
                            int(base_canvas_dim[1] *self._global_shrink)]
@@ -640,13 +644,13 @@ class Application():
         tk.Button(self._main_fr, text='GEO', command=self.on_geometry_optimize,
                   font = self._text_size['Text 16 bold'], fg='green', height = 1, bg = 'white')\
             .place(x=lc_x + delta_x * 6.7,y=lc_y - 6 * lc_y_delta)
-        try:
-            photo_report = tk.PhotoImage(file=self._root_dir + '\\images\\' +"img_generate_report.gif")
-            report_button = tk.Button(self._main_fr,image=photo_report, command = self.report_generate)
-            report_button.image = photo_report
-            report_button.place(x=1600,y=0)
-        except TclError:
-            tk.Button(self._main_fr, text='Generate report', command=self.report_generate).place(x=1600,y=0)
+        # try:
+        #     photo_report = tk.PhotoImage(file=self._root_dir + '\\images\\' +"img_generate_report.gif")
+        #     report_button = tk.Button(self._main_fr,image=photo_report, command = self.report_generate)
+        #     report_button.image = photo_report
+        #     report_button.place(x=1600,y=0)
+        # except TclError:
+        #     tk.Button(self._main_fr, text='Generate report', command=self.report_generate).place(x=1600,y=0)
 
         #self.openfile(defined='general_section_slm.txt')
 
