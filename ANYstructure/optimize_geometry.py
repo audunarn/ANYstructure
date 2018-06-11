@@ -367,11 +367,10 @@ class CreateOptGeoWindow():
         Function when pressing the optimization botton inside this window.
         :return:
         '''
-
-        self.opt_create_main_structure(self.opt_create_frames(self.opt_get_fractions()),
+        frames, distances = self.opt_create_frames(self.opt_get_fractions())
+        self.opt_create_main_structure(frames,
                                        self._active_points[0], self._active_points[1],
                                        self._active_points[2], self._active_points[3])
-
 
         contraints = (self._new_check_sec_mod.get(), self._new_check_min_pl_thk.get(),
                       self._new_check_shear_area.get(), self._new_check_buckling.get(),
@@ -401,7 +400,8 @@ class CreateOptGeoWindow():
                             max_var=self.get_upper_bounds(),lateral_pressure=lateral_press,deltas=self.get_deltas(),
                             algorithm='anysmart',side='p',const_chk = contraints,pso_options = self.pso_parameters,
                             is_geometric=True,fatigue_obj=None, fat_press_ext_int=None,min_max_span=(2,6),
-                            tot_len=self.opt_get_length(),frame_height=self.opt_get_distance(),frame_cross_a=0.0122))
+                            tot_len=self.opt_get_length(),frame_height=self.opt_get_distance(),
+                            frame_distance = distances))
 
     def opt_get_fractions(self):
         ''' Finding initial number of fractions '''
@@ -478,27 +478,30 @@ class CreateOptGeoWindow():
         count = 1
 
         self._opt_frames['opt_frame_start'] = [[self._point_dict[self._active_points[0]][0],
-                                                       self._point_dict[self._active_points[0]][1]],
-                                                      [self._point_dict[self._active_points[2]][0] ,
-                                                       self._point_dict[self._active_points[2]][1]]]
+                                                self._point_dict[self._active_points[0]][1]],
+                                               [self._point_dict[self._active_points[2]][0],
+                                                self._point_dict[self._active_points[2]][1]]]
 
         self._opt_frames['opt_frame_stop'] = [[self._point_dict[self._active_points[1]][0],
-                                                            self._point_dict[self._active_points[1]][1]],
-                                                           [self._point_dict[self._active_points[3]][0],
-                                                            self._point_dict[self._active_points[3]][1]]]
+                                               self._point_dict[self._active_points[1]][1]],
+                                              [self._point_dict[self._active_points[3]][0],
+                                               self._point_dict[self._active_points[3]][1]]]
+
         start =  0
         for fraction in fractions:
             start += fraction
             if start != 1:
-                self._opt_frames['opt_frame'+str(count)] = [ [self._point_dict[self._active_points[0]][0]+
-                                                              round(self.opt_get_length()*start,5),
-                                                              self._point_dict[self._active_points[0]][1]],
-                                                             [self._point_dict[self._active_points[2]][0]+
+                self._opt_frames['opt_frame'+str(count)] = [[self._point_dict[self._active_points[0]][0] +
+                                                             round(self.opt_get_length()*start,5),
+                                                             self._point_dict[self._active_points[0]][1]],
+                                                            [self._point_dict[self._active_points[2]][0] +
                                                              round(self.opt_get_length() * start,5),
-                                                              self._point_dict[self._active_points[2]][1]]]
+                                                             self._point_dict[self._active_points[2]][1]]]
             count+=1
+        distances = {'start_dist': dist(self._opt_frames['opt_frame_start'][0], self._opt_frames['opt_frame_start'][1]),
+                     'stop_dist': dist(self._opt_frames['opt_frame_stop'][0], self._opt_frames['opt_frame_stop'][1])}
 
-        return self._opt_frames
+        return self._opt_frames, distances
 
     def opt_create_main_structure(self,frames,start1,stop1,start2,stop2):
         ''' This creates line definition for the new structure objects.
@@ -1048,7 +1051,7 @@ class CreateOptGeoWindow():
         self.update_running_time()
 
         #############################
-        self.opt_create_main_structure(self.opt_create_frames(self.opt_get_fractions()),self._active_points[0],
+        self.opt_create_main_structure(self.opt_create_frames(self.opt_get_fractions())[0],self._active_points[0],
                                        self._active_points[1],self._active_points[2],self._active_points[3])
 
     def save_and_close(self):
