@@ -38,6 +38,10 @@ class Grid:
         '''
         return np.zeros((self._grid_height,self._grid_width))
 
+    def get_array(self):
+        ''' Returning the numpy array '''
+        return self._cells
+
     def get_grid_height(self):
         """
         Return the height of the grid for use in the GUI
