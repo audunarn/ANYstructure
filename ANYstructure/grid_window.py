@@ -211,8 +211,9 @@ class CreateGridWindow():
 
     def find_lines_inside_area(self, row1, col1, row2, col2):
         '''
-        Define a serch area.
+        Define a search area.
         Return the lines in this area.
+        This method makes sense if "find_lines" is set to True.
         '''
         return np.unique(self._grid.get_array()[row1:row2, col1:col2])
 
