@@ -14,7 +14,7 @@ def dist(p, q):
 
 class CreateGridWindow():
 
-    def __init__(self, grid, canvas_dim, to_draw, canvas_origo):
+    def __init__(self, grid, canvas_dim, to_draw, canvas_origo, find_lines: bool = False):
 
         self._grid = grid
         self._parent_dimensions = canvas_dim
@@ -31,11 +31,10 @@ class CreateGridWindow():
 
         for line, points in self._points_child.items():
             for point in self._grid.get_points_along_line(points[0],points[1]):
-
-                self._grid.set_barrier(point[0],point[1])
-
-        # if __name__ == '__main__':
-        #     self.draw_grid()
+                if not find_lines:
+                    self._grid.set_barrier(point[0],point[1])
+                else:
+                    self._grid.set_barrier(point[0], point[1], line_number = hlp.get_num(line))
 
     def __str__(self):
         return 'Not implemented'
@@ -210,21 +209,20 @@ class CreateGridWindow():
             all_grids.append(self._grid.get_matrix())
         return {'compartments': compartments, 'grids':all_grids}
 
+    def find_lines_inside_area(self, row1, col1, row2, col2):
+        '''
+        Define a serch area.
+        Return the lines in this area.
+        '''
+        return np.unique(self._grid.get_array()[row1:row2, col1:col2])
+
+
+
 if __name__ == '__main__':
     import time
-    import ANYstructure.make_grid_numpy as mgn
     t1 = time.time()
-
     canvas_dim = [10, 10]
-    canvas_origo = (10, 0)
-    to_draw = {'line1': ((2, 2), (2, 7)), 'line2': ((2, 7), (7, 7)),
-               'line3': ((7, 7), (7, 2)), 'line4': ((7, 2), (2, 2))}
-
-    my_app = CreateGridWindow(mgn.Grid(10,10),canvas_dim,to_draw,canvas_origo)
-    results = my_app.search_bfs(animate=True)
-    my_app.animate_grid(grids_to_animate=results['grids'])
-    print(results)
-    print('Time', time.time()-t1)
+    canvas_origo = (600, 0)
 
 
 
