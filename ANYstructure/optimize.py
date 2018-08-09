@@ -17,7 +17,7 @@ def run_optmizataion(initial_structure_obj=None, min_var=None,max_var=None,later
                      const_chk = (True,True,True,True,True,True),
                      pso_options = (100,0.5,0.5,0.5,100,1e-8,1e-8),is_geometric=False, fatigue_obj = None ,
                      fat_press_ext_int = None,
-                     min_max_span = (2,6), tot_len = 12, frame_height = 2.5, frame_cross_a = 0.0122,
+                     min_max_span = (2,6), tot_len = 12, frame_height = 2.5, frame_distance = None,
                      slamming_press = 0):
     '''
     The optimazation is initiated here. It is called from optimize_window.
@@ -53,11 +53,18 @@ def run_optmizataion(initial_structure_obj=None, min_var=None,max_var=None,later
                                                 fat_dict=fatigue_obj.get_fatigue_properties(),
                                                 fat_press=fat_press_ext_int) if algorithm != 'pso' else float('inf')
 
-    if algorithm=='anysmart' and not is_geometric:
+    if algorithm == 'anysmart' and not is_geometric:
         to_return = any_smart_loop(min_var, max_var, deltas, initial_structure_obj, lateral_pressure,
                                    init_filter_weight, side=side, const_chk=const_chk, fat_dict=fat_dict,
                                    fat_press=fat_press_ext_int,slamming_press=slamming_press)
         return to_return
+    elif algorithm == 'anysmart' and is_geometric:
+        return geometric_summary_search(min_var= min_var, max_var=max_var, deltas= deltas,
+                                        initial_structure_obj= initial_structure_obj, lateral_pressure=lateral_pressure,
+                                        init_filter= init_filter_weight, side= side, const_chk= const_chk,
+                                        fat_obj=  fatigue_obj, fat_press= fat_press_ext_int, min_max_span= min_max_span,
+                                        tot_len= tot_len, frame_distance = frame_distance,
+                                        algorithm= 'anysmart')
     elif algorithm == 'anydetail' and not is_geometric:
         return any_optimize_loop(min_var, max_var, deltas, initial_structure_obj, lateral_pressure,init_filter_weight,
                                  side=side, const_chk=const_chk, fat_dict=fat_dict, fat_press=fat_press_ext_int,
@@ -68,16 +75,16 @@ def run_optmizataion(initial_structure_obj=None, min_var=None,max_var=None,later
     elif algorithm == 'random_no_delta' and not is_geometric:
         return get_random_result_no_bounds(initial_structure_obj, lateral_pressure, min_var, max_var, trials=trials,
                                            side=side, const_chk=const_chk)
-    elif algorithm =='pso' and not is_geometric:
+    elif algorithm == 'pso' and not is_geometric:
         return particle_search(min_var,max_var,deltas,initial_structure_obj,lateral_pressure,init_filter_weight,side,
                                const_chk,pso_options,fat_dict,fat_press_ext_int,slamming_press)
-    elif algorithm =='pygmo_alg' and not is_geometric:
+    elif algorithm == 'pygmo_alg' and not is_geometric:
         return algorithmic_search(min_var,max_var,deltas,initial_structure_obj,lateral_pressure,init_filter_weight,side,
                                   const_chk,pso_options)
-    elif algorithm =='pso' and is_geometric:
-        return pso_geometric_summary_search(min_var,max_var,deltas, initial_structure_obj,lateral_pressure,
-                                            init_filter_weight,side,const_chk,pso_options,fatigue_obj,fat_press_ext_int,
-                                            min_max_span,tot_len,frame_height,frame_cross_a)
+    elif algorithm == 'pso' and is_geometric:
+        return geometric_summary_search(min_var,max_var,deltas, initial_structure_obj,lateral_pressure,
+                                        init_filter_weight,side,const_chk,pso_options,fatigue_obj,fat_press_ext_int,
+                                        min_max_span,tot_len,frame_height,frame_cross_a, 'pso')
     else:
         return None
 
@@ -150,9 +157,30 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
 
     if ass_var == None:
         return ass_var
-    return create_new_structure_obj(initial_structure_obj,[round(item,5) for item in ass_var]),\
-           create_new_calc_obj(initial_structure_obj,[round(item,5) for item in ass_var])[0], \
-           fat_dict
+    new_struc_obj = create_new_structure_obj(initial_structure_obj,[round(item,5) for item in ass_var])
+    new_calc_obj = create_new_calc_obj(initial_structure_obj,[round(item,5) for item in ass_var])[0]
+
+    return new_struc_obj, new_calc_obj, fat_dict, \
+           True if any_constraints_all(ass_var, new_struc_obj, lateral_pressure, current_weight,side,
+                                       const_chk,fat_dict,fat_press,slamming_press) is not False else False
+
+def any_smart_loop_geometric(min_var,max_var,deltas,initial_structure_obj,lateral_pressure, init_filter = float('inf'),
+                             side='p',const_chk=(True,True,True,True,True,True), fat_dict = None, fat_press = None,
+                             slamming_press = 0):
+    ''' Searching multiple sections using the smart loop. '''
+
+    all_obj = []
+
+    for struc_obj, lat_press in zip(initial_structure_obj, lateral_pressure):
+
+        opt_obj = any_smart_loop(min_var = min_var,max_var = max_var,deltas = deltas,initial_structure_obj = struc_obj,
+                                 lateral_pressure = lat_press, init_filter = init_filter, side=side,
+                                 const_chk=const_chk, fat_dict = fat_dict, fat_press = fat_press,
+                                 slamming_press = slamming_press)
+        # TODO-any set check if not solution acceptable.
+        all_obj.append(opt_obj)
+
+    return all_obj
 
 def particle_search(min_var,max_var,deltas,initial_structure_obj,lateral_pressure, init_filter = float('inf'),
                     side='p',const_chk=(True,True,True,True),
@@ -238,29 +266,27 @@ def particle_search_geometric(min_var=None,max_var=None,deltas = None, initial_s
     '''
     Searching using Particle Swarm Search (http://pythonhosted.org/pyswarm/) for a given section.
     '''
-    count=0
+
     all_obj = []
 
-    for dummy_i in range(len(initial_structure_obj)):
-        struc_obj =initial_structure_obj[count]
-        lat_press =lateral_pressure[count]
+    for struc_obj, lat_press in zip(initial_structure_obj, lateral_pressure):
 
         opt_obj = particle_search(min_var=min_var, max_var=max_var,initial_structure_obj=struc_obj,
                                   lateral_pressure=lat_press,
                                   side=side, const_chk=const_chk, pso_options=pso_options, deltas=deltas)
         # TODO-any set check if not solution acceptable.
         all_obj.append(opt_obj)
-        count += 1
+
     return all_obj
 
-def pso_geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_structure_obj=None,lateral_pressure=None,
-                                 init_filter = float('inf'),side='p',const_chk=(True,True,True,True, True, True),
-                                 pso_options=(100,0.5,0.5,0.5,100,1e-8,1e-8), fat_obj = None, fat_press = None,
-                                 min_max_span = (2,6), tot_len = 12, frame_height = 2.5, frame_cross_a = 0.0122):
+def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_structure_obj=None,lateral_pressure=None,
+                             init_filter = float('inf'),side='p',const_chk=(True,True,True,True, True, True),
+                             pso_options=(100,0.5,0.5,0.5,100,1e-8,1e-8), fat_obj = None, fat_press = None,
+                             min_max_span = (2,6), tot_len = 12, frame_distance = None,
+                             algorithm = 'anysmart'):
 
     '''Geometric optimization of all relevant sections. '''
     # Checking the number of initial objects and adding if number of fraction is to be changed.
-    result_fraction, result_weight = None,float('inf')
 
     found_max, found_min = False, False
     for frames in range(1,100):
@@ -283,7 +309,11 @@ def pso_geometric_summary_search(min_var=None,max_var=None,deltas = None, initia
     for no_of_fractions in range(min_frame_count, max_frame_cont+1):
         # Create fraction varables
         frac_var,min_frac,max_frac = [],[],[]
+
         for var in range(no_of_fractions):
+
+            # Frame height is a interpolation between height at start and end.
+
             frac_var.append(1/no_of_fractions)
             working_objects[no_of_fractions] = list(initial_structure_obj)
             working_lateral[no_of_fractions] = list(lateral_pressure)
@@ -312,29 +342,58 @@ def pso_geometric_summary_search(min_var=None,max_var=None,deltas = None, initia
             for struc_obj in struc_objects:
                 struc_obj.set_span(tot_len/no_of_fractions)
 
+        solution_found, iterations = False, 0
+        while not solution_found:
+            iterations += 1
+            if iterations != 1:
+                min_var[0:6] -= deltas/2
+                max_var[0:6] += deltas/2
 
-        opt_objects = particle_search_geometric(min_var=min_var,max_var=max_var,deltas=deltas,
-                                                initial_structure_obj=working_objects[no_of_fractions],
-                                                lateral_pressure=working_lateral[no_of_fractions],
-                                                init_filter = init_filter,side=side,const_chk=const_chk,
-                                                pso_options=pso_options, fat_obj = fat_obj, fat_press = fat_press)
-        # Finding weight of this solution.
-        tot_weight = 0
-        # TODO-any Check if all is acceptable.
+            if algorithm is 'pso':
+                opt_objects = particle_search_geometric(min_var=min_var,max_var=max_var,deltas=deltas,
+                                                        initial_structure_obj=working_objects[no_of_fractions],
+                                                        lateral_pressure=working_lateral[no_of_fractions],
+                                                        init_filter = init_filter,side=side,const_chk=const_chk,
+                                                        pso_options=pso_options, fat_obj = fat_obj,
+                                                        fat_press = fat_press)
+            elif algorithm is 'anysmart':
+                opt_objects = any_smart_loop_geometric(min_var=min_var,max_var=max_var,deltas=deltas,
+                                                       initial_structure_obj=working_objects[no_of_fractions],
+                                                       lateral_pressure=working_lateral[no_of_fractions],
+                                                       init_filter = init_filter,side=side,const_chk=const_chk,
+                                                       fat_dict = None, fat_press = None, slamming_press = 0)
 
-        for opt in opt_objects:
-            obj = opt[0]
-            if opt[3]:
-                tot_weight += calc_weight((obj.get_s(),obj.get_pl_thk(),obj.get_web_h(),obj.get_web_thk(),
-                                           obj.get_fl_w(),obj.get_fl_thk(),obj.get_span(),10))
-            else:
-                # In this case there are no applicable solutions fount in the specified dimension ranges.
-                tot_weight += float('inf')
-        for frame in range(int(len(opt_objects)/2)-1):
-            tot_weight += frame_cross_a*frame_height*7850
+                # TODO fatigue and slamming implemetation
+
+            # Finding weight of this solution.
+
+            tot_weight, frame_spacings, valid, width = 0, [None for dummy in range(len(opt_objects))], True, 10
+
+            for count, opt in enumerate(opt_objects):
+                obj = opt[0]
+                if opt[3]:
+                    tot_weight += calc_weight((obj.get_s(),obj.get_pl_thk(),obj.get_web_h(),obj.get_web_thk(),
+                                               obj.get_fl_w(),obj.get_fl_thk(),obj.get_span(),width), prt=False)
+                    if frame_spacings[count // 2] is None:
+                        frame_spacings[count // 2] = obj.get_s()
+                else:
+                    # In this case there are no applicable solutions fount in the specified dimension ranges.
+                    tot_weight += float('inf')
+                    valid = False
+            if valid:
+                print(frame_distance)
+                for frame in range(int(count/2)):
+                    frame_height = 2.5 if frame_distance is None else frame_distance['start_dist'] + \
+                                                                      (frame_distance['stop_dist']-
+                                                                       frame_distance['start_dist']) * \
+                                                                      ((frame+1)/no_of_fractions)
+                    pl_area, stf_area = 0.018 * width, 0.25 * 0.015 * (10//frame_spacings[frame])
+                    tot_weight += (pl_area + stf_area) * frame_height * 7850
+                    solution_found = True
+            elif iterations == 2:
+                solution_found = True
 
         results[no_of_fractions] = tot_weight, opt_objects
-
     return results
 
 def any_find_min_weight_var(var):
@@ -509,16 +568,21 @@ def create_new_structure_obj(init_obj, x, fat_dict=None):
     if fat_dict == None:
         return calc.Structure(main_dict)
 
-def calc_weight(x):
+def calc_weight(x, prt = False):
     '''
     Calculating the current weight
     :param current_dict:
     :return:
     '''
+
     width = x[7]
     span = x[6]
     plate_area = width*x[1]
     stiff_area = (x[2] * x[3]+ x[4] * x[5]) * (width//x[0])
+
+    if prt:
+        print('x is', x, 'plate area', plate_area, 'stiff area', stiff_area, 'weight',
+              span * 7850 * (plate_area + stiff_area))
     return span * 7850 * (plate_area + stiff_area)
 
 def calc_weight_pso(x,*args):
@@ -589,7 +653,8 @@ def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight
     '''
     iter_var = ((item,init_stuc_obj,lat_press,init_filter_weight,side,chk,fat_dict,fat_press,slamming_press)
                 for item in iterable_all)
-    with Pool(cpu_count()) as my_process:
+
+    with Pool(max(cpu_count()-1,1)) as my_process:
         # res_pre = my_process.starmap_async(any_constraints_all, iter_var).get()
         # print('Done calculating')
         res_pre = my_process.starmap(any_constraints_all, iter_var)
@@ -731,37 +796,41 @@ if __name__ == '__main__':
     x0 = [obj_dict['spacing'][0], obj_dict['plate_thk'][0], obj_dict['stf_web_height'][0], obj_dict['stf_web_thk'][0],
           obj_dict['stf_flange_width'][0], obj_dict['stf_flange_thk'][0], obj_dict['span'][0], 10]
     obj = calc.Structure(obj_dict)
-    lat_press = 271.124
+    lat_press = 200
     calc_object = calc.CalcScantlings(obj_dict)
-    upper_bounds = np.array([0.6, 0.01, 0.3, 0.01, 0.05, 0.01, 3.5, 10])
-    lower_bounds = np.array([0.8, 0.025, 0.5, 0.022, 0.25, 0.03, 3.5, 10])
-    deltas = np.array([0.02, 0.002, 0.01, 0.002, 0.02, 0.002])
+    lower_bounds = np.array([0.6, 0.01, 0.2, 0.01, 0.05, 0.01, 3.5, 10])
+    upper_bounds = np.array([0.8, 0.025, 0.6, 0.03, 0.25, 0.03, 3.5, 10])
+    deltas = np.array([0.05, 0.005, 0.05, 0.005, 0.05, 0.005])
     geo_opt_obj = test.get_geo_opt_object()
     geo_opt_press = test.get_geo_opt_presure()
-    print('Initial x is:', x0)
-    print('Initial constraint ok? ', True if any_constraints_all(x0,obj,lat_press,calc_weight(x0),
-                                                                 fat_dict=fat_obj.get_fatigue_properties(),
-                                                                 fat_press=fat_press) is not False else False)
-    print('Initial weight is:', calc_weight(x0))
-    #
+    # print('Initial x is:', x0)
+    # print('Initial constraint ok? ', True if any_constraints_all(x0,obj,lat_press,calc_weight(x0),
+    #                                                              fat_dict=fat_obj.get_fatigue_properties(),
+    #                                                              fat_press=fat_press) is not False else False)
+    # print('Initial weight is:', calc_weight(x0))
+    # #
     t2 = time.time()
-    opt = run_optmizataion(obj, upper_bounds, lower_bounds, lat_press, deltas, algorithm='anysmart',
-                           fatigue_obj=fat_obj, fat_press_ext_int=fat_press)[0]
-    print('Consumed time is: ', time.time()-t2)
+    # opt = run_optmizataion(obj, upper_bounds, lower_bounds, lat_press, deltas, algorithm='anysmart',
+    #                        fatigue_obj=fat_obj, fat_press_ext_int=fat_press)[0]
+    # print('Consumed time is: ', time.time()-t2)
 
-    # opt = run_optmizataion(initial_structure_obj=obj,
-    #                        min_var=np.array([0.6, 0.01, 0.3, 0.01, 0.05, 0.01, 3.5, 10]),
-    #                        max_var=np.array([0.8, 0.025, 0.5, 0.022, 0.25, 0.03, 3.5, 10]),
-    #                        lateral_pressure=geo_opt_press,deltas=np.array([0.05, 0.0025, 0.02, 0.002, 0.025, 0.002]),
-    #                        algorithm='pso',trials=30000,side='p',const_chk = (True,True,True,True,True),
-    #                        pso_options = (100,0.5,0.5,0.5,100,1e-8,1e-8),is_geometric=False, fatigue_obj = None,
-    #                        fat_press_ext_int = None,min_max_span = (2,6), tot_len = 12, frame_height = 2.5,
-    #                        frame_cross_a = 0.0122)
-    # print(opt)
-    # print('TIME:', time.time() - t2)
-    # for key,value in opt.items():
-    #     print('Frames: ', key)
-    #     print('Weight: ', value[0],' with length: ', len(value[1]))
+    opt = run_optmizataion(initial_structure_obj=geo_opt_obj,
+                           min_var=lower_bounds,
+                           max_var=upper_bounds,
+                           lateral_pressure= geo_opt_press, deltas=deltas,
+                           algorithm='anysmart',trials=30000,side='p',const_chk = (True,True,True,True,False,False),
+                           pso_options = (100,0.5,0.5,0.5,100,1e-8,1e-8),is_geometric=True, fatigue_obj = None,
+                           fat_press_ext_int = None,min_max_span = (2,6), tot_len = 12, frame_height = 2.5,
+                           frame_distance= {'start_dist': 2.5, 'stop_dist':5})
+    print(opt)
+    print('TIME:', time.time() - t2)
+    for key,value in opt.items():
+        print('***********************************************************************************')
+        print('Frames: ', key)
+        print('Weight: ', value[0],' with length: ', len(value[1]))
+        # for member in value[1]:
+        #     print(member[0])
+        print('')
     # print('Resulting weight is: ', calc_weight((opt.get_s(),opt.get_pl_thk(),opt.get_web_h(),opt.get_web_thk(),
     #                                             opt.get_fl_w(),opt.get_fl_thk(),opt.get_span(),10)))
     #

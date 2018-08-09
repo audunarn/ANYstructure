@@ -20,6 +20,7 @@ class Grid:
         self._grid_width = grid_width
         self._cells = np.zeros((self._grid_height,self._grid_width))
         self.empty, self.full, self.barrier, self.corner = 0, 1, -1, -2
+        self._geo_info = {'points': None, 'lines': None}
 
     def __str__(self):
         """
@@ -37,6 +38,19 @@ class Grid:
         :return:
         '''
         return np.zeros((self._grid_height,self._grid_width))
+
+    def get_array(self):
+        ''' Returning the numpy array '''
+        return self._cells
+
+    def provide_line_info(self, lines, points):
+        ''' Line information to the grid.
+            The geometric infomation is a dictionary
+            {   line_dict: line_dict,
+                point_dict: point_dict  }
+        '''
+        self._geo_info['lines'] = lines
+        self._geo_info['points'] = points
 
     def get_grid_height(self):
         """
@@ -88,11 +102,23 @@ class Grid:
         """
         self._cells[row][col] = value
 
-    def set_barrier(self, row, col):
+    def set_barrier(self, row, col, line_number: int = None):
         """
         Set cell with index (row, col) to be full
         """
-        self._cells[row][col] = self.barrier
+
+        if line_number is None:
+            self._cells[row][col] = self.barrier
+        else:
+            self._cells[row][col] = line_number
+
+
+
+    def set_number_to_cell(self, row, col, number):
+        '''
+        Setting an arbritary number to a cell.
+        '''
+        self._cells[row][col] = number
 
     def is_empty(self, row, col):
         """
@@ -325,3 +351,10 @@ class Grid:
         :return:
         '''
         return self._cells.tolist()
+
+if __name__ ==  '__main__':
+    import ANYstructure.example_data as ex
+    lines = ex.line_dict
+    points = ex.point_dict
+    my_grid = Grid(1000, 1000)
+    my_grid.provide_line_info(lines, points)

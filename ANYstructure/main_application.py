@@ -13,13 +13,16 @@ from ANYstructure.helper import *
 import math, decimal
 import ANYstructure.optimize_window as opw
 import ANYstructure.optimize_multiple_window as opwmult
+import ANYstructure.optimize_geometry as optgeo
 import ANYstructure.pl_stf_window as struc
 import ANYstructure.stresses_window as stress
 import ANYstructure.fatigue_window as fatigue
 from _tkinter import TclError
 import multiprocessing
 from ANYstructure.report_generator import LetterMaker
-import time
+import os.path
+import ctypes
+
 
 class Application():
     '''
@@ -43,7 +46,7 @@ class Application():
         else:
             self._global_shrink = 1
 
-        self._root_dir = os.path.dirname(__file__)+'/'
+        self._root_dir = os.path.dirname(os.path.abspath(__file__))
         # Main frame for the application
         self._main_fr = tk.Frame(parent, height=int(990*self._global_shrink), width=int(1920*self._global_shrink))
         self._main_fr.pack()
@@ -67,8 +70,14 @@ class Application():
         undo_redo.add_command(label='New line (right click two points) (CTRL-Q)', command=self.new_line)
         undo_redo.add_command(label='Assign structure properties (from clicked line (CTRL-S)',
                               command=self.new_structure)
+        sub_help = tk.Menu(menu)
+        menu.add_cascade(label='Help', menu = sub_help)
+        sub_help.add_command(label = 'Open documentation', command = self.open_documentation)
+        sub_help.add_command(label = 'Open example file', command = self.open_example)
 
-        menu.add_command(label='Open documentation', command=self.open_documentation)
+        sub_report = tk.Menu(menu)
+        menu.add_cascade(label = 'Reporting', menu = sub_report)
+        sub_report.add_command(label = 'Generate PDF report', command = self.report_generate)
 
         base_canvas_dim = [1000,720]  #do not modify this, sets the "orignal" canvas dimensions.
         self._canvas_dim = [int(base_canvas_dim[0] *self._global_shrink),
@@ -79,6 +88,8 @@ class Application():
 
         # Setting the fonts for all items in the application.
         self._text_size = {'Text 14 bold':'Verdana '+str(int(14*self._global_shrink))+' bold',
+                           'Text 16 bold': 'Verdana ' + str(int(16 * self._global_shrink)) + ' bold',
+                           'Text 18 bold': 'Verdana ' + str(int(18 * self._global_shrink)) + ' bold',
                           'Text 12 bold': 'Verdana ' + str(int(12 * self._global_shrink)) + ' bold',
                           'Text 10 bold':'Verdana '+str(int(10*self._global_shrink))+' bold',
                           'Text 9 bold': 'Verdana ' + str(int(9 * self._global_shrink)) + ' bold',
@@ -184,7 +195,7 @@ class Application():
         delta_x = 50*self._global_shrink
 
         # --- slider (used to zoom) ----
-        tk.Label(self._main_fr, text='Slide to zoom').place(x=ent_x+delta_x*6.5, y=delta_y)
+        tk.Label(self._main_fr, text='Slide to zoom (or use mouse wheel)').place(x=ent_x+delta_x*6.5, y=delta_y)
         self._slider = tk.Scale(self._main_fr,from_=60,to = 1, command=self.slider_used)
         self._slider.set(self._canvas_scale)
         self._slider.place(x=ent_x+delta_x*6.5, y= delta_y*2)
@@ -194,7 +205,7 @@ class Application():
             photo = tk.PhotoImage(file=self._root_dir + '\\images\\' + "img_title.gif")
             label = tk.Label(self._main_fr,image=photo)
             label.image = photo  # keep a reference!
-            label.place(x=10, y=10)
+            label.place(x=2, y=10)
         except TclError: # If the image is not located in the folder
             label = tk.Label(self._main_fr, text='DNVGL-OS-C101 based calculations')
             label.place(x=10, y=10)
@@ -291,7 +302,7 @@ class Application():
         tk.Label(self._main_fr, text='Select structure type ->', font=self._text_size['Text 8'])\
             .place(x=100, y=prop_vert_start + 8 * delta_y)
         self.add_stucture = tk.Button(self._main_fr, text='Add structure to line', command=self.new_structure,
-                                      font = self._text_size['Text 8 bold'], fg = 'yellow', bg = 'green', 
+                                      font = self._text_size['Text 8 bold'], fg = 'yellow', bg = 'green',
                                       width = 18, height = 2)
         self.add_stucture.place(x=types_start+6*delta_x, y=prop_vert_start+delta_y*10+10)
 
@@ -475,12 +486,12 @@ class Application():
         tk.Button(self._main_fr, text="Set compartment\n""properties.",command = self.update_tank,
                                             font=self._text_size['Text 8 bold'], bg = 'white', fg = 'blue')\
             .place(x=ent_x+delta_x*3, y=load_vert_start + delta_y * 5)
-        
+
         tk.Button(self._main_fr, text="Delete all tanks", command=self.delete_all_tanks,
                   font=self._text_size['Text 8 bold'], bg = 'white', fg = 'blue')\
             .place(x=ent_x+delta_x*3, y=load_vert_start + delta_y * 7)
         self._new_content_type = tk.StringVar()
-        
+
         self._ent_content_type = tk.OptionMenu(self._main_fr, self._new_content_type, *self._tank_options)
         ent_width = 10
         self._new_overpresure = tk.DoubleVar()
@@ -570,7 +581,7 @@ class Application():
             .place(x=lc_x + delta_x*4.2, y=lc_y - 3 * lc_y_delta)
         tk.Entry(self._main_fr, textvariable = self._new_dyn_acc_ballast,width = 10)\
             .place(x=lc_x + delta_x*4.2, y=lc_y - 2 * lc_y_delta)
-        tk.Button(self._main_fr, text = 'Set\naccelerations', command = self.create_accelerations, 
+        tk.Button(self._main_fr, text = 'Set\naccelerations', command = self.create_accelerations,
                   font = self._text_size['Text 8 bold'],
                   fg = 'yellow',bg = 'green').place(x=lc_x + delta_x*6, y=lc_y - 3 * lc_y_delta)
 
@@ -628,15 +639,19 @@ class Application():
             opt_button_mult.image = photo_opt
             opt_button_mult.place(x=lc_x+delta_x*4, y=lc_y - 6 * lc_y_delta)
         except TclError:
-            tk.Button(self._main_fr, text='MultiOptimize', command=self.on_optimize_multiple).place(x=lc_x + delta_x*5,
-                                                                                           y=lc_y - 6 * lc_y_delta)
-        try:
-            photo_report = tk.PhotoImage(file=self._root_dir + '\\images\\' +"img_generate_report.gif")
-            report_button = tk.Button(self._main_fr,image=photo_report, command = self.report_generate)
-            report_button.image = photo_report
-            report_button.place(x=1600,y=0)
-        except TclError:
-            tk.Button(self._main_fr, text='Generate report', command=self.report_generate).place(x=1600,y=0)
+            tk.Button(self._main_fr, text='MultiOpt', command=self.on_optimize_multiple).place(x=lc_x + delta_x*7,
+                                                                                               y=lc_y - 6 * lc_y_delta)
+
+        tk.Button(self._main_fr, text='GEO', command=self.on_geometry_optimize,
+                  font = self._text_size['Text 16 bold'], fg='green', height = 1, bg = 'white')\
+            .place(x=lc_x + delta_x * 6.7,y=lc_y - 6 * lc_y_delta)
+        # try:
+        #     photo_report = tk.PhotoImage(file=self._root_dir + '\\images\\' +"img_generate_report.gif")
+        #     report_button = tk.Button(self._main_fr,image=photo_report, command = self.report_generate)
+        #     report_button.image = photo_report
+        #     report_button.place(x=1600,y=0)
+        # except TclError:
+        #     tk.Button(self._main_fr, text='Generate report', command=self.report_generate).place(x=1600,y=0)
 
         #self.openfile(defined='general_section_slm.txt')
 
@@ -717,7 +732,7 @@ class Application():
 
                 name = ('manual', self._active_line, 'manual')  # tuple to identify combinations on line
                 if name in self._new_load_comb_dict.keys():
-                    self._manual_created.append(tk.Label(self._main_fr, text='Manual (pressure/LF)', 
+                    self._manual_created.append(tk.Label(self._main_fr, text='Manual (pressure/LF)',
                                                         font=self._text_size['Text 8 bold']))
                     self._manual_created.append(
                         tk.Entry(self._main_fr, textvariable=self._new_load_comb_dict[name][0], width=15))
@@ -731,11 +746,11 @@ class Application():
 
             #printing the results
             results = self.calculate_all_load_combinations_for_line(self._active_line)
-            self._result_label_dnva.config(text = 'DNV a [Pa]: ' + str(results['dnva']), 
+            self._result_label_dnva.config(text = 'DNV a [Pa]: ' + str(results['dnva']),
                                           font = self._text_size['Text 7'])
-            self._result_label_dnvb.config(text = 'DNV b [Pa]: ' + str(results['dnvb']), 
+            self._result_label_dnvb.config(text = 'DNV b [Pa]: ' + str(results['dnvb']),
                                           font = self._text_size['Text 7'])
-            self._result_label_tanktest.config(text = 'TT [Pa]: ' + str(results['tanktest']), 
+            self._result_label_tanktest.config(text = 'TT [Pa]: ' + str(results['tanktest']),
                                               font = self._text_size['Text 7'])
 
             try:
@@ -895,7 +910,7 @@ class Application():
         state = self.get_color_and_calc_state()
         self.draw_canvas(state=state)
         self.draw_prop()
-        
+
     def get_color_and_calc_state(self, current_line = None, active_line_only = False):
         ''' Return calculations and colors for line and results. '''
         return_dict = {'colors': {}, 'section_modulus': {}, 'thickness': {}, 'shear_area': {}, 'buckling': {},
@@ -1214,9 +1229,9 @@ class Application():
             return
 
         self._result_canvas.delete('all')
-        
+
         if self._line_is_active:
-            
+
             if self._active_line in self._line_to_struc:
                 x, y, dx, dy = 20, 15, 15, 14
                 m3_to_mm3 = float(math.pow(1000,3))
@@ -1479,7 +1494,7 @@ class Application():
     def move_point(self, event = None, redo = None):
         '''
         Moving a point.
-        :return: 
+        :return:
         '''
         if self._point_is_active:
             self.new_point(move=True, redo=redo) # doing the actual moving
@@ -1502,7 +1517,7 @@ class Application():
     def copy_point(self, event = None):
         '''
         Using the same input as new point, but with separate button.
-        :return: 
+        :return:
         '''
         if self._point_is_active:
             self.new_point(copy=True)
@@ -1552,7 +1567,7 @@ class Application():
 
     def new_structure(self, event = None):
         '''
-        This method maps the structure to the line when clicking "add structure to line" button. 
+        This method maps the structure to the line when clicking "add structure to line" button.
         The result is put in a dictionary. Key is line name and value is the structure object.
         :return:
         '''
@@ -1776,21 +1791,26 @@ class Application():
         current_tank.set_acceleration(self._accelerations_dict)
         current_tank.set_density(self._new_density.get())
 
-    def delete_line(self, event = None, undo = None):
+    def delete_line(self, event = None, undo = None, line = None):
         '''
         Deleting line and line properties.
         :return:
         '''
         try:
-            if 'line'+self._ent_delete_line.get() in self._line_dict.keys() or undo is not None:
-                line = 'line' + str(self._ent_delete_line.get()) if undo is None else undo
+            if line is not None:
+                line = 'line'+str(line)
+            else:
+                line = 'line' + str(self._ent_delete_line.get())
+
+            if line in self._line_dict.keys() or undo is not None:
+                line = line if undo is None else undo
                 point_str = 'p' + str(self._line_dict[line][0]) + 'p' + str(self._line_dict[line][1])
                 point_str_rev = 'p' + str(self._line_dict[line][1]) + 'p' + str(self._line_dict[line][0])
 
                 if line in self._line_dict.keys():
                     self._line_dict.pop(line)
                     if line in self._line_to_struc.keys():
-                        self._line_to_struc.pop('line' + str(self._ent_delete_line.get()))
+                        self._line_to_struc.pop(line)
                     self._line_point_to_point_string.pop(self._line_point_to_point_string.index(point_str))
                     self._line_point_to_point_string.pop(self._line_point_to_point_string.index(point_str_rev))
                 self.update_frame()
@@ -2453,6 +2473,10 @@ class Application():
         imp_file.close()
         self.update_frame()
 
+    def open_example(self):
+        ''' Open the example file. To be used in help menu. '''
+        self.openfile(defined = 'ship_section_example.txt')
+
     def on_open_structure_window(self):
         '''
         Opens the window to create structure.
@@ -2544,7 +2568,7 @@ class Application():
     def on_optimize_multiple(self):
         '''
         Used to optimize in batch mode.
-        :return: 
+        :return:
         '''
         try:
             [self.get_highest_pressure(line)['normal'] for line in self._line_to_struc.keys()]
@@ -2564,6 +2588,25 @@ class Application():
 
         top_opt = tk.Toplevel(self._parent)
         opwmult.CreateOptimizeMultipleWindow(top_opt,self)
+
+    def on_geometry_optimize(self):
+        '''
+
+        :param returned_objects:
+        :return:
+        '''
+
+        messagebox.showinfo(title='Multiple optimization information',
+                            message='Opening this window enables batch optimization.\n'
+                                    'There are less input and information. It is HIGHLY\n'
+                                    'recommended to single optimize first (optimize button).\n'
+                                    'This way you will understand how the optimizer works.\n'
+                                    '\n'
+                                    'A default range of T properties is chosen. Typical analysis\n'
+                                    'steps (deltas) is chosen.')
+
+        top_opt = tk.Toplevel(self._parent)
+        optgeo.CreateOptGeoWindow(top_opt,self)
 
     def on_close_load_window(self, returned_loads, counter, load_comb_dict):
         '''
@@ -2745,6 +2788,7 @@ class Application():
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
+    errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
     root = tk.Tk()
     my_app = Application(root)
     root.mainloop()
