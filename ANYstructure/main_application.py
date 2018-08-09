@@ -21,6 +21,7 @@ from _tkinter import TclError
 import multiprocessing
 from ANYstructure.report_generator import LetterMaker
 import os.path
+import ctypes
 
 
 class Application():
@@ -1790,21 +1791,26 @@ class Application():
         current_tank.set_acceleration(self._accelerations_dict)
         current_tank.set_density(self._new_density.get())
 
-    def delete_line(self, event = None, undo = None):
+    def delete_line(self, event = None, undo = None, line = None):
         '''
         Deleting line and line properties.
         :return:
         '''
         try:
-            if 'line'+self._ent_delete_line.get() in self._line_dict.keys() or undo is not None:
-                line = 'line' + str(self._ent_delete_line.get()) if undo is None else undo
+            if line is not None:
+                line = 'line'+str(line)
+            else:
+                line = 'line' + str(self._ent_delete_line.get())
+
+            if line in self._line_dict.keys() or undo is not None:
+                line = line if undo is None else undo
                 point_str = 'p' + str(self._line_dict[line][0]) + 'p' + str(self._line_dict[line][1])
                 point_str_rev = 'p' + str(self._line_dict[line][1]) + 'p' + str(self._line_dict[line][0])
 
                 if line in self._line_dict.keys():
                     self._line_dict.pop(line)
                     if line in self._line_to_struc.keys():
-                        self._line_to_struc.pop('line' + str(self._ent_delete_line.get()))
+                        self._line_to_struc.pop(line)
                     self._line_point_to_point_string.pop(self._line_point_to_point_string.index(point_str))
                     self._line_point_to_point_string.pop(self._line_point_to_point_string.index(point_str_rev))
                 self.update_frame()
@@ -2782,6 +2788,7 @@ class Application():
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
+    errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
     root = tk.Tk()
     my_app = Application(root)
     root.mainloop()
