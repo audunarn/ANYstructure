@@ -39,7 +39,7 @@ class Application():
         parent.wm_title('| ANYstructure |')
         self._parent = parent
         parent.protocol("WM_DELETE_WINDOW", self.close_main_window)
-
+        #hekfekf
         # If the resolution of the screen is below 2000, items are multiplied by global_shrink.
         if parent.winfo_screenwidth() < 2000:
             self._global_shrink = 0.96
@@ -642,9 +642,9 @@ class Application():
             tk.Button(self._main_fr, text='MultiOpt', command=self.on_optimize_multiple).place(x=lc_x + delta_x*7,
                                                                                                y=lc_y - 6 * lc_y_delta)
 
-        tk.Button(self._main_fr, text='GEO', command=self.on_geometry_optimize,
-                  font = self._text_size['Text 16 bold'], fg='green', height = 1, bg = 'white')\
-            .place(x=lc_x + delta_x * 6.7,y=lc_y - 6 * lc_y_delta)
+        # tk.Button(self._main_fr, text='GEO', command=self.on_geometry_optimize,
+        #           font = self._text_size['Text 16 bold'], fg='green', height = 1, bg = 'white')\
+        #     .place(x=lc_x + delta_x * 6.7,y=lc_y - 6 * lc_y_delta)
         # try:
         #     photo_report = tk.PhotoImage(file=self._root_dir + '\\images\\' +"img_generate_report.gif")
         #     report_button = tk.Button(self._main_fr,image=photo_report, command = self.report_generate)
