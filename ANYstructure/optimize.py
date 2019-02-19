@@ -5,7 +5,7 @@ import itertools as it
 import time
 import random
 import matplotlib.pyplot as plt
-from pyswarm import pso
+#from pyswarm import pso
 import copy
 #from opt_problem import MyProblem
 from multiprocessing import Pool, cpu_count
@@ -169,7 +169,7 @@ def any_smart_loop_geometric(min_var,max_var,deltas,initial_structure_obj,latera
                              slamming_press = 0):
     ''' Searching multiple sections using the smart loop. '''
 
-    all_obj = []
+    all_obj= []
 
     for struc_obj, lat_press in zip(initial_structure_obj, lateral_pressure):
 

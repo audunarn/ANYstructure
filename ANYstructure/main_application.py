@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 import os
 import tkinter as tk
 from tkinter import filedialog
@@ -642,9 +643,9 @@ class Application():
             tk.Button(self._main_fr, text='MultiOpt', command=self.on_optimize_multiple).place(x=lc_x + delta_x*7,
                                                                                                y=lc_y - 6 * lc_y_delta)
 
-        tk.Button(self._main_fr, text='GEO', command=self.on_geometry_optimize,
-                  font = self._text_size['Text 16 bold'], fg='green', height = 1, bg = 'white')\
-            .place(x=lc_x + delta_x * 6.7,y=lc_y - 6 * lc_y_delta)
+        #tk.Button(self._main_fr, text='GEO', command=self.on_geometry_optimize,
+        #          font = self._text_size['Text 16 bold'], fg='green', height = 1, bg = 'white')\
+        #    .place(x=lc_x + delta_x * 6.7,y=lc_y - 6 * lc_y_delta)
         # try:
         #     photo_report = tk.PhotoImage(file=self._root_dir + '\\images\\' +"img_generate_report.gif")
         #     report_button = tk.Button(self._main_fr,image=photo_report, command = self.report_generate)
@@ -1035,6 +1036,7 @@ class Application():
                                                             'section': sec_util,
                                                             'shear': shear_util,
                                                             'thickness': thk_util}
+                print(self._line_to_struc)
             else:
                 pass
         return return_dict
@@ -1569,6 +1571,14 @@ class Application():
         '''
         This method maps the structure to the line when clicking "add structure to line" button.
         The result is put in a dictionary. Key is line name and value is the structure object.
+
+        self_line_to_stuc
+            [0] Structure class
+            [1] calc scantling class instance
+            [2] calc fatigue class instance
+            [3] load class instance
+            [4] load combinations result (currently not used)
+            [5] Line calculation status. Need recalculation:  [True if changed, False if not changed., Color of line.]
         :return:
         '''
         if any([self._new_stf_spacing.get()==0, self._new_plate_thk.get()==0, self._new_stf_web_h.get()==0,
@@ -1579,11 +1589,7 @@ class Application():
                                                                       'manually.', type='ok')
             return
 
-
         if self._line_is_active:
-
-            # span, spacing, plate_thk, stf_web_height, stf_web_thk, stf_flange_width, stf_flange_thk
-
             # structure dictionary: name of line : [ 0.Structure class, 1.calc scantling class,
             # 2.calc fatigue class, 3.load object, 4.load combinations result ]
 
@@ -1609,7 +1615,7 @@ class Application():
                         'press_side': [self._new_pressure_side.get(), '']}
 
             if self._active_line not in self._line_to_struc.keys():
-                self._line_to_struc[self._active_line] = [None, None, None, [None], {}]
+                self._line_to_struc[self._active_line] = [None, None, None, [None], {}, [True, 'green']]
                 self._line_to_struc[self._active_line][0] = Structure(obj_dict)
                 self._line_to_struc[self._active_line][1] = CalcScantlings(obj_dict)
                 self._line_to_struc[self._active_line][2] = None
@@ -1634,7 +1640,7 @@ class Application():
 
             try:
                 self.calculate_all_load_combinations_for_line_all_lines()
-            except (KeyError, AttributeError) as error:
+            except (KeyError, AttributeError):
                 pass
         else:
             pass
@@ -2403,7 +2409,7 @@ class Application():
         struc_prop = imported['structure_properties']
 
         for line, lines_prop in struc_prop.items():
-            self._line_to_struc[line] = [None, None, None, [],[]]
+            self._line_to_struc[line] = [None, None, None, [], {}, [True, 'green']]
             self._line_point_to_point_string.append(
                 self.make_point_point_line_string(self._line_dict[line][0], self._line_dict[line][1])[0])
             self._line_point_to_point_string.append(

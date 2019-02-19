@@ -1041,7 +1041,7 @@ class CreateOptGeoWindow():
                         self._active_lines.append(key)
                         if key in self._opt_resutls.keys() and self._opt_resutls[key] != None:
                             self.draw_properties(init_obj=self._line_to_struc[key][0],
-                                                 opt_obj=self._opt_resutls[key][0],
+                                                opt_obj=self._opt_resutls[key][0],
                                                  line=key)
                         else:
                             self.draw_properties(init_obj=self._line_to_struc[key][0], line=key)
