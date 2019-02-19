@@ -2385,7 +2385,6 @@ class Application():
         export_all['load_combinations'] = load_combiantions
         export_all['tank_properties'] = tank_properties
         export_all['fatigue_properties'] = fatigue_properties
-
         json.dump(export_all, save_file)#, sort_keys=True, indent=4)
         save_file.close()
 
