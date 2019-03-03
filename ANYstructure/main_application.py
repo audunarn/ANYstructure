@@ -935,6 +935,9 @@ class Application():
             if current_line in self._line_to_struc.keys():
                 obj_structure = self._line_to_struc[current_line][0]
                 obj_scnt_calc = self._line_to_struc[current_line][1]
+                if self._line_to_struc[current_line][5][0] is True:
+                    print('broke', current_line, self._line_to_struc[current_line][5])
+                    break
                 try:
                     norm_and_slam = self.get_highest_pressure(current_line)
                     design_pressure = norm_and_slam['normal'] / 1000
@@ -1030,13 +1033,13 @@ class Application():
                 thk_util = 0 if obj_structure.get_plate_thk() == 0 else min_thk / (1000 * obj_structure.get_plate_thk())
                 sec_util = 0 if min(sec_mod) == 0 else min_sec_mod / min(sec_mod)
                 buc_util = 1 if float('inf') in buckling else max(buckling)
-
+                util_is_ok = all([fat_util < 1, shear_area < 1, thk_util < 1, sec_util < 1, buc_util < 1])
                 return_dict['utilization'][current_line] = {'buckling': buc_util,
                                                             'fatigue': fat_util,
                                                             'section': sec_util,
                                                             'shear': shear_util,
                                                             'thickness': thk_util}
-                print(self._line_to_struc)
+                self._line_to_struc[current_line][5] = [util_is_ok, 'green' if util_is_ok else 'red']
             else:
                 pass
         return return_dict
