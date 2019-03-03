@@ -156,6 +156,7 @@ class Application():
         # Load combinations definition used in method gui_load_combinations
         # These are created and destroyed and is not permanent in the application.
         self._lc_comb_created,self._comp_comb_created,self._manual_created, self._info_created = [],[],[], []
+        self._state_logger = dict()
 
         # The next dictionaries feed various infomation to the application
         self._load_factors_dict = {'dnva':[1.3,1.2,0.7], 'dnvb':[1,1,1.3], 'tanktest':[1,1,0]} # DNV  loads factors
@@ -914,10 +915,10 @@ class Application():
 
     def get_color_and_calc_state(self, current_line = None, active_line_only = False):
         ''' Return calculations and colors for line and results. '''
+
         return_dict = {'colors': {}, 'section_modulus': {}, 'thickness': {}, 'shear_area': {}, 'buckling': {},
                        'fatigue': {}, 'pressure_uls': {}, 'pressure_fls': {},
                        'struc_obj': {}, 'scant_calc_obj': {}, 'fatigue_obj': {}, 'utilization': {}, 'slamming': {}}
-
         line_iterator, slamming_pressure = [], None
         return_dict['slamming'][current_line] = {}
 
@@ -935,9 +936,8 @@ class Application():
             if current_line in self._line_to_struc.keys():
                 obj_structure = self._line_to_struc[current_line][0]
                 obj_scnt_calc = self._line_to_struc[current_line][1]
-                if self._line_to_struc[current_line][5][0] is True:
-                    print('broke', current_line, self._line_to_struc[current_line][5])
-                    break
+                if obj_scnt_calc.need_recalc is False:
+                    return self._state_logger[current_line]
                 try:
                     norm_and_slam = self.get_highest_pressure(current_line)
                     design_pressure = norm_and_slam['normal'] / 1000
@@ -1033,13 +1033,15 @@ class Application():
                 thk_util = 0 if obj_structure.get_plate_thk() == 0 else min_thk / (1000 * obj_structure.get_plate_thk())
                 sec_util = 0 if min(sec_mod) == 0 else min_sec_mod / min(sec_mod)
                 buc_util = 1 if float('inf') in buckling else max(buckling)
-                util_is_ok = all([fat_util < 1, shear_area < 1, thk_util < 1, sec_util < 1, buc_util < 1])
                 return_dict['utilization'][current_line] = {'buckling': buc_util,
                                                             'fatigue': fat_util,
                                                             'section': sec_util,
                                                             'shear': shear_util,
                                                             'thickness': thk_util}
-                self._line_to_struc[current_line][5] = [util_is_ok, 'green' if util_is_ok else 'red']
+
+                self._state_logger[current_line] = return_dict #  Logging the current state of the line.
+                self._line_to_struc[current_line][1].need_recalc = False
+
             else:
                 pass
         return return_dict
@@ -1581,7 +1583,6 @@ class Application():
             [2] calc fatigue class instance
             [3] load class instance
             [4] load combinations result (currently not used)
-            [5] Line calculation status. Need recalculation:  [True if changed, False if not changed., Color of line.]
         :return:
         '''
         if any([self._new_stf_spacing.get()==0, self._new_plate_thk.get()==0, self._new_stf_web_h.get()==0,
@@ -1618,7 +1619,7 @@ class Application():
                         'press_side': [self._new_pressure_side.get(), '']}
 
             if self._active_line not in self._line_to_struc.keys():
-                self._line_to_struc[self._active_line] = [None, None, None, [None], {}, [True, 'green']]
+                self._line_to_struc[self._active_line] = [None, None, None, [None], {}]
                 self._line_to_struc[self._active_line][0] = Structure(obj_dict)
                 self._line_to_struc[self._active_line][1] = CalcScantlings(obj_dict)
                 self._line_to_struc[self._active_line][2] = None
@@ -1632,6 +1633,7 @@ class Application():
                 prev_type = self._line_to_struc[self._active_line][0].get_structure_type()
                 self._line_to_struc[self._active_line][0].set_main_properties(obj_dict)
                 self._line_to_struc[self._active_line][1].set_main_properties(obj_dict)
+                self._line_to_struc[self._active_line][1].need_recalc = True
                 if self._line_to_struc[self._active_line][2] is not None:
                     self._line_to_struc[self._active_line][2].set_main_properties(obj_dict)
                 if prev_type in self._structure_types['non-wt'] and obj_dict['structure_type'][0] in \
@@ -2638,11 +2640,13 @@ class Application():
             # adding values to the line dictionary. resetting first.
             for key, value in self._line_to_struc.items():
                 self._line_to_struc[key][3] = []
+                self._line_to_struc[key][1].need_recalc = True  # All lines need recalculations.
 
             for main_line in self._line_dict.keys():
                 for object, load_line in self._load_dict.values():
                     if main_line in load_line:
                         self._line_to_struc[main_line][3].append(object)
+
 
         # Displaying the loads
         self.update_frame()
@@ -2656,6 +2660,7 @@ class Application():
         #print(returned_objects)
         self._line_to_struc[self._active_line][0]=returned_objects[0]
         self._line_to_struc[self._active_line][1]=returned_objects[1]
+        self._line_to_struc[self._active_line][1].need_recalc = True
         self.set_selected_variables(self._active_line)
         if returned_objects[2] is not None:
             self._line_to_struc[self._active_line][2] = CalcFatigue(returned_objects[0].get_structure_prop(),
@@ -2671,6 +2676,7 @@ class Application():
         '''
         for line,objects in returned_objects.items():
             self._line_to_struc[line][0] = returned_objects[line][0]
+            self._line_to_struc[line][0].need_recalc = True
             self._line_to_struc[line][1] = returned_objects[line][1]
             self.set_selected_variables(line)
             if returned_objects[line][2] is not None:
@@ -2723,6 +2729,8 @@ class Application():
                                                                          returned_fatigue_prop)
         else:
             self._line_to_struc[self._active_line][2].set_fatigue_properties(returned_fatigue_prop)
+
+        self._line_to_struc[self._active_line][1].need_recalc = True
 
     def on_aborted_load_window(self):
         '''
