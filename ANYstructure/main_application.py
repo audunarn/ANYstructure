@@ -870,7 +870,6 @@ class Application():
         if not animate:
             self._grid_calc.draw_grid(tank_count=None if len(self._tank_dict)==0 else len(self._tank_dict))
         else:
-
             self._grid_calc.animate_grid(grids_to_animate=compartment_search_return['grids'])
 
     def grid_display_tanks(self, save = False):
@@ -1115,6 +1114,7 @@ class Application():
                     color = 'red' if 'red' in state['colors'][line].values() else 'green'
                 except (KeyError, TypeError):
                     color = 'black'
+
                 vector = [coord2[0] - coord1[0], coord2[1] - coord1[1]]
                 # drawing a bold line if it is selected
                 if line == self._active_line and self._line_is_active:
@@ -1232,7 +1232,7 @@ class Application():
                             'struc_obj': {}, 'scant_calc_obj': {}, 'fatigue_obj': {}}
         :return:
         '''
-        if state is None:
+        if state is None or self._active_line not in state['struc_obj'].keys():
             return
 
         self._result_canvas.delete('all')
@@ -1455,6 +1455,7 @@ class Application():
         '''
         Adds a point number and coordinates to the point dictionary. Type is 'p1' = [x0,y0]
         '''
+
         try:
             if copy:
                 x_coord = self._new_point_x.get()/1000 + self._point_dict[self._active_point][0]
@@ -1633,6 +1634,7 @@ class Application():
                     self._compartments_listbox.delete(0, 'end')
 
             else:
+
                 prev_type = self._line_to_struc[self._active_line][0].get_structure_type()
                 self._line_to_struc[self._active_line][0].set_main_properties(obj_dict)
                 self._line_to_struc[self._active_line][1].set_main_properties(obj_dict)
@@ -1645,7 +1647,6 @@ class Application():
                     self._tank_dict = {}
                     self._main_grid.clear()
                     self._compartments_listbox.delete(0, 'end')
-
             try:
                 self.calculate_all_load_combinations_for_line_all_lines()
             except (KeyError, AttributeError):
@@ -2806,7 +2807,6 @@ class Application():
     def open_documentation(self):
         ''' Open the documentation pdf. '''
         os.startfile('ANYstructure_documentation.pdf')
-
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()

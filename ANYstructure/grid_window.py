@@ -23,7 +23,6 @@ class CreateGridWindow():
         self._points_child = {}
         self._child_dimensions = (canvas_dim[0]-canvas_origo[0]+1, canvas_origo[1]+1)
 
-
         for line,point in to_draw.items():
             point1 = (int(point[0][0]),int(point[0][1]))
             point2 = (int(point[1][0]),int(point[1][1]))
@@ -38,6 +37,14 @@ class CreateGridWindow():
 
     def __str__(self):
         return 'Not implemented'
+
+    @property
+    def grid(self):
+        return self._grid
+
+    @grid.setter
+    def grid(self, val):
+        self._grid = val
 
     def draw_grid(self, save = False, tank_count = None):
         '''
@@ -113,7 +120,6 @@ class CreateGridWindow():
                                                                         num in range(int(tank_count))])
         ani = animation.FuncAnimation(fig, update, data_gen, interval=50)
         fm = plt.get_current_fig_manager()
-
         #fm.window.activateWindow()
         #fm.window.raise_()
         plt.axis('off')
@@ -144,9 +150,11 @@ class CreateGridWindow():
         if animate:
             all_grids.append(self._grid.get_matrix())
 
+        barriers_where = np.where(self._grid.cells.reshape((1,np.product(self._grid.cells.shape))) == -1)
+        barrier_comp_count = dict()
+
         for startrow in range(0, self._child_dimensions[1], 20):
             for startcol in range(0, self._child_dimensions[0], 20):
-
                 if self._grid.is_empty(startrow,startcol):
                     el_max = ''
                     el_min = ''
@@ -154,6 +162,7 @@ class CreateGridWindow():
                     boundary = deque()
                     boundary.append((startrow,startcol))
                     corners = []
+                    barrier_comp_count[compartment_count] = 0
 
                     while len(boundary) != 0:
                         current_cell = boundary.pop()
@@ -177,6 +186,7 @@ class CreateGridWindow():
                         for neighbor in four_neighbors:
                             if self._grid.get_value(neighbor[0], neighbor[1]) == -1:
                                 no_of_barriers += 1
+                                barrier_comp_count[compartment_count] += 1
                             else:
                                 pass
 
@@ -191,7 +201,6 @@ class CreateGridWindow():
 
                                     if anim_count/anim_interval - anim_count//anim_interval == 0.0:
                                         all_grids.append(copy.deepcopy(self._grid.get_matrix()))
-
                         #finding corners on diagonal cells
                         for neighbor in [item for item in neighbors if item not in four_neighbors]:
                             if self._grid.get_value(neighbor[0], neighbor[1]) == -1:
@@ -207,7 +216,14 @@ class CreateGridWindow():
                     compartment_count += 1
         if animate:
             all_grids.append(self._grid.get_matrix())
-        return {'compartments': compartments, 'grids':all_grids}
+
+        cells_modified = dict()
+        comp_sum = np.sum([data for data in barrier_comp_count.values()])
+        for comp_no, data in compartments.items():
+            barrier_ratio_of_total = barrier_comp_count[comp_no] / comp_sum
+            cells_modified[comp_no] = data[0] + int(barriers_where[0].shape[0] * barrier_ratio_of_total)
+
+        return {'compartments': compartments, 'grids':all_grids, 'modified_cell_count': cells_modified}
 
     def find_lines_inside_area(self, row1, col1, row2, col2):
         '''
@@ -217,14 +233,14 @@ class CreateGridWindow():
         '''
         return np.unique(self._grid.get_array()[row1:row2, col1:col2])
 
-
-
 if __name__ == '__main__':
     import time
     t1 = time.time()
-    canvas_dim = [10, 10]
-    canvas_origo = (600, 0)
-
+    canvas_dim = [1000,720]
+    canvas_origo = (50,670)
+    my_grid = CreateGridWindow(test.get_grid_no_inp(), canvas_dim, test.get_to_draw(), canvas_origo)
+    search_return = my_grid.search_bfs(animate = True)
+    my_grid.draw_grid()
 
 
 

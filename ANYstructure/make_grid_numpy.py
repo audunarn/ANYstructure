@@ -10,7 +10,6 @@ class Grid:
     Includes boundary handling
     """
 
-
     def __init__(self, grid_height, grid_width):
         """
         Initializes grid to be empty, take height and width of grid as parameters
@@ -21,6 +20,14 @@ class Grid:
         self._cells = np.zeros((self._grid_height,self._grid_width))
         self.empty, self.full, self.barrier, self.corner = 0, 1, -1, -2
         self._geo_info = {'points': None, 'lines': None}
+
+    @property
+    def cells(self):
+        return self._cells
+
+    @cells.setter
+    def cells(self, val):
+        self._cells = val
 
     def __str__(self):
         """
