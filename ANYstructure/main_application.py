@@ -1445,6 +1445,9 @@ class Application():
             if len(self._tank_dict) != 0:
                 for tank, data in self._tank_dict.items():
                     data.set_acceleration(self._accelerations_dict)
+
+            for line, obj in self._line_to_struc.items():
+                obj[1].need_recalc = True
         except TclError:
             messagebox.showinfo(title='Input error', message='Input must be a number. Dots used not comma.')
 
@@ -1652,6 +1655,8 @@ class Application():
 
         self.draw_prop()
         try:
+            for line, obj in self._line_to_struc.items():
+                obj[1].need_recalc = True
             state = self.get_color_and_calc_state()
         except AttributeError:
             state = None
@@ -1801,6 +1806,9 @@ class Application():
         current_tank.set_content(self._new_content_type.get())
         current_tank.set_acceleration(self._accelerations_dict)
         current_tank.set_density(self._new_density.get())
+
+        for line, obj in self._line_to_struc.items():
+            obj[1].need_recalc = True
 
     def delete_line(self, event = None, undo = None, line = None):
         '''
@@ -2647,7 +2655,6 @@ class Application():
                     if main_line in load_line:
                         self._line_to_struc[main_line][3].append(object)
 
-
         # Displaying the loads
         self.update_frame()
 
@@ -2665,7 +2672,6 @@ class Application():
         if returned_objects[2] is not None:
             self._line_to_struc[self._active_line][2] = CalcFatigue(returned_objects[0].get_structure_prop(),
                                                                     returned_objects[2])
-
         self.update_frame()
 
     def on_close_opt_multiple_window(self, returned_objects):

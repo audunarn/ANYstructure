@@ -433,6 +433,15 @@ class CalcScantlings(Structure):
         super(CalcScantlings,self).__init__(main_dict=main_dict)
         self.lat_press = lat_press
         self.category = category
+        self._need_recalc = True
+
+    @property
+    def need_recalc(self):
+        return self._need_recalc
+
+    @need_recalc.setter
+    def need_recalc(self, val):
+        self._need_recalc = val
 
     def get_results_for_report(self,lat_press=0):
         '''
