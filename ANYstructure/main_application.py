@@ -1655,12 +1655,12 @@ class Application():
             pass
 
         self.draw_prop()
-        try:
-            for line, obj in self._line_to_struc.items():
-                obj[1].need_recalc = True
-            state = self.get_color_and_calc_state()
-        except AttributeError:
-            state = None
+        for line, obj in self._line_to_struc.items():
+            obj[1].need_recalc = True
+
+        state = self.get_color_and_calc_state()
+        # except AttributeError:
+        #     state = None
 
         self.draw_results(state=state)
         self.draw_canvas(state=state)
@@ -1761,8 +1761,11 @@ class Application():
         :return:
         '''
 
-        defined_loads = [load_obj for load_obj in self._line_to_struc[line_name][3]
-                         if load_obj.get_limit_state() != 'FLS']
+        defined_loads = []
+        for load_obj in self._line_to_struc[line_name][3]:
+            if load_obj is not None:
+                if load_obj.get_limit_state() != 'FLS':
+                    defined_loads.append(load_obj)
 
         defined_tanks = [['comp'+str(int(tank_num)), self._tank_dict['comp'+str(int(tank_num))]]
                      for tank_num in self.get_compartments_for_line_duplicates(line_name)]
