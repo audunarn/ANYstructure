@@ -15,11 +15,13 @@ class Grid:
         Initializes grid to be empty, take height and width of grid as parameters
         Indexed by rows (left to right), then by columns (top to bottom)
         """
+        print(grid_height, grid_width)
         self._grid_height = grid_height
         self._grid_width = grid_width
         self._cells = np.zeros((self._grid_height,self._grid_width))
         self.empty, self.full, self.barrier, self.corner = 0, 1, -1, -2
         self._geo_info = {'points': None, 'lines': None}
+        self._compressed_grid = None
 
     @property
     def cells(self):
@@ -359,9 +361,49 @@ class Grid:
         '''
         return self._cells.tolist()
 
+    def export_compressed_grid(self):
+        '''
+        Converting from array to list of list. Exporting the grid for saving.
+        :return:
+        '''
+        save_list = list()
+
+        for row in self._cells:
+            this_counter, this_number, save_row = 1, row[0], list()
+            for col_idx in range(len(row)-1):
+                last = col_idx == len(row)-2
+                if row[col_idx] == row[col_idx+1] and not last:
+                    this_counter += 1
+                elif row[col_idx] != row[col_idx+1] and not last:
+                    save_row.append([this_number, this_counter])
+                    this_number = row[col_idx+1]
+                    this_counter = 0
+                elif last:
+                    save_row.append([this_number, this_counter+1])
+                else:
+                    raise UserWarning('WRONG')
+            save_list.append(save_row)
+        self._compressed_grid = save_list
+        return save_list
+
+    def rebuild_compressed(self, compressed_grid = None):
+        '''
+        Rebuilding a compressed grid made by 'export_compressed_grid(self)'
+        :return:
+        '''
+        compressed_grid = compressed_grid if compressed_grid is not None else self._compressed_grid
+        for row in compressed_grid:
+            for col in row:
+                pass
+
+
+
+
+
+
 if __name__ ==  '__main__':
     import ANYstructure.example_data as ex
     lines = ex.line_dict
     points = ex.point_dict
-    my_grid = Grid(1000, 1000)
-    my_grid.provide_line_info(lines, points)
+    my_grid = ex.get_grid_no_inp()
+    my_grid.export_compressed_grid()
