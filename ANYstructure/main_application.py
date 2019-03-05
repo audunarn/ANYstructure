@@ -178,6 +178,7 @@ class Application():
         self._point_options= ['fixed','free']
         self._load_window_couter = 1 # this is used to create the naming of the tanks in the load window
         self._logger = {'added': list(), 'deleted': list()}  # used to log operations for geometry operations, to be used for undo/redo
+        self.__returned_load_data = None # Temporary data for returned loads from the load window.
 
         self._p1_p2_select = False
         self._line_is_active = False # True when a line is clicked
@@ -1355,8 +1356,9 @@ class Application():
                 self._result_canvas.create_text([x * self._global_shrink, (y+12*dy) * self._global_shrink],
                                                 text='Fatigue results (DNVGL-RP-C203): ',
                                                 font=self._text_size["Text 9 bold"], anchor='nw')
+
                 if self._line_to_struc[current_line][2] != None:
-                    try:
+                    if state['fatigue'][current_line]['damage'] is not None:
                         damage = state['fatigue'][current_line]['damage']
                         dff = state['fatigue'][current_line]['dff']
                         self._result_canvas.create_text([x * self._global_shrink, (y + 13 * dy) * self._global_shrink],
@@ -1365,7 +1367,7 @@ class Application():
                                                              str(round(damage*dff,3)),
                                                         font=self._text_size["Text 9 bold"], anchor='nw',
                                                         fill=color_fatigue)
-                    except AttributeError:
+                    else:
                         self._result_canvas.create_text([x * self._global_shrink, (y + 13 * dy) * self._global_shrink],
                                                         text='Total damage: NO RESULTS ',
                                                         font=self._text_size["Text 9 bold"],
@@ -2661,6 +2663,8 @@ class Application():
 
         # Displaying the loads
         self.update_frame()
+        # Storing the the returned data to temporary variable.
+        self.__returned_load_data = [returned_loads, counter, load_comb_dict]
 
     def on_close_opt_window(self,returned_objects):
         '''
@@ -2741,6 +2745,8 @@ class Application():
             self._line_to_struc[self._active_line][2].set_fatigue_properties(returned_fatigue_prop)
 
         self._line_to_struc[self._active_line][1].need_recalc = True
+        if self.__returned_load_data is not None:
+            map(self.on_close_load_window, self.__returned_load_data)
 
     def on_aborted_load_window(self):
         '''
