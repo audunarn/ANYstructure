@@ -154,7 +154,7 @@ class CreateStressesWindow():
             self._new_kps.set(1)
             self._new_max_pressure_side.set('p')
         try:
-            photo_transverse = tk.PhotoImage(file=image_dir+"img_transverse_stress.gif")
+            photo_transverse = tk.PhotoImage(file='images/'+"img_transverse_stress.gif")
             label_trans = tk.Label(self._frame, image=photo_transverse)
             label_trans.image = photo_transverse  # keep a reference!
             label_trans.place(x=start_x, y=60)
@@ -162,14 +162,14 @@ class CreateStressesWindow():
             pass
 
         try:
-            photo_axial = tk.PhotoImage(file=image_dir+"img_axial_stresses.gif")
+            photo_axial = tk.PhotoImage(file='images/'+"img_axial_stresses.gif")
             label_axial = tk.Label(self._frame, image=photo_axial)
             label_axial.image = photo_axial  # keep a reference!
             label_axial.place(x=start_x+5*dx, y=60)
         except TclError:
             pass
         try:
-            photo_fix = tk.PhotoImage(file=image_dir + "img_fixation_parameters.gif")
+            photo_fix = tk.PhotoImage(file='images/' + "img_fixation_parameters.gif")
             label_fix = tk.Label(self._frame, image=photo_fix)
             label_fix.image = photo_fix  # keep a reference!
             label_fix.place(x=start_x+9.5*dx, y=60)

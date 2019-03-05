@@ -407,7 +407,7 @@ class CreateOptimizeWindow():
         self.initial_weight = op.calc_weight([self._spacing,self._pl_thk,self._stf_web_h,self._stf_web_thk,
                                               self._fl_w,self._fl_thk,self._new_span.get(),self._new_width_lg.get()])
 
-        photo = tk.PhotoImage(file=image_dir+"img_plate_and_stiffener.gif")
+        photo = tk.PhotoImage(file='images/'+"img_plate_and_stiffener.gif")
         label = tk.Label(self._frame,image=photo)
         label.image = photo  # keep a reference!
         label.place(x=550, y=300)
