@@ -204,15 +204,21 @@ class Application():
         self._slider.place(x=ent_x+delta_x*6.5, y= delta_y*2)
 
         # --- main header image ---
-
         try:
-            photo = tk.PhotoImage(file='images/' + "img_title.gif")
+            img_file_name = 'img_title.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
             label = tk.Label(self._main_fr,image=photo)
             label.image = photo  # keep a reference!
             label.place(x=2, y=10)
         except TclError: # If the image is not located in the folder
             label = tk.Label(self._main_fr, text='DNVGL-OS-C101 based calculations')
             label.place(x=10, y=10)
+
+
         # ----------------------INITIATION OF THE SMALLER PARTS OF THE GUI STARTS HERE--------------------------
         # --- point input/output ----
         self._new_point_x = tk.DoubleVar()
@@ -220,6 +226,7 @@ class Application():
         self._new_point_fix = tk.StringVar()
         point_start = 100* self._global_shrink
         ent_width = 6  # width of entries
+
         tk.Label(self._main_fr, text='Input point coordinates [mm]', font=self._text_size['Text 9 bold'])\
             .place(x=10, y=point_start - 30*self._global_shrink)
         tk.Label(self._main_fr, text='Point x (horizontal) [mm]:',font="Text 9").place(x=10, y=point_start)
@@ -447,25 +454,41 @@ class Application():
         self._ent_pressure_side.place(x=10 + 7.6 * delta_x, y=prop_vert_start + 5.5 * delta_y)
 
         try:
-            photo_stf = tk.PhotoImage(file='images/' + "img_stf_button.gif")
-            stf_button = tk.Button(self._main_fr,image = photo_stf,command=self.on_open_structure_window)
-            stf_button.image = photo_stf
+            img_file_name = 'img_stf_button.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
+            stf_button = tk.Button(self._main_fr,image = photo,command=self.on_open_structure_window)
+            stf_button.image = photo
             stf_button.place(x=10,y=prop_vert_start)
         except TclError:
             tk.Button(self._main_fr, text='STF.', command=self.on_open_structure_window).place(x=10,y=prop_vert_start)
+
         try:
-            photo_stress = tk.PhotoImage(file='images/' + "img_stress_button.gif")
-            stress_button = tk.Button(self._main_fr,image = photo_stress,command=self.on_open_stresses_window)
-            stress_button.image = photo_stress
+            img_file_name = 'img_stress_button.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
+            stress_button = tk.Button(self._main_fr,image = photo,command=self.on_open_stresses_window)
+            stress_button.image = photo
             stress_button.place(x=10,y=prop_vert_start+3*delta_y)
         except TclError:
             tk.Button(self._main_fr, text='STRESS', command=self.on_open_stresses_window)\
                 .place(x=10,y=prop_vert_start+3*delta_y)
 
         try:
-            photo_fls = tk.PhotoImage(file='images/' + "fls_button.gif")
-            fls_button = tk.Button(self._main_fr,image = photo_fls,command=self.on_open_fatigue_window)
-            fls_button.image = photo_fls
+            img_file_name = 'fls_button.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
+            fls_button = tk.Button(self._main_fr,image = photo,command=self.on_open_fatigue_window)
+            fls_button.image = photo
             fls_button.place(x=10,y=prop_vert_start+6*delta_y)
         except TclError:
             tk.Button(self._main_fr, text='FLS', command=self.on_open_fatigue_window)\
@@ -539,9 +562,15 @@ class Application():
         # --- button to create compartments and define external pressures ---
 
         try:
-            photo_int = tk.PhotoImage(file='images/' + "img_int_pressure_button.gif")
-            self._int_button = tk.Button(self._main_fr,image = photo_int,command=self.grid_find_tanks)
-            self._int_button.image = photo_int
+            img_file_name = 'img_int_pressure_button.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
+
+            self._int_button = tk.Button(self._main_fr,image = photo,command=self.grid_find_tanks)
+            self._int_button.image = photo
             self._int_button.place(x=10, y=load_vert_start+0*delta_y)
         except TclError:
             tk.Button(self._main_fr, text='New tanks - start search \n'
@@ -554,9 +583,16 @@ class Application():
         show_compartment.place(x=10, y=load_vert_start+2*delta_y)
 
         try:
-            photo_ext = tk.PhotoImage(file='images/' + "img_ext_pressure_button.gif")
-            self._ext_button = tk.Button(self._main_fr,image=photo_ext, command = self.on_show_loads)
-            self._ext_button.image = photo_ext
+
+            img_file_name = 'img_ext_pressure_button.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
+
+            self._ext_button = tk.Button(self._main_fr,image=photo, command = self.on_show_loads)
+            self._ext_button.image = photo
             self._ext_button.place(x=ent_x+delta_x*1.5, y=load_vert_start+0*delta_y)
         except TclError:
             tk.Button(self._main_fr, text='New external load window \nsea - static/dynamic',
@@ -630,17 +666,27 @@ class Application():
         tk.Label(self._main_fr,text='Optimize selected line/structure (right click line):',
                  font = self._text_size['Text 9 bold'],fg='black').place(x=lc_x, y=lc_y - 7 * lc_y_delta)
         try:
-            photo_opt = tk.PhotoImage(file='images/' + "img_optimize.gif")
-            opt_button = tk.Button(self._main_fr,image=photo_opt, command = self.on_optimize)
-            opt_button.image = photo_opt
+            img_file_name = 'img_optimize.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
+            opt_button = tk.Button(self._main_fr,image=photo, command = self.on_optimize)
+            opt_button.image = photo
             opt_button.place(x=lc_x, y=lc_y - 6 * lc_y_delta)
         except TclError:
             tk.Button(self._main_fr, text='Optimize', command=self.on_optimize_multiple)\
                 .place(x=lc_x, y=lc_y - 6 * lc_y_delta)
         try:
-            photo_opt = tk.PhotoImage(file='images/' + "img_multi_opt.gif")
-            opt_button_mult = tk.Button(self._main_fr,image=photo_opt, command = self.on_optimize_multiple)
-            opt_button_mult.image = photo_opt
+            img_file_name = 'img_multi_opt.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
+            opt_button_mult = tk.Button(self._main_fr,image=photo, command = self.on_optimize_multiple)
+            opt_button_mult.image = photo
             opt_button_mult.place(x=lc_x+delta_x*4, y=lc_y - 6 * lc_y_delta)
         except TclError:
             tk.Button(self._main_fr, text='MultiOpt', command=self.on_optimize_multiple).place(x=lc_x + delta_x*7,
@@ -797,9 +843,14 @@ class Application():
 
         #setting the button to red
         try:
-            photo_int = tk.PhotoImage(file='images/' + "img_int_pressure_button_search.gif")
-            self._int_button.config(image = photo_int)
-            self._int_button.image = photo_int
+            img_file_name = 'img_int_pressure_button_search.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
+            self._int_button.config(image = photo)
+            self._int_button.image = photo
         except TclError:
             pass
 
@@ -863,9 +914,15 @@ class Application():
                         self._new_load_comb_dict[name][1].set(self._load_factors_dict[combination][2])
                         self._new_load_comb_dict[name][2].set(1)
         try:
-            photo_int = tk.PhotoImage(file='images/' + "img_int_pressure_button.gif")
-            self._int_button.config(image = photo_int)
-            self._int_button.image = photo_int
+            img_file_name = 'img_int_pressure_button.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
+
+            self._int_button.config(image = photo)
+            self._int_button.image = photo
         except TclError:
             pass
 
@@ -2500,7 +2557,10 @@ class Application():
 
     def open_example(self):
         ''' Open the example file. To be used in help menu. '''
-        self.openfile(defined = 'ship_section_example.txt')
+        if os.path.isfile('ship_section_example.txt') :
+            self.openfile(defined = 'ship_section_example.txt')
+        else:
+            self.openfile(defined= self._root_dir + '/' + 'ship_section_example.txt')
 
     def on_open_structure_window(self):
         '''
@@ -2558,9 +2618,14 @@ class Application():
         '''
 
         try:
-            photo_ext = tk.PhotoImage(file='images/' + "img_ext_pressure_button_def.gif")
-            self._ext_button.config(image = photo_ext)
-            self._ext_button.image = photo_ext
+            img_file_name = 'img_ext_pressure_button_def.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
+            self._ext_button.config(image = photo)
+            self._ext_button.image = photo
         except TclError:
             pass
 
@@ -2639,9 +2704,14 @@ class Application():
         :return:
         '''
         try:
-            photo_ext = tk.PhotoImage(file='images/' + "img_ext_pressure_button.gif")
-            self._ext_button.config(image = photo_ext)
-            self._ext_button.image = photo_ext
+            img_file_name = 'img_ext_pressure_button.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
+            self._ext_button.config(image = photo)
+            self._ext_button.image = photo
         except TclError:
             pass
         self._load_window_couter = counter
@@ -2755,9 +2825,14 @@ class Application():
         :return:
         '''
         try:
-            photo_ext = tk.PhotoImage(file='images/' + "img_ext_pressure_button.gif")
-            self._ext_button.config(image = photo_ext)
-            self._ext_button.image = photo_ext
+            img_file_name = 'img_ext_pressure_button.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
+            self._ext_button.config(image = photo)
+            self._ext_button.image = photo
         except TclError:
             pass
 
@@ -2816,7 +2891,10 @@ class Application():
 
     def open_documentation(self):
         ''' Open the documentation pdf. '''
-        os.startfile('ANYstructure_documentation.pdf')
+        if os.path.isfile('ANYstructure_documentation.pdf'):
+            os.startfile('ANYstructure_documentation.pdf')
+        else:
+            os.startfile(self._root_dir + '/' + 'ANYstructure_documentation.pdf')
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()

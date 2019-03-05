@@ -169,9 +169,14 @@ class CreateStressesWindow():
         except TclError:
             pass
         try:
-            photo_fix = tk.PhotoImage(file='images/' + "img_fixation_parameters.gif")
-            label_fix = tk.Label(self._frame, image=photo_fix)
-            label_fix.image = photo_fix  # keep a reference!
+            img_file_name = 'img_fixation_parameters.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
+            label_fix = tk.Label(self._frame, image=photo)
+            label_fix.image = photo  # keep a reference!
             label_fix.place(x=start_x+9.5*dx, y=60)
         except TclError:
             pass

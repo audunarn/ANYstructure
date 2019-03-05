@@ -102,7 +102,12 @@ class LetterMaker(object):
                   """<font size="12"> Time : </font>""" + '<font size="12">' + time_now + '</font>' + '<br/>'
         p = Paragraph(address, self.styles["Normal"])
         # add a logo and size it
-        logo = Image('images/' + 'ANYstructure_logo.jpg')
+        img_file_name = 'ANYstructure_logo.jpg'
+        if os.path.isfile('images/' + img_file_name):
+            file_path = 'images/' + img_file_name
+        else:
+            file_path = os.path.dirname(os.path.abspath(__file__)) + '/images/' + img_file_name
+        logo = Image(file_path)
         logo.drawHeight = 1 * inch
         logo.drawWidth = 2.5 * inch
         data = [[p, logo]]
