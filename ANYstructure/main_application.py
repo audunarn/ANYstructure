@@ -2538,8 +2538,9 @@ class Application():
                 self._new_load_comb_dict[name][0].set(data[1]), self._new_load_comb_dict[name][1].set(data[2])
         try:
             self._main_grid.import_grid(imported['tank_properties']['grid'])
+
             self._grid_calc = grid_window.CreateGridWindow(self._main_grid, self._canvas_dim,
-                                                          self._pending_grid_draw, self._canvas_base_origo)
+                                                           self._pending_grid_draw, self._canvas_base_origo)
 
 
             for comp_no in range(2, int(self._main_grid.get_highest_number_in_grid())+1):

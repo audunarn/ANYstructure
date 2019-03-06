@@ -352,14 +352,15 @@ class Grid:
         :param grid:
         :return:
         '''
-        self._cells = np.asarray(grid)
+
+        self._cells = self.rebuild_compressed(grid)
 
     def export_grid(self):
         '''
         Converting from array to list of list. Exporting the grid.
         :return:
         '''
-        return self._cells.tolist()
+        return self.export_compressed_grid()
 
     def export_compressed_grid(self):
         '''
@@ -367,9 +368,7 @@ class Grid:
         :return:
         '''
         save_list = list()
-        # import matplotlib.pyplot as plt
-        # plt.imshow(self._cells)
-        # plt.show()
+
         # Compressing horizontally
         for row in self._cells:
             this_counter, this_number, save_row = 1, row[0], list()
@@ -383,8 +382,7 @@ class Grid:
                     this_counter = 1
                 elif last:
                     save_row.append([this_number, this_counter+1])
-                else:
-                    raise UserWarning('WRONG')
+
             save_list.append(save_row)
 
         # Compressing vertically
@@ -401,8 +399,6 @@ class Grid:
                 save_vertical.append([this_number, this_counter])
                 if save_list[row_idx+1] != save_list[row_idx]:
                     save_vertical.append([save_list[row_idx+1], 1])
-            else:
-                pass
 
         self._compressed_grid = save_vertical
         return save_list
@@ -431,6 +427,8 @@ class Grid:
                 value_count = values[1]
                 for dummy_i in range(value_count):
                     expanded_list[row_count].append(value)
+
+        return np.array(expanded_list)
 
 if __name__ ==  '__main__':
     import ANYstructure.example_data as ex
