@@ -189,7 +189,9 @@ class Application():
         self._line_point_to_point_string = [] # This one ensures that a line is not created on top of a line
 
         # Initsializing the calculation grid used for tank definition
-        self._main_grid  = grid.Grid(self._canvas_base_origo[1]+1, base_canvas_dim[0]-self._canvas_base_origo[0]+1)
+        self._grid_dimensions = [self._canvas_base_origo[1] + 1, base_canvas_dim[0] - self._canvas_base_origo[0] + 1]
+        self._main_grid  = grid.Grid(self._grid_dimensions[0], self._grid_dimensions[1])
+
         self._grid_calc = None
 
         # These sets the location where entries are placed.
@@ -2106,8 +2108,6 @@ class Application():
         y_coord = (self._main_grid.get_grid_height() - grid_col)/self._base_scale_factor
         self._main_grid.get_grid_height()
         return y_coord
-
-        return (self._canvas_base_origo[1] - canv_elevation) / self._canvas_scale
 
     def get_grid_coord_from_points_coords(self, point_coord):
         '''
