@@ -15,7 +15,7 @@ class Grid:
         Initializes grid to be empty, take height and width of grid as parameters
         Indexed by rows (left to right), then by columns (top to bottom)
         """
-        print(grid_height, grid_width)
+
         self._grid_height = grid_height
         self._grid_width = grid_width
         self._cells = np.zeros((self._grid_height,self._grid_width))
@@ -411,7 +411,7 @@ class Grid:
         '''
         compressed_grid = compressed_grid if compressed_grid is not None else self._compressed_grid
         vertical_expansion_list = []
-        print(compressed_grid)
+
         # Expand vertically
         for row_count, row in enumerate(compressed_grid):
             values = row[0]
