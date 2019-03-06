@@ -354,6 +354,7 @@ class Grid:
         '''
 
         self._cells = self.rebuild_compressed(grid)
+        #self.cells = np.array(grid)
 
     def export_grid(self):
         '''
@@ -401,7 +402,7 @@ class Grid:
                     save_vertical.append([save_list[row_idx+1], 1])
 
         self._compressed_grid = save_vertical
-        return save_list
+        return save_vertical
 
     def rebuild_compressed(self, compressed_grid = None):
         '''
@@ -410,7 +411,7 @@ class Grid:
         '''
         compressed_grid = compressed_grid if compressed_grid is not None else self._compressed_grid
         vertical_expansion_list = []
-
+        print(compressed_grid)
         # Expand vertically
         for row_count, row in enumerate(compressed_grid):
             values = row[0]
