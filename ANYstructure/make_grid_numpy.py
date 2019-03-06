@@ -401,7 +401,6 @@ class Grid:
                 if save_list[row_idx+1] != save_list[row_idx]:
                     save_vertical.append([save_list[row_idx+1], 1])
 
-        self._compressed_grid = save_vertical
         return save_vertical
 
     def rebuild_compressed(self, compressed_grid = None):

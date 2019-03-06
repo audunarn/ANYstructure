@@ -15,7 +15,6 @@ def dist(p, q):
 class CreateGridWindow():
 
     def __init__(self, grid, canvas_dim, to_draw, canvas_origo, find_lines: bool = False):
-
         self._grid = grid
         self._parent_dimensions = canvas_dim
         self._to_draw = to_draw
@@ -34,6 +33,7 @@ class CreateGridWindow():
                     self._grid.set_barrier(point[0],point[1])
                 else:
                     self._grid.set_barrier(point[0], point[1], line_number = hlp.get_num(line))
+
 
     def __str__(self):
         return 'Not implemented'

@@ -1696,7 +1696,6 @@ class Application():
                     self._compartments_listbox.delete(0, 'end')
 
             else:
-
                 prev_type = self._line_to_struc[self._active_line][0].get_structure_type()
                 self._line_to_struc[self._active_line][0].set_main_properties(obj_dict)
                 self._line_to_struc[self._active_line][1].set_main_properties(obj_dict)
@@ -2752,6 +2751,7 @@ class Application():
         if returned_objects[2] is not None:
             self._line_to_struc[self._active_line][2] = CalcFatigue(returned_objects[0].get_structure_prop(),
                                                                     returned_objects[2])
+        self.new_structure()
         self.update_frame()
 
     def on_close_opt_multiple_window(self, returned_objects):
@@ -2768,6 +2768,8 @@ class Application():
             if returned_objects[line][2] is not None:
                 self._line_to_struc[line][2] = CalcFatigue(returned_objects[line][0].get_structure_prop(),
                                                            returned_objects[line][2])
+            self._active_line = line
+            self.new_structure()
         self.update_frame()
 
     def on_close_structure_window(self,returned_structure):
