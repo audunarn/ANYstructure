@@ -367,7 +367,10 @@ class Grid:
         :return:
         '''
         save_list = list()
-
+        # import matplotlib.pyplot as plt
+        # plt.imshow(self._cells)
+        # plt.show()
+        # Compressing horizontally
         for row in self._cells:
             this_counter, this_number, save_row = 1, row[0], list()
             for col_idx in range(len(row)-1):
@@ -377,13 +380,31 @@ class Grid:
                 elif row[col_idx] != row[col_idx+1] and not last:
                     save_row.append([this_number, this_counter])
                     this_number = row[col_idx+1]
-                    this_counter = 0
+                    this_counter = 1
                 elif last:
                     save_row.append([this_number, this_counter+1])
                 else:
                     raise UserWarning('WRONG')
             save_list.append(save_row)
-        self._compressed_grid = save_list
+
+        # Compressing vertically
+        this_counter, this_number, save_vertical = 1, save_list[0], list()
+        for row_idx in range(len(save_list) - 1):
+            last = row_idx == len(save_list) - 2
+            if save_list[row_idx] == save_list[row_idx +1] and not last:
+                this_counter += 1
+            elif save_list[row_idx] != save_list[row_idx +1] and not last:
+                save_vertical.append([this_number, this_counter])
+                this_number = save_list[row_idx +1]
+                this_counter = 1
+            elif last:
+                save_vertical.append([this_number, this_counter])
+                if save_list[row_idx+1] != save_list[row_idx]:
+                    save_vertical.append([save_list[row_idx+1], 1])
+            else:
+                pass
+
+        self._compressed_grid = save_vertical
         return save_list
 
     def rebuild_compressed(self, compressed_grid = None):
@@ -392,18 +413,36 @@ class Grid:
         :return:
         '''
         compressed_grid = compressed_grid if compressed_grid is not None else self._compressed_grid
-        for row in compressed_grid:
-            for col in row:
-                pass
+        vertical_expansion_list = []
 
+        # Expand vertically
+        for row_count, row in enumerate(compressed_grid):
+            values = row[0]
+            value_count = row[1]
+            for dummy_i in range(value_count):
+                vertical_expansion_list.append(values)
 
+        # Expand horisontally
+        expanded_list = [list() for dummy_i in range(len(vertical_expansion_list))]
 
-
-
+        for row_count, row in enumerate(vertical_expansion_list):
+            for values in row:
+                value = values[0]
+                value_count = values[1]
+                for dummy_i in range(value_count):
+                    expanded_list[row_count].append(value)
 
 if __name__ ==  '__main__':
     import ANYstructure.example_data as ex
+    import ANYstructure.grid_window as grd
+
     lines = ex.line_dict
     points = ex.point_dict
-    my_grid = ex.get_grid_no_inp()
-    my_grid.export_compressed_grid()
+
+    canvas_dim = [1000,720]
+    canvas_origo = (50,670)
+    my_grid = grd.CreateGridWindow(ex.get_grid_no_inp(), canvas_dim, ex.get_to_draw(), canvas_origo)
+    search_return = my_grid.search_bfs(animate = True)
+    grid_only = my_grid.grid
+    grid_only.export_compressed_grid()
+    grid_only.rebuild_compressed(grid_only._compressed_grid)
