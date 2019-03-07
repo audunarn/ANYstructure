@@ -433,6 +433,15 @@ class CalcScantlings(Structure):
         super(CalcScantlings,self).__init__(main_dict=main_dict)
         self.lat_press = lat_press
         self.category = category
+        self._need_recalc = True
+
+    @property
+    def need_recalc(self):
+        return self._need_recalc
+
+    @need_recalc.setter
+    def need_recalc(self, val):
+        self._need_recalc = val
 
     def get_results_for_report(self,lat_press=0):
         '''
@@ -1060,10 +1069,11 @@ class CalcFatigue(Structure):
 
     def get_total_damage(self, int_press=(0, 0, 0), ext_press=(0, 0, 0)):
         damage = 0
-        for idx in range(len([1 for val_i in ext_press if val_i is not 0])):
-            damage += self.get_damage_slope1(idx,self._sn_curve, int_press[idx], ext_press[idx]) + \
-                      self.get_damage_slope2(idx,self._sn_curve, int_press[idx], ext_press[idx])
 
+        for idx in range(3):
+            if self._fraction[idx] != 0 and self._period[idx] != 0:
+                damage += self.get_damage_slope1(idx,self._sn_curve, int_press[idx], ext_press[idx]) + \
+                          self.get_damage_slope2(idx,self._sn_curve, int_press[idx], ext_press[idx])
         return damage
 
     def set_fatigue_properties(self, fatigue_dict: dict):
@@ -1109,11 +1119,14 @@ if __name__ == '__main__':
     # print(my_buc.calculate_slamming_plate(1000000))
     # print(my_buc.calculate_slamming_stiffener(1000000))
     # print(my_buc.get_net_effective_plastic_section_modulus())
-    for example in [test.obj_dict, test.obj_dict2, test.obj_dict_L]:
-        # my_test = CalcScantlings(example)
-        my_test = CalcFatigue(example, test.fat_obj_dict)
-        print('Total damage: ', my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(50000, 60000, 0)))
-        print(my_test.get_fatigue_properties())
+    my_test = CalcFatigue(test.obj_dict, test.fat_obj_dict2)
+    my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0))
+    # for example in [test.obj_dict, test.obj_dict2, test.obj_dict_L]:
+    #     # my_test = CalcScantlings(example)
+    #     my_test = CalcFatigue(example, test.fat_obj_dict2)
+    #     my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0))
+        #print('Total damage: ', my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0)))
+        #print(my_test.get_fatigue_properties())
         # pressure = 200
         # print('SHEAR CENTER: ',my_test.get_shear_center())
         # print('SECTION MOD: ',my_test.get_section_modulus())

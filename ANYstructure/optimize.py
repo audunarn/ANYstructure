@@ -5,7 +5,7 @@ import itertools as it
 import time
 import random
 import matplotlib.pyplot as plt
-from pyswarm import pso
+#from pyswarm import pso
 import copy
 #from opt_problem import MyProblem
 from multiprocessing import Pool, cpu_count

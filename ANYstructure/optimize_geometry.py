@@ -8,7 +8,7 @@ import time
 from tkinter import messagebox
 import ANYstructure.example_data as test
 from ANYstructure.helper import *
-import copy
+import copy, pickle
 
 class CreateOptGeoWindow():
     '''
@@ -362,7 +362,7 @@ class CreateOptGeoWindow():
             self._ent_minstep.place(x=start_x + dx * 15, y=start_y + 0 * dy)
             self._ent_minfunc.place(x=start_x + dx * 15, y=start_y + 1 * dy)
 
-    def run_optimizaion(self):
+    def run_optimizaion(self, load_pre = False):
         '''
         Function when pressing the optimization botton inside this window.
         :return:
@@ -395,13 +395,17 @@ class CreateOptGeoWindow():
         [print(obj.get_structure_prop()) for obj in init_objects]
         print(contraints)
 
-        print(
-        op.run_optmizataion(initial_structure_obj=init_objects,min_var=self.get_lower_bounds(),
-                            max_var=self.get_upper_bounds(),lateral_pressure=lateral_press,deltas=self.get_deltas(),
-                            algorithm='anysmart',side='p',const_chk = contraints,pso_options = self.pso_parameters,
-                            is_geometric=True,fatigue_obj=None, fat_press_ext_int=None,min_max_span=(2,6),
-                            tot_len=self.opt_get_length(),frame_height=self.opt_get_distance(),
-                            frame_distance = distances))
+        if not load_pre:
+            geo_results = op.run_optmizataion(initial_structure_obj=init_objects,min_var=self.get_lower_bounds(),
+                                              max_var=self.get_upper_bounds(),lateral_pressure=lateral_press,
+                                              deltas=self.get_deltas(), algorithm='anysmart',side='p',
+                                              const_chk = contraints,pso_options = self.pso_parameters,
+                                              is_geometric=True,fatigue_obj=None, fat_press_ext_int=None,
+                                              min_max_span=(2,6), tot_len=self.opt_get_length(),
+                                              frame_height=self.opt_get_distance(), frame_distance = distances)
+        # SAVING RESULTS
+        with open('geo_opt.pickle', 'wb') as file:
+            pickle.dump(geo_results, file)
 
     def opt_get_fractions(self):
         ''' Finding initial number of fractions '''
@@ -1041,7 +1045,7 @@ class CreateOptGeoWindow():
                         self._active_lines.append(key)
                         if key in self._opt_resutls.keys() and self._opt_resutls[key] != None:
                             self.draw_properties(init_obj=self._line_to_struc[key][0],
-                                                 opt_obj=self._opt_resutls[key][0],
+                                                opt_obj=self._opt_resutls[key][0],
                                                  line=key)
                         else:
                             self.draw_properties(init_obj=self._line_to_struc[key][0], line=key)

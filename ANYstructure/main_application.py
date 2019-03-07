@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 import os
 import tkinter as tk
 from tkinter import filedialog
@@ -155,6 +156,7 @@ class Application():
         # Load combinations definition used in method gui_load_combinations
         # These are created and destroyed and is not permanent in the application.
         self._lc_comb_created,self._comp_comb_created,self._manual_created, self._info_created = [],[],[], []
+        self._state_logger = dict()
 
         # The next dictionaries feed various infomation to the application
         self._load_factors_dict = {'dnva':[1.3,1.2,0.7], 'dnvb':[1,1,1.3], 'tanktest':[1,1,0]} # DNV  loads factors
@@ -176,6 +178,7 @@ class Application():
         self._point_options= ['fixed','free']
         self._load_window_couter = 1 # this is used to create the naming of the tanks in the load window
         self._logger = {'added': list(), 'deleted': list()}  # used to log operations for geometry operations, to be used for undo/redo
+        self.__returned_load_data = None # Temporary data for returned loads from the load window.
 
         self._p1_p2_select = False
         self._line_is_active = False # True when a line is clicked
@@ -186,7 +189,9 @@ class Application():
         self._line_point_to_point_string = [] # This one ensures that a line is not created on top of a line
 
         # Initsializing the calculation grid used for tank definition
-        self._main_grid  = grid.Grid(self._canvas_base_origo[1]+1, base_canvas_dim[0]-self._canvas_base_origo[0]+1)
+        self._grid_dimensions = [self._canvas_base_origo[1] + 1, base_canvas_dim[0] - self._canvas_base_origo[0] + 1]
+        self._main_grid  = grid.Grid(self._grid_dimensions[0], self._grid_dimensions[1])
+
         self._grid_calc = None
 
         # These sets the location where entries are placed.
@@ -202,13 +207,20 @@ class Application():
 
         # --- main header image ---
         try:
-            photo = tk.PhotoImage(file=self._root_dir + '\\images\\' + "img_title.gif")
+            img_file_name = 'img_title.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
             label = tk.Label(self._main_fr,image=photo)
             label.image = photo  # keep a reference!
             label.place(x=2, y=10)
         except TclError: # If the image is not located in the folder
             label = tk.Label(self._main_fr, text='DNVGL-OS-C101 based calculations')
             label.place(x=10, y=10)
+
+
         # ----------------------INITIATION OF THE SMALLER PARTS OF THE GUI STARTS HERE--------------------------
         # --- point input/output ----
         self._new_point_x = tk.DoubleVar()
@@ -216,6 +228,7 @@ class Application():
         self._new_point_fix = tk.StringVar()
         point_start = 100* self._global_shrink
         ent_width = 6  # width of entries
+
         tk.Label(self._main_fr, text='Input point coordinates [mm]', font=self._text_size['Text 9 bold'])\
             .place(x=10, y=point_start - 30*self._global_shrink)
         tk.Label(self._main_fr, text='Point x (horizontal) [mm]:',font="Text 9").place(x=10, y=point_start)
@@ -443,25 +456,41 @@ class Application():
         self._ent_pressure_side.place(x=10 + 7.6 * delta_x, y=prop_vert_start + 5.5 * delta_y)
 
         try:
-            photo_stf = tk.PhotoImage(file=self._root_dir + '\\images\\' +"img_stf_button.gif")
-            stf_button = tk.Button(self._main_fr,image = photo_stf,command=self.on_open_structure_window)
-            stf_button.image = photo_stf
+            img_file_name = 'img_stf_button.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
+            stf_button = tk.Button(self._main_fr,image = photo,command=self.on_open_structure_window)
+            stf_button.image = photo
             stf_button.place(x=10,y=prop_vert_start)
         except TclError:
             tk.Button(self._main_fr, text='STF.', command=self.on_open_structure_window).place(x=10,y=prop_vert_start)
+
         try:
-            photo_stress = tk.PhotoImage(file=self._root_dir + '\\images\\' +"img_stress_button.gif")
-            stress_button = tk.Button(self._main_fr,image = photo_stress,command=self.on_open_stresses_window)
-            stress_button.image = photo_stress
+            img_file_name = 'img_stress_button.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
+            stress_button = tk.Button(self._main_fr,image = photo,command=self.on_open_stresses_window)
+            stress_button.image = photo
             stress_button.place(x=10,y=prop_vert_start+3*delta_y)
         except TclError:
             tk.Button(self._main_fr, text='STRESS', command=self.on_open_stresses_window)\
                 .place(x=10,y=prop_vert_start+3*delta_y)
 
         try:
-            photo_fls = tk.PhotoImage(file=self._root_dir + '\\images\\' +"fls_button.gif")
-            fls_button = tk.Button(self._main_fr,image = photo_fls,command=self.on_open_fatigue_window)
-            fls_button.image = photo_fls
+            img_file_name = 'fls_button.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
+            fls_button = tk.Button(self._main_fr,image = photo,command=self.on_open_fatigue_window)
+            fls_button.image = photo
             fls_button.place(x=10,y=prop_vert_start+6*delta_y)
         except TclError:
             tk.Button(self._main_fr, text='FLS', command=self.on_open_fatigue_window)\
@@ -535,9 +564,15 @@ class Application():
         # --- button to create compartments and define external pressures ---
 
         try:
-            photo_int = tk.PhotoImage(file=self._root_dir + '\\images\\' +"img_int_pressure_button.gif")
-            self._int_button = tk.Button(self._main_fr,image = photo_int,command=self.grid_find_tanks)
-            self._int_button.image = photo_int
+            img_file_name = 'img_int_pressure_button.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
+
+            self._int_button = tk.Button(self._main_fr,image = photo,command=self.grid_find_tanks)
+            self._int_button.image = photo
             self._int_button.place(x=10, y=load_vert_start+0*delta_y)
         except TclError:
             tk.Button(self._main_fr, text='New tanks - start search \n'
@@ -550,9 +585,16 @@ class Application():
         show_compartment.place(x=10, y=load_vert_start+2*delta_y)
 
         try:
-            photo_ext = tk.PhotoImage(file=self._root_dir + '\\images\\' +"img_ext_pressure_button.gif")
-            self._ext_button = tk.Button(self._main_fr,image=photo_ext, command = self.on_show_loads)
-            self._ext_button.image = photo_ext
+
+            img_file_name = 'img_ext_pressure_button.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
+
+            self._ext_button = tk.Button(self._main_fr,image=photo, command = self.on_show_loads)
+            self._ext_button.image = photo
             self._ext_button.place(x=ent_x+delta_x*1.5, y=load_vert_start+0*delta_y)
         except TclError:
             tk.Button(self._main_fr, text='New external load window \nsea - static/dynamic',
@@ -626,25 +668,35 @@ class Application():
         tk.Label(self._main_fr,text='Optimize selected line/structure (right click line):',
                  font = self._text_size['Text 9 bold'],fg='black').place(x=lc_x, y=lc_y - 7 * lc_y_delta)
         try:
-            photo_opt = tk.PhotoImage(file=self._root_dir + '\\images\\' +"img_optimize.gif")
-            opt_button = tk.Button(self._main_fr,image=photo_opt, command = self.on_optimize)
-            opt_button.image = photo_opt
+            img_file_name = 'img_optimize.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
+            opt_button = tk.Button(self._main_fr,image=photo, command = self.on_optimize)
+            opt_button.image = photo
             opt_button.place(x=lc_x, y=lc_y - 6 * lc_y_delta)
         except TclError:
             tk.Button(self._main_fr, text='Optimize', command=self.on_optimize_multiple)\
                 .place(x=lc_x, y=lc_y - 6 * lc_y_delta)
         try:
-            photo_opt = tk.PhotoImage(file=self._root_dir + '\\images\\' +"img_multi_opt.gif")
-            opt_button_mult = tk.Button(self._main_fr,image=photo_opt, command = self.on_optimize_multiple)
-            opt_button_mult.image = photo_opt
+            img_file_name = 'img_multi_opt.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
+            opt_button_mult = tk.Button(self._main_fr,image=photo, command = self.on_optimize_multiple)
+            opt_button_mult.image = photo
             opt_button_mult.place(x=lc_x+delta_x*4, y=lc_y - 6 * lc_y_delta)
         except TclError:
             tk.Button(self._main_fr, text='MultiOpt', command=self.on_optimize_multiple).place(x=lc_x + delta_x*7,
                                                                                                y=lc_y - 6 * lc_y_delta)
 
-        tk.Button(self._main_fr, text='GEO', command=self.on_geometry_optimize,
-                  font = self._text_size['Text 16 bold'], fg='green', height = 1, bg = 'white')\
-            .place(x=lc_x + delta_x * 6.7,y=lc_y - 6 * lc_y_delta)
+        #tk.Button(self._main_fr, text='GEO', command=self.on_geometry_optimize,
+        #          font = self._text_size['Text 16 bold'], fg='green', height = 1, bg = 'white')\
+        #    .place(x=lc_x + delta_x * 6.7,y=lc_y - 6 * lc_y_delta)
         # try:
         #     photo_report = tk.PhotoImage(file=self._root_dir + '\\images\\' +"img_generate_report.gif")
         #     report_button = tk.Button(self._main_fr,image=photo_report, command = self.report_generate)
@@ -793,9 +845,14 @@ class Application():
 
         #setting the button to red
         try:
-            photo_int = tk.PhotoImage(file=self._root_dir + '\\images\\' +"img_int_pressure_button_search.gif")
-            self._int_button.config(image = photo_int)
-            self._int_button.image = photo_int
+            img_file_name = 'img_int_pressure_button_search.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
+            self._int_button.config(image = photo)
+            self._int_button.image = photo
         except TclError:
             pass
 
@@ -859,16 +916,21 @@ class Application():
                         self._new_load_comb_dict[name][1].set(self._load_factors_dict[combination][2])
                         self._new_load_comb_dict[name][2].set(1)
         try:
-            photo_int = tk.PhotoImage(file=self._root_dir + '\\images\\' +"img_int_pressure_button.gif")
-            self._int_button.config(image = photo_int)
-            self._int_button.image = photo_int
+            img_file_name = 'img_int_pressure_button.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
+
+            self._int_button.config(image = photo)
+            self._int_button.image = photo
         except TclError:
             pass
 
         if not animate:
             self._grid_calc.draw_grid(tank_count=None if len(self._tank_dict)==0 else len(self._tank_dict))
         else:
-
             self._grid_calc.animate_grid(grids_to_animate=compartment_search_return['grids'])
 
     def grid_display_tanks(self, save = False):
@@ -913,10 +975,10 @@ class Application():
 
     def get_color_and_calc_state(self, current_line = None, active_line_only = False):
         ''' Return calculations and colors for line and results. '''
+
         return_dict = {'colors': {}, 'section_modulus': {}, 'thickness': {}, 'shear_area': {}, 'buckling': {},
                        'fatigue': {}, 'pressure_uls': {}, 'pressure_fls': {},
                        'struc_obj': {}, 'scant_calc_obj': {}, 'fatigue_obj': {}, 'utilization': {}, 'slamming': {}}
-
         line_iterator, slamming_pressure = [], None
         return_dict['slamming'][current_line] = {}
 
@@ -934,6 +996,8 @@ class Application():
             if current_line in self._line_to_struc.keys():
                 obj_structure = self._line_to_struc[current_line][0]
                 obj_scnt_calc = self._line_to_struc[current_line][1]
+                if obj_scnt_calc.need_recalc is False:
+                    return self._state_logger[current_line]
                 try:
                     norm_and_slam = self.get_highest_pressure(current_line)
                     design_pressure = norm_and_slam['normal'] / 1000
@@ -1029,12 +1093,15 @@ class Application():
                 thk_util = 0 if obj_structure.get_plate_thk() == 0 else min_thk / (1000 * obj_structure.get_plate_thk())
                 sec_util = 0 if min(sec_mod) == 0 else min_sec_mod / min(sec_mod)
                 buc_util = 1 if float('inf') in buckling else max(buckling)
-
                 return_dict['utilization'][current_line] = {'buckling': buc_util,
                                                             'fatigue': fat_util,
                                                             'section': sec_util,
                                                             'shear': shear_util,
                                                             'thickness': thk_util}
+
+                self._state_logger[current_line] = return_dict #  Logging the current state of the line.
+                self._line_to_struc[current_line][1].need_recalc = False
+
             else:
                 pass
         return return_dict
@@ -1108,6 +1175,7 @@ class Application():
                     color = 'red' if 'red' in state['colors'][line].values() else 'green'
                 except (KeyError, TypeError):
                     color = 'black'
+
                 vector = [coord2[0] - coord1[0], coord2[1] - coord1[1]]
                 # drawing a bold line if it is selected
                 if line == self._active_line and self._line_is_active:
@@ -1225,7 +1293,7 @@ class Application():
                             'struc_obj': {}, 'scant_calc_obj': {}, 'fatigue_obj': {}}
         :return:
         '''
-        if state is None:
+        if state is None or self._active_line not in state['struc_obj'].keys():
             return
 
         self._result_canvas.delete('all')
@@ -1348,8 +1416,9 @@ class Application():
                 self._result_canvas.create_text([x * self._global_shrink, (y+12*dy) * self._global_shrink],
                                                 text='Fatigue results (DNVGL-RP-C203): ',
                                                 font=self._text_size["Text 9 bold"], anchor='nw')
+
                 if self._line_to_struc[current_line][2] != None:
-                    try:
+                    if state['fatigue'][current_line]['damage'] is not None:
                         damage = state['fatigue'][current_line]['damage']
                         dff = state['fatigue'][current_line]['dff']
                         self._result_canvas.create_text([x * self._global_shrink, (y + 13 * dy) * self._global_shrink],
@@ -1358,7 +1427,7 @@ class Application():
                                                              str(round(damage*dff,3)),
                                                         font=self._text_size["Text 9 bold"], anchor='nw',
                                                         fill=color_fatigue)
-                    except AttributeError:
+                    else:
                         self._result_canvas.create_text([x * self._global_shrink, (y + 13 * dy) * self._global_shrink],
                                                         text='Total damage: NO RESULTS ',
                                                         font=self._text_size["Text 9 bold"],
@@ -1438,6 +1507,9 @@ class Application():
             if len(self._tank_dict) != 0:
                 for tank, data in self._tank_dict.items():
                     data.set_acceleration(self._accelerations_dict)
+
+            for line, obj in self._line_to_struc.items():
+                obj[1].need_recalc = True
         except TclError:
             messagebox.showinfo(title='Input error', message='Input must be a number. Dots used not comma.')
 
@@ -1445,6 +1517,7 @@ class Application():
         '''
         Adds a point number and coordinates to the point dictionary. Type is 'p1' = [x0,y0]
         '''
+
         try:
             if copy:
                 x_coord = self._new_point_x.get()/1000 + self._point_dict[self._active_point][0]
@@ -1569,6 +1642,13 @@ class Application():
         '''
         This method maps the structure to the line when clicking "add structure to line" button.
         The result is put in a dictionary. Key is line name and value is the structure object.
+
+        self_line_to_stuc
+            [0] Structure class
+            [1] calc scantling class instance
+            [2] calc fatigue class instance
+            [3] load class instance
+            [4] load combinations result (currently not used)
         :return:
         '''
         if any([self._new_stf_spacing.get()==0, self._new_plate_thk.get()==0, self._new_stf_web_h.get()==0,
@@ -1579,11 +1659,7 @@ class Application():
                                                                       'manually.', type='ok')
             return
 
-
         if self._line_is_active:
-
-            # span, spacing, plate_thk, stf_web_height, stf_web_thk, stf_flange_width, stf_flange_thk
-
             # structure dictionary: name of line : [ 0.Structure class, 1.calc scantling class,
             # 2.calc fatigue class, 3.load object, 4.load combinations result ]
 
@@ -1623,6 +1699,7 @@ class Application():
                 prev_type = self._line_to_struc[self._active_line][0].get_structure_type()
                 self._line_to_struc[self._active_line][0].set_main_properties(obj_dict)
                 self._line_to_struc[self._active_line][1].set_main_properties(obj_dict)
+                self._line_to_struc[self._active_line][1].need_recalc = True
                 if self._line_to_struc[self._active_line][2] is not None:
                     self._line_to_struc[self._active_line][2].set_main_properties(obj_dict)
                 if prev_type in self._structure_types['non-wt'] and obj_dict['structure_type'][0] in \
@@ -1631,19 +1708,20 @@ class Application():
                     self._tank_dict = {}
                     self._main_grid.clear()
                     self._compartments_listbox.delete(0, 'end')
-
             try:
                 self.calculate_all_load_combinations_for_line_all_lines()
-            except (KeyError, AttributeError) as error:
+            except (KeyError, AttributeError):
                 pass
         else:
             pass
 
         self.draw_prop()
-        try:
-            state = self.get_color_and_calc_state()
-        except AttributeError:
-            state = None
+        for line, obj in self._line_to_struc.items():
+            obj[1].need_recalc = True
+
+        state = self.get_color_and_calc_state()
+        # except AttributeError:
+        #     state = None
 
         self.draw_results(state=state)
         self.draw_canvas(state=state)
@@ -1744,8 +1822,11 @@ class Application():
         :return:
         '''
 
-        defined_loads = [load_obj for load_obj in self._line_to_struc[line_name][3]
-                         if load_obj.get_limit_state() != 'FLS']
+        defined_loads = []
+        for load_obj in self._line_to_struc[line_name][3]:
+            if load_obj is not None:
+                if load_obj.get_limit_state() != 'FLS':
+                    defined_loads.append(load_obj)
 
         defined_tanks = [['comp'+str(int(tank_num)), self._tank_dict['comp'+str(int(tank_num))]]
                      for tank_num in self.get_compartments_for_line_duplicates(line_name)]
@@ -1790,6 +1871,9 @@ class Application():
         current_tank.set_content(self._new_content_type.get())
         current_tank.set_acceleration(self._accelerations_dict)
         current_tank.set_density(self._new_density.get())
+
+        for line, obj in self._line_to_struc.items():
+            obj[1].need_recalc = True
 
     def delete_line(self, event = None, undo = None, line = None):
         '''
@@ -2023,8 +2107,6 @@ class Application():
         y_coord = (self._main_grid.get_grid_height() - grid_col)/self._base_scale_factor
         self._main_grid.get_grid_height()
         return y_coord
-
-        return (self._canvas_base_origo[1] - canv_elevation) / self._canvas_scale
 
     def get_grid_coord_from_points_coords(self, point_coord):
         '''
@@ -2361,6 +2443,7 @@ class Application():
 
         tank_properties = {}
         tank_properties['grid'] = self._main_grid.export_grid()
+        tank_properties['search_data'] = self._main_grid.bfs_search_data
         for tank,data in self._tank_dict.items():
             tank_properties[tank] = data.get_parameters()
 
@@ -2379,7 +2462,6 @@ class Application():
         export_all['load_combinations'] = load_combiantions
         export_all['tank_properties'] = tank_properties
         export_all['fatigue_properties'] = fatigue_properties
-
         json.dump(export_all, save_file)#, sort_keys=True, indent=4)
         save_file.close()
 
@@ -2403,7 +2485,7 @@ class Application():
         struc_prop = imported['structure_properties']
 
         for line, lines_prop in struc_prop.items():
-            self._line_to_struc[line] = [None, None, None, [],[]]
+            self._line_to_struc[line] = [None, None, None, [], {}, [True, 'green']]
             self._line_point_to_point_string.append(
                 self.make_point_point_line_string(self._line_dict[line][0], self._line_dict[line][1])[0])
             self._line_point_to_point_string.append(
@@ -2454,11 +2536,17 @@ class Application():
                 name = tuple(data[0])
                 self._new_load_comb_dict[name] = [tk.DoubleVar(),tk.IntVar()]
                 self._new_load_comb_dict[name][0].set(data[1]), self._new_load_comb_dict[name][1].set(data[2])
+
         try:
             self._main_grid.import_grid(imported['tank_properties']['grid'])
             self._grid_calc = grid_window.CreateGridWindow(self._main_grid, self._canvas_dim,
-                                                          self._pending_grid_draw, self._canvas_base_origo)
+                                                           self._pending_grid_draw, self._canvas_base_origo)
 
+            tank_inp = dict()
+            for key, value in imported['tank_properties']['search_data'].items():
+                tank_inp[int(key)] = value
+            self._main_grid.bfs_search_data = tank_inp
+            self._grid_calc.bfs_search_data = tank_inp
 
             for comp_no in range(2, int(self._main_grid.get_highest_number_in_grid())+1):
                 self._compartments_listbox.insert('end',comp_no)
@@ -2475,7 +2563,10 @@ class Application():
 
     def open_example(self):
         ''' Open the example file. To be used in help menu. '''
-        self.openfile(defined = 'ship_section_example.txt')
+        if os.path.isfile('ship_section_example.txt') :
+            self.openfile(defined = 'ship_section_example.txt')
+        else:
+            self.openfile(defined= self._root_dir + '/' + 'ship_section_example.txt')
 
     def on_open_structure_window(self):
         '''
@@ -2533,9 +2624,14 @@ class Application():
         '''
 
         try:
-            photo_ext = tk.PhotoImage(file=self._root_dir + '\\images\\' +"img_ext_pressure_button_def.gif")
-            self._ext_button.config(image = photo_ext)
-            self._ext_button.image = photo_ext
+            img_file_name = 'img_ext_pressure_button_def.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
+            self._ext_button.config(image = photo)
+            self._ext_button.image = photo
         except TclError:
             pass
 
@@ -2614,9 +2710,14 @@ class Application():
         :return:
         '''
         try:
-            photo_ext = tk.PhotoImage(file=self._root_dir + '\\images\\' +"img_ext_pressure_button.gif")
-            self._ext_button.config(image = photo_ext)
-            self._ext_button.image = photo_ext
+            img_file_name = 'img_ext_pressure_button.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
+            self._ext_button.config(image = photo)
+            self._ext_button.image = photo
         except TclError:
             pass
         self._load_window_couter = counter
@@ -2630,6 +2731,7 @@ class Application():
             # adding values to the line dictionary. resetting first.
             for key, value in self._line_to_struc.items():
                 self._line_to_struc[key][3] = []
+                self._line_to_struc[key][1].need_recalc = True  # All lines need recalculations.
 
             for main_line in self._line_dict.keys():
                 for object, load_line in self._load_dict.values():
@@ -2638,6 +2740,8 @@ class Application():
 
         # Displaying the loads
         self.update_frame()
+        # Storing the the returned data to temporary variable.
+        self.__returned_load_data = [returned_loads, counter, load_comb_dict]
 
     def on_close_opt_window(self,returned_objects):
         '''
@@ -2648,11 +2752,12 @@ class Application():
         #print(returned_objects)
         self._line_to_struc[self._active_line][0]=returned_objects[0]
         self._line_to_struc[self._active_line][1]=returned_objects[1]
+        self._line_to_struc[self._active_line][1].need_recalc = True
         self.set_selected_variables(self._active_line)
         if returned_objects[2] is not None:
             self._line_to_struc[self._active_line][2] = CalcFatigue(returned_objects[0].get_structure_prop(),
                                                                     returned_objects[2])
-
+        self.new_structure()
         self.update_frame()
 
     def on_close_opt_multiple_window(self, returned_objects):
@@ -2663,11 +2768,14 @@ class Application():
         '''
         for line,objects in returned_objects.items():
             self._line_to_struc[line][0] = returned_objects[line][0]
+            self._line_to_struc[line][0].need_recalc = True
             self._line_to_struc[line][1] = returned_objects[line][1]
             self.set_selected_variables(line)
             if returned_objects[line][2] is not None:
                 self._line_to_struc[line][2] = CalcFatigue(returned_objects[line][0].get_structure_prop(),
                                                            returned_objects[line][2])
+            self._active_line = line
+            self.new_structure()
         self.update_frame()
 
     def on_close_structure_window(self,returned_structure):
@@ -2716,15 +2824,24 @@ class Application():
         else:
             self._line_to_struc[self._active_line][2].set_fatigue_properties(returned_fatigue_prop)
 
+        self._line_to_struc[self._active_line][1].need_recalc = True
+        if self.__returned_load_data is not None:
+            map(self.on_close_load_window, self.__returned_load_data)
+
     def on_aborted_load_window(self):
         '''
         When it is aborted due to closing.
         :return:
         '''
         try:
-            photo_ext = tk.PhotoImage(file=self._root_dir + '\\images\\' +"img_ext_pressure_button.gif")
-            self._ext_button.config(image = photo_ext)
-            self._ext_button.image = photo_ext
+            img_file_name = 'img_ext_pressure_button.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
+            self._ext_button.config(image = photo)
+            self._ext_button.image = photo
         except TclError:
             pass
 
@@ -2783,8 +2900,10 @@ class Application():
 
     def open_documentation(self):
         ''' Open the documentation pdf. '''
-        os.startfile('ANYstructure_documentation.pdf')
-
+        if os.path.isfile('ANYstructure_documentation.pdf'):
+            os.startfile('ANYstructure_documentation.pdf')
+        else:
+            os.startfile(self._root_dir + '/' + 'ANYstructure_documentation.pdf')
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()

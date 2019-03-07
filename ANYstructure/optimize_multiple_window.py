@@ -58,7 +58,7 @@ class CreateOptimizeMultipleWindow():
         tk.Frame(self._frame, width=770, height=5, bg="grey", colormap="new").place(x=20, y=135)
 
 
-        algorithms = ('anysmart', 'random', 'random_no_delta', 'anydetail','pso')
+        algorithms = ('anysmart', 'random', 'random_no_delta')
 
         tk.Label(self._frame, text='-- Structural optimizer for multiple selections --',
                  font='Verdana 15 bold').place(x=10, y=10)

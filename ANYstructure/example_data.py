@@ -53,6 +53,10 @@ fat_obj_dict = {'SN-curve': 'Ec','SCF': 1,'Design life': 20, 'n0':10000, 'Weibul
                 'Period': (9, 9, 9), 'Fraction': (1, 0, 0), 'CorrLoc': (0.5, 0.5, 0.5),
                 'Order': ('Loaded', 'Ballast', 'Part'), 'Accelerations':(0.5, 0.5, 0.5), 'DFF':2}
 
+fat_obj_dict2 = {'SN-curve': 'Ec','SCF': 1,'Design life': 20, 'n0':10000, 'Weibull': (0, 1, 0),
+                'Period': (0, 9, 0), 'Fraction': (0, 1, 0), 'CorrLoc': (0, 0.5, 0),
+                'Order': ('Loaded', 'Ballast', 'Part'), 'Accelerations':(0, 2, 0), 'DFF':2}
+
 loa_fls = {'static_draft':None,'poly_third':1,'poly_second':50,'poly_first':10,'poly_const':5000,'man_press':0,
            'load_condition':'loaded','name_of_load':'test_load_laoded_FLS','limit_state':'FLS'}
 

@@ -120,14 +120,24 @@ class CreateStructureWindow():
         self._new_fl_w.trace('w',self.draw_trace)
         self._new_fl_thk.trace('w',self.draw_trace)
         try:
-            photo = tk.PhotoImage(file=image_dir+"img_stiffened_plate_panel.gif")
+            img_file_name = 'img_stiffened_plate_panel.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = os.path.dirname(os.path.abspath(__file__)) + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
             label = tk.Label(self._frame, image=photo)
             label.image = photo  # keep a reference!
             label.place(x=550, y=300)
         except TclError:
             pass
         try:
-            photo_T_L_FB = tk.PhotoImage(file=image_dir+"img_T_L_FB.gif")
+            img_file_name = 'img_T_L_FB.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = os.path.dirname(os.path.abspath(__file__)) + '/images/' + img_file_name
+            photo_T_L_FB = tk.PhotoImage(file=file_path)
             label = tk.Label(self._frame, image=photo_T_L_FB )
             label.image = photo_T_L_FB   # keep a reference!
             label.place(x=270, y=50)

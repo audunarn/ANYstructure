@@ -10,17 +10,35 @@ class Grid:
     Includes boundary handling
     """
 
-
     def __init__(self, grid_height, grid_width):
         """
         Initializes grid to be empty, take height and width of grid as parameters
         Indexed by rows (left to right), then by columns (top to bottom)
         """
+
         self._grid_height = grid_height
         self._grid_width = grid_width
         self._cells = np.zeros((self._grid_height,self._grid_width))
         self.empty, self.full, self.barrier, self.corner = 0, 1, -1, -2
         self._geo_info = {'points': None, 'lines': None}
+        self._compressed_grid = None
+        self._bfs_search_data = None
+
+    @property
+    def cells(self):
+        return self._cells
+
+    @cells.setter
+    def cells(self, val):
+        self._cells = val
+
+    @property
+    def bfs_search_data(self):
+        return self._bfs_search_data
+
+    @bfs_search_data.setter
+    def bfs_search_data(self, val):
+        self._bfs_search_data = val
 
     def __str__(self):
         """
@@ -343,18 +361,95 @@ class Grid:
         :param grid:
         :return:
         '''
-        self._cells = np.asarray(grid)
+
+        self._cells = self.rebuild_compressed(grid)
+        #self.cells = np.array(grid)
 
     def export_grid(self):
         '''
         Converting from array to list of list. Exporting the grid.
         :return:
         '''
-        return self._cells.tolist()
+        return self.export_compressed_grid()
+
+    def export_compressed_grid(self):
+        '''
+        Converting from array to list of list. Exporting the grid for saving.
+        :return:
+        '''
+        save_list = list()
+
+        # Compressing horizontally
+        for row in self._cells:
+            this_counter, this_number, save_row = 1, row[0], list()
+            for col_idx in range(len(row)-1):
+                last = col_idx == len(row)-2
+                if row[col_idx] == row[col_idx+1] and not last:
+                    this_counter += 1
+                elif row[col_idx] != row[col_idx+1] and not last:
+                    save_row.append([this_number, this_counter])
+                    this_number = row[col_idx+1]
+                    this_counter = 1
+                elif last:
+                    save_row.append([this_number, this_counter+1])
+
+            save_list.append(save_row)
+
+        # Compressing vertically
+        this_counter, this_number, save_vertical = 1, save_list[0], list()
+        for row_idx in range(len(save_list) - 1):
+            last = row_idx == len(save_list) - 2
+            if save_list[row_idx] == save_list[row_idx +1] and not last:
+                this_counter += 1
+            elif save_list[row_idx] != save_list[row_idx +1] and not last:
+                save_vertical.append([this_number, this_counter])
+                this_number = save_list[row_idx +1]
+                this_counter = 1
+            elif last:
+                save_vertical.append([this_number, this_counter])
+                if save_list[row_idx+1] != save_list[row_idx]:
+                    save_vertical.append([save_list[row_idx+1], 1])
+
+        return save_vertical
+
+    def rebuild_compressed(self, compressed_grid = None):
+        '''
+        Rebuilding a compressed grid made by 'export_compressed_grid(self)'
+        :return:
+        '''
+        compressed_grid = compressed_grid if compressed_grid is not None else self._compressed_grid
+        vertical_expansion_list = []
+
+        # Expand vertically
+        for row_count, row in enumerate(compressed_grid):
+            values = row[0]
+            value_count = row[1]
+            for dummy_i in range(value_count):
+                vertical_expansion_list.append(values)
+
+        # Expand horisontally
+        expanded_list = [list() for dummy_i in range(len(vertical_expansion_list))]
+
+        for row_count, row in enumerate(vertical_expansion_list):
+            for values in row:
+                value = values[0]
+                value_count = values[1]
+                for dummy_i in range(value_count):
+                    expanded_list[row_count].append(value)
+
+        return np.array(expanded_list)
 
 if __name__ ==  '__main__':
     import ANYstructure.example_data as ex
+    import ANYstructure.grid_window as grd
+
     lines = ex.line_dict
     points = ex.point_dict
-    my_grid = Grid(1000, 1000)
-    my_grid.provide_line_info(lines, points)
+
+    canvas_dim = [1000,720]
+    canvas_origo = (50,670)
+    my_grid = grd.CreateGridWindow(ex.get_grid_no_inp(), canvas_dim, ex.get_to_draw(), canvas_origo)
+    search_return = my_grid.search_bfs(animate = True)
+    grid_only = my_grid.grid
+    grid_only.export_compressed_grid()
+    grid_only.rebuild_compressed(grid_only._compressed_grid)

@@ -97,12 +97,17 @@ class LetterMaker(object):
         time_now = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
 
         # create return address
-        address = """<font size="12"><strong> SevScant report generator<br/></strong></font>""" + '<br/>' + \
+        address = """<font size="12"><strong> ANYstructure report generator<br/></strong></font>""" + '<br/>' + \
                   """<font size="12"> User: </font>""" + '<font size="12">' + user + '</font>' + '<br/>' + '<br/>' + \
                   """<font size="12"> Time : </font>""" + '<font size="12">' + time_now + '</font>' + '<br/>'
         p = Paragraph(address, self.styles["Normal"])
         # add a logo and size it
-        logo = Image(self.data['path'] + '\\images\\' + 'ANYstructure_logo.jpg')
+        img_file_name = 'ANYstructure_logo.jpg'
+        if os.path.isfile('images/' + img_file_name):
+            file_path = 'images/' + img_file_name
+        else:
+            file_path = os.path.dirname(os.path.abspath(__file__)) + '/images/' + img_file_name
+        logo = Image(file_path)
         logo.drawHeight = 1 * inch
         logo.drawWidth = 2.5 * inch
         data = [[p, logo]]
