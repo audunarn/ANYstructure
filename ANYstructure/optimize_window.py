@@ -65,7 +65,7 @@ class CreateOptimizeWindow():
 
         self._canvas_opt.place(x=10,y=300)
 
-        algorithms = ('anysmart','random','random_no_delta','anydetail','pso')
+        algorithms = ('anysmart','random','random_no_delta')
 
         tk.Label(self._frame,text='-- Structural optimizer --',font='Verdana 15 bold').place(x=10,y=10)
 
