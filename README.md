@@ -15,6 +15,10 @@ run main()
 
 ------------------------------------------------------------------------
 
+Windows installable EXE-link: https://drive.google.com/drive/folders/1fEJsDxhqMiq29NoPuYxGYNSnPnuwSnt8?usp=sharing
+
+------------------------------------------------------------------------
+
 GUI based steel structure calculation tool.
  
  The following is calculated:
@@ -31,13 +35,11 @@ Pressures on external hull (or any other generic location) is defined by specify
 You can optimize single plate/stiffener field or multiple.
 
 PLEASE CONTRIBUTE. 
-For windows executable (.exe) version for non-coders, use the link below. Unzip and click the .exe file. Same licenese.
+For windows executable (.exe) version for non-coders, use the link below.
 Note that I am looking for contributions. Non-coders can verify, make documentation, suggest improvements etc. Point
 is: please do more than just use the tool and stay silent :)
 
 Feedback: audunarn@gmail.com or discuss on github.
-
-EXE-link: https://drive.google.com/drive/folders/1fEJsDxhqMiq29NoPuYxGYNSnPnuwSnt8?usp=sharing
 
 Please like, share or comment on LinkedIn: https://www.linkedin.com/in/audun-arnesen-nyhus-6aa17118/
 
