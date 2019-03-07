@@ -21,6 +21,7 @@ class CreateGridWindow():
         self._parent_origo = canvas_origo
         self._points_child = {}
         self._child_dimensions = (canvas_dim[0]-canvas_origo[0]+1, canvas_origo[1]+1)
+        self._bfs_search_data = None
 
         for line,point in to_draw.items():
             point1 = (int(point[0][0]),int(point[0][1]))
@@ -46,6 +47,14 @@ class CreateGridWindow():
     def grid(self, val):
         self._grid = val
 
+    @property
+    def bfs_search_data(self):
+        return self._bfs_search_data
+
+    @bfs_search_data.setter
+    def bfs_search_data(self, val):
+        self._bfs_search_data = val
+
     def draw_grid(self, save = False, tank_count = None):
         '''
         Drawing grid
@@ -56,10 +65,22 @@ class CreateGridWindow():
         # TODO make a better plot of the tanks
 
         def discrete_matshow(data):
+            if self._bfs_search_data is not None:
+                comp_cell_count = self._bfs_search_data
+            area_mult = self._parent_dimensions[0]/(10*self._parent_dimensions[0]) * \
+                        self._parent_dimensions[1]/(10*self._parent_dimensions[1])
+            plt_txt = list()
+            for num in range(tank_count):
+                if self._bfs_search_data is not None:
+                    tank_area = comp_cell_count[num + 2] * area_mult
+                    plt_txt.append('Comp' + str(num + 2) + ' Approx. area: ' + str(round(tank_area,1)))
+                else:
+                    plt_txt.append('Comp' + str(num + 2))
+
             fig = plt.figure(figsize=[12, 8])
             ax = fig.add_subplot(111)
-
-            fig.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.05)
+            ax.tick_params(labelsize=8)
+            fig.subplots_adjust(left=0.05, right=0.90, top=0.95, bottom=0.05)
             # get discrete colormap
             cmap = plt.get_cmap('Accent_r', np.max(data) - np.min(data) + 1)
             # set limits .5 outside true range
@@ -68,14 +89,15 @@ class CreateGridWindow():
             colb = fig.colorbar(cax, ticks=np.arange(np.min(data), np.max(data) + 1), shrink=0.8)
             if tank_count is not None:
                 colb.set_ticks([-1, 0, 1] + [num + 2 for num in range(tank_count)])
-                colb.set_ticklabels(['BHD/Deck', 'Not searched', 'External'] + ['Comp' + str(num + 2) for
-                                                                                num in range(tank_count)])
+                colb.set_ticklabels(['BHD/Deck', 'Not searched', 'External'] + plt_txt)
 
         # generate data
         discrete_matshow(self._grid.get_matrix())
         plt.suptitle('Compartments returned from search operation displayed below', fontsize=20, color='red')
         plt.xscale('linear')
         plt.axis('off')
+        plt.annotate('*area calculation inaccuracies due to thickness of barriers (BHD/Deck)', (0, 0), (0, -20),
+                     xycoords='axes fraction', textcoords='offset points', va='top', fontsize = 10)
         if save:
             plt.savefig('current_comps.png')
         else:
@@ -217,13 +239,16 @@ class CreateGridWindow():
         if animate:
             all_grids.append(self._grid.get_matrix())
 
-        cells_modified = dict()
+        cells_modified, area_modified = dict(), dict()
         comp_sum = np.sum([data for data in barrier_comp_count.values()])
         for comp_no, data in compartments.items():
             barrier_ratio_of_total = barrier_comp_count[comp_no] / comp_sum
             cells_modified[comp_no] = data[0] + int(barriers_where[0].shape[0] * barrier_ratio_of_total)
 
-        return {'compartments': compartments, 'grids':all_grids, 'modified_cell_count': cells_modified}
+        to_return = {'compartments': compartments, 'grids':all_grids, 'modified_cell_count': cells_modified}
+        self.bfs_search_data = to_return['modified_cell_count']
+        self._grid.bfs_search_data = to_return['modified_cell_count']
+        return to_return
 
     def find_lines_inside_area(self, row1, col1, row2, col2):
         '''
@@ -240,7 +265,7 @@ if __name__ == '__main__':
     canvas_origo = (50,670)
     my_grid = CreateGridWindow(test.get_grid_no_inp(), canvas_dim, test.get_to_draw(), canvas_origo)
     search_return = my_grid.search_bfs(animate = True)
-    my_grid.draw_grid()
+    my_grid.draw_grid(tank_count=4)
 
 
 
