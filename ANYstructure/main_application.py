@@ -2443,6 +2443,7 @@ class Application():
 
         tank_properties = {}
         tank_properties['grid'] = self._main_grid.export_grid()
+        tank_properties['search_data'] = self._main_grid.bfs_search_data
         for tank,data in self._tank_dict.items():
             tank_properties[tank] = data.get_parameters()
 
@@ -2541,6 +2542,11 @@ class Application():
             self._grid_calc = grid_window.CreateGridWindow(self._main_grid, self._canvas_dim,
                                                            self._pending_grid_draw, self._canvas_base_origo)
 
+            tank_inp = dict()
+            for key, value in imported['tank_properties']['search_data'].items():
+                tank_inp[int(key)] = value
+            self._main_grid.bfs_search_data = tank_inp
+            self._grid_calc.bfs_search_data = tank_inp
 
             for comp_no in range(2, int(self._main_grid.get_highest_number_in_grid())+1):
                 self._compartments_listbox.insert('end',comp_no)

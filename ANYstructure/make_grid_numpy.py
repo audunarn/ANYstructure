@@ -22,6 +22,7 @@ class Grid:
         self.empty, self.full, self.barrier, self.corner = 0, 1, -1, -2
         self._geo_info = {'points': None, 'lines': None}
         self._compressed_grid = None
+        self._bfs_search_data = None
 
     @property
     def cells(self):
@@ -30,6 +31,14 @@ class Grid:
     @cells.setter
     def cells(self, val):
         self._cells = val
+
+    @property
+    def bfs_search_data(self):
+        return self._bfs_search_data
+
+    @bfs_search_data.setter
+    def bfs_search_data(self, val):
+        self._bfs_search_data = val
 
     def __str__(self):
         """
