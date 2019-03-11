@@ -75,6 +75,7 @@ class Application():
         menu.add_cascade(label='Help', menu = sub_help)
         sub_help.add_command(label = 'Open documentation', command = self.open_documentation)
         sub_help.add_command(label = 'Open example file', command = self.open_example)
+        sub_help.add_command(label='About ANYstructure', command=self.open_about)
 
         sub_report = tk.Menu(menu)
         menu.add_cascade(label = 'Reporting', menu = sub_report)
@@ -2904,6 +2905,17 @@ class Application():
             os.startfile('ANYstructure_documentation.pdf')
         else:
             os.startfile(self._root_dir + '/' + 'ANYstructure_documentation.pdf')
+
+    def open_about(self):
+        '''
+        Open a about messagebox.
+        :return:
+        '''
+        messagebox.showinfo(title='Input error', message='ANYstructure 0.3.8'
+                                                         '\n'
+                                                         '\n'
+                                                         'By Audun Arnesen Nyhus \n'
+                                                         '2019')
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
