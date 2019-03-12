@@ -296,7 +296,6 @@ class CreateOptGeoWindow():
         self.draw_select_canvas()
         #self.run_optimizaion()
 
-
     def selected_algorithm(self, event):
         '''
         Action when selecting an algorithm in the optionm menu.
@@ -385,16 +384,23 @@ class CreateOptGeoWindow():
 
         init_objects = []
         lateral_press = []
-
+        broke = False
         for line,coord in self._opt_structure.items():
-            init_objects.append(self.opt_create_struc_obj(self._opt_structure[line])[0])
+            if self.opt_create_struc_obj(self._opt_structure[line]) is None:
+                broke = True
+                break
+            else:
+                init_objects.append(self.opt_create_struc_obj(self._opt_structure[line])[0])
             if __name__ == '__main__':
                 lateral_press.append(200)  # for testing
             else:
                 p1, p2 = self._opt_structure[line]
                 closet_line = self.opt_find_closest_orig_line([(p2[0]-p1[0])*0.5, (p2[1]-p1[1])*0.5])
                 lateral_press.append(self.app.get_highest_pressure(closet_line)['normal'] / 1000)
-
+        if broke:
+            messagebox.showinfo(title='Selection error.',
+                                message='This field cannot be subdivided or is not load subjected. Error.')
+            return None
         # [print(obj.get_structure_prop()) for obj in init_objects]
         # print(contraints)
 
@@ -438,7 +444,8 @@ class CreateOptGeoWindow():
 
         vector = [pt2[0] - pt1[0], pt2[1] - pt1[1]]
         point = [pt1[0]+vector[0]*0.5,pt1[1]+vector[1]*0.5]
-
+        if self.opt_find_closest_orig_line(point) == None:
+            return None
         objects = [copy.deepcopy(x) if x != None else None for x in
                    self._line_to_struc[self.opt_find_closest_orig_line(point)]]
 
