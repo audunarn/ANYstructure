@@ -2915,7 +2915,7 @@ class Application():
         Open a about messagebox.
         :return:
         '''
-        messagebox.showinfo(title='Input error', message='ANYstructure 0.4'
+        messagebox.showinfo(title='Input error', message='ANYstructure 0.4.x'
                                                          '\n'
                                                          '\n'
                                                          'By Audun Arnesen Nyhus \n'

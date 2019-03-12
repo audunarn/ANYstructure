@@ -64,7 +64,7 @@ class CreateOptGeoWindow():
 
         algorithms = ('anysmart',' ')
 
-        tk.Label(self._frame, text='-- Structural optimizer for multiple selections --',
+        tk.Label(self._frame, text='-- Plate field span optimizer for plate fields separated by frames. --',
                  font='Verdana 15 bold').place(x=10, y=10)
 
         # upper and lower bounds for optimization
@@ -414,8 +414,8 @@ class CreateOptGeoWindow():
                                               frame_height=self.opt_get_distance(), frame_distance = distances)
             self._geo_results = geo_results
             # SAVING RESULTS
-            with open('geo_opt.pickle', 'wb') as file:
-                pickle.dump(geo_results, file)
+            # with open('geo_opt.pickle', 'wb') as file:
+            #     pickle.dump(geo_results, file)
         else:
             with open('geo_opt.pickle', 'rb') as file:
                 self._geo_results = pickle.load(file)

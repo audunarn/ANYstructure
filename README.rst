@@ -39,4 +39,4 @@ Alternatively run \_\_main\_\_.py
 Documentation
 -------------
 
-COMING SOON!
+Documentation is cointained in the tool. Help -> Open documentation.
