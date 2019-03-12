@@ -15,7 +15,7 @@ run main()
 
 ------------------------------------------------------------------------
 
-Windows installable EXE-link: https://drive.google.com/drive/folders/1fEJsDxhqMiq29NoPuYxGYNSnPnuwSnt8?usp=sharing
+Windows installable EXE-link: https://sourceforge.net/projects/anystructure/
 
 ------------------------------------------------------------------------
 
