@@ -784,12 +784,13 @@ class CreateOptGeoWindow():
         self._canvas_select.create_text(self._canvas_origo[0] - 30,
                                         self._canvas_origo[1] + 20, text='(0,0)',
                                         font='Text 10')
-        self._canvas_select.create_text([800, 50],
-                                        text='Mouse left click:  select lines to loads\n'
-                                             'Mouse mid click: show properties for one line\n'
-                                             'Mouse right click: clear all selection\n'
-                                             'Shift key press: add selected line\n'
-                                             'Control key press: remove selected line', font='Verdana 8 bold',
+        self._canvas_select.create_text([700, 50],
+                                        text='How to:\n'
+                                             'For a double bottom structure: \n'
+                                             'Click start point 1 -> click en point 1 (for example bottom plate)\n'
+                                             'Click start point 2 -> click en point 2 (for example inner bottom\n'
+                                             'Run optimization! Wait for the results...... wait.... wait....\n',
+                                        font='Verdana 8 bold',
                                         fill='red')
         # drawing the line dictionary.
         if len(self._line_dict) != 0:
@@ -908,7 +909,6 @@ class CreateOptGeoWindow():
                                          anchor='w', font=text_type)
             self._canvas_opt.create_text([start_x + 330, y_loc ], text=str(all(check_ok)),
                                          anchor='w', font=text_type)
-
 
     def algorithm_info(self):
         ''' When button is clicked, info is displayed.'''

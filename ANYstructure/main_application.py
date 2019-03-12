@@ -695,8 +695,8 @@ class Application():
             tk.Button(self._main_fr, text='MultiOpt', command=self.on_optimize_multiple).place(x=lc_x + delta_x*7,
                                                                                                y=lc_y - 6 * lc_y_delta)
 
-        tk.Button(self._main_fr, text='GEO', command=self.on_geometry_optimize,
-                 font = self._text_size['Text 16 bold'], fg='green', height = 1, bg = 'white')\
+        tk.Button(self._main_fr, text='SPAN', command=self.on_geometry_optimize,
+                 font = self._text_size['Text 14 bold'], fg='green', height = 1, bg = 'white')\
            .place(x=lc_x + delta_x * 6.7,y=lc_y - 6 * lc_y_delta)
         # try:
         #     photo_report = tk.PhotoImage(file=self._root_dir + '\\images\\' +"img_generate_report.gif")
@@ -2697,14 +2697,14 @@ class Application():
         :return:
         '''
 
-        messagebox.showinfo(title='Multiple optimization information',
-                            message='Opening this window enables batch optimization.\n'
-                                    'There are less input and information. It is HIGHLY\n'
-                                    'recommended to single optimize first (optimize button).\n'
-                                    'This way you will understand how the optimizer works.\n'
+        messagebox.showinfo(title='Span optimization module', message =
+                                    'WEIGHT INDEX is the most important result.\n'
+                                    'Results are presented for information and can not be returned to main model\n'
+                                    'Weight index will show you the span length that will give the lowest weight.\n'
                                     '\n'
                                     'A default range of T properties is chosen. Typical analysis\n'
-                                    'steps (deltas) is chosen.')
+                                    'steps (deltas) is chosen.\n'
+                                  'Loads are taken from existing structure.')
 
         top_opt = tk.Toplevel(self._parent)
         optgeo.CreateOptGeoWindow(top_opt,self)
