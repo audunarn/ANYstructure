@@ -2544,10 +2544,14 @@ class Application():
                                                            self._pending_grid_draw, self._canvas_base_origo)
 
             tank_inp = dict()
-            for key, value in imported['tank_properties']['search_data'].items():
-                tank_inp[int(key)] = value
-            self._main_grid.bfs_search_data = tank_inp
-            self._grid_calc.bfs_search_data = tank_inp
+            if 'search_data' in imported['tank_properties'].keys():
+                for key, value in imported['tank_properties']['search_data'].items():
+                    tank_inp[int(key)] = value
+                self._main_grid.bfs_search_data = tank_inp
+                self._grid_calc.bfs_search_data = tank_inp
+            else:
+                self._main_grid.bfs_search_data = None
+                self._grid_calc.bfs_search_data = None
 
             for comp_no in range(2, int(self._main_grid.get_highest_number_in_grid())+1):
                 self._compartments_listbox.insert('end',comp_no)
