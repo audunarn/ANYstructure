@@ -361,9 +361,10 @@ class Grid:
         :param grid:
         :return:
         '''
-
-        self._cells = self.rebuild_compressed(grid)
-        #self.cells = np.array(grid)
+        if np.array(grid).shape[1] == 2:
+            self._cells = self.rebuild_compressed(grid)
+        else:
+            self.cells = np.array(grid) # old large save files
 
     def export_grid(self):
         '''

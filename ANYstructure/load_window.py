@@ -178,7 +178,9 @@ class CreateLoadWindow():
 
         # --- showing created loads ---
         start_y = 340
-        tk.Label(self._frame, text='3. Created loads are seen below\n(double click to select):',
+        tk.Label(self._frame, text='3. Created loads are seen below\n'
+                                   '(scroll if not all is shown.)\n'
+                                   'DOUBLE CLICK load to see assosiated lines.:',
                  font="Verdana 10 bold", fg='red').place(x=10, y=start_y)
         self._load_obj_box = tk.Listbox(self._frame, height = 15, selectmode = listbox_select, bg='azure',
                                        relief = 'groove', borderwidth=2)

@@ -75,6 +75,7 @@ class Application():
         menu.add_cascade(label='Help', menu = sub_help)
         sub_help.add_command(label = 'Open documentation', command = self.open_documentation)
         sub_help.add_command(label = 'Open example file', command = self.open_example)
+        sub_help.add_command(label='About ANYstructure', command=self.open_about)
 
         sub_report = tk.Menu(menu)
         menu.add_cascade(label = 'Reporting', menu = sub_report)
@@ -694,9 +695,9 @@ class Application():
             tk.Button(self._main_fr, text='MultiOpt', command=self.on_optimize_multiple).place(x=lc_x + delta_x*7,
                                                                                                y=lc_y - 6 * lc_y_delta)
 
-        #tk.Button(self._main_fr, text='GEO', command=self.on_geometry_optimize,
-        #          font = self._text_size['Text 16 bold'], fg='green', height = 1, bg = 'white')\
-        #    .place(x=lc_x + delta_x * 6.7,y=lc_y - 6 * lc_y_delta)
+        tk.Button(self._main_fr, text='SPAN', command=self.on_geometry_optimize,
+                 font = self._text_size['Text 14 bold'], fg='green', height = 1, bg = 'white')\
+           .place(x=lc_x + delta_x * 6.7,y=lc_y - 6 * lc_y_delta)
         # try:
         #     photo_report = tk.PhotoImage(file=self._root_dir + '\\images\\' +"img_generate_report.gif")
         #     report_button = tk.Button(self._main_fr,image=photo_report, command = self.report_generate)
@@ -2543,10 +2544,14 @@ class Application():
                                                            self._pending_grid_draw, self._canvas_base_origo)
 
             tank_inp = dict()
-            for key, value in imported['tank_properties']['search_data'].items():
-                tank_inp[int(key)] = value
-            self._main_grid.bfs_search_data = tank_inp
-            self._grid_calc.bfs_search_data = tank_inp
+            if 'search_data' in imported['tank_properties'].keys():
+                for key, value in imported['tank_properties']['search_data'].items():
+                    tank_inp[int(key)] = value
+                self._main_grid.bfs_search_data = tank_inp
+                self._grid_calc.bfs_search_data = tank_inp
+            else:
+                self._main_grid.bfs_search_data = None
+                self._grid_calc.bfs_search_data = None
 
             for comp_no in range(2, int(self._main_grid.get_highest_number_in_grid())+1):
                 self._compartments_listbox.insert('end',comp_no)
@@ -2692,14 +2697,14 @@ class Application():
         :return:
         '''
 
-        messagebox.showinfo(title='Multiple optimization information',
-                            message='Opening this window enables batch optimization.\n'
-                                    'There are less input and information. It is HIGHLY\n'
-                                    'recommended to single optimize first (optimize button).\n'
-                                    'This way you will understand how the optimizer works.\n'
+        messagebox.showinfo(title='Span optimization module', message =
+                                    'WEIGHT INDEX is the most important result.\n'
+                                    'Results are presented for information and can not be returned to main model\n'
+                                    'Weight index will show you the span length that will give the lowest weight.\n'
                                     '\n'
                                     'A default range of T properties is chosen. Typical analysis\n'
-                                    'steps (deltas) is chosen.')
+                                    'steps (deltas) is chosen.\n'
+                                  'Loads are taken from existing structure.')
 
         top_opt = tk.Toplevel(self._parent)
         optgeo.CreateOptGeoWindow(top_opt,self)
@@ -2904,6 +2909,17 @@ class Application():
             os.startfile('ANYstructure_documentation.pdf')
         else:
             os.startfile(self._root_dir + '/' + 'ANYstructure_documentation.pdf')
+
+    def open_about(self):
+        '''
+        Open a about messagebox.
+        :return:
+        '''
+        messagebox.showinfo(title='Input error', message='ANYstructure 0.4'
+                                                         '\n'
+                                                         '\n'
+                                                         'By Audun Arnesen Nyhus \n'
+                                                         '2019')
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()

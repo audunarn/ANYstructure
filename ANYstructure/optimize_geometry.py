@@ -56,12 +56,13 @@ class CreateOptGeoWindow():
         # ----------------------------------COPIED FROM OPTIMIZE_WINDOW----------------------------------------------- #
 
         self._opt_resutls = {}
+        self._geo_results = None
         self._opt_actual_running_time = tk.Label(self._frame, text='')
 
         tk.Frame(self._frame, width=770, height=5, bg="grey", colormap="new").place(x=20, y=95)
         tk.Frame(self._frame, width=770, height=5, bg="grey", colormap="new").place(x=20, y=135)
 
-        algorithms = ('anysmart', 'random', 'random_no_delta', 'anydetail', 'pso')
+        algorithms = ('anysmart',' ')
 
         tk.Label(self._frame, text='-- Structural optimizer for multiple selections --',
                  font='Verdana 15 bold').place(x=10, y=10)
@@ -259,9 +260,9 @@ class CreateOptGeoWindow():
                                     font='Verdana 10', fg='Yellow')
         self.run_button.place(x=start_x + dx * 10, y=start_y)
         self._opt_actual_running_time.place(x=start_x + dx * 8, y=start_y + dy * 1.5)
-        self.close_and_save = tk.Button(self._frame, text='Return and replace with selected optimized structure',
-                                        command=self.save_and_close, bg='green', font='Verdana 10 bold', fg='yellow')
-        self.close_and_save.place(x=start_x + dx * 10, y=10)
+        # self.close_and_save = tk.Button(self._frame, text='Return and replace with selected optimized structure',
+        #                                 command=self.save_and_close, bg='green', font='Verdana 10 bold', fg='yellow')
+        # self.close_and_save.place(x=start_x + dx * 10, y=10)
 
         # Selection of constraints
         self._new_check_sec_mod = tk.BooleanVar()
@@ -293,6 +294,7 @@ class CreateOptGeoWindow():
         self._active_lines = []
         self.controls()
         self.draw_select_canvas()
+        #self.run_optimizaion()
 
     def selected_algorithm(self, event):
         '''
@@ -382,18 +384,25 @@ class CreateOptGeoWindow():
 
         init_objects = []
         lateral_press = []
-
+        broke = False
         for line,coord in self._opt_structure.items():
-            init_objects.append(self.opt_create_struc_obj(self._opt_structure[line])[0])
+            if self.opt_create_struc_obj(self._opt_structure[line]) is None:
+                broke = True
+                break
+            else:
+                init_objects.append(self.opt_create_struc_obj(self._opt_structure[line])[0])
             if __name__ == '__main__':
                 lateral_press.append(200)  # for testing
             else:
                 p1, p2 = self._opt_structure[line]
                 closet_line = self.opt_find_closest_orig_line([(p2[0]-p1[0])*0.5, (p2[1]-p1[1])*0.5])
                 lateral_press.append(self.app.get_highest_pressure(closet_line)['normal'] / 1000)
-
-        [print(obj.get_structure_prop()) for obj in init_objects]
-        print(contraints)
+        if broke:
+            messagebox.showinfo(title='Selection error.',
+                                message='This field cannot be subdivided or is not load subjected. Error.')
+            return None
+        # [print(obj.get_structure_prop()) for obj in init_objects]
+        # print(contraints)
 
         if not load_pre:
             geo_results = op.run_optmizataion(initial_structure_obj=init_objects,min_var=self.get_lower_bounds(),
@@ -403,9 +412,14 @@ class CreateOptGeoWindow():
                                               is_geometric=True,fatigue_obj=None, fat_press_ext_int=None,
                                               min_max_span=(2,6), tot_len=self.opt_get_length(),
                                               frame_height=self.opt_get_distance(), frame_distance = distances)
-        # SAVING RESULTS
-        with open('geo_opt.pickle', 'wb') as file:
-            pickle.dump(geo_results, file)
+            self._geo_results = geo_results
+            # SAVING RESULTS
+            with open('geo_opt.pickle', 'wb') as file:
+                pickle.dump(geo_results, file)
+        else:
+            with open('geo_opt.pickle', 'rb') as file:
+                self._geo_results = pickle.load(file)
+        self.draw_result_text(self._geo_results)
 
     def opt_get_fractions(self):
         ''' Finding initial number of fractions '''
@@ -430,7 +444,8 @@ class CreateOptGeoWindow():
 
         vector = [pt2[0] - pt1[0], pt2[1] - pt1[1]]
         point = [pt1[0]+vector[0]*0.5,pt1[1]+vector[1]*0.5]
-
+        if self.opt_find_closest_orig_line(point) == None:
+            return None
         objects = [copy.deepcopy(x) if x != None else None for x in
                    self._line_to_struc[self.opt_find_closest_orig_line(point)]]
 
@@ -776,12 +791,13 @@ class CreateOptGeoWindow():
         self._canvas_select.create_text(self._canvas_origo[0] - 30,
                                         self._canvas_origo[1] + 20, text='(0,0)',
                                         font='Text 10')
-        self._canvas_select.create_text([800, 50],
-                                        text='Mouse left click:  select lines to loads\n'
-                                             'Mouse mid click: show properties for one line\n'
-                                             'Mouse right click: clear all selection\n'
-                                             'Shift key press: add selected line\n'
-                                             'Control key press: remove selected line', font='Verdana 8 bold',
+        self._canvas_select.create_text([700, 50],
+                                        text='How to:\n'
+                                             'For a double bottom structure: \n'
+                                             'Click start point 1 -> click en point 1 (for example bottom plate)\n'
+                                             'Click start point 2 -> click en point 2 (for example inner bottom\n'
+                                             'Run optimization! Wait for the results...... wait.... wait....\n',
+                                        font='Verdana 8 bold',
                                         fill='red')
         # drawing the line dictionary.
         if len(self._line_dict) != 0:
@@ -861,6 +877,45 @@ class CreateOptGeoWindow():
                 self._canvas_select.create_text(self.get_point_canvas_coord(key)[0] - 5,
                                                 self.get_point_canvas_coord(key)[1] - 14, text='pt.'+str(get_num(key)),
                                                 font='Verdana 8', fill='blue')
+
+    def draw_result_text(self, geo_opt_obj):
+        ''' Textual version of the results. '''
+
+        self._canvas_opt.delete('all')
+        start_x = 20
+        delta = 40
+        start_y = 100
+        y_loc = delta + start_y
+
+        self._canvas_opt.create_text([start_x, 40],
+                                     text='Results seen next. Weight index is tot_weight / max_weight \n'
+                                          'max_weight is the highest total weight of the checked variations.\n'
+                                          'Weight index of 1 is the heaviest calculated variation.',
+                                     font='Verdana 10', fill='Blue', anchor='w')
+
+        self._canvas_opt.create_text([start_x, y_loc],
+                                     text='| Plate fields | Fields length | Weight index | All OK? |',
+                                     font='Verdana 10 bold', fill='red', anchor = 'w')
+        y_loc += delta / 2
+        self._canvas_opt.create_text([start_x, y_loc],
+                                     text='************************************************', anchor='w',
+                                     font='Verdana 10 bold')
+        text_type = 'Verdana 12 bold'
+        weights = [self._geo_results[key][0] for key in self._geo_results.keys()]
+        print(weights)
+        for key, value in self._geo_results.items():
+            y_loc = y_loc + delta
+            check_ok = [val[-1] is True for val in self._geo_results[key][1]]
+
+            self._canvas_opt.create_text([start_x + 20, y_loc ], text=str(len(check_ok)),
+                                         anchor='w', font=text_type)
+            self._canvas_opt.create_text([start_x + 120, y_loc ], text=str(self._geo_results[key][1][0][0].get_span()),
+                                         anchor='w', font=text_type)
+            self._canvas_opt.create_text([start_x + 220, y_loc ],
+                                         text=str(round(self._geo_results[key][0] / max(weights), 3)),
+                                         anchor='w', font=text_type)
+            self._canvas_opt.create_text([start_x + 330, y_loc ], text=str(all(check_ok)),
+                                         anchor='w', font=text_type)
 
     def algorithm_info(self):
         ''' When button is clicked, info is displayed.'''
