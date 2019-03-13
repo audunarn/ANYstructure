@@ -1945,6 +1945,7 @@ class Application():
             self._tank_dict = {}
             self._compartments_listbox.delete(0,'end')
             self._main_grid.clear()
+            self._grid_calc = None
         else:
             pass
 
@@ -2670,8 +2671,9 @@ class Application():
         try:
             self.get_highest_pressure(self._active_line)['normal']
         except (KeyError, AttributeError):
-            messagebox.showinfo(title='Missing loads/accelerations', message='Make some loads for the line.\n'+
-                                                                             'Define accelerations for compartments.')
+            messagebox.showinfo(title='Missing loads/accelerations',
+                                message='Select line or make some loads for the line.\n'+
+                                        'Define accelerations for compartments.')
             return
 
         if self._line_is_active:
