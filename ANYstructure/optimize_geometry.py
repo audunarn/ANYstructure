@@ -9,6 +9,7 @@ from tkinter import messagebox
 import ANYstructure.example_data as test
 from ANYstructure.helper import *
 import copy, pickle
+import ANYstructure.calc_structure
 
 class CreateOptGeoWindow():
     '''
@@ -25,7 +26,6 @@ class CreateOptGeoWindow():
             self._point_dict = test.get_point_dict()
             self._canvas_scale = 25
             self._line_to_struc = test.get_line_to_struc()
-            print(self._line_to_struc)
             self._opt_frames = {}
             self._active_points = ['point1','point4','point8','point5']
         else:
@@ -415,9 +415,9 @@ class CreateOptGeoWindow():
                                               min_max_span=(2,6), tot_len=self.opt_get_length(),
                                               frame_height=self.opt_get_distance(), frame_distance = distances)
             self._geo_results = geo_results
-            # SAVING RESULTS
-            # with open('geo_opt.pickle', 'wb') as file:
-            #     pickle.dump(geo_results, file)
+            #SAVING RESULTS
+            with open('geo_opt_2.pickle', 'wb') as file:
+                pickle.dump(geo_results, file)
         else:
             with open('geo_opt.pickle', 'rb') as file:
                 self._geo_results = pickle.load(file)
@@ -884,21 +884,29 @@ class CreateOptGeoWindow():
         else:
             self._canvas_select.create_text([20, 20], text='Results are presented here', font='Verdana 12 bold',
                                             fill='red', anchor = 'w')
-            text_type = 'Verdana 10 bold'
-            weights = [opt_results[key][0] for key in opt_results.keys()]
+            text_type = 'Verdana 10'
             delta, start_x, y_loc = 20, 20, 40
 
             for key, values in opt_results.items():
-
+                print(y_loc)
+                # if y_loc > 700:
+                #     start_x = 400
+                #     y_loc = 40
                 y_loc = y_loc + delta
                 check_ok = [val[-1] is True for val in opt_results[key][1]]
-
+                self._canvas_select.create_text([start_x + delta, y_loc], text=str(len(check_ok)),
+                                                anchor='w', font=text_type)
+                y_loc += delta
                 for data in values[1]:
                     for stuc_info in data:
-                        print(key, stuc_info)
+                        if type(stuc_info) == ANYstructure.calc_structure.Structure:
+                            if y_loc > 700:
+                                y_loc = 120
+                                start_x = 500
+                            self._canvas_select.create_text([start_x + delta, y_loc], text=stuc_info.get_one_line_string(),
+                                                            anchor='w', font=text_type)
+                            y_loc += 15
 
-                self._canvas_opt.create_text([start_x + 20, y_loc], text=str(len(check_ok)),
-                                             anchor='w', font=text_type)
 
     def draw_result_text(self, geo_opt_obj):
         ''' Textual version of the results. '''

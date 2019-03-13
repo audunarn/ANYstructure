@@ -518,15 +518,14 @@ def create_new_calc_obj(init_obj,x, fat_dict=None):
     :param init_obj:
     :return:
     '''
-    
+    x_old = [init_obj.get_s(), init_obj.get_plate_thk(), init_obj.get_web_h() , init_obj.get_web_thk(),
+             init_obj.get_fl_w() ,init_obj.get_fl_thk(), init_obj.get_span(), init_obj.get_lg()]
+
     sigma_y1_new = stress_scaling(init_obj.get_sigma_y1(), init_obj.get_plate_thk(), x[1])
     sigma_y2_new = stress_scaling(init_obj.get_sigma_y2(), init_obj.get_plate_thk(), x[1])
     tau_xy_new = stress_scaling(init_obj.get_tau_xy(), init_obj.get_plate_thk(), x[1])
-    sigma_x_new = stress_scaling_area(init_obj.get_sigma_x(),
-                                      init_obj.get_s()*init_obj.get_plate_thk()+
-                                      init_obj.get_web_h()*init_obj.get_web_thk()+
-                                      init_obj.get_fl_w()*init_obj.get_fl_thk()
-                                      ,x[0]*x[1]+x[2]*x[3]+x[4]*x[5])
+    sigma_x_new = stress_scaling_area(init_obj.get_sigma_x(),sum(get_field_tot_area(x_old)),sum(get_field_tot_area(x)))
+
     main_dict = {'mat_yield': [init_obj.get_fy(), 'Pa'],'span': [init_obj.get_span(), 'm'],
                                 'spacing': [x[0], 'm'],'plate_thk': [x[1], 'm'],'stf_web_height':[ x[2], 'm'],
                                 'stf_web_thk': [x[3], 'm'],'stf_flange_width': [x[4], 'm'],
@@ -547,15 +546,14 @@ def create_new_structure_obj(init_obj, x, fat_dict=None):
     :param init_obj:
     :return:
     '''
+    x_old = [init_obj.get_s(), init_obj.get_plate_thk(), init_obj.get_web_h() , init_obj.get_web_thk(),
+             init_obj.get_fl_w() ,init_obj.get_fl_thk(), init_obj.get_span(), init_obj.get_lg()]
 
     sigma_y1_new = stress_scaling(init_obj.get_sigma_y1(), init_obj.get_plate_thk(), x[1])
     sigma_y2_new = stress_scaling(init_obj.get_sigma_y2(), init_obj.get_plate_thk(), x[1])
     tau_xy_new = stress_scaling(init_obj.get_tau_xy(), init_obj.get_plate_thk(), x[1])
-    sigma_x_new = stress_scaling_area(init_obj.get_sigma_x(),
-                                      init_obj.get_s() * init_obj.get_plate_thk() +
-                                      init_obj.get_web_h() * init_obj.get_web_thk() +
-                                      init_obj.get_fl_w() * init_obj.get_fl_thk()
-                                      , x[0] * x[1] + x[2] * x[3] + x[4] * x[5])
+    sigma_x_new = stress_scaling_area(init_obj.get_sigma_x(),sum(get_field_tot_area(x_old)),sum(get_field_tot_area(x)))
+
     main_dict = {'mat_yield': [init_obj.get_fy(), 'Pa'], 'span': [init_obj.get_span(), 'm'],
                                'spacing': [x[0], 'm'], 'plate_thk': [x[1], 'm'], 'stf_web_height': [x[2], 'm'],
                                'stf_web_thk': [x[3], 'm'], 'stf_flange_width': [x[4], 'm'],
@@ -568,6 +566,13 @@ def create_new_structure_obj(init_obj, x, fat_dict=None):
     if fat_dict == None:
         return calc.Structure(main_dict)
 
+def get_field_tot_area(x):
+    ''' Total area of a plate field. '''
+    width = x[7]
+    plate_area = width*x[1]
+    stiff_area = (x[2] * x[3]+ x[4] * x[5]) * (width//x[0])
+    return plate_area, stiff_area
+
 def calc_weight(x, prt = False):
     '''
     Calculating the current weight
@@ -575,10 +580,8 @@ def calc_weight(x, prt = False):
     :return:
     '''
 
-    width = x[7]
     span = x[6]
-    plate_area = width*x[1]
-    stiff_area = (x[2] * x[3]+ x[4] * x[5]) * (width//x[0])
+    plate_area, stiff_area = get_field_tot_area(x)
 
     if prt:
         print('x is', x, 'plate area', plate_area, 'stiff area', stiff_area, 'weight',
@@ -639,16 +642,19 @@ def stress_scaling(sigma_old,t_old,t_new):
     return sigma_new
 
 def stress_scaling_area(sigma_old,a_old,a_new):
+    ''' Scale stresses using inpur area '''
     if a_new <= a_old: #decreasing the thickness
         sigma_new = sigma_old*(a_old/(a_old-abs((a_old-a_new))))
         assert sigma_new >= sigma_old, 'ERROR no stress increase: \n' \
                                       't_old '+str(a_old)+' sigma_old '+str(sigma_old)+ \
                                       '\nt_new '+str(a_new)+' sigma_new '+str(sigma_new)
+        #print(a_old, sigma_old, '|', a_new, sigma_new)
     else: #increasing the thickness
         sigma_new = sigma_old*(a_old/(a_old+0.5*abs((a_old-a_new))))
         assert sigma_new <= sigma_old, 'ERROR no stress reduction: \n' \
                                       't_old '+str(a_old)+' sigma_old '+str(sigma_old)+ \
                                       '\nt_new '+str(a_new)+' sigma_new '+str(sigma_new)
+        #print(a_old, sigma_old, '|', a_new, sigma_new)
     return sigma_new
 
 def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight,side='p',

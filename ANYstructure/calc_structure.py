@@ -66,6 +66,11 @@ class Structure():
             '\n km1,km2,km3:                   ' + str(self.km1)+'/'+str(self.km2)+'/'+str(self.km3)+
             '\n Pressure side (p-plate/s-stf): ' + str(self.pressure_side) + ' ')
 
+    def get_one_line_string(self):
+        ''' Returning a one line string. '''
+        return 'pl_'+str(self.spacing*1000)+'x'+str(self.plate_th*1000)+' stf_'+self.stiffener_type+\
+               str(self.web_height*1000)+'x'+str(self.web_th*1000)+'+'+str(self.flange_width*1000)+'x'+\
+               str(self.flange_th*1000)
 
     def get_report_stresses(self):
         'Return the stresses to the report'
