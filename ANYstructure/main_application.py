@@ -2725,10 +2725,9 @@ class Application():
             return
 
         try:
-            self.get_highest_pressure(self._active_line)['normal']
-        except (KeyError, AttributeError):
-            messagebox.showinfo(title='Missing loads/accelerations', message='Make some loads for the line.\n'+
-                                                                             'Define accelerations for compartments.')
+            [self.get_highest_pressure(line)['normal'] for line in self._line_to_struc.keys()]
+        except KeyError:
+            messagebox.showinfo(title='Missing loads', message='The SpanOpt requires that loads have been defined.\n')
             return
 
         messagebox.showinfo(title='Span optimization module', message =
