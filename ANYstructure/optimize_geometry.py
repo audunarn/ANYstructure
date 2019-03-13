@@ -296,7 +296,7 @@ class CreateOptGeoWindow():
         self.controls()
         self.draw_select_canvas()
         if __name__ == '__main__':
-            self.run_optimizaion(load_pre = True)
+            self.run_optimizaion(load_pre = True, save_results=True)
 
     def selected_algorithm(self, event):
         '''
@@ -366,7 +366,7 @@ class CreateOptGeoWindow():
             self._ent_minstep.place(x=start_x + dx * 15, y=start_y + 0 * dy)
             self._ent_minfunc.place(x=start_x + dx * 15, y=start_y + 1 * dy)
 
-    def run_optimizaion(self, load_pre = False):
+    def run_optimizaion(self, load_pre = False, save_results = False):
         '''
         Function when pressing the optimization botton inside this window.
         :return:
@@ -416,8 +416,9 @@ class CreateOptGeoWindow():
                                               frame_height=self.opt_get_distance(), frame_distance = distances)
             self._geo_results = geo_results
             #SAVING RESULTS
-            with open('geo_opt_2.pickle', 'wb') as file:
-                pickle.dump(geo_results, file)
+            if save_results:
+                with open('geo_opt_2.pickle', 'wb') as file:
+                    pickle.dump(geo_results, file)
         else:
             with open('geo_opt.pickle', 'rb') as file:
                 self._geo_results = pickle.load(file)
@@ -1066,7 +1067,8 @@ class CreateOptGeoWindow():
         When clicking the right button, this method is called.
         method is referenced in
         '''
-
+        if self._geo_results is not None:
+            return
         click_x = self._canvas_select.winfo_pointerx() - self._canvas_select.winfo_rootx()
         click_y = self._canvas_select.winfo_pointery() - self._canvas_select.winfo_rooty()
 
