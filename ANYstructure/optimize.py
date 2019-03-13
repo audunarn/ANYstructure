@@ -518,15 +518,14 @@ def create_new_calc_obj(init_obj,x, fat_dict=None):
     :param init_obj:
     :return:
     '''
-    
+    x_old = [init_obj.get_s(), init_obj.get_plate_thk(), init_obj.get_web_h() , init_obj.get_web_thk(),
+             init_obj.get_fl_w() ,init_obj.get_fl_thk(), init_obj.get_span(), init_obj.get_lg()]
+
     sigma_y1_new = stress_scaling(init_obj.get_sigma_y1(), init_obj.get_plate_thk(), x[1])
     sigma_y2_new = stress_scaling(init_obj.get_sigma_y2(), init_obj.get_plate_thk(), x[1])
     tau_xy_new = stress_scaling(init_obj.get_tau_xy(), init_obj.get_plate_thk(), x[1])
-    sigma_x_new = stress_scaling_area(init_obj.get_sigma_x(),
-                                      init_obj.get_s()*init_obj.get_plate_thk()+
-                                      init_obj.get_web_h()*init_obj.get_web_thk()+
-                                      init_obj.get_fl_w()*init_obj.get_fl_thk()
-                                      ,x[0]*x[1]+x[2]*x[3]+x[4]*x[5])
+    sigma_x_new = stress_scaling_area(init_obj.get_sigma_x(),sum(get_field_tot_area(x_old)),sum(get_field_tot_area(x)))
+
     main_dict = {'mat_yield': [init_obj.get_fy(), 'Pa'],'span': [init_obj.get_span(), 'm'],
                                 'spacing': [x[0], 'm'],'plate_thk': [x[1], 'm'],'stf_web_height':[ x[2], 'm'],
                                 'stf_web_thk': [x[3], 'm'],'stf_flange_width': [x[4], 'm'],
@@ -547,15 +546,14 @@ def create_new_structure_obj(init_obj, x, fat_dict=None):
     :param init_obj:
     :return:
     '''
+    x_old = [init_obj.get_s(), init_obj.get_plate_thk(), init_obj.get_web_h() , init_obj.get_web_thk(),
+             init_obj.get_fl_w() ,init_obj.get_fl_thk(), init_obj.get_span(), init_obj.get_lg()]
 
     sigma_y1_new = stress_scaling(init_obj.get_sigma_y1(), init_obj.get_plate_thk(), x[1])
     sigma_y2_new = stress_scaling(init_obj.get_sigma_y2(), init_obj.get_plate_thk(), x[1])
     tau_xy_new = stress_scaling(init_obj.get_tau_xy(), init_obj.get_plate_thk(), x[1])
-    sigma_x_new = stress_scaling_area(init_obj.get_sigma_x(),
-                                      init_obj.get_s() * init_obj.get_plate_thk() +
-                                      init_obj.get_web_h() * init_obj.get_web_thk() +
-                                      init_obj.get_fl_w() * init_obj.get_fl_thk()
-                                      , x[0] * x[1] + x[2] * x[3] + x[4] * x[5])
+    sigma_x_new = stress_scaling_area(init_obj.get_sigma_x(),sum(get_field_tot_area(x_old)),sum(get_field_tot_area(x)))
+
     main_dict = {'mat_yield': [init_obj.get_fy(), 'Pa'], 'span': [init_obj.get_span(), 'm'],
                                'spacing': [x[0], 'm'], 'plate_thk': [x[1], 'm'], 'stf_web_height': [x[2], 'm'],
                                'stf_web_thk': [x[3], 'm'], 'stf_flange_width': [x[4], 'm'],
@@ -568,6 +566,13 @@ def create_new_structure_obj(init_obj, x, fat_dict=None):
     if fat_dict == None:
         return calc.Structure(main_dict)
 
+def get_field_tot_area(x):
+    ''' Total area of a plate field. '''
+    width = x[7]
+    plate_area = width*x[1]
+    stiff_area = (x[2] * x[3]+ x[4] * x[5]) * (width//x[0])
+    return plate_area, stiff_area
+
 def calc_weight(x, prt = False):
     '''
     Calculating the current weight
@@ -575,10 +580,8 @@ def calc_weight(x, prt = False):
     :return:
     '''
 
-    width = x[7]
     span = x[6]
-    plate_area = width*x[1]
-    stiff_area = (x[2] * x[3]+ x[4] * x[5]) * (width//x[0])
+    plate_area, stiff_area = get_field_tot_area(x)
 
     if prt:
         print('x is', x, 'plate area', plate_area, 'stiff area', stiff_area, 'weight',
@@ -626,16 +629,32 @@ def calc_weight_pso_section(x,*args):
 
 def stress_scaling(sigma_old,t_old,t_new):
     if t_new <= t_old: #decreasing the thickness
-        sigma_new = sigma_old*(t_old/(t_old-(t_old-t_new)))
+        sigma_new = sigma_old*(t_old/(t_old-abs((t_old-t_new))))
+        assert sigma_new >= sigma_old, 'ERROR no stress increase: \n' \
+                                      't_old '+str(t_old)+' sigma_old '+str(sigma_old)+ \
+                                      '\nt_new '+str(t_new)+' sigma_new '+str(sigma_new)
+
     else: #increasing the thickness
-        sigma_new = sigma_old*(t_old/(t_old+0.5*(t_old-t_new)))
+        sigma_new = sigma_old*(t_old/(t_old+0.5*abs((t_old-t_new))))
+        assert sigma_new <= sigma_old, 'ERROR no stress reduction: \n' \
+                                      't_old '+str(t_old)+' sigma_old '+str(sigma_old)+ \
+                                      '\nt_new '+str(t_new)+' sigma_new '+str(sigma_new)
     return sigma_new
 
 def stress_scaling_area(sigma_old,a_old,a_new):
+    ''' Scale stresses using inpur area '''
     if a_new <= a_old: #decreasing the thickness
-        sigma_new = sigma_old*(a_old/(a_old-(a_old-a_new)))
+        sigma_new = sigma_old*(a_old/(a_old-abs((a_old-a_new))))
+        assert sigma_new >= sigma_old, 'ERROR no stress increase: \n' \
+                                      't_old '+str(a_old)+' sigma_old '+str(sigma_old)+ \
+                                      '\nt_new '+str(a_new)+' sigma_new '+str(sigma_new)
+        #print(a_old, sigma_old, '|', a_new, sigma_new)
     else: #increasing the thickness
-        sigma_new = sigma_old*(a_old/(a_old+0.5*(a_old-a_new)))
+        sigma_new = sigma_old*(a_old/(a_old+0.5*abs((a_old-a_new))))
+        assert sigma_new <= sigma_old, 'ERROR no stress reduction: \n' \
+                                      't_old '+str(a_old)+' sigma_old '+str(sigma_old)+ \
+                                      '\nt_new '+str(a_new)+' sigma_new '+str(sigma_new)
+        #print(a_old, sigma_old, '|', a_new, sigma_new)
     return sigma_new
 
 def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight,side='p',
@@ -787,72 +806,20 @@ def product_any(*args, repeat=1,weight=float('inf')):
             yield tuple(prod)
 
 if __name__ == '__main__':
-
-    obj_dict = test.obj_dict
-    fat_obj = test.get_fatigue_object()
-    fp = test.get_fatigue_pressures()
+    import ANYstructure.example_data as ex
+    obj_dict = ex.obj_dict
+    fat_obj = ex.get_fatigue_object()
+    fp = ex.get_fatigue_pressures()
     fat_press = ((fp['p_ext']['loaded'],fp['p_ext']['ballast'],fp['p_ext']['part']),
                  (fp['p_int']['loaded'],fp['p_int']['ballast'],fp['p_int']['part']))
     x0 = [obj_dict['spacing'][0], obj_dict['plate_thk'][0], obj_dict['stf_web_height'][0], obj_dict['stf_web_thk'][0],
           obj_dict['stf_flange_width'][0], obj_dict['stf_flange_thk'][0], obj_dict['span'][0], 10]
     obj = calc.Structure(obj_dict)
-    lat_press = 200
+    lat_press = 271.124
     calc_object = calc.CalcScantlings(obj_dict)
-    lower_bounds = np.array([0.6, 0.01, 0.2, 0.01, 0.05, 0.01, 3.5, 10])
-    upper_bounds = np.array([0.8, 0.025, 0.6, 0.03, 0.25, 0.03, 3.5, 10])
+    upper_bounds = np.array([0.6, 0.01, 0.3, 0.01, 0.1, 0.01, 3.5, 10])
+    lower_bounds = np.array([0.8, 0.02, 0.5, 0.02, 0.22, 0.03, 3.5, 10])
     deltas = np.array([0.05, 0.005, 0.05, 0.005, 0.05, 0.005])
-    geo_opt_obj = test.get_geo_opt_object()
-    geo_opt_press = test.get_geo_opt_presure()
-    # print('Initial x is:', x0)
-    # print('Initial constraint ok? ', True if any_constraints_all(x0,obj,lat_press,calc_weight(x0),
-    #                                                              fat_dict=fat_obj.get_fatigue_properties(),
-    #                                                              fat_press=fat_press) is not False else False)
-    # print('Initial weight is:', calc_weight(x0))
-    # #
-    t2 = time.time()
-    # opt = run_optmizataion(obj, upper_bounds, lower_bounds, lat_press, deltas, algorithm='anysmart',
-    #                        fatigue_obj=fat_obj, fat_press_ext_int=fat_press)[0]
-    # print('Consumed time is: ', time.time()-t2)
-
-    opt = run_optmizataion(initial_structure_obj=geo_opt_obj,
-                           min_var=lower_bounds,
-                           max_var=upper_bounds,
-                           lateral_pressure= geo_opt_press, deltas=deltas,
-                           algorithm='anysmart',trials=30000,side='p',const_chk = (True,True,True,True,False,False),
-                           pso_options = (100,0.5,0.5,0.5,100,1e-8,1e-8),is_geometric=True, fatigue_obj = None,
-                           fat_press_ext_int = None,min_max_span = (2,6), tot_len = 12, frame_height = 2.5,
-                           frame_distance= {'start_dist': 2.5, 'stop_dist':5})
-    print(opt)
-    print('TIME:', time.time() - t2)
-    for key,value in opt.items():
-        print('***********************************************************************************')
-        print('Frames: ', key)
-        print('Weight: ', value[0],' with length: ', len(value[1]))
-        # for member in value[1]:
-        #     print(member[0])
-        print('')
-    # print('Resulting weight is: ', calc_weight((opt.get_s(),opt.get_pl_thk(),opt.get_web_h(),opt.get_web_thk(),
-    #                                             opt.get_fl_w(),opt.get_fl_thk(),opt.get_span(),10)))
-    #
-    # t2 = time.time()
-    # print(run_optmizataion(obj,
-    #                        [0.6, 0.01, 0.3, 0.01, 0.05, 0.01,3.5,10],
-    #                        [0.8, 0.025, 0.5, 0.022, 0.25, 0.03, 3.5, 10],
-    #                        271.124,
-    #                        deltas=np.array([0.05, 0.001, 0.025, 0.002, 0.025, 0.002]),algorithm='anydetail')[0])
-    # print('TIME:',time.time()-t2)
-    # comb = any_get_all_combs([0.7, 0.01, 0.4, 0.01, 0.1, 0.01,3.5,10],[0.8, 0.02, 0.5, 0.02, 0.4, 0.02, 3.5, 10],
-    #                          np.array([0.05, 0.005, 0.05, 0.0025, 0.05, 0.005]),init_weight=6000)
-    # c = 0
-    # for i in comb:
-    #     c+=1
-    #     print(i)
-    # print(c)
-
-    # args = [obj,lat_press,float('inf'),'p',(True,True,True,True),3.5,10]
-    # lb = [0.6, 0.01, 0.3, 0.01, 0.05, 0.01]
-    # ub = [0.8, 0.025, 0.5, 0.022, 0.25, 0.03]
-    # xopt, fopt = pso(calc_weight_pso, lb, ub, f_ieqcons=any_constraints_all_number,swarmsize=100, args=args)
-    # print('xopt is: ',xopt)
-    # print('fopt is: ',fopt)
-
+    results = run_optmizataion(obj, upper_bounds, lower_bounds, lat_press, deltas, algorithm='anysmart',
+                               fatigue_obj=fat_obj, fat_press_ext_int=fat_press)[0]
+    print(results.get_structure_prop())

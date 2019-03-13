@@ -28,14 +28,14 @@ def test_optimization(opt_input):
     results = opt.run_optmizataion(obj, upper_bounds, lower_bounds, lat_press, deltas, algorithm='anysmart',
                                    fatigue_obj=fat_obj, fat_press_ext_int=fat_press)[0]
 
-    assert results.get_structure_prop() ==  {'mat_yield': [355000000.0, 'Pa'], 'span': [4, 'm'], 'spacing': [0.6, 'm'],
+    assert results.get_structure_prop() ==  {'mat_yield': [355000000.0, 'Pa'], 'span': [4, 'm'], 'spacing': [0.65, 'm'],
                                              'plate_thk': [0.015, 'm'], 'stf_web_height': [0.3, 'm'],
                                              'stf_web_thk': [0.01, 'm'], 'stf_flange_width': [0.15, 'm'],
                                              'stf_flange_thk': [0.025, 'm'], 'structure_type': ['BOTTOM', ''],
-                                             'stf_type': ['T', ''], 'sigma_y1': [80.0, 'MPa'],'sigma_y2': [80.0, 'MPa'],
-                                             'sigma_x': [108.95238095238096, 'MPa'], 'tau_xy': [5.0, 'MPa'],
-                                             'plate_kpp': [1, ''],'stf_kps': [1, ''], 'stf_km1': [12, ''],
-                                             'stf_km2': [24, ''], 'stf_km3': [12, '']}
+                                             'stf_type': ['T', ''], 'sigma_y1': [80.0, 'MPa'],
+                                             'sigma_y2': [80.0, 'MPa'], 'sigma_x': [89.9820895522388, 'MPa'],
+                                             'tau_xy': [5.0, 'MPa'], 'plate_kpp': [1, ''], 'stf_kps': [1, ''],
+                                             'stf_km1': [12, ''], 'stf_km2': [24, ''], 'stf_km3': [12, '']}
 
 def test_weight_calc(opt_input):
     assert opt.calc_weight(opt_input[-1]) == 8873.64

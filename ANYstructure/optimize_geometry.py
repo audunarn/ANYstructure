@@ -9,6 +9,7 @@ from tkinter import messagebox
 import ANYstructure.example_data as test
 from ANYstructure.helper import *
 import copy, pickle
+import ANYstructure.calc_structure
 
 class CreateOptGeoWindow():
     '''
@@ -294,7 +295,8 @@ class CreateOptGeoWindow():
         self._active_lines = []
         self.controls()
         self.draw_select_canvas()
-        #self.run_optimizaion()
+        if __name__ == '__main__':
+            self.run_optimizaion(load_pre = True, save_results=True)
 
     def selected_algorithm(self, event):
         '''
@@ -364,7 +366,7 @@ class CreateOptGeoWindow():
             self._ent_minstep.place(x=start_x + dx * 15, y=start_y + 0 * dy)
             self._ent_minfunc.place(x=start_x + dx * 15, y=start_y + 1 * dy)
 
-    def run_optimizaion(self, load_pre = False):
+    def run_optimizaion(self, load_pre = False, save_results = False):
         '''
         Function when pressing the optimization botton inside this window.
         :return:
@@ -413,13 +415,16 @@ class CreateOptGeoWindow():
                                               min_max_span=(2,6), tot_len=self.opt_get_length(),
                                               frame_height=self.opt_get_distance(), frame_distance = distances)
             self._geo_results = geo_results
-            # SAVING RESULTS
-            # with open('geo_opt.pickle', 'wb') as file:
-            #     pickle.dump(geo_results, file)
+            #SAVING RESULTS
+            if save_results:
+                with open('geo_opt_2.pickle', 'wb') as file:
+                    pickle.dump(geo_results, file)
         else:
             with open('geo_opt.pickle', 'rb') as file:
                 self._geo_results = pickle.load(file)
-        self.draw_result_text(self._geo_results)
+        if __name__ == '__main__':
+            self.draw_result_text(self._geo_results)
+            self.draw_select_canvas(opt_results=self._geo_results)
 
     def opt_get_fractions(self):
         ''' Finding initial number of fractions '''
@@ -713,7 +718,6 @@ class CreateOptGeoWindow():
                                                   fill=init_color, stipple=init_stipple)
 
         if opt_obj != None:
-            # [0.6, 0.012, 0.25, 0.01, 0.1, 0.01]
             self._canvas_opt.create_rectangle(ctr_x - m * opt_obj.get_s() / 2, ctr_y,
                                               ctr_x + m * opt_obj.get_s() / 2,
                                               ctr_y - m * opt_obj.get_pl_thk(), fill=opt_color,
@@ -775,108 +779,135 @@ class CreateOptGeoWindow():
                                          text='Lateral pressure: ' + str(lateral_press) + ' kPa',
                                          font='Verdana 10 bold', fill='red')
 
-    def draw_select_canvas(self, load_selected=False):
+    def draw_select_canvas(self, load_selected=False, opt_results = None):
         '''
         Making the lines canvas.
         :return:
         '''
         self._canvas_select.delete('all')
 
-        # stippled lines and text.
+        if opt_results is None:
+            # stippled lines and text.
 
-        self._canvas_select.create_line(self._canvas_origo[0], 0, self._canvas_origo[0], self._select_canvas_dim[1],
-                                        stipple='gray50')
-        self._canvas_select.create_line(0, self._canvas_origo[1], self._select_canvas_dim[0], self._canvas_origo[1],
-                                        stipple='gray50')
-        self._canvas_select.create_text(self._canvas_origo[0] - 30,
-                                        self._canvas_origo[1] + 20, text='(0,0)',
-                                        font='Text 10')
-        self._canvas_select.create_text([700, 50],
-                                        text='How to:\n'
-                                             'For a double bottom structure: \n'
-                                             'Click start point 1 -> click en point 1 (for example bottom plate)\n'
-                                             'Click start point 2 -> click en point 2 (for example inner bottom\n'
-                                             'Run optimization! Wait for the results...... wait.... wait....\n',
-                                        font='Verdana 8 bold',
-                                        fill='red')
-        # drawing the line dictionary.
-        if len(self._line_dict) != 0:
-            for line, value in self._line_dict.items():
-                color = 'black'
-                coord1 = self.get_point_canvas_coord('point' + str(value[0]))
-                coord2 = self.get_point_canvas_coord('point' + str(value[1]))
-                vector = [coord2[0] - coord1[0], coord2[1] - coord1[1]]
-                # drawing a bold line if it is selected
-                if self._line_to_struc[line][0].get_structure_type() not in ('GENERAL_INTERNAL_NONWT','FRAME'):
-
-                    if line in self._active_lines:
-                        self._canvas_select.create_line(coord1, coord2, width=6, fill=color,stipple='gray50')
-                        self._canvas_select.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 + 10,
-                                                        text='Line ' + str(get_num(line)), font='Verdand 10 bold',
-                                                        fill='red')
-                    else:
-                        self._canvas_select.create_line(coord1, coord2, width=3, fill=color,stipple='gray25')
-                        self._canvas_select.create_text(coord1[0] - 20 + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 +
-
-                                                        10,text='line' + str(get_num(line)),font="Text 8", fill='black')
-
-            if len(self._opt_frames) != 0:
-                for key,value in self._opt_frames.items():
-                    coord1 = self.get_canvas_coord(value[0])
-                    coord2 = self.get_canvas_coord(value[1])
+            self._canvas_select.create_line(self._canvas_origo[0], 0, self._canvas_origo[0], self._select_canvas_dim[1],
+                                            stipple='gray50')
+            self._canvas_select.create_line(0, self._canvas_origo[1], self._select_canvas_dim[0], self._canvas_origo[1],
+                                            stipple='gray50')
+            self._canvas_select.create_text(self._canvas_origo[0] - 30,
+                                            self._canvas_origo[1] + 20, text='(0,0)',
+                                            font='Text 10')
+            self._canvas_select.create_text([700, 50],
+                                            text='How to:\n'
+                                                 'For a double bottom structure: \n'
+                                                 'Click start point 1 -> click en point 1 (for example bottom plate)\n'
+                                                 'Click start point 2 -> click en point 2 (for example inner bottom\n'
+                                                 'Run optimization! Wait for the results...... wait.... wait....\n',
+                                            font='Verdana 8 bold',
+                                            fill='red')
+            # drawing the line dictionary.
+            if len(self._line_dict) != 0:
+                for line, value in self._line_dict.items():
+                    color = 'black'
+                    coord1 = self.get_point_canvas_coord('point' + str(value[0]))
+                    coord2 = self.get_point_canvas_coord('point' + str(value[1]))
                     vector = [coord2[0] - coord1[0], coord2[1] - coord1[1]]
-                    self._canvas_select.create_line(coord1, coord2, width=3, fill='SkyBlue1')
-            else:
-                pass
+                    # drawing a bold line if it is selected
+                    if self._line_to_struc[line][0].get_structure_type() not in ('GENERAL_INTERNAL_NONWT','FRAME'):
 
-        if len(self._active_points)>1:
-            color = 'blue'
-            coord1 = self.get_point_canvas_coord(self._active_points[0])
-            coord2 = self.get_point_canvas_coord(self._active_points[1])
-            vector = [coord2[0] - coord1[0], coord2[1] - coord1[1]]
-            # drawing a bold line if it is selected
-            self._canvas_select.create_line(coord1, coord2, width=6, fill=color)
-            if len(self._active_points) > 3:
-                coord1 = self.get_point_canvas_coord(self._active_points[2])
-                coord2 = self.get_point_canvas_coord(self._active_points[3])
-                vector = [coord2[0] - coord1[0], coord2[1] - coord1[1]]
-                self._canvas_select.create_line(coord1, coord2, width=6, fill=color)
+                        if line in self._active_lines:
+                            self._canvas_select.create_line(coord1, coord2, width=6, fill=color,stipple='gray50')
+                            self._canvas_select.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 + 10,
+                                                            text='Line ' + str(get_num(line)), font='Verdand 10 bold',
+                                                            fill='red')
+                        else:
+                            self._canvas_select.create_line(coord1, coord2, width=3, fill=color,stipple='gray25')
+                            self._canvas_select.create_text(coord1[0] - 20 + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 +
 
-        # drawing the point dictionary
-        for key,value in self._point_dict.items():
-            pt_size = 6
-            if key in self._active_points:
-                self._canvas_select.create_oval(self.get_point_canvas_coord(key)[0] - pt_size + 2,
-                                              self.get_point_canvas_coord(key)[1] - pt_size + 2,
-                                              self.get_point_canvas_coord(key)[0] + pt_size + 2,
-                                              self.get_point_canvas_coord(key)[1] + pt_size + 2, fill='blue')
-                if self._active_points.index(key) == 0:
-                    self._canvas_select.create_text(self.get_point_canvas_coord(key)[0] - 5,
-                                                    self.get_point_canvas_coord(key)[1] - 14, text='START 1',
-                                                    font='Verdana 12', fill = 'blue')
-                elif self._active_points.index(key) == 1:
-                    self._canvas_select.create_text(self.get_point_canvas_coord(key)[0] - 5,
-                                                    self.get_point_canvas_coord(key)[1] - 14,
-                                                    text='STOP 1',font='Verdana 12', fill='blue')
-                elif self._active_points.index(key) == 2:
-                    self._canvas_select.create_text(self.get_point_canvas_coord(key)[0] - 5,
-                                                    self.get_point_canvas_coord(key)[1] - 14,
-                                                    text='START 2',font='Verdana 12', fill='blue')
-                elif self._active_points.index(key) == 3:
-                    self._canvas_select.create_text(self.get_point_canvas_coord(key)[0] - 5,
-                                                    self.get_point_canvas_coord(key)[1] - 14,
-                                                    text='STOP 2',font='Verdana 12', fill='blue')
+                                                            10,text='line' + str(get_num(line)),font="Text 8", fill='black')
+
+                if len(self._opt_frames) != 0:
+                    for key,value in self._opt_frames.items():
+                        coord1 = self.get_canvas_coord(value[0])
+                        coord2 = self.get_canvas_coord(value[1])
+                        vector = [coord2[0] - coord1[0], coord2[1] - coord1[1]]
+                        self._canvas_select.create_line(coord1, coord2, width=3, fill='SkyBlue1')
                 else:
                     pass
-            else:
-                self._canvas_select.create_oval(self.get_point_canvas_coord(key)[0] - pt_size,
-                                              self.get_point_canvas_coord(key)[1] - pt_size,
-                                              self.get_point_canvas_coord(key)[0] + pt_size,
-                                              self.get_point_canvas_coord(key)[1] + pt_size, fill='red')
 
-                self._canvas_select.create_text(self.get_point_canvas_coord(key)[0] - 5,
-                                                self.get_point_canvas_coord(key)[1] - 14, text='pt.'+str(get_num(key)),
-                                                font='Verdana 8', fill='blue')
+            if len(self._active_points)>1:
+                color = 'blue'
+                coord1 = self.get_point_canvas_coord(self._active_points[0])
+                coord2 = self.get_point_canvas_coord(self._active_points[1])
+                vector = [coord2[0] - coord1[0], coord2[1] - coord1[1]]
+                # drawing a bold line if it is selected
+                self._canvas_select.create_line(coord1, coord2, width=6, fill=color)
+                if len(self._active_points) > 3:
+                    coord1 = self.get_point_canvas_coord(self._active_points[2])
+                    coord2 = self.get_point_canvas_coord(self._active_points[3])
+                    vector = [coord2[0] - coord1[0], coord2[1] - coord1[1]]
+                    self._canvas_select.create_line(coord1, coord2, width=6, fill=color)
+
+            # drawing the point dictionary
+            for key,value in self._point_dict.items():
+                pt_size = 6
+                if key in self._active_points:
+                    self._canvas_select.create_oval(self.get_point_canvas_coord(key)[0] - pt_size + 2,
+                                                  self.get_point_canvas_coord(key)[1] - pt_size + 2,
+                                                  self.get_point_canvas_coord(key)[0] + pt_size + 2,
+                                                  self.get_point_canvas_coord(key)[1] + pt_size + 2, fill='blue')
+                    if self._active_points.index(key) == 0:
+                        self._canvas_select.create_text(self.get_point_canvas_coord(key)[0] - 5,
+                                                        self.get_point_canvas_coord(key)[1] - 14, text='START 1',
+                                                        font='Verdana 12', fill = 'blue')
+                    elif self._active_points.index(key) == 1:
+                        self._canvas_select.create_text(self.get_point_canvas_coord(key)[0] - 5,
+                                                        self.get_point_canvas_coord(key)[1] - 14,
+                                                        text='STOP 1',font='Verdana 12', fill='blue')
+                    elif self._active_points.index(key) == 2:
+                        self._canvas_select.create_text(self.get_point_canvas_coord(key)[0] - 5,
+                                                        self.get_point_canvas_coord(key)[1] - 14,
+                                                        text='START 2',font='Verdana 12', fill='blue')
+                    elif self._active_points.index(key) == 3:
+                        self._canvas_select.create_text(self.get_point_canvas_coord(key)[0] - 5,
+                                                        self.get_point_canvas_coord(key)[1] - 14,
+                                                        text='STOP 2',font='Verdana 12', fill='blue')
+                    else:
+                        pass
+                else:
+                    self._canvas_select.create_oval(self.get_point_canvas_coord(key)[0] - pt_size,
+                                                  self.get_point_canvas_coord(key)[1] - pt_size,
+                                                  self.get_point_canvas_coord(key)[0] + pt_size,
+                                                  self.get_point_canvas_coord(key)[1] + pt_size, fill='red')
+
+                    self._canvas_select.create_text(self.get_point_canvas_coord(key)[0] - 5,
+                                                    self.get_point_canvas_coord(key)[1] - 14, text='pt.'+str(get_num(key)),
+                                                    font='Verdana 8', fill='blue')
+        else:
+            self._canvas_select.create_text([20, 20], text='Results are presented here', font='Verdana 12 bold',
+                                            fill='red', anchor = 'w')
+            text_type = 'Verdana 10'
+            delta, start_x, y_loc = 20, 20, 40
+
+            for key, values in opt_results.items():
+                print(y_loc)
+                # if y_loc > 700:
+                #     start_x = 400
+                #     y_loc = 40
+                y_loc = y_loc + delta
+                check_ok = [val[-1] is True for val in opt_results[key][1]]
+                self._canvas_select.create_text([start_x + delta, y_loc], text=str(len(check_ok)),
+                                                anchor='w', font=text_type)
+                y_loc += delta
+                for data in values[1]:
+                    for stuc_info in data:
+                        if type(stuc_info) == ANYstructure.calc_structure.Structure:
+                            if y_loc > 700:
+                                y_loc = 120
+                                start_x = 500
+                            self._canvas_select.create_text([start_x + delta, y_loc], text=stuc_info.get_one_line_string(),
+                                                            anchor='w', font=text_type)
+                            y_loc += 15
+
 
     def draw_result_text(self, geo_opt_obj):
         ''' Textual version of the results. '''
@@ -902,7 +933,7 @@ class CreateOptGeoWindow():
                                      font='Verdana 10 bold')
         text_type = 'Verdana 12 bold'
         weights = [self._geo_results[key][0] for key in self._geo_results.keys()]
-        print(weights)
+
         for key, value in self._geo_results.items():
             y_loc = y_loc + delta
             check_ok = [val[-1] is True for val in self._geo_results[key][1]]
@@ -1036,7 +1067,8 @@ class CreateOptGeoWindow():
         When clicking the right button, this method is called.
         method is referenced in
         '''
-
+        if self._geo_results is not None:
+            return
         click_x = self._canvas_select.winfo_pointerx() - self._canvas_select.winfo_rootx()
         click_y = self._canvas_select.winfo_pointery() - self._canvas_select.winfo_rooty()
 
@@ -1131,7 +1163,6 @@ class CreateOptGeoWindow():
             messagebox.showinfo(title='Nothing to return', message='No results to return.')
             return
         self._frame.destroy()
-
 
 if __name__ == '__main__':
     root = tk.Tk()

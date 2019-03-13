@@ -154,7 +154,7 @@ def get_fatigue_object():
 def get_tank_object():
     return load.Tanks(tank_dict=tank_dict_ballast)
 
-def get_line_to_struc():
+def get_line_to_struc(geo = False):
     to_return = {}
     for line in line_dict.keys():
         to_return[line]=[get_structure_object(line), get_structure_calc_object(), None, [None], {}]
@@ -233,17 +233,17 @@ def get_geo_opt_object():
               'sigma_y2': [80, 'MPa'], 'sigma_x': [80, 'MPa'], 'tau_xy': [5, 'MPa'], 'stf_type': ['T', '']},
              {'mat_yield': [355000000.0, 'Pa'], 'span': [4.0, 'm'], 'spacing': [0.7, 'm'], 'plate_thk': [0.015, 'm'],
               'stf_web_height': [0.4, 'm'], 'stf_web_thk': [0.012, 'm'], 'stf_flange_width': [0.15, 'm'],
-              'stf_flange_thk': [0.02, 'm'], 'structure_type': ['BOTTOM', ''], 'plate_kpp': [1, ''], 'stf_kps': [1, ''],
+              'stf_flange_thk': [0.02, 'm'], 'structure_type': ['GENERAL_INTERNAL_WT', ''], 'plate_kpp': [1, ''], 'stf_kps': [1, ''],
               'stf_km1': [12, ''], 'stf_km2': [24, ''], 'stf_km3': [12, ''], 'sigma_y1': [80, 'MPa'],
               'sigma_y2': [80, 'MPa'], 'sigma_x': [80, 'MPa'], 'tau_xy': [5, 'MPa'], 'stf_type': ['T', '']},
              {'mat_yield': [355000000.0, 'Pa'], 'span': [4.0, 'm'], 'spacing': [0.7, 'm'], 'plate_thk': [0.015, 'm'],
               'stf_web_height': [0.4, 'm'], 'stf_web_thk': [0.012, 'm'], 'stf_flange_width': [0.15, 'm'],
-              'stf_flange_thk': [0.02, 'm'], 'structure_type': ['BOTTOM', ''], 'plate_kpp': [1, ''], 'stf_kps': [1, ''],
+              'stf_flange_thk': [0.02, 'm'], 'structure_type': ['GENERAL_INTERNAL_WT', ''], 'plate_kpp': [1, ''], 'stf_kps': [1, ''],
               'stf_km1': [12, ''], 'stf_km2': [24, ''], 'stf_km3': [12, ''], 'sigma_y1': [80, 'MPa'],
               'sigma_y2': [80, 'MPa'], 'sigma_x': [80, 'MPa'], 'tau_xy': [5, 'MPa'], 'stf_type': ['T', '']},
              {'mat_yield': [355000000.0, 'Pa'], 'span': [4.0, 'm'], 'spacing': [0.7, 'm'], 'plate_thk': [0.015, 'm'],
               'stf_web_height': [0.4, 'm'], 'stf_web_thk': [0.012, 'm'], 'stf_flange_width': [0.15, 'm'],
-              'stf_flange_thk': [0.02, 'm'], 'structure_type': ['BOTTOM', ''], 'plate_kpp': [1, ''], 'stf_kps': [1, ''],
+              'stf_flange_thk': [0.02, 'm'], 'structure_type': ['GENERAL_INTERNAL_WT', ''], 'plate_kpp': [1, ''], 'stf_kps': [1, ''],
               'stf_km1': [12, ''], 'stf_km2': [24, ''], 'stf_km3': [12, ''], 'sigma_y1': [80, 'MPa'],
               'sigma_y2': [80, 'MPa'], 'sigma_x': [80, 'MPa'], 'tau_xy': [5, 'MPa'], 'stf_type': ['T', '']})
     return [calc_structure.CalcScantlings(dic) for dic in dicts]

@@ -192,7 +192,6 @@ class Application():
         # Initsializing the calculation grid used for tank definition
         self._grid_dimensions = [self._canvas_base_origo[1] + 1, base_canvas_dim[0] - self._canvas_base_origo[0] + 1]
         self._main_grid  = grid.Grid(self._grid_dimensions[0], self._grid_dimensions[1])
-
         self._grid_calc = None
 
         # These sets the location where entries are placed.
@@ -2222,11 +2221,11 @@ class Application():
         Resetting the script.
         :return:
         '''
+
         self._line_dict = {}
         self._point_dict = {}
         self._line_to_struc = {}
         self._line_point_to_point_string = []
-        self._main_canvas.delete('all')
         self.update_frame()
         self._load_dict = {}
         self._new_load_comb_dict = {}
@@ -2234,6 +2233,22 @@ class Application():
         self._active_line = ''
         self._point_is_active = False
         self._active_point = ''
+        self.delete_all_tanks()
+        self._main_canvas.delete('all')
+        self._prop_canvas.delete('all')
+        self._result_canvas.delete('all')
+        self._pending_grid_draw = {}
+        self._p1_p2_select = False
+        self._line_is_active = False # True when a line is clicked
+        self._active_line = '' # Name of the clicked point
+        self._point_is_active = False # True when a point is clicked
+        self._active_point = '' # Name of the clicked point
+        self.controls() # Function to activate mouse clicks
+        self._line_point_to_point_string = [] # This one ensures that a line is not created on top of a line
+
+        # Initsializing the calculation grid used for tank definition
+        self._main_grid  = grid.Grid(self._grid_dimensions[0], self._grid_dimensions[1])
+        self._grid_calc = None
 
     def controls(self):
         '''
@@ -2648,6 +2663,10 @@ class Application():
         User open window to optimize current structure
         :return:
         '''
+        if [self.get_highest_pressure(line)['normal'] for line in self._line_to_struc.keys()] == []:
+            messagebox.showinfo(title='Missing something', message='Make something')
+            return
+
         try:
             self.get_highest_pressure(self._active_line)['normal']
         except (KeyError, AttributeError):
@@ -2671,6 +2690,10 @@ class Application():
         Used to optimize in batch mode.
         :return:
         '''
+        if [self.get_highest_pressure(line)['normal'] for line in self._line_to_struc.keys()] == []:
+            messagebox.showinfo(title='Missing something', message='Make something')
+            return
+
         try:
             [self.get_highest_pressure(line)['normal'] for line in self._line_to_struc.keys()]
         except KeyError:
@@ -2696,6 +2719,16 @@ class Application():
         :param returned_objects:
         :return:
         '''
+
+        if [self.get_highest_pressure(line)['normal'] for line in self._line_to_struc.keys()] == []:
+            messagebox.showinfo(title='Missing something', message='Make something')
+            return
+
+        try:
+            [self.get_highest_pressure(line)['normal'] for line in self._line_to_struc.keys()]
+        except KeyError:
+            messagebox.showinfo(title='Missing loads', message='The SpanOpt requires that loads have been defined.\n')
+            return
 
         messagebox.showinfo(title='Span optimization module', message =
                                     'WEIGHT INDEX is the most important result.\n'
@@ -2856,13 +2889,15 @@ class Application():
         :return:
         '''
 
-        mess = tk.messagebox.showwarning('Close main window', 'Save before closing?',type = 'yesno')
+        mess = tk.messagebox.showwarning('Close main window', 'Save before closing?',type = 'yesnocancel')
 
         if mess == 'yes':
             self.savefile()
             self._parent.destroy()
-        else:
+        elif mess == 'no':
             self._parent.destroy()
+        elif mess == 'cancel':
+            pass
 
     def logger(self, line = None, point = None, move_coords = None):
         ''' Log to be used for undo and redo. '''
