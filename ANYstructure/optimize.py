@@ -633,16 +633,22 @@ def stress_scaling(sigma_old,t_old,t_new):
 
     else: #increasing the thickness
         sigma_new = sigma_old*(t_old/(t_old+0.5*abs((t_old-t_new))))
-        assert sigma_new < sigma_old, 'ERROR no stress reduction: \n' \
+        assert sigma_new <= sigma_old, 'ERROR no stress reduction: \n' \
                                       't_old '+str(t_old)+' sigma_old '+str(sigma_old)+ \
                                       '\nt_new '+str(t_new)+' sigma_new '+str(sigma_new)
     return sigma_new
 
 def stress_scaling_area(sigma_old,a_old,a_new):
     if a_new <= a_old: #decreasing the thickness
-        sigma_new = sigma_old*(a_old/(a_old-(a_old-a_new)))
+        sigma_new = sigma_old*(a_old/(a_old-abs((a_old-a_new))))
+        assert sigma_new >= sigma_old, 'ERROR no stress increase: \n' \
+                                      't_old '+str(a_old)+' sigma_old '+str(sigma_old)+ \
+                                      '\nt_new '+str(a_new)+' sigma_new '+str(sigma_new)
     else: #increasing the thickness
-        sigma_new = sigma_old*(a_old/(a_old+0.5*(a_old-a_new)))
+        sigma_new = sigma_old*(a_old/(a_old+0.5*abs((a_old-a_new))))
+        assert sigma_new <= sigma_old, 'ERROR no stress reduction: \n' \
+                                      't_old '+str(a_old)+' sigma_old '+str(sigma_old)+ \
+                                      '\nt_new '+str(a_new)+' sigma_new '+str(sigma_new)
     return sigma_new
 
 def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight,side='p',
