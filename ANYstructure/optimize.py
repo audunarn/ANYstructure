@@ -626,9 +626,16 @@ def calc_weight_pso_section(x,*args):
 
 def stress_scaling(sigma_old,t_old,t_new):
     if t_new <= t_old: #decreasing the thickness
-        sigma_new = sigma_old*(t_old/(t_old-(t_old-t_new)))
+        sigma_new = sigma_old*(t_old/(t_old-abs((t_old-t_new))))
+        assert sigma_new >= sigma_old, 'ERROR no stress increase: \n' \
+                                      't_old '+str(t_old)+' sigma_old '+str(sigma_old)+ \
+                                      '\nt_new '+str(t_new)+' sigma_new '+str(sigma_new)
+
     else: #increasing the thickness
-        sigma_new = sigma_old*(t_old/(t_old+0.5*(t_old-t_new)))
+        sigma_new = sigma_old*(t_old/(t_old+0.5*abs((t_old-t_new))))
+        assert sigma_new < sigma_old, 'ERROR no stress reduction: \n' \
+                                      't_old '+str(t_old)+' sigma_old '+str(sigma_old)+ \
+                                      '\nt_new '+str(t_new)+' sigma_new '+str(sigma_new)
     return sigma_new
 
 def stress_scaling_area(sigma_old,a_old,a_new):
@@ -801,36 +808,36 @@ if __name__ == '__main__':
     lower_bounds = np.array([0.6, 0.01, 0.2, 0.01, 0.05, 0.01, 3.5, 10])
     upper_bounds = np.array([0.8, 0.025, 0.6, 0.03, 0.25, 0.03, 3.5, 10])
     deltas = np.array([0.05, 0.005, 0.05, 0.005, 0.05, 0.005])
-    geo_opt_obj = test.get_geo_opt_object()
-    geo_opt_press = test.get_geo_opt_presure()
-    # print('Initial x is:', x0)
-    # print('Initial constraint ok? ', True if any_constraints_all(x0,obj,lat_press,calc_weight(x0),
-    #                                                              fat_dict=fat_obj.get_fatigue_properties(),
-    #                                                              fat_press=fat_press) is not False else False)
-    # print('Initial weight is:', calc_weight(x0))
-    # #
+    # geo_opt_obj = test.get_geo_opt_object()
+    # geo_opt_press = test.get_geo_opt_presure()
+    print('Initial x is:', x0)
+    print('Initial constraint ok? ', True if any_constraints_all(x0,obj,lat_press,calc_weight(x0),
+                                                                 fat_dict=fat_obj.get_fatigue_properties(),
+                                                                 fat_press=fat_press) is not False else False)
+    print('Initial weight is:', calc_weight(x0))
     t2 = time.time()
-    # opt = run_optmizataion(obj, upper_bounds, lower_bounds, lat_press, deltas, algorithm='anysmart',
-    #                        fatigue_obj=fat_obj, fat_press_ext_int=fat_press)[0]
-    # print('Consumed time is: ', time.time()-t2)
 
-    opt = run_optmizataion(initial_structure_obj=geo_opt_obj,
-                           min_var=lower_bounds,
-                           max_var=upper_bounds,
-                           lateral_pressure= geo_opt_press, deltas=deltas,
-                           algorithm='anysmart',trials=30000,side='p',const_chk = (True,True,True,True,False,False),
-                           pso_options = (100,0.5,0.5,0.5,100,1e-8,1e-8),is_geometric=True, fatigue_obj = None,
-                           fat_press_ext_int = None,min_max_span = (2,6), tot_len = 12, frame_height = 2.5,
-                           frame_distance= {'start_dist': 2.5, 'stop_dist':5})
-    print(opt)
-    print('TIME:', time.time() - t2)
-    for key,value in opt.items():
-        print('***********************************************************************************')
-        print('Frames: ', key)
-        print('Weight: ', value[0],' with length: ', len(value[1]))
-        # for member in value[1]:
-        #     print(member[0])
-        print('')
+    opt = run_optmizataion(obj, upper_bounds, lower_bounds, lat_press, deltas, algorithm='anysmart',
+                           fatigue_obj=fat_obj, fat_press_ext_int=fat_press)[0]
+    print('Consumed time is: ', time.time()-t2)
+
+    # opt = run_optmizataion(initial_structure_obj=geo_opt_obj,
+    #                        min_var=lower_bounds,
+    #                        max_var=upper_bounds,
+    #                        lateral_pressure= geo_opt_press, deltas=deltas,
+    #                        algorithm='anysmart',trials=30000,side='p',const_chk = (True,True,True,True,False,False),
+    #                        pso_options = (100,0.5,0.5,0.5,100,1e-8,1e-8),is_geometric=True, fatigue_obj = None,
+    #                        fat_press_ext_int = None,min_max_span = (2,6), tot_len = 12, frame_height = 2.5,
+    #                        frame_distance= {'start_dist': 2.5, 'stop_dist':5})
+    # print(opt)
+    # print('TIME:', time.time() - t2)
+    # for key,value in opt.items():
+    #     print('***********************************************************************************')
+    #     print('Frames: ', key)
+    #     print('Weight: ', value[0],' with length: ', len(value[1]))
+    #     # for member in value[1]:
+    #     #     print(member[0])
+    #     print('')
     # print('Resulting weight is: ', calc_weight((opt.get_s(),opt.get_pl_thk(),opt.get_web_h(),opt.get_web_thk(),
     #                                             opt.get_fl_w(),opt.get_fl_thk(),opt.get_span(),10)))
     #
