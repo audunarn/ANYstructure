@@ -2731,13 +2731,14 @@ class Application():
             return
 
         messagebox.showinfo(title='Span optimization module', message =
+                                    'Computationally heavy! Will run for a long time.\n\n'
                                     'WEIGHT INDEX is the most important result.\n'
-                                    'Results are presented for information and can not be returned to main model\n'
+                                    'Results are presented for information and can not be returned to main model.\n'
                                     'Weight index will show you the span length that will give the lowest weight.\n'
                                     '\n'
                                     'A default range of T properties is chosen. Typical analysis\n'
                                     'steps (deltas) is chosen.\n'
-                                  'Loads are taken from existing structure.')
+                                    'Loads are taken from existing structure.')
 
         top_opt = tk.Toplevel(self._parent)
         optgeo.CreateOptGeoWindow(top_opt,self)
