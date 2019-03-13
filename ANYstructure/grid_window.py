@@ -103,7 +103,7 @@ class CreateGridWindow():
         else:
             plt.show()
 
-    def animate_grid(self, grids_to_animate: list = None):
+    def animate_grid(self, grids_to_animate: list = None, tank_count = None):
         ''' If animation is selected, the grid is shown here. '''
 
         all_grids = grids_to_animate
@@ -126,26 +126,42 @@ class CreateGridWindow():
             while True:
                 yield generate_data()
         plt.ion()
-        tank_count = np.max(all_grids[-1])
+        #tank_count = np.max(all_grids[-1])
         fig = plt.figure(figsize=[12, 8])
         ax = fig.add_subplot(111)
-        fig.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.05)
+        ax.tick_params(labelsize=8)
+        fig.subplots_adjust(left=0.05, right=0.90, top=0.95, bottom=0.05)
         # get discrete colormap
         cmap = plt.get_cmap('Accent_r', np.max(all_grids[-1]) - np.min(all_grids[-1]) + 1)
         # set limits .5 outside true range
         cax = ax.matshow(all_grids[-1], cmap=cmap, vmin=np.min(all_grids[-1]) - .5, vmax=np.max(all_grids[-1]) + .5)
         # tell the colorbar to tick at integers
         colb = fig.colorbar(cax, ticks=np.arange(np.min(all_grids[-1]), np.max(all_grids[-1]) + 1), shrink=0.8)
+
+        if self._bfs_search_data is not None:
+            comp_cell_count = self._bfs_search_data
+        area_mult = self._parent_dimensions[0] / (10 * self._parent_dimensions[0]) * \
+                    self._parent_dimensions[1] / (10 * self._parent_dimensions[1])
+        plt_txt = list()
+        for num in range(tank_count):
+            if self._bfs_search_data is not None:
+                tank_area = comp_cell_count[num + 2] * area_mult
+                plt_txt.append('Comp' + str(num + 2) + ' Approx. area: ' + str(round(tank_area, 1)))
+            else:
+                plt_txt.append('Comp' + str(num + 2))
+
         if tank_count is not None:
             colb.set_ticks([-1, 0, 1] + [num + 2 for num in range(int(tank_count))])
-            colb.set_ticklabels(['BHD/Deck', 'Not searched', 'External'] + ['Comp' + str(num + 2) for
-                                                                        num in range(int(tank_count))])
+            colb.set_ticklabels(['BHD/Deck', 'Not searched', 'External'] + plt_txt)
         ani = animation.FuncAnimation(fig, update, data_gen, interval=50)
         fm = plt.get_current_fig_manager()
-        #fm.window.activateWindow()
-        #fm.window.raise_()
-        plt.axis('off')
+        fm.window.activateWindow()
+        fm.window.raise_()
         plt.suptitle('Compartments returned from search operation displayed below', fontsize=20, color='red')
+        plt.xscale('linear')
+        plt.axis('off')
+        plt.annotate('*area calculation inaccuracies due to thickness of barriers (BHD/Deck)', (0, 0), (0, -20),
+                     xycoords='axes fraction', textcoords='offset points', va='top', fontsize = 10)
         plt.show()
 
     def search_bfs(self, animate = False):
