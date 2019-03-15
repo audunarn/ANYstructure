@@ -6,6 +6,7 @@ import numpy as np
 import time, os
 from tkinter import messagebox
 import ANYstructure.example_data as test
+import ANYstructure.helper as hlp
 
 class CreateOptimizeWindow():
     '''
@@ -54,6 +55,7 @@ class CreateOptimizeWindow():
         self._opt_runned = False
         self._opt_results = ()
         self._opt_actual_running_time = tk.Label(self._frame,text='')
+        self._predefined_structure = False
 
         self._draw_scale = 500
         self._canvas_dim = (500, 450)
@@ -463,6 +465,7 @@ class CreateOptimizeWindow():
         tk.Checkbutton(self._frame, variable=self._new_check_slamming).place(x=start_x + dx * 12, y=start_y + 9 * dy)
 
         self.draw_properties()
+        self.run_optimizaion()
 
     def selected_algorithm(self,event):
         '''
@@ -556,6 +559,11 @@ class CreateOptimizeWindow():
         else:
             fat_press = None
 
+        self._predefined_structure = True
+        if self._predefined_structure:
+            predefined_stiffener_iter = hlp.helper_read_xml('tbar.xml', obj=self._initial_structure_obj)
+        else:
+            predefined_stiffener_iter = None
 
         self._opt_results= op.run_optmizataion(self._initial_structure_obj,self.get_lower_bounds(),
                                                self.get_upper_bounds(),self._new_design_pressure.get(),
@@ -565,7 +573,8 @@ class CreateOptimizeWindow():
                                                const_chk=contraints,pso_options = self.pso_parameters,
                                                fatigue_obj=self._fatigue_object,
                                                fat_press_ext_int=fat_press,
-                                               slamming_press = self._new_slamming_pressure.get())
+                                               slamming_press = self._new_slamming_pressure.get(),
+                                               predefined_stiffener_iter=predefined_stiffener_iter)
 
         if self._opt_results is not None:
             self._opt_actual_running_time.config(text='Actual running time: \n'
