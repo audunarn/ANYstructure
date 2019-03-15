@@ -11,7 +11,7 @@ import ANYstructure.helper as hlp
 #from opt_problem import MyProblem
 from multiprocessing import Pool, cpu_count
 import ANYstructure.example_data as test
-import psopy
+#import psopy
 
 
 def run_optmizataion(initial_structure_obj=None, min_var=None,max_var=None,lateral_pressure=None,
