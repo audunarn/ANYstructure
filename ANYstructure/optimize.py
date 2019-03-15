@@ -389,7 +389,7 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                     if frame_spacings[count // 2] is None:
                         frame_spacings[count // 2] = obj.get_s()
                 else:
-                    # In this case there are no applicable solutions fount in the specified dimension ranges.
+                    # In this case there are no applicable solutions found in the specified dimension ranges.
                     tot_weight += float('inf')
                     valid = False
             if valid:
