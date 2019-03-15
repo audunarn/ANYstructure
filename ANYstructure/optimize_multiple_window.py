@@ -8,7 +8,7 @@ import time, os
 from tkinter import messagebox
 import ANYstructure.example_data as test
 from ANYstructure.helper import *
-
+import ANYstructure.helper as hlp
 
 class CreateOptimizeMultipleWindow():
     '''
@@ -426,6 +426,12 @@ class CreateOptimizeMultipleWindow():
                          (fat_press['p_int']['loaded'], fat_press['p_int']['ballast'],
                           fat_press['p_int']['part']))
 
+            self._predefined_structure = True
+            if self._predefined_structure:
+                predefined_stiffener_iter = hlp.helper_read_xml('tbar.xml', obj=init_obj)
+            else:
+                predefined_stiffener_iter = None
+
             self._opt_resutls[line] = op.run_optmizataion(init_obj, self.get_lower_bounds(init_obj),
                                                           self.get_upper_bounds(init_obj),
                                                           lateral_press,self.get_deltas(),
@@ -436,7 +442,8 @@ class CreateOptimizeMultipleWindow():
                                                           pso_options=self.pso_parameters,
                                                           fatigue_obj=fat_obj,
                                                           fat_press_ext_int=fat_press,
-                                                          slamming_press=slamming_pressure)
+                                                          slamming_press=slamming_pressure,
+                                                          predefined_stiffener_iter = predefined_stiffener_iter)
             counter += 1
             self.progress_count.set(counter)
             self.progress_bar.update_idletasks()

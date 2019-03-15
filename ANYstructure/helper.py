@@ -2,7 +2,7 @@
 Helper funations to be used.
 '''
 
-import math
+import math, copy
 
 def print_helper(properties, prop_text, units):
     '''
@@ -192,3 +192,47 @@ def helper_manual(line_name, comb_name,load_factors_all):
 
     return load_factors[0].get() * load_factors[1].get() * load_factors[2].get()
 
+def helper_read_xml(file, obj = None):
+    ''' Read a xml file. '''
+    from xml.dom import minidom
+    xmldoc = minidom.parse(file)
+    sectionlist = xmldoc.getElementsByTagName('section')
+    sec_types = ('unsymmetrical_i_section', 'l_section', 'bar_section')
+    to_return = {}
+    for sec_type in sec_types:
+        sec_type_get = xmldoc.getElementsByTagName(sec_type)
+        for item, itemdata in zip(sectionlist, sec_type_get):
+            if sec_type is sec_types[0]:
+                stf_web_h, stf_web_thk = 'h', 'tw'
+                stf_flange_width, stf_flange_thk  = 'bfbot', 'tfbot'
+            elif sec_type is sec_types[1]:
+                stf_web_h, stf_web_thk = 'stf_web_height', 'stf_web_thk'
+                stf_flange_width, stf_flange_thk  = 'stf_flange_width', 'stf_flange_thk'
+            elif sec_type is sec_types[2]:
+                stf_web_h, stf_web_thk = 'stf_web_height', 'stf_web_thk'
+                stf_flange_width, stf_flange_thk  = 'stf_flange_width', 'stf_flange_thk'
+
+
+            to_return[item.getAttribute('name')] = {'stf_web_height': [float(itemdata.getAttribute('h')) / 1000, 'm'],
+                                                    'stf_web_thk': [float(itemdata.getAttribute('tw')) / 1000, 'm'],
+                                                    'stf_flange_width': [float(itemdata.getAttribute('bfbot')) / 1000, 'm'],
+                                                    'stf_flange_thk': [float(itemdata.getAttribute('tfbot')) / 1000, 'm'],
+                                                    'structure_type': ['T', '']}
+    if obj is not None:  # This will return a modified object.
+        to_return_obj = list()
+        for key, value in to_return.items():
+            new_obj = copy.deepcopy(obj)
+            for prop_name, prop_val in value.items():
+                new_obj_prop = new_obj.get_structure_prop()
+                new_obj_prop[prop_name] = prop_val
+            new_obj.set_main_properties(new_obj_prop)
+            to_return_obj.append(new_obj)
+        print(to_return_obj)
+        return to_return_obj
+    else:  # Returning only the data.
+        print(to_return)
+        return to_return
+if __name__ == '__main__':
+    import ANYstructure.example_data as ex
+    file = 'bulb.xml'
+    helper_read_xml(file, obj=ex.get_structure_object())

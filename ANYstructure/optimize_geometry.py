@@ -10,6 +10,7 @@ import ANYstructure.example_data as test
 from ANYstructure.helper import *
 import copy, pickle
 import ANYstructure.calc_structure
+import ANYstructure.helper as hlp
 
 class CreateOptGeoWindow():
     '''
@@ -24,7 +25,7 @@ class CreateOptGeoWindow():
             self._line_dict = test.get_line_dict()
             self._load_count = 0
             self._point_dict = test.get_point_dict()
-            self._canvas_scale = 25
+            self._canvas_scale = 20
             self._line_to_struc = test.get_line_to_struc()
             self._opt_frames = {}
             self._active_points = ['point1','point4','point8','point5']
@@ -295,8 +296,8 @@ class CreateOptGeoWindow():
         self._active_lines = []
         self.controls()
         self.draw_select_canvas()
-        if __name__ == '__main__':
-            self.run_optimizaion(load_pre = True, save_results=True)
+        # if __name__ == '__main__':
+        #     self.run_optimizaion(load_pre = True, save_results=True)
 
     def selected_algorithm(self, event):
         '''
@@ -414,8 +415,10 @@ class CreateOptGeoWindow():
                                               is_geometric=True,fatigue_obj=None, fat_press_ext_int=None,
                                               min_max_span=(2,6), tot_len=self.opt_get_length(),
                                               frame_height=self.opt_get_distance(), frame_distance = distances)
+            print(geo_results)
             self._geo_results = geo_results
             #SAVING RESULTS
+            save_results = True
             if save_results:
                 with open('geo_opt_2.pickle', 'wb') as file:
                     pickle.dump(geo_results, file)

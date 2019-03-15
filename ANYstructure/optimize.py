@@ -7,9 +7,11 @@ import random
 import matplotlib.pyplot as plt
 #from pyswarm import pso
 import copy
+import ANYstructure.helper as hlp
 #from opt_problem import MyProblem
 from multiprocessing import Pool, cpu_count
 import ANYstructure.example_data as test
+import psopy
 
 
 def run_optmizataion(initial_structure_obj=None, min_var=None,max_var=None,lateral_pressure=None,
@@ -18,7 +20,7 @@ def run_optmizataion(initial_structure_obj=None, min_var=None,max_var=None,later
                      pso_options = (100,0.5,0.5,0.5,100,1e-8,1e-8),is_geometric=False, fatigue_obj = None ,
                      fat_press_ext_int = None,
                      min_max_span = (2,6), tot_len = 12, frame_height = 2.5, frame_distance = None,
-                     slamming_press = 0):
+                     slamming_press = 0, predefined_stiffener_iter = None):
     '''
     The optimazation is initiated here. It is called from optimize_window.
     :param initial_structure_obj:
@@ -56,7 +58,8 @@ def run_optmizataion(initial_structure_obj=None, min_var=None,max_var=None,later
     if algorithm == 'anysmart' and not is_geometric:
         to_return = any_smart_loop(min_var, max_var, deltas, initial_structure_obj, lateral_pressure,
                                    init_filter_weight, side=side, const_chk=const_chk, fat_dict=fat_dict,
-                                   fat_press=fat_press_ext_int,slamming_press=slamming_press)
+                                   fat_press=fat_press_ext_int,slamming_press=slamming_press,
+                                   predefiened_stiffener_iter=predefined_stiffener_iter)
         return to_return
     elif algorithm == 'anysmart' and is_geometric:
         return geometric_summary_search(min_var= min_var, max_var=max_var, deltas= deltas,
@@ -64,7 +67,7 @@ def run_optmizataion(initial_structure_obj=None, min_var=None,max_var=None,later
                                         init_filter= init_filter_weight, side= side, const_chk= const_chk,
                                         fat_obj=  fatigue_obj, fat_press= fat_press_ext_int, min_max_span= min_max_span,
                                         tot_len= tot_len, frame_distance = frame_distance,
-                                        algorithm= 'anysmart')
+                                        algorithm= 'anysmart', predefiened_stiffener_iter=predefined_stiffener_iter)
     elif algorithm == 'anydetail' and not is_geometric:
         return any_optimize_loop(min_var, max_var, deltas, initial_structure_obj, lateral_pressure,init_filter_weight,
                                  side=side, const_chk=const_chk, fat_dict=fat_dict, fat_press=fat_press_ext_int,
@@ -133,7 +136,7 @@ def any_optimize_loop(min_var,max_var,deltas,initial_structure_obj,lateral_press
 
 def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure, init_filter = float('inf'),
                    side='p',const_chk=(True,True,True,True,True,True), fat_dict = None, fat_press = None,
-                   slamming_press = 0):
+                   slamming_press = 0, predefiened_stiffener_iter = None):
     '''
     Trying to be smart
     :param min_var:
@@ -142,7 +145,12 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
     :return:
     '''
 
-    main_iter = get_filtered_results(any_get_all_combs(min_var, max_var, deltas, init_weight=init_filter),
+    if predefiened_stiffener_iter is None:
+        structure_to_check = any_get_all_combs(min_var, max_var, deltas, init_weight=init_filter)
+    else:
+        structure_to_check = [obj.get_tuple() for obj in predefiened_stiffener_iter]
+
+    main_iter = get_filtered_results(structure_to_check,
                                      initial_structure_obj,lateral_pressure,init_filter_weight=init_filter,
                                      side=side,chk=const_chk, fat_dict=fat_dict, fat_press=fat_press,
                                      slamming_press=slamming_press)
@@ -166,17 +174,19 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
 
 def any_smart_loop_geometric(min_var,max_var,deltas,initial_structure_obj,lateral_pressure, init_filter = float('inf'),
                              side='p',const_chk=(True,True,True,True,True,True), fat_dict = None, fat_press = None,
-                             slamming_press = 0):
+                             slamming_press = 0, predefiened_stiffener_iter=None):
     ''' Searching multiple sections using the smart loop. '''
 
     all_obj = []
 
     for struc_obj, lat_press in zip(initial_structure_obj, lateral_pressure):
 
+        predefiened_stiffener_iter = hlp.helper_read_xml('tbar.xml', obj=struc_obj)
+
         opt_obj = any_smart_loop(min_var = min_var,max_var = max_var,deltas = deltas,initial_structure_obj = struc_obj,
                                  lateral_pressure = lat_press, init_filter = init_filter, side=side,
                                  const_chk=const_chk, fat_dict = fat_dict, fat_press = fat_press,
-                                 slamming_press = slamming_press)
+                                 slamming_press = slamming_press, predefiened_stiffener_iter=predefiened_stiffener_iter)
         # TODO-any set check if not solution acceptable.
         all_obj.append(opt_obj)
 
@@ -184,7 +194,7 @@ def any_smart_loop_geometric(min_var,max_var,deltas,initial_structure_obj,latera
 
 def particle_search(min_var,max_var,deltas,initial_structure_obj,lateral_pressure, init_filter = float('inf'),
                     side='p',const_chk=(True,True,True,True),
-                    pso_options=(100,0.5,0.5,0.5,100,1e-8,1e-8), fat_dict = None, fat_press = None,
+                    pso_options=(10000,0.5,0.5,0.5,100,1e-8,1e-8), fat_dict = None, fat_press = None,
                     slamming_press = 0):
     '''
     Searchin using Particle Swarm Search (http://pythonhosted.org/pyswarm/)
@@ -214,17 +224,18 @@ def particle_search(min_var,max_var,deltas,initial_structure_obj,lateral_pressur
                          f_ieqcons=any_constraints_all_number,swarmsize=pso_options[0],
                          omega=pso_options[1], phip=pso_options[2],phig=pso_options[3],
                          maxiter=pso_options[4], minstep=pso_options[5], minfunc=pso_options[6],
-                         args=args, processes= cpu_count())
+                         args=args)
 
     ass_var = xopt
     np.append(ass_var,[args[5],args[6]])
     new_structure_obj = create_new_structure_obj(initial_structure_obj,[round(item,5) for item in ass_var])
     new_calc_obj = create_new_calc_obj(initial_structure_obj,[round(item,5) for item in ass_var])[0]
-
+    print(xopt)
     args = list(args)
     args[0] = new_structure_obj
 
     return new_structure_obj, new_calc_obj, fat_dict, True if any_constraints_all_number(xopt, *args) == 0 else False
+
 
 def algorithmic_search(min_var,max_var,deltas,initial_structure_obj,lateral_pressure, init_filter = float('inf'),
                     side='p',const_chk=(True,True,True,True),
@@ -283,7 +294,7 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                              init_filter = float('inf'),side='p',const_chk=(True,True,True,True, True, True),
                              pso_options=(100,0.5,0.5,0.5,100,1e-8,1e-8), fat_obj = None, fat_press = None,
                              min_max_span = (2,6), tot_len = 12, frame_distance = None,
-                             algorithm = 'anysmart'):
+                             algorithm = 'anysmart', predefiened_stiffener_iter=None):
 
     '''Geometric optimization of all relevant sections. '''
     # Checking the number of initial objects and adding if number of fraction is to be changed.
@@ -361,14 +372,15 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                                                        initial_structure_obj=working_objects[no_of_fractions],
                                                        lateral_pressure=working_lateral[no_of_fractions],
                                                        init_filter = init_filter,side=side,const_chk=const_chk,
-                                                       fat_dict = None, fat_press = None, slamming_press = 0)
+                                                       fat_dict = None, fat_press = None, slamming_press = 0,
+                                                       predefiened_stiffener_iter = predefiened_stiffener_iter)
 
                 # TODO fatigue and slamming implemetation
 
             # Finding weight of this solution.
 
             tot_weight, frame_spacings, valid, width = 0, [None for dummy in range(len(opt_objects))], True, 10
-
+            print(opt_objects)
             for count, opt in enumerate(opt_objects):
                 obj = opt[0]
                 if opt[3]:
@@ -568,7 +580,11 @@ def create_new_structure_obj(init_obj, x, fat_dict=None):
 
 def get_field_tot_area(x):
     ''' Total area of a plate field. '''
-    width = x[7]
+
+    if len(x) == 6:
+        width = 10
+    else:
+        width = x[7]
     plate_area = width*x[1]
     stiff_area = (x[2] * x[3]+ x[4] * x[5]) * (width//x[0])
     return plate_area, stiff_area
@@ -819,7 +835,14 @@ if __name__ == '__main__':
     calc_object = calc.CalcScantlings(obj_dict)
     upper_bounds = np.array([0.6, 0.01, 0.3, 0.01, 0.1, 0.01, 3.5, 10])
     lower_bounds = np.array([0.8, 0.02, 0.5, 0.02, 0.22, 0.03, 3.5, 10])
-    deltas = np.array([0.05, 0.005, 0.05, 0.005, 0.05, 0.005])
+    deltas = np.array([0.05, 0.005, 0.05, 0.005, 0.05, 0.005, 0.5])
     results = run_optmizataion(obj, upper_bounds, lower_bounds, lat_press, deltas, algorithm='anysmart',
                                fatigue_obj=fat_obj, fat_press_ext_int=fat_press)[0]
-    print(results.get_structure_prop())
+    print(results.get_one_line_string())
+    # for swarm_size in [100, 1000, 10000, 100000, 1000000]:
+    #     t1 = time.time()
+    #
+    #     pso_options = (swarm_size, 0.5, 0.5, 0.5, 100, 1e-8, 1e-8)
+    #     results = run_optmizataion(obj, upper_bounds, lower_bounds, lat_press, deltas, algorithm='anysmart',
+    #                            fatigue_obj=fat_obj, fat_press_ext_int=fat_press, pso_options=pso_options)[0]
+    #     print('Swarm size', swarm_size, 'running time', time.time()-t1, results.get_one_line_string())
