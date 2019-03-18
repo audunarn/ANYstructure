@@ -67,7 +67,7 @@ class CreateOptimizeWindow():
 
         self._canvas_opt.place(x=10,y=300)
 
-        algorithms = ('anysmart','random','random_no_delta')
+        algorithms = ('anysmart','random','random_no_delta', 'anydetail')
 
         tk.Label(self._frame,text='-- Structural optimizer --',font='Verdana 15 bold').place(x=10,y=10)
 
@@ -432,7 +432,7 @@ class CreateOptimizeWindow():
         self.run_button.place(x=start_x+dx*8, y=start_y+dy*0.5)
         self._opt_actual_running_time.place(x=start_x+dx*8, y=start_y+dy*1.5)
 
-        self.close_and_save =tk.Button(self._frame,text='Return and replace initial strucutre with optimized',
+        self.close_and_save =tk.Button(self._frame,text='Return and replace initial structure with optimized',
                                        command=self.save_and_close,bg='green',font='Verdana 10',fg='yellow')
         self.close_and_save.place(x=start_x+dx*5,y=10)
 
@@ -465,7 +465,7 @@ class CreateOptimizeWindow():
         tk.Checkbutton(self._frame, variable=self._new_check_slamming).place(x=start_x + dx * 12, y=start_y + 9 * dy)
 
         self.draw_properties()
-        self.run_optimizaion()
+
 
     def selected_algorithm(self,event):
         '''

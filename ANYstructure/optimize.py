@@ -436,9 +436,11 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
     if chk[0]:
         if not min(calc_object[0].get_section_modulus()) > calc_object[0].get_dnv_min_section_modulus(lat_press) :
             return False
+
     # Local stiffener buckling
     if not calc_object[0].buckling_local_stiffener():
         return False
+
     # Buckling
     if chk[3]:
         if not all([uf<=1 for uf in calc_object[0].calculate_buckling_all(design_lat_press=lat_press,
@@ -446,7 +448,7 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
             return False
     # Minimum plate thickeness
     if chk[1]:
-        if not calc_object.get_plate_thk()>calc_object[0].get_dnv_min_thickness(lat_press)/1000:
+        if not calc_object[0].get_plate_thk()>calc_object[0].get_dnv_min_thickness(lat_press)/1000:
             return False
     # Shear area
     if chk[2]:
@@ -484,6 +486,7 @@ def any_constraints_all_number(x,*args):
     if chk[0]:
         if not min(calc_object[0].get_section_modulus()) > calc_object[0].get_dnv_min_section_modulus(lat_press) :
             return -1
+
     # Local stiffener buckling
     if not calc_object[0].buckling_local_stiffener():
         return -1
@@ -494,7 +497,7 @@ def any_constraints_all_number(x,*args):
             return -1
     #Minimum plate thickeness
     if chk[1]:
-        if not obj.get_plate_thk()>calc_object[0].get_dnv_min_thickness(lat_press)/1000:
+        if not calc_object[0].get_plate_thk()>calc_object[0].get_dnv_min_thickness(lat_press)/1000:
             return -1
     # Shear area
     if chk[2]:

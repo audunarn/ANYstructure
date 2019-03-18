@@ -199,25 +199,40 @@ def helper_read_xml(file, obj = None):
     sectionlist = xmldoc.getElementsByTagName('section')
     sec_types = ('unsymmetrical_i_section', 'l_section', 'bar_section')
     to_return = {}
-    for sec_type in sec_types:
+    for idx, sec_type in enumerate(sec_types):
         sec_type_get = xmldoc.getElementsByTagName(sec_type)
+        if sec_types == []:
+            continue
         for item, itemdata in zip(sectionlist, sec_type_get):
-            if sec_type is sec_types[0]:
+            if sec_type == sec_types[0]:
                 stf_web_h, stf_web_thk = 'h', 'tw'
                 stf_flange_width, stf_flange_thk  = 'bfbot', 'tfbot'
-            elif sec_type is sec_types[1]:
-                stf_web_h, stf_web_thk = 'stf_web_height', 'stf_web_thk'
-                stf_flange_width, stf_flange_thk  = 'stf_flange_width', 'stf_flange_thk'
-            elif sec_type is sec_types[2]:
-                stf_web_h, stf_web_thk = 'stf_web_height', 'stf_web_thk'
-                stf_flange_width, stf_flange_thk  = 'stf_flange_width', 'stf_flange_thk'
+                structure_type = 'T'
+            elif sec_type == sec_types[1]:
+                stf_web_h, stf_web_thk = 'h', 'tw'
+                stf_flange_width, stf_flange_thk  = 'b', 'tf'
+                structure_type = 'L'
+            elif sec_type == sec_types[2]:
+                stf_web_h, stf_web_thk = 'h', 'b'
+                stf_flange_width, stf_flange_thk  = None, None
+                structure_type = 'FB'
 
-
-            to_return[item.getAttribute('name')] = {'stf_web_height': [float(itemdata.getAttribute('h')) / 1000, 'm'],
-                                                    'stf_web_thk': [float(itemdata.getAttribute('tw')) / 1000, 'm'],
-                                                    'stf_flange_width': [float(itemdata.getAttribute('bfbot')) / 1000, 'm'],
-                                                    'stf_flange_thk': [float(itemdata.getAttribute('tfbot')) / 1000, 'm'],
-                                                    'structure_type': ['T', '']}
+            to_return[item.getAttribute('name')] = {'stf_web_height':
+                                                        [float(itemdata.getAttribute(stf_web_h)) / 1000,
+                                                         'm'],
+                                                    'stf_web_thk':
+                                                        [float(itemdata.getAttribute(stf_web_thk)) / 1000,
+                                                         'm'],
+                                                    'stf_flange_width':
+                                                        [0 if stf_flange_width is None else
+                                                         float(itemdata.getAttribute(stf_flange_width)) / 1000,
+                                                         'm'],
+                                                    'stf_flange_thk':
+                                                        [0 if stf_flange_thk is None else
+                                                         float(itemdata.getAttribute(stf_flange_thk)) / 1000,
+                                                         'm'],
+                                                    'structure_type':
+                                                        [structure_type, '']}
     if obj is not None:  # This will return a modified object.
         to_return_obj = list()
         for key, value in to_return.items():
@@ -227,12 +242,11 @@ def helper_read_xml(file, obj = None):
                 new_obj_prop[prop_name] = prop_val
             new_obj.set_main_properties(new_obj_prop)
             to_return_obj.append(new_obj)
-        print(to_return_obj)
         return to_return_obj
     else:  # Returning only the data.
         print(to_return)
         return to_return
 if __name__ == '__main__':
     import ANYstructure.example_data as ex
-    file = 'bulb.xml'
-    helper_read_xml(file, obj=ex.get_structure_object())
+    file = 'flatbar.xml'
+    helper_read_xml(file)
