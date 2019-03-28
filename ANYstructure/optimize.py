@@ -16,7 +16,7 @@ import ANYstructure.example_data as test
 
 def run_optmizataion(initial_structure_obj=None, min_var=None,max_var=None,lateral_pressure=None,
                      deltas=None,algorithm='anysmart',trials=30000,side='p',
-                     const_chk = (True,True,True,True,True,True),
+                     const_chk = (True,True,True,True,True,True, True),
                      pso_options = (100,0.5,0.5,0.5,100,1e-8,1e-8),is_geometric=False, fatigue_obj = None ,
                      fat_press_ext_int = None,
                      min_max_span = (2,6), tot_len = 12, frame_height = 2.5, frame_distance = None,
@@ -138,7 +138,7 @@ def any_optimize_loop(min_var,max_var,deltas,initial_structure_obj,lateral_press
            fat_dict
 
 def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure, init_filter = float('inf'),
-                   side='p',const_chk=(True,True,True,True,True,True), fat_dict = None, fat_press = None,
+                   side='p',const_chk=(True,True,True,True,True,True,True), fat_dict = None, fat_press = None,
                    slamming_press = 0, predefiened_stiffener_iter = None):
     '''
     Trying to be smart
@@ -167,8 +167,8 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
     if ass_var == None:
         return ass_var
 
-    new_struc_obj = create_new_structure_obj(initial_structure_obj,[round(item,5) for item in ass_var])
-    new_calc_obj = create_new_calc_obj(initial_structure_obj,[round(item,5) for item in ass_var])[0]
+    new_struc_obj = create_new_structure_obj(initial_structure_obj,[item for item in ass_var])
+    new_calc_obj = create_new_calc_obj(initial_structure_obj,[item for item in ass_var])[0]
 
     return new_struc_obj, new_calc_obj, fat_dict, \
            True if any_constraints_all(ass_var, new_struc_obj, lateral_pressure, current_weight,side,
@@ -385,8 +385,8 @@ def any_find_min_weight_var(var):
     return min(map(calc_weight))
 
 
-def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True,True, True, True),
-                        fat_dict = None, fat_press = None, slamming_press = 0, print_result = True):
+def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True,True, True, True, True),
+                        fat_dict = None, fat_press = None, slamming_press = 0, print_result = False):
     '''
     Checking all constraints defined.
     :param x:
@@ -403,7 +403,6 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
 
     calc_object = create_new_calc_obj(obj, x, fat_dict)
 
-
     # Section modulus
     if chk[0]:
         if not min(calc_object[0].get_section_modulus()) > calc_object[0].get_dnv_min_section_modulus(lat_press):
@@ -412,10 +411,11 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
             return False
 
     # Local stiffener buckling
-    if not calc_object[0].buckling_local_stiffener():
-        if print_result:
-            print('Local stiffener buckling',calc_object[0].get_one_line_string(), False)
-        return False
+    if chk[6]:
+        if not calc_object[0].buckling_local_stiffener():
+            if print_result:
+                print('Local stiffener buckling',calc_object[0].get_one_line_string(), False)
+            return False
 
     # Buckling
     if chk[3]:
@@ -562,11 +562,16 @@ def create_new_structure_obj(init_obj, x, fat_dict=None):
     tau_xy_new = stress_scaling(init_obj.get_tau_xy(), init_obj.get_plate_thk(), x[1])
     sigma_x_new = stress_scaling_area(init_obj.get_sigma_x(),sum(get_field_tot_area(x_old)),sum(get_field_tot_area(x)))
 
+    try:
+        stf_type = x[8]
+    except IndexError:
+        stf_type = init_obj.get_stiffener_type()
+
     main_dict = {'mat_yield': [init_obj.get_fy(), 'Pa'], 'span': [init_obj.get_span(), 'm'],
                                'spacing': [x[0], 'm'], 'plate_thk': [x[1], 'm'], 'stf_web_height': [x[2], 'm'],
                                'stf_web_thk': [x[3], 'm'], 'stf_flange_width': [x[4], 'm'],
                                'stf_flange_thk': [x[5], 'm'], 'structure_type': [init_obj.get_structure_type(), ''],
-                               'stf_type': [init_obj.get_stiffener_type(), ''], 'sigma_y1': [sigma_y1_new, 'MPa'],
+                               'stf_type': [stf_type, ''], 'sigma_y1': [sigma_y1_new, 'MPa'],
                                'sigma_y2': [sigma_y2_new, 'MPa'], 'sigma_x': [sigma_x_new, 'MPa'],
                                'tau_xy': [tau_xy_new, 'MPa'], 'plate_kpp': [init_obj.get_kpp(), ''],
                                'stf_kps': [init_obj.get_kps(), ''], 'stf_km1': [init_obj.get_km1(), ''],
@@ -671,7 +676,8 @@ def stress_scaling_area(sigma_old,a_old,a_new):
     return sigma_new
 
 def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight,side='p',
-                         chk=(True,True,True,True,True,True),fat_dict = None, fat_press = None, slamming_press=None):
+                         chk=(True,True,True,True,True,True,True),fat_dict = None, fat_press = None,
+                         slamming_press=None):
     '''
     Using multiprocessing to return list of applicable results.
 

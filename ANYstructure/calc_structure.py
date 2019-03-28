@@ -979,10 +979,20 @@ class CalcScantlings(Structure):
         :return:
         '''
 
-        c = self.flange_width/2+self.web_th/2 # returning only for T-stiffener currently
-        epsilon = (235/(self.mat_yield/1e6))**0.5
+        epsilon = math.sqrt(235 / (self.mat_yield / 1e6))
 
-        return c<=(14*self.flange_th*epsilon) and self.web_height<=42*self.web_th*epsilon
+        if self.stiffener_type == 'L':
+            c = self.flange_width - self.web_th/2
+        elif self.stiffener_type == 'T':
+            c = self.flange_width/2 - self.web_th/2
+        elif self.stiffener_type == 'FB':
+            return self.web_height <= 42 * self.web_th * epsilon
+
+        # print(self.web_height, self.web_th, self.flange_width ,self.flange_th )
+        # print('c:',c, 14 * self.flange_th * epsilon, ' | ',  self.web_height, 42 * self.web_th * epsilon)
+        # print(c <= (14  * self.flange_th * epsilon) and self.web_height <= 42 * self.web_th * epsilon)
+        # print('')
+        return c <= (14  * self.flange_th * epsilon) and self.web_height <= 42 * self.web_th * epsilon
 
     def is_acceptable_pl_thk(self, design_pressure):
         '''

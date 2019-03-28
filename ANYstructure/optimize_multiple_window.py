@@ -49,6 +49,8 @@ class CreateOptimizeMultipleWindow():
         self._add_to_lines = True
         self._lines_add_to_load = []
 
+        self._predefined_structure = None
+
         # ----------------------------------COPIED FROM OPTIMIZE_WINDOW-----------------------------------------------
 
         self._opt_resutls = {}
@@ -271,26 +273,38 @@ class CreateOptimizeMultipleWindow():
         self._new_check_buckling = tk.BooleanVar()
         self._new_check_fatigue = tk.BooleanVar()
         self._new_check_slamming = tk.BooleanVar()
-
+        self._new_check_local_buckling = tk.BooleanVar()
         self._new_check_sec_mod.set(True)
         self._new_check_min_pl_thk.set(True)
         self._new_check_shear_area.set(True)
         self._new_check_buckling.set(True)
         self._new_check_fatigue.set(True)
-        self._new_check_slamming.set(True)
-        start_y = 140
-        tk.Label(self._frame, text='Check for minimum section modulus').place(x=start_x + dx * 10.5, y=start_y + 14 * dy)
-        tk.Label(self._frame, text='Check for minimum plate thk.').place(x=start_x + dx * 10.5, y=start_y + 15 * dy)
-        tk.Label(self._frame, text='Check for minimum shear area').place(x=start_x + dx * 10.5, y=start_y + 16 * dy)
-        tk.Label(self._frame, text='Check for buckling (RP-C201)').place(x=start_x + dx * 10.5, y=start_y + 17 * dy)
-        tk.Label(self._frame, text='Check for fatigue (RP-C203)').place(x=start_x + dx * 10.5, y=start_y + 18 * dy)
+        self._new_check_slamming.set(False)
+        self._new_check_local_buckling.set(True)
 
-        tk.Checkbutton(self._frame, variable=self._new_check_sec_mod).place(x=start_x + dx * 13, y=start_y + 14 * dy)
-        tk.Checkbutton(self._frame, variable=self._new_check_min_pl_thk).place(x=start_x + dx * 13, y=start_y + 15 * dy)
-        tk.Checkbutton(self._frame, variable=self._new_check_shear_area).place(x=start_x + dx * 13, y=start_y + 16 * dy)
-        tk.Checkbutton(self._frame, variable=self._new_check_buckling).place(x=start_x + dx * 13, y=start_y + 17 * dy)
-        tk.Checkbutton(self._frame, variable=self._new_check_fatigue).place(x=start_x + dx * 13, y=start_y + 18 * dy)
-        tk.Checkbutton(self._frame, variable=self._new_check_slamming).place(x=start_x + dx * 13, y=start_y + 19 * dy)
+        start_y, start_x = 520, 200
+        tk.Label(self._frame,text='Check for minimum section modulus').place(x=start_x+dx*9.7,y=start_y+4*dy)
+        tk.Label(self._frame, text='Check for minimum plate thk.').place(x=start_x+dx*9.7,y=start_y+5*dy)
+        tk.Label(self._frame, text='Check for minimum shear area').place(x=start_x+dx*9.7,y=start_y+6*dy)
+        tk.Label(self._frame, text='Check for buckling (RP-C201)').place(x=start_x+dx*9.7,y=start_y+7*dy)
+        tk.Label(self._frame, text='Check for fatigue (RP-C203)').place(x=start_x + dx * 9.7, y=start_y + 8 * dy)
+        tk.Label(self._frame, text='Check for bow slamming').place(x=start_x + dx * 9.7, y=start_y + 9 * dy)
+        tk.Label(self._frame, text='Check for local stf. buckling').place(x=start_x + dx * 9.7, y=start_y + 10 * dy)
+
+        tk.Checkbutton(self._frame,variable=self._new_check_sec_mod).place(x=start_x+dx*12,y=start_y+4*dy)
+        tk.Checkbutton(self._frame, variable=self._new_check_min_pl_thk).place(x=start_x+dx*12,y=start_y+5*dy)
+        tk.Checkbutton(self._frame, variable=self._new_check_shear_area).place(x=start_x+dx*12,y=start_y+6*dy)
+        tk.Checkbutton(self._frame, variable=self._new_check_buckling).place(x=start_x+dx*12,y=start_y+7*dy)
+        tk.Checkbutton(self._frame, variable=self._new_check_fatigue).place(x=start_x + dx * 12, y=start_y + 8 * dy)
+        tk.Checkbutton(self._frame, variable=self._new_check_slamming).place(x=start_x + dx * 12, y=start_y + 9 * dy)
+        tk.Checkbutton(self._frame, variable=self._new_check_local_buckling).place(x=start_x + dx * 12,
+                                                                                   y=start_y + 10 * dy)
+
+        self._toggle_btn = tk.Button(self._frame, text="Iterate predefiened stiffeners", relief="raised",
+                                     command=self.toggle, bg = 'salmon')
+        self._toggle_btn.place(x=start_x+dx*8.2, y=start_y - dy * 11.5)
+        self._toggle_object, self._filez = None, None
+        self.draw_properties()
 
         # ----------------------------------END OF OPTIMIZE SINGLE COPY-----------------------------------------------
         self.progress_count = tk.IntVar()
@@ -383,7 +397,7 @@ class CreateOptimizeMultipleWindow():
         
         contraints = (self._new_check_sec_mod.get(), self._new_check_min_pl_thk.get(),
                       self._new_check_shear_area.get(), self._new_check_buckling.get(),
-                      self._new_check_fatigue.get(), self._new_check_slamming.get())
+                      self._new_check_fatigue.get(), self._new_check_slamming.get(), self._new_check_local_buckling)
         
         self.pso_parameters = (self._new_swarm_size.get(),self._new_omega.get(),self._new_phip.get(),
                                self._new_phig.get(),self._new_maxiter.get(),self._new_minstep.get(),
@@ -426,9 +440,12 @@ class CreateOptimizeMultipleWindow():
                          (fat_press['p_int']['loaded'], fat_press['p_int']['ballast'],
                           fat_press['p_int']['part']))
 
-            self._predefined_structure = True
-            if self._predefined_structure:
-                predefined_stiffener_iter = hlp.helper_read_xml('tbar.xml', obj=init_obj)
+            if self._predefined_structure is not None:
+                self._toggle_object = init_obj
+                self.toggle(filez = self._filez)
+                predefined_stiffener_iter = self._predefined_structure
+                print(predefined_stiffener_iter)
+
             else:
                 predefined_stiffener_iter = None
 
@@ -905,6 +922,36 @@ class CreateOptimizeMultipleWindow():
             messagebox.showinfo(title='Nothing to return', message='No results to return.')
             return
         self._frame.destroy()
+
+    def open_multiple_files(self, files = None):
+        from tkinter.filedialog import askopenfilenames
+        filez = askopenfilenames(parent=root, title='Choose files to open')
+        lst = list(filez)
+        return hlp.helper_read_section_file(files=lst)
+
+    def toggle(self, filez = None, obj = None):
+
+        if self._toggle_btn.config('relief')[-1] == 'sunken':
+            self._toggle_btn.config(relief="raised")
+            self._toggle_btn.config(bg = 'salmon')
+            self._predefined_structure = None
+        else:
+
+            self._toggle_btn.config(relief="sunken")
+            self._toggle_btn.config(bg = 'salmon')
+            self._toggle_btn.config(bg='green')
+            if filez is None:
+                from tkinter.filedialog import askopenfilenames
+                self._filez = askopenfilenames(parent=root, title='Choose files to open')
+                files = list(self._filez)
+            self._filez = filez
+            self._predefined_structure = hlp.helper_read_section_file(files=list(files), obj=obj)
+
+        if self._predefined_structure == []:
+            self._toggle_btn.config(relief="raised")
+            self._toggle_btn.config(bg = 'salmon')
+            self._predefined_structure = None
+            self._filez = None
 
 if __name__ == '__main__':
     root = tk.Tk()
