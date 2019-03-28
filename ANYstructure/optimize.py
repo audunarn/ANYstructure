@@ -155,9 +155,9 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
         structure_to_check = [obj.get_tuple() for obj in predefiened_stiffener_iter]
         structure_to_check = any_get_all_combs(min_var, max_var, deltas, init_weight=init_filter,
                                                predef_stiffeners=structure_to_check)
+        print('HERE')
 
-    print(structure_to_check)
-
+    print('Structure to check', structure_to_check)
 
     main_iter = get_filtered_results(structure_to_check, initial_structure_obj,lateral_pressure
                                      ,init_filter_weight=init_filter, side=side,chk=const_chk, fat_dict=fat_dict,
@@ -847,7 +847,6 @@ def product_any(*args, repeat=1,weight=float('inf')):
 if __name__ == '__main__':
     import ANYstructure.example_data as ex
     obj_dict = ex.obj_dict
-    print(obj_dict)
     fat_obj = ex.get_fatigue_object()
     fp = ex.get_fatigue_pressures()
     fat_press = ((fp['p_ext']['loaded'],fp['p_ext']['ballast'],fp['p_ext']['part']),
@@ -864,7 +863,6 @@ if __name__ == '__main__':
 
     new_params = random.choice(predef).get_structure_prop()
     startobject = copy.deepcopy(obj)
-    print(new_params)
 
     obj.set_main_properties(new_params)
     calc_object.set_main_properties(new_params)
