@@ -151,7 +151,13 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
     if predefiened_stiffener_iter is None:
         structure_to_check = any_get_all_combs(min_var, max_var, deltas, init_weight=init_filter)
     else:
+        #structure_to_check = [obj.get_tuple() for obj in predefiened_stiffener_iter]
         structure_to_check = [obj.get_tuple() for obj in predefiened_stiffener_iter]
+        structure_to_check = any_get_all_combs(min_var, max_var, deltas, init_weight=init_filter,
+                                               predef_stiffeners=structure_to_check)
+
+    print(structure_to_check)
+
 
     main_iter = get_filtered_results(structure_to_check, initial_structure_obj,lateral_pressure
                                      ,init_filter_weight=init_filter, side=side,chk=const_chk, fat_dict=fat_dict,
@@ -701,7 +707,7 @@ def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight
 
     return list(filter(lambda x: x is not False, res_pre))
 
-def any_get_all_combs(min_var, max_var,deltas, init_weight = float('inf')):
+def any_get_all_combs(min_var, max_var,deltas, init_weight = float('inf'), predef_stiffeners = None):
     '''
     Calulating initial values.
     :param min:
@@ -716,6 +722,18 @@ def any_get_all_combs(min_var, max_var,deltas, init_weight = float('inf')):
     pl_thk_array = (np.arange(min_var[1], max_var[1]+ deltas[1], deltas[1])) if min_var[1] != max_var[1] \
         else np.array([min_var[1]])
     pl_thk_array = pl_thk_array[pl_thk_array <= max_var[1]]
+
+    if predef_stiffeners is not None:
+        predef_iterable = list()
+        for pre_str in predef_stiffeners:
+            for spacing in spacing_array:
+                for pl_thk in pl_thk_array:
+                    new_field = list(pre_str)
+                    new_field[0] = spacing
+                    new_field[1] = pl_thk
+                    predef_iterable.append(tuple(new_field))
+        return predef_iterable
+
 
     web_h_array = (np.arange(min_var[2], max_var[2]+ deltas[2], deltas[2])) if min_var[2] != max_var[2] \
         else np.array([min_var[2]])
