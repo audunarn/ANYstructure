@@ -50,10 +50,13 @@ def run_optmizataion(initial_structure_obj=None, min_var=None,max_var=None,later
             if algorithm != 'pso' else float('inf')
     elif not is_geometric:
         fat_dict = fatigue_obj.get_fatigue_properties()
-        init_filter_weight = get_initial_weight(obj=initial_structure_obj, lat_press=lateral_pressure, min_var=min_var,
-                                                max_var=max_var, deltas=deltas, trials=30000,
-                                                fat_dict=fatigue_obj.get_fatigue_properties(),
-                                                fat_press=fat_press_ext_int) if algorithm != 'pso' else float('inf')
+        if predefined_stiffener_iter is None:
+            init_filter_weight = get_initial_weight(obj=initial_structure_obj, lat_press=lateral_pressure,
+                                                    min_var=min_var, max_var=max_var, deltas=deltas, trials=30000,
+                                                    fat_dict=fatigue_obj.get_fatigue_properties(),
+                                                    fat_press=fat_press_ext_int) if algorithm != 'pso' else float('inf')
+        else:
+            init_filter_weight = float('inf')
 
     if algorithm == 'anysmart' and not is_geometric:
         to_return = any_smart_loop(min_var, max_var, deltas, initial_structure_obj, lateral_pressure,
@@ -150,21 +153,20 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
     else:
         structure_to_check = [obj.get_tuple() for obj in predefiened_stiffener_iter]
 
-    main_iter = get_filtered_results(structure_to_check,
-                                     initial_structure_obj,lateral_pressure,init_filter_weight=init_filter,
-                                     side=side,chk=const_chk, fat_dict=fat_dict, fat_press=fat_press,
-                                     slamming_press=slamming_press)
-
+    main_iter = get_filtered_results(structure_to_check, initial_structure_obj,lateral_pressure
+                                     ,init_filter_weight=init_filter, side=side,chk=const_chk, fat_dict=fat_dict,
+                                     fat_press=fat_press, slamming_press=slamming_press)
     ass_var=None
     current_weight = float('inf')
     for item in main_iter:
         item_weight = calc_weight(item)
-        if item_weight<current_weight:
+        if item_weight < current_weight:
             ass_var = item
             current_weight = item_weight
 
     if ass_var == None:
         return ass_var
+
     new_struc_obj = create_new_structure_obj(initial_structure_obj,[round(item,5) for item in ass_var])
     new_calc_obj = create_new_calc_obj(initial_structure_obj,[round(item,5) for item in ass_var])[0]
 
@@ -180,8 +182,8 @@ def any_smart_loop_geometric(min_var,max_var,deltas,initial_structure_obj,latera
     all_obj = []
 
     for struc_obj, lat_press in zip(initial_structure_obj, lateral_pressure):
-
-        predefiened_stiffener_iter = hlp.helper_read_xml('tbar.xml', obj=struc_obj)
+        files = ('tbar.xml', 'flatbar.xml', 'bulb.xml')
+        predefiened_stiffener_iter = hlp.helper_read_xml(files, obj=struc_obj)
 
         opt_obj = any_smart_loop(min_var = min_var,max_var = max_var,deltas = deltas,initial_structure_obj = struc_obj,
                                  lateral_pressure = lat_press, init_filter = init_filter, side=side,
@@ -230,46 +232,10 @@ def particle_search(min_var,max_var,deltas,initial_structure_obj,lateral_pressur
     np.append(ass_var,[args[5],args[6]])
     new_structure_obj = create_new_structure_obj(initial_structure_obj,[round(item,5) for item in ass_var])
     new_calc_obj = create_new_calc_obj(initial_structure_obj,[round(item,5) for item in ass_var])[0]
-    print(xopt)
     args = list(args)
     args[0] = new_structure_obj
 
     return new_structure_obj, new_calc_obj, fat_dict, True if any_constraints_all_number(xopt, *args) == 0 else False
-
-
-def algorithmic_search(min_var,max_var,deltas,initial_structure_obj,lateral_pressure, init_filter = float('inf'),
-                    side='p',const_chk=(True,True,True,True),
-                    pso_options=(100,0.5,0.5,0.5,100,1e-8,1e-8), fat_obj = None, fat_press = None):
-    '''
-    Searchin using Particle Swarm Search (http://pythonhosted.org/pyswarm/)
-
-    :param min_var:
-    :param max_var:
-    :param deltas:
-    :param initial_structure_obj:
-    :param lateral_pressure:
-    :param side:
-    :param const_chk:
-        :param pso_options:
-    :return:
-    '''
-
-    # prob = pg.problem(MyProblem(10,upper_bounds=max_var,lower_bounds=min_var))
-    # algo = pg.algorithm(pg.pso(gen=100, omega=0.7298, eta1=2.05, eta2=2.05, max_vel=0.5, variant=5,
-    #                            neighb_type=2, neighb_param=4, memory=False))
-    # algo.set_verbosity(10)
-    # pop = pg.population(prob, 100)
-    # pop = algo.evolve(pop)
-    # print(pop.problem)
-    # uda = algo.extract(pg.pso)
-    # print(uda.get_log())
-    #
-    # ass_var = xopt
-    # np.append(ass_var,[args[5],args[6]])
-    #
-    # return create_new_structure_obj(initial_structure_obj,[round(item,5) for item in ass_var]),\
-    #        create_new_calc_obj(initial_structure_obj,[round(item,5) for item in ass_var])
-    pass
 
 def particle_search_geometric(min_var=None,max_var=None,deltas = None, initial_structure_obj=None,lateral_pressure=None,
                               init_filter = float('inf'),side='p',const_chk=(True,True,True,True, True, True),
@@ -380,7 +346,7 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
             # Finding weight of this solution.
 
             tot_weight, frame_spacings, valid, width = 0, [None for dummy in range(len(opt_objects))], True, 10
-            print(opt_objects)
+            #print(opt_objects)
             for count, opt in enumerate(opt_objects):
                 obj = opt[0]
                 if opt[3]:
@@ -393,7 +359,7 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                     tot_weight += float('inf')
                     valid = False
             if valid:
-                print(frame_distance)
+                #print(frame_distance)
                 for frame in range(int(count/2)):
                     frame_height = 2.5 if frame_distance is None else frame_distance['start_dist'] + \
                                                                       (frame_distance['stop_dist']-
@@ -420,13 +386,19 @@ def any_find_min_weight_var(var):
 
 
 def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True,True, True, True),
-                        fat_dict = None, fat_press = None, slamming_press = 0):
+                        fat_dict = None, fat_press = None, slamming_press = 0, print_result = True):
     '''
     Checking all constraints defined.
     :param x:
     :return:
     '''
+    #calc_object = create_new_calc_obj(obj, x, fat_dict)
+
     if calc_weight(x) > init_weight:
+        if print_result:
+            pass
+            # print('Weights', calc_weight(x), ' > ', init_weight,
+            #       calc_object[0].get_one_line_string(), init_weight, False)
         return False
 
     calc_object = create_new_calc_obj(obj, x, fat_dict)
@@ -434,37 +406,52 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
 
     # Section modulus
     if chk[0]:
-        if not min(calc_object[0].get_section_modulus()) > calc_object[0].get_dnv_min_section_modulus(lat_press) :
+        if not min(calc_object[0].get_section_modulus()) > calc_object[0].get_dnv_min_section_modulus(lat_press):
+            if print_result:
+                print('Section modulus',calc_object[0].get_one_line_string(), False)
             return False
 
     # Local stiffener buckling
     if not calc_object[0].buckling_local_stiffener():
+        if print_result:
+            print('Local stiffener buckling',calc_object[0].get_one_line_string(), False)
         return False
 
     # Buckling
     if chk[3]:
         if not all([uf<=1 for uf in calc_object[0].calculate_buckling_all(design_lat_press=lat_press,
                                                                           checked_side=side)]):
+            if print_result:
+                print('Buckling',calc_object[0].get_one_line_string(), False)
             return False
     # Minimum plate thickeness
     if chk[1]:
         if not calc_object[0].get_plate_thk()>calc_object[0].get_dnv_min_thickness(lat_press)/1000:
+            if print_result:
+                print('Minimum plate thickeness',calc_object[0].get_one_line_string(), False)
             return False
     # Shear area
     if chk[2]:
         if not calc_object[0].get_shear_area()>calc_object[0].get_minimum_shear_area(lat_press):
+            if print_result:
+                print('Shear area',calc_object[0].get_one_line_string(), False)
             return False
 
     # Fatigue
     if chk[4] and fat_dict is not None:
         if calc_object[1].get_total_damage(ext_press=fat_press[0], int_press=fat_press[1])*calc_object[1].get_dff() > 1:
+            if print_result:
+                print('Fatigue',calc_object[0].get_one_line_string(), False)
             return False
 
     # Slamming
     if chk[5] and slamming_press != 0:
         if calc_object[0].check_all_slamming(slamming_press) is False:
+            if print_result:
+                print('Slamming',calc_object[0].get_one_line_string(), False)
             return False
-
+    if print_result:
+        print('OK Section', calc_object[0].get_one_line_string(), True)
     return x
 
 def any_constraints_all_number(x,*args):
@@ -539,13 +526,19 @@ def create_new_calc_obj(init_obj,x, fat_dict=None):
     sigma_y1_new = stress_scaling(init_obj.get_sigma_y1(), init_obj.get_plate_thk(), x[1])
     sigma_y2_new = stress_scaling(init_obj.get_sigma_y2(), init_obj.get_plate_thk(), x[1])
     tau_xy_new = stress_scaling(init_obj.get_tau_xy(), init_obj.get_plate_thk(), x[1])
-    sigma_x_new = stress_scaling_area(init_obj.get_sigma_x(),sum(get_field_tot_area(x_old)),sum(get_field_tot_area(x)))
+    sigma_x_new = stress_scaling_area(init_obj.get_sigma_x(),
+                                      sum(get_field_tot_area(x_old)),
+                                      sum(get_field_tot_area(x)))
+    try:
+        stf_type = x[8]
+    except IndexError:
+        stf_type = init_obj.get_stiffener_type()
 
     main_dict = {'mat_yield': [init_obj.get_fy(), 'Pa'],'span': [init_obj.get_span(), 'm'],
                                 'spacing': [x[0], 'm'],'plate_thk': [x[1], 'm'],'stf_web_height':[ x[2], 'm'],
                                 'stf_web_thk': [x[3], 'm'],'stf_flange_width': [x[4], 'm'],
                                 'stf_flange_thk': [x[5], 'm'],'structure_type': [init_obj.get_structure_type(), ''],
-                                'stf_type': [init_obj.get_stiffener_type(), ''],'sigma_y1': [sigma_y1_new, 'MPa'],
+                                'stf_type': [stf_type, ''],'sigma_y1': [sigma_y1_new, 'MPa'],
                                 'sigma_y2': [sigma_y2_new, 'MPa'],'sigma_x': [sigma_x_new, 'MPa'],
                                 'tau_xy': [tau_xy_new, 'MPa'],'plate_kpp': [init_obj.get_kpp(), ''],
                                 'stf_kps': [init_obj.get_kps(), ''],'stf_km1': [init_obj.get_km1(), ''],
@@ -590,6 +583,7 @@ def get_field_tot_area(x):
         width = x[7]
     plate_area = width*x[1]
     stiff_area = (x[2] * x[3]+ x[4] * x[5]) * (width//x[0])
+
     return plate_area, stiff_area
 
 def calc_weight(x, prt = False):
@@ -661,19 +655,19 @@ def stress_scaling(sigma_old,t_old,t_new):
     return sigma_new
 
 def stress_scaling_area(sigma_old,a_old,a_new):
-    ''' Scale stresses using inpur area '''
+    ''' Scale stresses using input area '''
+
     if a_new <= a_old: #decreasing the thickness
         sigma_new = sigma_old*(a_old/(a_old-abs((a_old-a_new))))
         assert sigma_new >= sigma_old, 'ERROR no stress increase: \n' \
                                       't_old '+str(a_old)+' sigma_old '+str(sigma_old)+ \
                                       '\nt_new '+str(a_new)+' sigma_new '+str(sigma_new)
-        #print(a_old, sigma_old, '|', a_new, sigma_new)
     else: #increasing the thickness
         sigma_new = sigma_old*(a_old/(a_old+0.5*abs((a_old-a_new))))
         assert sigma_new <= sigma_old, 'ERROR no stress reduction: \n' \
                                       't_old '+str(a_old)+' sigma_old '+str(sigma_old)+ \
                                       '\nt_new '+str(a_new)+' sigma_new '+str(sigma_new)
-        #print(a_old, sigma_old, '|', a_new, sigma_new)
+    #print('a_old', a_old, 'sigma_old', sigma_old, '|', 'a_new', a_new, 'sigma_new',sigma_new)
     return sigma_new
 
 def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight,side='p',
@@ -691,6 +685,8 @@ def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight
     '''
     iter_var = ((item,init_stuc_obj,lat_press,init_filter_weight,side,chk,fat_dict,fat_press,slamming_press)
                 for item in iterable_all)
+
+    #res_pre = it.starmap(any_constraints_all, iter_var)
 
     with Pool(max(cpu_count()-1,1)) as my_process:
         # res_pre = my_process.starmap_async(any_constraints_all, iter_var).get()
@@ -827,6 +823,7 @@ def product_any(*args, repeat=1,weight=float('inf')):
 if __name__ == '__main__':
     import ANYstructure.example_data as ex
     obj_dict = ex.obj_dict
+    print(obj_dict)
     fat_obj = ex.get_fatigue_object()
     fp = ex.get_fatigue_pressures()
     fat_press = ((fp['p_ext']['loaded'],fp['p_ext']['ballast'],fp['p_ext']['part']),
@@ -839,9 +836,20 @@ if __name__ == '__main__':
     upper_bounds = np.array([0.6, 0.01, 0.3, 0.01, 0.1, 0.01, 3.5, 10])
     lower_bounds = np.array([0.8, 0.02, 0.5, 0.02, 0.22, 0.03, 3.5, 10])
     deltas = np.array([0.05, 0.005, 0.05, 0.005, 0.05, 0.005, 0.5])
+    predef = hlp.helper_read_section_file(files = 'section.csv', obj=obj)
+
+    new_params = random.choice(predef).get_structure_prop()
+    startobject = copy.deepcopy(obj)
+    print(new_params)
+
+    obj.set_main_properties(new_params)
+    calc_object.set_main_properties(new_params)
+    fat_obj.set_main_properties(new_params)
+
     results = run_optmizataion(obj, upper_bounds, lower_bounds, lat_press, deltas, algorithm='anysmart',
-                               fatigue_obj=fat_obj, fat_press_ext_int=fat_press)[0]
-    print(results.get_one_line_string())
+                               fatigue_obj=fat_obj, fat_press_ext_int=fat_press, predefined_stiffener_iter=predef)
+    print(results)
+    print(startobject.get_one_line_string())
     # for swarm_size in [100, 1000, 10000, 100000, 1000000]:
     #     t1 = time.time()
     #

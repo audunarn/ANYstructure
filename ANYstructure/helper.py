@@ -214,25 +214,38 @@ def helper_read_section_file(files, obj = None, to_json = False, to_csv = False)
                         stf_web_h, stf_web_thk = 'h', 'tw'
                         stf_flange_width, stf_flange_thk  = 'bfbot', 'tfbot'
                         stiffener_type = 'T'
+                        mult = 1/1000
                     elif sec_type == sec_types[1]:
                         stf_web_h, stf_web_thk = 'h', 'tw'
                         stf_flange_width, stf_flange_thk  = 'b', 'tf'
                         stiffener_type = 'L'
+                        mult = 1/1000
                     elif sec_type == sec_types[2]:
                         stf_web_h, stf_web_thk = 'h', 'b'
                         stf_flange_width, stf_flange_thk  = None, None
                         stiffener_type = 'FB'
+                        mult = 1 / 1000
                     section_name = item.getAttribute('name')
-                    to_return[section_name] = {'stf_web_height': [float(itemdata.getAttribute(stf_web_h)) / 1000, 'm'],
-                                               'stf_web_thk': [float(itemdata.getAttribute(stf_web_thk)) / 1000,'m'],
+                    to_return[section_name] = {'stf_web_height': [float(itemdata.getAttribute(stf_web_h)) *mult, 'm'],
+                                               'stf_web_thk': [float(itemdata.getAttribute(stf_web_thk)) *mult,'m'],
                                                'stf_flange_width': [0 if stf_flange_width is None else
-                                               float(itemdata.getAttribute(stf_flange_width)) / 1000,'m'],
+                                               float(itemdata.getAttribute(stf_flange_width)) *mult,'m'],
                                                'stf_flange_thk': [0 if stf_flange_thk is None else
-                                               float(itemdata.getAttribute(stf_flange_thk)) / 1000, 'm'],
+                                               float(itemdata.getAttribute(stf_flange_thk)) *mult, 'm'],
                                                'stf_type': [stiffener_type, '']}
+
                     return_csv.append([to_return[section_name][var][0] for var in ['stf_web_height', 'stf_web_thk',
-                                                                              'stf_flange_width', 'stf_flange_thk',
-                                                                              'stf_type']])
+                                                                                   'stf_flange_width', 'stf_flange_thk',
+                                                                                   'stf_type']])
+            if to_json:
+                with open('sections.json', 'w') as file:
+                    json.dump(to_return, file)
+            if to_csv:
+                with open('section.csv', 'w', newline='') as file:
+                    section_writer = csv.writer(file)
+                    for line in return_csv:
+                        section_writer.writerow(line)
+
         elif file.endswith('json'):
             with open(file, 'r') as json_file:
                 to_return = json.load(json_file)
@@ -241,11 +254,14 @@ def helper_read_section_file(files, obj = None, to_json = False, to_csv = False)
             with open(file, 'r') as csv_file:
                 csv_reader = csv.reader(csv_file, delimiter=',')
                 for idx, section in enumerate(csv_reader):
-                    to_return[str(idx)] = {'stf_web_height': [float(section[0]) / 1000, 'm'],
-                                           'stf_web_thk': [float(section[1]) / 1000,'m'],
+
+
+                    to_return[str(idx)] = {'stf_web_height': [float(section[0]), 'm'],
+                                           'stf_web_thk': [float(section[1]),'m'],
                                            'stf_flange_width': [float(section[2]),'m'],
-                                           'stf_flange_thk': [float(section[3]) / 1000, 'm'],
+                                           'stf_flange_thk': [float(section[3]), 'm'],
                                            'stf_type': [section[4], '']}
+
     if to_json:
         with open('sections.json', 'w') as file:
             json.dump(to_return, file)
@@ -259,9 +275,10 @@ def helper_read_section_file(files, obj = None, to_json = False, to_csv = False)
     for key, value in to_return.items():
         if obj is not None:  # This will return a modified object.
             new_obj = copy.deepcopy(obj)
+            new_obj_prop = new_obj.get_structure_prop()
             for prop_name, prop_val in value.items():
-                new_obj_prop = new_obj.get_structure_prop()
                 new_obj_prop[prop_name] = prop_val
+
             new_obj.set_main_properties(new_obj_prop)
             to_return_final.append(new_obj)
         else:
@@ -271,6 +288,8 @@ def helper_read_section_file(files, obj = None, to_json = False, to_csv = False)
 
 if __name__ == '__main__':
     import ANYstructure.example_data as ex
-    file = ('bulb.xml', 'flatbar.xml', 'tbar.xml')
-    all_returned = helper_read_section_file('section.csv', obj=ex.get_structure_object())
-    #[print(item.get_one_line_string()) for item in all_returned]
+    file = ['bulb.xml', 'flatbar.xml', 'tbar.xml']
+    all_returned = helper_read_section_file(file, obj=ex.get_structure_object(), to_csv=True)
+
+    import random
+    print(random.choice(all_returned))

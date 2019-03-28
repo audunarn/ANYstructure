@@ -7,6 +7,7 @@ import time, os
 from tkinter import messagebox
 import ANYstructure.example_data as test
 import ANYstructure.helper as hlp
+import random
 
 class CreateOptimizeWindow():
     '''
@@ -16,8 +17,8 @@ class CreateOptimizeWindow():
     def __init__(self,master,app=None):
         super(CreateOptimizeWindow,self).__init__()
         if __name__ == '__main__':
-            self._initial_structure_obj = test.get_structure_calc_object()
-            self._initial_calc_obj = test.get_structure_calc_object()
+            self._initial_structure_obj = test.get_structure_calc_object(heavy=True)
+            self._initial_calc_obj = test.get_structure_calc_object(heavy=True)
             self._lateral_pressure = 200
             self._fatigue_object = test.get_fatigue_object()
             self._fatigue_pressure = test.get_fatigue_pressures()
@@ -559,9 +560,17 @@ class CreateOptimizeWindow():
         else:
             fat_press = None
 
-        self._predefined_structure = True
+        #self._predefined_structure = True
         if self._predefined_structure:
-            predefined_stiffener_iter = hlp.helper_read_xml('tbar.xml', obj=self._initial_structure_obj)
+
+            predefined_stiffener_iter = hlp.helper_read_section_file(files='section.csv',
+                                                                     obj=self._initial_structure_obj)
+            main_properties = random.choice(predefined_stiffener_iter).get_structure_prop()
+            self._initial_structure_obj.set_main_properties(main_properties)
+            self._initial_calc_obj.set_main_properties(main_properties)
+            if self._fatigue_object is not None:
+                self._fatigue_object.set_main_properties(main_properties)
+
         else:
             predefined_stiffener_iter = None
 

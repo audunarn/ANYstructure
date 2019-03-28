@@ -197,7 +197,7 @@ class Structure():
     def get_tuple(self):
         ''' Return a tuple of the plate stiffener'''
         return (self.spacing, self.plate_th, self.web_height, self.web_th, self.flange_width,
-                self.flange_th, self.span, self.girder_lg)
+                self.flange_th, self.span, self.girder_lg, self.stiffener_type)
 
     def get_section_modulus(self, efficient_se = None, dnv_table = False):
         '''
