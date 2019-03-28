@@ -69,8 +69,11 @@ class Structure():
     def get_one_line_string(self):
         ''' Returning a one line string. '''
         return 'pl_'+str(self.spacing*1000)+'x'+str(round(self.plate_th*1000,1))+' stf_'+self.stiffener_type+\
-               str(round(self.web_height*1000,1))+'x'+str(self.web_th*1000)+'+'+str(self.flange_width*1000)+'x'+\
-               str(self.flange_th*1000)
+               str(round(self.web_height*1000,1))+'x'+str(round(self.web_th*1000,1))+'+'+str(round(self.flange_width*1000,1))+'x'+\
+               str(round(self.flange_th*1000,1))+' | ' + 'sigma_x: ' + str(round(self.sigma_x, 1)) +' sigma_y: ' + \
+               str(round(self.sigma_y, 1)) + ' sigma_y1: ' + str(round(self.sigma_y, 1)) + \
+               ' sigma_y2: ' + str(round(self.sigma_y2, 1))
+
 
     def get_report_stresses(self):
         'Return the stresses to the report'
@@ -193,8 +196,9 @@ class Structure():
         return self.pressure_side
     def get_tuple(self):
         ''' Return a tuple of the plate stiffener'''
-        return (self.spacing, self.plate_th, self.web_height, self.web_th, self.web_th, self.flange_width,
+        return (self.spacing, self.plate_th, self.web_height, self.web_th, self.flange_width,
                 self.flange_th, self.span, self.girder_lg)
+
     def get_section_modulus(self, efficient_se = None, dnv_table = False):
         '''
         Returns the section modulus.
@@ -230,7 +234,6 @@ class Structure():
         Wey1 = Iy / (h - ez)
         Wey2 = Iy / ez
         return Wey1, Wey2
-
     def get_plasic_section_modulus(self):
         '''
         Returns the plastic section modulus
