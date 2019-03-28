@@ -2,7 +2,7 @@
 Helper funations to be used.
 '''
 
-import math, copy
+import math, copy, csv
 
 def print_helper(properties, prop_text, units):
     '''
@@ -192,56 +192,68 @@ def helper_manual(line_name, comb_name,load_factors_all):
 
     return load_factors[0].get() * load_factors[1].get() * load_factors[2].get()
 
-def helper_read_xml(files, obj = None, to_json = False, to_csv = True):
+def helper_read_section_file(files, obj = None, to_json = False, to_csv = False):
     ''' Read a xml file. '''
     import json
     from xml.dom import minidom
     to_return_final, to_return, return_csv = list(),  dict(), list()
-
+    if type(files) != list:
+        files = [files,]
     for file in files:
-        xmldoc = minidom.parse(file)
-        sectionlist = xmldoc.getElementsByTagName('section')
-        sec_types = ('unsymmetrical_i_section', 'l_section', 'bar_section')
+        if file.endswith('xml'):
+            xmldoc = minidom.parse(file)
+            sectionlist = xmldoc.getElementsByTagName('section')
+            sec_types = ('unsymmetrical_i_section', 'l_section', 'bar_section')
 
-        for idx, sec_type in enumerate(sec_types):
-            sec_type_get = xmldoc.getElementsByTagName(sec_type)
-            if sec_types == []:
-                continue
-            for item, itemdata in zip(sectionlist, sec_type_get):
-                if sec_type == sec_types[0]:
-                    stf_web_h, stf_web_thk = 'h', 'tw'
-                    stf_flange_width, stf_flange_thk  = 'bfbot', 'tfbot'
-                    stiffener_type = 'T'
-                elif sec_type == sec_types[1]:
-                    stf_web_h, stf_web_thk = 'h', 'tw'
-                    stf_flange_width, stf_flange_thk  = 'b', 'tf'
-                    stiffener_type = 'L'
-                elif sec_type == sec_types[2]:
-                    stf_web_h, stf_web_thk = 'h', 'b'
-                    stf_flange_width, stf_flange_thk  = None, None
-                    stiffener_type = 'FB'
-                section_name = item.getAttribute('name')
-                to_return[section_name] = {'stf_web_height': [float(itemdata.getAttribute(stf_web_h)) / 1000, 'm'],
-                                           'stf_web_thk': [float(itemdata.getAttribute(stf_web_thk)) / 1000,'m'],
-                                           'stf_flange_width': [0 if stf_flange_width is None else
-                                           float(itemdata.getAttribute(stf_flange_width)) / 1000,'m'],
-                                           'stf_flange_thk': [0 if stf_flange_thk is None else
-                                           float(itemdata.getAttribute(stf_flange_thk)) / 1000, 'm'],
-                                           'stf_type': [stiffener_type, '']}
-                return_csv.append([to_return[section_name][var][0] for var in ['stf_web_height', 'stf_web_thk',
-                                                                          'stf_flange_width', 'stf_flange_thk',
-                                                                          'stf_type']])
+            for idx, sec_type in enumerate(sec_types):
+                sec_type_get = xmldoc.getElementsByTagName(sec_type)
+                if sec_types == []:
+                    continue
+                for item, itemdata in zip(sectionlist, sec_type_get):
+                    if sec_type == sec_types[0]:
+                        stf_web_h, stf_web_thk = 'h', 'tw'
+                        stf_flange_width, stf_flange_thk  = 'bfbot', 'tfbot'
+                        stiffener_type = 'T'
+                    elif sec_type == sec_types[1]:
+                        stf_web_h, stf_web_thk = 'h', 'tw'
+                        stf_flange_width, stf_flange_thk  = 'b', 'tf'
+                        stiffener_type = 'L'
+                    elif sec_type == sec_types[2]:
+                        stf_web_h, stf_web_thk = 'h', 'b'
+                        stf_flange_width, stf_flange_thk  = None, None
+                        stiffener_type = 'FB'
+                    section_name = item.getAttribute('name')
+                    to_return[section_name] = {'stf_web_height': [float(itemdata.getAttribute(stf_web_h)) / 1000, 'm'],
+                                               'stf_web_thk': [float(itemdata.getAttribute(stf_web_thk)) / 1000,'m'],
+                                               'stf_flange_width': [0 if stf_flange_width is None else
+                                               float(itemdata.getAttribute(stf_flange_width)) / 1000,'m'],
+                                               'stf_flange_thk': [0 if stf_flange_thk is None else
+                                               float(itemdata.getAttribute(stf_flange_thk)) / 1000, 'm'],
+                                               'stf_type': [stiffener_type, '']}
+                    return_csv.append([to_return[section_name][var][0] for var in ['stf_web_height', 'stf_web_thk',
+                                                                              'stf_flange_width', 'stf_flange_thk',
+                                                                              'stf_type']])
+        elif file.endswith('json'):
+            with open(file, 'r') as json_file:
+                to_return = json.load(json_file)
 
+        elif file.endswith('csv'):
+            with open(file, 'r') as csv_file:
+                csv_reader = csv.reader(csv_file, delimiter=',')
+                for idx, section in enumerate(csv_reader):
+                    to_return[str(idx)] = {'stf_web_height': [float(section[0]) / 1000, 'm'],
+                                           'stf_web_thk': [float(section[1]) / 1000,'m'],
+                                           'stf_flange_width': [float(section[2]),'m'],
+                                           'stf_flange_thk': [float(section[3]) / 1000, 'm'],
+                                           'stf_type': [section[4], '']}
     if to_json:
         with open('sections.json', 'w') as file:
             json.dump(to_return, file)
 
     if to_csv:
-        import csv
         with open('section.csv', 'w', newline = '') as file:
             section_writer = csv.writer(file)
             for line in return_csv:
-                print(line)
                 section_writer.writerow(line)
 
     for key, value in to_return.items():
@@ -257,10 +269,8 @@ def helper_read_xml(files, obj = None, to_json = False, to_csv = True):
 
     return to_return_final
 
-
-
 if __name__ == '__main__':
     import ANYstructure.example_data as ex
     file = ('bulb.xml', 'flatbar.xml', 'tbar.xml')
-    all_returned = helper_read_xml(file, obj=ex.get_structure_object())
+    all_returned = helper_read_section_file('section.csv', obj=ex.get_structure_object())
     #[print(item.get_one_line_string()) for item in all_returned]
