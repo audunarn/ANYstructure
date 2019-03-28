@@ -13,6 +13,14 @@ obj_dict = {'mat_yield': [355e6, 'Pa'], 'span': [4, 'm'], 'spacing': [0.75, 'm']
             'sigma_y1': [80, 'MPa'], 'sigma_y2': [80, 'MPa'], 'sigma_x': [80, 'MPa'], 'tau_xy': [5, 'MPa'],
             'stf_type': ['T', '']}
 
+obj_dict_heavy = {'mat_yield': [355e6, 'Pa'], 'span': [4, 'm'], 'spacing': [0.75, 'm'],
+            'plate_thk': [0.015, 'm'],
+            'stf_web_height': [0.5, 'm'], 'stf_web_thk': [0.025, 'm'], 'stf_flange_width': [0.2, 'm'],
+            'stf_flange_thk': [0.03, 'm'], 'structure_type': ['BOTTOM', ''], 'plate_kpp': [1, ''],
+            'stf_kps': [1, ''], 'stf_km1': [12, ''], 'stf_km2': [24, ''], 'stf_km3': [12, ''],
+            'sigma_y1': [80, 'MPa'], 'sigma_y2': [80, 'MPa'], 'sigma_x': [80, 'MPa'], 'tau_xy': [5, 'MPa'],
+            'stf_type': ['T', '']}
+
 obj_dict2 = {'mat_yield': [355e6, 'Pa'], 'span': [4, 'm'], 'spacing': [0.7, 'm'],
             'plate_thk': [0.018, 'm'],
             'stf_web_height': [0.36, 'm'], 'stf_web_thk': [0.012, 'm'], 'stf_flange_width': [0.15, 'm'],
@@ -142,11 +150,11 @@ def get_structure_object(line=None):
     else:
         return calc_structure.Structure(obj_dict)
 
-def get_structure_calc_object(line=None):
+def get_structure_calc_object(line=None, heavy = False):
     if line in ('line12','line13','line11','line4'):
         return calc_structure.CalcScantlings(obj_dict_fr)
     else:
-        return calc_structure.CalcScantlings(obj_dict)
+        return calc_structure.CalcScantlings(obj_dict if not heavy else obj_dict_heavy)
 
 def get_fatigue_object():
     return calc_structure.CalcFatigue(obj_dict, fat_obj_dict)

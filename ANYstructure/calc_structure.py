@@ -571,11 +571,13 @@ class CalcScantlings(Structure):
 
         design_pressure = design_pressure_kpa
         #print(self.sigma_x)
-        sigma_jd = math.sqrt(math.pow(self.sigma_x,2)+math.pow(self.sigma_y,2)-self.sigma_x*self.sigma_y+3*math.pow(self.tauxy,2))
-        fy= self.mat_yield / 1000000
+        sigma_jd = math.sqrt(math.pow(self.sigma_x,2)+math.pow(self.sigma_y,2)-
+                             self.sigma_x*self.sigma_y+3*math.pow(self.tauxy,2))
+        fy = self.mat_yield / 1000000
         fyd = fy/1.15
-        sigma_pd1 = min(1.3*(fyd-sigma_jd),fyd)
-
+        sigma_pd1 = min(1.3*(fyd-sigma_jd), fyd)
+        sigma_pd1 = abs(sigma_pd1)
+        #print(fyd, sigma_jd, fyd)
         if self.category == 'secondary':
             t0 = 5
         else:
@@ -590,6 +592,7 @@ class CalcScantlings(Structure):
         elif ka<0.72:
             ka = 0.72
 
+        assert sigma_pd1 > 0, 'sigma_pd1 must be negative | current value is: ' + str(sigma_pd1)
         t_min_bend = (15.8 * ka * self.spacing * math.sqrt(design_pressure)) / \
                      math.sqrt(sigma_pd1 *self.plate_kpp)
 
@@ -922,7 +925,7 @@ class CalcScantlings(Structure):
                 eq7_57 = (Nsd / NkpRd) - 2 * (Nsd / Nrd) + ((M2Sd - Nsd * zstar) / (MpRd * (1 - (Nsd / Ne)))) + u
                 max_lfs.append(max(eq7_54, eq7_55, eq7_56, eq7_57))
                 ufs.append([eq7_19, eq7_54, eq7_55, eq7_56, eq7_57])
-                # print('eq7_19, eq7_54, eq7_55, eq7_56, eq7_57')
+                #print('eq7_19, eq7_54, eq7_55, eq7_56, eq7_57')
             min_of_max_ufs_idx = max_lfs.index(min(max_lfs))
             return ufs[min_of_max_ufs_idx]
 
@@ -1127,30 +1130,30 @@ if __name__ == '__main__':
     # print(my_buc.calculate_slamming_plate(1000000))
     # print(my_buc.calculate_slamming_stiffener(1000000))
     # print(my_buc.get_net_effective_plastic_section_modulus())
-    my_test = CalcFatigue(test.obj_dict, test.fat_obj_dict2)
-    my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0))
-    # for example in [test.obj_dict, test.obj_dict2, test.obj_dict_L]:
-    #     # my_test = CalcScantlings(example)
-    #     my_test = CalcFatigue(example, test.fat_obj_dict2)
-    #     my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0))
-        #print('Total damage: ', my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0)))
-        #print(my_test.get_fatigue_properties())
-        # pressure = 200
-        # print('SHEAR CENTER: ',my_test.get_shear_center())
-        # print('SECTION MOD: ',my_test.get_section_modulus())
-        # print('SECTION MOD FLANGE: ', my_test.get_section_modulus()[0])
-        # print('SHEAR AREA: ', my_test.get_shear_area())
-        # print('PLASTIC SECTION MOD: ',my_test.get_plasic_section_modulus())
-        # print('MOMENT OF INTERTIA: ',my_test.get_moment_of_intertia())
-        # print('WEIGHT', my_test.get_weight())
-        # print('PROPERTIES', my_test.get_structure_prop())
-        # print('CROSS AREA', my_test.get_cross_section_area())
-        # print()
-    #
-    #     print('EFFICIENT MOMENT OF INTERTIA: ',my_test.get_moment_of_intertia(efficent_se=my_test.get_plate_efficent_b(
-    #         design_lat_press=pressure)))
-    #     print('Se: ',my_test.calculate_buckling_all(design_lat_press=pressure,checked_side='s'))
-    #     print('Se: ', my_test.calculate_buckling_all(design_lat_press=pressure, checked_side='p'))
-    #     print('MINIMUM PLATE THICKNESS',my_test.get_dnv_min_thickness(pressure))
-    #     print('MINIMUM SECTION MOD.', my_test.get_dnv_min_section_modulus(pressure))
-    #     print()
+    my_test = CalcScantlings(test.obj_dict)
+    #my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0))
+    for example in [test.obj_dict, test.obj_dict2, test.obj_dict_L]:
+        # my_test = CalcScantlings(example)
+        # my_test = CalcFatigue(example, test.fat_obj_dict2)
+        # my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0))
+        # print('Total damage: ', my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0)))
+        # print(my_test.get_fatigue_properties())
+        pressure = 200
+        print('SHEAR CENTER: ',my_test.get_shear_center())
+        print('SECTION MOD: ',my_test.get_section_modulus())
+        print('SECTION MOD FLANGE: ', my_test.get_section_modulus()[0])
+        print('SHEAR AREA: ', my_test.get_shear_area())
+        print('PLASTIC SECTION MOD: ',my_test.get_plasic_section_modulus())
+        print('MOMENT OF INTERTIA: ',my_test.get_moment_of_intertia())
+        print('WEIGHT', my_test.get_weight())
+        print('PROPERTIES', my_test.get_structure_prop())
+        print('CROSS AREA', my_test.get_cross_section_area())
+        print()
+
+        print('EFFICIENT MOMENT OF INTERTIA: ',my_test.get_moment_of_intertia(efficent_se=my_test.get_plate_efficent_b(
+            design_lat_press=pressure)))
+        print('Se: ',my_test.calculate_buckling_all(design_lat_press=pressure,checked_side='s'))
+        print('Se: ', my_test.calculate_buckling_all(design_lat_press=pressure, checked_side='p'))
+        print('MINIMUM PLATE THICKNESS',my_test.get_dnv_min_thickness(pressure))
+        print('MINIMUM SECTION MOD.', my_test.get_dnv_min_section_modulus(pressure))
+        print()

@@ -192,61 +192,75 @@ def helper_manual(line_name, comb_name,load_factors_all):
 
     return load_factors[0].get() * load_factors[1].get() * load_factors[2].get()
 
-def helper_read_xml(file, obj = None):
+def helper_read_xml(files, obj = None, to_json = False, to_csv = True):
     ''' Read a xml file. '''
+    import json
     from xml.dom import minidom
-    xmldoc = minidom.parse(file)
-    sectionlist = xmldoc.getElementsByTagName('section')
-    sec_types = ('unsymmetrical_i_section', 'l_section', 'bar_section')
-    to_return = {}
-    for idx, sec_type in enumerate(sec_types):
-        sec_type_get = xmldoc.getElementsByTagName(sec_type)
-        if sec_types == []:
-            continue
-        for item, itemdata in zip(sectionlist, sec_type_get):
-            if sec_type == sec_types[0]:
-                stf_web_h, stf_web_thk = 'h', 'tw'
-                stf_flange_width, stf_flange_thk  = 'bfbot', 'tfbot'
-                structure_type = 'T'
-            elif sec_type == sec_types[1]:
-                stf_web_h, stf_web_thk = 'h', 'tw'
-                stf_flange_width, stf_flange_thk  = 'b', 'tf'
-                structure_type = 'L'
-            elif sec_type == sec_types[2]:
-                stf_web_h, stf_web_thk = 'h', 'b'
-                stf_flange_width, stf_flange_thk  = None, None
-                structure_type = 'FB'
+    to_return_final, to_return, return_csv = list(),  dict(), list()
 
-            to_return[item.getAttribute('name')] = {'stf_web_height':
-                                                        [float(itemdata.getAttribute(stf_web_h)) / 1000,
-                                                         'm'],
-                                                    'stf_web_thk':
-                                                        [float(itemdata.getAttribute(stf_web_thk)) / 1000,
-                                                         'm'],
-                                                    'stf_flange_width':
-                                                        [0 if stf_flange_width is None else
-                                                         float(itemdata.getAttribute(stf_flange_width)) / 1000,
-                                                         'm'],
-                                                    'stf_flange_thk':
-                                                        [0 if stf_flange_thk is None else
-                                                         float(itemdata.getAttribute(stf_flange_thk)) / 1000,
-                                                         'm'],
-                                                    'structure_type':
-                                                        [structure_type, '']}
-    if obj is not None:  # This will return a modified object.
-        to_return_obj = list()
-        for key, value in to_return.items():
+    for file in files:
+        xmldoc = minidom.parse(file)
+        sectionlist = xmldoc.getElementsByTagName('section')
+        sec_types = ('unsymmetrical_i_section', 'l_section', 'bar_section')
+
+        for idx, sec_type in enumerate(sec_types):
+            sec_type_get = xmldoc.getElementsByTagName(sec_type)
+            if sec_types == []:
+                continue
+            for item, itemdata in zip(sectionlist, sec_type_get):
+                if sec_type == sec_types[0]:
+                    stf_web_h, stf_web_thk = 'h', 'tw'
+                    stf_flange_width, stf_flange_thk  = 'bfbot', 'tfbot'
+                    stiffener_type = 'T'
+                elif sec_type == sec_types[1]:
+                    stf_web_h, stf_web_thk = 'h', 'tw'
+                    stf_flange_width, stf_flange_thk  = 'b', 'tf'
+                    stiffener_type = 'L'
+                elif sec_type == sec_types[2]:
+                    stf_web_h, stf_web_thk = 'h', 'b'
+                    stf_flange_width, stf_flange_thk  = None, None
+                    stiffener_type = 'FB'
+                section_name = item.getAttribute('name')
+                to_return[section_name] = {'stf_web_height': [float(itemdata.getAttribute(stf_web_h)) / 1000, 'm'],
+                                           'stf_web_thk': [float(itemdata.getAttribute(stf_web_thk)) / 1000,'m'],
+                                           'stf_flange_width': [0 if stf_flange_width is None else
+                                           float(itemdata.getAttribute(stf_flange_width)) / 1000,'m'],
+                                           'stf_flange_thk': [0 if stf_flange_thk is None else
+                                           float(itemdata.getAttribute(stf_flange_thk)) / 1000, 'm'],
+                                           'stf_type': [stiffener_type, '']}
+                return_csv.append([to_return[section_name][var][0] for var in ['stf_web_height', 'stf_web_thk',
+                                                                          'stf_flange_width', 'stf_flange_thk',
+                                                                          'stf_type']])
+
+    if to_json:
+        with open('sections.json', 'w') as file:
+            json.dump(to_return, file)
+
+    if to_csv:
+        import csv
+        with open('section.csv', 'w', newline = '') as file:
+            section_writer = csv.writer(file)
+            for line in return_csv:
+                print(line)
+                section_writer.writerow(line)
+
+    for key, value in to_return.items():
+        if obj is not None:  # This will return a modified object.
             new_obj = copy.deepcopy(obj)
             for prop_name, prop_val in value.items():
                 new_obj_prop = new_obj.get_structure_prop()
                 new_obj_prop[prop_name] = prop_val
             new_obj.set_main_properties(new_obj_prop)
-            to_return_obj.append(new_obj)
-        return to_return_obj
-    else:  # Returning only the data.
-        print(to_return)
-        return to_return
+            to_return_final.append(new_obj)
+        else:
+            to_return_final.append(value)
+
+    return to_return_final
+
+
+
 if __name__ == '__main__':
     import ANYstructure.example_data as ex
-    file = 'flatbar.xml'
-    helper_read_xml(file)
+    file = ('bulb.xml', 'flatbar.xml', 'tbar.xml')
+    all_returned = helper_read_xml(file, obj=ex.get_structure_object())
+    #[print(item.get_one_line_string()) for item in all_returned]
