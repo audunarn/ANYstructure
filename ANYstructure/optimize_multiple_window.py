@@ -405,8 +405,9 @@ class CreateOptimizeMultipleWindow():
         
         self.progress_count.set(0)
         counter = 0
-        
+        found_files = None
         for line in self._active_lines:
+            predefined_structure = None
             init_obj = self._line_to_struc[line][0]
 
             if __name__ == '__main__':
@@ -440,12 +441,9 @@ class CreateOptimizeMultipleWindow():
                          (fat_press['p_int']['loaded'], fat_press['p_int']['ballast'],
                           fat_press['p_int']['part']))
 
-            if self._predefined_structure is not None:
-                self._toggle_object = init_obj
-                self.toggle(filez = self._filez)
-                predefined_stiffener_iter = self._predefined_structure
+            if predefined_structure is not None:
+                found_files, predefined_stiffener_iter = self.toggle(found_files=found_files, obj = init_obj)
                 print(predefined_stiffener_iter)
-
             else:
                 predefined_stiffener_iter = None
 
@@ -923,35 +921,32 @@ class CreateOptimizeMultipleWindow():
             return
         self._frame.destroy()
 
-    def open_multiple_files(self, files = None):
-        from tkinter.filedialog import askopenfilenames
-        filez = askopenfilenames(parent=root, title='Choose files to open')
-        lst = list(filez)
-        return hlp.helper_read_section_file(files=lst)
 
-    def toggle(self, filez = None, obj = None):
+    def toggle(self, found_files = None, obj = None):
 
         if self._toggle_btn.config('relief')[-1] == 'sunken':
             self._toggle_btn.config(relief="raised")
             self._toggle_btn.config(bg = 'salmon')
             self._predefined_structure = None
         else:
-
             self._toggle_btn.config(relief="sunken")
-            self._toggle_btn.config(bg = 'salmon')
             self._toggle_btn.config(bg='green')
-            if filez is None:
+            if found_files is None:
                 from tkinter.filedialog import askopenfilenames
-                self._filez = askopenfilenames(parent=root, title='Choose files to open')
-                files = list(self._filez)
-            self._filez = filez
-            self._predefined_structure = hlp.helper_read_section_file(files=list(files), obj=obj)
+                all_files = list(askopenfilenames(parent=root, title='Choose files to open'))
+                predefined_structure = hlp.helper_read_section_file(files = all_files, obj=obj)
+                found_files = all_files
+            else:
+                predefined_structure = hlp.helper_read_section_file(files = found_files, obj=obj)
 
         if self._predefined_structure == []:
             self._toggle_btn.config(relief="raised")
             self._toggle_btn.config(bg = 'salmon')
             self._predefined_structure = None
             self._filez = None
+
+        return found_files, predefined_structure
+
 
 if __name__ == '__main__':
     root = tk.Tk()

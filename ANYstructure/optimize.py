@@ -692,12 +692,12 @@ def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight
     iter_var = ((item,init_stuc_obj,lat_press,init_filter_weight,side,chk,fat_dict,fat_press,slamming_press)
                 for item in iterable_all)
 
-    #res_pre = it.starmap(any_constraints_all, iter_var)
+    res_pre = it.starmap(any_constraints_all, iter_var)
 
-    with Pool(max(cpu_count()-1,1)) as my_process:
-        # res_pre = my_process.starmap_async(any_constraints_all, iter_var).get()
-        # print('Done calculating')
-        res_pre = my_process.starmap(any_constraints_all, iter_var)
+    # with Pool(max(cpu_count()-1,1)) as my_process:
+    #     # res_pre = my_process.starmap_async(any_constraints_all, iter_var).get()
+    #     # print('Done calculating')
+    #     res_pre = my_process.starmap(any_constraints_all, iter_var)
 
     return list(filter(lambda x: x is not False, res_pre))
 
