@@ -267,7 +267,10 @@ class CreateOptGeoWindow():
         #                                 command=self.save_and_close, bg='green', font='Verdana 10 bold', fg='yellow')
         # self.close_and_save.place(x=start_x + dx * 10, y=10)
 
-        # Selection of constraints
+        tk.Button(self._frame, text='Open predefined stiffeners example',
+                  command=hlp.open_example_file, bg='white', font='Verdana 10')\
+            .place(x=start_x+dx*10,y=10)
+
         # Selection of constraints
         self._new_check_sec_mod = tk.BooleanVar()
         self._new_check_min_pl_thk = tk.BooleanVar()
@@ -297,8 +300,8 @@ class CreateOptGeoWindow():
         tk.Checkbutton(self._frame, variable=self._new_check_min_pl_thk).place(x=start_x+dx*12,y=start_y+5*dy)
         tk.Checkbutton(self._frame, variable=self._new_check_shear_area).place(x=start_x+dx*12,y=start_y+6*dy)
         tk.Checkbutton(self._frame, variable=self._new_check_buckling).place(x=start_x+dx*12,y=start_y+7*dy)
-        tk.Checkbutton(self._frame, variable=self._new_check_fatigue).place(x=start_x + dx * 12, y=start_y + 8 * dy)
-        tk.Checkbutton(self._frame, variable=self._new_check_slamming).place(x=start_x + dx * 12, y=start_y + 9 * dy)
+        #tk.Checkbutton(self._frame, variable=self._new_check_fatigue).place(x=start_x + dx * 12, y=start_y + 8 * dy)
+        #tk.Checkbutton(self._frame, variable=self._new_check_slamming).place(x=start_x + dx * 12, y=start_y + 9 * dy)
         tk.Checkbutton(self._frame, variable=self._new_check_local_buckling).place(x=start_x + dx * 12,
                                                                                    y=start_y + 10 * dy)
         self._toggle_btn = tk.Button(self._frame, text="Iterate predefiened stiffeners", relief="raised",

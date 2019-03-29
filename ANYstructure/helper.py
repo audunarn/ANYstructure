@@ -297,8 +297,12 @@ def helper_read_section_file(files, obj = None, to_json = False, to_csv = False)
         pass
     elif len(append_list) > 1:
         to_return_final = append_list
-    print('LENGTH', len(to_return_final))
+
     return to_return_final
+
+def open_example_file():
+    import os
+    os.startfile('section.csv')
 
 if __name__ == '__main__':
     import ANYstructure.example_data as ex
