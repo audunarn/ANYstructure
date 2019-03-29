@@ -274,7 +274,7 @@ def helper_read_section_file(files, obj = None, to_json = False, to_csv = False)
     if obj is not None:  # This will return a modified object.
         if type(obj) is not list:
             obj = [obj, ]
-            append_list = list()
+            append_list = [[],]
         else:
             append_list = [list() for dummy in obj]
     else:
@@ -287,7 +287,6 @@ def helper_read_section_file(files, obj = None, to_json = False, to_csv = False)
                 new_obj_prop = new_obj.get_structure_prop()
                 for prop_name, prop_val in value.items():
                     new_obj_prop[prop_name] = prop_val
-
                 new_obj.set_main_properties(new_obj_prop)
                 append_list[idx].append(new_obj)
         else:

@@ -184,7 +184,7 @@ def any_smart_loop_geometric(min_var,max_var,deltas,initial_structure_obj,latera
     all_obj = []
     idx = 0
     for struc_obj, lat_press in zip(initial_structure_obj, lateral_pressure):
-        predefiened_stiffener_iter = any_get_all_combs(min_var=min_var, max_var=max_var,deltas=deltas,
+        this_predefiened_stiffener_iter = any_get_all_combs(min_var=min_var, max_var=max_var,deltas=deltas,
                                                        predef_stiffeners=predefiened_stiffener_iter)
         temp_predef = list()
         for x in predefiened_stiffener_iter:
@@ -193,13 +193,14 @@ def any_smart_loop_geometric(min_var,max_var,deltas,initial_structure_obj,latera
             xvar.append(struc_obj.get_lg())
             temp_predef.append(tuple(xvar))
 
-        predefiened_stiffener_iter = [create_new_structure_obj(struc_obj, xtup) for xtup in predefiened_stiffener_iter]
+        this_predefiened_stiffener_iter = [create_new_structure_obj(struc_obj, xtup) for xtup in
+                                           this_predefiened_stiffener_iter]
 
         opt_obj = any_smart_loop(min_var = min_var,max_var = max_var,deltas = deltas,initial_structure_obj = struc_obj,
                                  lateral_pressure = lat_press, init_filter = init_filter, side=side,
                                  const_chk=const_chk, fat_dict = fat_dict, fat_press = fat_press,
                                  slamming_press = slamming_press,
-                                 predefiened_stiffener_iter=predefiened_stiffener_iter)
+                                 predefiened_stiffener_iter=this_predefiened_stiffener_iter)
         # TODO-any set check if not solution acceptable.
         all_obj.append(opt_obj)
 
@@ -877,7 +878,7 @@ if __name__ == '__main__':
 
     results = run_optmizataion(obj, upper_bounds, lower_bounds, lat_press, deltas, algorithm='anysmart',
                                fatigue_obj=fat_obj, fat_press_ext_int=fat_press, predefined_stiffener_iter=predef)
-    print(results)
+    print(results[0])
     print(startobject.get_one_line_string())
     # for swarm_size in [100, 1000, 10000, 100000, 1000000]:
     #     t1 = time.time()
