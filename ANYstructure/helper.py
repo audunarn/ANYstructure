@@ -267,7 +267,7 @@ def helper_read_section_file(files, obj = None, to_json = False, to_csv = False)
             json.dump(to_return, file)
 
     if to_csv:
-        with open('section.csv', 'w', newline = '') as file:
+        with open('sections.csv', 'w', newline = '') as file:
             section_writer = csv.writer(file)
             for line in return_csv:
                 section_writer.writerow(line)
@@ -302,7 +302,7 @@ def helper_read_section_file(files, obj = None, to_json = False, to_csv = False)
 
 def open_example_file():
     import os
-    os.startfile('section.csv')
+    os.startfile('sections.csv')
 
 if __name__ == '__main__':
     import ANYstructure.example_data as ex
