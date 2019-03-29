@@ -151,10 +151,10 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
     if predefiened_stiffener_iter is None:
         structure_to_check = any_get_all_combs(min_var, max_var, deltas, init_weight=init_filter)
     else:
-        #structure_to_check = [obj.get_tuple() for obj in predefiened_stiffener_iter]
         structure_to_check = [obj.get_tuple() for obj in predefiened_stiffener_iter]
         structure_to_check = any_get_all_combs(min_var, max_var, deltas, init_weight=init_filter,
                                                predef_stiffeners=structure_to_check)
+
     main_iter = get_filtered_results(structure_to_check, initial_structure_obj,lateral_pressure
                                      ,init_filter_weight=init_filter, side=side,chk=const_chk, fat_dict=fat_dict,
                                      fat_press=fat_press, slamming_press=slamming_press)
@@ -182,15 +182,24 @@ def any_smart_loop_geometric(min_var,max_var,deltas,initial_structure_obj,latera
     ''' Searching multiple sections using the smart loop. '''
 
     all_obj = []
-
+    idx = 0
     for struc_obj, lat_press in zip(initial_structure_obj, lateral_pressure):
-        files = ('tbar.xml', 'flatbar.xml', 'bulb.xml')
-        predefiened_stiffener_iter = hlp.helper_read_xml(files, obj=struc_obj)
+        predefiened_stiffener_iter = any_get_all_combs(min_var=min_var, max_var=max_var,deltas=deltas,
+                                                       predef_stiffeners=predefiened_stiffener_iter)
+        temp_predef = list()
+        for x in predefiened_stiffener_iter:
+            xvar = list(x)
+            xvar.append(struc_obj.get_span())
+            xvar.append(struc_obj.get_lg())
+            temp_predef.append(tuple(xvar))
+
+        predefiened_stiffener_iter = [create_new_structure_obj(struc_obj, xtup) for xtup in predefiened_stiffener_iter]
 
         opt_obj = any_smart_loop(min_var = min_var,max_var = max_var,deltas = deltas,initial_structure_obj = struc_obj,
                                  lateral_pressure = lat_press, init_filter = init_filter, side=side,
                                  const_chk=const_chk, fat_dict = fat_dict, fat_press = fat_press,
-                                 slamming_press = slamming_press, predefiened_stiffener_iter=predefiened_stiffener_iter)
+                                 slamming_press = slamming_press,
+                                 predefiened_stiffener_iter=predefiened_stiffener_iter)
         # TODO-any set check if not solution acceptable.
         all_obj.append(opt_obj)
 
@@ -348,7 +357,7 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
             # Finding weight of this solution.
 
             tot_weight, frame_spacings, valid, width = 0, [None for dummy in range(len(opt_objects))], True, 10
-            #print(opt_objects)
+
             for count, opt in enumerate(opt_objects):
                 obj = opt[0]
                 if opt[3]:
@@ -722,6 +731,9 @@ def any_get_all_combs(min_var, max_var,deltas, init_weight = float('inf'), prede
     if predef_stiffeners is not None:
         predef_iterable = list()
         for pre_str in predef_stiffeners:
+            if type(pre_str) == dict:
+                pre_str = (None, None, pre_str['stf_web_height'][0], pre_str['stf_web_thk'][0],
+                           pre_str['stf_flange_width'][0], pre_str['stf_flange_thk'][0])
             for spacing in spacing_array:
                 for pl_thk in pl_thk_array:
                     new_field = list(pre_str)

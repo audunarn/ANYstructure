@@ -868,9 +868,9 @@ class CreateOptimizeWindow():
         if self._predefined_structure == []:
             self._toggle_btn.config(relief="raised")
             self._toggle_btn.config(bg = 'salmon')
-            self._ent_spacing_upper.config(bg = 'salmon')
-            self._ent_spacing_lower.config(bg = 'salmon')
-            self._ent_delta_spacing.config(bg = 'salmon')
+            self._ent_spacing_upper.config(bg = 'white')
+            self._ent_spacing_lower.config(bg = 'white')
+            self._ent_delta_spacing.config(bg = 'white')
             self._predefined_structure = None
 
 

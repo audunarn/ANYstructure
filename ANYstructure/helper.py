@@ -271,19 +271,34 @@ def helper_read_section_file(files, obj = None, to_json = False, to_csv = False)
             section_writer = csv.writer(file)
             for line in return_csv:
                 section_writer.writerow(line)
+    if obj is not None:  # This will return a modified object.
+        if type(obj) is not list:
+            obj = [obj, ]
+            append_list = list()
+        else:
+            append_list = [list() for dummy in obj]
+    else:
+        append_list = list()
 
     for key, value in to_return.items():
         if obj is not None:  # This will return a modified object.
-            new_obj = copy.deepcopy(obj)
-            new_obj_prop = new_obj.get_structure_prop()
-            for prop_name, prop_val in value.items():
-                new_obj_prop[prop_name] = prop_val
+            for idx, iter_obj in enumerate(obj):
+                new_obj = copy.deepcopy(iter_obj)
+                new_obj_prop = new_obj.get_structure_prop()
+                for prop_name, prop_val in value.items():
+                    new_obj_prop[prop_name] = prop_val
 
-            new_obj.set_main_properties(new_obj_prop)
-            to_return_final.append(new_obj)
+                new_obj.set_main_properties(new_obj_prop)
+                append_list[idx].append(new_obj)
         else:
             to_return_final.append(value)
-
+    if len(append_list) == 1:
+        to_return_final = append_list[0]
+    elif len(append_list) == 0:
+        pass
+    elif len(append_list) > 1:
+        to_return_final = append_list
+    print('LENGTH', len(to_return_final))
     return to_return_final
 
 if __name__ == '__main__':

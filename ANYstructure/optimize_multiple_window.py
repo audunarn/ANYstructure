@@ -602,6 +602,7 @@ class CreateOptimizeMultipleWindow():
     
         if opt_obj != None:
             # [0.6, 0.012, 0.25, 0.01, 0.1, 0.01]
+            self._canvas_opt.config(bg = 'palegreen')
             self._canvas_opt.create_rectangle(ctr_x - m * opt_obj.get_s() / 2, ctr_y,
                                              ctr_x + m * opt_obj.get_s() / 2,
                                              ctr_y - m * opt_obj.get_pl_thk(), fill=opt_color,
@@ -652,7 +653,9 @@ class CreateOptimizeMultipleWindow():
                                                                                 opt_obj.get_lg()]))),
                                         font='Verdana 8', fill=opt_color)
         else:
-            self._canvas_opt.create_text(150, 60, text='No optimized solution found.')
+            self._canvas_opt.config(bg='mistyrose')
+            self._canvas_opt.create_text(200, 60, text='No optimized solution found.', font = 'Verdana 14 bold')
+
 
 
         if line != None:
