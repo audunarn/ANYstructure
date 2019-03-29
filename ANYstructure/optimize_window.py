@@ -773,12 +773,12 @@ class CreateOptimizeWindow():
                                                  fill=opt_color, stipple=opt_stippe)
 
             self._canvas_opt.create_line(10, 50, 30, 50, fill=opt_color, width=5)
-            self._canvas_opt.create_text(270,50,text='Optimized - Pl.: '+str(round(self._opt_results[0].get_s()*1000,0)) +'x'+
-                                                    str(self._opt_results[0].get_pl_thk()*1000)+' Stf.: '
-                                                    +str(self._opt_results[0].get_web_h()*1000)+
-                                                    'x'+str(self._opt_results[0].get_web_thk()*1000)+'+'+
-                                                            str(self._opt_results[0].get_fl_w()*1000)+
-                                                    'x'+str(self._opt_results[0].get_fl_thk()*1000),
+            self._canvas_opt.create_text(270,50,text='Optimized - Pl.: '+str(round(self._opt_results[0].get_s()*1000,1))
+                                                     +'x'+ str(round(self._opt_results[0].get_pl_thk()*1000,1))+
+                                                     ' Stf.: '+str(round(self._opt_results[0].get_web_h()*1000,1))+
+                                                    'x'+str(round(self._opt_results[0].get_web_thk()*1000,1))+'+'+
+                                                            str(round(self._opt_results[0].get_fl_w()*1000,1))+
+                                                    'x'+str(round(self._opt_results[0].get_fl_thk()*1000,1)),
                                         font = 'Verdana 8',fill = opt_color)
             self._canvas_opt.create_text(120, 70, text='Weight (per Lg width): '
                                                       + str(int(op.calc_weight([self._opt_results[0].get_s(),

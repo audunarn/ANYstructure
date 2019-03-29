@@ -241,7 +241,7 @@ def helper_read_section_file(files, obj = None, to_json = False, to_csv = False)
                 with open('sections.json', 'w') as file:
                     json.dump(to_return, file)
             if to_csv:
-                with open('section.csv', 'w', newline='') as file:
+                with open('sections.csv', 'w', newline='') as file:
                     section_writer = csv.writer(file)
                     for line in return_csv:
                         section_writer.writerow(line)

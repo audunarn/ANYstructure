@@ -639,12 +639,12 @@ class CreateOptimizeMultipleWindow():
 
             self._canvas_opt.create_line(10, 50, 30, 50, fill=opt_color, width=5)
             self._canvas_opt.create_text(270, 50,
-                                        text='Optimized - Pl.: ' + str(opt_obj.get_s() * 1000) + 'x' +
-                                             str(opt_obj.get_pl_thk() * 1000) + ' Stf.: '
-                                             + str(opt_obj.get_web_h() * 1000) +
-                                             'x' + str(opt_obj.get_web_thk() * 1000) + '+' +
-                                             str(opt_obj.get_fl_w() * 1000) +
-                                             'x' + str(opt_obj.get_fl_thk() * 1000),
+                                        text='Optimized - Pl.: ' + str(round(opt_obj.get_s() * 1000,1)) + 'x' +
+                                             str(round(opt_obj.get_pl_thk() * 1000,1)) + ' Stf.: '
+                                             + str(round(opt_obj.get_web_h() * 1000,1)) +
+                                             'x' + str(round(opt_obj.get_web_thk() * 1000,1)) + '+' +
+                                             str(round(opt_obj.get_fl_w() * 1000,1)) +
+                                             'x' + str(round(opt_obj.get_fl_thk() * 1000,1)),
                                         font='Verdana 8', fill=opt_color)
             self._canvas_opt.create_text(120, 70, text='Weight (per Lg width): '
                                                       + str(int(op.calc_weight([opt_obj.get_s(),
