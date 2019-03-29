@@ -1220,7 +1220,7 @@ class CreateOptGeoWindow():
                 self._ent_spacing_upper.config(bg = 'lightgreen')
                 self._ent_spacing_lower.config(bg = 'lightgreen')
                 self._ent_delta_spacing.config(bg = 'lightgreen')
-                self._filez = list(askopenfilenames(parent=root, title='Choose files to open'))
+                self._filez = list(askopenfilenames(parent=self._frame, title='Choose files to open'))
 
         return found_files, predefined_structure
 
