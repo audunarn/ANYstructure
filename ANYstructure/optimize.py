@@ -867,19 +867,12 @@ if __name__ == '__main__':
     calc_object = calc.CalcScantlings(obj_dict)
     upper_bounds = np.array([0.6, 0.01, 0.3, 0.01, 0.1, 0.01, 3.5, 10])
     lower_bounds = np.array([0.8, 0.02, 0.5, 0.02, 0.22, 0.03, 3.5, 10])
-    deltas = np.array([0.05, 0.005, 0.05, 0.005, 0.05, 0.005, 0.5])
-    predef = hlp.helper_read_section_file(files = 'section.csv', obj=obj)
-    new_params = random.choice(predef).get_structure_prop()
-    startobject = copy.deepcopy(obj)
-
-    obj.set_main_properties(new_params)
-    calc_object.set_main_properties(new_params)
-    fat_obj.set_main_properties(new_params)
+    deltas = np.array([0.05, 0.005, 0.05, 0.005, 0.05, 0.005])
 
     results = run_optmizataion(obj, upper_bounds, lower_bounds, lat_press, deltas, algorithm='anysmart',
-                               fatigue_obj=fat_obj, fat_press_ext_int=fat_press, predefined_stiffener_iter=predef)
-    print(results[0])
-    print(startobject.get_one_line_string())
+                               fatigue_obj=fat_obj, fat_press_ext_int=fat_press)
+    print(results[0].get_structure_prop())
+
     # for swarm_size in [100, 1000, 10000, 100000, 1000000]:
     #     t1 = time.time()
     #
