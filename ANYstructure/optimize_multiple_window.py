@@ -8,7 +8,8 @@ import time, os
 from tkinter import messagebox
 import ANYstructure.example_data as test
 from ANYstructure.helper import *
-
+import ANYstructure.helper as hlp
+from tkinter.filedialog import askopenfilenames
 
 class CreateOptimizeMultipleWindow():
     '''
@@ -48,6 +49,8 @@ class CreateOptimizeMultipleWindow():
         self._active_lines = []
         self._add_to_lines = True
         self._lines_add_to_load = []
+
+        self._predefined_structure = None
 
         # ----------------------------------COPIED FROM OPTIMIZE_WINDOW-----------------------------------------------
 
@@ -264,6 +267,10 @@ class CreateOptimizeMultipleWindow():
                                         command=self.save_and_close, bg='green', font='Verdana 10 bold', fg='yellow')
         self.close_and_save.place(x=start_x + dx * 10, y=10)
 
+        tk.Button(self._frame, text='Open predefined stiffeners example',
+                  command=hlp.open_example_file, bg='white', font='Verdana 10')\
+            .place(x=start_x+dx*10,y=10)
+
         # Selection of constraints
         self._new_check_sec_mod = tk.BooleanVar()
         self._new_check_min_pl_thk = tk.BooleanVar()
@@ -271,33 +278,44 @@ class CreateOptimizeMultipleWindow():
         self._new_check_buckling = tk.BooleanVar()
         self._new_check_fatigue = tk.BooleanVar()
         self._new_check_slamming = tk.BooleanVar()
-
+        self._new_check_local_buckling = tk.BooleanVar()
         self._new_check_sec_mod.set(True)
         self._new_check_min_pl_thk.set(True)
         self._new_check_shear_area.set(True)
         self._new_check_buckling.set(True)
         self._new_check_fatigue.set(True)
-        self._new_check_slamming.set(True)
-        start_y = 140
-        tk.Label(self._frame, text='Check for minimum section modulus').place(x=start_x + dx * 10.5, y=start_y + 14 * dy)
-        tk.Label(self._frame, text='Check for minimum plate thk.').place(x=start_x + dx * 10.5, y=start_y + 15 * dy)
-        tk.Label(self._frame, text='Check for minimum shear area').place(x=start_x + dx * 10.5, y=start_y + 16 * dy)
-        tk.Label(self._frame, text='Check for buckling (RP-C201)').place(x=start_x + dx * 10.5, y=start_y + 17 * dy)
-        tk.Label(self._frame, text='Check for fatigue (RP-C203)').place(x=start_x + dx * 10.5, y=start_y + 18 * dy)
+        self._new_check_slamming.set(False)
+        self._new_check_local_buckling.set(True)
 
-        tk.Checkbutton(self._frame, variable=self._new_check_sec_mod).place(x=start_x + dx * 13, y=start_y + 14 * dy)
-        tk.Checkbutton(self._frame, variable=self._new_check_min_pl_thk).place(x=start_x + dx * 13, y=start_y + 15 * dy)
-        tk.Checkbutton(self._frame, variable=self._new_check_shear_area).place(x=start_x + dx * 13, y=start_y + 16 * dy)
-        tk.Checkbutton(self._frame, variable=self._new_check_buckling).place(x=start_x + dx * 13, y=start_y + 17 * dy)
-        tk.Checkbutton(self._frame, variable=self._new_check_fatigue).place(x=start_x + dx * 13, y=start_y + 18 * dy)
-        tk.Checkbutton(self._frame, variable=self._new_check_slamming).place(x=start_x + dx * 13, y=start_y + 19 * dy)
+        start_y, start_x = 520, 200
+        tk.Label(self._frame,text='Check for minimum section modulus').place(x=start_x+dx*9.7,y=start_y+4*dy)
+        tk.Label(self._frame, text='Check for minimum plate thk.').place(x=start_x+dx*9.7,y=start_y+5*dy)
+        tk.Label(self._frame, text='Check for minimum shear area').place(x=start_x+dx*9.7,y=start_y+6*dy)
+        tk.Label(self._frame, text='Check for buckling (RP-C201)').place(x=start_x+dx*9.7,y=start_y+7*dy)
+        tk.Label(self._frame, text='Check for fatigue (RP-C203)').place(x=start_x + dx * 9.7, y=start_y + 8 * dy)
+        tk.Label(self._frame, text='Check for bow slamming').place(x=start_x + dx * 9.7, y=start_y + 9 * dy)
+        tk.Label(self._frame, text='Check for local stf. buckling').place(x=start_x + dx * 9.7, y=start_y + 10 * dy)
+
+        tk.Checkbutton(self._frame,variable=self._new_check_sec_mod).place(x=start_x+dx*12,y=start_y+4*dy)
+        tk.Checkbutton(self._frame, variable=self._new_check_min_pl_thk).place(x=start_x+dx*12,y=start_y+5*dy)
+        tk.Checkbutton(self._frame, variable=self._new_check_shear_area).place(x=start_x+dx*12,y=start_y+6*dy)
+        tk.Checkbutton(self._frame, variable=self._new_check_buckling).place(x=start_x+dx*12,y=start_y+7*dy)
+        tk.Checkbutton(self._frame, variable=self._new_check_fatigue).place(x=start_x + dx * 12, y=start_y + 8 * dy)
+        tk.Checkbutton(self._frame, variable=self._new_check_slamming).place(x=start_x + dx * 12, y=start_y + 9 * dy)
+        tk.Checkbutton(self._frame, variable=self._new_check_local_buckling).place(x=start_x + dx * 12,
+                                                                                   y=start_y + 10 * dy)
+        self._toggle_btn = tk.Button(self._frame, text="Iterate predefiened stiffeners", relief="raised",
+                                     command=self.toggle, bg = 'salmon')
+        self._toggle_btn.place(x=start_x+dx*8.2, y=start_y - dy * 11.5)
+        self._toggle_object, self._filez = None, None
+        self.draw_properties()
 
         # ----------------------------------END OF OPTIMIZE SINGLE COPY-----------------------------------------------
         self.progress_count = tk.IntVar()
         self.progress_count.set(0)
         self.progress_bar = Progressbar(self._frame, orient="horizontal",length=200, mode="determinate",
                                         variable=self.progress_count)
-        self.progress_bar.place(x=start_x+dx*10,y=start_y-dy*1.7)
+        self.progress_bar.place(x=start_x+dx*10.5,y=start_y-dy*11.5)
 
         self._active_lines = []
         self.controls()
@@ -383,7 +401,8 @@ class CreateOptimizeMultipleWindow():
         
         contraints = (self._new_check_sec_mod.get(), self._new_check_min_pl_thk.get(),
                       self._new_check_shear_area.get(), self._new_check_buckling.get(),
-                      self._new_check_fatigue.get(), self._new_check_slamming.get())
+                      self._new_check_fatigue.get(), self._new_check_slamming.get(),
+                      self._new_check_local_buckling.get())
         
         self.pso_parameters = (self._new_swarm_size.get(),self._new_omega.get(),self._new_phip.get(),
                                self._new_phig.get(),self._new_maxiter.get(),self._new_minstep.get(),
@@ -391,7 +410,7 @@ class CreateOptimizeMultipleWindow():
         
         self.progress_count.set(0)
         counter = 0
-        
+        found_files = self._filez
         for line in self._active_lines:
             init_obj = self._line_to_struc[line][0]
 
@@ -426,6 +445,12 @@ class CreateOptimizeMultipleWindow():
                          (fat_press['p_int']['loaded'], fat_press['p_int']['ballast'],
                           fat_press['p_int']['part']))
 
+            if self._toggle_btn.config('relief')[-1] == 'sunken':
+                found_files, predefined_stiffener_iter = self.toggle(found_files=found_files, obj = init_obj,
+                                                                     iterating=True)
+            else:
+                predefined_stiffener_iter = None
+
             self._opt_resutls[line] = op.run_optmizataion(init_obj, self.get_lower_bounds(init_obj),
                                                           self.get_upper_bounds(init_obj),
                                                           lateral_press,self.get_deltas(),
@@ -436,7 +461,8 @@ class CreateOptimizeMultipleWindow():
                                                           pso_options=self.pso_parameters,
                                                           fatigue_obj=fat_obj,
                                                           fat_press_ext_int=fat_press,
-                                                          slamming_press=slamming_pressure)
+                                                          slamming_press=slamming_pressure,
+                                                          predefined_stiffener_iter = predefined_stiffener_iter)
             counter += 1
             self.progress_count.set(counter)
             self.progress_bar.update_idletasks()
@@ -580,6 +606,7 @@ class CreateOptimizeMultipleWindow():
     
         if opt_obj != None:
             # [0.6, 0.012, 0.25, 0.01, 0.1, 0.01]
+            self._canvas_opt.config(bg = 'palegreen')
             self._canvas_opt.create_rectangle(ctr_x - m * opt_obj.get_s() / 2, ctr_y,
                                              ctr_x + m * opt_obj.get_s() / 2,
                                              ctr_y - m * opt_obj.get_pl_thk(), fill=opt_color,
@@ -630,7 +657,9 @@ class CreateOptimizeMultipleWindow():
                                                                                 opt_obj.get_lg()]))),
                                         font='Verdana 8', fill=opt_color)
         else:
-            self._canvas_opt.create_text(150, 60, text='No optimized solution found.')
+            self._canvas_opt.config(bg='mistyrose')
+            self._canvas_opt.create_text(200, 60, text='No optimized solution found.', font = 'Verdana 14 bold')
+
 
 
         if line != None:
@@ -898,6 +927,35 @@ class CreateOptimizeMultipleWindow():
             messagebox.showinfo(title='Nothing to return', message='No results to return.')
             return
         self._frame.destroy()
+
+    def toggle(self, found_files = None, obj = None, iterating = False):
+        '''
+        On off button.
+        :param found_files:
+        :param obj:
+        :return:
+        '''
+        if iterating:
+            if found_files is not None:
+                predefined_structure = hlp.helper_read_section_file(files=found_files, obj=obj)
+        else:
+            predefined_structure = None
+            if self._toggle_btn.config('relief')[-1] == 'sunken':
+                self._toggle_btn.config(relief="raised")
+                self._toggle_btn.config(bg = 'salmon')
+                self._ent_spacing_upper.config(bg = 'white')
+                self._ent_spacing_lower.config(bg = 'white')
+                self._ent_delta_spacing.config(bg = 'white')
+            else:
+                self._toggle_btn.config(relief="sunken")
+                self._toggle_btn.config(bg='lightgreen')
+                self._ent_spacing_upper.config(bg = 'lightgreen')
+                self._ent_spacing_lower.config(bg = 'lightgreen')
+                self._ent_delta_spacing.config(bg = 'lightgreen')
+                self._filez = list(askopenfilenames(parent=self._frame, title='Choose files to open'))
+
+        return found_files, predefined_structure
+
 
 if __name__ == '__main__':
     root = tk.Tk()

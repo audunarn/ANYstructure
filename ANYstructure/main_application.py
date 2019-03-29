@@ -931,7 +931,8 @@ class Application():
         if not animate:
             self._grid_calc.draw_grid(tank_count=None if len(self._tank_dict)==0 else len(self._tank_dict))
         else:
-            self._grid_calc.animate_grid(grids_to_animate=compartment_search_return['grids'])
+            self._grid_calc.animate_grid(grids_to_animate=compartment_search_return['grids'],
+                                         tank_count = None if len(self._tank_dict)==0 else len(self._tank_dict))
 
     def grid_display_tanks(self, save = False):
         '''
@@ -1766,6 +1767,8 @@ class Application():
                             'all_types' : self._options_type}
 
         self._tank_dict['comp' + str(comp_no)] =  Tanks(temp_tank_dict)
+        if self.__returned_load_data is not None:
+            map(self.on_close_load_window, self.__returned_load_data)
 
     def calculate_all_load_combinations_for_line_all_lines(self):
         '''
@@ -1945,6 +1948,9 @@ class Application():
             self._tank_dict = {}
             self._compartments_listbox.delete(0,'end')
             self._main_grid.clear()
+            self._grid_calc = None
+            if self.__returned_load_data is not None:
+                map(self.on_close_load_window, self.__returned_load_data)
         else:
             pass
 
@@ -2670,8 +2676,9 @@ class Application():
         try:
             self.get_highest_pressure(self._active_line)['normal']
         except (KeyError, AttributeError):
-            messagebox.showinfo(title='Missing loads/accelerations', message='Make some loads for the line.\n'+
-                                                                             'Define accelerations for compartments.')
+            messagebox.showinfo(title='Missing loads/accelerations',
+                                message='Select line or make some loads for the line.\n'+
+                                        'Define accelerations for compartments.')
             return
 
         if self._line_is_active:
@@ -2731,13 +2738,14 @@ class Application():
             return
 
         messagebox.showinfo(title='Span optimization module', message =
+                                    'Computationally heavy! Will run for a long time.\n\n'
                                     'WEIGHT INDEX is the most important result.\n'
-                                    'Results are presented for information and can not be returned to main model\n'
+                                    'Results are presented for information and can not be returned to main model.\n'
                                     'Weight index will show you the span length that will give the lowest weight.\n'
                                     '\n'
                                     'A default range of T properties is chosen. Typical analysis\n'
                                     'steps (deltas) is chosen.\n'
-                                  'Loads are taken from existing structure.')
+                                    'Loads are taken from existing structure.')
 
         top_opt = tk.Toplevel(self._parent)
         optgeo.CreateOptGeoWindow(top_opt,self)
