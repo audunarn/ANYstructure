@@ -440,7 +440,7 @@ class CreateOptimizeWindow():
         self.close_and_save.place(x=start_x+dx*5,y=10)
 
         tk.Button(self._frame, text='Open predefined stiffeners example',
-                  command=lambda: self.open_example_file, bg='white', font='Verdana 10')\
+                  command=self.open_example_file, bg='white', font='Verdana 10')\
             .place(x=start_x+dx*10,y=10)
 
         # Selection of constraints
