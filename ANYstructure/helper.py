@@ -300,9 +300,13 @@ def helper_read_section_file(files, obj = None, to_json = False, to_csv = False)
 
     return to_return_final
 
-def open_example_file():
+def open_example_file(root_path = None):
     import os
-    os.startfile('sections.csv')
+
+    if os.path.isfile('sections.csv'):
+        os.startfile('sections.csv')
+    else:
+        os.startfile(root_path + '/' + 'sections.csv')
 
 if __name__ == '__main__':
     import ANYstructure.example_data as ex

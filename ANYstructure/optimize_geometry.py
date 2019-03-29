@@ -268,7 +268,7 @@ class CreateOptGeoWindow():
         # self.close_and_save.place(x=start_x + dx * 10, y=10)
 
         tk.Button(self._frame, text='Open predefined stiffeners example',
-                  command=hlp.open_example_file, bg='white', font='Verdana 10')\
+                  command=self.open_example_file, bg='white', font='Verdana 10')\
             .place(x=start_x+dx*10,y=10)
 
         # Selection of constraints
@@ -1222,6 +1222,13 @@ class CreateOptGeoWindow():
                 self._filez = list(askopenfilenames(parent=self._frame, title='Choose files to open'))
 
         return found_files, predefined_structure
+
+    def open_example_file(self):
+        import os
+        if os.path.isfile('sections.csv'):
+            os.startfile('sections.csv')
+        else:
+            os.startfile(self._root_dir + '/' + 'sections.csv')
 
 if __name__ == '__main__':
     root = tk.Tk()

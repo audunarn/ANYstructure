@@ -440,7 +440,7 @@ class CreateOptimizeWindow():
         self.close_and_save.place(x=start_x+dx*5,y=10)
 
         tk.Button(self._frame, text='Open predefined stiffeners example',
-                  command=hlp.open_example_file, bg='white', font='Verdana 10')\
+                  command=lambda: self.open_example_file, bg='white', font='Verdana 10')\
             .place(x=start_x+dx*10,y=10)
 
         # Selection of constraints
@@ -873,6 +873,13 @@ class CreateOptimizeWindow():
             self._ent_spacing_lower.config(bg = 'white')
             self._ent_delta_spacing.config(bg = 'white')
             self._predefined_structure = None
+
+    def open_example_file(self):
+        import os
+        if os.path.isfile('sections.csv'):
+            os.startfile('sections.csv')
+        else:
+            os.startfile(self._root_dir + '/' + 'sections.csv')
 
 
 def receive_progress_info():
