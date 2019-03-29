@@ -589,6 +589,7 @@ class CreateOptimizeWindow():
                                                fat_press_ext_int=fat_press,
                                                slamming_press = self._new_slamming_pressure.get(),
                                                predefined_stiffener_iter=predefined_stiffener_iter)
+        print(self._opt_results[0])
 
         if self._opt_results is not None:
             self._opt_actual_running_time.config(text='Actual running time: \n'
@@ -769,7 +770,7 @@ class CreateOptimizeWindow():
                                                  fill=opt_color, stipple=opt_stippe)
 
             self._canvas_opt.create_line(10, 50, 30, 50, fill=opt_color, width=5)
-            self._canvas_opt.create_text(270,50,text='Optimized - Pl.: '+str(round(self._opt_results[0].get_s(),1)*1000) +'x'+
+            self._canvas_opt.create_text(270,50,text='Optimized - Pl.: '+str(round(self._opt_results[0].get_s()*1000,0)) +'x'+
                                                     str(self._opt_results[0].get_pl_thk()*1000)+' Stf.: '
                                                     +str(self._opt_results[0].get_web_h()*1000)+
                                                     'x'+str(self._opt_results[0].get_web_thk()*1000)+'+'+
