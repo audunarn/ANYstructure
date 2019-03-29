@@ -589,7 +589,6 @@ class CreateOptimizeWindow():
                                                fat_press_ext_int=fat_press,
                                                slamming_press = self._new_slamming_pressure.get(),
                                                predefined_stiffener_iter=predefined_stiffener_iter)
-        print(self._opt_results[0])
 
         if self._opt_results is not None:
             self._opt_actual_running_time.config(text='Actual running time: \n'
@@ -851,9 +850,9 @@ class CreateOptimizeWindow():
         if self._toggle_btn.config('relief')[-1] == 'sunken':
             self._toggle_btn.config(relief="raised")
             self._toggle_btn.config(bg = 'salmon')
-            self._ent_spacing_upper.config(bg = 'salmon')
-            self._ent_spacing_lower.config(bg = 'salmon')
-            self._ent_delta_spacing.config(bg = 'salmon')
+            self._ent_spacing_upper.config(bg = 'white')
+            self._ent_spacing_lower.config(bg = 'white')
+            self._ent_delta_spacing.config(bg = 'white')
             self._predefined_structure = None
         else:
             from tkinter.filedialog import askopenfilenames

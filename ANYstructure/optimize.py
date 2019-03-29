@@ -155,10 +155,6 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
         structure_to_check = [obj.get_tuple() for obj in predefiened_stiffener_iter]
         structure_to_check = any_get_all_combs(min_var, max_var, deltas, init_weight=init_filter,
                                                predef_stiffeners=structure_to_check)
-        print('HERE')
-
-    print('Structure to check', structure_to_check)
-
     main_iter = get_filtered_results(structure_to_check, initial_structure_obj,lateral_pressure
                                      ,init_filter_weight=init_filter, side=side,chk=const_chk, fat_dict=fat_dict,
                                      fat_press=fat_press, slamming_press=slamming_press)
@@ -860,7 +856,6 @@ if __name__ == '__main__':
     lower_bounds = np.array([0.8, 0.02, 0.5, 0.02, 0.22, 0.03, 3.5, 10])
     deltas = np.array([0.05, 0.005, 0.05, 0.005, 0.05, 0.005, 0.5])
     predef = hlp.helper_read_section_file(files = 'section.csv', obj=obj)
-
     new_params = random.choice(predef).get_structure_prop()
     startobject = copy.deepcopy(obj)
 

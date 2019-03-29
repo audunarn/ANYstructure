@@ -9,6 +9,7 @@ from tkinter import messagebox
 import ANYstructure.example_data as test
 from ANYstructure.helper import *
 import ANYstructure.helper as hlp
+from tkinter.filedialog import askopenfilenames
 
 class CreateOptimizeMultipleWindow():
     '''
@@ -299,7 +300,6 @@ class CreateOptimizeMultipleWindow():
         tk.Checkbutton(self._frame, variable=self._new_check_slamming).place(x=start_x + dx * 12, y=start_y + 9 * dy)
         tk.Checkbutton(self._frame, variable=self._new_check_local_buckling).place(x=start_x + dx * 12,
                                                                                    y=start_y + 10 * dy)
-
         self._toggle_btn = tk.Button(self._frame, text="Iterate predefiened stiffeners", relief="raised",
                                      command=self.toggle, bg = 'salmon')
         self._toggle_btn.place(x=start_x+dx*8.2, y=start_y - dy * 11.5)
@@ -311,7 +311,7 @@ class CreateOptimizeMultipleWindow():
         self.progress_count.set(0)
         self.progress_bar = Progressbar(self._frame, orient="horizontal",length=200, mode="determinate",
                                         variable=self.progress_count)
-        self.progress_bar.place(x=start_x+dx*10,y=start_y-dy*1.7)
+        self.progress_bar.place(x=start_x+dx*10.5,y=start_y-dy*11.5)
 
         self._active_lines = []
         self.controls()
@@ -397,7 +397,8 @@ class CreateOptimizeMultipleWindow():
         
         contraints = (self._new_check_sec_mod.get(), self._new_check_min_pl_thk.get(),
                       self._new_check_shear_area.get(), self._new_check_buckling.get(),
-                      self._new_check_fatigue.get(), self._new_check_slamming.get(), self._new_check_local_buckling)
+                      self._new_check_fatigue.get(), self._new_check_slamming.get(),
+                      self._new_check_local_buckling.get())
         
         self.pso_parameters = (self._new_swarm_size.get(),self._new_omega.get(),self._new_phip.get(),
                                self._new_phig.get(),self._new_maxiter.get(),self._new_minstep.get(),
@@ -405,9 +406,8 @@ class CreateOptimizeMultipleWindow():
         
         self.progress_count.set(0)
         counter = 0
-        found_files = None
+        found_files = self._filez
         for line in self._active_lines:
-            predefined_structure = None
             init_obj = self._line_to_struc[line][0]
 
             if __name__ == '__main__':
@@ -441,9 +441,9 @@ class CreateOptimizeMultipleWindow():
                          (fat_press['p_int']['loaded'], fat_press['p_int']['ballast'],
                           fat_press['p_int']['part']))
 
-            if predefined_structure is not None:
-                found_files, predefined_stiffener_iter = self.toggle(found_files=found_files, obj = init_obj)
-                print(predefined_stiffener_iter)
+            if self._toggle_btn.config('relief')[-1] == 'sunken':
+                found_files, predefined_stiffener_iter = self.toggle(found_files=found_files, obj = init_obj,
+                                                                     iterating=True)
             else:
                 predefined_stiffener_iter = None
 
@@ -921,29 +921,31 @@ class CreateOptimizeMultipleWindow():
             return
         self._frame.destroy()
 
-
-    def toggle(self, found_files = None, obj = None):
-
-        if self._toggle_btn.config('relief')[-1] == 'sunken':
-            self._toggle_btn.config(relief="raised")
-            self._toggle_btn.config(bg = 'salmon')
-            self._predefined_structure = None
+    def toggle(self, found_files = None, obj = None, iterating = False):
+        '''
+        On off button.
+        :param found_files:
+        :param obj:
+        :return:
+        '''
+        if iterating:
+            if found_files is not None:
+                predefined_structure = hlp.helper_read_section_file(files=found_files, obj=obj)
         else:
-            self._toggle_btn.config(relief="sunken")
-            self._toggle_btn.config(bg='green')
-            if found_files is None:
-                from tkinter.filedialog import askopenfilenames
-                all_files = list(askopenfilenames(parent=root, title='Choose files to open'))
-                predefined_structure = hlp.helper_read_section_file(files = all_files, obj=obj)
-                found_files = all_files
+            predefined_structure = None
+            if self._toggle_btn.config('relief')[-1] == 'sunken':
+                self._toggle_btn.config(relief="raised")
+                self._toggle_btn.config(bg = 'salmon')
+                self._ent_spacing_upper.config(bg = 'white')
+                self._ent_spacing_lower.config(bg = 'white')
+                self._ent_delta_spacing.config(bg = 'white')
             else:
-                predefined_structure = hlp.helper_read_section_file(files = found_files, obj=obj)
-
-        if self._predefined_structure == []:
-            self._toggle_btn.config(relief="raised")
-            self._toggle_btn.config(bg = 'salmon')
-            self._predefined_structure = None
-            self._filez = None
+                self._toggle_btn.config(relief="sunken")
+                self._toggle_btn.config(bg='lightgreen')
+                self._ent_spacing_upper.config(bg = 'lightgreen')
+                self._ent_spacing_lower.config(bg = 'lightgreen')
+                self._ent_delta_spacing.config(bg = 'lightgreen')
+                self._filez = list(askopenfilenames(parent=root, title='Choose files to open'))
 
         return found_files, predefined_structure
 
