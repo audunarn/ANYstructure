@@ -851,18 +851,27 @@ class CreateOptimizeWindow():
         if self._toggle_btn.config('relief')[-1] == 'sunken':
             self._toggle_btn.config(relief="raised")
             self._toggle_btn.config(bg = 'salmon')
+            self._ent_spacing_upper.config(bg = 'salmon')
+            self._ent_spacing_lower.config(bg = 'salmon')
+            self._ent_delta_spacing.config(bg = 'salmon')
             self._predefined_structure = None
         else:
             from tkinter.filedialog import askopenfilenames
             self._toggle_btn.config(relief="sunken")
             self._toggle_btn.config(bg = 'salmon')
-            self._toggle_btn.config(bg='green')
+            self._toggle_btn.config(bg='lightgreen')
+            self._ent_spacing_upper.config(bg = 'lightgreen')
+            self._ent_spacing_lower.config(bg = 'lightgreen')
+            self._ent_delta_spacing.config(bg = 'lightgreen')
             self._filez = askopenfilenames(parent=root, title='Choose files to open')
             self._predefined_structure = hlp.helper_read_section_file(files=list(self._filez), obj=self._toggle_object)
 
         if self._predefined_structure == []:
             self._toggle_btn.config(relief="raised")
             self._toggle_btn.config(bg = 'salmon')
+            self._ent_spacing_upper.config(bg = 'salmon')
+            self._ent_spacing_lower.config(bg = 'salmon')
+            self._ent_delta_spacing.config(bg = 'salmon')
             self._predefined_structure = None
 
 
