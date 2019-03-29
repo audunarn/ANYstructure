@@ -268,8 +268,8 @@ class CreateOptimizeMultipleWindow():
         self.close_and_save.place(x=start_x + dx * 10, y=10)
 
         tk.Button(self._frame, text='Open predefined stiffeners example',
-                  command=hlp.open_example_file, bg='white', font='Verdana 10')\
-            .place(x=start_x+dx*10,y=10)
+                  command=self.open_example_file, bg='white', font='Verdana 10')\
+            .place(x=start_x+dx*15,y=10)
 
         # Selection of constraints
         self._new_check_sec_mod = tk.BooleanVar()
@@ -287,7 +287,7 @@ class CreateOptimizeMultipleWindow():
         self._new_check_slamming.set(False)
         self._new_check_local_buckling.set(True)
 
-        start_y, start_x = 520, 200
+        start_y, start_x, dy = 530, 200, 35
         tk.Label(self._frame,text='Check for minimum section modulus').place(x=start_x+dx*9.7,y=start_y+4*dy)
         tk.Label(self._frame, text='Check for minimum plate thk.').place(x=start_x+dx*9.7,y=start_y+5*dy)
         tk.Label(self._frame, text='Check for minimum shear area').place(x=start_x+dx*9.7,y=start_y+6*dy)
@@ -306,7 +306,7 @@ class CreateOptimizeMultipleWindow():
                                                                                    y=start_y + 10 * dy)
         self._toggle_btn = tk.Button(self._frame, text="Iterate predefiened stiffeners", relief="raised",
                                      command=self.toggle, bg = 'salmon')
-        self._toggle_btn.place(x=start_x+dx*8.2, y=start_y - dy * 11.5)
+        self._toggle_btn.place(x=start_x+dx*8.2, y=start_y - dy * 13)
         self._toggle_object, self._filez = None, None
         self.draw_properties()
 
@@ -639,12 +639,12 @@ class CreateOptimizeMultipleWindow():
 
             self._canvas_opt.create_line(10, 50, 30, 50, fill=opt_color, width=5)
             self._canvas_opt.create_text(270, 50,
-                                        text='Optimized - Pl.: ' + str(opt_obj.get_s() * 1000) + 'x' +
-                                             str(opt_obj.get_pl_thk() * 1000) + ' Stf.: '
-                                             + str(opt_obj.get_web_h() * 1000) +
-                                             'x' + str(opt_obj.get_web_thk() * 1000) + '+' +
-                                             str(opt_obj.get_fl_w() * 1000) +
-                                             'x' + str(opt_obj.get_fl_thk() * 1000),
+                                        text='Optimized - Pl.: ' + str(round(opt_obj.get_s() * 1000,1)) + 'x' +
+                                             str(round(opt_obj.get_pl_thk() * 1000,1)) + ' Stf.: '
+                                             + str(round(opt_obj.get_web_h() * 1000,1)) +
+                                             'x' + str(round(opt_obj.get_web_thk() * 1000,1)) + '+' +
+                                             str(round(opt_obj.get_fl_w() * 1000,1)) +
+                                             'x' + str(round(opt_obj.get_fl_thk() * 1000,1)),
                                         font='Verdana 8', fill=opt_color)
             self._canvas_opt.create_text(120, 70, text='Weight (per Lg width): '
                                                       + str(int(op.calc_weight([opt_obj.get_s(),
@@ -955,6 +955,13 @@ class CreateOptimizeMultipleWindow():
                 self._filez = list(askopenfilenames(parent=self._frame, title='Choose files to open'))
 
         return found_files, predefined_structure
+
+    def open_example_file(self):
+        import os
+        if os.path.isfile('sections.csv'):
+            os.startfile('sections.csv')
+        else:
+            os.startfile(self._root_dir + '/' + 'sections.csv')
 
 
 if __name__ == '__main__':

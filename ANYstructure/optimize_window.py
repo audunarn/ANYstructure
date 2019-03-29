@@ -9,6 +9,7 @@ from tkinter import messagebox
 import ANYstructure.example_data as test
 import ANYstructure.helper as hlp
 import random
+from tkinter.filedialog import askopenfilenames
 
 class CreateOptimizeWindow():
     '''
@@ -439,7 +440,7 @@ class CreateOptimizeWindow():
         self.close_and_save.place(x=start_x+dx*5,y=10)
 
         tk.Button(self._frame, text='Open predefined stiffeners example',
-                  command=hlp.open_example_file, bg='white', font='Verdana 10')\
+                  command=self.open_example_file, bg='white', font='Verdana 10')\
             .place(x=start_x+dx*10,y=10)
 
         # Selection of constraints
@@ -577,11 +578,12 @@ class CreateOptimizeWindow():
         else:
             fat_press = None
 
-        if self._predefined_structure is not None:
-            predefined_stiffener_iter = self._predefined_structure
+        if self._toggle_btn.config('relief')[-1] == 'sunken':
+            open_files = askopenfilenames(parent=self._frame, title='Choose files to open')
+            predefined_stiffener_iter = hlp.helper_read_section_file(files=list(open_files),
+                                                                     obj=self._initial_structure_obj)
         else:
             predefined_stiffener_iter = None
-            self._toggle_object = None
 
         self._opt_results= op.run_optmizataion(self._initial_structure_obj,self.get_lower_bounds(),
                                                self.get_upper_bounds(),self._new_design_pressure.get(),
@@ -593,7 +595,6 @@ class CreateOptimizeWindow():
                                                fat_press_ext_int=fat_press,
                                                slamming_press = self._new_slamming_pressure.get(),
                                                predefined_stiffener_iter=predefined_stiffener_iter)
-
         if self._opt_results is not None:
             self._opt_actual_running_time.config(text='Actual running time: \n'
                                                      +str(time.time()-t_start)+' sec')
@@ -773,12 +774,12 @@ class CreateOptimizeWindow():
                                                  fill=opt_color, stipple=opt_stippe)
 
             self._canvas_opt.create_line(10, 50, 30, 50, fill=opt_color, width=5)
-            self._canvas_opt.create_text(270,50,text='Optimized - Pl.: '+str(round(self._opt_results[0].get_s()*1000,0)) +'x'+
-                                                    str(self._opt_results[0].get_pl_thk()*1000)+' Stf.: '
-                                                    +str(self._opt_results[0].get_web_h()*1000)+
-                                                    'x'+str(self._opt_results[0].get_web_thk()*1000)+'+'+
-                                                            str(self._opt_results[0].get_fl_w()*1000)+
-                                                    'x'+str(self._opt_results[0].get_fl_thk()*1000),
+            self._canvas_opt.create_text(270,50,text='Optimized - Pl.: '+str(round(self._opt_results[0].get_s()*1000,1))
+                                                     +'x'+ str(round(self._opt_results[0].get_pl_thk()*1000,1))+
+                                                     ' Stf.: '+str(round(self._opt_results[0].get_web_h()*1000,1))+
+                                                    'x'+str(round(self._opt_results[0].get_web_thk()*1000,1))+'+'+
+                                                            str(round(self._opt_results[0].get_fl_w()*1000,1))+
+                                                    'x'+str(round(self._opt_results[0].get_fl_thk()*1000,1)),
                                         font = 'Verdana 8',fill = opt_color)
             self._canvas_opt.create_text(120, 70, text='Weight (per Lg width): '
                                                       + str(int(op.calc_weight([self._opt_results[0].get_s(),
@@ -848,7 +849,6 @@ class CreateOptimizeWindow():
                                     '\n'
                                     'All algorithms calculates local scantling and buckling requirements')
 
-
     def toggle(self):
 
         if self._toggle_btn.config('relief')[-1] == 'sunken':
@@ -857,17 +857,14 @@ class CreateOptimizeWindow():
             self._ent_spacing_upper.config(bg = 'white')
             self._ent_spacing_lower.config(bg = 'white')
             self._ent_delta_spacing.config(bg = 'white')
-            self._predefined_structure = None
         else:
-            from tkinter.filedialog import askopenfilenames
+
             self._toggle_btn.config(relief="sunken")
             self._toggle_btn.config(bg = 'salmon')
             self._toggle_btn.config(bg='lightgreen')
             self._ent_spacing_upper.config(bg = 'lightgreen')
             self._ent_spacing_lower.config(bg = 'lightgreen')
             self._ent_delta_spacing.config(bg = 'lightgreen')
-            self._filez = askopenfilenames(parent=self._frame, title='Choose files to open')
-            self._predefined_structure = hlp.helper_read_section_file(files=list(self._filez), obj=self._toggle_object)
 
         if self._predefined_structure == []:
             self._toggle_btn.config(relief="raised")
@@ -876,6 +873,13 @@ class CreateOptimizeWindow():
             self._ent_spacing_lower.config(bg = 'white')
             self._ent_delta_spacing.config(bg = 'white')
             self._predefined_structure = None
+
+    def open_example_file(self):
+        import os
+        if os.path.isfile('sections.csv'):
+            os.startfile('sections.csv')
+        else:
+            os.startfile(self._root_dir + '/' + 'sections.csv')
 
 
 def receive_progress_info():
