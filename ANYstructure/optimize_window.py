@@ -49,6 +49,7 @@ class CreateOptimizeWindow():
             except KeyError:
                 self._slamming_pressure = 0
             image_dir = app._root_dir +'\\images\\'
+            self._root_dir = app._root_dir
 
         self._frame = master
         self._frame.wm_title("Optimize structure")

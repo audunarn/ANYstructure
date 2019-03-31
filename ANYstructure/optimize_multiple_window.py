@@ -39,12 +39,14 @@ class CreateOptimizeMultipleWindow():
             self._canvas_scale = app._canvas_scale
             self._line_to_struc = app._line_to_struc
             image_dir = app._root_dir + '\\images\\'
+            self._root_dir = app._root_dir
 
         self._frame = master
         self._frame.wm_title("Optimize structure")
         self._frame.geometry('1800x950')
         self._frame.grab_set()
         self._canvas_origo = (50, 720 - 50)
+
 
         self._active_lines = []
         self._add_to_lines = True

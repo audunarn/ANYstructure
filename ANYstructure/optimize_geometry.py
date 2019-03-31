@@ -41,6 +41,7 @@ class CreateOptGeoWindow():
             self._line_to_struc = app._line_to_struc
             self._opt_frames = {}
             self._active_points = []
+            self._root_dir = app._root_dir
 
         self._opt_structure = {}
         self._opt_frames_obj = []
@@ -232,26 +233,26 @@ class CreateOptGeoWindow():
         self._new_minstep.set(1e-8)
         self._new_minfunc.set(1e-8)
 
-        self._new_delta_spacing.trace('w', self.update_running_time)
-        self._new_delta_pl_thk.trace('w', self.update_running_time)
-        self._new_delta_web_h.trace('w', self.update_running_time)
-        self._new_delta_web_thk.trace('w', self.update_running_time)
-        self._new_delta_fl_w.trace('w', self.update_running_time)
-        self._new_delta_fl_thk.trace('w', self.update_running_time)
-        self._new_spacing_upper.trace('w', self.update_running_time)
-        self._new_spacing_lower.trace('w', self.update_running_time)
-        self._new_pl_thk_upper.trace('w', self.update_running_time)
-        self._new_pl_thk_lower.trace('w', self.update_running_time)
-        self._new_web_h_upper.trace('w', self.update_running_time)
-        self._new_web_h_lower.trace('w', self.update_running_time)
-        self._new_web_thk_upper.trace('w', self.update_running_time)
-        self._new_web_thk_lower.trace('w', self.update_running_time)
-        self._new_fl_w_upper.trace('w', self.update_running_time)
-        self._new_fl_w_lower.trace('w', self.update_running_time)
-        self._new_fl_thk_upper.trace('w', self.update_running_time)
-        self._new_fl_thk_lower.trace('w', self.update_running_time)
-        self._new_algorithm_random_trials.trace('w', self.update_running_time)
-        self._new_algorithm.trace('w', self.update_running_time)
+        # self._new_delta_spacing.trace('w', self.update_running_time)
+        # self._new_delta_pl_thk.trace('w', self.update_running_time)
+        # self._new_delta_web_h.trace('w', self.update_running_time)
+        # self._new_delta_web_thk.trace('w', self.update_running_time)
+        # self._new_delta_fl_w.trace('w', self.update_running_time)
+        # self._new_delta_fl_thk.trace('w', self.update_running_time)
+        # self._new_spacing_upper.trace('w', self.update_running_time)
+        # self._new_spacing_lower.trace('w', self.update_running_time)
+        # self._new_pl_thk_upper.trace('w', self.update_running_time)
+        # self._new_pl_thk_lower.trace('w', self.update_running_time)
+        # self._new_web_h_upper.trace('w', self.update_running_time)
+        # self._new_web_h_lower.trace('w', self.update_running_time)
+        # self._new_web_thk_upper.trace('w', self.update_running_time)
+        # self._new_web_thk_lower.trace('w', self.update_running_time)
+        # self._new_fl_w_upper.trace('w', self.update_running_time)
+        # self._new_fl_w_lower.trace('w', self.update_running_time)
+        # self._new_fl_thk_upper.trace('w', self.update_running_time)
+        # self._new_fl_thk_lower.trace('w', self.update_running_time)
+        # self._new_algorithm_random_trials.trace('w', self.update_running_time)
+        # self._new_algorithm.trace('w', self.update_running_time)
 
         self.running_time_per_item = 4e-05
         self._runnig_time_label.config(text=str(self.get_running_time()))
@@ -426,7 +427,7 @@ class CreateOptGeoWindow():
                 lateral_press.append(self.app.get_highest_pressure(closet_line)['normal'] / 1000)
         if broke:
             messagebox.showinfo(title='Selection error.',
-                                message='This field cannot be subdivided or is not load subjected. Error.')
+                                message='This field cannot be subdivided or there are no loads. Error.')
             return None
 
         found_files = self._filez
@@ -446,17 +447,19 @@ class CreateOptGeoWindow():
                                               predefined_stiffener_iter=predefined_stiffener_iter)
 
             self._geo_results = geo_results
+
             #SAVING RESULTS
             save_results = True
             if save_results:
                 with open('geo_opt_2.pickle', 'wb') as file:
                     pickle.dump(geo_results, file)
         else:
-            with open('geo_opt.pickle', 'rb') as file:
+            with open('geo_opt_2.pickle', 'rb') as file:
                 self._geo_results = pickle.load(file)
-        if __name__ == '__main__':
-            self.draw_result_text(self._geo_results)
-            self.draw_select_canvas(opt_results=self._geo_results)
+                
+
+        self.draw_result_text(self._geo_results)
+        self.draw_select_canvas(opt_results=self._geo_results)
 
     def opt_get_fractions(self):
         ''' Finding initial number of fractions '''
@@ -480,7 +483,7 @@ class CreateOptGeoWindow():
         pt2 = opt_line[1]
 
         vector = [pt2[0] - pt1[0], pt2[1] - pt1[1]]
-        point = [pt1[0]+vector[0]*0.5,pt1[1]+vector[1]*0.5]
+        point = [pt1[0]+vector[0]*0.5, pt1[1]+vector[1]*0.5]
         if self.opt_find_closest_orig_line(point) == None:
             return None
         objects = [copy.deepcopy(x) if x != None else None for x in

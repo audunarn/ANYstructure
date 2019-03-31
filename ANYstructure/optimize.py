@@ -184,17 +184,20 @@ def any_smart_loop_geometric(min_var,max_var,deltas,initial_structure_obj,latera
     all_obj = []
     idx = 0
     for struc_obj, lat_press in zip(initial_structure_obj, lateral_pressure):
-        this_predefiened_stiffener_iter = any_get_all_combs(min_var=min_var, max_var=max_var,deltas=deltas,
-                                                       predef_stiffeners=predefiened_stiffener_iter)
-        temp_predef = list()
-        for x in predefiened_stiffener_iter:
-            xvar = list(x)
-            xvar.append(struc_obj.get_span())
-            xvar.append(struc_obj.get_lg())
-            temp_predef.append(tuple(xvar))
+        if predefiened_stiffener_iter is not None:
+            this_predefiened_stiffener_iter = any_get_all_combs(min_var=min_var, max_var=max_var,deltas=deltas,
+                                                           predef_stiffeners=predefiened_stiffener_iter)
+            temp_predef = list()
+            for x in predefiened_stiffener_iter:
+                xvar = list(x)
+                xvar.append(struc_obj.get_span())
+                xvar.append(struc_obj.get_lg())
+                temp_predef.append(tuple(xvar))
 
-        this_predefiened_stiffener_iter = [create_new_structure_obj(struc_obj, xtup) for xtup in
-                                           this_predefiened_stiffener_iter]
+            this_predefiened_stiffener_iter = [create_new_structure_obj(struc_obj, xtup) for xtup in
+                                               this_predefiened_stiffener_iter]
+        else:
+            this_predefiened_stiffener_iter = None
 
         opt_obj = any_smart_loop(min_var = min_var,max_var = max_var,deltas = deltas,initial_structure_obj = struc_obj,
                                  lateral_pressure = lat_press, init_filter = init_filter, side=side,
@@ -272,7 +275,7 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                              init_filter = float('inf'),side='p',const_chk=(True,True,True,True, True, True),
                              pso_options=(100,0.5,0.5,0.5,100,1e-8,1e-8), fat_obj = None, fat_press = None,
                              min_max_span = (2,6), tot_len = 12, frame_distance = None,
-                             algorithm = 'anysmart', predefiened_stiffener_iter=None):
+                             algorithm = 'anysmart', predefiened_stiffener_iter=None, reiterate = True):
 
     '''Geometric optimization of all relevant sections. '''
     # Checking the number of initial objects and adding if number of fraction is to be changed.
@@ -335,8 +338,8 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
         while not solution_found:
             iterations += 1
             if iterations != 1:
-                min_var[0:6] -= deltas/2
-                max_var[0:6] += deltas/2
+                min_var[0:6] += deltas/2
+                max_var[0:6] -= deltas/2
 
             if algorithm is 'pso':
                 opt_objects = particle_search_geometric(min_var=min_var,max_var=max_var,deltas=deltas,
@@ -381,7 +384,10 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                     tot_weight += (pl_area + stf_area) * frame_height * 7850
                     solution_found = True
             elif iterations == 2:
-                solution_found = True
+                solution_found = True  # Only iterate once.
+
+            if predefiened_stiffener_iter is not None or not reiterate:
+                solution_found = True  # Noe solution may be found, but in this case no more iteations.
 
         results[no_of_fractions] = tot_weight, opt_objects
     return results
