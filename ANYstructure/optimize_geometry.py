@@ -461,19 +461,21 @@ class CreateOptGeoWindow():
 
             self._geo_results = geo_results
 
-            #SAVING RESULTS
-            if save_results:
-                with open('geo_opt_2.pickle', 'wb') as file:
-                    pickle.dump(geo_results, file)
+            # #SAVING RESULTS
+            # if save_results:
+            #     with open('geo_opt_2.pickle', 'wb') as file:
+            #         pickle.dump(geo_results, file)
         else:
             with open('geo_opt_2.pickle', 'rb') as file:
                 self._geo_results = pickle.load(file)
 
-
-        save_file = filedialog.asksaveasfile(mode="w", defaultextension=".txt")
-        filename = save_file.name
-        if save_file is None:  # ask saveasfile return `None` if dialog closed with "cancel".
-            return
+        if save_results:
+            save_file = filedialog.asksaveasfile(mode="w", defaultextension=".txt")
+            filename = save_file.name
+            if save_file is None:  # ask saveasfile return `None` if dialog closed with "cancel".
+                return
+        else:
+            save_file = None
 
         save_file = self.draw_result_text(self._geo_results, save_to_file=filename)
         self.draw_select_canvas(opt_results=self._geo_results, save_file = save_file)

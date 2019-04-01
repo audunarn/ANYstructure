@@ -963,7 +963,15 @@ class CreateOptimizeMultipleWindow():
                 self._ent_spacing_upper.config(bg = 'lightgreen')
                 self._ent_spacing_lower.config(bg = 'lightgreen')
                 self._ent_delta_spacing.config(bg = 'lightgreen')
-                self._filez = list(askopenfilenames(parent=self._frame, title='Choose files to open'))
+                openfile = list(askopenfilenames(parent=self._frame, title='Choose files to open'))
+                if openfile == []:
+                    self._toggle_btn.config(relief="raised")
+                    self._toggle_btn.config(bg='salmon')
+                    self._ent_spacing_upper.config(bg='white')
+                    self._ent_spacing_lower.config(bg='white')
+                    self._ent_delta_spacing.config(bg='white')
+                else:
+                    self._filez = openfile
 
         return found_files, predefined_structure
 
