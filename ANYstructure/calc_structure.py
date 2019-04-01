@@ -74,7 +74,6 @@ class Structure():
                # str(round(self.sigma_y, 1)) + ' sigma_y1: ' + str(round(self.sigma_y, 1)) + \
                # ' sigma_y2: ' + str(round(self.sigma_y2, 1))
 
-
     def get_report_stresses(self):
         'Return the stresses to the report'
         return 'sigma_y1: '+str(round(self.sigma_y1,1))+' sigma_y2: '+str(round(self.sigma_y2,1))+ \
