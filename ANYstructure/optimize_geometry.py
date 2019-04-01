@@ -13,6 +13,7 @@ import ANYstructure.calc_structure
 import ANYstructure.helper as hlp
 from tkinter.filedialog import askopenfilenames
 from multiprocessing import cpu_count
+from tkinter import filedialog
 
 class CreateOptGeoWindow():
     '''
@@ -402,7 +403,7 @@ class CreateOptGeoWindow():
             self._ent_minstep.place(x=start_x + dx * 15, y=start_y + 0 * dy)
             self._ent_minfunc.place(x=start_x + dx * 15, y=start_y + 1 * dy)
 
-    def run_optimizaion(self, load_pre = False, save_results = True):
+    def run_optimizaion(self, load_pre = True, save_results = True):
         '''
         Function when pressing the optimization botton inside this window.
         :return:
@@ -461,17 +462,22 @@ class CreateOptGeoWindow():
             self._geo_results = geo_results
 
             #SAVING RESULTS
-            save_results = True
             if save_results:
                 with open('geo_opt_2.pickle', 'wb') as file:
                     pickle.dump(geo_results, file)
         else:
             with open('geo_opt_2.pickle', 'rb') as file:
                 self._geo_results = pickle.load(file)
-                
 
-        self.draw_result_text(self._geo_results)
-        self.draw_select_canvas(opt_results=self._geo_results)
+
+        save_file = filedialog.asksaveasfile(mode="w", defaultextension=".txt")
+        filename = save_file.name
+        if save_file is None:  # ask saveasfile return `None` if dialog closed with "cancel".
+            return
+
+        save_file = self.draw_result_text(self._geo_results, save_to_file=filename)
+        self.draw_select_canvas(opt_results=self._geo_results, save_file = save_file)
+
 
     def opt_get_fractions(self):
         ''' Finding initial number of fractions '''
@@ -826,7 +832,7 @@ class CreateOptGeoWindow():
                                          text='Lateral pressure: ' + str(lateral_press) + ' kPa',
                                          font='Verdana 10 bold', fill='red')
 
-    def draw_select_canvas(self, load_selected=False, opt_results = None):
+    def draw_select_canvas(self, load_selected=False, opt_results = None, save_file = None):
         '''
         Making the lines canvas.
         :return:
@@ -935,27 +941,39 @@ class CreateOptGeoWindow():
             text_type = 'Verdana 10'
             delta, start_x, y_loc = 20, 20, 40
 
+            if save_file is not None:
+                save_file.write('\n' + 'Stiffener properties:')
+
             for key, values in opt_results.items():
-                print(y_loc)
                 # if y_loc > 700:
                 #     start_x = 400
                 #     y_loc = 40
+                if save_file is not None:
+                    save_file.write('\n' + str(len(check_ok))+'\n')
                 y_loc = y_loc + delta
                 check_ok = [val[-1] is True for val in opt_results[key][1]]
                 self._canvas_select.create_text([start_x + delta, y_loc], text=str(len(check_ok)),
                                                 anchor='w', font=text_type)
                 y_loc += delta
+
                 for data in values[1]:
                     for stuc_info in data:
                         if type(stuc_info) == ANYstructure.calc_structure.Structure:
                             if y_loc > 700:
                                 y_loc = 120
                                 start_x = 500
-                            self._canvas_select.create_text([start_x + delta, y_loc], text=stuc_info.get_one_line_string(),
+                            self._canvas_select.create_text([start_x + delta, y_loc],
+                                                            text=stuc_info.get_one_line_string(),
                                                             anchor='w', font=text_type)
                             y_loc += 15
+                            if save_file is not None:
+                                save_file.write(stuc_info.get_one_line_string()+' | '+
+                                                stuc_info.get_report_stresses()+'\n')
+            if save_file is not None:
+                save_file.write('\n -------------  END  ---------------')
+                save_file.close()
 
-    def draw_result_text(self, geo_opt_obj):
+    def draw_result_text(self, geo_opt_obj, save_to_file = None):
         ''' Textual version of the results. '''
 
         self._canvas_opt.delete('all')
@@ -980,19 +998,39 @@ class CreateOptGeoWindow():
         text_type = 'Verdana 12 bold'
         weights = [self._geo_results[key][0] for key in self._geo_results.keys()]
 
+        max_weight = 0
+        for weight in weights:
+            if weight != float('inf'):
+                max_weight = weight if weight > max_weight else max_weight
+
+
+        if save_to_file is not None:
+            save_file = open(save_to_file, 'w')
+            save_file.write('| Plate fields | Fields length | Weight index | All OK? |\n')
+            save_file.write('*********************************************************\n')
+
         for key, value in self._geo_results.items():
             y_loc = y_loc + delta
             check_ok = [val[-1] is True for val in self._geo_results[key][1]]
 
             self._canvas_opt.create_text([start_x + 20, y_loc ], text=str(len(check_ok)),
                                          anchor='w', font=text_type)
+
             self._canvas_opt.create_text([start_x + 120, y_loc ], text=str(self._geo_results[key][1][0][0].get_span()),
                                          anchor='w', font=text_type)
             self._canvas_opt.create_text([start_x + 220, y_loc ],
-                                         text=str(round(self._geo_results[key][0] / max(weights), 3)),
+                                         text=str(round(self._geo_results[key][0] / max_weight, 3)),
                                          anchor='w', font=text_type)
             self._canvas_opt.create_text([start_x + 330, y_loc ], text=str(all(check_ok)),
                                          anchor='w', font=text_type)
+
+            if save_to_file is not None:
+                save_file.write(str(len(check_ok))+ ' ' +str(self._geo_results[key][1][0][0].get_span()) + ' ' +
+                                str(round(self._geo_results[key][0] / max_weight, 3)) + ' ' + str(all(check_ok))+'\n')
+
+        if save_to_file:
+            return save_file
+
 
     def algorithm_info(self):
         ''' When button is clicked, info is displayed.'''
