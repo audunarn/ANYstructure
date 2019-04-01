@@ -12,6 +12,7 @@ import copy, pickle
 import ANYstructure.calc_structure
 import ANYstructure.helper as hlp
 from tkinter.filedialog import askopenfilenames
+from multiprocessing import cpu_count
 
 class CreateOptGeoWindow():
     '''
@@ -102,6 +103,7 @@ class CreateOptGeoWindow():
         self._new_maxiter = tk.IntVar()
         self._new_minstep = tk.DoubleVar()
         self._new_minfunc = tk.DoubleVar()
+        self._new_processes = tk.IntVar()
 
         ent_w = 10
         self._ent_spacing_upper = tk.Entry(self._frame, textvariable=self._new_spacing_upper, width=ent_w)
@@ -138,6 +140,11 @@ class CreateOptGeoWindow():
         self._ent_minfunc = tk.Entry(self._frame, textvariable=self._new_minfunc, width=pso_width)
 
         start_x, start_y, dx, dy = 20, 70, 100, 40
+
+        tk.Label(self._frame, text='Processes\n (CPUs)', font='Verdana 9 bold', bg = 'silver')\
+            .place(x=start_x + 8 * dx, y=start_y + 0.5 * dy)
+        tk.Entry(self._frame, textvariable=self._new_processes, width = 12, bg = 'silver')\
+            .place(x=start_x + 8 * dx, y=start_y + 1.4 * dy)
 
         self._prop_canvas_dim = (500, 450)
         self._draw_scale = 500
@@ -224,6 +231,7 @@ class CreateOptGeoWindow():
         self._new_fl_thk_lower.set(round(10, 5))
         self._new_algorithm.set('anysmart')
         self._new_algorithm_random_trials.set(10000)
+        self._new_processes.set(max(cpu_count() - 1, 1))
 
         self._new_swarm_size.set(100)
         self._new_omega.set(0.5)
@@ -267,6 +275,7 @@ class CreateOptGeoWindow():
         # self.close_and_save = tk.Button(self._frame, text='Return and replace with selected optimized structure',
         #                                 command=self.save_and_close, bg='green', font='Verdana 10 bold', fg='yellow')
         # self.close_and_save.place(x=start_x + dx * 10, y=10)
+
 
         tk.Button(self._frame, text='Open predefined stiffeners example',
                   command=self.open_example_file, bg='white', font='Verdana 10')\
@@ -322,6 +331,8 @@ class CreateOptGeoWindow():
         self.draw_select_canvas()
         # if __name__ == '__main__':
         #     self.run_optimizaion(load_pre = True, save_results=True)
+
+
 
     def selected_algorithm(self, event):
         '''
@@ -391,7 +402,7 @@ class CreateOptGeoWindow():
             self._ent_minstep.place(x=start_x + dx * 15, y=start_y + 0 * dy)
             self._ent_minfunc.place(x=start_x + dx * 15, y=start_y + 1 * dy)
 
-    def run_optimizaion(self, load_pre = False, save_results = False):
+    def run_optimizaion(self, load_pre = False, save_results = True):
         '''
         Function when pressing the optimization botton inside this window.
         :return:
@@ -444,7 +455,8 @@ class CreateOptGeoWindow():
                                               is_geometric=True,fatigue_obj=None, fat_press_ext_int=None,
                                               min_max_span=(2,6), tot_len=self.opt_get_length(),
                                               frame_height=self.opt_get_distance(), frame_distance = distances,
-                                              predefined_stiffener_iter=predefined_stiffener_iter)
+                                              predefined_stiffener_iter=predefined_stiffener_iter,
+                                              processes = self._new_processes.get())
 
             self._geo_results = geo_results
 

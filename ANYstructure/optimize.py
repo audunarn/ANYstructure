@@ -20,7 +20,7 @@ def run_optmizataion(initial_structure_obj=None, min_var=None,max_var=None,later
                      pso_options = (100,0.5,0.5,0.5,100,1e-8,1e-8),is_geometric=False, fatigue_obj = None ,
                      fat_press_ext_int = None,
                      min_max_span = (2,6), tot_len = 12, frame_height = 2.5, frame_distance = None,
-                     slamming_press = 0, predefined_stiffener_iter = None):
+                     slamming_press = 0, predefined_stiffener_iter = None, processes = None):
     '''
     The optimazation is initiated here. It is called from optimize_window.
     :param initial_structure_obj:
@@ -139,7 +139,7 @@ def any_optimize_loop(min_var,max_var,deltas,initial_structure_obj,lateral_press
 
 def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure, init_filter = float('inf'),
                    side='p',const_chk=(True,True,True,True,True,True,True), fat_dict = None, fat_press = None,
-                   slamming_press = 0, predefiened_stiffener_iter = None):
+                   slamming_press = 0, predefiened_stiffener_iter = None, processes = None):
     '''
     Trying to be smart
     :param min_var:
@@ -178,7 +178,7 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
 
 def any_smart_loop_geometric(min_var,max_var,deltas,initial_structure_obj,lateral_pressure, init_filter = float('inf'),
                              side='p',const_chk=(True,True,True,True,True,True), fat_dict = None, fat_press = None,
-                             slamming_press = 0, predefiened_stiffener_iter=None):
+                             slamming_press = 0, predefiened_stiffener_iter=None, processes = None):
     ''' Searching multiple sections using the smart loop. '''
 
     all_obj = []
@@ -275,7 +275,8 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                              init_filter = float('inf'),side='p',const_chk=(True,True,True,True, True, True),
                              pso_options=(100,0.5,0.5,0.5,100,1e-8,1e-8), fat_obj = None, fat_press = None,
                              min_max_span = (2,6), tot_len = 12, frame_distance = None,
-                             algorithm = 'anysmart', predefiened_stiffener_iter=None, reiterate = True):
+                             algorithm = 'anysmart', predefiened_stiffener_iter=None, reiterate = True,
+                             processes = None):
 
     '''Geometric optimization of all relevant sections. '''
     # Checking the number of initial objects and adding if number of fraction is to be changed.
@@ -695,7 +696,7 @@ def stress_scaling_area(sigma_old,a_old,a_new):
 
 def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight,side='p',
                          chk=(True,True,True,True,True,True,True),fat_dict = None, fat_press = None,
-                         slamming_press=None):
+                         slamming_press=None, processes = None):
     '''
     Using multiprocessing to return list of applicable results.
 
@@ -711,8 +712,10 @@ def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight
                 for item in iterable_all)
 
     #res_pre = it.starmap(any_constraints_all, iter_var)
+    if processes is None:
+        processes = max(cpu_count()-1,1)
 
-    with Pool(max(cpu_count()-1,1)) as my_process:
+    with Pool(processes) as my_process:
         # res_pre = my_process.starmap_async(any_constraints_all, iter_var).get()
         # print('Done calculating')
         res_pre = my_process.starmap(any_constraints_all, iter_var)

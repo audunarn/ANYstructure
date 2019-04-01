@@ -10,6 +10,7 @@ import ANYstructure.example_data as test
 from ANYstructure.helper import *
 import ANYstructure.helper as hlp
 from tkinter.filedialog import askopenfilenames
+from multiprocessing import cpu_count
 
 class CreateOptimizeMultipleWindow():
     '''
@@ -136,6 +137,13 @@ class CreateOptimizeMultipleWindow():
         self._ent_minfunc = tk.Entry(self._frame,textvariable=self._new_minfunc, width = pso_width)
 
         start_x, start_y, dx, dy = 20, 70, 100, 40
+
+        self._new_processes = tk.IntVar()
+        self._new_processes.set(max(cpu_count() - 1, 1))
+        tk.Label(self._frame, text='Processes\n (CPUs)', font='Verdana 9 bold', bg = 'silver')\
+            .place(x=start_x + 12.3 * dx, y=start_y - 0.2 * dy)
+        tk.Entry(self._frame, textvariable=self._new_processes, width = 12, bg = 'silver')\
+            .place(x=start_x + 12.3 * dx, y=start_y + 0.7* dy)
 
         self._prop_canvas_dim = (500, 450)
         self._draw_scale = 500
@@ -464,7 +472,8 @@ class CreateOptimizeMultipleWindow():
                                                           fatigue_obj=fat_obj,
                                                           fat_press_ext_int=fat_press,
                                                           slamming_press=slamming_pressure,
-                                                          predefined_stiffener_iter = predefined_stiffener_iter)
+                                                          predefined_stiffener_iter = predefined_stiffener_iter,
+                                                          processes=self._new_processes.get())
             counter += 1
             self.progress_count.set(counter)
             self.progress_bar.update_idletasks()
