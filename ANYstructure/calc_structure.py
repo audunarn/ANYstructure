@@ -889,7 +889,8 @@ class CalcScantlings(Structure):
         Ne = ((math.pow(math.pi,2))*E*Ae)/(math.pow(lk/ie,2))# eq7.72 , checked ok
 
         Nrd = Ae * (fy / 1.15) #eq7.65, checked ok
-        Nsd = sigxSd * (As + s * t) + tautf * s * t
+        Nsd = sigxSd * (As + s * t) + tautf * s * t #TODO verify this!!!
+
         zstar = 0 #simplification as per 7.7.1 Continuous stiffeners
         MstRd = Wes*(fy/1.15) #eq7.70 checked ok, no ex
         MpRd = Wep*(fy/1.15) #eq7.71 checked ok, no ex
