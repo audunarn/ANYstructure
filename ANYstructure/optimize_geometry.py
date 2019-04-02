@@ -955,23 +955,40 @@ class CreateOptGeoWindow():
                 check_ok = [val[-1] is True for val in opt_results[key][1]]
                 if save_file is not None:
                     save_file.write('\n' + str(len(check_ok))+'\n')
-                self._canvas_select.create_text([start_x + delta, y_loc], text=str(len(check_ok)),
+                self._canvas_select.create_text([start_x + delta, y_loc],
+                                                text=str(len(check_ok))+' panels with weight '+ str(round(values[0],1))+
+                                                     '. Check may not be OK.',
                                                 anchor='w', font=text_type)
                 y_loc += delta
-
+                item_count, endstring = 0, ''
                 for data in values[1]:
-                    for stuc_info in data:
+                    for idx, stuc_info in enumerate(data):
                         if type(stuc_info) == ANYstructure.calc_structure.Structure:
                             if y_loc > 700:
                                 y_loc = 120
                                 start_x = 500
+                            if item_count == 0:
+                                endstring = 'START 1'
+                            elif item_count > 0 and item_count < len(values[1]) / 2-1 and len(values[1]) != 4:
+                                endstring = '-------'
+                            elif item_count == len(values[1])/2-1:
+                                endstring = '-END 1-'
+                            elif item_count == len(values[1])/2:
+                                endstring = 'START 2'
+                            elif item_count > len(values[1])/2 and item_count < len(values[1])-1:
+                                endstring = '-------'
+                            elif item_count == len(values[1])-1:
+                                endstring = '-END 2-'
                             self._canvas_select.create_text([start_x + delta, y_loc],
-                                                            text=stuc_info.get_one_line_string(),
+                                                            text=stuc_info.get_one_line_string()+ ' for '+endstring,
                                                             anchor='w', font=text_type)
                             y_loc += 15
                             if save_file is not None:
                                 save_file.write(stuc_info.get_one_line_string()+' | '+
-                                                stuc_info.get_report_stresses()+'\n')
+                                                stuc_info.get_report_stresses()+ ' for '+
+                                                endstring + ' | Panel check: '+'OK!' if values[1][idx][-1]
+                                                else 'NOT OK! \n')
+                            item_count += 1
             if save_file is not None:
                 save_file.write('\n -------------  END  ---------------')
                 save_file.close()

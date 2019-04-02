@@ -68,8 +68,9 @@ class Structure():
 
     def get_one_line_string(self):
         ''' Returning a one line string. '''
-        return 'pl_'+str(self.spacing*1000)+'x'+str(round(self.plate_th*1000,1))+' stf_'+self.stiffener_type+\
-               str(round(self.web_height*1000,1))+'x'+str(round(self.web_th*1000,1))+'+'+str(round(self.flange_width*1000,1))+'x'+\
+        return 'pl_'+str(round(self.spacing*1000, 1))+'x'+str(round(self.plate_th*1000,1))+' stf_'+self.stiffener_type+\
+               str(round(self.web_height*1000,1))+'x'+str(round(self.web_th*1000,1))+'+'\
+               +str(round(self.flange_width*1000,1))+'x'+\
                str(round(self.flange_th*1000,1))#+' | ' + 'sigma_x: ' + str(round(self.sigma_x, 1)) +' sigma_y: ' + \
                # str(round(self.sigma_y, 1)) + ' sigma_y1: ' + str(round(self.sigma_y, 1)) + \
                # ' sigma_y2: ' + str(round(self.sigma_y2, 1))
