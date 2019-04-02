@@ -12,6 +12,7 @@ import ANYstructure.helper as hlp
 from multiprocessing import Pool, cpu_count
 import ANYstructure.example_data as test
 #import psopy
+from math import ceil, floor
 
 
 def run_optmizataion(initial_structure_obj=None, min_var=None,max_var=None,lateral_pressure=None,
@@ -315,22 +316,21 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
             while similar_count != no_of_fractions*2:
                 if similar_count > no_of_fractions*2:
                     working_objects[no_of_fractions].pop(0)
-                    working_objects[no_of_fractions].pop(-1)
+                    working_objects[no_of_fractions].pop(floor(int(len(working_objects)/2)))
                     working_lateral[no_of_fractions].pop(0)
-                    working_lateral[no_of_fractions].pop(-1)
+                    working_lateral[no_of_fractions].pop(floor(int(len(working_objects)/2)))
                     similar_count -= 2
                 else:
                     obj_start, obj_stop = copy.deepcopy(working_objects[no_of_fractions][0]),\
-                                          copy.deepcopy(working_objects[no_of_fractions][0])
+                                          copy.deepcopy(working_objects[no_of_fractions][int(len(working_objects)/2)])
                     lat_start, lat_stop = working_lateral[no_of_fractions][0], \
-                                          working_lateral[no_of_fractions][1]
+                                          working_lateral[no_of_fractions][int(len(working_objects)/2)]
 
                     working_objects[no_of_fractions].insert(0,obj_start)
-                    working_objects[no_of_fractions].append(obj_stop)
+                    working_objects[no_of_fractions].insert(ceil(int(len(working_objects)/2)), obj_stop)
                     working_lateral[no_of_fractions].insert(0,lat_start)
-                    working_lateral[no_of_fractions].append(lat_stop)
+                    working_lateral[no_of_fractions].insert(ceil(int(len(working_objects)/2)), lat_stop)
                     similar_count += 2
-
         for no_of_fractions, struc_objects in working_objects.items():
             for struc_obj in struc_objects:
                 struc_obj.set_span(tot_len/no_of_fractions)
