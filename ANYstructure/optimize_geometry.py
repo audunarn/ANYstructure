@@ -1024,6 +1024,7 @@ class CreateOptGeoWindow():
                 max_weight = weight if weight > max_weight else max_weight
 
 
+
         if save_to_file is not None:
             save_file = open(save_to_file, 'w')
             save_file.write('| Plate fields | Fields length | Weight index | All OK? |\n')
@@ -1039,14 +1040,16 @@ class CreateOptGeoWindow():
             self._canvas_opt.create_text([start_x + 120, y_loc ], text=str(self._geo_results[key][1][0][0].get_span()),
                                          anchor='w', font=text_type)
             self._canvas_opt.create_text([start_x + 220, y_loc ],
-                                         text=str(round(self._geo_results[key][0] / max_weight, 3)),
+                                         text=str(round(self._geo_results[key][0] / max_weight, 3))
+                                         if max_weight != 0 else '',
                                          anchor='w', font=text_type)
             self._canvas_opt.create_text([start_x + 330, y_loc ], text=str(all(check_ok)),
                                          anchor='w', font=text_type)
 
             if save_to_file is not None:
                 save_file.write(str(len(check_ok))+ ' ' +str(self._geo_results[key][1][0][0].get_span()) + ' ' +
-                                str(round(self._geo_results[key][0] / max_weight, 3)) + ' ' + str(all(check_ok))+'\n')
+                                str(round(self._geo_results[key][0] / max_weight, 3))
+                                         if max_weight != 0 else '' + ' ' + str(all(check_ok))+'\n')
 
         if save_to_file:
             return save_file
