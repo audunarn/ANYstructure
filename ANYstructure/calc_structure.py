@@ -934,7 +934,7 @@ class CalcScantlings(Structure):
             for zstar in np.arange(-zt / 2, zp, 0.002):
                 eq7_54 = (Nsd / NksRd) - 2 * (Nsd / Nrd) + ((M1Sd + Nsd * zstar) / (MstRd * (1 - (Nsd / Ne)))) + u
                 eq7_55 = (Nsd / NkpRd) + ((M1Sd + Nsd * zstar) / (MpRd * (1 - (Nsd / Ne)))) + u
-                eq7_56 = (Nsd / NksRd) + ((M2Sd + Nsd * zstar) / (Ms2Rd * (1 - (Nsd / Ne)))) + u
+                eq7_56 = (Nsd / NksRd) + ((M2Sd - Nsd * zstar) / (Ms2Rd * (1 - (Nsd / Ne)))) + u
                 eq7_57 = (Nsd / NkpRd) - 2 * (Nsd / Nrd) + ((M2Sd - Nsd * zstar) / (MpRd * (1 - (Nsd / Ne)))) + u
                 max_lfs.append(max(eq7_54, eq7_55, eq7_56, eq7_57))
                 ufs.append([eq7_19, eq7_54, eq7_55, eq7_56, eq7_57])
@@ -1177,7 +1177,7 @@ if __name__ == '__main__':
 
         print('EFFICIENT MOMENT OF INTERTIA: ',my_test.get_moment_of_intertia(efficent_se=my_test.get_plate_efficent_b(
             design_lat_press=pressure)))
-        #print('Se: ',my_test.calculate_buckling_all(design_lat_press=pressure,checked_side='s'))
+        print('Se: ',my_test.calculate_buckling_all(design_lat_press=pressure,checked_side='s'))
         print('Se: ', my_test.calculate_buckling_all(design_lat_press=pressure, checked_side='p'))
         print('MINIMUM PLATE THICKNESS',my_test.get_dnv_min_thickness(pressure))
         print('MINIMUM SECTION MOD.', my_test.get_dnv_min_section_modulus(pressure))
