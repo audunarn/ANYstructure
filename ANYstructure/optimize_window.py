@@ -10,6 +10,7 @@ import ANYstructure.example_data as test
 import ANYstructure.helper as hlp
 import random
 from tkinter.filedialog import askopenfilenames
+from multiprocessing import cpu_count
 
 class CreateOptimizeWindow():
     '''
@@ -49,6 +50,7 @@ class CreateOptimizeWindow():
             except KeyError:
                 self._slamming_pressure = 0
             image_dir = app._root_dir +'\\images\\'
+            self._root_dir = app._root_dir
 
         self._frame = master
         self._frame.wm_title("Optimize structure")
@@ -194,6 +196,13 @@ class CreateOptimizeWindow():
         self._ent_shear_stress = tk.Entry(self._frame, textvariable=self._new_shear_stress, width=ent_w)
 
         start_x,start_y,dx,dy = 20,100,100,40
+
+        self._new_processes = tk.IntVar()
+        self._new_processes.set(max(cpu_count() - 1, 1))
+        tk.Label(self._frame, text='Processes\n (CPUs)', font='Verdana 9 bold', bg = 'silver')\
+            .place(x=start_x + 8.3 * dx, y=start_y - 1.1 * dy)
+        tk.Entry(self._frame, textvariable=self._new_processes, width = 12, bg = 'silver')\
+            .place(x=start_x + 8.3 * dx, y=start_y - 0.3 * dy)
 
 
         tk.Label(self._frame,text='Upper bounds [mm]',font='Verdana 9').place(x=start_x,y=start_y)
@@ -594,7 +603,8 @@ class CreateOptimizeWindow():
                                                fatigue_obj=self._fatigue_object,
                                                fat_press_ext_int=fat_press,
                                                slamming_press = self._new_slamming_pressure.get(),
-                                               predefined_stiffener_iter=predefined_stiffener_iter)
+                                               predefined_stiffener_iter=predefined_stiffener_iter,
+                                               processes=self._new_processes.get())
         if self._opt_results is not None:
             self._opt_actual_running_time.config(text='Actual running time: \n'
                                                      +str(time.time()-t_start)+' sec')

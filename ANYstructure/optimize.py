@@ -12,6 +12,7 @@ import ANYstructure.helper as hlp
 from multiprocessing import Pool, cpu_count
 import ANYstructure.example_data as test
 #import psopy
+from math import ceil, floor
 
 
 def run_optmizataion(initial_structure_obj=None, min_var=None,max_var=None,lateral_pressure=None,
@@ -20,7 +21,7 @@ def run_optmizataion(initial_structure_obj=None, min_var=None,max_var=None,later
                      pso_options = (100,0.5,0.5,0.5,100,1e-8,1e-8),is_geometric=False, fatigue_obj = None ,
                      fat_press_ext_int = None,
                      min_max_span = (2,6), tot_len = 12, frame_height = 2.5, frame_distance = None,
-                     slamming_press = 0, predefined_stiffener_iter = None):
+                     slamming_press = 0, predefined_stiffener_iter = None, processes = None):
     '''
     The optimazation is initiated here. It is called from optimize_window.
     :param initial_structure_obj:
@@ -139,7 +140,7 @@ def any_optimize_loop(min_var,max_var,deltas,initial_structure_obj,lateral_press
 
 def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure, init_filter = float('inf'),
                    side='p',const_chk=(True,True,True,True,True,True,True), fat_dict = None, fat_press = None,
-                   slamming_press = 0, predefiened_stiffener_iter = None):
+                   slamming_press = 0, predefiened_stiffener_iter = None, processes = None):
     '''
     Trying to be smart
     :param min_var:
@@ -178,23 +179,26 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
 
 def any_smart_loop_geometric(min_var,max_var,deltas,initial_structure_obj,lateral_pressure, init_filter = float('inf'),
                              side='p',const_chk=(True,True,True,True,True,True), fat_dict = None, fat_press = None,
-                             slamming_press = 0, predefiened_stiffener_iter=None):
+                             slamming_press = 0, predefiened_stiffener_iter=None, processes = None):
     ''' Searching multiple sections using the smart loop. '''
 
     all_obj = []
     idx = 0
     for struc_obj, lat_press in zip(initial_structure_obj, lateral_pressure):
-        this_predefiened_stiffener_iter = any_get_all_combs(min_var=min_var, max_var=max_var,deltas=deltas,
-                                                       predef_stiffeners=predefiened_stiffener_iter)
-        temp_predef = list()
-        for x in predefiened_stiffener_iter:
-            xvar = list(x)
-            xvar.append(struc_obj.get_span())
-            xvar.append(struc_obj.get_lg())
-            temp_predef.append(tuple(xvar))
+        if predefiened_stiffener_iter is not None:
+            this_predefiened_stiffener_iter = any_get_all_combs(min_var=min_var, max_var=max_var,deltas=deltas,
+                                                           predef_stiffeners=predefiened_stiffener_iter)
+            temp_predef = list()
+            for x in predefiened_stiffener_iter:
+                xvar = list(x)
+                xvar.append(struc_obj.get_span())
+                xvar.append(struc_obj.get_lg())
+                temp_predef.append(tuple(xvar))
 
-        this_predefiened_stiffener_iter = [create_new_structure_obj(struc_obj, xtup) for xtup in
-                                           this_predefiened_stiffener_iter]
+            this_predefiened_stiffener_iter = [create_new_structure_obj(struc_obj, xtup) for xtup in
+                                               this_predefiened_stiffener_iter]
+        else:
+            this_predefiened_stiffener_iter = None
 
         opt_obj = any_smart_loop(min_var = min_var,max_var = max_var,deltas = deltas,initial_structure_obj = struc_obj,
                                  lateral_pressure = lat_press, init_filter = init_filter, side=side,
@@ -272,7 +276,8 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                              init_filter = float('inf'),side='p',const_chk=(True,True,True,True, True, True),
                              pso_options=(100,0.5,0.5,0.5,100,1e-8,1e-8), fat_obj = None, fat_press = None,
                              min_max_span = (2,6), tot_len = 12, frame_distance = None,
-                             algorithm = 'anysmart', predefiened_stiffener_iter=None):
+                             algorithm = 'anysmart', predefiened_stiffener_iter=None, reiterate = True,
+                             processes = None):
 
     '''Geometric optimization of all relevant sections. '''
     # Checking the number of initial objects and adding if number of fraction is to be changed.
@@ -311,22 +316,21 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
             while similar_count != no_of_fractions*2:
                 if similar_count > no_of_fractions*2:
                     working_objects[no_of_fractions].pop(0)
-                    working_objects[no_of_fractions].pop(-1)
+                    working_objects[no_of_fractions].pop(floor(int(len(working_objects)/2)))
                     working_lateral[no_of_fractions].pop(0)
-                    working_lateral[no_of_fractions].pop(-1)
+                    working_lateral[no_of_fractions].pop(floor(int(len(working_objects)/2)))
                     similar_count -= 2
                 else:
                     obj_start, obj_stop = copy.deepcopy(working_objects[no_of_fractions][0]),\
-                                          copy.deepcopy(working_objects[no_of_fractions][0])
+                                          copy.deepcopy(working_objects[no_of_fractions][int(len(working_objects)/2)])
                     lat_start, lat_stop = working_lateral[no_of_fractions][0], \
-                                          working_lateral[no_of_fractions][1]
+                                          working_lateral[no_of_fractions][int(len(working_objects)/2)]
 
                     working_objects[no_of_fractions].insert(0,obj_start)
-                    working_objects[no_of_fractions].append(obj_stop)
+                    working_objects[no_of_fractions].insert(ceil(int(len(working_objects)/2)), obj_stop)
                     working_lateral[no_of_fractions].insert(0,lat_start)
-                    working_lateral[no_of_fractions].append(lat_stop)
+                    working_lateral[no_of_fractions].insert(ceil(int(len(working_objects)/2)), lat_stop)
                     similar_count += 2
-
         for no_of_fractions, struc_objects in working_objects.items():
             for struc_obj in struc_objects:
                 struc_obj.set_span(tot_len/no_of_fractions)
@@ -335,8 +339,8 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
         while not solution_found:
             iterations += 1
             if iterations != 1:
-                min_var[0:6] -= deltas/2
-                max_var[0:6] += deltas/2
+                min_var[0:6] += deltas/2
+                max_var[0:6] -= deltas/2
 
             if algorithm is 'pso':
                 opt_objects = particle_search_geometric(min_var=min_var,max_var=max_var,deltas=deltas,
@@ -381,7 +385,10 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                     tot_weight += (pl_area + stf_area) * frame_height * 7850
                     solution_found = True
             elif iterations == 2:
-                solution_found = True
+                solution_found = True  # Only iterate once.
+
+            if predefiened_stiffener_iter is not None or not reiterate:
+                solution_found = True  # Noe solution may be found, but in this case no more iteations.
 
         results[no_of_fractions] = tot_weight, opt_objects
     return results
@@ -689,7 +696,7 @@ def stress_scaling_area(sigma_old,a_old,a_new):
 
 def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight,side='p',
                          chk=(True,True,True,True,True,True,True),fat_dict = None, fat_press = None,
-                         slamming_press=None):
+                         slamming_press=None, processes = None):
     '''
     Using multiprocessing to return list of applicable results.
 
@@ -705,8 +712,10 @@ def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight
                 for item in iterable_all)
 
     #res_pre = it.starmap(any_constraints_all, iter_var)
+    if processes is None:
+        processes = max(cpu_count()-1,1)
 
-    with Pool(max(cpu_count()-1,1)) as my_process:
+    with Pool(processes) as my_process:
         # res_pre = my_process.starmap_async(any_constraints_all, iter_var).get()
         # print('Done calculating')
         res_pre = my_process.starmap(any_constraints_all, iter_var)

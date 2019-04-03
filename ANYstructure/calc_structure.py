@@ -68,12 +68,12 @@ class Structure():
 
     def get_one_line_string(self):
         ''' Returning a one line string. '''
-        return 'pl_'+str(self.spacing*1000)+'x'+str(round(self.plate_th*1000,1))+' stf_'+self.stiffener_type+\
-               str(round(self.web_height*1000,1))+'x'+str(round(self.web_th*1000,1))+'+'+str(round(self.flange_width*1000,1))+'x'+\
-               str(round(self.flange_th*1000,1))+' | ' + 'sigma_x: ' + str(round(self.sigma_x, 1)) +' sigma_y: ' + \
-               str(round(self.sigma_y, 1)) + ' sigma_y1: ' + str(round(self.sigma_y, 1)) + \
-               ' sigma_y2: ' + str(round(self.sigma_y2, 1))
-
+        return 'pl_'+str(round(self.spacing*1000, 1))+'x'+str(round(self.plate_th*1000,1))+' stf_'+self.stiffener_type+\
+               str(round(self.web_height*1000,1))+'x'+str(round(self.web_th*1000,1))+'+'\
+               +str(round(self.flange_width*1000,1))+'x'+\
+               str(round(self.flange_th*1000,1))#+' | ' + 'sigma_x: ' + str(round(self.sigma_x, 1)) +' sigma_y: ' + \
+               # str(round(self.sigma_y, 1)) + ' sigma_y1: ' + str(round(self.sigma_y, 1)) + \
+               # ' sigma_y2: ' + str(round(self.sigma_y2, 1))
 
     def get_report_stresses(self):
         'Return the stresses to the report'
@@ -838,49 +838,53 @@ class CalcScantlings(Structure):
         Iz = (1/12)*Af*math.pow(bf,2)+math.pow(ef,2)*(Af/(1+(Af/Aw))) #moment of inertia about z-axis, checked
 
         G = E/(2*(1+0.3)) #rules for ships Pt.8 Ch.1, page 334
-        lT = self.span #assuming thath the distance between lateral supports is lower than 0.4 Lg and 0.8 Lg
+        lT = self.span # Calculated further down
         #print('Aw ',Aw,'Af ', Af,'tf ', tf,'tw ', tw,'G ', G,'E ', E,'Iz ', Iz,'lt ', lT)
-        if stf_type in ['T', 'L']:
-            fET = beta*(((Aw + Af * math.pow(tf/tw,2)) / (Aw + 3*Af)) * G*math.pow(tw/hw,2))+\
-                  (math.pow(math.pi, 2) * E * Iz) / ((Aw/3 + Af)*math.pow(lT,2)) \
-                if bf != 0 \
-                else (beta+2*math.pow(hw/lT,2))*G*math.pow(tw/hw,2) # eq7.32 checked, no example
-        else:
-            fET = (beta + 2*math.pow(hw/lT,2))*G*math.pow(tw/hw,2) # eq7.34 checked, no example
 
-        alphaT = math.sqrt(fy/fET) #eq7.30. checked
+        def get_some_data(lT):
+            if stf_type in ['T', 'L']:
+                fET = beta*(((Aw + Af * math.pow(tf/tw,2)) / (Aw + 3*Af)) * G*math.pow(tw/hw,2))+\
+                      (math.pow(math.pi, 2) * E * Iz) / ((Aw/3 + Af)*math.pow(lT,2)) \
+                    if bf != 0 \
+                    else (beta+2*math.pow(hw/lT,2))*G*math.pow(tw/hw,2) # eq7.32 checked, no example
+            else:
+                fET = (beta + 2*math.pow(hw/lT,2))*G*math.pow(tw/hw,2) # eq7.34 checked, no example
 
-        mu7_29 = 0.35 * (alphaT - 0.6) # eq 7.29. checked
+            alphaT = math.sqrt(fy/fET) #eq7.30. checked
 
-        fr = fy if alphaT<=0.6 else ((1+mu7_29+math.pow(alphaT,2)-math.sqrt( math.pow(1+mu7_29+math.pow(alphaT,2),2)-
-                                                                             4*math.pow(alphaT,2))) /
-                                     (2*math.pow(alphaT,2))) * fy
-        alpha = math.sqrt(fr / fE) #e7.23, checked.
-        #fET= beta*G*It/Ipo+(math.pi**2)*(E*(hs**2)*Iz/(Ipo*lT**2))
-        # mu_ch7_5_1 = (0.34+0.08*(zp/ie))*(alpha-0.2) if checked_side == 'p' else (0.34+0.08*(zt/ie))*(alpha-0.2) #
-        #
-        # fk = fr if alpha <= 0.2 else fr*(((1+mu_ch7_5_1+math.pow(alpha,2))-
-        #                                   math.sqrt(math.pow(1+mu_ch7_5_1+math.pow(alpha,2),2)-
-        #                                             4*math.pow(alpha,2)))/(2*math.pow(alpha,2))) # checked, ok
+            mu7_29 = 0.35 * (alphaT - 0.6) # eq 7.29. checked
 
-        mu_pl = (0.34 + 0.08 * (zp / ie)) * (alpha - 0.2)
-        mu_stf = (0.34 + 0.08 * (zt / ie)) * (alpha - 0.2)
-        fyp,fys = fy,fy
-        fyps = (fyp*se*t+fys*As)/(se*t+As)
+            fr = fy if alphaT<=0.6 else ((1+mu7_29+math.pow(alphaT,2)-math.sqrt( math.pow(1+mu7_29+math.pow(alphaT,2),2)-
+                                                                                 4*math.pow(alphaT,2))) /
+                                         (2*math.pow(alphaT,2))) * fy
+            alpha = math.sqrt(fr / fE) #e7.23, checked.
 
-        fks = fr if alpha <= 0.2 else fr * (1+mu_stf+math.pow(alpha,2)-math.sqrt(math.pow(1+mu_stf+math.pow(alpha,2),2)-
-                                                                                 4*math.pow(alpha,2)))/\
-                                      (2*math.pow(alpha,2))
-        fr = fyps
-        fkp = fyp if alpha <= 0.2 else fr * (1+mu_pl+math.pow(alpha,2)-math.sqrt(math.pow(1+mu_pl+math.pow(alpha,2),2)-
-                                                                                 4*math.pow(alpha,2)))/\
-                                       (2*math.pow(alpha,2))
+            mu_tors = 0.35*(alphaT-0.6)
+            fT = fy if alphaT <= 0.6 else fy * (1+mu_tors+math.pow(alphaT,2)-math.sqrt(math.pow(1+mu_tors+math.pow(alphaT,2),2)-
+                                                                                     4*math.pow(alphaT,2)))/\
+                                           (2*math.pow(alphaT,2))
 
-        u = math.pow(tauSd/tauRd,2) #eq7.58. checked.
+            mu_pl = (0.34 + 0.08 * (zp / ie)) * (alpha - 0.2)
+            mu_stf = (0.34 + 0.08 * (zt / ie)) * (alpha - 0.2)
+            frp = fy
+            frs = fy if alphaT <= 0.6 else fT
+            fyp,fys = fy,fy
+            #fyps = (fyp*se*t+fys*As)/(se*t+As)
+            fks = fr if alpha <= 0.2 else frs * (1+mu_stf+math.pow(alpha,2)-math.sqrt(math.pow(1+mu_stf+math.pow(alpha,2),2)-
+                                                                                     4*math.pow(alpha,2)))/\
+                                          (2*math.pow(alpha,2))
+            #fr = fyps
+            fkp = fyp if alpha <= 0.2 else frp * (1+mu_pl+math.pow(alpha,2)-math.sqrt(math.pow(1+mu_pl+math.pow(alpha,2),2)-
+                                                                                     4*math.pow(alpha,2)))/\
+                                           (2*math.pow(alpha,2))
 
-        Ms1Rd = Wes*(fr/1.15) #ok, assuming fr calculated with lT=span
+            return fr, fks, fkp
 
-        NksRd = Ae*(fks/1.15) #eq7.66, page 22 - fk according to equation 7.26, sec 7.5,
+        u = math.pow(tauSd / tauRd, 2)  # eq7.58. checked.
+        fr, fks, fkp = get_some_data(lT=lT*0.4)
+        Ms1Rd = Wes*(fr/1.15) #ok, assuming fr calculated with lT=span * 0.4
+        NksRd = Ae * (fks / 1.15) #eq7.66, page 22 - fk according to equation 7.26, sec 7.5,
+        NkpRd = Ae * (fkp / 1.15)  # checked ok, no ex
 
         M1Sd = abs((qSd*math.pow(l,2))/12) #ch7.7.1, checked ok
 
@@ -889,27 +893,33 @@ class CalcScantlings(Structure):
         Ne = ((math.pow(math.pi,2))*E*Ae)/(math.pow(lk/ie,2))# eq7.72 , checked ok
 
         Nrd = Ae * (fy / 1.15) #eq7.65, checked ok
-        Nsd = sigxSd * (As + s * t) + tautf * s * t
+
+        Nsd = sigxSd * (As + s*t) + tautf * s *t #  Equation 7.1, section 7.2, checked ok
+
         zstar = 0 #simplification as per 7.7.1 Continuous stiffeners
         MstRd = Wes*(fy/1.15) #eq7.70 checked ok, no ex
         MpRd = Wep*(fy/1.15) #eq7.71 checked ok, no ex
-        NkpRd = Ae*(fkp/1.15) #checked ok, no ex
+
+        fr, fks, fkp = get_some_data(lT = lT * 0.8)
         Ms2Rd = Wes*(fr/1.15) #eq7.69 checked ok, no ex
+        # print('Nksrd', NksRd, 'Nkprd', NkpRd, 'Ae is', Ae, 'fks is', fks, 'fkp is', fkp,
+        #       'alphas are', mu_pl, mu_stf, 'lk', lk, 'lt', lT)
 
         #print('CENTROID ', 'zp', 'zt', self.get_cross_section_centroid_with_effective_plate(se)*1000,zp,zt)
 
         eq7_19 = sigySd/(ksp*sigyRd) #checked ok
+
         # Lateral pressure on plate side:
         if checked_side == 'p':
-            #print('eq7_50 = ',Nsd ,'/', NksRd,'+' ,M1Sd,'-' , Nsd ,'*', zstar, '/' ,Ms1Rd,'*',1,'-', Nsd ,'/', Ne,'+', u)
+            # print('eq7_50 = ',Nsd ,'/', NksRd,'+' ,M1Sd,'-' , Nsd ,'*', zstar, '/' ,Ms1Rd,'*',1,'-', Nsd ,'/', Ne,'+', u)
+            # print('eq7_51 = ',Nsd,' / ',NkpRd,' - 2 * ',Nsd, '/' ,Nrd,' + ',M1Sd,' - ,',Nsd,' * ',zstar,' / ',MpRd,' * ','1 - ',Nsd,' / ',Ne,' + ',u)
             #print('eq7_52 = ',Nsd,'/', NksRd,'-', 2, '*',Nsd,'/', Nrd,'+',M2Sd,'-', Nsd,'*', zstar,'/',MstRd,'*',1, '-',Nsd,'/', Ne,'+', u)
-
             max_lfs = []
             ufs = []
             for zstar in np.arange(-zt/2,zp,0.002):
                 eq7_50 = (Nsd / NksRd) + (M1Sd - Nsd * zstar) / (Ms1Rd * (1 - Nsd / Ne)) + u
                 eq7_51 = (Nsd / NkpRd) - 2 * (Nsd / Nrd) + ((M1Sd - Nsd * zstar) / (MpRd * (1 - (Nsd / Ne)))) + u
-                eq7_52 = (Nsd / NksRd) - 2 * (Nsd / Nrd) + ((M2Sd - Nsd * zstar) / (MstRd * (1 - (Nsd / Ne)))) + u
+                eq7_52 = (Nsd / NksRd) - 2 * (Nsd / Nrd) + ((M2Sd + Nsd * zstar) / (MstRd * (1 - (Nsd / Ne)))) + u
                 eq7_53 = (Nsd / NkpRd) + (M2Sd + Nsd * zstar) / (MpRd * (1 - Nsd / Ne))
                 max_lfs.append(max(eq7_50, eq7_51, eq7_52, eq7_53))
                 ufs.append([eq7_19, eq7_50, eq7_51, eq7_52, eq7_53,zstar])
@@ -924,10 +934,10 @@ class CalcScantlings(Structure):
             for zstar in np.arange(-zt / 2, zp, 0.002):
                 eq7_54 = (Nsd / NksRd) - 2 * (Nsd / Nrd) + ((M1Sd + Nsd * zstar) / (MstRd * (1 - (Nsd / Ne)))) + u
                 eq7_55 = (Nsd / NkpRd) + ((M1Sd + Nsd * zstar) / (MpRd * (1 - (Nsd / Ne)))) + u
-                eq7_56 = (Nsd / NksRd) + ((M2Sd + Nsd * zstar) / (Ms2Rd * (1 - (Nsd / Ne)))) + u
+                eq7_56 = (Nsd / NksRd) + ((M2Sd - Nsd * zstar) / (Ms2Rd * (1 - (Nsd / Ne)))) + u
                 eq7_57 = (Nsd / NkpRd) - 2 * (Nsd / Nrd) + ((M2Sd - Nsd * zstar) / (MpRd * (1 - (Nsd / Ne)))) + u
                 max_lfs.append(max(eq7_54, eq7_55, eq7_56, eq7_57))
-                ufs.append([eq7_19, eq7_54, eq7_55, eq7_56, eq7_57])
+                ufs.append([eq7_19, eq7_54, eq7_55, eq7_56, eq7_57, zstar])
                 #print('eq7_19, eq7_54, eq7_55, eq7_56, eq7_57')
             min_of_max_ufs_idx = max_lfs.index(min(max_lfs))
             return ufs[min_of_max_ufs_idx]
@@ -1143,9 +1153,11 @@ if __name__ == '__main__':
     # print(my_buc.calculate_slamming_plate(1000000))
     # print(my_buc.calculate_slamming_stiffener(1000000))
     # print(my_buc.get_net_effective_plastic_section_modulus())
-    my_test = CalcScantlings(test.obj_dict)
+
     #my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0))
-    for example in [test.obj_dict, test.obj_dict2, test.obj_dict_L]:
+    import ANYstructure.example_data as ex
+    for example in [CalcScantlings(ex.obj_dict), CalcScantlings(ex.obj_dict2), CalcScantlings(ex.obj_dict_L)]:
+        my_test = example
         # my_test = CalcScantlings(example)
         # my_test = CalcFatigue(example, test.fat_obj_dict2)
         # my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0))

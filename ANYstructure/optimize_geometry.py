@@ -12,6 +12,8 @@ import copy, pickle
 import ANYstructure.calc_structure
 import ANYstructure.helper as hlp
 from tkinter.filedialog import askopenfilenames
+from multiprocessing import cpu_count
+from tkinter import filedialog
 
 class CreateOptGeoWindow():
     '''
@@ -41,6 +43,7 @@ class CreateOptGeoWindow():
             self._line_to_struc = app._line_to_struc
             self._opt_frames = {}
             self._active_points = []
+            self._root_dir = app._root_dir
 
         self._opt_structure = {}
         self._opt_frames_obj = []
@@ -101,6 +104,7 @@ class CreateOptGeoWindow():
         self._new_maxiter = tk.IntVar()
         self._new_minstep = tk.DoubleVar()
         self._new_minfunc = tk.DoubleVar()
+        self._new_processes = tk.IntVar()
 
         ent_w = 10
         self._ent_spacing_upper = tk.Entry(self._frame, textvariable=self._new_spacing_upper, width=ent_w)
@@ -137,6 +141,11 @@ class CreateOptGeoWindow():
         self._ent_minfunc = tk.Entry(self._frame, textvariable=self._new_minfunc, width=pso_width)
 
         start_x, start_y, dx, dy = 20, 70, 100, 40
+
+        tk.Label(self._frame, text='Processes\n (CPUs)', font='Verdana 9 bold', bg = 'silver')\
+            .place(x=start_x + 8 * dx, y=start_y + 0.5 * dy)
+        tk.Entry(self._frame, textvariable=self._new_processes, width = 12, bg = 'silver')\
+            .place(x=start_x + 8 * dx, y=start_y + 1.4 * dy)
 
         self._prop_canvas_dim = (500, 450)
         self._draw_scale = 500
@@ -223,6 +232,7 @@ class CreateOptGeoWindow():
         self._new_fl_thk_lower.set(round(10, 5))
         self._new_algorithm.set('anysmart')
         self._new_algorithm_random_trials.set(10000)
+        self._new_processes.set(max(cpu_count() - 1, 1))
 
         self._new_swarm_size.set(100)
         self._new_omega.set(0.5)
@@ -232,26 +242,26 @@ class CreateOptGeoWindow():
         self._new_minstep.set(1e-8)
         self._new_minfunc.set(1e-8)
 
-        self._new_delta_spacing.trace('w', self.update_running_time)
-        self._new_delta_pl_thk.trace('w', self.update_running_time)
-        self._new_delta_web_h.trace('w', self.update_running_time)
-        self._new_delta_web_thk.trace('w', self.update_running_time)
-        self._new_delta_fl_w.trace('w', self.update_running_time)
-        self._new_delta_fl_thk.trace('w', self.update_running_time)
-        self._new_spacing_upper.trace('w', self.update_running_time)
-        self._new_spacing_lower.trace('w', self.update_running_time)
-        self._new_pl_thk_upper.trace('w', self.update_running_time)
-        self._new_pl_thk_lower.trace('w', self.update_running_time)
-        self._new_web_h_upper.trace('w', self.update_running_time)
-        self._new_web_h_lower.trace('w', self.update_running_time)
-        self._new_web_thk_upper.trace('w', self.update_running_time)
-        self._new_web_thk_lower.trace('w', self.update_running_time)
-        self._new_fl_w_upper.trace('w', self.update_running_time)
-        self._new_fl_w_lower.trace('w', self.update_running_time)
-        self._new_fl_thk_upper.trace('w', self.update_running_time)
-        self._new_fl_thk_lower.trace('w', self.update_running_time)
-        self._new_algorithm_random_trials.trace('w', self.update_running_time)
-        self._new_algorithm.trace('w', self.update_running_time)
+        # self._new_delta_spacing.trace('w', self.update_running_time)
+        # self._new_delta_pl_thk.trace('w', self.update_running_time)
+        # self._new_delta_web_h.trace('w', self.update_running_time)
+        # self._new_delta_web_thk.trace('w', self.update_running_time)
+        # self._new_delta_fl_w.trace('w', self.update_running_time)
+        # self._new_delta_fl_thk.trace('w', self.update_running_time)
+        # self._new_spacing_upper.trace('w', self.update_running_time)
+        # self._new_spacing_lower.trace('w', self.update_running_time)
+        # self._new_pl_thk_upper.trace('w', self.update_running_time)
+        # self._new_pl_thk_lower.trace('w', self.update_running_time)
+        # self._new_web_h_upper.trace('w', self.update_running_time)
+        # self._new_web_h_lower.trace('w', self.update_running_time)
+        # self._new_web_thk_upper.trace('w', self.update_running_time)
+        # self._new_web_thk_lower.trace('w', self.update_running_time)
+        # self._new_fl_w_upper.trace('w', self.update_running_time)
+        # self._new_fl_w_lower.trace('w', self.update_running_time)
+        # self._new_fl_thk_upper.trace('w', self.update_running_time)
+        # self._new_fl_thk_lower.trace('w', self.update_running_time)
+        # self._new_algorithm_random_trials.trace('w', self.update_running_time)
+        # self._new_algorithm.trace('w', self.update_running_time)
 
         self.running_time_per_item = 4e-05
         self._runnig_time_label.config(text=str(self.get_running_time()))
@@ -266,6 +276,7 @@ class CreateOptGeoWindow():
         # self.close_and_save = tk.Button(self._frame, text='Return and replace with selected optimized structure',
         #                                 command=self.save_and_close, bg='green', font='Verdana 10 bold', fg='yellow')
         # self.close_and_save.place(x=start_x + dx * 10, y=10)
+
 
         tk.Button(self._frame, text='Open predefined stiffeners example',
                   command=self.open_example_file, bg='white', font='Verdana 10')\
@@ -321,6 +332,8 @@ class CreateOptGeoWindow():
         self.draw_select_canvas()
         # if __name__ == '__main__':
         #     self.run_optimizaion(load_pre = True, save_results=True)
+
+
 
     def selected_algorithm(self, event):
         '''
@@ -390,7 +403,7 @@ class CreateOptGeoWindow():
             self._ent_minstep.place(x=start_x + dx * 15, y=start_y + 0 * dy)
             self._ent_minfunc.place(x=start_x + dx * 15, y=start_y + 1 * dy)
 
-    def run_optimizaion(self, load_pre = False, save_results = False):
+    def run_optimizaion(self, load_pre = False, save_results = True):
         '''
         Function when pressing the optimization botton inside this window.
         :return:
@@ -426,7 +439,7 @@ class CreateOptGeoWindow():
                 lateral_press.append(self.app.get_highest_pressure(closet_line)['normal'] / 1000)
         if broke:
             messagebox.showinfo(title='Selection error.',
-                                message='This field cannot be subdivided or is not load subjected. Error.')
+                                message='This field cannot be subdivided or there are no loads. Error.')
             return None
 
         found_files = self._filez
@@ -443,20 +456,31 @@ class CreateOptGeoWindow():
                                               is_geometric=True,fatigue_obj=None, fat_press_ext_int=None,
                                               min_max_span=(2,6), tot_len=self.opt_get_length(),
                                               frame_height=self.opt_get_distance(), frame_distance = distances,
-                                              predefined_stiffener_iter=predefined_stiffener_iter)
+                                              predefined_stiffener_iter=predefined_stiffener_iter,
+                                              processes = self._new_processes.get())
 
             self._geo_results = geo_results
-            #SAVING RESULTS
-            save_results = True
-            if save_results:
-                with open('geo_opt_2.pickle', 'wb') as file:
-                    pickle.dump(geo_results, file)
+
+            # #SAVING RESULTS
+            # if save_results:
+            #     with open('geo_opt_2.pickle', 'wb') as file:
+            #         pickle.dump(geo_results, file)
         else:
-            with open('geo_opt.pickle', 'rb') as file:
+            with open('geo_opt_2.pickle', 'rb') as file:
                 self._geo_results = pickle.load(file)
-        if __name__ == '__main__':
-            self.draw_result_text(self._geo_results)
-            self.draw_select_canvas(opt_results=self._geo_results)
+
+
+        save_file, filename = None, None
+        if save_results:
+            save_file = filedialog.asksaveasfile(mode="w", defaultextension=".txt", title = 'Save results to file')
+            if save_file is None:  # ask saveasfile return `None` if dialog closed with "cancel".
+                filename = None
+            else:
+                filename = save_file.name
+
+        save_file = self.draw_result_text(self._geo_results, save_to_file=filename)
+        self.draw_select_canvas(opt_results=self._geo_results, save_file = save_file)
+
 
     def opt_get_fractions(self):
         ''' Finding initial number of fractions '''
@@ -480,7 +504,7 @@ class CreateOptGeoWindow():
         pt2 = opt_line[1]
 
         vector = [pt2[0] - pt1[0], pt2[1] - pt1[1]]
-        point = [pt1[0]+vector[0]*0.5,pt1[1]+vector[1]*0.5]
+        point = [pt1[0]+vector[0]*0.5, pt1[1]+vector[1]*0.5]
         if self.opt_find_closest_orig_line(point) == None:
             return None
         objects = [copy.deepcopy(x) if x != None else None for x in
@@ -811,7 +835,7 @@ class CreateOptGeoWindow():
                                          text='Lateral pressure: ' + str(lateral_press) + ' kPa',
                                          font='Verdana 10 bold', fill='red')
 
-    def draw_select_canvas(self, load_selected=False, opt_results = None):
+    def draw_select_canvas(self, load_selected=False, opt_results = None, save_file = None):
         '''
         Making the lines canvas.
         :return:
@@ -920,27 +944,57 @@ class CreateOptGeoWindow():
             text_type = 'Verdana 10'
             delta, start_x, y_loc = 20, 20, 40
 
+            if save_file is not None:
+                save_file.write('\n' + 'Stiffener properties:')
+
             for key, values in opt_results.items():
-                print(y_loc)
                 # if y_loc > 700:
                 #     start_x = 400
                 #     y_loc = 40
+
                 y_loc = y_loc + delta
                 check_ok = [val[-1] is True for val in opt_results[key][1]]
-                self._canvas_select.create_text([start_x + delta, y_loc], text=str(len(check_ok)),
+                if save_file is not None:
+                    save_file.write('\n' + str(len(check_ok))+'\n')
+                self._canvas_select.create_text([start_x + delta, y_loc],
+                                                text=str(len(check_ok))+' panels with weight '+ str(round(values[0],1))+
+                                                     '. Check may not be OK.',
                                                 anchor='w', font=text_type)
                 y_loc += delta
+                item_count, endstring = 0, ''
                 for data in values[1]:
-                    for stuc_info in data:
+                    for idx, stuc_info in enumerate(data):
                         if type(stuc_info) == ANYstructure.calc_structure.Structure:
                             if y_loc > 700:
                                 y_loc = 120
                                 start_x = 500
-                            self._canvas_select.create_text([start_x + delta, y_loc], text=stuc_info.get_one_line_string(),
+                            if item_count == 0:
+                                endstring = 'START 1'
+                            elif item_count > 0 and item_count < len(values[1]) / 2-1 and len(values[1]) != 4:
+                                endstring = '-------'
+                            elif item_count == len(values[1])/2-1:
+                                endstring = '-END 1-'
+                            elif item_count == len(values[1])/2:
+                                endstring = 'START 2'
+                            elif item_count > len(values[1])/2 and item_count < len(values[1])-1:
+                                endstring = '-------'
+                            elif item_count == len(values[1])-1:
+                                endstring = '-END 2-'
+                            self._canvas_select.create_text([start_x + delta, y_loc],
+                                                            text=stuc_info.get_one_line_string()+ ' for '+endstring,
                                                             anchor='w', font=text_type)
                             y_loc += 15
+                            if save_file is not None:
+                                save_file.write(stuc_info.get_one_line_string()+' | '+
+                                                stuc_info.get_report_stresses()+ ' for '+
+                                                endstring + ' | Panel check: '+'OK!\n' if values[1][idx][-1]
+                                                else 'NOT OK! \n')
+                            item_count += 1
+            if save_file is not None:
+                save_file.write('\n -------------  END  ---------------')
+                save_file.close()
 
-    def draw_result_text(self, geo_opt_obj):
+    def draw_result_text(self, geo_opt_obj, save_to_file = None):
         ''' Textual version of the results. '''
 
         self._canvas_opt.delete('all')
@@ -965,19 +1019,42 @@ class CreateOptGeoWindow():
         text_type = 'Verdana 12 bold'
         weights = [self._geo_results[key][0] for key in self._geo_results.keys()]
 
+        max_weight = 0
+        for weight in weights:
+            if weight != float('inf'):
+                max_weight = weight if weight > max_weight else max_weight
+
+
+
+        if save_to_file is not None:
+            save_file = open(save_to_file, 'w')
+            save_file.write('| Plate fields | Fields length | Weight index | All OK? |\n')
+            save_file.write('*********************************************************\n')
+
         for key, value in self._geo_results.items():
             y_loc = y_loc + delta
             check_ok = [val[-1] is True for val in self._geo_results[key][1]]
 
             self._canvas_opt.create_text([start_x + 20, y_loc ], text=str(len(check_ok)),
                                          anchor='w', font=text_type)
+
             self._canvas_opt.create_text([start_x + 120, y_loc ], text=str(self._geo_results[key][1][0][0].get_span()),
                                          anchor='w', font=text_type)
             self._canvas_opt.create_text([start_x + 220, y_loc ],
-                                         text=str(round(self._geo_results[key][0] / max(weights), 3)),
+                                         text=str(round(self._geo_results[key][0] / max_weight, 3))
+                                         if max_weight != 0 else '',
                                          anchor='w', font=text_type)
             self._canvas_opt.create_text([start_x + 330, y_loc ], text=str(all(check_ok)),
                                          anchor='w', font=text_type)
+
+            if save_to_file is not None:
+                save_file.write(str(len(check_ok))+ ' ' +str(self._geo_results[key][1][0][0].get_span()) + ' ' +
+                                str(round(self._geo_results[key][0] / max_weight, 3))
+                                         if max_weight != 0 else '' + ' ' + str(all(check_ok))+'\n')
+
+        if save_to_file:
+            return save_file
+
 
     def algorithm_info(self):
         ''' When button is clicked, info is displayed.'''
