@@ -71,7 +71,8 @@ def run_optmizataion(initial_structure_obj=None, min_var=None,max_var=None,later
                                         init_filter= init_filter_weight, side= side, const_chk= const_chk,
                                         fat_obj=  fatigue_obj, fat_press= fat_press_ext_int, min_max_span= min_max_span,
                                         tot_len= tot_len, frame_distance = frame_distance,
-                                        algorithm= 'anysmart', predefiened_stiffener_iter=predefined_stiffener_iter)
+                                        algorithm= 'anysmart', predefiened_stiffener_iter=predefined_stiffener_iter,
+                                        slamming_press = slamming_press)
     elif algorithm == 'anydetail' and not is_geometric:
         return any_optimize_loop(min_var, max_var, deltas, initial_structure_obj, lateral_pressure,init_filter_weight,
                                  side=side, const_chk=const_chk, fat_dict=fat_dict, fat_press=fat_press_ext_int,
@@ -299,6 +300,9 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
     # print('Initial lateral: ', lateral_pressure)
     working_objects = {}
     working_lateral = {}
+    working_fatigue = {}
+    working_fatigue_press = {}
+    working_slamming = {}
 
     for no_of_fractions in range(min_frame_count, max_frame_cont+1):
         # Create fraction varables
@@ -311,16 +315,26 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
             frac_var.append(1/no_of_fractions)
             working_objects[no_of_fractions] = list(initial_structure_obj)
             working_lateral[no_of_fractions] = list(lateral_pressure)
+            working_fatigue[no_of_fractions] = list(lateral_pressure)
+            working_fatigue_press[no_of_fractions] = list(lateral_pressure)
+            working_slamming[no_of_fractions] = list(lateral_pressure)
 
             similar_count = len(working_objects[no_of_fractions])
             while similar_count != no_of_fractions*2:
                 if similar_count > no_of_fractions*2:
-                    working_objects[no_of_fractions].pop(0)
-                    working_objects[no_of_fractions].pop(floor(int(len(working_objects)/2)))
-                    working_lateral[no_of_fractions].pop(0)
-                    working_lateral[no_of_fractions].pop(floor(int(len(working_objects)/2)))
+                    for var_dict in [working_objects, working_lateral, working_fatigue,
+                                     working_fatigue_press, working_slamming]:
+                        var_dict[no_of_fractions].pop(0)
+                        var_dict[no_of_fractions].pop(floor(int(len(working_objects)/2)))
+                    # working_objects[no_of_fractions].pop(0)
+                    # working_objects[no_of_fractions].pop(floor(int(len(working_objects)/2)))
+                    # working_lateral[no_of_fractions].pop(0)
+                    # working_lateral[no_of_fractions].pop(floor(int(len(working_objects)/2)))
                     similar_count -= 2
                 else:
+                    for var_dict in [working_objects, working_lateral, working_fatigue,
+                                     working_fatigue_press, working_slamming]:
+                        pass
                     obj_start, obj_stop = copy.deepcopy(working_objects[no_of_fractions][0]),\
                                           copy.deepcopy(working_objects[no_of_fractions][int(len(working_objects)/2)])
                     lat_start, lat_stop = working_lateral[no_of_fractions][0], \
