@@ -838,7 +838,7 @@ class CalcScantlings(Structure):
         Iz = (1/12)*Af*math.pow(bf,2)+math.pow(ef,2)*(Af/(1+(Af/Aw))) #moment of inertia about z-axis, checked
 
         G = E/(2*(1+0.3)) #rules for ships Pt.8 Ch.1, page 334
-        lT = self.span #assuming thath the distance between lateral supports is lower than 0.4 Lg and 0.8 Lg
+        lT = self.span * 0.4 #assuming thath the distance between lateral supports is lower than 0.4 Lg and 0.8 Lg
         #print('Aw ',Aw,'Af ', Af,'tf ', tf,'tw ', tw,'G ', G,'E ', E,'Iz ', Iz,'lt ', lT)
         if stf_type in ['T', 'L']:
             fET = beta*(((Aw + Af * math.pow(tf/tw,2)) / (Aw + 3*Af)) * G*math.pow(tw/hw,2))+\
@@ -862,25 +862,31 @@ class CalcScantlings(Structure):
         # fk = fr if alpha <= 0.2 else fr*(((1+mu_ch7_5_1+math.pow(alpha,2))-
         #                                   math.sqrt(math.pow(1+mu_ch7_5_1+math.pow(alpha,2),2)-
         #                                             4*math.pow(alpha,2)))/(2*math.pow(alpha,2))) # checked, ok
+        mu_tors = 0.35*(alphaT-0.6)
+        fT = fy if alphaT <= 0.6 else fy * (1+mu_tors+math.pow(alphaT,2)-math.sqrt(math.pow(1+mu_tors+math.pow(alphaT,2),2)-
+                                                                                 4*math.pow(alphaT,2)))/\
+                                       (2*math.pow(alphaT,2))
 
         mu_pl = (0.34 + 0.08 * (zp / ie)) * (alpha - 0.2)
         mu_stf = (0.34 + 0.08 * (zt / ie)) * (alpha - 0.2)
+        frp = fy
+        frs = fy if alphaT <= 0.6 else fT
         fyp,fys = fy,fy
         fyps = (fyp*se*t+fys*As)/(se*t+As)
-
-        fks = fr if alpha <= 0.2 else fr * (1+mu_stf+math.pow(alpha,2)-math.sqrt(math.pow(1+mu_stf+math.pow(alpha,2),2)-
+        fks = fr if alpha <= 0.2 else frs * (1+mu_stf+math.pow(alpha,2)-math.sqrt(math.pow(1+mu_stf+math.pow(alpha,2),2)-
                                                                                  4*math.pow(alpha,2)))/\
                                       (2*math.pow(alpha,2))
-        fr = fyps
-        fkp = fyp if alpha <= 0.2 else fr * (1+mu_pl+math.pow(alpha,2)-math.sqrt(math.pow(1+mu_pl+math.pow(alpha,2),2)-
+        #fr = fyps
+        fkp = fyp if alpha <= 0.2 else frp * (1+mu_pl+math.pow(alpha,2)-math.sqrt(math.pow(1+mu_pl+math.pow(alpha,2),2)-
                                                                                  4*math.pow(alpha,2)))/\
                                        (2*math.pow(alpha,2))
 
         u = math.pow(tauSd/tauRd,2) #eq7.58. checked.
 
-        Ms1Rd = Wes*(fr/1.15) #ok, assuming fr calculated with lT=span
+        Ms1Rd = Wes*(fr/1.15) #ok, assuming fr calculated with lT=span * 0.4
 
-        NksRd = Ae*(fks/1.15) #eq7.66, page 22 - fk according to equation 7.26, sec 7.5,
+        NksRd = Ae * (fks / 1.15) #eq7.66, page 22 - fk according to equation 7.26, sec 7.5,
+        NkpRd = Ae * (fkp / 1.15)  # checked ok, no ex
 
         M1Sd = abs((qSd*math.pow(l,2))/12) #ch7.7.1, checked ok
 
@@ -889,28 +895,32 @@ class CalcScantlings(Structure):
         Ne = ((math.pow(math.pi,2))*E*Ae)/(math.pow(lk/ie,2))# eq7.72 , checked ok
 
         Nrd = Ae * (fy / 1.15) #eq7.65, checked ok
-        Nsd = sigxSd * (As + s * t) + tautf * s * t #TODO verify this!!!
+
+        Nsd = sigxSd * (As + s*t) + tautf * s *t #  Equation 7.1, section 7.2, checked ok
 
         zstar = 0 #simplification as per 7.7.1 Continuous stiffeners
         MstRd = Wes*(fy/1.15) #eq7.70 checked ok, no ex
         MpRd = Wep*(fy/1.15) #eq7.71 checked ok, no ex
-        NkpRd = Ae*(fkp/1.15) #checked ok, no ex
+
         Ms2Rd = Wes*(fr/1.15) #eq7.69 checked ok, no ex
+        # print('Nksrd', NksRd, 'Nkprd', NkpRd, 'Ae is', Ae, 'fks is', fks, 'fkp is', fkp,
+        #       'alphas are', mu_pl, mu_stf, 'lk', lk, 'lt', lT)
 
         #print('CENTROID ', 'zp', 'zt', self.get_cross_section_centroid_with_effective_plate(se)*1000,zp,zt)
-
+        compare = [Nsd, tautf, taucrg, kg, taucrl, kl, p0]
         eq7_19 = sigySd/(ksp*sigyRd) #checked ok
+        print(Wes, lT)
         # Lateral pressure on plate side:
         if checked_side == 'p':
-            #print('eq7_50 = ',Nsd ,'/', NksRd,'+' ,M1Sd,'-' , Nsd ,'*', zstar, '/' ,Ms1Rd,'*',1,'-', Nsd ,'/', Ne,'+', u)
-            #print('eq7_52 = ',Nsd,'/', NksRd,'-', 2, '*',Nsd,'/', Nrd,'+',M2Sd,'-', Nsd,'*', zstar,'/',MstRd,'*',1, '-',Nsd,'/', Ne,'+', u)
-
+            # print('eq7_50 = ',Nsd ,'/', NksRd,'+' ,M1Sd,'-' , Nsd ,'*', zstar, '/' ,Ms1Rd,'*',1,'-', Nsd ,'/', Ne,'+', u)
+            # print('eq7_51 = ',Nsd,' / ',NkpRd,' - 2 * ',Nsd, '/' ,Nrd,' + ',M1Sd,' - ,',Nsd,' * ',zstar,' / ',MpRd,' * ','1 - ',Nsd,' / ',Ne,' + ',u)
+            print('eq7_52 = ',Nsd,'/', NksRd,'-', 2, '*',Nsd,'/', Nrd,'+',M2Sd,'-', Nsd,'*', zstar,'/',MstRd,'*',1, '-',Nsd,'/', Ne,'+', u)
             max_lfs = []
             ufs = []
             for zstar in np.arange(-zt/2,zp,0.002):
                 eq7_50 = (Nsd / NksRd) + (M1Sd - Nsd * zstar) / (Ms1Rd * (1 - Nsd / Ne)) + u
                 eq7_51 = (Nsd / NkpRd) - 2 * (Nsd / Nrd) + ((M1Sd - Nsd * zstar) / (MpRd * (1 - (Nsd / Ne)))) + u
-                eq7_52 = (Nsd / NksRd) - 2 * (Nsd / Nrd) + ((M2Sd - Nsd * zstar) / (MstRd * (1 - (Nsd / Ne)))) + u
+                eq7_52 = (Nsd / NksRd) - 2 * (Nsd / Nrd) + ((M2Sd + Nsd * zstar) / (MstRd * (1 - (Nsd / Ne)))) + u
                 eq7_53 = (Nsd / NkpRd) + (M2Sd + Nsd * zstar) / (MpRd * (1 - Nsd / Ne))
                 max_lfs.append(max(eq7_50, eq7_51, eq7_52, eq7_53))
                 ufs.append([eq7_19, eq7_50, eq7_51, eq7_52, eq7_53,zstar])
@@ -1145,8 +1155,10 @@ if __name__ == '__main__':
     # print(my_buc.calculate_slamming_stiffener(1000000))
     # print(my_buc.get_net_effective_plastic_section_modulus())
     my_test = CalcScantlings(test.obj_dict)
+
     #my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0))
-    for example in [test.obj_dict, test.obj_dict2, test.obj_dict_L]:
+    for example in [test.obj_dict]:
+        print(example)
         # my_test = CalcScantlings(example)
         # my_test = CalcFatigue(example, test.fat_obj_dict2)
         # my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0))
@@ -1166,7 +1178,7 @@ if __name__ == '__main__':
 
         print('EFFICIENT MOMENT OF INTERTIA: ',my_test.get_moment_of_intertia(efficent_se=my_test.get_plate_efficent_b(
             design_lat_press=pressure)))
-        print('Se: ',my_test.calculate_buckling_all(design_lat_press=pressure,checked_side='s'))
+        #print('Se: ',my_test.calculate_buckling_all(design_lat_press=pressure,checked_side='s'))
         print('Se: ', my_test.calculate_buckling_all(design_lat_press=pressure, checked_side='p'))
         print('MINIMUM PLATE THICKNESS',my_test.get_dnv_min_thickness(pressure))
         print('MINIMUM SECTION MOD.', my_test.get_dnv_min_section_modulus(pressure))
