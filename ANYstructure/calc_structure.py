@@ -937,7 +937,7 @@ class CalcScantlings(Structure):
                 eq7_56 = (Nsd / NksRd) + ((M2Sd - Nsd * zstar) / (Ms2Rd * (1 - (Nsd / Ne)))) + u
                 eq7_57 = (Nsd / NkpRd) - 2 * (Nsd / Nrd) + ((M2Sd - Nsd * zstar) / (MpRd * (1 - (Nsd / Ne)))) + u
                 max_lfs.append(max(eq7_54, eq7_55, eq7_56, eq7_57))
-                ufs.append([eq7_19, eq7_54, eq7_55, eq7_56, eq7_57])
+                ufs.append([eq7_19, eq7_54, eq7_55, eq7_56, eq7_57, zstar])
                 #print('eq7_19, eq7_54, eq7_55, eq7_56, eq7_57')
             min_of_max_ufs_idx = max_lfs.index(min(max_lfs))
             return ufs[min_of_max_ufs_idx]
