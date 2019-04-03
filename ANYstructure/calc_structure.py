@@ -838,53 +838,51 @@ class CalcScantlings(Structure):
         Iz = (1/12)*Af*math.pow(bf,2)+math.pow(ef,2)*(Af/(1+(Af/Aw))) #moment of inertia about z-axis, checked
 
         G = E/(2*(1+0.3)) #rules for ships Pt.8 Ch.1, page 334
-        lT = self.span * 0.4 #assuming thath the distance between lateral supports is lower than 0.4 Lg and 0.8 Lg
+        lT = self.span # Calculated further down
         #print('Aw ',Aw,'Af ', Af,'tf ', tf,'tw ', tw,'G ', G,'E ', E,'Iz ', Iz,'lt ', lT)
-        if stf_type in ['T', 'L']:
-            fET = beta*(((Aw + Af * math.pow(tf/tw,2)) / (Aw + 3*Af)) * G*math.pow(tw/hw,2))+\
-                  (math.pow(math.pi, 2) * E * Iz) / ((Aw/3 + Af)*math.pow(lT,2)) \
-                if bf != 0 \
-                else (beta+2*math.pow(hw/lT,2))*G*math.pow(tw/hw,2) # eq7.32 checked, no example
-        else:
-            fET = (beta + 2*math.pow(hw/lT,2))*G*math.pow(tw/hw,2) # eq7.34 checked, no example
 
-        alphaT = math.sqrt(fy/fET) #eq7.30. checked
+        def get_some_data(lT):
+            if stf_type in ['T', 'L']:
+                fET = beta*(((Aw + Af * math.pow(tf/tw,2)) / (Aw + 3*Af)) * G*math.pow(tw/hw,2))+\
+                      (math.pow(math.pi, 2) * E * Iz) / ((Aw/3 + Af)*math.pow(lT,2)) \
+                    if bf != 0 \
+                    else (beta+2*math.pow(hw/lT,2))*G*math.pow(tw/hw,2) # eq7.32 checked, no example
+            else:
+                fET = (beta + 2*math.pow(hw/lT,2))*G*math.pow(tw/hw,2) # eq7.34 checked, no example
 
-        mu7_29 = 0.35 * (alphaT - 0.6) # eq 7.29. checked
+            alphaT = math.sqrt(fy/fET) #eq7.30. checked
 
-        fr = fy if alphaT<=0.6 else ((1+mu7_29+math.pow(alphaT,2)-math.sqrt( math.pow(1+mu7_29+math.pow(alphaT,2),2)-
-                                                                             4*math.pow(alphaT,2))) /
-                                     (2*math.pow(alphaT,2))) * fy
-        alpha = math.sqrt(fr / fE) #e7.23, checked.
-        #fET= beta*G*It/Ipo+(math.pi**2)*(E*(hs**2)*Iz/(Ipo*lT**2))
-        # mu_ch7_5_1 = (0.34+0.08*(zp/ie))*(alpha-0.2) if checked_side == 'p' else (0.34+0.08*(zt/ie))*(alpha-0.2) #
-        #
-        # fk = fr if alpha <= 0.2 else fr*(((1+mu_ch7_5_1+math.pow(alpha,2))-
-        #                                   math.sqrt(math.pow(1+mu_ch7_5_1+math.pow(alpha,2),2)-
-        #                                             4*math.pow(alpha,2)))/(2*math.pow(alpha,2))) # checked, ok
-        mu_tors = 0.35*(alphaT-0.6)
-        fT = fy if alphaT <= 0.6 else fy * (1+mu_tors+math.pow(alphaT,2)-math.sqrt(math.pow(1+mu_tors+math.pow(alphaT,2),2)-
-                                                                                 4*math.pow(alphaT,2)))/\
-                                       (2*math.pow(alphaT,2))
+            mu7_29 = 0.35 * (alphaT - 0.6) # eq 7.29. checked
 
-        mu_pl = (0.34 + 0.08 * (zp / ie)) * (alpha - 0.2)
-        mu_stf = (0.34 + 0.08 * (zt / ie)) * (alpha - 0.2)
-        frp = fy
-        frs = fy if alphaT <= 0.6 else fT
-        fyp,fys = fy,fy
-        fyps = (fyp*se*t+fys*As)/(se*t+As)
-        fks = fr if alpha <= 0.2 else frs * (1+mu_stf+math.pow(alpha,2)-math.sqrt(math.pow(1+mu_stf+math.pow(alpha,2),2)-
-                                                                                 4*math.pow(alpha,2)))/\
-                                      (2*math.pow(alpha,2))
-        #fr = fyps
-        fkp = fyp if alpha <= 0.2 else frp * (1+mu_pl+math.pow(alpha,2)-math.sqrt(math.pow(1+mu_pl+math.pow(alpha,2),2)-
-                                                                                 4*math.pow(alpha,2)))/\
-                                       (2*math.pow(alpha,2))
+            fr = fy if alphaT<=0.6 else ((1+mu7_29+math.pow(alphaT,2)-math.sqrt( math.pow(1+mu7_29+math.pow(alphaT,2),2)-
+                                                                                 4*math.pow(alphaT,2))) /
+                                         (2*math.pow(alphaT,2))) * fy
+            alpha = math.sqrt(fr / fE) #e7.23, checked.
 
-        u = math.pow(tauSd/tauRd,2) #eq7.58. checked.
+            mu_tors = 0.35*(alphaT-0.6)
+            fT = fy if alphaT <= 0.6 else fy * (1+mu_tors+math.pow(alphaT,2)-math.sqrt(math.pow(1+mu_tors+math.pow(alphaT,2),2)-
+                                                                                     4*math.pow(alphaT,2)))/\
+                                           (2*math.pow(alphaT,2))
 
+            mu_pl = (0.34 + 0.08 * (zp / ie)) * (alpha - 0.2)
+            mu_stf = (0.34 + 0.08 * (zt / ie)) * (alpha - 0.2)
+            frp = fy
+            frs = fy if alphaT <= 0.6 else fT
+            fyp,fys = fy,fy
+            #fyps = (fyp*se*t+fys*As)/(se*t+As)
+            fks = fr if alpha <= 0.2 else frs * (1+mu_stf+math.pow(alpha,2)-math.sqrt(math.pow(1+mu_stf+math.pow(alpha,2),2)-
+                                                                                     4*math.pow(alpha,2)))/\
+                                          (2*math.pow(alpha,2))
+            #fr = fyps
+            fkp = fyp if alpha <= 0.2 else frp * (1+mu_pl+math.pow(alpha,2)-math.sqrt(math.pow(1+mu_pl+math.pow(alpha,2),2)-
+                                                                                     4*math.pow(alpha,2)))/\
+                                           (2*math.pow(alpha,2))
+
+            return fr, fks, fkp
+
+        u = math.pow(tauSd / tauRd, 2)  # eq7.58. checked.
+        fr, fks, fkp = get_some_data(lT=lT*0.4)
         Ms1Rd = Wes*(fr/1.15) #ok, assuming fr calculated with lT=span * 0.4
-
         NksRd = Ae * (fks / 1.15) #eq7.66, page 22 - fk according to equation 7.26, sec 7.5,
         NkpRd = Ae * (fkp / 1.15)  # checked ok, no ex
 
@@ -902,12 +900,13 @@ class CalcScantlings(Structure):
         MstRd = Wes*(fy/1.15) #eq7.70 checked ok, no ex
         MpRd = Wep*(fy/1.15) #eq7.71 checked ok, no ex
 
+        fr, fks, fkp = get_some_data(lT = lT * 0.8)
         Ms2Rd = Wes*(fr/1.15) #eq7.69 checked ok, no ex
         # print('Nksrd', NksRd, 'Nkprd', NkpRd, 'Ae is', Ae, 'fks is', fks, 'fkp is', fkp,
         #       'alphas are', mu_pl, mu_stf, 'lk', lk, 'lt', lT)
 
         #print('CENTROID ', 'zp', 'zt', self.get_cross_section_centroid_with_effective_plate(se)*1000,zp,zt)
-        compare = [Nsd, tautf, taucrg, kg, taucrl, kl, p0]
+
         eq7_19 = sigySd/(ksp*sigyRd) #checked ok
 
         # Lateral pressure on plate side:

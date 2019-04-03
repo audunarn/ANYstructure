@@ -403,7 +403,7 @@ class CreateOptGeoWindow():
             self._ent_minstep.place(x=start_x + dx * 15, y=start_y + 0 * dy)
             self._ent_minfunc.place(x=start_x + dx * 15, y=start_y + 1 * dy)
 
-    def run_optimizaion(self, load_pre = False, save_results = True):
+    def run_optimizaion(self, load_pre = True, save_results = True):
         '''
         Function when pressing the optimization botton inside this window.
         :return:
