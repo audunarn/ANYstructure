@@ -469,6 +469,7 @@ class CreateOptGeoWindow():
             with open('geo_opt_2.pickle', 'rb') as file:
                 self._geo_results = pickle.load(file)
 
+
         save_file, filename = None, None
         if save_results:
             save_file = filedialog.asksaveasfile(mode="w", defaultextension=".txt", title = 'Save results to file')
@@ -986,7 +987,7 @@ class CreateOptGeoWindow():
                             if save_file is not None:
                                 save_file.write(stuc_info.get_one_line_string()+' | '+
                                                 stuc_info.get_report_stresses()+ ' for '+
-                                                endstring + ' | Panel check: '+'OK!' if values[1][idx][-1]
+                                                endstring + ' | Panel check: '+'OK!\n' if values[1][idx][-1]
                                                 else 'NOT OK! \n')
                             item_count += 1
             if save_file is not None:
