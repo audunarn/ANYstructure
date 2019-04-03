@@ -1153,11 +1153,11 @@ if __name__ == '__main__':
     # print(my_buc.calculate_slamming_plate(1000000))
     # print(my_buc.calculate_slamming_stiffener(1000000))
     # print(my_buc.get_net_effective_plastic_section_modulus())
-    my_test = CalcScantlings(test.obj_dict)
 
     #my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0))
-    for example in [test.obj_dict]:
-        print(example)
+    import ANYstructure.example_data as ex
+    for example in [CalcScantlings(ex.obj_dict), CalcScantlings(ex.obj_dict2), CalcScantlings(ex.obj_dict_L)]:
+        my_test = example
         # my_test = CalcScantlings(example)
         # my_test = CalcFatigue(example, test.fat_obj_dict2)
         # my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0))
