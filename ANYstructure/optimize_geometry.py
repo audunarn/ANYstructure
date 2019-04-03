@@ -423,10 +423,14 @@ class CreateOptGeoWindow():
 
         init_objects = []
         lateral_press = []
+        fatigue_objects = []
+        slamming_press = []
+        fat_press_ext_int = []
+
         broke = False
 
         for line,coord in self._opt_structure.items():
-            if self.opt_create_struc_obj(self._opt_structure[line]) is None:
+            if self.opt_create_struc_obj(self._opt_structre[line]) is None:
                 broke = True
                 break
             else:
@@ -453,11 +457,13 @@ class CreateOptGeoWindow():
                                               max_var=self.get_upper_bounds(),lateral_pressure=lateral_press,
                                               deltas=self.get_deltas(), algorithm='anysmart',side='p',
                                               const_chk = contraints,pso_options = self.pso_parameters,
-                                              is_geometric=True,fatigue_obj=None, fat_press_ext_int=None,
+                                              is_geometric=True,fatigue_obj= fatigue_objects,
+                                              fat_press_ext_int=fat_press_ext_int,
                                               min_max_span=(2,6), tot_len=self.opt_get_length(),
                                               frame_height=self.opt_get_distance(), frame_distance = distances,
                                               predefined_stiffener_iter=predefined_stiffener_iter,
-                                              processes = self._new_processes.get())
+                                              processes = self._new_processes.get(),
+                                              slamming_press=slamming_press)
 
             self._geo_results = geo_results
 
