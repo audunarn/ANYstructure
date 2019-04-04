@@ -266,7 +266,7 @@ def get_geo_opt_fat_press():
     return [get_fatigue_pressures() for dummy in range(len(get_geo_opt_presure()))]
 
 def get_geo_opt_slamming_none():
-    return [None for dummy in range(len(get_geo_opt_presure()))]
+    return [0 for dummy in range(len(get_geo_opt_presure()))]
 
 def get_geo_opt_slamming():
     return [get_slamming_pressure() for dummy in range(len(get_geo_opt_presure()))]

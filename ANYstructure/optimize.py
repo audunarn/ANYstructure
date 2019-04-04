@@ -149,7 +149,7 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
     :param initial_structure:
     :return:
     '''
-
+    print(min_var, max_var, deltas)
     if predefiened_stiffener_iter is None:
         structure_to_check = any_get_all_combs(min_var, max_var, deltas, init_weight=init_filter)
     else:
@@ -160,6 +160,7 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
     main_iter = get_filtered_results(structure_to_check, initial_structure_obj,lateral_pressure
                                      ,init_filter_weight=init_filter, side=side,chk=const_chk, fat_dict=fat_dict,
                                      fat_press=fat_press, slamming_press=slamming_press)
+
     ass_var=None
     current_weight = float('inf')
     for item in main_iter:
@@ -391,7 +392,7 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                                                         pso_options=pso_options, fat_obj = fat_obj,
                                                         fat_press = fat_press)
             elif algorithm is 'anysmart':
-                print('RUNNING anysmart')
+
                 opt_objects = any_smart_loop_geometric(min_var=min_var,max_var=max_var,deltas=deltas,
                                                        initial_structure_obj=working_objects[no_of_fractions],
                                                        lateral_pressure=working_lateral[no_of_fractions],
@@ -406,7 +407,7 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
             # Finding weight of this solution.
 
             tot_weight, frame_spacings, valid, width = 0, [None for dummy in range(len(opt_objects))], True, 10
-            print('OPT OBJ', opt_objects)
+
             for count, opt in enumerate(opt_objects):
                 obj = opt[0]
                 if opt[3]:
@@ -502,6 +503,7 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
 
     # Fatigue
     if chk[4] and fat_dict is not None:
+        print(fat_press)
         if calc_object[1].get_total_damage(ext_press=fat_press[0], int_press=fat_press[1])*calc_object[1].get_dff() > 1:
             if print_result:
                 print('Fatigue',calc_object[0].get_one_line_string(), False)
@@ -752,6 +754,7 @@ def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight
     :param chk:
     :return:
     '''
+
     iter_var = ((item,init_stuc_obj,lat_press,init_filter_weight,side,chk,fat_dict,fat_press,slamming_press)
                 for item in iterable_all)
 
@@ -918,8 +921,8 @@ if __name__ == '__main__':
     # obj = calc.Structure(obj_dict)
     # lat_press = 271.124
     # calc_object = calc.CalcScantlings(obj_dict)
-    upper_bounds = np.array([0.6, 0.01, 0.3, 0.01, 0.1, 0.01, 3.5, 10])
-    lower_bounds = np.array([0.8, 0.02, 0.5, 0.02, 0.22, 0.03, 3.5, 10])
+    lower_bounds = np.array([0.6, 0.01, 0.3, 0.01, 0.1, 0.01, 3.5, 10])
+    upper_bounds = np.array([0.8, 0.02, 0.5, 0.02, 0.22, 0.03, 3.5, 10])
     deltas = np.array([0.05, 0.005, 0.05, 0.005, 0.05, 0.005])
     #
     # results = run_optmizataion(obj, upper_bounds, lower_bounds, lat_press, deltas, algorithm='anysmart',
