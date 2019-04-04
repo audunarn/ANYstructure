@@ -185,8 +185,10 @@ def any_smart_loop_geometric(min_var,max_var,deltas,initial_structure_obj,latera
 
     all_obj = []
     idx = 0
+
     for struc_obj, lat_press, fatigue_obj, fatigue_press, slam_press in zip(initial_structure_obj, lateral_pressure,
                                                                             fat_obj, fat_press, slamming_press):
+
         if predefiened_stiffener_iter is not None:
             this_predefiened_stiffener_iter = any_get_all_combs(min_var=min_var, max_var=max_var,deltas=deltas,
                                                                 predef_stiffeners=predefiened_stiffener_iter)
@@ -387,6 +389,7 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                                                         pso_options=pso_options, fat_obj = fat_obj,
                                                         fat_press = fat_press)
             elif algorithm is 'anysmart':
+                print('RUNNING anysmart')
                 opt_objects = any_smart_loop_geometric(min_var=min_var,max_var=max_var,deltas=deltas,
                                                        initial_structure_obj=working_objects[no_of_fractions],
                                                        lateral_pressure=working_lateral[no_of_fractions],
@@ -401,7 +404,7 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
             # Finding weight of this solution.
 
             tot_weight, frame_spacings, valid, width = 0, [None for dummy in range(len(opt_objects))], True, 10
-
+            print('OPT OBJ', opt_objects)
             for count, opt in enumerate(opt_objects):
                 obj = opt[0]
                 if opt[3]:

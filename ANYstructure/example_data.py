@@ -7,10 +7,10 @@ import random
 
 obj_dict = {'mat_yield': [355e6, 'Pa'], 'span': [4, 'm'], 'spacing': [0.75, 'm'],
             'plate_thk': [0.015, 'm'],
-            'stf_web_height': [0.33, 'm'], 'stf_web_thk': [0.012, 'm'], 'stf_flange_width': [0.15, 'm'],
-            'stf_flange_thk': [0.018, 'm'], 'structure_type': ['BOTTOM', ''], 'plate_kpp': [1, ''],
+            'stf_web_height': [0.4, 'm'], 'stf_web_thk': [0.018, 'm'], 'stf_flange_width': [0.15, 'm'],
+            'stf_flange_thk': [0.02, 'm'], 'structure_type': ['BOTTOM', ''], 'plate_kpp': [1, ''],
             'stf_kps': [1, ''], 'stf_km1': [12, ''], 'stf_km2': [24, ''], 'stf_km3': [12, ''],
-            'sigma_y1': [50, 'MPa'], 'sigma_y2': [40, 'MPa'], 'sigma_x': [60, 'MPa'], 'tau_xy': [5, 'MPa'],
+            'sigma_y1': [80, 'MPa'], 'sigma_y2': [80, 'MPa'], 'sigma_x': [80, 'MPa'], 'tau_xy': [5, 'MPa'],
             'stf_type': ['T', '']}
 
 obj_dict_heavy = {'mat_yield': [355e6, 'Pa'], 'span': [4, 'm'], 'spacing': [0.75, 'm'],
