@@ -428,15 +428,20 @@ class CreateOptGeoWindow():
         fat_press_ext_int = []
 
         broke = False
-
+        print('OPT structure is', self._opt_structure)
         for line,coord in self._opt_structure.items():
-            if self.opt_create_struc_obj(self._opt_structre[line]) is None:
+            print(self.opt_create_struc_obj(self._opt_structure[line]))
+            if self.opt_create_struc_obj(self._opt_structure[line]) is None:
                 broke = True
                 break
             else:
                 init_objects.append(self.opt_create_struc_obj(self._opt_structure[line])[0])
             if __name__ == '__main__':
+                import ANYstructure.example_data as ex
                 lateral_press.append(200)  # for testing
+                slamming_press.append(None)
+                fatigue_objects.append(ex.get_fatigue_object())
+                fat_press_ext_int.append(ex.get_fatigue_pressures())
             else:
                 p1, p2 = self._opt_structure[line]
                 closet_line = self.opt_find_closest_orig_line([(p2[0]-p1[0])*0.5, (p2[1]-p1[1])*0.5])

@@ -179,16 +179,17 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
                                        const_chk,fat_dict,fat_press,slamming_press) is not False else False
 
 def any_smart_loop_geometric(min_var,max_var,deltas,initial_structure_obj,lateral_pressure, init_filter = float('inf'),
-                             side='p',const_chk=(True,True,True,True,True,True), fat_dict = None, fat_press = None,
-                             slamming_press = 0, predefiened_stiffener_iter=None, processes = None):
+                             side='p',const_chk=(True,True,True,True,True,True), fat_obj = None, fat_press = None,
+                             slamming_press = None, predefiened_stiffener_iter=None, processes = None):
     ''' Searching multiple sections using the smart loop. '''
 
     all_obj = []
     idx = 0
-    for struc_obj, lat_press in zip(initial_structure_obj, lateral_pressure):
+    for struc_obj, lat_press, fatigue_obj, fatigue_press, slam_press in zip(initial_structure_obj, lateral_pressure,
+                                                                            fat_obj, fat_press, slamming_press):
         if predefiened_stiffener_iter is not None:
             this_predefiened_stiffener_iter = any_get_all_combs(min_var=min_var, max_var=max_var,deltas=deltas,
-                                                           predef_stiffeners=predefiened_stiffener_iter)
+                                                                predef_stiffeners=predefiened_stiffener_iter)
             temp_predef = list()
             for x in predefiened_stiffener_iter:
                 xvar = list(x)
@@ -203,8 +204,8 @@ def any_smart_loop_geometric(min_var,max_var,deltas,initial_structure_obj,latera
 
         opt_obj = any_smart_loop(min_var = min_var,max_var = max_var,deltas = deltas,initial_structure_obj = struc_obj,
                                  lateral_pressure = lat_press, init_filter = init_filter, side=side,
-                                 const_chk=const_chk, fat_dict = fat_dict, fat_press = fat_press,
-                                 slamming_press = slamming_press,
+                                 const_chk=const_chk, fat_dict = fatigue_obj.get_fatigue_properties(),
+                                 fat_press = fatigue_press, slamming_press = slam_press,
                                  predefiened_stiffener_iter=this_predefiened_stiffener_iter)
         # TODO-any set check if not solution acceptable.
         all_obj.append(opt_obj)
@@ -278,7 +279,7 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                              pso_options=(100,0.5,0.5,0.5,100,1e-8,1e-8), fat_obj = None, fat_press = None,
                              min_max_span = (2,6), tot_len = 12, frame_distance = None,
                              algorithm = 'anysmart', predefiened_stiffener_iter=None, reiterate = True,
-                             processes = None):
+                             processes = None, slamming_press = None):
 
     '''Geometric optimization of all relevant sections. '''
     # Checking the number of initial objects and adding if number of fraction is to be changed.
@@ -315,41 +316,63 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
             frac_var.append(1/no_of_fractions)
             working_objects[no_of_fractions] = list(initial_structure_obj)
             working_lateral[no_of_fractions] = list(lateral_pressure)
-            working_fatigue[no_of_fractions] = list(lateral_pressure)
-            working_fatigue_press[no_of_fractions] = list(lateral_pressure)
-            working_slamming[no_of_fractions] = list(lateral_pressure)
+            working_fatigue[no_of_fractions] = list(fat_obj)
+            working_fatigue_press[no_of_fractions] = list(fat_press)
+            working_slamming[no_of_fractions] = list(slamming_press)
 
             similar_count = len(working_objects[no_of_fractions])
             while similar_count != no_of_fractions*2:
                 if similar_count > no_of_fractions*2:
                     for var_dict in [working_objects, working_lateral, working_fatigue,
                                      working_fatigue_press, working_slamming]:
-                        var_dict[no_of_fractions].pop(0)
-                        var_dict[no_of_fractions].pop(floor(int(len(working_objects)/2)))
+                        if len(var_dict[no_of_fractions]) != 0:
+                            var_dict[no_of_fractions].pop(0)
+                            working_objects[no_of_fractions].pop(int(floor(len(working_objects) / 2)))
                     # working_objects[no_of_fractions].pop(0)
                     # working_objects[no_of_fractions].pop(floor(int(len(working_objects)/2)))
                     # working_lateral[no_of_fractions].pop(0)
                     # working_lateral[no_of_fractions].pop(floor(int(len(working_objects)/2)))
                     similar_count -= 2
                 else:
-                    for var_dict in [working_objects, working_lateral, working_fatigue,
-                                     working_fatigue_press, working_slamming]:
-                        pass
                     obj_start, obj_stop = copy.deepcopy(working_objects[no_of_fractions][0]),\
                                           copy.deepcopy(working_objects[no_of_fractions][int(len(working_objects)/2)])
+                    fat_obj_start, fat_obj_stop = copy.deepcopy(fat_obj[no_of_fractions][0]), \
+                                                  copy.deepcopy(fat_obj[no_of_fractions][int(len(working_objects)/2)])
                     lat_start, lat_stop = working_lateral[no_of_fractions][0], \
-                                          working_lateral[no_of_fractions][int(len(working_objects)/2)]
+                                          working_lateral[no_of_fractions][int(ceil(len(working_objects)/2))]
+                    fat_press_start, fat_press_stop = working_fatigue_press[no_of_fractions][0], \
+                                                      working_fatigue_press[no_of_fractions][
+                                                          int(ceil(len(working_objects)/2))]
+                    slam_start, slam_stop = working_slamming[no_of_fractions][0], \
+                                            working_slamming[no_of_fractions][int(ceil(len(working_objects)/2))]
 
-                    working_objects[no_of_fractions].insert(0,obj_start)
-                    working_objects[no_of_fractions].insert(ceil(int(len(working_objects)/2)), obj_stop)
-                    working_lateral[no_of_fractions].insert(0,lat_start)
-                    working_lateral[no_of_fractions].insert(ceil(int(len(working_objects)/2)), lat_stop)
+                    for work, work_input in zip([working_objects, working_lateral, working_fatigue,
+                                                 working_fatigue_press, working_slamming],
+                                                [(obj_start, obj_stop), (lat_start, lat_stop),
+                                                 (fat_obj_start, fat_obj_stop), (fat_press_start, fat_press_stop),
+                                                 (slam_start, slam_stop)]):
+                        if work[no_of_fractions] is not None:
+                            work[no_of_fractions].insert(0, work_input[0])
+                            work[no_of_fractions].insert(int(ceil(len(working_objects) / 2)), work_input[1])
+
+
+                    # working_objects[no_of_fractions].insert(0,obj_start)
+                    # working_objects[no_of_fractions].insert(int(ceil(len(working_objects)/2)), obj_stop)
+                    # working_lateral[no_of_fractions].insert(0,lat_start)
+                    # working_lateral[no_of_fractions].insert(int(ceil(len(working_objects)/2)), lat_stop)
+                    # working_fatigue[no_of_fractions].insert(0,fat_obj_start)
+                    # working_fatigue[no_of_fractions].insert(int(ceil(len(working_objects)/2)), fat_obj_stop)
+                    # working_fatigue_press[no_of_fractions].insert(0,fat_press_start)
+                    # working_fatigue_press[no_of_fractions].insert(int(ceil(len(working_objects)/2)), fat_press_stop)
+                    # working_slamming[no_of_fractions].insert(0,slam_start)
+                    # working_slamming[no_of_fractions].insert(int(ceil(len(working_objects)/2)), slam_stop)
                     similar_count += 2
         for no_of_fractions, struc_objects in working_objects.items():
             for struc_obj in struc_objects:
                 struc_obj.set_span(tot_len/no_of_fractions)
 
         solution_found, iterations = False, 0
+
         while not solution_found:
             iterations += 1
             if iterations != 1:
@@ -368,7 +391,9 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                                                        initial_structure_obj=working_objects[no_of_fractions],
                                                        lateral_pressure=working_lateral[no_of_fractions],
                                                        init_filter = init_filter,side=side,const_chk=const_chk,
-                                                       fat_dict = None, fat_press = None, slamming_press = 0,
+                                                       fat_obj = working_fatigue[no_of_fractions],
+                                                       slamming_press = working_slamming[no_of_fractions],
+                                                       fat_press=working_fatigue_press[no_of_fractions],
                                                        predefiened_stiffener_iter = predefiened_stiffener_iter)
 
                 # TODO fatigue and slamming implemetation
@@ -878,23 +903,23 @@ def product_any(*args, repeat=1,weight=float('inf')):
 
 if __name__ == '__main__':
     import ANYstructure.example_data as ex
-    obj_dict = ex.obj_dict
-    fat_obj = ex.get_fatigue_object()
-    fp = ex.get_fatigue_pressures()
-    fat_press = ((fp['p_ext']['loaded'],fp['p_ext']['ballast'],fp['p_ext']['part']),
-                 (fp['p_int']['loaded'],fp['p_int']['ballast'],fp['p_int']['part']))
-    x0 = [obj_dict['spacing'][0], obj_dict['plate_thk'][0], obj_dict['stf_web_height'][0], obj_dict['stf_web_thk'][0],
-          obj_dict['stf_flange_width'][0], obj_dict['stf_flange_thk'][0], obj_dict['span'][0], 10]
-    obj = calc.Structure(obj_dict)
-    lat_press = 271.124
-    calc_object = calc.CalcScantlings(obj_dict)
+    # obj_dict = ex.obj_dict
+    # fat_obj = ex.get_fatigue_object()
+    # fp = ex.get_fatigue_pressures()
+    # fat_press = ((fp['p_ext']['loaded'],fp['p_ext']['ballast'],fp['p_ext']['part']),
+    #              (fp['p_int']['loaded'],fp['p_int']['ballast'],fp['p_int']['part']))
+    # x0 = [obj_dict['spacing'][0], obj_dict['plate_thk'][0], obj_dict['stf_web_height'][0], obj_dict['stf_web_thk'][0],
+    #       obj_dict['stf_flange_width'][0], obj_dict['stf_flange_thk'][0], obj_dict['span'][0], 10]
+    # obj = calc.Structure(obj_dict)
+    # lat_press = 271.124
+    # calc_object = calc.CalcScantlings(obj_dict)
     upper_bounds = np.array([0.6, 0.01, 0.3, 0.01, 0.1, 0.01, 3.5, 10])
     lower_bounds = np.array([0.8, 0.02, 0.5, 0.02, 0.22, 0.03, 3.5, 10])
     deltas = np.array([0.05, 0.005, 0.05, 0.005, 0.05, 0.005])
-
-    results = run_optmizataion(obj, upper_bounds, lower_bounds, lat_press, deltas, algorithm='anysmart',
-                               fatigue_obj=fat_obj, fat_press_ext_int=fat_press)
-    print(results[0].get_structure_prop())
+    #
+    # results = run_optmizataion(obj, upper_bounds, lower_bounds, lat_press, deltas, algorithm='anysmart',
+    #                            fatigue_obj=fat_obj, fat_press_ext_int=fat_press)
+    # print(results[0].get_structure_prop())
 
     # for swarm_size in [100, 1000, 10000, 100000, 1000000]:
     #     t1 = time.time()
@@ -903,3 +928,8 @@ if __name__ == '__main__':
     #     results = run_optmizataion(obj, upper_bounds, lower_bounds, lat_press, deltas, algorithm='anysmart',
     #                            fatigue_obj=fat_obj, fat_press_ext_int=fat_press, pso_options=pso_options)[0]
     #     print('Swarm size', swarm_size, 'running time', time.time()-t1, results.get_one_line_string())
+
+    results = run_optmizataion(ex.get_geo_opt_object(), lower_bounds, upper_bounds, ex.get_geo_opt_presure(), deltas,
+                               is_geometric=True, fatigue_obj=ex.get_geo_opt_fatigue(),
+                               fat_press_ext_int=ex.get_geo_opt_fat_press(),
+                               slamming_press=ex.get_geo_opt_slamming_none())
