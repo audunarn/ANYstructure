@@ -327,9 +327,9 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                 if similar_count > no_of_fractions*2:
                     for var_dict in [working_objects, working_lateral, working_fatigue,
                                      working_fatigue_press, working_slamming]:
-                        if len(var_dict[no_of_fractions]) != 0:
-                            var_dict[no_of_fractions].pop(0)
-                            working_objects[no_of_fractions].pop(int(floor(len(working_objects) / 2)))
+
+                        var_dict[no_of_fractions].pop(0)
+                        var_dict[no_of_fractions].pop(int(floor(len(working_objects) / 2)))
                     # working_objects[no_of_fractions].pop(0)
                     # working_objects[no_of_fractions].pop(floor(int(len(working_objects)/2)))
                     # working_lateral[no_of_fractions].pop(0)
@@ -348,14 +348,16 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                     slam_start, slam_stop = working_slamming[no_of_fractions][0], \
                                             working_slamming[no_of_fractions][int(ceil(len(working_objects)/2))]
 
-                    for work, work_input in zip([working_objects, working_lateral, working_fatigue,
-                                                 working_fatigue_press, working_slamming],
+                    for work, work_input in zip([working_objects[no_of_fractions], working_lateral[no_of_fractions],
+                                                 working_fatigue[no_of_fractions],
+                                                 working_fatigue_press[no_of_fractions],
+                                                 working_slamming[no_of_fractions]],
                                                 [(obj_start, obj_stop), (lat_start, lat_stop),
                                                  (fat_obj_start, fat_obj_stop), (fat_press_start, fat_press_stop),
                                                  (slam_start, slam_stop)]):
-                        if work[no_of_fractions] is not None:
-                            work[no_of_fractions].insert(0, work_input[0])
-                            work[no_of_fractions].insert(int(ceil(len(working_objects) / 2)), work_input[1])
+
+                        work[no_of_fractions].insert(0, work_input[0])
+                        work[no_of_fractions].insert(int(ceil(len(working_objects) / 2)), work_input[1])
 
 
                     # working_objects[no_of_fractions].insert(0,obj_start)
