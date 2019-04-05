@@ -296,7 +296,7 @@ class CreateOptGeoWindow():
         self._new_check_shear_area.set(True)
         self._new_check_buckling.set(True)
         self._new_check_fatigue.set(True)
-        self._new_check_slamming.set(False)
+        self._new_check_slamming.set(True)
         self._new_check_local_buckling.set(True)
 
         start_y, start_x, dy  = 570, 200, 30
@@ -313,7 +313,7 @@ class CreateOptGeoWindow():
         tk.Checkbutton(self._frame, variable=self._new_check_shear_area).place(x=start_x+dx*12,y=start_y+6*dy)
         tk.Checkbutton(self._frame, variable=self._new_check_buckling).place(x=start_x+dx*12,y=start_y+7*dy)
         tk.Checkbutton(self._frame, variable=self._new_check_fatigue).place(x=start_x + dx * 12, y=start_y + 8 * dy)
-        #tk.Checkbutton(self._frame, variable=self._new_check_slamming).place(x=start_x + dx * 12, y=start_y + 9 * dy)
+        tk.Checkbutton(self._frame, variable=self._new_check_slamming).place(x=start_x + dx * 12, y=start_y + 9 * dy)
         tk.Checkbutton(self._frame, variable=self._new_check_local_buckling).place(x=start_x + dx * 12,
                                                                                    y=start_y + 10 * dy)
         self._toggle_btn = tk.Button(self._frame, text="Iterate predefiened stiffeners", relief="raised",
@@ -416,7 +416,8 @@ class CreateOptGeoWindow():
 
         contraints = (self._new_check_sec_mod.get(), self._new_check_min_pl_thk.get(),
                       self._new_check_shear_area.get(), self._new_check_buckling.get(),
-                      self._new_check_fatigue.get(), False, self._new_check_local_buckling.get()) # TODO not including fatigue and slamming
+                      self._new_check_fatigue.get(), self._new_check_slamming.get(),
+                      self._new_check_local_buckling.get())
 
         self.pso_parameters = (self._new_swarm_size.get(), self._new_omega.get(), self._new_phip.get(),
                                self._new_phig.get(),self._new_maxiter.get(), self._new_minstep.get(),
@@ -459,8 +460,8 @@ class CreateOptGeoWindow():
                 p1, p2 = self._opt_structure[line]
                 closet_line = self.opt_find_closest_orig_line([(p2[0]-p1[0])*0.5, (p2[1]-p1[1])*0.5])
                 gotten_lat_press = self.app.get_highest_pressure(closet_line)
-                lateral_press.append(gotten_lat_press(closet_line)['normal'] / 1000)
-                slamming_press.append(gotten_lat_press(closet_line)['slamming'])
+                lateral_press.append(gotten_lat_press['normal'] / 1000)
+                slamming_press.append(gotten_lat_press['slamming'])
         if broke:
             messagebox.showinfo(title='Selection error.',
                                 message='This field cannot be subdivided or there are no loads. Error.')
@@ -487,10 +488,10 @@ class CreateOptGeoWindow():
 
             self._geo_results = geo_results
 
-            # #SAVING RESULTS
-            # if save_results:
-            #     with open('geo_opt_2.pickle', 'wb') as file:
-            #         pickle.dump(geo_results, file)
+            #SAVING RESULTS
+            if save_results:
+                with open('geo_opt_2.pickle', 'wb') as file:
+                    pickle.dump(geo_results, file)
         else:
             with open('geo_opt_2.pickle', 'rb') as file:
                 self._geo_results = pickle.load(file)
