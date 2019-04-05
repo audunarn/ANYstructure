@@ -207,7 +207,8 @@ def any_smart_loop_geometric(min_var,max_var,deltas,initial_structure_obj,latera
 
         opt_obj = any_smart_loop(min_var = min_var,max_var = max_var,deltas = deltas,initial_structure_obj = struc_obj,
                                  lateral_pressure = lat_press, init_filter = init_filter, side=side,
-                                 const_chk=const_chk, fat_dict = fatigue_obj.get_fatigue_properties(),
+                                 const_chk=const_chk,
+                                 fat_dict = None if fatigue_obj is None else fatigue_obj.get_fatigue_properties(),
                                  fat_press = fatigue_press, slamming_press = slam_press,
                                  predefiened_stiffener_iter=this_predefiened_stiffener_iter)
         # TODO-any set check if not solution acceptable.
