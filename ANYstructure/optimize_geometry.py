@@ -1201,8 +1201,12 @@ class CreateOptGeoWindow():
         When clicking the right button, this method is called.
         method is referenced in
         '''
-        if self._geo_results is not None:
-            return
+        if type(self._geo_results) is not list():
+            if self._geo_results is not None:
+                return
+        else:
+            if self._geo_results[0] is not None:
+                return
         click_x = self._canvas_select.winfo_pointerx() - self._canvas_select.winfo_rootx()
         click_y = self._canvas_select.winfo_pointery() - self._canvas_select.winfo_rooty()
 

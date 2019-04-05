@@ -13,6 +13,7 @@ from multiprocessing import Pool, cpu_count
 import ANYstructure.example_data as test
 #import psopy
 from math import ceil, floor
+from matplotlib import pyplot as plt
 
 
 def run_optmizataion(initial_structure_obj=None, min_var=None,max_var=None,lateral_pressure=None,
@@ -125,7 +126,7 @@ def any_optimize_loop(min_var,max_var,deltas,initial_structure_obj,lateral_press
                             if any_constraints_all(var_x,initial_structure_obj,lat_press=lateral_pressure,
                                                    init_weight=min_weight,side=side,chk=const_chk,
                                                    fat_dict = fat_dict, fat_press = fat_press,
-                                                   slamming_press=slamming_press) is not False:
+                                                   slamming_press=slamming_press)[0] is not False:
                                 current_weight = calc_weight(var_x)
                                 if current_weight < min_weight:
                                     iter_count+=1
@@ -157,9 +158,12 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
         structure_to_check = any_get_all_combs(min_var, max_var, deltas, init_weight=init_filter,
                                                predef_stiffeners=structure_to_check)
 
-    main_iter = get_filtered_results(structure_to_check, initial_structure_obj,lateral_pressure
-                                     ,init_filter_weight=init_filter, side=side,chk=const_chk, fat_dict=fat_dict,
-                                     fat_press=fat_press, slamming_press=slamming_press)
+    main_result = get_filtered_results(structure_to_check, initial_structure_obj,lateral_pressure
+                                       ,init_filter_weight=init_filter, side=side,chk=const_chk, fat_dict=fat_dict,
+                                       fat_press=fat_press, slamming_press=slamming_press)
+
+    main_iter = main_result[0]
+    main_fail = main_result[1]
 
     ass_var=None
     current_weight = float('inf')
@@ -170,14 +174,14 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
             current_weight = item_weight
 
     if ass_var == None:
-        return ass_var
+        return None, None, None, None, main_fail
 
     new_struc_obj = create_new_structure_obj(initial_structure_obj,[item for item in ass_var])
     new_calc_obj = create_new_calc_obj(initial_structure_obj,[item for item in ass_var])[0]
 
     return new_struc_obj, new_calc_obj, fat_dict, \
-           True if any_constraints_all(ass_var, new_struc_obj, lateral_pressure, current_weight,side,
-                                       const_chk,fat_dict,fat_press,slamming_press) is not False else False
+           True if any_constraints_all(ass_var, new_struc_obj, lateral_pressure, current_weight,side,const_chk,fat_dict,
+                                       fat_press,slamming_press)[0] is not False else False, main_fail
 
 def any_smart_loop_geometric(min_var,max_var,deltas,initial_structure_obj,lateral_pressure, init_filter = float('inf'),
                              side='p',const_chk=(True,True,True,True,True,True), fat_obj = None, fat_press = None,
@@ -462,7 +466,7 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
             pass
             # print('Weights', calc_weight(x), ' > ', init_weight,
             #       calc_object[0].get_one_line_string(), init_weight, False)
-        return False
+        return False, 'Weight filter', x
 
     calc_object = create_new_calc_obj(obj, x, fat_dict)
 
@@ -471,14 +475,14 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
         if not min(calc_object[0].get_section_modulus()) > calc_object[0].get_dnv_min_section_modulus(lat_press):
             if print_result:
                 print('Section modulus',calc_object[0].get_one_line_string(), False)
-            return False
+            return False, 'Section modulus', x
 
     # Local stiffener buckling
     if chk[6]:
         if not calc_object[0].buckling_local_stiffener():
             if print_result:
                 print('Local stiffener buckling',calc_object[0].get_one_line_string(), False)
-            return False
+            return False, 'Local stiffener buckling', x
 
     # Buckling
     if chk[3]:
@@ -486,33 +490,34 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
                                                                           checked_side=side)]):
             if print_result:
                 print('Buckling',calc_object[0].get_one_line_string(), False)
-            return False
-    # Minimum plate thickeness
+            return False, 'Buckling', x
+
+    # Minimum plate thickness
     if chk[1]:
         if not calc_object[0].get_plate_thk()>calc_object[0].get_dnv_min_thickness(lat_press)/1000:
             if print_result:
                 print('Minimum plate thickeness',calc_object[0].get_one_line_string(), False)
-            return False
+            return False, 'Minimum plate thickness'
     # Shear area
     if chk[2]:
         if not calc_object[0].get_shear_area()>calc_object[0].get_minimum_shear_area(lat_press):
             if print_result:
                 print('Shear area',calc_object[0].get_one_line_string(), False)
-            return False
+            return False, 'Shear area', x
 
     # Fatigue
     if chk[4] and fat_dict is not None:
         if calc_object[1].get_total_damage(ext_press=fat_press[0], int_press=fat_press[1])*calc_object[1].get_dff() > 1:
             if print_result:
                 print('Fatigue',calc_object[0].get_one_line_string(), False)
-            return False
+            return False, 'Fatigue', x
 
     # Slamming
     if chk[5] and slamming_press != 0:
         if calc_object[0].check_all_slamming(slamming_press) is False:
             if print_result:
                 print('Slamming',calc_object[0].get_one_line_string(), False)
-            return False
+            return False, 'Slamming', x
     if print_result:
         print('OK Section', calc_object[0].get_one_line_string(), True)
     return x
@@ -764,7 +769,14 @@ def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight
         # print('Done calculating')
         res_pre = my_process.starmap(any_constraints_all, iter_var)
 
-    return list(filter(lambda x: x is not False, res_pre))
+    check_ok, check_not_ok = list(), list()
+    for item in res_pre:
+        if len(item) == 3:
+            check_not_ok.append(item)
+        else:
+            check_ok.append(item)
+
+    return check_ok, check_not_ok
 
 def any_get_all_combs(min_var, max_var,deltas, init_weight = float('inf'), predef_stiffeners = None):
     '''
@@ -834,10 +846,10 @@ def get_initial_weight(obj,lat_press,min_var,max_var,deltas,trials,fat_dict,fat_
     '''
     min_weight = float('inf')
     combs = any_get_all_combs(min_var, max_var, deltas)
-    trial_selection = random_product(combs,repeat=trials)
+    trial_selection = random_product(combs ,repeat=trials)
     for x in trial_selection:
         if any_constraints_all(x=x,obj=obj,lat_press=lat_press,init_weight=min_weight,
-                               fat_dict=fat_dict,fat_press = fat_press):
+                               fat_dict=fat_dict,fat_press = fat_press)[0]:
             current_weight = calc_weight(x)
             if current_weight < min_weight:
                 min_weight = current_weight
@@ -854,7 +866,7 @@ def get_random_result(obj,lat_press,min_var,max_var,deltas,trials=10000,side='p'
     trial_selection = random_product(combs,repeat=trials)
     for x in trial_selection:
         if any_constraints_all(x=x,obj=obj,lat_press=lat_press,init_weight=min_weight,side=side,chk=const_chk,
-                               fat_dict = fat_dict, fat_press = fat_press):
+                               fat_dict = fat_dict, fat_press = fat_press)[0]:
             current_weight = calc_weight(x)
             if current_weight < min_weight:
                 min_weight = current_weight
@@ -880,7 +892,7 @@ def get_random_result_no_bounds(obj,lat_press,min_var,max_var,trials=10000,side=
         fl_thk = random.randrange(int(min_var[5]*1000),int(max_var[5]*1000),1)/1000
         x = (spacing,pl_thk,web_h,web_thk,fl_w,fl_thk,min_var[6],min_var[7])
         if any_constraints_all(x=x,obj=obj,lat_press=lat_press,init_weight=min_weight,side=side,chk=const_chk,
-                               fat_dict = fat_dict, fat_press = fat_press):
+                               fat_dict = fat_dict, fat_press = fat_press)[0]:
             current_weight = calc_weight(x)
             if current_weight < min_weight:
                 min_weight = current_weight
@@ -908,23 +920,23 @@ def product_any(*args, repeat=1,weight=float('inf')):
 
 if __name__ == '__main__':
     import ANYstructure.example_data as ex
-    # obj_dict = ex.obj_dict
-    # fat_obj = ex.get_fatigue_object()
-    # fp = ex.get_fatigue_pressures()
-    # fat_press = ((fp['p_ext']['loaded'],fp['p_ext']['ballast'],fp['p_ext']['part']),
-    #              (fp['p_int']['loaded'],fp['p_int']['ballast'],fp['p_int']['part']))
-    # x0 = [obj_dict['spacing'][0], obj_dict['plate_thk'][0], obj_dict['stf_web_height'][0], obj_dict['stf_web_thk'][0],
-    #       obj_dict['stf_flange_width'][0], obj_dict['stf_flange_thk'][0], obj_dict['span'][0], 10]
-    # obj = calc.Structure(obj_dict)
-    # lat_press = 271.124
-    # calc_object = calc.CalcScantlings(obj_dict)
+    obj_dict = ex.obj_dict
+    fat_obj = ex.get_fatigue_object()
+    fp = ex.get_fatigue_pressures()
+    fat_press = ((fp['p_ext']['loaded'],fp['p_ext']['ballast'],fp['p_ext']['part']),
+                 (fp['p_int']['loaded'],fp['p_int']['ballast'],fp['p_int']['part']))
+    x0 = [obj_dict['spacing'][0], obj_dict['plate_thk'][0], obj_dict['stf_web_height'][0], obj_dict['stf_web_thk'][0],
+          obj_dict['stf_flange_width'][0], obj_dict['stf_flange_thk'][0], obj_dict['span'][0], 10]
+    obj = calc.Structure(obj_dict)
+    lat_press = 271.124
+    calc_object = calc.CalcScantlings(obj_dict)
     lower_bounds = np.array([0.6, 0.01, 0.3, 0.01, 0.1, 0.01, 3.5, 10])
     upper_bounds = np.array([0.8, 0.02, 0.5, 0.02, 0.22, 0.03, 3.5, 10])
-    deltas = np.array([0.05, 0.005, 0.05, 0.005, 0.05, 0.005])
-    #
-    # results = run_optmizataion(obj, upper_bounds, lower_bounds, lat_press, deltas, algorithm='anysmart',
-    #                            fatigue_obj=fat_obj, fat_press_ext_int=fat_press)
-    # print(results[0].get_structure_prop())
+    deltas = np.array([0.025, 0.0025, 0.025, 0.0025, 0.025, 0.0025])
+
+    results = run_optmizataion(obj, lower_bounds,upper_bounds, lat_press, deltas, algorithm='anysmart',
+                               fatigue_obj=fat_obj, fat_press_ext_int=fat_press)
+    print(results[0].get_structure_prop())
 
     # for swarm_size in [100, 1000, 10000, 100000, 1000000]:
     #     t1 = time.time()
@@ -933,15 +945,21 @@ if __name__ == '__main__':
     #     results = run_optmizataion(obj, upper_bounds, lower_bounds, lat_press, deltas, algorithm='anysmart',
     #                            fatigue_obj=fat_obj, fat_press_ext_int=fat_press, pso_options=pso_options)[0]
     #     print('Swarm size', swarm_size, 'running time', time.time()-t1, results.get_one_line_string())
-    fat_press_ext_int = list()
-    for pressure in ex.get_geo_opt_fat_press():
-        fat_press_ext_int.append(((pressure['p_ext']['loaded'], pressure['p_ext']['ballast'],
-                                   pressure['p_ext']['part']),
-                                  (pressure['p_int']['loaded'], pressure['p_int']['ballast'],
-                                   pressure['p_int']['part'])))
-
-    results = run_optmizataion(ex.get_geo_opt_object(), lower_bounds, upper_bounds, ex.get_geo_opt_presure(), deltas,
-                               is_geometric=True, fatigue_obj=ex.get_geo_opt_fatigue(),
-                               fat_press_ext_int=fat_press_ext_int,
-                               slamming_press=ex.get_geo_opt_slamming_none())
-    print(results)
+    # fat_press_ext_int = list()
+    # for pressure in ex.get_geo_opt_fat_press():
+    #     fat_press_ext_int.append(((pressure['p_ext']['loaded'], pressure['p_ext']['ballast'],
+    #                                pressure['p_ext']['part']),
+    #                               (pressure['p_int']['loaded'], pressure['p_int']['ballast'],
+    #                                pressure['p_int']['part'])))
+    #
+    # results = run_optmizataion(ex.get_geo_opt_object(), lower_bounds, upper_bounds, ex.get_geo_opt_presure(), deltas,
+    #                            is_geometric=True, fatigue_obj=ex.get_geo_opt_fatigue(),
+    #                            fat_press_ext_int=fat_press_ext_int,
+    #                            slamming_press=ex.get_geo_opt_slamming_none())
+    # print(results)
+    # import pickle
+    # with open('geo_opt_2.pickle', 'rb') as file:
+    #     geo_results = pickle.load(file)
+    #
+    # for key, value in geo_results.items():
+    #     print(key,value)

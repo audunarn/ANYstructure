@@ -605,7 +605,9 @@ class CreateOptimizeWindow():
                                                slamming_press = self._new_slamming_pressure.get(),
                                                predefined_stiffener_iter=predefined_stiffener_iter,
                                                processes=self._new_processes.get())
+
         if self._opt_results is not None:
+            failed_panels = self._opt_results[4]
             self._opt_actual_running_time.config(text='Actual running time: \n'
                                                      +str(time.time()-t_start)+' sec')
             self._opt_runned = True
