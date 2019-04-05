@@ -45,6 +45,7 @@ class CreateOptGeoWindow():
             self._active_points = []
             self._root_dir = app._root_dir
 
+
         self._opt_structure = {}
         self._opt_frames_obj = []
         self._frame = master
@@ -311,7 +312,7 @@ class CreateOptGeoWindow():
         tk.Checkbutton(self._frame, variable=self._new_check_min_pl_thk).place(x=start_x+dx*12,y=start_y+5*dy)
         tk.Checkbutton(self._frame, variable=self._new_check_shear_area).place(x=start_x+dx*12,y=start_y+6*dy)
         tk.Checkbutton(self._frame, variable=self._new_check_buckling).place(x=start_x+dx*12,y=start_y+7*dy)
-        #tk.Checkbutton(self._frame, variable=self._new_check_fatigue).place(x=start_x + dx * 12, y=start_y + 8 * dy)
+        tk.Checkbutton(self._frame, variable=self._new_check_fatigue).place(x=start_x + dx * 12, y=start_y + 8 * dy)
         #tk.Checkbutton(self._frame, variable=self._new_check_slamming).place(x=start_x + dx * 12, y=start_y + 9 * dy)
         tk.Checkbutton(self._frame, variable=self._new_check_local_buckling).place(x=start_x + dx * 12,
                                                                                    y=start_y + 10 * dy)
@@ -415,31 +416,38 @@ class CreateOptGeoWindow():
 
         contraints = (self._new_check_sec_mod.get(), self._new_check_min_pl_thk.get(),
                       self._new_check_shear_area.get(), self._new_check_buckling.get(),
-                      False, False, self._new_check_local_buckling.get()) # TODO not including fatigue and slamming
+                      self._new_check_fatigue.get(), False, self._new_check_local_buckling.get()) # TODO not including fatigue and slamming
 
         self.pso_parameters = (self._new_swarm_size.get(), self._new_omega.get(), self._new_phip.get(),
                                self._new_phig.get(),self._new_maxiter.get(), self._new_minstep.get(),
                                self._new_minfunc.get())
 
-        init_objects = []
-        lateral_press = []
-        fatigue_objects = []
-        slamming_press = []
-        fat_press_ext_int = []
+        init_objects, fatigue_objects, fat_press_ext_int, slamming_pressures, lateral_press, fatigue_objects, \
+        slamming_press = [list() for dummy in range(7)]
 
         broke = False
-        print('OPT structure is', self._opt_structure)
         for line,coord in self._opt_structure.items():
-            print(self.opt_create_struc_obj(self._opt_structure[line]))
             if self.opt_create_struc_obj(self._opt_structure[line]) is None:
                 broke = True
                 break
             else:
                 init_objects.append(self.opt_create_struc_obj(self._opt_structure[line])[0])
+                fat_obj_single = self.opt_create_struc_obj(self._opt_structure[line])[2]
+                fatigue_objects.append(fat_obj_single)
+                try:
+                    fat_press_single = self.app.get_fatigue_pressures(line, fat_obj_single.get_accelerations())
+                    fat_press_tuple = ((fat_press_single['p_ext']['loaded'], fat_press_single['p_ext']['ballast'],
+                                        fat_press_single['p_ext']['part']),
+                                       (fat_press_single['p_int']['loaded'], fat_press_single['p_int']['ballast'],
+                                        fat_press_single['p_int']['part']))
+                    fat_press_ext_int.append(fat_press_tuple)
+                except AttributeError:
+                    fat_press_ext_int.append(None)
+
             if __name__ == '__main__':
                 import ANYstructure.example_data as ex
                 lateral_press.append(200)  # for testing
-                slamming_press.append(None)
+                slamming_press.append(0)
                 fatigue_objects.append(ex.get_fatigue_object())
                 for pressure in ex.get_geo_opt_fat_press():
                     fat_press_ext_int.append(((pressure['p_ext']['loaded'], pressure['p_ext']['ballast'],
@@ -450,7 +458,9 @@ class CreateOptGeoWindow():
             else:
                 p1, p2 = self._opt_structure[line]
                 closet_line = self.opt_find_closest_orig_line([(p2[0]-p1[0])*0.5, (p2[1]-p1[1])*0.5])
-                lateral_press.append(self.app.get_highest_pressure(closet_line)['normal'] / 1000)
+                gotten_lat_press = self.app.get_highest_pressure(closet_line)
+                lateral_press.append(gotten_lat_press(closet_line)['normal'] / 1000)
+                slamming_press.append(gotten_lat_press(closet_line)['slamming'])
         if broke:
             messagebox.showinfo(title='Selection error.',
                                 message='This field cannot be subdivided or there are no loads. Error.')
