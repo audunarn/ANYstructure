@@ -441,7 +441,12 @@ class CreateOptGeoWindow():
                 lateral_press.append(200)  # for testing
                 slamming_press.append(None)
                 fatigue_objects.append(ex.get_fatigue_object())
-                fat_press_ext_int.append(ex.get_fatigue_pressures())
+                for pressure in ex.get_geo_opt_fat_press():
+                    fat_press_ext_int.append(((pressure['p_ext']['loaded'], pressure['p_ext']['ballast'],
+                                               pressure['p_ext']['part']),
+                                              (pressure['p_int']['loaded'], pressure['p_int']['ballast'],
+                                               pressure['p_int']['part'])))
+
             else:
                 p1, p2 = self._opt_structure[line]
                 closet_line = self.opt_find_closest_orig_line([(p2[0]-p1[0])*0.5, (p2[1]-p1[1])*0.5])

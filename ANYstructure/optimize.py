@@ -149,7 +149,7 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
     :param initial_structure:
     :return:
     '''
-    print(min_var, max_var, deltas)
+
     if predefiened_stiffener_iter is None:
         structure_to_check = any_get_all_combs(min_var, max_var, deltas, init_weight=init_filter)
     else:
@@ -322,7 +322,6 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
             working_fatigue[no_of_fractions] = list(fat_obj)
             working_fatigue_press[no_of_fractions] = list(fat_press)
             working_slamming[no_of_fractions] = list(slamming_press)
-
             similar_count = len(working_objects[no_of_fractions])
             while similar_count != no_of_fractions*2:
                 if similar_count > no_of_fractions*2:
@@ -339,8 +338,8 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                 else:
                     obj_start, obj_stop = copy.deepcopy(working_objects[no_of_fractions][0]),\
                                           copy.deepcopy(working_objects[no_of_fractions][int(len(working_objects)/2)])
-                    fat_obj_start, fat_obj_stop = copy.deepcopy(fat_obj[no_of_fractions][0]), \
-                                                  copy.deepcopy(fat_obj[no_of_fractions][int(len(working_objects)/2)])
+                    fat_obj_start, fat_obj_stop = copy.deepcopy(working_fatigue[no_of_fractions][0]), \
+                                                  copy.deepcopy(working_fatigue[no_of_fractions][int(len(working_objects)/2)])
                     lat_start, lat_stop = working_lateral[no_of_fractions][0], \
                                           working_lateral[no_of_fractions][int(ceil(len(working_objects)/2))]
                     fat_press_start, fat_press_stop = working_fatigue_press[no_of_fractions][0], \
@@ -357,9 +356,8 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                                                  (fat_obj_start, fat_obj_stop), (fat_press_start, fat_press_stop),
                                                  (slam_start, slam_stop)]):
 
-                        work[no_of_fractions].insert(0, work_input[0])
-                        work[no_of_fractions].insert(int(ceil(len(working_objects) / 2)), work_input[1])
-
+                        work.insert(0, work_input[0])
+                        work.insert(int(ceil(len(working_objects) / 2)), work_input[1])
 
                     # working_objects[no_of_fractions].insert(0,obj_start)
                     # working_objects[no_of_fractions].insert(int(ceil(len(working_objects)/2)), obj_stop)
@@ -503,7 +501,6 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
 
     # Fatigue
     if chk[4] and fat_dict is not None:
-        print(fat_press)
         if calc_object[1].get_total_damage(ext_press=fat_press[0], int_press=fat_press[1])*calc_object[1].get_dff() > 1:
             if print_result:
                 print('Fatigue',calc_object[0].get_one_line_string(), False)
@@ -757,7 +754,6 @@ def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight
 
     iter_var = ((item,init_stuc_obj,lat_press,init_filter_weight,side,chk,fat_dict,fat_press,slamming_press)
                 for item in iterable_all)
-
     #res_pre = it.starmap(any_constraints_all, iter_var)
     if processes is None:
         processes = max(cpu_count()-1,1)
@@ -936,8 +932,15 @@ if __name__ == '__main__':
     #     results = run_optmizataion(obj, upper_bounds, lower_bounds, lat_press, deltas, algorithm='anysmart',
     #                            fatigue_obj=fat_obj, fat_press_ext_int=fat_press, pso_options=pso_options)[0]
     #     print('Swarm size', swarm_size, 'running time', time.time()-t1, results.get_one_line_string())
+    fat_press_ext_int = list()
+    for pressure in ex.get_geo_opt_fat_press():
+        fat_press_ext_int.append(((pressure['p_ext']['loaded'], pressure['p_ext']['ballast'],
+                                   pressure['p_ext']['part']),
+                                  (pressure['p_int']['loaded'], pressure['p_int']['ballast'],
+                                   pressure['p_int']['part'])))
 
     results = run_optmizataion(ex.get_geo_opt_object(), lower_bounds, upper_bounds, ex.get_geo_opt_presure(), deltas,
                                is_geometric=True, fatigue_obj=ex.get_geo_opt_fatigue(),
-                               fat_press_ext_int=ex.get_geo_opt_fat_press(),
+                               fat_press_ext_int=fat_press_ext_int,
                                slamming_press=ex.get_geo_opt_slamming_none())
+    print(results)
