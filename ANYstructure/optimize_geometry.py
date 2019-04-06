@@ -435,15 +435,6 @@ class CreateOptGeoWindow():
                 init_objects.append(self.opt_create_struc_obj(self._opt_structure[line])[0])
                 fat_obj_single = self.opt_create_struc_obj(self._opt_structure[line])[2]
                 fatigue_objects.append(fat_obj_single)
-                try:
-                    fat_press_single = self.app.get_fatigue_pressures(line, fat_obj_single.get_accelerations())
-                    fat_press_tuple = ((fat_press_single['p_ext']['loaded'], fat_press_single['p_ext']['ballast'],
-                                        fat_press_single['p_ext']['part']),
-                                       (fat_press_single['p_int']['loaded'], fat_press_single['p_int']['ballast'],
-                                        fat_press_single['p_int']['part']))
-                    fat_press_ext_int.append(fat_press_tuple)
-                except AttributeError:
-                    fat_press_ext_int.append(None)
 
             if __name__ == '__main__':
                 import ANYstructure.example_data as ex
@@ -462,6 +453,15 @@ class CreateOptGeoWindow():
                 gotten_lat_press = self.app.get_highest_pressure(closet_line)
                 lateral_press.append(gotten_lat_press['normal'] / 1000)
                 slamming_press.append(gotten_lat_press['slamming'])
+                try:
+                    fat_press_single = self.app.get_fatigue_pressures(line, fat_obj_single.get_accelerations())
+                    fat_press_tuple = ((fat_press_single['p_ext']['loaded'], fat_press_single['p_ext']['ballast'],
+                                        fat_press_single['p_ext']['part']),
+                                       (fat_press_single['p_int']['loaded'], fat_press_single['p_int']['ballast'],
+                                        fat_press_single['p_int']['part']))
+                    fat_press_ext_int.append(fat_press_tuple)
+                except AttributeError:
+                    fat_press_ext_int.append(None)
         if broke:
             messagebox.showinfo(title='Selection error.',
                                 message='This field cannot be subdivided or there are no loads. Error.')

@@ -59,6 +59,8 @@ def run_optmizataion(initial_structure_obj=None, min_var=None,max_var=None,later
                                                     fat_press=fat_press_ext_int) if algorithm != 'pso' else float('inf')
         else:
             init_filter_weight = float('inf')
+    elif is_geometric:
+        init_filter_weight = float('inf')
 
     if algorithm == 'anysmart' and not is_geometric:
         to_return = any_smart_loop(min_var, max_var, deltas, initial_structure_obj, lateral_pressure,
@@ -168,10 +170,13 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
     ass_var=None
     current_weight = float('inf')
     for item in main_iter:
+        main_fail.append((True, 'Check OK', item))
         item_weight = calc_weight(item)
         if item_weight < current_weight:
             ass_var = item
             current_weight = item_weight
+
+    main_fail = (item for item in main_result[1])
 
     if ass_var == None:
         return None, None, None, None, main_fail
@@ -459,7 +464,6 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
     :return:
     '''
     #calc_object = create_new_calc_obj(obj, x, fat_dict)
-
     if calc_weight(x) > init_weight:
         if print_result:
             pass
@@ -935,7 +939,14 @@ if __name__ == '__main__':
 
     results = run_optmizataion(obj, lower_bounds,upper_bounds, lat_press, deltas, algorithm='anysmart',
                                fatigue_obj=fat_obj, fat_press_ext_int=fat_press)
-    print(results[0].get_structure_prop())
+
+    npres = np.array([item[1] for item in results[-1]])
+    x = np.unique(npres)
+    y = [np.count_nonzero(npres == item) for item in np.unique(npres)]
+    plt.pie(y, labels = x, autopct='%1.1f%%', explode=[0.1 for dummy in range(len(x))])
+    plt.show()
+
+
 
     # for swarm_size in [100, 1000, 10000, 100000, 1000000]:
     #     t1 = time.time()
