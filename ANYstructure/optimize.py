@@ -16,10 +16,10 @@ from math import ceil, floor
 from matplotlib import pyplot as plt
 
 
-def run_optmizataion(initial_structure_obj=None, min_var=None,max_var=None,lateral_pressure=None,
-                     deltas=None,algorithm='anysmart',trials=30000,side='p',
+def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lateral_pressure=None,
+                     deltas=None, algorithm='anysmart', trials=30000, side='p',
                      const_chk = (True,True,True,True,True,True, True),
-                     pso_options = (100,0.5,0.5,0.5,100,1e-8,1e-8),is_geometric=False, fatigue_obj = None ,
+                     pso_options = (100,0.5,0.5,0.5,100,1e-8,1e-8), is_geometric=False, fatigue_obj = None ,
                      fat_press_ext_int = None,
                      min_max_span = (2,6), tot_len = 12, frame_height = 2.5, frame_distance = None,
                      slamming_press = 0, predefined_stiffener_iter = None, processes = None):
@@ -36,31 +36,21 @@ def run_optmizataion(initial_structure_obj=None, min_var=None,max_var=None,later
     :return:
     '''
 
-    # init_filter_weight = get_initial_weight(obj=initial_structure_obj,lat_press=lateral_pressure,min_var=min_var,
-    #                                         max_var=max_var,deltas=deltas,trials=30000,
-    #                                         fat_dict=fatigue_obj.get_fatigue_properties(),
-    #                                         fat_press=fat_press_ext_int) \
-    #     if algorithm != 'pso' else float('inf')
-
     init_filter_weight = float('inf')
-
-    if fatigue_obj == None and not is_geometric:
+    if is_geometric or predefined_stiffener_iter is not None:
+        init_filter_weight = float('inf')
+        fat_dict = None if fatigue_obj is None else fatigue_obj.get_fatigue_properties()
+    elif fatigue_obj is None:
         fat_dict = None
         init_filter_weight = get_initial_weight(obj=initial_structure_obj, lat_press=lateral_pressure, min_var=min_var,
-                                                max_var=max_var, deltas=deltas, trials=30000,
-                                                fat_dict=None, fat_press=None)  \
-            if algorithm != 'pso' else float('inf')
-    elif not is_geometric:
+                                                max_var=max_var, deltas=deltas, trials=trials,
+                                                fat_dict=None, fat_press=None) if algorithm != 'pso' else float('inf')
+    elif fatigue_obj is not None:
         fat_dict = fatigue_obj.get_fatigue_properties()
-        if predefined_stiffener_iter is None:
-            init_filter_weight = get_initial_weight(obj=initial_structure_obj, lat_press=lateral_pressure,
-                                                    min_var=min_var, max_var=max_var, deltas=deltas, trials=30000,
-                                                    fat_dict=fatigue_obj.get_fatigue_properties(),
-                                                    fat_press=fat_press_ext_int) if algorithm != 'pso' else float('inf')
-        else:
-            init_filter_weight = float('inf')
-    elif is_geometric:
-        init_filter_weight = float('inf')
+        init_filter_weight = get_initial_weight(obj=initial_structure_obj, lat_press=lateral_pressure,
+                                                min_var=min_var, max_var=max_var, deltas=deltas, trials=trials,
+                                                fat_dict=fatigue_obj.get_fatigue_properties(),
+                                                fat_press=fat_press_ext_int) if algorithm != 'pso' else float('inf')
 
     if algorithm == 'anysmart' and not is_geometric:
         to_return = any_smart_loop(min_var, max_var, deltas, initial_structure_obj, lateral_pressure,
@@ -89,9 +79,6 @@ def run_optmizataion(initial_structure_obj=None, min_var=None,max_var=None,later
     elif algorithm == 'pso' and not is_geometric:
         return particle_search(min_var,max_var,deltas,initial_structure_obj,lateral_pressure,init_filter_weight,side,
                                const_chk,pso_options,fat_dict,fat_press_ext_int,slamming_press)
-    elif algorithm == 'pygmo_alg' and not is_geometric:
-        return algorithmic_search(min_var,max_var,deltas,initial_structure_obj,lateral_pressure,init_filter_weight,side,
-                                  const_chk,pso_options)
     elif algorithm == 'pso' and is_geometric:
         return geometric_summary_search(min_var,max_var,deltas, initial_structure_obj,lateral_pressure,
                                         init_filter_weight,side,const_chk,pso_options,fatigue_obj,fat_press_ext_int,
@@ -117,6 +104,7 @@ def any_optimize_loop(min_var,max_var,deltas,initial_structure_obj,lateral_press
     plt.draw()
     iter_count = 0
     min_weight = init_filter
+    main_fail = list()
     for spacing in np.arange(min_var[0],max_var[0]+deltas[0],deltas[0]):
         for plate_thk in np.arange(min_var[1],max_var[1]+deltas[1],deltas[1]):
             for stf_web_h in np.arange(min_var[2],max_var[2]+deltas[2],deltas[2]):
@@ -125,22 +113,24 @@ def any_optimize_loop(min_var,max_var,deltas,initial_structure_obj,lateral_press
                         for stf_flange_thk in np.arange(min_var[5],max_var[5]+deltas[5],deltas[5]):
                             var_x = np.array([spacing, plate_thk, stf_web_h, stf_web_thk, stf_flange_width,
                                               stf_flange_thk,min_var[6],min_var[7]])
-                            if any_constraints_all(var_x,initial_structure_obj,lat_press=lateral_pressure,
+                            check = any_constraints_all(var_x,initial_structure_obj,lat_press=lateral_pressure,
                                                    init_weight=min_weight,side=side,chk=const_chk,
                                                    fat_dict = fat_dict, fat_press = fat_press,
-                                                   slamming_press=slamming_press)[0] is not False:
+                                                   slamming_press=slamming_press)
+                            if check[0] is not False:
                                 current_weight = calc_weight(var_x)
-                                if current_weight < min_weight:
+                                if current_weight <= min_weight:
                                     iter_count+=1
                                     min_weight = current_weight
                                     ass_var = var_x
-                                    plot_x.append(iter_count)
-                                    plot_y.append(min_weight)
-    plt.plot(plot_x,plot_y)
-    plt.show()
+                                main_fail.append((True, 'Check OK', var_x))
+                            else:
+                                main_fail.append(check)
+    if ass_var is None:
+        return None, None, None, None, main_fail
     return create_new_structure_obj(initial_structure_obj,[round(item,5) for item in ass_var]),\
            create_new_calc_obj(initial_structure_obj,[round(item,5) for item in ass_var])[0], \
-           fat_dict
+           fat_dict, main_fail
 
 def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure, init_filter = float('inf'),
                    side='p',const_chk=(True,True,True,True,True,True,True), fat_dict = None, fat_press = None,
@@ -160,8 +150,8 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
         structure_to_check = any_get_all_combs(min_var, max_var, deltas, init_weight=init_filter,
                                                predef_stiffeners=structure_to_check)
 
-    main_result = get_filtered_results(structure_to_check, initial_structure_obj,lateral_pressure
-                                       ,init_filter_weight=init_filter, side=side,chk=const_chk, fat_dict=fat_dict,
+    main_result = get_filtered_results(structure_to_check, initial_structure_obj,lateral_pressure,
+                                       init_filter_weight=init_filter, side=side,chk=const_chk, fat_dict=fat_dict,
                                        fat_press=fat_press, slamming_press=slamming_press)
 
     main_iter = main_result[0]
@@ -463,7 +453,7 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
     :param x:
     :return:
     '''
-    #calc_object = create_new_calc_obj(obj, x, fat_dict)
+    calc_object = create_new_calc_obj(obj, x, fat_dict)
     if calc_weight(x) > init_weight:
         if print_result:
             pass
@@ -760,7 +750,7 @@ def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight
     :param chk:
     :return:
     '''
-
+    print('Init filter weigh', init_filter_weight)
     iter_var = ((item,init_stuc_obj,lat_press,init_filter_weight,side,chk,fat_dict,fat_press,slamming_press)
                 for item in iterable_all)
     #res_pre = it.starmap(any_constraints_all, iter_var)
@@ -937,8 +927,18 @@ if __name__ == '__main__':
     upper_bounds = np.array([0.8, 0.02, 0.5, 0.02, 0.22, 0.03, 3.5, 10])
     deltas = np.array([0.025, 0.0025, 0.025, 0.0025, 0.025, 0.0025])
 
-    results = run_optmizataion(obj, lower_bounds,upper_bounds, lat_press, deltas, algorithm='anysmart',
+
+    t1 = time.time()
+
+    results = run_optmizataion(obj, lower_bounds,upper_bounds, lat_press, deltas, algorithm='anydetail',
                                fatigue_obj=fat_obj, fat_press_ext_int=fat_press)
+    print('ANYsmart', time.time()-t1)
+    t1 = time.time()
+
+    # results = run_optmizataion(obj, lower_bounds,upper_bounds, lat_press, deltas, algorithm='anydetail',
+    #                            fatigue_obj=fat_obj, fat_press_ext_int=fat_press)
+    #
+    # print('ANYdetail', time.time() - t1)
 
     npres = np.array([item[1] for item in results[-1]])
     x = np.unique(npres)
