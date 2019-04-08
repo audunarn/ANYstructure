@@ -442,7 +442,10 @@ class CreateOptimizeWindow():
         self.run_button = tk.Button(self._frame,text='RUN OPTIMIZATION!', command=self.run_optimizaion, bg='red',
                                     font='Verdana 10',fg='Yellow')
         self.run_button.place(x=start_x+dx*8, y=start_y+dy*0.5)
-        self._opt_actual_running_time.place(x=start_x+dx*8, y=start_y+dy*1.5)
+        self.run_results = tk.Button(self._frame,text='show calculated', command=self.plot_results, bg='white',
+                                    font='Verdana 10',fg='black')
+        self.run_results.place(x=start_x+dx*8, y=start_y+dy*1.5)
+        self._opt_actual_running_time.place(x=start_x+dx*8, y=start_y+dy*2.5)
 
         self.close_and_save =tk.Button(self._frame,text='Return and replace initial structure with optimized',
                                        command=self.save_and_close,bg='green',font='Verdana 10',fg='yellow')
@@ -460,6 +463,7 @@ class CreateOptimizeWindow():
         self._new_check_fatigue = tk.BooleanVar()
         self._new_check_slamming = tk.BooleanVar()
         self._new_check_local_buckling = tk.BooleanVar()
+        self._new_use_weight_filter = tk.BooleanVar()
         self._new_check_sec_mod.set(True)
         self._new_check_min_pl_thk.set(True)
         self._new_check_shear_area.set(True)
@@ -467,6 +471,9 @@ class CreateOptimizeWindow():
         self._new_check_fatigue.set(True)
         self._new_check_slamming.set(False)
         self._new_check_local_buckling.set(True)
+        self._new_use_weight_filter.set(True)
+
+
         start_y = 140
         tk.Label(self._frame,text='Check for minimum section modulus').place(x=start_x+dx*9.7,y=start_y+4*dy)
         tk.Label(self._frame, text='Check for minimum plate thk.').place(x=start_x+dx*9.7,y=start_y+5*dy)
@@ -475,6 +482,7 @@ class CreateOptimizeWindow():
         tk.Label(self._frame, text='Check for fatigue (RP-C203)').place(x=start_x + dx * 9.7, y=start_y + 8 * dy)
         tk.Label(self._frame, text='Check for bow slamming').place(x=start_x + dx * 9.7, y=start_y + 9 * dy)
         tk.Label(self._frame, text='Check for local stf. buckling').place(x=start_x + dx * 9.7, y=start_y + 10 * dy)
+        tk.Label(self._frame, text='Use weight filter (for speed)').place(x=start_x + dx * 9.7, y=start_y + 11 * dy)
 
         tk.Checkbutton(self._frame,variable=self._new_check_sec_mod).place(x=start_x+dx*12,y=start_y+4*dy)
         tk.Checkbutton(self._frame, variable=self._new_check_min_pl_thk).place(x=start_x+dx*12,y=start_y+5*dy)
@@ -484,6 +492,8 @@ class CreateOptimizeWindow():
         tk.Checkbutton(self._frame, variable=self._new_check_slamming).place(x=start_x + dx * 12, y=start_y + 9 * dy)
         tk.Checkbutton(self._frame, variable=self._new_check_local_buckling).place(x=start_x + dx * 12,
                                                                                    y=start_y + 10 * dy)
+        tk.Checkbutton(self._frame, variable=self._new_use_weight_filter).place(x=start_x + dx * 12,
+                                                                                   y=start_y + 11 * dy)
 
         # tk.Button(self._frame,text='Iterate predefiened stiffeners',command=self.open_multiple_files ,bg='yellow')\
         #     .place(x=start_x, y=start_y - dy * 2)
@@ -604,7 +614,8 @@ class CreateOptimizeWindow():
                                                fat_press_ext_int=fat_press,
                                                slamming_press = self._new_slamming_pressure.get(),
                                                predefined_stiffener_iter=predefined_stiffener_iter,
-                                               processes=self._new_processes.get())
+                                               processes=self._new_processes.get(),
+                                               use_weight_filter = self._new_use_weight_filter.get())
 
         if self._opt_results is not None:
             failed_panels = self._opt_results[4]
@@ -893,6 +904,12 @@ class CreateOptimizeWindow():
         else:
             os.startfile(self._root_dir + '/' + 'sections.csv')
 
+    def show_calculated(self):
+        ''' '''
+
+    def plot_results(self):
+        if len(self._opt_results) != 0:
+            op.plot_optimization_results(self._opt_results)
 
 def receive_progress_info():
     '''
@@ -900,6 +917,10 @@ def receive_progress_info():
     :return:
     '''
     print('hi')
+
+def plot_results(results):
+    if results is not None or None not in results:
+        op.plot_optimization_results(results)
 
 if __name__ == '__main__':
     root = tk.Tk()

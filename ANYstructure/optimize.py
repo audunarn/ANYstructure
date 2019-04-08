@@ -14,6 +14,8 @@ import ANYstructure.example_data as test
 #import psopy
 from math import ceil, floor
 from matplotlib import pyplot as plt
+import numpy as np
+from mpl_toolkits.mplot3d import axes3d
 
 
 def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lateral_pressure=None,
@@ -22,7 +24,7 @@ def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lat
                      pso_options = (100,0.5,0.5,0.5,100,1e-8,1e-8), is_geometric=False, fatigue_obj = None ,
                      fat_press_ext_int = None,
                      min_max_span = (2,6), tot_len = 12, frame_height = 2.5, frame_distance = None,
-                     slamming_press = 0, predefined_stiffener_iter = None, processes = None):
+                     slamming_press = 0, predefined_stiffener_iter = None, processes = None, use_weight_filter = True):
     '''
     The optimazation is initiated here. It is called from optimize_window.
     :param initial_structure_obj:
@@ -35,22 +37,27 @@ def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lat
     :param pso_options:
     :return:
     '''
-
     init_filter_weight = float('inf')
-    if is_geometric or predefined_stiffener_iter is not None:
-        init_filter_weight = float('inf')
+
+    if is_geometric:
+        fat_dict = [None if this_fat is None else this_fat.get_fatigue_properties() for this_fat in fatigue_obj]
+    else:
         fat_dict = None if fatigue_obj is None else fatigue_obj.get_fatigue_properties()
-    elif fatigue_obj is None:
-        fat_dict = None
-        init_filter_weight = get_initial_weight(obj=initial_structure_obj, lat_press=lateral_pressure, min_var=min_var,
-                                                max_var=max_var, deltas=deltas, trials=trials,
-                                                fat_dict=None, fat_press=None) if algorithm != 'pso' else float('inf')
-    elif fatigue_obj is not None:
-        fat_dict = fatigue_obj.get_fatigue_properties()
-        init_filter_weight = get_initial_weight(obj=initial_structure_obj, lat_press=lateral_pressure,
-                                                min_var=min_var, max_var=max_var, deltas=deltas, trials=trials,
-                                                fat_dict=fatigue_obj.get_fatigue_properties(),
-                                                fat_press=fat_press_ext_int) if algorithm != 'pso' else float('inf')
+
+    if use_weight_filter:
+        if is_geometric or algorithm is 'pso':
+            init_filter_weight = float('inf')
+        else:
+            predefined_stiffener_iter = None if predefined_stiffener_iter is None else predefined_stiffener_iter
+
+            init_filter_weight = get_initial_weight(obj=initial_structure_obj,
+                                                    lat_press=lateral_pressure,
+                                                    min_var=min_var, max_var=max_var, deltas=deltas,
+                                                    trials= 30000 if predefined_stiffener_iter is None else
+                                                    len(predefined_stiffener_iter),
+                                                    fat_dict=fat_dict,
+                                                    fat_press=None if fat_press_ext_int is None else fat_press_ext_int,
+                                                    predefined_stiffener_iter = predefined_stiffener_iter)
 
     if algorithm == 'anysmart' and not is_geometric:
         to_return = any_smart_loop(min_var, max_var, deltas, initial_structure_obj, lateral_pressure,
@@ -128,9 +135,13 @@ def any_optimize_loop(min_var,max_var,deltas,initial_structure_obj,lateral_press
                                 main_fail.append(check)
     if ass_var is None:
         return None, None, None, None, main_fail
-    return create_new_structure_obj(initial_structure_obj,[round(item,5) for item in ass_var]),\
-           create_new_calc_obj(initial_structure_obj,[round(item,5) for item in ass_var])[0], \
-           fat_dict, main_fail
+
+    new_struc_obj = create_new_structure_obj(initial_structure_obj,[item for item in ass_var])
+    new_calc_obj = create_new_calc_obj(initial_structure_obj,[item for item in ass_var])[0]
+
+    return new_struc_obj, new_calc_obj, fat_dict, \
+           True if any_constraints_all(ass_var, new_struc_obj, lateral_pressure, min_weight,side,const_chk,fat_dict,
+                                       fat_press,slamming_press)[0] is not False else False, main_fail
 
 def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure, init_filter = float('inf'),
                    side='p',const_chk=(True,True,True,True,True,True,True), fat_dict = None, fat_press = None,
@@ -149,6 +160,8 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
         structure_to_check = [obj.get_tuple() for obj in predefiened_stiffener_iter]
         structure_to_check = any_get_all_combs(min_var, max_var, deltas, init_weight=init_filter,
                                                predef_stiffeners=structure_to_check)
+        init_filter = get_initial_weight(initial_structure_obj, lateral_pressure, min_var, max_var, deltas, 10000,
+                                         fat_dict, fat_press, predefiened_stiffener_iter)
 
     main_result = get_filtered_results(structure_to_check, initial_structure_obj,lateral_pressure,
                                        init_filter_weight=init_filter, side=side,chk=const_chk, fat_dict=fat_dict,
@@ -166,7 +179,7 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
             ass_var = item
             current_weight = item_weight
 
-    main_fail = (item for item in main_result[1])
+    main_fail = (item for item in main_fail)
 
     if ass_var == None:
         return None, None, None, None, main_fail
@@ -453,7 +466,7 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
     :param x:
     :return:
     '''
-    calc_object = create_new_calc_obj(obj, x, fat_dict)
+
     if calc_weight(x) > init_weight:
         if print_result:
             pass
@@ -750,7 +763,7 @@ def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight
     :param chk:
     :return:
     '''
-    print('Init filter weigh', init_filter_weight)
+    #print('Init filter weigh', init_filter_weight)
     iter_var = ((item,init_stuc_obj,lat_press,init_filter_weight,side,chk,fat_dict,fat_press,slamming_press)
                 for item in iterable_all)
     #res_pre = it.starmap(any_constraints_all, iter_var)
@@ -832,14 +845,17 @@ def any_get_all_combs(min_var, max_var,deltas, init_weight = float('inf'), prede
 
     return comb
 
-def get_initial_weight(obj,lat_press,min_var,max_var,deltas,trials,fat_dict,fat_press):
+def get_initial_weight(obj,lat_press,min_var,max_var,deltas,trials,fat_dict,fat_press, predefined_stiffener_iter):
     '''
     Return a guess of the initial weight used to filter the constraints.
     Only aim is to reduce running time of the algorithm.
     '''
     min_weight = float('inf')
-    combs = any_get_all_combs(min_var, max_var, deltas)
-    trial_selection = random_product(combs ,repeat=trials)
+
+    combs = any_get_all_combs(min_var, max_var, deltas) if predefined_stiffener_iter is None \
+        else any_get_all_combs(min_var, max_var, deltas,
+                               predef_stiffeners=[item.get_tuple() for item in predefined_stiffener_iter])
+    trial_selection = random_product(combs, repeat=trials)
     for x in trial_selection:
         if any_constraints_all(x=x,obj=obj,lat_press=lat_press,init_weight=min_weight,
                                fat_dict=fat_dict,fat_press = fat_press)[0]:
@@ -911,6 +927,32 @@ def product_any(*args, repeat=1,weight=float('inf')):
         if calc_weight(prod) < weight:
             yield tuple(prod)
 
+def plot_optimization_results(results):
+    ''' Plotting a distribution of the '''
+
+    check_ok_array, check_array, section_array = list(), list(), list()
+
+    for check_ok, check, section in results[4]:
+        check_ok_array.append(check_ok)
+        check_array.append(check)
+        section_array.append(section)
+    check_ok_array, check_array, section_array = np.array(check_ok_array), \
+                                                 np.array(check_array), \
+                                                 np.array(section_array)
+
+    x_label = np.unique(check_array)
+    y = [np.count_nonzero(check_array == item) for item in np.unique(check_array)]
+
+    fig, axs = plt.subplots(2, 1)
+    clust_data = np.append(np.array(x_label).reshape(len(x_label), 1), np.array(y).reshape(len(y), 1), axis=1)
+    collabel = ('Check fail type or OK', 'Number of occurences')
+    axs[0].axis('tight')
+    axs[0].axis('off')
+    the_table = axs[0].table(cellText=clust_data, colLabels=collabel, loc='center')
+    axs[1].pie(y, labels=x_label, autopct='%1.1f%%', explode=[0.1 for dummy in range(len(x_label))])
+
+    plt.show()
+
 if __name__ == '__main__':
     import ANYstructure.example_data as ex
     obj_dict = ex.obj_dict
@@ -920,6 +962,7 @@ if __name__ == '__main__':
                  (fp['p_int']['loaded'],fp['p_int']['ballast'],fp['p_int']['part']))
     x0 = [obj_dict['spacing'][0], obj_dict['plate_thk'][0], obj_dict['stf_web_height'][0], obj_dict['stf_web_thk'][0],
           obj_dict['stf_flange_width'][0], obj_dict['stf_flange_thk'][0], obj_dict['span'][0], 10]
+
     obj = calc.Structure(obj_dict)
     lat_press = 271.124
     calc_object = calc.CalcScantlings(obj_dict)
@@ -930,21 +973,63 @@ if __name__ == '__main__':
 
     t1 = time.time()
 
-    results = run_optmizataion(obj, lower_bounds,upper_bounds, lat_press, deltas, algorithm='anydetail',
-                               fatigue_obj=fat_obj, fat_press_ext_int=fat_press)
-    print('ANYsmart', time.time()-t1)
+    results = run_optmizataion(obj, lower_bounds,upper_bounds, lat_press, deltas, algorithm='anysmart',
+                               fatigue_obj=fat_obj, fat_press_ext_int=fat_press, use_weight_filter=False)
+
     t1 = time.time()
+    check_ok_array, check_array, section_array = list(), list(), list()
 
-    # results = run_optmizataion(obj, lower_bounds,upper_bounds, lat_press, deltas, algorithm='anydetail',
-    #                            fatigue_obj=fat_obj, fat_press_ext_int=fat_press)
-    #
-    # print('ANYdetail', time.time() - t1)
+    for check_ok, check, section in results[4]:
+        check_ok_array.append(check_ok)
+        check_array.append(check)
+        section_array.append(section)
+    check_ok_array, check_array, section_array = np.array(check_ok_array),\
+                                                 np.array(check_array),\
+                                                 np.array(section_array)
 
-    npres = np.array([item[1] for item in results[-1]])
-    x = np.unique(npres)
-    y = [np.count_nonzero(npres == item) for item in np.unique(npres)]
-    plt.pie(y, labels = x, autopct='%1.1f%%', explode=[0.1 for dummy in range(len(x))])
+    x_label = np.unique(check_array)
+    y = [np.count_nonzero(check_array == item) for item in np.unique(check_array)]
+
+    fig, axs = plt.subplots(2, 1)
+    clust_data = np.append(np.array(x_label).reshape(len(x_label),1), np.array(y).reshape(len(y),1), axis=1)
+    collabel = ('Check fail type or OK', 'Number of occurences')
+    axs[0].axis('tight')
+    axs[0].axis('off')
+    the_table = axs[0].table(cellText=clust_data, colLabels=collabel, loc='center')
+    axs[1].pie(y, labels = x_label, autopct='%1.1f%%', explode=[0.1 for dummy in range(len(x_label))])
     plt.show()
+    #
+    # cmap = plt.cm.get_cmap(plt.cm.viridis, len(x_label))
+    #
+    #
+    # # Create data
+    # N = 60
+    # x = section_array[:,0] * section_array[:,1]
+    # y = section_array[:,2] * section_array[:,3]
+    # z = section_array[:,4] * section_array[:,5]
+    #
+    # #data = (g1, g2, g3)
+    #
+    # groups = np.unique(npres)
+    # colors = "bgrcmykw"#[plt.cm.get_cmap(plt.cm.viridis, len(x_label))(idx) for idx in range(len(x_label))]
+    #
+    # color_dict = dict()
+    # for idx, group in enumerate(groups):
+    #     color_dict[group] = colors[idx]
+    #
+    # # Create plot
+    # fig = plt.figure()
+    # #ax = fig.add_subplot(1, 1, 1)
+    # ax = fig.gca(projection='3d')
+    #
+    # for xdata, ydata, zdata, group in zip(x, y, z, groups):
+    #
+    #     ax.scatter(x, y, z, alpha= 0.6 if group != 'Weight filter' else 0.2,
+    #                c=color_dict[group], edgecolors='none', s=5, label=group)
+    #
+    # plt.title('Matplot 3d scatter plot')
+    # plt.legend(loc=2)
+    # plt.show()
 
 
 
