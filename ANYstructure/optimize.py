@@ -17,7 +17,6 @@ from matplotlib import pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d import axes3d
 
-
 def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lateral_pressure=None,
                      deltas=None, algorithm='anysmart', trials=30000, side='p',
                      const_chk = (True,True,True,True,True,True, True),
@@ -179,7 +178,7 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
             ass_var = item
             current_weight = item_weight
 
-    main_fail = (item for item in main_fail)
+    #main_fail = (item for item in main_fail)
 
     if ass_var == None:
         return None, None, None, None, main_fail
@@ -953,6 +952,8 @@ def plot_optimization_results(results):
 
     plt.show()
 
+
+
 if __name__ == '__main__':
     import ANYstructure.example_data as ex
     obj_dict = ex.obj_dict
@@ -988,48 +989,47 @@ if __name__ == '__main__':
                                                  np.array(section_array)
 
     x_label = np.unique(check_array)
-    y = [np.count_nonzero(check_array == item) for item in np.unique(check_array)]
-
-    fig, axs = plt.subplots(2, 1)
-    clust_data = np.append(np.array(x_label).reshape(len(x_label),1), np.array(y).reshape(len(y),1), axis=1)
-    collabel = ('Check fail type or OK', 'Number of occurences')
-    axs[0].axis('tight')
-    axs[0].axis('off')
-    the_table = axs[0].table(cellText=clust_data, colLabels=collabel, loc='center')
-    axs[1].pie(y, labels = x_label, autopct='%1.1f%%', explode=[0.1 for dummy in range(len(x_label))])
-    plt.show()
+    # y = [np.count_nonzero(check_array == item) for item in np.unique(check_array)]
+    #
+    # fig, axs = plt.subplots(2, 1)
+    # clust_data = np.append(np.array(x_label).reshape(len(x_label),1), np.array(y).reshape(len(y),1), axis=1)
+    # collabel = ('Check fail type or OK', 'Number of occurences')
+    # axs[0].axis('tight')
+    # axs[0].axis('off')
+    # the_table = axs[0].table(cellText=clust_data, colLabels=collabel, loc='center')
+    # axs[1].pie(y, labels = x_label, autopct='%1.1f%%', explode=[0.1 for dummy in range(len(x_label))])
+    # plt.show()
     #
     # cmap = plt.cm.get_cmap(plt.cm.viridis, len(x_label))
     #
-    #
-    # # Create data
-    # N = 60
-    # x = section_array[:,0] * section_array[:,1]
-    # y = section_array[:,2] * section_array[:,3]
-    # z = section_array[:,4] * section_array[:,5]
-    #
-    # #data = (g1, g2, g3)
-    #
-    # groups = np.unique(npres)
-    # colors = "bgrcmykw"#[plt.cm.get_cmap(plt.cm.viridis, len(x_label))(idx) for idx in range(len(x_label))]
-    #
-    # color_dict = dict()
-    # for idx, group in enumerate(groups):
-    #     color_dict[group] = colors[idx]
-    #
-    # # Create plot
-    # fig = plt.figure()
-    # #ax = fig.add_subplot(1, 1, 1)
-    # ax = fig.gca(projection='3d')
-    #
-    # for xdata, ydata, zdata, group in zip(x, y, z, groups):
-    #
-    #     ax.scatter(x, y, z, alpha= 0.6 if group != 'Weight filter' else 0.2,
-    #                c=color_dict[group], edgecolors='none', s=5, label=group)
-    #
-    # plt.title('Matplot 3d scatter plot')
-    # plt.legend(loc=2)
-    # plt.show()
+
+    # Create data
+    N = 60
+    x = section_array[:,0] * section_array[:,1]
+    y = section_array[:,2] * section_array[:,3]
+    z = section_array[:,4] * section_array[:,5]
+
+    #data = (g1, g2, g3)
+
+    groups = x_label
+    colors = "bgrcmykw"
+    color_dict = dict()
+    for idx, group in enumerate(groups):
+        color_dict[group] = colors[idx]
+
+    # Create plot
+    fig = plt.figure()
+    #ax = fig.add_subplot(1, 1, 1)
+    ax = fig.gca(projection='3d')
+
+    for xdata, ydata, zdata, group in zip(x, y, z, groups):
+        if group == 'Check OK':
+            ax.scatter(x, y, z, alpha= 0.6 if group != 'Weight filter' else 0.2,
+                       c=color_dict[group], edgecolors='none', s=5, label=group)
+
+    plt.title('Matplot 3d scatter plot')
+    plt.legend(loc=2)
+    plt.show()
 
 
 
