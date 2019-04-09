@@ -698,7 +698,7 @@ class CreateOptimizeWindow():
         except ZeroDivisionError:
             pass# _tkinter.TclError: pass
     
-    def get_upper_bounds(self):
+    def get_up00per_bounds(self):
         '''
         Return an numpy array of upper bounds.
         :return: 

@@ -17,13 +17,15 @@ from matplotlib import pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d import axes3d
 
+
 def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lateral_pressure=None,
                      deltas=None, algorithm='anysmart', trials=30000, side='p',
                      const_chk = (True,True,True,True,True,True, True),
                      pso_options = (100,0.5,0.5,0.5,100,1e-8,1e-8), is_geometric=False, fatigue_obj = None ,
                      fat_press_ext_int = None,
                      min_max_span = (2,6), tot_len = 12, frame_height = 2.5, frame_distance = None,
-                     slamming_press = 0, predefined_stiffener_iter = None, processes = None, use_weight_filter = True):
+                     slamming_press = 0, predefined_stiffener_iter = None, processes = None, use_weight_filter = True,
+                     load_pre = False):
     '''
     The optimazation is initiated here. It is called from optimize_window.
     :param initial_structure_obj:
@@ -71,7 +73,7 @@ def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lat
                                         fat_obj=  fatigue_obj, fat_press= fat_press_ext_int, min_max_span= min_max_span,
                                         tot_len= tot_len, frame_distance = frame_distance,
                                         algorithm= 'anysmart', predefiened_stiffener_iter=predefined_stiffener_iter,
-                                        slamming_press = slamming_press)
+                                        slamming_press = slamming_press, load_pre = load_pre)
     elif algorithm == 'anydetail' and not is_geometric:
         return any_optimize_loop(min_var, max_var, deltas, initial_structure_obj, lateral_pressure,init_filter_weight,
                                  side=side, const_chk=const_chk, fat_dict=fat_dict, fat_press=fat_press_ext_int,
@@ -293,7 +295,7 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                              pso_options=(100,0.5,0.5,0.5,100,1e-8,1e-8), fat_obj = None, fat_press = None,
                              min_max_span = (2,6), tot_len = 12, frame_distance = None,
                              algorithm = 'anysmart', predefiened_stiffener_iter=None, reiterate = True,
-                             processes = None, slamming_press = None):
+                             processes = None, slamming_press = None, load_pre = False):
 
     '''Geometric optimization of all relevant sections. '''
     # Checking the number of initial objects and adding if number of fraction is to be changed.
@@ -401,16 +403,19 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                                                         pso_options=pso_options, fat_obj = fat_obj,
                                                         fat_press = fat_press)
             elif algorithm is 'anysmart':
-
-                opt_objects = any_smart_loop_geometric(min_var=min_var,max_var=max_var,deltas=deltas,
-                                                       initial_structure_obj=working_objects[no_of_fractions],
-                                                       lateral_pressure=working_lateral[no_of_fractions],
-                                                       init_filter = init_filter,side=side,const_chk=const_chk,
-                                                       fat_obj = working_fatigue[no_of_fractions],
-                                                       slamming_press = working_slamming[no_of_fractions],
-                                                       fat_press=working_fatigue_press[no_of_fractions],
-                                                       predefiened_stiffener_iter = predefiened_stiffener_iter)
-
+                if load_pre:
+                    import pickle
+                    with open('geo_opt_2.pickle', 'rb') as file:
+                        opt_objects = pickle.load(file)[no_of_fractions][1]
+                else:
+                    opt_objects = any_smart_loop_geometric(min_var=min_var,max_var=max_var,deltas=deltas,
+                                                           initial_structure_obj=working_objects[no_of_fractions],
+                                                           lateral_pressure=working_lateral[no_of_fractions],
+                                                           init_filter = init_filter,side=side,const_chk=const_chk,
+                                                           fat_obj = working_fatigue[no_of_fractions],
+                                                           slamming_press = working_slamming[no_of_fractions],
+                                                           fat_press=working_fatigue_press[no_of_fractions],
+                                                           predefiened_stiffener_iter = predefiened_stiffener_iter)
                 # TODO fatigue and slamming implemetation
 
             # Finding weight of this solution.
@@ -424,6 +429,7 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                                                obj.get_fl_w(),obj.get_fl_thk(),obj.get_span(),width), prt=False)
                     if frame_spacings[count // 2] is None:
                         frame_spacings[count // 2] = obj.get_s()
+
                 else:
                     # In this case there are no applicable solutions found in the specified dimension ranges.
                     tot_weight += float('inf')
@@ -435,7 +441,7 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                                                                       (frame_distance['stop_dist']-
                                                                        frame_distance['start_dist']) * \
                                                                       ((frame+1)/no_of_fractions)
-                    pl_area, stf_area = 0.018 * width, 0.25 * 0.015 * (10//frame_spacings[frame])
+                    pl_area, stf_area = 0.018 * width, 0.25 * 0.015 * (width//frame_spacings[frame])
                     tot_weight += (pl_area + stf_area) * frame_height * 7850
                     solution_found = True
             elif iterations == 2:
@@ -952,8 +958,6 @@ def plot_optimization_results(results):
 
     plt.show()
 
-
-
 if __name__ == '__main__':
     import ANYstructure.example_data as ex
     obj_dict = ex.obj_dict
@@ -1040,17 +1044,17 @@ if __name__ == '__main__':
     #     results = run_optmizataion(obj, upper_bounds, lower_bounds, lat_press, deltas, algorithm='anysmart',
     #                            fatigue_obj=fat_obj, fat_press_ext_int=fat_press, pso_options=pso_options)[0]
     #     print('Swarm size', swarm_size, 'running time', time.time()-t1, results.get_one_line_string())
-    # fat_press_ext_int = list()
-    # for pressure in ex.get_geo_opt_fat_press():
-    #     fat_press_ext_int.append(((pressure['p_ext']['loaded'], pressure['p_ext']['ballast'],
-    #                                pressure['p_ext']['part']),
-    #                               (pressure['p_int']['loaded'], pressure['p_int']['ballast'],
-    #                                pressure['p_int']['part'])))
-    #
-    # results = run_optmizataion(ex.get_geo_opt_object(), lower_bounds, upper_bounds, ex.get_geo_opt_presure(), deltas,
-    #                            is_geometric=True, fatigue_obj=ex.get_geo_opt_fatigue(),
-    #                            fat_press_ext_int=fat_press_ext_int,
-    #                            slamming_press=ex.get_geo_opt_slamming_none())
+    fat_press_ext_int = list()
+    for pressure in ex.get_geo_opt_fat_press():
+        fat_press_ext_int.append(((pressure['p_ext']['loaded'], pressure['p_ext']['ballast'],
+                                   pressure['p_ext']['part']),
+                                  (pressure['p_int']['loaded'], pressure['p_int']['ballast'],
+                                   pressure['p_int']['part'])))
+
+    results = run_optmizataion(ex.get_geo_opt_object(), lower_bounds, upper_bounds, ex.get_geo_opt_presure(), deltas,
+                               is_geometric=True, fatigue_obj=ex.get_geo_opt_fatigue(),
+                               fat_press_ext_int=fat_press_ext_int,
+                               slamming_press=ex.get_geo_opt_slamming_none(), load_pre=True)
     # print(results)
     import pickle
     with open('geo_opt_2.pickle', 'rb') as file:
