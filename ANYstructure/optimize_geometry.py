@@ -488,10 +488,10 @@ class CreateOptGeoWindow():
 
             self._geo_results = geo_results
 
-            #SAVING RESULTS
-            if save_results:
-                with open('geo_opt_2.pickle', 'wb') as file:
-                    pickle.dump(geo_results, file)
+            # #SAVING RESULTS
+            # if save_results:
+            #     with open('geo_opt_2.pickle', 'wb') as file:
+            #         pickle.dump(geo_results, file)
         else:
             with open('geo_opt_2.pickle', 'rb') as file:
                 self._geo_results = pickle.load(file)
@@ -969,7 +969,7 @@ class CreateOptGeoWindow():
             self._canvas_select.create_text([20, 20], text='Results are presented here', font='Verdana 12 bold',
                                             fill='red', anchor = 'w')
             text_type = 'Verdana 10'
-            delta, start_x, y_loc = 20, 20, 40
+            delta, start_x, y_loc = 20, 10, 40
 
             if save_file is not None:
                 save_file.write('\n' + 'Stiffener properties:')
@@ -980,42 +980,43 @@ class CreateOptGeoWindow():
                 #     y_loc = 40
 
                 y_loc = y_loc + delta
-                check_ok = [val[-1] is True for val in opt_results[key][1]]
+
+                check_ok = [val[3] is True for val in opt_results[key][1]]
+
                 if save_file is not None:
                     save_file.write('\n' + str(len(check_ok))+'\n')
                 self._canvas_select.create_text([start_x + delta, y_loc],
-                                                text=str(len(check_ok))+' panels with weight '+ str(round(values[0],1))+
-                                                     '. Check may not be OK.',
+                                                text=str(len(check_ok))+' panels with weight '+ str(round(values[0],1)),
                                                 anchor='w', font=text_type)
                 y_loc += delta
                 item_count, endstring = 0, ''
-                for data in values[1]:
+
+                for data_idx, data in enumerate(values[1]):
                     for idx, stuc_info in enumerate(data):
                         if type(stuc_info) == ANYstructure.calc_structure.Structure:
                             if y_loc > 700:
                                 y_loc = 120
                                 start_x = 500
                             if item_count == 0:
-                                endstring = 'START 1'
+                                endstring = ' START 1'+' OK!\n' if values[1][data_idx][3] else ' START 1'+' NOT OK!\n'
                             elif item_count > 0 and item_count < len(values[1]) / 2-1 and len(values[1]) != 4:
-                                endstring = '-------'
+                                endstring = ' -------'+' OK!\n' if values[1][data_idx][3] else ' -------'+' NOT OK!\n'
                             elif item_count == len(values[1])/2-1:
-                                endstring = '-END 1-'
+                                endstring = ' -END 1-'+' OK!\n' if values[1][data_idx][3] else ' -END 1-'+' NOT OK!\n'
                             elif item_count == len(values[1])/2:
-                                endstring = 'START 2'
+                                endstring = ' START 2'+' OK!\n' if values[1][data_idx][3] else ' START 2'+' NOT OK!\n'
                             elif item_count > len(values[1])/2 and item_count < len(values[1])-1:
-                                endstring = '-------'
+                                endstring = ' -------'+' OK!\n' if values[1][data_idx][3] else ' -------'+' NOT OK!\n'
                             elif item_count == len(values[1])-1:
-                                endstring = '-END 2-'
+                                endstring = ' -END 2-'+' OK!\n' if values[1][data_idx][3] else ' -END 2-'+' NOT OK!\n'
                             self._canvas_select.create_text([start_x + delta, y_loc],
-                                                            text=stuc_info.get_one_line_string()+ ' for '+endstring,
+                                                            text=stuc_info.get_one_line_string()+endstring,
                                                             anchor='w', font=text_type)
                             y_loc += 15
+
                             if save_file is not None:
                                 save_file.write(stuc_info.get_one_line_string()+' | '+
-                                                stuc_info.get_report_stresses()+ ' for '+
-                                                endstring + ' | Panel check: '+'OK!\n' if values[1][idx][-1]
-                                                else 'NOT OK! \n')
+                                                stuc_info.get_report_stresses()+ endstring)
                             item_count += 1
             if save_file is not None:
                 save_file.write('\n -------------  END  ---------------')
@@ -1060,7 +1061,7 @@ class CreateOptGeoWindow():
 
         for key, value in self._geo_results.items():
             y_loc = y_loc + delta
-            check_ok = [val[-1] is True for val in self._geo_results[key][1]]
+            check_ok = [val[3] is True for val in self._geo_results[key][1]]
 
             self._canvas_opt.create_text([start_x + 20, y_loc ], text=str(len(check_ok)),
                                          anchor='w', font=text_type)

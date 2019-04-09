@@ -974,21 +974,21 @@ if __name__ == '__main__':
 
     t1 = time.time()
 
-    results = run_optmizataion(obj, lower_bounds,upper_bounds, lat_press, deltas, algorithm='anysmart',
-                               fatigue_obj=fat_obj, fat_press_ext_int=fat_press, use_weight_filter=False)
-
-    t1 = time.time()
-    check_ok_array, check_array, section_array = list(), list(), list()
-
-    for check_ok, check, section in results[4]:
-        check_ok_array.append(check_ok)
-        check_array.append(check)
-        section_array.append(section)
-    check_ok_array, check_array, section_array = np.array(check_ok_array),\
-                                                 np.array(check_array),\
-                                                 np.array(section_array)
-
-    x_label = np.unique(check_array)
+    # results = run_optmizataion(obj, lower_bounds,upper_bounds, lat_press, deltas, algorithm='anysmart',
+    #                            fatigue_obj=fat_obj, fat_press_ext_int=fat_press, use_weight_filter=False)
+    #
+    # t1 = time.time()
+    # check_ok_array, check_array, section_array = list(), list(), list()
+    #
+    # for check_ok, check, section in results[4]:
+    #     check_ok_array.append(check_ok)
+    #     check_array.append(check)
+    #     section_array.append(section)
+    # check_ok_array, check_array, section_array = np.array(check_ok_array),\
+    #                                              np.array(check_array),\
+    #                                              np.array(section_array)
+    #
+    # x_label = np.unique(check_array)
     # y = [np.count_nonzero(check_array == item) for item in np.unique(check_array)]
     #
     # fig, axs = plt.subplots(2, 1)
@@ -1004,32 +1004,32 @@ if __name__ == '__main__':
     #
 
     # Create data
-    N = 60
-    x = section_array[:,0] * section_array[:,1]
-    y = section_array[:,2] * section_array[:,3]
-    z = section_array[:,4] * section_array[:,5]
-
-    #data = (g1, g2, g3)
-
-    groups = x_label
-    colors = "bgrcmykw"
-    color_dict = dict()
-    for idx, group in enumerate(groups):
-        color_dict[group] = colors[idx]
-
-    # Create plot
-    fig = plt.figure()
-    #ax = fig.add_subplot(1, 1, 1)
-    ax = fig.gca(projection='3d')
-
-    for xdata, ydata, zdata, group in zip(x, y, z, groups):
-        if group == 'Check OK':
-            ax.scatter(x, y, z, alpha= 0.6 if group != 'Weight filter' else 0.2,
-                       c=color_dict[group], edgecolors='none', s=5, label=group)
-
-    plt.title('Matplot 3d scatter plot')
-    plt.legend(loc=2)
-    plt.show()
+    # N = 60
+    # x = section_array[:,0] * section_array[:,1]
+    # y = section_array[:,2] * section_array[:,3]
+    # z = section_array[:,4] * section_array[:,5]
+    #
+    # #data = (g1, g2, g3)
+    #
+    # groups = x_label
+    # colors = "bgrcmykw"
+    # color_dict = dict()
+    # for idx, group in enumerate(groups):
+    #     color_dict[group] = colors[idx]
+    #
+    # # Create plot
+    # fig = plt.figure()
+    # #ax = fig.add_subplot(1, 1, 1)
+    # ax = fig.gca(projection='3d')
+    #
+    # for xdata, ydata, zdata, group in zip(x, y, z, groups):
+    #     if group == 'Check OK':
+    #         ax.scatter(x, y, z, alpha= 0.6 if group != 'Weight filter' else 0.2,
+    #                    c=color_dict[group], edgecolors='none', s=5, label=group)
+    #
+    # plt.title('Matplot 3d scatter plot')
+    # plt.legend(loc=2)
+    # plt.show()
 
 
 
@@ -1052,9 +1052,9 @@ if __name__ == '__main__':
     #                            fat_press_ext_int=fat_press_ext_int,
     #                            slamming_press=ex.get_geo_opt_slamming_none())
     # print(results)
-    # import pickle
-    # with open('geo_opt_2.pickle', 'rb') as file:
-    #     geo_results = pickle.load(file)
-    #
-    # for key, value in geo_results.items():
-    #     print(key,value)
+    import pickle
+    with open('geo_opt_2.pickle', 'rb') as file:
+        geo_results = pickle.load(file)
+
+    print(type(geo_results[5][1][0][0]), type(geo_results[3][1][0][1]), geo_results[3][1][0][2], geo_results[3][1][0][3], type(geo_results[3][1][0][4]))
+
