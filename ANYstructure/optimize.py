@@ -135,14 +135,12 @@ def any_optimize_loop(min_var,max_var,deltas,initial_structure_obj,lateral_press
                             else:
                                 main_fail.append(check)
     if ass_var is None:
-        return None, None, None, None, main_fail
+        return None, None, None, False, main_fail
 
     new_struc_obj = create_new_structure_obj(initial_structure_obj,[item for item in ass_var])
     new_calc_obj = create_new_calc_obj(initial_structure_obj,[item for item in ass_var])[0]
 
-    return new_struc_obj, new_calc_obj, fat_dict, \
-           True if any_constraints_all(ass_var, new_struc_obj, lateral_pressure, min_weight,side,const_chk,fat_dict,
-                                       fat_press,slamming_press)[0] is not False else False, main_fail
+    return new_struc_obj, new_calc_obj, fat_dict, True, main_fail
 
 def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure, init_filter = float('inf'),
                    side='p',const_chk=(True,True,True,True,True,True,True), fat_dict = None, fat_press = None,
@@ -183,14 +181,12 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
     #main_fail = (item for item in main_fail)
 
     if ass_var == None:
-        return None, None, None, None, main_fail
+        return None, None, None, False, main_fail
 
     new_struc_obj = create_new_structure_obj(initial_structure_obj,[item for item in ass_var])
     new_calc_obj = create_new_calc_obj(initial_structure_obj,[item for item in ass_var])[0]
 
-    return new_struc_obj, new_calc_obj, fat_dict, \
-           True if any_constraints_all(ass_var, new_struc_obj, lateral_pressure, current_weight,side,const_chk,fat_dict,
-                                       fat_press,slamming_press)[0] is not False else False, main_fail
+    return new_struc_obj, new_calc_obj, fat_dict, True, main_fail
 
 def any_smart_loop_geometric(min_var,max_var,deltas,initial_structure_obj,lateral_pressure, init_filter = float('inf'),
                              side='p',const_chk=(True,True,True,True,True,True), fat_obj = None, fat_press = None,
@@ -217,11 +213,13 @@ def any_smart_loop_geometric(min_var,max_var,deltas,initial_structure_obj,latera
                                                this_predefiened_stiffener_iter]
         else:
             this_predefiened_stiffener_iter = None
+
         opt_obj = any_smart_loop(min_var = min_var,max_var = max_var,deltas = deltas,initial_structure_obj = struc_obj,
                                  lateral_pressure = lat_press, init_filter = init_filter, side=side,
                                  const_chk=const_chk,
                                  fat_dict = None if fatigue_obj is None else fatigue_obj.get_fatigue_properties(),
-                                 fat_press = fatigue_press, slamming_press = 0 if slam_press is None else slam_press,
+                                 fat_press = None if fatigue_press is None else fatigue_press,
+                                 slamming_press = 0 if slam_press is None else slam_press,
                                  predefiened_stiffener_iter=this_predefiened_stiffener_iter)
         # TODO-any set check if not solution acceptable.
         all_obj.append(opt_obj)
@@ -424,6 +422,7 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
 
             for count, opt in enumerate(opt_objects):
                 obj = opt[0]
+                print('OPT 3 is', type(opt[3]))
                 if opt[3]:
                     tot_weight += calc_weight((obj.get_s(),obj.get_pl_thk(),obj.get_web_h(),obj.get_web_thk(),
                                                obj.get_fl_w(),obj.get_fl_thk(),obj.get_span(),width), prt=False)
@@ -932,10 +931,10 @@ def product_any(*args, repeat=1,weight=float('inf')):
         if calc_weight(prod) < weight:
             yield tuple(prod)
 
-def plot_optimization_results(results):
-    ''' Plotting a distribution of the '''
+def plot_optimization_results(results, multiple = False):
 
     check_ok_array, check_array, section_array = list(), list(), list()
+
 
     for check_ok, check, section in results[4]:
         check_ok_array.append(check_ok)
@@ -1055,10 +1054,14 @@ if __name__ == '__main__':
                                is_geometric=True, fatigue_obj=ex.get_geo_opt_fatigue(),
                                fat_press_ext_int=fat_press_ext_int,
                                slamming_press=ex.get_geo_opt_slamming_none(), load_pre=True)
-    # print(results)
-    import pickle
-    with open('geo_opt_2.pickle', 'rb') as file:
-        geo_results = pickle.load(file)
 
-    print(type(geo_results[5][1][0][0]), type(geo_results[3][1][0][1]), geo_results[3][1][0][2], geo_results[3][1][0][3], type(geo_results[3][1][0][4]))
+    # import pickle
+    # with open('geo_opt_2.pickle', 'rb') as file:
+    #     geo_results = pickle.load(file)
+    # for val in range(6):
+    #     plot_optimization_results(geo_results[3][1][val])
+
+
+
+
 
