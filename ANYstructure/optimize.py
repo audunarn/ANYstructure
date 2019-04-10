@@ -154,15 +154,20 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
     :return:
     '''
 
-    if predefiened_stiffener_iter is None:
-        structure_to_check = any_get_all_combs(min_var, max_var, deltas, init_weight=init_filter)
-    else:
-        structure_to_check = [obj.get_tuple() for obj in predefiened_stiffener_iter]
-        structure_to_check = any_get_all_combs(min_var, max_var, deltas, init_weight=init_filter,
-                                               predef_stiffeners=structure_to_check)
-        init_filter = get_initial_weight(initial_structure_obj, lateral_pressure, min_var, max_var, deltas, 10000,
-                                         fat_dict, fat_press, predefiened_stiffener_iter)
+    # if predefiened_stiffener_iter is None:
+    #     structure_to_check = any_get_all_combs(min_var, max_var, deltas, init_weight=init_filter)
+    # else:
+    #     #structure_to_check = [obj.get_tuple() for obj in predefiened_stiffener_iter]
+    #     structure_to_check = any_get_all_combs(min_var, max_var, deltas, init_weight=init_filter,
+    #                                            predef_stiffeners=predefiened_stiffener_iter)
+    #     init_filter = get_initial_weight(initial_structure_obj, lateral_pressure, min_var, max_var, deltas, 10000,
+    #                                      fat_dict, fat_press, predefiened_stiffener_iter)
 
+    if predefiened_stiffener_iter is None:
+        structure_to_check= any_get_all_combs(min_var, max_var, deltas)
+    else:
+        structure_to_check = any_get_all_combs(min_var, max_var, deltas,predef_stiffeners=[item.get_tuple() for item
+                                                                                           in predefiened_stiffener_iter])
 
     main_result = get_filtered_results(structure_to_check, initial_structure_obj,lateral_pressure,
                                        init_filter_weight=init_filter, side=side,chk=const_chk, fat_dict=fat_dict,
@@ -871,12 +876,14 @@ def get_initial_weight(obj,lat_press,min_var,max_var,deltas,trials,fat_dict,fat_
     Only aim is to reduce running time of the algorithm.
     '''
     min_weight = float('inf')
-
-    combs = any_get_all_combs(min_var, max_var, deltas) if predefined_stiffener_iter is None \
-        else any_get_all_combs(min_var, max_var, deltas,
-                               predef_stiffeners=[item.get_tuple() for item in predefined_stiffener_iter])
+    if predefined_stiffener_iter is None:
+        combs = any_get_all_combs(min_var, max_var, deltas)
+    else:
+        combs = any_get_all_combs(min_var, max_var, deltas,predef_stiffeners=[item.get_tuple() for item in
+                                                                              predefined_stiffener_iter])
 
     trial_selection = random_product(combs, repeat=trials)
+
     for x in trial_selection:
         if any_constraints_all(x=x,obj=obj,lat_press=lat_press,init_weight=min_weight,
                                fat_dict=fat_dict,fat_press = fat_press)[0]:
