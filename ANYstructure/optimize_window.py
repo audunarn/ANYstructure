@@ -604,6 +604,7 @@ class CreateOptimizeWindow():
         else:
             predefined_stiffener_iter = None
 
+
         self._opt_results= op.run_optmizataion(self._initial_structure_obj,self.get_lower_bounds(),
                                                self.get_upper_bounds(),self._new_design_pressure.get(),
                                                self.get_deltas(),algorithm=self._new_algorithm.get(),
