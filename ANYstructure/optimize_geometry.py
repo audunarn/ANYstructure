@@ -383,7 +383,7 @@ class CreateOptGeoWindow():
 
         self._toggle_btn = tk.Button(self._frame, text="Iterate predefiened stiffeners", relief="raised",
                                      command=self.toggle, bg = 'salmon')
-        self._toggle_btn.place(x=start_x+dx*10.5, y=start_y - dy * 14)
+        self._toggle_btn.place(x=start_x+dx*10.5, y=start_y - dy * 16.8)
         self._toggle_object, self._filez = None, None
 
         # ----------------------------------END OF OPTIMIZE SINGLE COPY-----------------------------------------------

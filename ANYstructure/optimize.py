@@ -163,6 +163,7 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
         init_filter = get_initial_weight(initial_structure_obj, lateral_pressure, min_var, max_var, deltas, 10000,
                                          fat_dict, fat_press, predefiened_stiffener_iter)
 
+
     main_result = get_filtered_results(structure_to_check, initial_structure_obj,lateral_pressure,
                                        init_filter_weight=init_filter, side=side,chk=const_chk, fat_dict=fat_dict,
                                        fat_press=fat_press, slamming_press=slamming_press)
@@ -205,7 +206,7 @@ def any_smart_loop_geometric(min_var,max_var,deltas,initial_structure_obj,latera
                                                                 predef_stiffeners=predefiened_stiffener_iter)
             temp_predef = list()
             for x in predefiened_stiffener_iter:
-                xvar = list(x)
+                xvar = list(x[0:7])
                 xvar.append(struc_obj.get_span())
                 xvar.append(struc_obj.get_lg())
                 temp_predef.append(tuple(xvar))
@@ -425,8 +426,6 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                 obj = opt[0]
 
                 if opt[3]:
-                    print('OBJECT weight', calc_weight((obj.get_s(),obj.get_pl_thk(),obj.get_web_h(),obj.get_web_thk(),
-                                               obj.get_fl_w(),obj.get_fl_thk(),obj.get_span(),width), prt=False))
                     tot_weight += calc_weight((obj.get_s(),obj.get_pl_thk(),obj.get_web_h(),obj.get_web_thk(),
                                                obj.get_fl_w(),obj.get_fl_thk(),obj.get_span(),width), prt=False)
                     if frame_spacings[count // 2] is None:
@@ -617,6 +616,7 @@ def create_new_calc_obj(init_obj,x, fat_dict=None):
     sigma_x_new = stress_scaling_area(init_obj.get_sigma_x(),
                                       sum(get_field_tot_area(x_old)),
                                       sum(get_field_tot_area(x)))
+
     try:
         stf_type = x[8]
     except IndexError:
@@ -778,6 +778,7 @@ def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight
     :return:
     '''
     #print('Init filter weigh', init_filter_weight)
+
     iter_var = ((item,init_stuc_obj,lat_press,init_filter_weight,side,chk,fat_dict,fat_press,slamming_press)
                 for item in iterable_all)
     #res_pre = it.starmap(any_constraints_all, iter_var)
@@ -815,18 +816,23 @@ def any_get_all_combs(min_var, max_var,deltas, init_weight = float('inf'), prede
     pl_thk_array = pl_thk_array[pl_thk_array <= max_var[1]]
 
     if predef_stiffeners is not None:
-        predef_iterable = list()
+        predef_iterable, predef_types = list(), list()
         for pre_str in predef_stiffeners:
             if type(pre_str) == dict:
                 pre_str = (None, None, pre_str['stf_web_height'][0], pre_str['stf_web_thk'][0],
                            pre_str['stf_flange_width'][0], pre_str['stf_flange_thk'][0])
-            for spacing in spacing_array:
+                #stf_type = pre_str['stf_type'][0]
+            else:
+                #stf_type = pre_str[-1]
+                pass
+            for spacing in spacing_array: #TODO not getting the stiffener types
                 for pl_thk in pl_thk_array:
                     new_field = list(pre_str)
                     new_field[0] = spacing
                     new_field[1] = pl_thk
                     predef_iterable.append(tuple(new_field))
-        return predef_iterable
+                    #predef_types.append(stf_type)
+        return predef_iterable#, predef_types
 
 
     web_h_array = (np.arange(min_var[2], max_var[2]+ deltas[2], deltas[2])) if min_var[2] != max_var[2] \
@@ -869,6 +875,7 @@ def get_initial_weight(obj,lat_press,min_var,max_var,deltas,trials,fat_dict,fat_
     combs = any_get_all_combs(min_var, max_var, deltas) if predefined_stiffener_iter is None \
         else any_get_all_combs(min_var, max_var, deltas,
                                predef_stiffeners=[item.get_tuple() for item in predefined_stiffener_iter])
+
     trial_selection = random_product(combs, repeat=trials)
     for x in trial_selection:
         if any_constraints_all(x=x,obj=obj,lat_press=lat_press,init_weight=min_weight,
@@ -987,9 +994,10 @@ if __name__ == '__main__':
 
     t1 = time.time()
 
-    # results = run_optmizataion(obj, lower_bounds,upper_bounds, lat_press, deltas, algorithm='anysmart',
-    #                            fatigue_obj=fat_obj, fat_press_ext_int=fat_press, use_weight_filter=True)
-    #
+    results = run_optmizataion(obj, lower_bounds,upper_bounds, lat_press, deltas, algorithm='anysmart',
+                               fatigue_obj=fat_obj, fat_press_ext_int=fat_press, use_weight_filter=True,
+                               predefined_stiffener_iter=hlp.helper_read_section_file('sections.csv', obj=obj))
+
     # t1 = time.time()
     # check_ok_array, check_array, section_array = list(), list(), list()
     #
@@ -1053,17 +1061,17 @@ if __name__ == '__main__':
     #     results = run_optmizataion(obj, upper_bounds, lower_bounds, lat_press, deltas, algorithm='anysmart',
     #                            fatigue_obj=fat_obj, fat_press_ext_int=fat_press, pso_options=pso_options)[0]
     #     print('Swarm size', swarm_size, 'running time', time.time()-t1, results.get_one_line_string())
-    fat_press_ext_int = list()
-    for pressure in ex.get_geo_opt_fat_press():
-        fat_press_ext_int.append(((pressure['p_ext']['loaded'], pressure['p_ext']['ballast'],
-                                   pressure['p_ext']['part']),
-                                  (pressure['p_int']['loaded'], pressure['p_int']['ballast'],
-                                   pressure['p_int']['part'])))
-
-    results = run_optmizataion(ex.get_geo_opt_object(), lower_bounds, upper_bounds, ex.get_geo_opt_presure(), deltas,
-                               is_geometric=True, fatigue_obj=ex.get_geo_opt_fatigue(),
-                               fat_press_ext_int=fat_press_ext_int,
-                               slamming_press=ex.get_geo_opt_slamming_none(), load_pre=True)
+    # fat_press_ext_int = list()
+    # for pressure in ex.get_geo_opt_fat_press():
+    #     fat_press_ext_int.append(((pressure['p_ext']['loaded'], pressure['p_ext']['ballast'],
+    #                                pressure['p_ext']['part']),
+    #                               (pressure['p_int']['loaded'], pressure['p_int']['ballast'],
+    #                                pressure['p_int']['part'])))
+    #
+    # results = run_optmizataion(ex.get_geo_opt_object(), lower_bounds, upper_bounds, ex.get_geo_opt_presure(), deltas,
+    #                            is_geometric=True, fatigue_obj=ex.get_geo_opt_fatigue(),
+    #                            fat_press_ext_int=fat_press_ext_int,
+    #                            slamming_press=ex.get_geo_opt_slamming_none(), load_pre=True)
 
     # import pickle
     # with open('geo_opt_2.pickle', 'rb') as file:
