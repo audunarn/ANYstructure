@@ -204,30 +204,11 @@ def any_smart_loop_geometric(min_var,max_var,deltas,initial_structure_obj,latera
 
     all_obj = []
     idx = 0
-    for i in zip(initial_structure_obj, lateral_pressure,fat_obj, fat_press, slamming_press):
-        idx += 1
-    print('IDX is', idx)
-
-    idx = 0
     for struc_obj, lat_press, fatigue_obj, fatigue_press, slam_press in zip(initial_structure_obj, lateral_pressure,
                                                                             fat_obj, fat_press, slamming_press):
-        print('Going', idx)
+        #print(predefiened_stiffener_iter)
         if predefiened_stiffener_iter is not None:
-
-            this_predefiened_objects = hlp.helper_read_section_file('sections.csv', struc_obj)
-
-            # this_combs = any_get_all_combs(min_var=min_var, max_var=max_var,deltas=deltas,
-            #                                predef_stiffeners=this_predefiened_stiffener_list)
-            #
-            # temp_predef = list()
-            # for x in this_combs:
-            #     xvar = x.get_tuple()
-            #     print(xvar)
-            #     xvar.append(struc_obj.get_span())
-            #     xvar.append(struc_obj.get_lg())
-            #     temp_predef.append(tuple(xvar))
-
-            #this_predefiened_objects= [create_new_structure_obj(struc_obj, xtup) for xtup in this_combs]
+            this_predefiened_objects = hlp.helper_read_section_file(predefiened_stiffener_iter, struc_obj)
         else:
             this_predefiened_objects = None
 

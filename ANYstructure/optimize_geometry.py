@@ -539,11 +539,11 @@ class CreateOptGeoWindow():
                                 message='This field cannot be subdivided or there are no loads. Error.')
             return None
 
-        found_files = self._filez
-        if self._toggle_btn.config('relief')[-1] == 'sunken':
-            found_files, predefined_stiffener_iter = self.toggle(found_files=found_files, iterating=True)
-        else:
-            predefined_stiffener_iter = None
+        # found_files = self._filez
+        # if self._toggle_btn.config('relief')[-1] == 'sunken':
+        #     found_files, predefined_stiffener_iter = self.toggle(found_files=found_files, iterating=True)
+        # else:
+        #     predefined_stiffener_iter = None
 
         if not load_pre:
             geo_results = op.run_optmizataion(initial_structure_obj=init_objects,min_var=self.get_lower_bounds(),
@@ -554,7 +554,7 @@ class CreateOptGeoWindow():
                                               fat_press_ext_int=fat_press_ext_int,
                                               min_max_span=min_max_span, tot_len=self.opt_get_length(),
                                               frame_height=self.opt_get_distance(), frame_distance = distances,
-                                              predefined_stiffener_iter=predefined_stiffener_iter,
+                                              predefined_stiffener_iter=self._filez,
                                               processes = self._new_processes.get(),
                                               slamming_press=slamming_press, opt_girder_prop=opt_girder_prop)
 
@@ -1384,24 +1384,25 @@ class CreateOptGeoWindow():
         :param obj:
         :return:
         '''
-        if iterating:
-            if found_files is not None:
-                predefined_structure = hlp.helper_read_section_file(files=found_files, obj=obj)
+        # if iterating:
+        #     if found_files is not None:
+        #         predefined_structure = hlp.helper_read_section_file(files=found_files, obj=obj)
+        # else:
+        predefined_structure = None
+        if self._toggle_btn.config('relief')[-1] == 'sunken':
+            self._toggle_btn.config(relief="raised")
+            self._toggle_btn.config(bg = 'salmon')
+            self._ent_spacing_upper.config(bg = 'white')
+            self._ent_spacing_lower.config(bg = 'white')
+            self._ent_delta_spacing.config(bg = 'white')
+            self._filez = None
         else:
-            predefined_structure = None
-            if self._toggle_btn.config('relief')[-1] == 'sunken':
-                self._toggle_btn.config(relief="raised")
-                self._toggle_btn.config(bg = 'salmon')
-                self._ent_spacing_upper.config(bg = 'white')
-                self._ent_spacing_lower.config(bg = 'white')
-                self._ent_delta_spacing.config(bg = 'white')
-            else:
-                self._toggle_btn.config(relief="sunken")
-                self._toggle_btn.config(bg='lightgreen')
-                self._ent_spacing_upper.config(bg = 'lightgreen')
-                self._ent_spacing_lower.config(bg = 'lightgreen')
-                self._ent_delta_spacing.config(bg = 'lightgreen')
-                self._filez = list(askopenfilenames(parent=self._frame, title='Choose files to open'))
+            self._toggle_btn.config(relief="sunken")
+            self._toggle_btn.config(bg='lightgreen')
+            self._ent_spacing_upper.config(bg = 'lightgreen')
+            self._ent_spacing_lower.config(bg = 'lightgreen')
+            self._ent_delta_spacing.config(bg = 'lightgreen')
+            self._filez = list(askopenfilenames(parent=self._frame, title='Choose files to open'))
 
         return found_files, predefined_structure
 
