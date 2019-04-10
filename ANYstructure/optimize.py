@@ -294,7 +294,7 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                              pso_options=(100,0.5,0.5,0.5,100,1e-8,1e-8), fat_obj = None, fat_press = None,
                              min_max_span = (2,6), tot_len = 12, frame_distance = None,
                              algorithm = 'anysmart', predefiened_stiffener_iter=None, reiterate = True,
-                             processes = None, slamming_press = None, load_pre = False, opt_girder_prop = None):
+                             processes = None, slamming_press = None, load_pre = False, opt_girder_prop = None, ):
 
     '''Geometric optimization of all relevant sections. '''
     # Checking the number of initial objects and adding if number of fraction is to be changed.
