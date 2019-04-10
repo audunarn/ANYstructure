@@ -425,6 +425,8 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                 obj = opt[0]
 
                 if opt[3]:
+                    print('OBJECT weight', calc_weight((obj.get_s(),obj.get_pl_thk(),obj.get_web_h(),obj.get_web_thk(),
+                                               obj.get_fl_w(),obj.get_fl_thk(),obj.get_span(),width), prt=False))
                     tot_weight += calc_weight((obj.get_s(),obj.get_pl_thk(),obj.get_web_h(),obj.get_web_thk(),
                                                obj.get_fl_w(),obj.get_fl_thk(),obj.get_span(),width), prt=False)
                     if frame_spacings[count // 2] is None:
@@ -445,9 +447,10 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                     #pl_area, stf_area = 0.018 * width, 0.25 * 0.015 * (width//frame_spacings[frame])
                     this_x = (frame_spacings[frame], opt_girder_prop[0], opt_girder_prop[1], opt_girder_prop[2],
                               opt_girder_prop[3], opt_girder_prop[4], None, width)
-                    this_weight = get_field_tot_area(this_x)* frame_height * 7850
+                    this_weight = sum(get_field_tot_area(this_x))* frame_height * 7850
                     scale_max, scale_min = opt_girder_prop[5], opt_girder_prop[6]
-                    this_scale = scale_min + (scale_max-scale_min) * (count / (max_frame_cont-min_frame_count))
+                    this_scale = scale_min + (scale_max-scale_min) * (abs((max_frame_cont-(count+1)/2))/
+                                                                      (max_frame_cont-min_frame_count))
                     tot_weight += this_weight * this_scale
                     solution_found = True
             elif iterations == 2:
@@ -984,8 +987,8 @@ if __name__ == '__main__':
 
     t1 = time.time()
 
-    results = run_optmizataion(obj, lower_bounds,upper_bounds, lat_press, deltas, algorithm='anysmart',
-                               fatigue_obj=fat_obj, fat_press_ext_int=fat_press, use_weight_filter=True)
+    # results = run_optmizataion(obj, lower_bounds,upper_bounds, lat_press, deltas, algorithm='anysmart',
+    #                            fatigue_obj=fat_obj, fat_press_ext_int=fat_press, use_weight_filter=True)
     #
     # t1 = time.time()
     # check_ok_array, check_array, section_array = list(), list(), list()
@@ -1057,10 +1060,10 @@ if __name__ == '__main__':
                                   (pressure['p_int']['loaded'], pressure['p_int']['ballast'],
                                    pressure['p_int']['part'])))
 
-    # results = run_optmizataion(ex.get_geo_opt_object(), lower_bounds, upper_bounds, ex.get_geo_opt_presure(), deltas,
-    #                            is_geometric=True, fatigue_obj=ex.get_geo_opt_fatigue(),
-    #                            fat_press_ext_int=fat_press_ext_int,
-    #                            slamming_press=ex.get_geo_opt_slamming_none(), load_pre=True)
+    results = run_optmizataion(ex.get_geo_opt_object(), lower_bounds, upper_bounds, ex.get_geo_opt_presure(), deltas,
+                               is_geometric=True, fatigue_obj=ex.get_geo_opt_fatigue(),
+                               fat_press_ext_int=fat_press_ext_int,
+                               slamming_press=ex.get_geo_opt_slamming_none(), load_pre=True)
 
     # import pickle
     # with open('geo_opt_2.pickle', 'rb') as file:
