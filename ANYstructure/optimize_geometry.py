@@ -106,6 +106,13 @@ class CreateOptGeoWindow():
         self._new_minstep = tk.DoubleVar()
         self._new_minfunc = tk.DoubleVar()
         self._new_processes = tk.IntVar()
+        self._new_opt_girder_thk = tk.DoubleVar()
+        self._new_opt_girder_stf_web_h = tk.DoubleVar()
+        self._new_opt_girder_stf_web_thk = tk.DoubleVar()
+        self._new_opt_girder_stf_flange_b = tk.DoubleVar()
+        self._new_opt_girder_stf_flange_thk = tk.DoubleVar()
+        self._new_opt_girder_scale_high = tk.DoubleVar()
+        self._new_opt_girder_scale_low = tk.DoubleVar()
 
         ent_w = 10
         self._ent_spacing_upper = tk.Entry(self._frame, textvariable=self._new_spacing_upper, width=ent_w)
@@ -140,6 +147,22 @@ class CreateOptGeoWindow():
         self._ent_maxiter = tk.Entry(self._frame, textvariable=self._new_maxiter, width=pso_width)
         self._ent_minstep = tk.Entry(self._frame, textvariable=self._new_minstep, width=pso_width)
         self._ent_minfunc = tk.Entry(self._frame, textvariable=self._new_minfunc, width=pso_width)
+
+        self._ent_opt_girder_thk = tk.Entry(self._frame, textvariable=self._new_opt_girder_thk, width=ent_w)
+        self._ent_opt_girder_stf_web_h = tk.Entry(self._frame, textvariable=self._new_opt_girder_stf_web_h,
+                                                  width=ent_w)
+        self._ent_opt_girder_stf_web_thk = tk.Entry(self._frame, textvariable=self._new_opt_girder_stf_web_thk,
+                                                    width=ent_w)
+        self._ent_opt_girder_stf_fl_b = tk.Entry(self._frame, textvariable=self._new_opt_girder_stf_flange_b,
+                                                 width=ent_w)
+        self._ent_opt_girder_stf_fl_thk = tk.Entry(self._frame, textvariable=self._new_opt_girder_stf_flange_thk,
+                                                   width=ent_w)
+
+        self._ent_opt_girder_scale_high = tk.Entry(self._frame, textvariable=self._new_opt_girder_scale_high,
+                                                   width=int(ent_w/2))
+        self._ent_opt_girder_scale_low = tk.Entry(self._frame, textvariable=self._new_opt_girder_scale_low,
+                                                   width=int(ent_w/2))
+
 
         start_x, start_y, dx, dy = 20, 70, 100, 40
 
@@ -234,6 +257,13 @@ class CreateOptGeoWindow():
         self._new_algorithm.set('anysmart')
         self._new_algorithm_random_trials.set(10000)
         self._new_processes.set(max(cpu_count() - 1, 1))
+        self._new_opt_girder_thk.set(0.018)
+        self._new_opt_girder_stf_web_h.set(0.250)
+        self._new_opt_girder_stf_web_thk.set(0.015)
+        self._new_opt_girder_stf_flange_b.set(0)
+        self._new_opt_girder_stf_flange_thk.set(0)
+        self._new_opt_girder_scale_high.set(1.2)
+        self._new_opt_girder_scale_low.set(0.8)
 
         self._new_swarm_size.set(100)
         self._new_omega.set(0.5)
@@ -299,7 +329,8 @@ class CreateOptGeoWindow():
         self._new_check_slamming.set(True)
         self._new_check_local_buckling.set(True)
 
-        start_y, start_x, dy  = 570, 200, 30
+
+        start_y, start_x, dy  = 570, 100, 30
         tk.Label(self._frame,text='Check for minimum section modulus').place(x=start_x+dx*9.7,y=start_y+4*dy)
         tk.Label(self._frame, text='Check for minimum plate thk.').place(x=start_x+dx*9.7,y=start_y+5*dy)
         tk.Label(self._frame, text='Check for minimum shear area').place(x=start_x+dx*9.7,y=start_y+6*dy)
@@ -307,6 +338,25 @@ class CreateOptGeoWindow():
         tk.Label(self._frame, text='Check for fatigue (RP-C203)').place(x=start_x + dx * 9.7, y=start_y + 8 * dy)
         tk.Label(self._frame, text='Check for bow slamming').place(x=start_x + dx * 9.7, y=start_y + 9 * dy)
         tk.Label(self._frame, text='Check for local stf. buckling').place(x=start_x + dx * 9.7, y=start_y + 10 * dy)
+
+        tk.Label(self._frame, text='Frame (girder data) for weight calculation:', font = 'Verdana 9 bold')\
+            .place(x=start_x + dx * 13,
+                                                                                       y=start_y + 4 * dy)
+        tk.Label(self._frame, text='Girder thickness').place(x=start_x + dx * 13, y=start_y + 5 * dy)
+        tk.Label(self._frame, text='Stiffener height').place(x=start_x + dx * 13, y=start_y + 6 * dy)
+        tk.Label(self._frame, text='Stiffener thickness').place(x=start_x + dx * 13, y=start_y + 7 * dy)
+        tk.Label(self._frame, text='Stf. flange width').place(x=start_x + dx * 13, y=start_y + 8 * dy)
+        tk.Label(self._frame, text='Stf. flange thickenss').place(x=start_x + dx * 13, y=start_y + 9 * dy)
+        tk.Label(self._frame, text='For weight calculation of girder: Max span mult / Min span mult')\
+            .place(x=start_x + dx * 13,y=start_y + 10 * dy)
+
+        self._ent_opt_girder_thk.place(x=start_x + dx * 15, y=start_y + 5 * dy)
+        self._ent_opt_girder_stf_web_h.place(x=start_x + dx * 15, y=start_y + 6 * dy)
+        self._ent_opt_girder_stf_web_thk.place(x=start_x + dx * 15, y=start_y + 7 * dy)
+        self._ent_opt_girder_stf_fl_b.place(x=start_x + dx * 15, y=start_y + 8 * dy)
+        self._ent_opt_girder_stf_fl_thk.place(x=start_x + dx * 15, y=start_y + 9 * dy)
+        self._ent_opt_girder_scale_high.place(x=start_x + dx * 15, y=start_y + 11 * dy)
+        self._ent_opt_girder_scale_low.place(x=start_x + dx * 15.5, y=start_y + 11 * dy)
 
         tk.Checkbutton(self._frame,variable=self._new_check_sec_mod).place(x=start_x+dx*12,y=start_y+4*dy)
         tk.Checkbutton(self._frame, variable=self._new_check_min_pl_thk).place(x=start_x+dx*12,y=start_y+5*dy)
@@ -316,6 +366,8 @@ class CreateOptGeoWindow():
         tk.Checkbutton(self._frame, variable=self._new_check_slamming).place(x=start_x + dx * 12, y=start_y + 9 * dy)
         tk.Checkbutton(self._frame, variable=self._new_check_local_buckling).place(x=start_x + dx * 12,
                                                                                    y=start_y + 10 * dy)
+
+
         self._toggle_btn = tk.Button(self._frame, text="Iterate predefiened stiffeners", relief="raised",
                                      command=self.toggle, bg = 'salmon')
         self._toggle_btn.place(x=start_x+dx*10.5, y=start_y - dy * 14)
@@ -326,7 +378,7 @@ class CreateOptGeoWindow():
         self.progress_count.set(0)
         self.progress_bar = Progressbar(self._frame, orient="horizontal",length=200, mode="determinate",
                                         variable=self.progress_count)
-        self.progress_bar.place(x=start_x+dx*10.5,y=start_y-dy*16.5)
+        #self.progress_bar.place(x=start_x+dx*10.5,y=start_y-dy*16.5)
 
         self._active_lines = []
         self.controls()
@@ -423,6 +475,11 @@ class CreateOptGeoWindow():
                                self._new_phig.get(),self._new_maxiter.get(), self._new_minstep.get(),
                                self._new_minfunc.get())
 
+        opt_girder_prop = (self._new_opt_girder_thk.get(), self._new_opt_girder_stf_web_h.get(),
+                           self._new_opt_girder_stf_web_thk.get(), self._new_opt_girder_stf_flange_b.get(),
+                           self._new_opt_girder_stf_flange_thk.get(),self._new_opt_girder_scale_high.get(),
+                           self._new_opt_girder_scale_low.get())
+
         init_objects, fatigue_objects, fat_press_ext_int, slamming_pressures, lateral_press, fatigue_objects, \
         slamming_press = [list() for dummy in range(7)]
 
@@ -484,7 +541,7 @@ class CreateOptGeoWindow():
                                               frame_height=self.opt_get_distance(), frame_distance = distances,
                                               predefined_stiffener_iter=predefined_stiffener_iter,
                                               processes = self._new_processes.get(),
-                                              slamming_press=slamming_press)
+                                              slamming_press=slamming_press, opt_girder_prop=opt_girder_prop)
 
             self._geo_results = geo_results
 
@@ -495,6 +552,7 @@ class CreateOptGeoWindow():
         else:
             with open('geo_opt_2.pickle', 'rb') as file:
                 self._geo_results = pickle.load(file)
+
 
 
         save_file, filename = None, None
