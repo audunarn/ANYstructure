@@ -154,18 +154,24 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
     :return:
     '''
 
+    # if predefiened_stiffener_iter is None:
+    #     structure_to_check = any_get_all_combs(min_var, max_var, deltas, init_weight=init_filter)
+    # else:
+    #     #structure_to_check = [obj.get_tuple() for obj in predefiened_stiffener_iter]
+    #     structure_to_check = any_get_all_combs(min_var, max_var, deltas, init_weight=init_filter,
+    #                                            predef_stiffeners=predefiened_stiffener_iter)
+    #     init_filter = get_initial_weight(initial_structure_obj, lateral_pressure, min_var, max_var, deltas, 10000,
+    #                                      fat_dict, fat_press, predefiened_stiffener_iter)
+
     if predefiened_stiffener_iter is None:
-        structure_to_check = any_get_all_combs(min_var, max_var, deltas, init_weight=init_filter)
+        structure_to_check = any_get_all_combs(min_var, max_var, deltas)
     else:
-        structure_to_check = [obj.get_tuple() for obj in predefiened_stiffener_iter]
-        structure_to_check = any_get_all_combs(min_var, max_var, deltas, init_weight=init_filter,
-                                               predef_stiffeners=structure_to_check)
-        init_filter = get_initial_weight(initial_structure_obj, lateral_pressure, min_var, max_var, deltas, 10000,
-                                         fat_dict, fat_press, predefiened_stiffener_iter)
+        structure_to_check = any_get_all_combs(min_var, max_var, deltas,predef_stiffeners=[item.get_tuple() for item
+                                                                                           in predefiened_stiffener_iter])
 
     main_result = get_filtered_results(structure_to_check, initial_structure_obj,lateral_pressure,
                                        init_filter_weight=init_filter, side=side,chk=const_chk, fat_dict=fat_dict,
-                                       fat_press=fat_press, slamming_press=slamming_press)
+                                       fat_press=fat_press, slamming_press=slamming_press, processes=processes)
 
     main_iter = main_result[0]
     main_fail = main_result[1]
@@ -196,24 +202,14 @@ def any_smart_loop_geometric(min_var,max_var,deltas,initial_structure_obj,latera
 
     all_obj = []
     idx = 0
-
     for struc_obj, lat_press, fatigue_obj, fatigue_press, slam_press in zip(initial_structure_obj, lateral_pressure,
                                                                             fat_obj, fat_press, slamming_press):
-
+        #print(predefiened_stiffener_iter)
         if predefiened_stiffener_iter is not None:
-            this_predefiened_stiffener_iter = any_get_all_combs(min_var=min_var, max_var=max_var,deltas=deltas,
-                                                                predef_stiffeners=predefiened_stiffener_iter)
-            temp_predef = list()
-            for x in predefiened_stiffener_iter:
-                xvar = list(x)
-                xvar.append(struc_obj.get_span())
-                xvar.append(struc_obj.get_lg())
-                temp_predef.append(tuple(xvar))
-
-            this_predefiened_stiffener_iter = [create_new_structure_obj(struc_obj, xtup) for xtup in
-                                               this_predefiened_stiffener_iter]
+            this_predefiened_objects = hlp.helper_read_section_file(predefiened_stiffener_iter, struc_obj)
         else:
-            this_predefiened_stiffener_iter = None
+            this_predefiened_objects = None
+
 
         opt_obj = any_smart_loop(min_var = min_var,max_var = max_var,deltas = deltas,initial_structure_obj = struc_obj,
                                  lateral_pressure = lat_press, init_filter = init_filter, side=side,
@@ -221,9 +217,10 @@ def any_smart_loop_geometric(min_var,max_var,deltas,initial_structure_obj,latera
                                  fat_dict = None if fatigue_obj is None else fatigue_obj.get_fatigue_properties(),
                                  fat_press = None if fatigue_press is None else fatigue_press,
                                  slamming_press = 0 if slam_press is None else slam_press,
-                                 predefiened_stiffener_iter=this_predefiened_stiffener_iter)
+                                 predefiened_stiffener_iter=this_predefiened_objects, processes=processes)
         # TODO-any set check if not solution acceptable.
         all_obj.append(opt_obj)
+        idx += 1
 
     return all_obj
 
@@ -305,11 +302,9 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
         if tot_len/frames <= min_max_span[1] and found_min is False:
             min_frame_count = frame_count - 1
             found_min = True
-            print(tot_len/frames)
         if tot_len/frames <= min_max_span[0] and found_max is False:
             max_frame_cont = frame_count - 1
             found_max = True
-            print(tot_len/frames)
         if found_min and found_max:
             break
     results = {}
@@ -453,9 +448,10 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                     #pl_area, stf_area = 0.018 * width, 0.25 * 0.015 * (width//frame_spacings[frame])
                     this_x = (frame_spacings[frame], opt_girder_prop[0], opt_girder_prop[1], opt_girder_prop[2],
                               opt_girder_prop[3], opt_girder_prop[4], None, width)
-                    this_weight = get_field_tot_area(this_x)* frame_height * 7850
+                    this_weight = sum(get_field_tot_area(this_x))* frame_height * 7850
                     scale_max, scale_min = opt_girder_prop[5], opt_girder_prop[6]
-                    this_scale = scale_min + (scale_max-scale_min) * (count / (max_frame_cont-min_frame_count))
+                    this_scale = scale_min + (scale_max-scale_min) * (abs((max_frame_cont-(count+1)/2))/
+                                                                      (max_frame_cont-min_frame_count))
                     tot_weight += this_weight * this_scale
                     solution_found = True
             elif iterations == 2:
@@ -622,6 +618,7 @@ def create_new_calc_obj(init_obj,x, fat_dict=None):
     sigma_x_new = stress_scaling_area(init_obj.get_sigma_x(),
                                       sum(get_field_tot_area(x_old)),
                                       sum(get_field_tot_area(x)))
+
     try:
         stf_type = x[8]
     except IndexError:
@@ -783,6 +780,7 @@ def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight
     :return:
     '''
     #print('Init filter weigh', init_filter_weight)
+
     iter_var = ((item,init_stuc_obj,lat_press,init_filter_weight,side,chk,fat_dict,fat_press,slamming_press)
                 for item in iterable_all)
     #res_pre = it.starmap(any_constraints_all, iter_var)
@@ -822,10 +820,7 @@ def any_get_all_combs(min_var, max_var,deltas, init_weight = float('inf'), prede
     if predef_stiffeners is not None:
         predef_iterable = list()
         for pre_str in predef_stiffeners:
-            if type(pre_str) == dict:
-                pre_str = (None, None, pre_str['stf_web_height'][0], pre_str['stf_web_thk'][0],
-                           pre_str['stf_flange_width'][0], pre_str['stf_flange_thk'][0])
-            for spacing in spacing_array:
+            for spacing in spacing_array: #TODO not getting the stiffener types
                 for pl_thk in pl_thk_array:
                     new_field = list(pre_str)
                     new_field[0] = spacing
@@ -870,11 +865,14 @@ def get_initial_weight(obj,lat_press,min_var,max_var,deltas,trials,fat_dict,fat_
     Only aim is to reduce running time of the algorithm.
     '''
     min_weight = float('inf')
+    if predefined_stiffener_iter is None:
+        combs = any_get_all_combs(min_var, max_var, deltas)
+    else:
+        combs = any_get_all_combs(min_var, max_var, deltas,predef_stiffeners=[item.get_tuple() for item in
+                                                                              predefined_stiffener_iter])
 
-    combs = any_get_all_combs(min_var, max_var, deltas) if predefined_stiffener_iter is None \
-        else any_get_all_combs(min_var, max_var, deltas,
-                               predef_stiffeners=[item.get_tuple() for item in predefined_stiffener_iter])
     trial_selection = random_product(combs, repeat=trials)
+
     for x in trial_selection:
         if any_constraints_all(x=x,obj=obj,lat_press=lat_press,init_weight=min_weight,
                                fat_dict=fat_dict,fat_press = fat_press)[0]:
@@ -992,9 +990,9 @@ if __name__ == '__main__':
 
     t1 = time.time()
 
-    # results = run_optmizataion(obj, lower_bounds,upper_bounds, lat_press, deltas, algorithm='anysmart',
-    #                            fatigue_obj=fat_obj, fat_press_ext_int=fat_press, use_weight_filter=True)
-    # #
+    results = run_optmizataion(obj, lower_bounds,upper_bounds, lat_press, deltas, algorithm='anysmart',
+                               fatigue_obj=fat_obj, fat_press_ext_int=fat_press, use_weight_filter=True)
+    #
     # t1 = time.time()
     # check_ok_array, check_array, section_array = list(), list(), list()
     #
@@ -1065,10 +1063,10 @@ if __name__ == '__main__':
                                   (pressure['p_int']['loaded'], pressure['p_int']['ballast'],
                                    pressure['p_int']['part'])))
 
-    results = run_optmizataion(ex.get_geo_opt_object(), lower_bounds, upper_bounds, ex.get_geo_opt_presure(), deltas,
-                               is_geometric=True, fatigue_obj=ex.get_geo_opt_fatigue(),
-                               fat_press_ext_int=fat_press_ext_int,
-                               slamming_press=ex.get_geo_opt_slamming_none(), load_pre=True, min_max_span = (1,12))
+    # results = run_optmizataion(ex.get_geo_opt_object(), lower_bounds, upper_bounds, ex.get_geo_opt_presure(), deltas,
+    #                            is_geometric=True, fatigue_obj=ex.get_geo_opt_fatigue(),
+    #                            fat_press_ext_int=fat_press_ext_int,
+    #                            slamming_press=ex.get_geo_opt_slamming_none(), load_pre=True)
 
     # import pickle
     # with open('geo_opt_2.pickle', 'rb') as file:
