@@ -1049,9 +1049,6 @@ class CreateOptGeoWindow():
 
             delta, start_x, y_loc = 20, 10, 40
 
-            if save_file is not None:
-                save_file.write('\n' + 'Stiffener properties:')
-
             for key, values in opt_results.items():
                 # if y_loc > 700:
                 #     start_x = 400
@@ -1093,8 +1090,8 @@ class CreateOptGeoWindow():
                             y_loc += 15
 
                             if save_file is not None:
-                                save_file.write(stuc_info.get_one_line_string()+stuc_info.get_extended_string() + ' | '+
-                                                stuc_info.get_report_stresses()+ endstring)
+                                save_file.write(stuc_info.get_one_line_string()+' ' + stuc_info.get_extended_string() +
+                                                ' | ' + stuc_info.get_report_stresses()+ endstring)
                             item_count += 1
             if save_file is not None:
                 save_file.write('\n -------------  END  ---------------')
