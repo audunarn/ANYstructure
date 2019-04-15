@@ -322,9 +322,7 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
         frac_var,min_frac,max_frac = [],[],[]
 
         for var in range(no_of_fractions):
-
             # Frame height is a interpolation between height at start and end.
-
             frac_var.append(1/no_of_fractions)
             working_objects[no_of_fractions] = list(initial_structure_obj)
             working_lateral[no_of_fractions] = list(lateral_pressure)
