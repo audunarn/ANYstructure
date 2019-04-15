@@ -20,7 +20,7 @@ import ANYstructure.stresses_window as stress
 import ANYstructure.fatigue_window as fatigue
 from _tkinter import TclError
 import multiprocessing
-#from ANYstructure.report_generator import LetterMaker
+from ANYstructure.report_generator import LetterMaker
 import os.path
 import ctypes
 
