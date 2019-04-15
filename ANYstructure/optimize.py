@@ -294,20 +294,22 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                              pso_options=(100,0.5,0.5,0.5,100,1e-8,1e-8), fat_obj = None, fat_press = None,
                              min_max_span = (2,6), tot_len = 12, frame_distance = None,
                              algorithm = 'anysmart', predefiened_stiffener_iter=None, reiterate = True,
-                             processes = None, slamming_press = None, load_pre = False, opt_girder_prop = None, ):
+                             processes = None, slamming_press = None, load_pre = False, opt_girder_prop = None):
 
     '''Geometric optimization of all relevant sections. '''
     # Checking the number of initial objects and adding if number of fraction is to be changed.
-
+    # print('Min/max span is', min_max_span)
     found_max, found_min = False, False
     for frames in range(1,100):
         frame_count = frames
         if tot_len/frames <= min_max_span[1] and found_min is False:
-            min_frame_count = frame_count
+            min_frame_count = frame_count - 1
             found_min = True
+            print(tot_len/frames)
         if tot_len/frames <= min_max_span[0] and found_max is False:
             max_frame_cont = frame_count - 1
             found_max = True
+            print(tot_len/frames)
         if found_min and found_max:
             break
     results = {}
@@ -320,7 +322,7 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
     working_fatigue_press = {}
     working_slamming = {}
 
-    for no_of_fractions in range(min_frame_count, max_frame_cont+1):
+    for no_of_fractions in range(min_frame_count+1, max_frame_cont+1):
         # Create fraction varables
         frac_var,min_frac,max_frac = [],[],[]
 
@@ -349,16 +351,22 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                     similar_count -= 2
                 else:
                     obj_start, obj_stop = copy.deepcopy(working_objects[no_of_fractions][0]),\
-                                          copy.deepcopy(working_objects[no_of_fractions][int(len(working_objects)/2)])
+                                          copy.deepcopy(working_objects[no_of_fractions]
+                                                        [int(len(working_objects[no_of_fractions])/2)])
                     fat_obj_start, fat_obj_stop = copy.deepcopy(working_fatigue[no_of_fractions][0]), \
-                                                  copy.deepcopy(working_fatigue[no_of_fractions][int(len(working_objects)/2)])
+                                                  copy.deepcopy(working_fatigue[no_of_fractions]
+                                                                [int(len(working_objects[no_of_fractions])/2)])
+
                     lat_start, lat_stop = working_lateral[no_of_fractions][0], \
-                                          working_lateral[no_of_fractions][int(ceil(len(working_objects)/2))]
+                                          working_lateral[no_of_fractions][int(ceil(
+                                              len(working_objects[no_of_fractions])/2))]
+
                     fat_press_start, fat_press_stop = working_fatigue_press[no_of_fractions][0], \
                                                       working_fatigue_press[no_of_fractions][
-                                                          int(ceil(len(working_objects)/2))]
+                                                          int(ceil(len(working_objects[no_of_fractions])/2))]
                     slam_start, slam_stop = working_slamming[no_of_fractions][0], \
-                                            working_slamming[no_of_fractions][int(ceil(len(working_objects)/2))]
+                                            working_slamming[no_of_fractions][
+                                                int(ceil(len(working_objects[no_of_fractions])/2))]
 
                     for work, work_input in zip([working_objects[no_of_fractions], working_lateral[no_of_fractions],
                                                  working_fatigue[no_of_fractions],
@@ -984,9 +992,9 @@ if __name__ == '__main__':
 
     t1 = time.time()
 
-    results = run_optmizataion(obj, lower_bounds,upper_bounds, lat_press, deltas, algorithm='anysmart',
-                               fatigue_obj=fat_obj, fat_press_ext_int=fat_press, use_weight_filter=True)
-    #
+    # results = run_optmizataion(obj, lower_bounds,upper_bounds, lat_press, deltas, algorithm='anysmart',
+    #                            fatigue_obj=fat_obj, fat_press_ext_int=fat_press, use_weight_filter=True)
+    # #
     # t1 = time.time()
     # check_ok_array, check_array, section_array = list(), list(), list()
     #
@@ -1057,10 +1065,10 @@ if __name__ == '__main__':
                                   (pressure['p_int']['loaded'], pressure['p_int']['ballast'],
                                    pressure['p_int']['part'])))
 
-    # results = run_optmizataion(ex.get_geo_opt_object(), lower_bounds, upper_bounds, ex.get_geo_opt_presure(), deltas,
-    #                            is_geometric=True, fatigue_obj=ex.get_geo_opt_fatigue(),
-    #                            fat_press_ext_int=fat_press_ext_int,
-    #                            slamming_press=ex.get_geo_opt_slamming_none(), load_pre=True)
+    results = run_optmizataion(ex.get_geo_opt_object(), lower_bounds, upper_bounds, ex.get_geo_opt_presure(), deltas,
+                               is_geometric=True, fatigue_obj=ex.get_geo_opt_fatigue(),
+                               fat_press_ext_int=fat_press_ext_int,
+                               slamming_press=ex.get_geo_opt_slamming_none(), load_pre=True, min_max_span = (1,12))
 
     # import pickle
     # with open('geo_opt_2.pickle', 'rb') as file:

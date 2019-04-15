@@ -545,6 +545,8 @@ class CreateOptGeoWindow():
         else:
             predefined_stiffener_iter = None
 
+        
+
         if not load_pre:
             geo_results = op.run_optmizataion(initial_structure_obj=init_objects,min_var=self.get_lower_bounds(),
                                               max_var=self.get_upper_bounds(),lateral_pressure=lateral_press,

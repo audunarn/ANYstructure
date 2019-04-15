@@ -417,6 +417,8 @@ class CreateOptimizeMultipleWindow():
         self.pso_parameters = (self._new_swarm_size.get(),self._new_omega.get(),self._new_phip.get(),
                                self._new_phig.get(),self._new_maxiter.get(),self._new_minstep.get(),
                                self._new_minfunc.get())
+
+        max_min_span = None
         
         self.progress_count.set(0)
         counter = 0
@@ -473,7 +475,8 @@ class CreateOptimizeMultipleWindow():
                                                           fat_press_ext_int=fat_press,
                                                           slamming_press=slamming_pressure,
                                                           predefined_stiffener_iter = predefined_stiffener_iter,
-                                                          processes=self._new_processes.get())
+                                                          processes=self._new_processes.get(),
+                                                          min_max_span=max_min_span)
             counter += 1
             self.progress_count.set(counter)
             self.progress_bar.update_idletasks()
