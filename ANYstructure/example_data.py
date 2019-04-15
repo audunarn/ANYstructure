@@ -256,6 +256,21 @@ def get_geo_opt_object():
               'sigma_y2': [80, 'MPa'], 'sigma_x': [80, 'MPa'], 'tau_xy': [5, 'MPa'], 'stf_type': ['T', '']})
     return [calc_structure.CalcScantlings(dic) for dic in dicts]
 
+def get_geo_opt_fatigue():
+    return [get_fatigue_object() for dummy in range(len(get_geo_opt_presure()))]
+
+def get_geo_opt_fat_press():
+    return [get_fatigue_pressures() for dummy in range(len(get_geo_opt_presure()))]
+
+def get_geo_opt_fat_press():
+    return [get_fatigue_pressures() for dummy in range(len(get_geo_opt_presure()))]
+
+def get_geo_opt_slamming_none():
+    return [0 for dummy in range(len(get_geo_opt_presure()))]
+
+def get_geo_opt_slamming():
+    return [get_slamming_pressure() for dummy in range(len(get_geo_opt_presure()))]
+
 def get_grid_coord_from_points_coords(point_coord):
     '''
     Converts coordinates to be used in the grid. Returns (row,col). This value will not change with slider.
@@ -266,6 +281,8 @@ def get_grid_coord_from_points_coords(point_coord):
     row = canvas_origo[1] - point_coord[1]*10
     col = point_coord[0]*10
     return (row,col)
+
+
 
 if __name__ == '__main__':
     print(get_random_color())

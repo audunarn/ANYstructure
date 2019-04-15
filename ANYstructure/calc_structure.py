@@ -71,14 +71,17 @@ class Structure():
         return 'pl_'+str(round(self.spacing*1000, 1))+'x'+str(round(self.plate_th*1000,1))+' stf_'+self.stiffener_type+\
                str(round(self.web_height*1000,1))+'x'+str(round(self.web_th*1000,1))+'+'\
                +str(round(self.flange_width*1000,1))+'x'+\
-               str(round(self.flange_th*1000,1))#+' | ' + 'sigma_x: ' + str(round(self.sigma_x, 1)) +' sigma_y: ' + \
-               # str(round(self.sigma_y, 1)) + ' sigma_y1: ' + str(round(self.sigma_y, 1)) + \
-               # ' sigma_y2: ' + str(round(self.sigma_y2, 1))
+               str(round(self.flange_th*1000,1))
 
     def get_report_stresses(self):
         'Return the stresses to the report'
         return 'sigma_y1: '+str(round(self.sigma_y1,1))+' sigma_y2: '+str(round(self.sigma_y2,1))+ \
                ' sigma_x: ' + str(round(self.sigma_x,1))+' tauxy: '+ str(round(self.tauxy,1))
+
+    def get_extended_string(self):
+        ''' Some more information returned. '''
+        return 'span: '+str(round(self.span,4))+' structure type: '+ self.structure_type + ' stf. type: ' + \
+               self.stiffener_type + ' pressure side: ' + self.pressure_side
     
     def get_sigma_y1(self):
         '''

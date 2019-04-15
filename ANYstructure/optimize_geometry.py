@@ -45,6 +45,7 @@ class CreateOptGeoWindow():
             self._active_points = []
             self._root_dir = app._root_dir
 
+
         self._opt_structure = {}
         self._opt_frames_obj = []
         self._frame = master
@@ -105,6 +106,15 @@ class CreateOptGeoWindow():
         self._new_minstep = tk.DoubleVar()
         self._new_minfunc = tk.DoubleVar()
         self._new_processes = tk.IntVar()
+        self._new_opt_girder_thk = tk.DoubleVar()
+        self._new_opt_girder_stf_web_h = tk.DoubleVar()
+        self._new_opt_girder_stf_web_thk = tk.DoubleVar()
+        self._new_opt_girder_stf_flange_b = tk.DoubleVar()
+        self._new_opt_girder_stf_flange_thk = tk.DoubleVar()
+        self._new_opt_girder_scale_high = tk.DoubleVar()
+        self._new_opt_girder_scale_low = tk.DoubleVar()
+        self._new_opt_span_max = tk.DoubleVar()
+        self._new_opt_span_min = tk.DoubleVar()
 
         ent_w = 10
         self._ent_spacing_upper = tk.Entry(self._frame, textvariable=self._new_spacing_upper, width=ent_w)
@@ -139,6 +149,27 @@ class CreateOptGeoWindow():
         self._ent_maxiter = tk.Entry(self._frame, textvariable=self._new_maxiter, width=pso_width)
         self._ent_minstep = tk.Entry(self._frame, textvariable=self._new_minstep, width=pso_width)
         self._ent_minfunc = tk.Entry(self._frame, textvariable=self._new_minfunc, width=pso_width)
+
+        self._ent_opt_girder_thk = tk.Entry(self._frame, textvariable=self._new_opt_girder_thk, width=ent_w)
+        self._ent_opt_girder_stf_web_h = tk.Entry(self._frame, textvariable=self._new_opt_girder_stf_web_h,
+                                                  width=ent_w)
+        self._ent_opt_girder_stf_web_thk = tk.Entry(self._frame, textvariable=self._new_opt_girder_stf_web_thk,
+                                                    width=ent_w)
+        self._ent_opt_girder_stf_fl_b = tk.Entry(self._frame, textvariable=self._new_opt_girder_stf_flange_b,
+                                                 width=ent_w)
+        self._ent_opt_girder_stf_fl_thk = tk.Entry(self._frame, textvariable=self._new_opt_girder_stf_flange_thk,
+                                                   width=ent_w)
+
+        self._ent_opt_girder_scale_high = tk.Entry(self._frame, textvariable=self._new_opt_girder_scale_high,
+                                                   width=int(ent_w/2))
+        self._ent_opt_girder_scale_low = tk.Entry(self._frame, textvariable=self._new_opt_girder_scale_low,
+                                                   width=int(ent_w/2))
+
+        self._ent_opt_max_span = tk.Entry(self._frame, textvariable=self._new_opt_span_max,
+                                                   width=int(ent_w/2))
+        self._ent_opt_min_span = tk.Entry(self._frame, textvariable=self._new_opt_span_min,
+                                                   width=int(ent_w/2))
+
 
         start_x, start_y, dx, dy = 20, 70, 100, 40
 
@@ -233,6 +264,15 @@ class CreateOptGeoWindow():
         self._new_algorithm.set('anysmart')
         self._new_algorithm_random_trials.set(10000)
         self._new_processes.set(max(cpu_count() - 1, 1))
+        self._new_opt_girder_thk.set(0.018)
+        self._new_opt_girder_stf_web_h.set(0.250)
+        self._new_opt_girder_stf_web_thk.set(0.015)
+        self._new_opt_girder_stf_flange_b.set(0)
+        self._new_opt_girder_stf_flange_thk.set(0)
+        self._new_opt_girder_scale_high.set(1.2)
+        self._new_opt_girder_scale_low.set(0.8)
+        self._new_opt_span_max.set(6)
+        self._new_opt_span_min.set(2)
 
         self._new_swarm_size.set(100)
         self._new_omega.set(0.5)
@@ -295,10 +335,11 @@ class CreateOptGeoWindow():
         self._new_check_shear_area.set(True)
         self._new_check_buckling.set(True)
         self._new_check_fatigue.set(True)
-        self._new_check_slamming.set(False)
+        self._new_check_slamming.set(True)
         self._new_check_local_buckling.set(True)
 
-        start_y, start_x, dy  = 570, 200, 30
+
+        start_y, start_x, dy  = 570, 100, 25
         tk.Label(self._frame,text='Check for minimum section modulus').place(x=start_x+dx*9.7,y=start_y+4*dy)
         tk.Label(self._frame, text='Check for minimum plate thk.').place(x=start_x+dx*9.7,y=start_y+5*dy)
         tk.Label(self._frame, text='Check for minimum shear area').place(x=start_x+dx*9.7,y=start_y+6*dy)
@@ -307,17 +348,42 @@ class CreateOptGeoWindow():
         tk.Label(self._frame, text='Check for bow slamming').place(x=start_x + dx * 9.7, y=start_y + 9 * dy)
         tk.Label(self._frame, text='Check for local stf. buckling').place(x=start_x + dx * 9.7, y=start_y + 10 * dy)
 
+        tk.Label(self._frame, text='Frame (girder data) for weight calculation:', font = 'Verdana 9 bold')\
+            .place(x=start_x + dx * 13,
+                                                                                       y=start_y + 4 * dy)
+        tk.Label(self._frame, text='Girder thickness').place(x=start_x + dx * 13, y=start_y + 5 * dy)
+        tk.Label(self._frame, text='Stiffener height').place(x=start_x + dx * 13, y=start_y + 6 * dy)
+        tk.Label(self._frame, text='Stiffener thickness').place(x=start_x + dx * 13, y=start_y + 7 * dy)
+        tk.Label(self._frame, text='Stf. flange width').place(x=start_x + dx * 13, y=start_y + 8 * dy)
+        tk.Label(self._frame, text='Stf. flange thickenss').place(x=start_x + dx * 13, y=start_y + 9 * dy)
+        tk.Label(self._frame, text='For weight calculation of girder: Max span mult / Min span mult')\
+            .place(x=start_x + dx * 13,y=start_y + 10 * dy)
+        tk.Label(self._frame, text='Maximum span / Minimum span ->')\
+            .place(x=start_x + dx * 13,y=start_y + 12 * dy)
+
+        self._ent_opt_girder_thk.place(x=start_x + dx * 15, y=start_y + 5 * dy)
+        self._ent_opt_girder_stf_web_h.place(x=start_x + dx * 15, y=start_y + 6 * dy)
+        self._ent_opt_girder_stf_web_thk.place(x=start_x + dx * 15, y=start_y + 7 * dy)
+        self._ent_opt_girder_stf_fl_b.place(x=start_x + dx * 15, y=start_y + 8 * dy)
+        self._ent_opt_girder_stf_fl_thk.place(x=start_x + dx * 15, y=start_y + 9 * dy)
+        self._ent_opt_girder_scale_high.place(x=start_x + dx * 15, y=start_y + 11 * dy)
+        self._ent_opt_girder_scale_low.place(x=start_x + dx * 15.5, y=start_y + 11 * dy)
+        self._ent_opt_max_span.place(x=start_x + dx * 15, y=start_y + 12 * dy)
+        self._ent_opt_min_span.place(x=start_x + dx * 15.5, y=start_y + 12 * dy)
+
         tk.Checkbutton(self._frame,variable=self._new_check_sec_mod).place(x=start_x+dx*12,y=start_y+4*dy)
         tk.Checkbutton(self._frame, variable=self._new_check_min_pl_thk).place(x=start_x+dx*12,y=start_y+5*dy)
         tk.Checkbutton(self._frame, variable=self._new_check_shear_area).place(x=start_x+dx*12,y=start_y+6*dy)
         tk.Checkbutton(self._frame, variable=self._new_check_buckling).place(x=start_x+dx*12,y=start_y+7*dy)
-        #tk.Checkbutton(self._frame, variable=self._new_check_fatigue).place(x=start_x + dx * 12, y=start_y + 8 * dy)
-        #tk.Checkbutton(self._frame, variable=self._new_check_slamming).place(x=start_x + dx * 12, y=start_y + 9 * dy)
+        tk.Checkbutton(self._frame, variable=self._new_check_fatigue).place(x=start_x + dx * 12, y=start_y + 8 * dy)
+        tk.Checkbutton(self._frame, variable=self._new_check_slamming).place(x=start_x + dx * 12, y=start_y + 9 * dy)
         tk.Checkbutton(self._frame, variable=self._new_check_local_buckling).place(x=start_x + dx * 12,
                                                                                    y=start_y + 10 * dy)
+
+
         self._toggle_btn = tk.Button(self._frame, text="Iterate predefiened stiffeners", relief="raised",
                                      command=self.toggle, bg = 'salmon')
-        self._toggle_btn.place(x=start_x+dx*10.5, y=start_y - dy * 14)
+        self._toggle_btn.place(x=start_x+dx*10.5, y=start_y - dy * 16.8)
         self._toggle_object, self._filez = None, None
 
         # ----------------------------------END OF OPTIMIZE SINGLE COPY-----------------------------------------------
@@ -325,7 +391,7 @@ class CreateOptGeoWindow():
         self.progress_count.set(0)
         self.progress_bar = Progressbar(self._frame, orient="horizontal",length=200, mode="determinate",
                                         variable=self.progress_count)
-        self.progress_bar.place(x=start_x+dx*10.5,y=start_y-dy*16.5)
+        #self.progress_bar.place(x=start_x+dx*10.5,y=start_y-dy*16.5)
 
         self._active_lines = []
         self.controls()
@@ -415,49 +481,85 @@ class CreateOptGeoWindow():
 
         contraints = (self._new_check_sec_mod.get(), self._new_check_min_pl_thk.get(),
                       self._new_check_shear_area.get(), self._new_check_buckling.get(),
-                      False, False, self._new_check_local_buckling.get()) # TODO not including fatigue and slamming
+                      self._new_check_fatigue.get(), self._new_check_slamming.get(),
+                      self._new_check_local_buckling.get())
 
         self.pso_parameters = (self._new_swarm_size.get(), self._new_omega.get(), self._new_phip.get(),
                                self._new_phig.get(),self._new_maxiter.get(), self._new_minstep.get(),
                                self._new_minfunc.get())
 
-        init_objects = []
-        lateral_press = []
-        broke = False
+        opt_girder_prop = (self._new_opt_girder_thk.get(), self._new_opt_girder_stf_web_h.get(),
+                           self._new_opt_girder_stf_web_thk.get(), self._new_opt_girder_stf_flange_b.get(),
+                           self._new_opt_girder_stf_flange_thk.get(),self._new_opt_girder_scale_high.get(),
+                           self._new_opt_girder_scale_low.get())
+        min_max_span = (self._new_opt_span_min.get(), self._new_opt_span_max.get())
 
+
+        init_objects, fatigue_objects, fat_press_ext_int, slamming_pressures, lateral_press, fatigue_objects, \
+        slamming_press = [list() for dummy in range(7)]
+
+        broke = False
         for line,coord in self._opt_structure.items():
             if self.opt_create_struc_obj(self._opt_structure[line]) is None:
                 broke = True
                 break
             else:
                 init_objects.append(self.opt_create_struc_obj(self._opt_structure[line])[0])
+                fat_obj_single = self.opt_create_struc_obj(self._opt_structure[line])[2]
+                fatigue_objects.append(fat_obj_single)
+
             if __name__ == '__main__':
+                import ANYstructure.example_data as ex
                 lateral_press.append(200)  # for testing
+                slamming_press.append(0)
+                fatigue_objects.append(ex.get_fatigue_object())
+                for pressure in ex.get_geo_opt_fat_press():
+                    fat_press_ext_int.append(((pressure['p_ext']['loaded'], pressure['p_ext']['ballast'],
+                                               pressure['p_ext']['part']),
+                                              (pressure['p_int']['loaded'], pressure['p_int']['ballast'],
+                                               pressure['p_int']['part'])))
+
             else:
                 p1, p2 = self._opt_structure[line]
                 closet_line = self.opt_find_closest_orig_line([(p2[0]-p1[0])*0.5, (p2[1]-p1[1])*0.5])
-                lateral_press.append(self.app.get_highest_pressure(closet_line)['normal'] / 1000)
+                gotten_lat_press = self.app.get_highest_pressure(closet_line)
+                lateral_press.append(gotten_lat_press['normal'] / 1000)
+                slamming_press.append(gotten_lat_press['slamming'])
+                try:
+                    fat_press_single = self.app.get_fatigue_pressures(line, fat_obj_single.get_accelerations())
+                    fat_press_tuple = ((fat_press_single['p_ext']['loaded'], fat_press_single['p_ext']['ballast'],
+                                        fat_press_single['p_ext']['part']),
+                                       (fat_press_single['p_int']['loaded'], fat_press_single['p_int']['ballast'],
+                                        fat_press_single['p_int']['part']))
+                    fat_press_ext_int.append(fat_press_tuple)
+                except AttributeError:
+                    fat_press_ext_int.append(None)
         if broke:
             messagebox.showinfo(title='Selection error.',
                                 message='This field cannot be subdivided or there are no loads. Error.')
             return None
 
-        found_files = self._filez
-        if self._toggle_btn.config('relief')[-1] == 'sunken':
-            found_files, predefined_stiffener_iter = self.toggle(found_files=found_files, iterating=True)
-        else:
-            predefined_stiffener_iter = None
+        # found_files = self._filez
+        # if self._toggle_btn.config('relief')[-1] == 'sunken':
+        #     found_files, predefined_stiffener_iter = self.toggle(found_files=found_files, iterating=True)
+        # else:
+        #     predefined_stiffener_iter = None
+
+        
 
         if not load_pre:
+
             geo_results = op.run_optmizataion(initial_structure_obj=init_objects,min_var=self.get_lower_bounds(),
                                               max_var=self.get_upper_bounds(),lateral_pressure=lateral_press,
                                               deltas=self.get_deltas(), algorithm='anysmart',side='p',
                                               const_chk = contraints,pso_options = self.pso_parameters,
-                                              is_geometric=True,fatigue_obj=None, fat_press_ext_int=None,
-                                              min_max_span=(2,6), tot_len=self.opt_get_length(),
+                                              is_geometric=True,fatigue_obj= fatigue_objects,
+                                              fat_press_ext_int=fat_press_ext_int,
+                                              min_max_span=min_max_span, tot_len=self.opt_get_length(),
                                               frame_height=self.opt_get_distance(), frame_distance = distances,
-                                              predefined_stiffener_iter=predefined_stiffener_iter,
-                                              processes = self._new_processes.get())
+                                              predefined_stiffener_iter=self._filez,
+                                              processes = self._new_processes.get(),
+                                              slamming_press=slamming_press, opt_girder_prop=opt_girder_prop)
 
             self._geo_results = geo_results
 
@@ -468,6 +570,7 @@ class CreateOptGeoWindow():
         else:
             with open('geo_opt_2.pickle', 'rb') as file:
                 self._geo_results = pickle.load(file)
+
 
 
         save_file, filename = None, None
@@ -537,7 +640,7 @@ class CreateOptGeoWindow():
 
     def opt_get_distance(self):
         ''' Getting the largest disctance between the two lines to be optimized. '''
-        if len(self._active_points)==4:
+        if len(self._active_points) == 4:
             return dist(self._point_dict[self._active_points[0]],self._point_dict[self._active_points[2]])
         else:
             return None
@@ -546,8 +649,6 @@ class CreateOptGeoWindow():
         ''' Getting the length of the lines to be optimized. '''
         if len(self._active_points)==4:
             return dist(self._point_dict[self._active_points[0]],self._point_dict[self._active_points[1]])
-        # else:
-        #     return None
 
     def opt_get_fraction_bounds(self, max_len = 6, min_len = 2):
         ''' Return the fraction bounds(basis upper/lower) to be considered. '''
@@ -841,7 +942,7 @@ class CreateOptGeoWindow():
         :return:
         '''
         self._canvas_select.delete('all')
-
+        text_type = 'Verdana 8'
         if opt_results is None:
             # stippled lines and text.
 
@@ -904,6 +1005,7 @@ class CreateOptGeoWindow():
                     self._canvas_select.create_line(coord1, coord2, width=6, fill=color)
 
             # drawing the point dictionary
+
             for key,value in self._point_dict.items():
                 pt_size = 6
                 if key in self._active_points:
@@ -914,19 +1016,19 @@ class CreateOptGeoWindow():
                     if self._active_points.index(key) == 0:
                         self._canvas_select.create_text(self.get_point_canvas_coord(key)[0] - 5,
                                                         self.get_point_canvas_coord(key)[1] - 14, text='START 1',
-                                                        font='Verdana 12', fill = 'blue')
+                                                        font=text_type, fill = 'blue')
                     elif self._active_points.index(key) == 1:
                         self._canvas_select.create_text(self.get_point_canvas_coord(key)[0] - 5,
                                                         self.get_point_canvas_coord(key)[1] - 14,
-                                                        text='STOP 1',font='Verdana 12', fill='blue')
+                                                        text='STOP 1',font=text_type, fill='blue')
                     elif self._active_points.index(key) == 2:
                         self._canvas_select.create_text(self.get_point_canvas_coord(key)[0] - 5,
                                                         self.get_point_canvas_coord(key)[1] - 14,
-                                                        text='START 2',font='Verdana 12', fill='blue')
+                                                        text='START 2',font=text_type, fill='blue')
                     elif self._active_points.index(key) == 3:
                         self._canvas_select.create_text(self.get_point_canvas_coord(key)[0] - 5,
                                                         self.get_point_canvas_coord(key)[1] - 14,
-                                                        text='STOP 2',font='Verdana 12', fill='blue')
+                                                        text='STOP 2',font=text_type, fill='blue')
                     else:
                         pass
                 else:
@@ -939,13 +1041,13 @@ class CreateOptGeoWindow():
                                                     self.get_point_canvas_coord(key)[1] - 14, text='pt.'+str(get_num(key)),
                                                     font='Verdana 8', fill='blue')
         else:
-            self._canvas_select.create_text([20, 20], text='Results are presented here', font='Verdana 12 bold',
+            self._canvas_select.create_text([20, 20], text='Results are presented here. '
+                                                           'All results may not fit the screen. '
+                                                           'All results are seen in your saved result file.',
+                                            font='Verdana 12 bold',
                                             fill='red', anchor = 'w')
-            text_type = 'Verdana 10'
-            delta, start_x, y_loc = 20, 20, 40
 
-            if save_file is not None:
-                save_file.write('\n' + 'Stiffener properties:')
+            delta, start_x, y_loc = 20, 10, 40
 
             for key, values in opt_results.items():
                 # if y_loc > 700:
@@ -953,42 +1055,43 @@ class CreateOptGeoWindow():
                 #     y_loc = 40
 
                 y_loc = y_loc + delta
-                check_ok = [val[-1] is True for val in opt_results[key][1]]
+
+                check_ok = [val[3] is True for val in opt_results[key][1]]
+
                 if save_file is not None:
                     save_file.write('\n' + str(len(check_ok))+'\n')
                 self._canvas_select.create_text([start_x + delta, y_loc],
-                                                text=str(len(check_ok))+' panels with weight '+ str(round(values[0],1))+
-                                                     '. Check may not be OK.',
+                                                text=str(len(check_ok))+' panels with weight '+ str(round(values[0],1)),
                                                 anchor='w', font=text_type)
                 y_loc += delta
                 item_count, endstring = 0, ''
-                for data in values[1]:
+
+                for data_idx, data in enumerate(values[1]):
                     for idx, stuc_info in enumerate(data):
                         if type(stuc_info) == ANYstructure.calc_structure.Structure:
                             if y_loc > 700:
                                 y_loc = 120
-                                start_x = 500
+                                start_x += 350
                             if item_count == 0:
-                                endstring = 'START 1'
+                                endstring = ' START 1'+' OK!\n' if values[1][data_idx][3] else ' START 1'+' NOT OK!\n'
                             elif item_count > 0 and item_count < len(values[1]) / 2-1 and len(values[1]) != 4:
-                                endstring = '-------'
+                                endstring = ' -------'+' OK!\n' if values[1][data_idx][3] else ' -------'+' NOT OK!\n'
                             elif item_count == len(values[1])/2-1:
-                                endstring = '-END 1-'
+                                endstring = ' -END 1-'+' OK!\n' if values[1][data_idx][3] else ' -END 1-'+' NOT OK!\n'
                             elif item_count == len(values[1])/2:
-                                endstring = 'START 2'
+                                endstring = ' START 2'+' OK!\n' if values[1][data_idx][3] else ' START 2'+' NOT OK!\n'
                             elif item_count > len(values[1])/2 and item_count < len(values[1])-1:
-                                endstring = '-------'
+                                endstring = ' -------'+' OK!\n' if values[1][data_idx][3] else ' -------'+' NOT OK!\n'
                             elif item_count == len(values[1])-1:
-                                endstring = '-END 2-'
+                                endstring = ' -END 2-'+' OK!\n' if values[1][data_idx][3] else ' -END 2-'+' NOT OK!\n'
                             self._canvas_select.create_text([start_x + delta, y_loc],
-                                                            text=stuc_info.get_one_line_string()+ ' for '+endstring,
+                                                            text=stuc_info.get_one_line_string()+endstring,
                                                             anchor='w', font=text_type)
                             y_loc += 15
+
                             if save_file is not None:
-                                save_file.write(stuc_info.get_one_line_string()+' | '+
-                                                stuc_info.get_report_stresses()+ ' for '+
-                                                endstring + ' | Panel check: '+'OK!\n' if values[1][idx][-1]
-                                                else 'NOT OK! \n')
+                                save_file.write(stuc_info.get_one_line_string()+' ' + stuc_info.get_extended_string() +
+                                                ' | ' + stuc_info.get_report_stresses()+ endstring)
                             item_count += 1
             if save_file is not None:
                 save_file.write('\n -------------  END  ---------------')
@@ -999,8 +1102,8 @@ class CreateOptGeoWindow():
 
         self._canvas_opt.delete('all')
         start_x = 20
-        delta = 40
-        start_y = 100
+        delta = 25
+        start_y = 60
         y_loc = delta + start_y
 
         self._canvas_opt.create_text([start_x, 40],
@@ -1016,7 +1119,7 @@ class CreateOptGeoWindow():
         self._canvas_opt.create_text([start_x, y_loc],
                                      text='************************************************', anchor='w',
                                      font='Verdana 10 bold')
-        text_type = 'Verdana 12 bold'
+        text_type = 'Verdana 10 bold'
         weights = [self._geo_results[key][0] for key in self._geo_results.keys()]
 
         max_weight = 0
@@ -1033,12 +1136,14 @@ class CreateOptGeoWindow():
 
         for key, value in self._geo_results.items():
             y_loc = y_loc + delta
-            check_ok = [val[-1] is True for val in self._geo_results[key][1]]
+            check_ok = [val[3] is True for val in self._geo_results[key][1]]
 
             self._canvas_opt.create_text([start_x + 20, y_loc ], text=str(len(check_ok)),
                                          anchor='w', font=text_type)
 
-            self._canvas_opt.create_text([start_x + 120, y_loc ], text=str(self._geo_results[key][1][0][0].get_span()),
+            self._canvas_opt.create_text([start_x + 120, y_loc ], text=str('No results\n' if
+                                                                           self._geo_results[key][1][0][0] is None else
+                                                                           round(self._geo_results[key][1][0][0].get_span(),4)),
                                          anchor='w', font=text_type)
             self._canvas_opt.create_text([start_x + 220, y_loc ],
                                          text=str(round(self._geo_results[key][0] / max_weight, 3))
@@ -1048,9 +1153,12 @@ class CreateOptGeoWindow():
                                          anchor='w', font=text_type)
 
             if save_to_file is not None:
-                save_file.write(str(len(check_ok))+ ' ' +str(self._geo_results[key][1][0][0].get_span()) + ' ' +
-                                str(round(self._geo_results[key][0] / max_weight, 3))
-                                         if max_weight != 0 else '' + ' ' + str(all(check_ok))+'\n')
+                save_file.write(str(len(check_ok))+ ' ' + 'No results\n' if self._geo_results[key][1][0][0] is None
+                                                             else str(round(self._geo_results[key][1][0][0].get_span(),
+                                                                            4)) + ' ' +
+                                                                  str(round(self._geo_results[key][0] / max_weight, 3))
+                                                                  + '\n' if max_weight != 0 else
+                '' + ' ' + str(all(check_ok))+'\n')
 
         if save_to_file:
             return save_file
@@ -1175,8 +1283,12 @@ class CreateOptGeoWindow():
         When clicking the right button, this method is called.
         method is referenced in
         '''
-        if self._geo_results is not None:
-            return
+        if type(self._geo_results) is not list():
+            if self._geo_results is not None:
+                return
+        else:
+            if self._geo_results[0] is not None:
+                return
         click_x = self._canvas_select.winfo_pointerx() - self._canvas_select.winfo_rootx()
         click_y = self._canvas_select.winfo_pointery() - self._canvas_select.winfo_rooty()
 
@@ -1279,24 +1391,25 @@ class CreateOptGeoWindow():
         :param obj:
         :return:
         '''
-        if iterating:
-            if found_files is not None:
-                predefined_structure = hlp.helper_read_section_file(files=found_files, obj=obj)
+        # if iterating:
+        #     if found_files is not None:
+        #         predefined_structure = hlp.helper_read_section_file(files=found_files, obj=obj)
+        # else:
+        predefined_structure = None
+        if self._toggle_btn.config('relief')[-1] == 'sunken':
+            self._toggle_btn.config(relief="raised")
+            self._toggle_btn.config(bg = 'salmon')
+            self._ent_spacing_upper.config(bg = 'white')
+            self._ent_spacing_lower.config(bg = 'white')
+            self._ent_delta_spacing.config(bg = 'white')
+            self._filez = None
         else:
-            predefined_structure = None
-            if self._toggle_btn.config('relief')[-1] == 'sunken':
-                self._toggle_btn.config(relief="raised")
-                self._toggle_btn.config(bg = 'salmon')
-                self._ent_spacing_upper.config(bg = 'white')
-                self._ent_spacing_lower.config(bg = 'white')
-                self._ent_delta_spacing.config(bg = 'white')
-            else:
-                self._toggle_btn.config(relief="sunken")
-                self._toggle_btn.config(bg='lightgreen')
-                self._ent_spacing_upper.config(bg = 'lightgreen')
-                self._ent_spacing_lower.config(bg = 'lightgreen')
-                self._ent_delta_spacing.config(bg = 'lightgreen')
-                self._filez = list(askopenfilenames(parent=self._frame, title='Choose files to open'))
+            self._toggle_btn.config(relief="sunken")
+            self._toggle_btn.config(bg='lightgreen')
+            self._ent_spacing_upper.config(bg = 'lightgreen')
+            self._ent_spacing_lower.config(bg = 'lightgreen')
+            self._ent_delta_spacing.config(bg = 'lightgreen')
+            self._filez = list(askopenfilenames(parent=self._frame, title='Choose files to open'))
 
         return found_files, predefined_structure
 
