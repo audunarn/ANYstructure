@@ -52,12 +52,13 @@ class CreateOptimizeMultipleWindow():
         self._active_lines = []
         self._add_to_lines = True
         self._lines_add_to_load = []
+        self._mid_click_line = None
 
         self._predefined_structure = None
 
         # ----------------------------------COPIED FROM OPTIMIZE_WINDOW-----------------------------------------------
 
-        self._opt_resutls = {}
+        self._opt_results = {}
         self._opt_actual_running_time = tk.Label(self._frame, text='')
 
         tk.Frame(self._frame, width=770, height=5, bg="grey", colormap="new").place(x=20, y=95)
@@ -272,7 +273,10 @@ class CreateOptimizeMultipleWindow():
         self.run_button = tk.Button(self._frame, text='RUN OPTIMIZATION!', command=self.run_optimizaion, bg='red',
                                     font='Verdana 10', fg='Yellow')
         self.run_button.place(x=start_x + dx * 8, y=start_y)
-        self._opt_actual_running_time.place(x=start_x + dx * 8, y=start_y + dy * 1.5)
+        self.run_results = tk.Button(self._frame,text='show calculated', command=self.plot_results, bg='white',
+                                    font='Verdana 10',fg='black')
+        self.run_results.place(x=start_x+dx*8, y=start_y+dy*1.5)
+        self._opt_actual_running_time.place(x=start_x + dx * 8, y=start_y - dy * 1.5)
         self.close_and_save = tk.Button(self._frame, text='Return and replace with selected optimized structure',
                                         command=self.save_and_close, bg='green', font='Verdana 10 bold', fg='yellow')
         self.close_and_save.place(x=start_x + dx * 10, y=10)
@@ -404,6 +408,8 @@ class CreateOptimizeMultipleWindow():
         Function when pressing the optimization botton inside this window.
         :return:
         '''
+        self.run_button.config(bg = 'white')
+
         t_start = time.time()
 
         self.progress_bar.config(maximum=len(self._active_lines))
@@ -463,7 +469,7 @@ class CreateOptimizeMultipleWindow():
             else:
                 predefined_stiffener_iter = None
 
-            self._opt_resutls[line] = op.run_optmizataion(init_obj, self.get_lower_bounds(init_obj),
+            self._opt_results[line] = op.run_optmizataion(init_obj, self.get_lower_bounds(init_obj),
                                                           self.get_upper_bounds(init_obj),
                                                           lateral_press,self.get_deltas(),
                                                           algorithm=self._new_algorithm.get(),
@@ -481,13 +487,14 @@ class CreateOptimizeMultipleWindow():
             self.progress_count.set(counter)
             self.progress_bar.update_idletasks()
 
-            if self._opt_resutls[line] != None:
+            if self._opt_results[line] != None:
                 self._opt_actual_running_time.config(text='Accumulated running time: \n'
                                                          + str(time.time() - t_start) + ' sec')
             else:
                 pass
         counter += 1
         self.progress_bar.stop()
+        self.run_button.config(bg='green')
 
     def get_running_time(self):
         '''
@@ -913,11 +920,13 @@ class CreateOptimizeMultipleWindow():
                         self._canvas_select.delete('all')
                         self._active_lines = []
                         self._active_lines.append(key)
-                        if key in self._opt_resutls.keys() and self._opt_resutls[key]!=None:
-                            self.draw_properties(init_obj=self._line_to_struc[key][0],opt_obj=self._opt_resutls[key][0],
+                        if key in self._opt_results.keys() and self._opt_results[key]!=None:
+                            self.draw_properties(init_obj=self._line_to_struc[key][0],opt_obj=self._opt_results[key][0],
                                                  line=key)
+                            self._mid_click_line = key
                         else:
                             self.draw_properties(init_obj=self._line_to_struc[key][0],line=key)
+                            self._mid_click_line = None
                         break
                 self.draw_select_canvas()
         self.draw_select_canvas()
@@ -934,7 +943,7 @@ class CreateOptimizeMultipleWindow():
         try:
             to_return = {}
             for line in self._active_lines:
-                to_return[line] = self._opt_resutls[line]
+                to_return[line] = self._opt_results[line]
             self.app.on_close_opt_multiple_window(to_return)
             messagebox.showinfo(title='Return info', message='Returning: '+str(to_return.keys()))
         except IndexError:
@@ -977,6 +986,12 @@ class CreateOptimizeMultipleWindow():
                     self._filez = openfile
 
         return found_files, predefined_structure
+
+    def plot_results(self):
+        if self._mid_click_line is not None:
+            if len(self._opt_results[self._mid_click_line]) != 0:
+                op.plot_optimization_results(self._opt_results[self._mid_click_line])
+
 
     def open_example_file(self):
         import os

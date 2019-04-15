@@ -576,6 +576,7 @@ class CreateOptimizeWindow():
         function for button
         :return:
         '''
+        self.run_button.config(bg = 'white')
         t_start = time.time()
         self._opt_results, self._opt_runned = (), False
         self._opt_actual_running_time.config(text='')
@@ -641,6 +642,8 @@ class CreateOptimizeWindow():
         else:
             messagebox.showinfo(title='Nothing found', message='No better alternatives found. Modify input.\n'
                                                                'There may be no alternative that is acceptable.\n')
+
+        self.run_button.config(bg='green')
 
     def get_running_time(self):
         '''
@@ -919,9 +922,7 @@ def receive_progress_info():
     '''
     print('hi')
 
-def plot_results(results):
-    if results is not None or None not in results:
-        op.plot_optimization_results(results)
+
 
 if __name__ == '__main__':
     root = tk.Tk()
