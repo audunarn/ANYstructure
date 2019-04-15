@@ -563,10 +563,10 @@ class CreateOptGeoWindow():
 
             self._geo_results = geo_results
 
-            # #SAVING RESULTS
-            # if save_results:
-            #     with open('geo_opt_2.pickle', 'wb') as file:
-            #         pickle.dump(geo_results, file)
+            #SAVING RESULTS
+            if save_results:
+                with open('geo_opt_2.pickle', 'wb') as file:
+                    pickle.dump(geo_results, file)
         else:
             with open('geo_opt_2.pickle', 'rb') as file:
                 self._geo_results = pickle.load(file)
@@ -942,7 +942,7 @@ class CreateOptGeoWindow():
         :return:
         '''
         self._canvas_select.delete('all')
-
+        text_type = 'Verdana 8'
         if opt_results is None:
             # stippled lines and text.
 
@@ -1005,6 +1005,7 @@ class CreateOptGeoWindow():
                     self._canvas_select.create_line(coord1, coord2, width=6, fill=color)
 
             # drawing the point dictionary
+
             for key,value in self._point_dict.items():
                 pt_size = 6
                 if key in self._active_points:
@@ -1015,19 +1016,19 @@ class CreateOptGeoWindow():
                     if self._active_points.index(key) == 0:
                         self._canvas_select.create_text(self.get_point_canvas_coord(key)[0] - 5,
                                                         self.get_point_canvas_coord(key)[1] - 14, text='START 1',
-                                                        font='Verdana 12', fill = 'blue')
+                                                        font=text_type, fill = 'blue')
                     elif self._active_points.index(key) == 1:
                         self._canvas_select.create_text(self.get_point_canvas_coord(key)[0] - 5,
                                                         self.get_point_canvas_coord(key)[1] - 14,
-                                                        text='STOP 1',font='Verdana 12', fill='blue')
+                                                        text='STOP 1',font=text_type, fill='blue')
                     elif self._active_points.index(key) == 2:
                         self._canvas_select.create_text(self.get_point_canvas_coord(key)[0] - 5,
                                                         self.get_point_canvas_coord(key)[1] - 14,
-                                                        text='START 2',font='Verdana 12', fill='blue')
+                                                        text='START 2',font=text_type, fill='blue')
                     elif self._active_points.index(key) == 3:
                         self._canvas_select.create_text(self.get_point_canvas_coord(key)[0] - 5,
                                                         self.get_point_canvas_coord(key)[1] - 14,
-                                                        text='STOP 2',font='Verdana 12', fill='blue')
+                                                        text='STOP 2',font=text_type, fill='blue')
                     else:
                         pass
                 else:
@@ -1040,9 +1041,12 @@ class CreateOptGeoWindow():
                                                     self.get_point_canvas_coord(key)[1] - 14, text='pt.'+str(get_num(key)),
                                                     font='Verdana 8', fill='blue')
         else:
-            self._canvas_select.create_text([20, 20], text='Results are presented here', font='Verdana 12 bold',
+            self._canvas_select.create_text([20, 20], text='Results are presented here. '
+                                                           'All results may not fit the screen. '
+                                                           'All results are seen in your saved result file.',
+                                            font='Verdana 12 bold',
                                             fill='red', anchor = 'w')
-            text_type = 'Verdana 10'
+
             delta, start_x, y_loc = 20, 10, 40
 
             if save_file is not None:
@@ -1070,7 +1074,7 @@ class CreateOptGeoWindow():
                         if type(stuc_info) == ANYstructure.calc_structure.Structure:
                             if y_loc > 700:
                                 y_loc = 120
-                                start_x = 500
+                                start_x += 350
                             if item_count == 0:
                                 endstring = ' START 1'+' OK!\n' if values[1][data_idx][3] else ' START 1'+' NOT OK!\n'
                             elif item_count > 0 and item_count < len(values[1]) / 2-1 and len(values[1]) != 4:
@@ -1089,7 +1093,7 @@ class CreateOptGeoWindow():
                             y_loc += 15
 
                             if save_file is not None:
-                                save_file.write(stuc_info.get_one_line_string()+' | '+
+                                save_file.write(stuc_info.get_one_line_string()+stuc_info.get_extended_string() + ' | '+
                                                 stuc_info.get_report_stresses()+ endstring)
                             item_count += 1
             if save_file is not None:
@@ -1101,8 +1105,8 @@ class CreateOptGeoWindow():
 
         self._canvas_opt.delete('all')
         start_x = 20
-        delta = 40
-        start_y = 100
+        delta = 25
+        start_y = 60
         y_loc = delta + start_y
 
         self._canvas_opt.create_text([start_x, 40],
@@ -1118,7 +1122,7 @@ class CreateOptGeoWindow():
         self._canvas_opt.create_text([start_x, y_loc],
                                      text='************************************************', anchor='w',
                                      font='Verdana 10 bold')
-        text_type = 'Verdana 12 bold'
+        text_type = 'Verdana 10 bold'
         weights = [self._geo_results[key][0] for key in self._geo_results.keys()]
 
         max_weight = 0
@@ -1140,7 +1144,9 @@ class CreateOptGeoWindow():
             self._canvas_opt.create_text([start_x + 20, y_loc ], text=str(len(check_ok)),
                                          anchor='w', font=text_type)
 
-            self._canvas_opt.create_text([start_x + 120, y_loc ], text=str(self._geo_results[key][1][0][0].get_span()),
+            self._canvas_opt.create_text([start_x + 120, y_loc ], text=str('No results\n' if
+                                                                           self._geo_results[key][1][0][0] is None else
+                                                                           round(self._geo_results[key][1][0][0].get_span(),4)),
                                          anchor='w', font=text_type)
             self._canvas_opt.create_text([start_x + 220, y_loc ],
                                          text=str(round(self._geo_results[key][0] / max_weight, 3))
@@ -1150,9 +1156,12 @@ class CreateOptGeoWindow():
                                          anchor='w', font=text_type)
 
             if save_to_file is not None:
-                save_file.write(str(len(check_ok))+ ' ' +str(self._geo_results[key][1][0][0].get_span()) + ' ' +
-                                str(round(self._geo_results[key][0] / max_weight, 3))
-                                         if max_weight != 0 else '' + ' ' + str(all(check_ok))+'\n')
+                save_file.write(str(len(check_ok))+ ' ' + 'No results\n' if self._geo_results[key][1][0][0] is None
+                                                             else str(round(self._geo_results[key][1][0][0].get_span(),
+                                                                            4)) + ' ' +
+                                                                  str(round(self._geo_results[key][0] / max_weight, 3))
+                                                                  + '\n' if max_weight != 0 else
+                '' + ' ' + str(all(check_ok))+'\n')
 
         if save_to_file:
             return save_file
