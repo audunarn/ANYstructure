@@ -269,8 +269,8 @@ class CreateOptGeoWindow():
         self._new_opt_girder_stf_web_thk.set(0.015)
         self._new_opt_girder_stf_flange_b.set(0)
         self._new_opt_girder_stf_flange_thk.set(0)
-        self._new_opt_girder_scale_high.set(1.2)
-        self._new_opt_girder_scale_low.set(0.8)
+        self._new_opt_girder_scale_high.set(1.1)
+        self._new_opt_girder_scale_low.set(0.9)
         self._new_opt_span_max.set(6)
         self._new_opt_span_min.set(2)
 
@@ -1410,6 +1410,12 @@ class CreateOptGeoWindow():
             self._ent_spacing_lower.config(bg = 'lightgreen')
             self._ent_delta_spacing.config(bg = 'lightgreen')
             self._filez = list(askopenfilenames(parent=self._frame, title='Choose files to open'))
+            if self._filez == []:
+                self._toggle_btn.config(relief="raised")
+                self._toggle_btn.config(bg='salmon')
+                self._ent_spacing_upper.config(bg='white')
+                self._ent_spacing_lower.config(bg='white')
+                self._ent_delta_spacing.config(bg='white')
 
         return found_files, predefined_structure
 
