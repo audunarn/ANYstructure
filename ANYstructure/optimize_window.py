@@ -445,7 +445,7 @@ class CreateOptimizeWindow():
         self.run_results = tk.Button(self._frame,text='show calculated', command=self.plot_results, bg='white',
                                     font='Verdana 10',fg='black')
         self.run_results.place(x=start_x+dx*8, y=start_y+dy*1.5)
-        self._opt_actual_running_time.place(x=start_x+dx*8, y=start_y+dy*2.5)
+        self._opt_actual_running_time.place(x=start_x+dx*9.5, y=start_y-dy)
 
         self.close_and_save =tk.Button(self._frame,text='Return and replace initial structure with optimized',
                                        command=self.save_and_close,bg='green',font='Verdana 10',fg='yellow')
@@ -914,6 +914,11 @@ class CreateOptimizeWindow():
     def plot_results(self):
         if len(self._opt_results) != 0:
             op.plot_optimization_results(self._opt_results)
+
+    def write_result_csv(self):
+        if len(self._opt_results) != 0:
+            print(self._opt_results)
+
 
 def receive_progress_info():
     '''

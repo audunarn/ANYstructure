@@ -509,18 +509,24 @@ class CalcScantlings(Structure):
     def check_all_slamming(self, slamming_pressure):
         ''' A summary check of slamming '''
 
-        if self.plate_th*1000 < self.calculate_slamming_plate(slamming_pressure):
-            return False
+        pl_chk = self.calculate_slamming_plate(slamming_pressure)
+        if self.plate_th*1000 < pl_chk:
+            chk1 = pl_chk / self.plate_th*1000
+            return False, chk1
 
         stf_res = self.calculate_slamming_stiffener(slamming_pressure)
 
         if self.web_th*1000 < stf_res['tw_req']:
-            return False
+            chk2 = stf_res['tw_req'] / self.web_th*1000
+            return False, chk2
 
         if stf_res['Zp_req'] is not None:
-            if self.get_net_effective_plastic_section_modulus() < stf_res['Zp_req']:
-                return False
-        return True
+            eff_pl_sec_mod = self.get_net_effective_plastic_section_modulus()
+            if eff_pl_sec_mod < stf_res['Zp_req']:
+                chk3 = stf_res['Zp_req']/eff_pl_sec_mod
+                return False, chk3
+
+        return True, None
 
     def get_net_effective_plastic_section_modulus(self, angle = 90):
         ''' Calculated according to Rules for classification: Ships — DNVGL-RU-SHIP Pt.3 Ch.3. Edition July 2017,
@@ -988,7 +994,7 @@ class CalcScantlings(Structure):
 
     def buckling_local_stiffener(self):
         '''
-        Local requrements for stiffeners. Chapter 9.11.
+        Local requirements for stiffeners. Chapter 9.11.
         :return:
         '''
 
@@ -999,13 +1005,16 @@ class CalcScantlings(Structure):
         elif self.stiffener_type == 'T':
             c = self.flange_width/2 - self.web_th/2
         elif self.stiffener_type == 'FB':
-            return self.web_height <= 42 * self.web_th * epsilon
+            return self.web_height <= 42 * self.web_th * epsilon, self.web_height/(42 * self.web_th * epsilon)
 
         # print(self.web_height, self.web_th, self.flange_width ,self.flange_th )
         # print('c:',c, 14 * self.flange_th * epsilon, ' | ',  self.web_height, 42 * self.web_th * epsilon)
         # print(c <= (14  * self.flange_th * epsilon) and self.web_height <= 42 * self.web_th * epsilon)
+        # print(c/(14  * self.flange_th * epsilon), self.web_height / (42 * self.web_th * epsilon))
         # print('')
-        return c <= (14  * self.flange_th * epsilon) and self.web_height <= 42 * self.web_th * epsilon
+
+        return c <= (14  * self.flange_th * epsilon) and self.web_height <= 42 * self.web_th * epsilon, \
+               max(c/(14  * self.flange_th * epsilon), self.web_height / (42 * self.web_th * epsilon))
 
     def is_acceptable_pl_thk(self, design_pressure):
         '''
@@ -1167,21 +1176,22 @@ if __name__ == '__main__':
         # print('Total damage: ', my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0)))
         # print(my_test.get_fatigue_properties())
         pressure = 200
-        print('SHEAR CENTER: ',my_test.get_shear_center())
-        print('SECTION MOD: ',my_test.get_section_modulus())
-        print('SECTION MOD FLANGE: ', my_test.get_section_modulus()[0])
-        print('SHEAR AREA: ', my_test.get_shear_area())
-        print('PLASTIC SECTION MOD: ',my_test.get_plasic_section_modulus())
-        print('MOMENT OF INTERTIA: ',my_test.get_moment_of_intertia())
-        print('WEIGHT', my_test.get_weight())
-        print('PROPERTIES', my_test.get_structure_prop())
-        print('CROSS AREA', my_test.get_cross_section_area())
-        print()
-
-        print('EFFICIENT MOMENT OF INTERTIA: ',my_test.get_moment_of_intertia(efficent_se=my_test.get_plate_efficent_b(
-            design_lat_press=pressure)))
-        print('Se: ',my_test.calculate_buckling_all(design_lat_press=pressure,checked_side='s'))
-        print('Se: ', my_test.calculate_buckling_all(design_lat_press=pressure, checked_side='p'))
-        print('MINIMUM PLATE THICKNESS',my_test.get_dnv_min_thickness(pressure))
-        print('MINIMUM SECTION MOD.', my_test.get_dnv_min_section_modulus(pressure))
-        print()
+        print(my_test.buckling_local_stiffener())
+        # print('SHEAR CENTER: ',my_test.get_shear_center())
+        # print('SECTION MOD: ',my_test.get_section_modulus())
+        # print('SECTION MOD FLANGE: ', my_test.get_section_modulus()[0])
+        # print('SHEAR AREA: ', my_test.get_shear_area())
+        # print('PLASTIC SECTION MOD: ',my_test.get_plasic_section_modulus())
+        # print('MOMENT OF INTERTIA: ',my_test.get_moment_of_intertia())
+        # print('WEIGHT', my_test.get_weight())
+        # print('PROPERTIES', my_test.get_structure_prop())
+        # print('CROSS AREA', my_test.get_cross_section_area())
+        # print()
+        #
+        # print('EFFICIENT MOMENT OF INTERTIA: ',my_test.get_moment_of_intertia(efficent_se=my_test.get_plate_efficent_b(
+        #     design_lat_press=pressure)))
+        # print('Se: ',my_test.calculate_buckling_all(design_lat_press=pressure,checked_side='s'))
+        # print('Se: ', my_test.calculate_buckling_all(design_lat_press=pressure, checked_side='p'))
+        # print('MINIMUM PLATE THICKNESS',my_test.get_dnv_min_thickness(pressure))
+        # print('MINIMUM SECTION MOD.', my_test.get_dnv_min_section_modulus(pressure))
+        # print()

@@ -16,7 +16,8 @@ from math import ceil, floor
 from matplotlib import pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d import axes3d
-
+from tkinter.filedialog import asksaveasfilename
+import csv
 
 def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lateral_pressure=None,
                      deltas=None, algorithm='anysmart', trials=30000, side='p',
@@ -125,16 +126,16 @@ def any_optimize_loop(min_var,max_var,deltas,initial_structure_obj,lateral_press
                             var_x = np.array([spacing, plate_thk, stf_web_h, stf_web_thk, stf_flange_width,
                                               stf_flange_thk,min_var[6],min_var[7]])
                             check = any_constraints_all(var_x,initial_structure_obj,lat_press=lateral_pressure,
-                                                   init_weight=min_weight,side=side,chk=const_chk,
-                                                   fat_dict = fat_dict, fat_press = fat_press,
-                                                   slamming_press=slamming_press)
+                                                        init_weight=min_weight,side=side,chk=const_chk,
+                                                        fat_dict = fat_dict, fat_press = fat_press,
+                                                        slamming_press=slamming_press)
                             if check[0] is not False:
                                 current_weight = calc_weight(var_x)
                                 if current_weight <= min_weight:
                                     iter_count+=1
                                     min_weight = current_weight
                                     ass_var = var_x
-                                main_fail.append((True, 'Check OK', var_x))
+                                main_fail.append(check)
                             else:
                                 main_fail.append(check)
     if ass_var is None:
@@ -181,13 +182,11 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
     ass_var=None
     current_weight = float('inf')
     for item in main_iter:
-        main_fail.append((True, 'Check OK', item))
-        item_weight = calc_weight(item)
+        main_fail.append(item)
+        item_weight = calc_weight(item[2])
         if item_weight < current_weight:
-            ass_var = item
+            ass_var = item[2]
             current_weight = item_weight
-
-    #main_fail = (item for item in main_fail)
 
     if ass_var == None:
         return None, None, None, False, main_fail
@@ -485,67 +484,92 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
     :param x:
     :return:
     '''
-
-    if calc_weight(x) > init_weight:
+    all_checks = [0,0,0,0,0,0,0,0]
+    this_weight = calc_weight(x)
+    if this_weight > init_weight:
+        weigt_frac = this_weight / init_weight
         if print_result:
             pass
             # print('Weights', calc_weight(x), ' > ', init_weight,
             #       calc_object[0].get_one_line_string(), init_weight, False)
-        return False, 'Weight filter', x
+        all_checks[0] = weigt_frac
+        return False, 'Weight filter', x, all_checks
 
     calc_object = create_new_calc_obj(obj, x, fat_dict)
 
     # Section modulus
     if chk[0]:
-        if not min(calc_object[0].get_section_modulus()) > calc_object[0].get_dnv_min_section_modulus(lat_press):
+        section_modulus = min(calc_object[0].get_section_modulus())
+        min_section_modulus = calc_object[0].get_dnv_min_section_modulus(lat_press)
+        section_frac = min_section_modulus / section_modulus
+        all_checks[1] = section_frac
+        if not section_modulus > min_section_modulus :
             if print_result:
                 print('Section modulus',calc_object[0].get_one_line_string(), False)
-            return False, 'Section modulus', x
+            return False, 'Section modulus', x, all_checks
 
     # Local stiffener buckling
     if chk[6]:
-        if not calc_object[0].buckling_local_stiffener():
+        buckling_local =  calc_object[0].buckling_local_stiffener()
+        all_checks[2] = buckling_local[1]
+        if not buckling_local[0]:
             if print_result:
                 print('Local stiffener buckling',calc_object[0].get_one_line_string(), False)
-            return False, 'Local stiffener buckling', x
+            return False, 'Local stiffener buckling', x, all_checks
 
     # Buckling
     if chk[3]:
-        if not all([uf<=1 for uf in calc_object[0].calculate_buckling_all(design_lat_press=lat_press,
-                                                                          checked_side=side)]):
+        buckling_results = calc_object[0].calculate_buckling_all(design_lat_press=lat_press, checked_side=side)
+        all_checks[3] = max(buckling_results)
+        if not all([uf<=1 for uf in buckling_results]):
             if print_result:
                 print('Buckling',calc_object[0].get_one_line_string(), False)
-            return False, 'Buckling', x
+            return False, 'Buckling', x, all_checks
 
     # Minimum plate thickness
     if chk[1]:
-        if not calc_object[0].get_plate_thk()>calc_object[0].get_dnv_min_thickness(lat_press)/1000:
+        act_pl_thk = calc_object[0].get_plate_thk()
+        min_pl_thk = calc_object[0].get_dnv_min_thickness(lat_press)/1000
+        plate_frac = min_pl_thk / act_pl_thk
+        all_checks[4] = plate_frac
+        if not act_pl_thk > min_pl_thk:
             if print_result:
                 print('Minimum plate thickeness',calc_object[0].get_one_line_string(), False)
-            return False, 'Minimum plate thickness', x
+            return False, 'Minimum plate thickness', x, all_checks
+
     # Shear area
     if chk[2]:
-        if not calc_object[0].get_shear_area()>calc_object[0].get_minimum_shear_area(lat_press):
+        calc_shear_area = calc_object[0].get_shear_area()
+        min_shear_area = calc_object[0].get_minimum_shear_area(lat_press)
+        shear_frac = min_shear_area / calc_shear_area
+        all_checks[5] = shear_frac
+        if not calc_shear_area > min_shear_area:
             if print_result:
                 print('Shear area',calc_object[0].get_one_line_string(), False)
-            return False, 'Shear area', x
+            return False, 'Shear area', x,  all_checks
 
     # Fatigue
     if chk[4] and fat_dict is not None:
-        if calc_object[1].get_total_damage(ext_press=fat_press[0], int_press=fat_press[1])*calc_object[1].get_dff() > 1:
+        fatigue_uf = calc_object[1].get_total_damage(ext_press=fat_press[0],
+                                                     int_press=fat_press[1])*calc_object[1].get_dff()
+        all_checks[6] = fatigue_uf
+        if fatigue_uf > 1:
             if print_result:
                 print('Fatigue',calc_object[0].get_one_line_string(), False)
-            return False, 'Fatigue', x
+            return False, 'Fatigue', x, all_checks
 
     # Slamming
     if chk[5] and slamming_press != 0:
-        if calc_object[0].check_all_slamming(slamming_press) is False:
+        slam_check = calc_object[0].check_all_slamming(slamming_press)
+        all_checks[7] = slam_check[1]
+        if slam_check[0] is False:
             if print_result:
                 print('Slamming',calc_object[0].get_one_line_string(), False)
-            return False, 'Slamming', x
+            return False, 'Slamming', x, all_checks
+
     if print_result:
         print('OK Section', calc_object[0].get_one_line_string(), True)
-    return x
+    return True, 'Check OK', x, all_checks
 
 def any_constraints_all_number(x,*args):
     '''
@@ -691,7 +715,6 @@ def calc_weight(x, prt = False):
     :param current_dict:
     :return:
     '''
-
     span = x[6]
     plate_area, stiff_area = get_field_tot_area(x)
 
@@ -798,7 +821,7 @@ def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight
 
     check_ok, check_not_ok = list(), list()
     for item in res_pre:
-        if len(item) == 3:
+        if item[0] is False:
             check_not_ok.append(item)
         else:
             check_ok.append(item)
@@ -896,7 +919,7 @@ def get_random_result(obj,lat_press,min_var,max_var,deltas,trials=10000,side='p'
     trial_selection = random_product(combs,repeat=trials)
     for x in trial_selection:
         if any_constraints_all(x=x,obj=obj,lat_press=lat_press,init_weight=min_weight,side=side,chk=const_chk,
-                               fat_dict = fat_dict, fat_press = fat_press)[0]:
+                               fat_dict = fat_dict, fat_press = fat_press)[0] is not False:
             current_weight = calc_weight(x)
             if current_weight < min_weight:
                 min_weight = current_weight
@@ -951,12 +974,32 @@ def product_any(*args, repeat=1,weight=float('inf')):
 def plot_optimization_results(results, multiple = False):
 
     check_ok_array, check_array, section_array = list(), list(), list()
+    save_to_csv = asksaveasfilename()
 
+    if save_to_csv != '':
+        csv_file = open(save_to_csv,'w', newline='')
+        csv_writer = csv.writer(csv_file)
+        csv_writer.writerow(['Is OK', 'Check info', 'pl b', 'pl thk', 'web h', 'web thk', 'fl b', 'fl thk', 'span',
+                             'girder width', 'stiffener type', 'uf weight', 'uf sec mod', 'uf loc stf buc',
+                             'uf buckling', 'uf min pl', 'uf shear', 'uf fatigue', 'uf slamming'])
 
-    for check_ok, check, section in results[4]:
+    for check_ok, check, section, ufres in results[4]:
         check_ok_array.append(check_ok)
         check_array.append(check)
         section_array.append(section)
+        if save_to_csv != '':
+            to_write = list()
+            to_write.append(check_ok)
+            to_write.append(check)
+            [to_write.append(item) for item in section]
+            if(len(section) == 8):
+                to_write.append('T')
+            [to_write.append(item) for item in ufres]
+            csv_writer.writerow(to_write)
+
+    if save_to_csv != '':
+        csv_file.close()
+
     check_ok_array, check_array, section_array = np.array(check_ok_array), \
                                                  np.array(check_array), \
                                                  np.array(section_array)
@@ -994,9 +1037,9 @@ if __name__ == '__main__':
 
     t1 = time.time()
     #
-    # results = run_optmizataion(obj, lower_bounds,upper_bounds, lat_press, deltas, algorithm='anysmart',
-    #                            fatigue_obj=fat_obj, fat_press_ext_int=fat_press, use_weight_filter=True,
-    #                            predefined_stiffener_iter=hlp.helper_read_section_file('sections.csv', obj=obj))
+    results = run_optmizataion(obj, lower_bounds,upper_bounds, lat_press, deltas, algorithm='anysmart',
+                               fatigue_obj=fat_obj, fat_press_ext_int=fat_press, use_weight_filter=True,
+                               predefined_stiffener_iter=hlp.helper_read_section_file('sections.csv', obj=obj))
     # print(results)
 
     # t1 = time.time()
@@ -1071,13 +1114,13 @@ if __name__ == '__main__':
 
     opt_girder_prop = (0.018, 0.25,0.015, 0,0, 1.1,0.9)
 
-    results = run_optmizataion(ex.get_geo_opt_object(), lower_bounds, upper_bounds, ex.get_geo_opt_presure(), deltas,
-                               is_geometric=True, fatigue_obj=ex.get_geo_opt_fatigue(),
-                               fat_press_ext_int=fat_press_ext_int,
-                               slamming_press=ex.get_geo_opt_slamming_none(), load_pre=False,
-                               opt_girder_prop= opt_girder_prop,
-                               predefined_stiffener_iter=hlp.helper_read_section_file('sections.csv'),
-                               min_max_span=(1,12), tot_len=12)
+    # results = run_optmizataion(ex.get_geo_opt_object(), lower_bounds, upper_bounds, ex.get_geo_opt_presure(), deltas,
+    #                            is_geometric=True, fatigue_obj=ex.get_geo_opt_fatigue(),
+    #                            fat_press_ext_int=fat_press_ext_int,
+    #                            slamming_press=ex.get_geo_opt_slamming_none(), load_pre=False,
+    #                            opt_girder_prop= opt_girder_prop,
+    #                            predefined_stiffener_iter=hlp.helper_read_section_file('sections.csv', obj=),
+    #                            min_max_span=(1,12), tot_len=12)
 
     # import pickle
     # with open('geo_opt_2.pickle', 'rb') as file:
