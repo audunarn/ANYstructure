@@ -625,11 +625,11 @@ class CreateOptimizeWindow():
             self._opt_runned = True
             self._result_label.config(text='Optimization result | Spacing: '+
                                            str(round(self._opt_results[0].get_s(),1)*1000)+
-                                          ' Plate thickness: '+str(self._opt_results[0].get_plate_thk()*1000)+
-                                          ' Stiffener - T'+str(self._opt_results[0].get_web_h()*1000)+'x'
-                                          +str(self._opt_results[0].get_web_thk()*1000)+
-                                          '+'+str(self._opt_results[0].get_fl_w()*1000)+'x'
-                                          +str(self._opt_results[0].get_fl_thk()*1000))
+                                          ' Plate thickness: '+str(round(self._opt_results[0].get_plate_thk()*1000,2))+
+                                          ' Stiffener - T'+str(round(self._opt_results[0].get_web_h()*1000,2))+'x'
+                                          +str(round(self._opt_results[0].get_web_thk()*1000,2))+
+                                          '+'+str(round(self._opt_results[0].get_fl_w()*1000,2))+'x'
+                                          +str(round(self._opt_results[0].get_fl_thk()*1000,2)))
 
             self._new_opt_spacing.set(round(self._opt_results[0].get_s(),5))
             self._new_opt_pl_thk.set(round(self._opt_results[0].get_plate_thk(),5))
