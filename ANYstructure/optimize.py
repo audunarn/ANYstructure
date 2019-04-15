@@ -424,15 +424,17 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
             # Finding weight of this solution.
 
             tot_weight, frame_spacings, valid, width = 0, [None for dummy in range(len(opt_objects))], True, 10
-
+            #print('Weight for', no_of_fractions)
             for count, opt in enumerate(opt_objects):
                 obj = opt[0]
 
                 if opt[3]:
-                    tot_weight += calc_weight((obj.get_s(),obj.get_pl_thk(),obj.get_web_h(),obj.get_web_thk(),
+                    weigth_to_add = calc_weight((obj.get_s(),obj.get_pl_thk(),obj.get_web_h(),obj.get_web_thk(),
                                                obj.get_fl_w(),obj.get_fl_thk(),obj.get_span(),width), prt=False)
+                    tot_weight += weigth_to_add
                     if frame_spacings[count // 2] is None:
                         frame_spacings[count // 2] = obj.get_s()
+                    #print('added normal weight', weigth_to_add)
 
                 else:
                     # In this case there are no applicable solutions found in the specified dimension ranges.
@@ -440,7 +442,7 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                     valid = False
             if valid:
                 #print(frame_distance)
-                for frame in range(int(count/2)):
+                for frame in range(no_of_fractions-1):
                     frame_height = 2.5 if frame_distance is None else frame_distance['start_dist'] + \
                                                                       (frame_distance['stop_dist']-
                                                                        frame_distance['start_dist']) * \
@@ -457,6 +459,7 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                     #print('Number of fractions', no_of_fractions, 'Scale', this_scale)
                     tot_weight += this_weight * this_scale
                     solution_found = True
+                    #print('added frame weight', this_weight * this_scale)
             elif iterations == 2:
                 solution_found = True  # Only iterate once.
 

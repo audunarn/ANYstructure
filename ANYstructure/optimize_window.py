@@ -885,7 +885,6 @@ class CreateOptimizeWindow():
             self._ent_spacing_lower.config(bg = 'white')
             self._ent_delta_spacing.config(bg = 'white')
         else:
-
             self._toggle_btn.config(relief="sunken")
             self._toggle_btn.config(bg = 'salmon')
             self._toggle_btn.config(bg='lightgreen')
