@@ -23,7 +23,7 @@ def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lat
                      const_chk = (True,True,True,True,True,True, True),
                      pso_options = (100,0.5,0.5,0.5,100,1e-8,1e-8), is_geometric=False, fatigue_obj = None ,
                      fat_press_ext_int = None,
-                     min_max_span = (2,6), tot_len = 12, frame_height = 2.5, frame_distance = None,
+                     min_max_span = (2,6), tot_len = None, frame_height = 2.5, frame_distance = None,
                      slamming_press = 0, predefined_stiffener_iter = None, processes = None, use_weight_filter = True,
                      load_pre = False, opt_girder_prop = None):
     '''
@@ -47,8 +47,10 @@ def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lat
 
     if use_weight_filter:
         if is_geometric or algorithm is 'pso':
+
             init_filter_weight = float('inf')
         else:
+
             predefined_stiffener_iter = None if predefined_stiffener_iter is None else predefined_stiffener_iter
 
             init_filter_weight = get_initial_weight(obj=initial_structure_obj,
@@ -289,7 +291,7 @@ def particle_search_geometric(min_var=None,max_var=None,deltas = None, initial_s
 def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_structure_obj=None,lateral_pressure=None,
                              init_filter = float('inf'),side='p',const_chk=(True,True,True,True, True, True),
                              pso_options=(100,0.5,0.5,0.5,100,1e-8,1e-8), fat_obj = None, fat_press = None,
-                             min_max_span = (2,6), tot_len = 12, frame_distance = None,
+                             min_max_span = (2,6), tot_len = None, frame_distance = None,
                              algorithm = 'anysmart', predefiened_stiffener_iter=None, reiterate = True,
                              processes = None, slamming_press = None, load_pre = False, opt_girder_prop = None):
 
@@ -302,13 +304,12 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
         if tot_len/frames <= min_max_span[1] and found_min is False:
             min_frame_count = frame_count - 1
             found_min = True
-        if tot_len/frames <= min_max_span[0] and found_max is False:
-            max_frame_cont = frame_count - 1
+        if tot_len / field_divisions <= min_max_span[0] and not found_max:
+            max_frame_count = field_divisions - 1
             found_max = True
-        if found_min and found_max:
-            break
+
     results = {}
-    # print('Frame count min/max: ', min_frame_count, max_frame_cont)
+    # print('Frame count min/max: ', min_frame_count, max_frame_count)
     # print('Initial objects: ', [print(type(obj)) for obj in initial_structure_obj])
     # print('Initial lateral: ', lateral_pressure)
     working_objects = {}
@@ -317,7 +318,7 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
     working_fatigue_press = {}
     working_slamming = {}
 
-    for no_of_fractions in range(min_frame_count+1, max_frame_cont+1):
+    for no_of_fractions in range(min_frame_count+1, max_frame_count+1):
         # Create fraction varables
         frac_var,min_frac,max_frac = [],[],[]
 
@@ -450,8 +451,10 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                               opt_girder_prop[3], opt_girder_prop[4], None, width)
                     this_weight = sum(get_field_tot_area(this_x))* frame_height * 7850
                     scale_max, scale_min = opt_girder_prop[5], opt_girder_prop[6]
-                    this_scale = scale_min + (scale_max-scale_min) * (abs((max_frame_cont-(count+1)/2))/
-                                                                      (max_frame_cont-min_frame_count))
+
+                    this_scale = scale_min + (scale_max-scale_min) * (abs((max_frame_count-(count+1)/2))/
+                                                                      (max_frame_count-min_frame_count))
+                    #print('Number of fractions', no_of_fractions, 'Scale', this_scale)
                     tot_weight += this_weight * this_scale
                     solution_found = True
             elif iterations == 2:
@@ -518,7 +521,7 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
         if not calc_object[0].get_plate_thk()>calc_object[0].get_dnv_min_thickness(lat_press)/1000:
             if print_result:
                 print('Minimum plate thickeness',calc_object[0].get_one_line_string(), False)
-            return False, 'Minimum plate thickness'
+            return False, 'Minimum plate thickness', x
     # Shear area
     if chk[2]:
         if not calc_object[0].get_shear_area()>calc_object[0].get_minimum_shear_area(lat_press):
@@ -989,10 +992,12 @@ if __name__ == '__main__':
 
 
     t1 = time.time()
-
-    results = run_optmizataion(obj, lower_bounds,upper_bounds, lat_press, deltas, algorithm='anysmart',
-                               fatigue_obj=fat_obj, fat_press_ext_int=fat_press, use_weight_filter=True)
     #
+    results = run_optmizataion(obj, lower_bounds,upper_bounds, lat_press, deltas, algorithm='anysmart',
+                               fatigue_obj=fat_obj, fat_press_ext_int=fat_press, use_weight_filter=True,
+                               predefined_stiffener_iter=hlp.helper_read_section_file('sections.csv', obj=obj))
+    print(results)
+
     # t1 = time.time()
     # check_ok_array, check_array, section_array = list(), list(), list()
     #
@@ -1063,10 +1068,14 @@ if __name__ == '__main__':
                                   (pressure['p_int']['loaded'], pressure['p_int']['ballast'],
                                    pressure['p_int']['part'])))
 
+    opt_girder_prop = (0.018, 0.25,0.015, 0,0, 1.1,0.9)
+
     # results = run_optmizataion(ex.get_geo_opt_object(), lower_bounds, upper_bounds, ex.get_geo_opt_presure(), deltas,
     #                            is_geometric=True, fatigue_obj=ex.get_geo_opt_fatigue(),
     #                            fat_press_ext_int=fat_press_ext_int,
-    #                            slamming_press=ex.get_geo_opt_slamming_none(), load_pre=True)
+    #                            slamming_press=ex.get_geo_opt_slamming_none(), load_pre=False,
+    #                            opt_girder_prop= opt_girder_prop,
+    #                            predefined_stiffener_iter=hlp.helper_read_section_file('sections.csv'))
 
     # import pickle
     # with open('geo_opt_2.pickle', 'rb') as file:

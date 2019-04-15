@@ -548,6 +548,7 @@ class CreateOptGeoWindow():
         
 
         if not load_pre:
+
             geo_results = op.run_optmizataion(initial_structure_obj=init_objects,min_var=self.get_lower_bounds(),
                                               max_var=self.get_upper_bounds(),lateral_pressure=lateral_press,
                                               deltas=self.get_deltas(), algorithm='anysmart',side='p',
@@ -639,7 +640,7 @@ class CreateOptGeoWindow():
 
     def opt_get_distance(self):
         ''' Getting the largest disctance between the two lines to be optimized. '''
-        if len(self._active_points)==4:
+        if len(self._active_points) == 4:
             return dist(self._point_dict[self._active_points[0]],self._point_dict[self._active_points[2]])
         else:
             return None
@@ -648,8 +649,6 @@ class CreateOptGeoWindow():
         ''' Getting the length of the lines to be optimized. '''
         if len(self._active_points)==4:
             return dist(self._point_dict[self._active_points[0]],self._point_dict[self._active_points[1]])
-        # else:
-        #     return None
 
     def opt_get_fraction_bounds(self, max_len = 6, min_len = 2):
         ''' Return the fraction bounds(basis upper/lower) to be considered. '''
