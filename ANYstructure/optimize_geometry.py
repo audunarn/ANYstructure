@@ -563,10 +563,10 @@ class CreateOptGeoWindow():
 
             self._geo_results = geo_results
 
-            #SAVING RESULTS
-            if save_results:
-                with open('geo_opt_2.pickle', 'wb') as file:
-                    pickle.dump(geo_results, file)
+            # #SAVING RESULTS
+            # if save_results:
+            #     with open('geo_opt_2.pickle', 'wb') as file:
+            #         pickle.dump(geo_results, file)
         else:
             with open('geo_opt_2.pickle', 'rb') as file:
                 self._geo_results = pickle.load(file)
