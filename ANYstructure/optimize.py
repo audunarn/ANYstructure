@@ -351,7 +351,7 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                                                         [int(ceil(len(working_objects[no_of_fractions])/2))])
                     fat_obj_start, fat_obj_stop = copy.deepcopy(working_fatigue[no_of_fractions][0]), \
                                                   copy.deepcopy(working_fatigue[no_of_fractions]
-                                                                [int(len(working_objects[no_of_fractions])/2)])
+                                                                [int(ceil(len(working_objects[no_of_fractions])/2))])
 
                     lat_start, lat_stop = working_lateral[no_of_fractions][0], \
                                           working_lateral[no_of_fractions][int(ceil(
