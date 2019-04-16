@@ -1091,8 +1091,15 @@ class CreateOptGeoWindow():
 
                             if save_file is not None:
                                 save_file.write(stuc_info.get_one_line_string()+' ' + stuc_info.get_extended_string() +
-                                                ' | ' + stuc_info.get_report_stresses()+ endstring)
+                                                ' | ' + stuc_info.get_report_stresses() + endstring)
                             item_count += 1
+
+                if save_file is not None:
+                    save_file.write('Weight details for this solution:\n')
+                    save_file.write('Weight of main structure: ' + str(values[2]['objects']))
+                    save_file.write('Weight of frames: ' + str(values[2]['frames']))
+                    save_file.write('Scale on main structure: ' + str(values[2]['scales']))
+
             if save_file is not None:
                 save_file.write('\n -------------  END  ---------------')
                 save_file.close()
