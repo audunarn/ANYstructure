@@ -332,37 +332,49 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
             working_fatigue_press[no_of_fractions] = list(fat_press)
             working_slamming[no_of_fractions] = list(slamming_press)
             similar_count = len(working_objects[no_of_fractions])
+            tick_tock = True
+
             while similar_count != no_of_fractions*2:
+
                 if similar_count > no_of_fractions*2:
                     for var_dict in [working_objects, working_lateral, working_fatigue,
                                      working_fatigue_press, working_slamming]:
+                        if tick_tock:
+                            lower_idx = 0
+                            upper_idx = int(floor(len(working_objects[no_of_fractions]) / 2))
+                            tick_tock = False
+                        else:
+                            lower_idx = int(len(working_objects[no_of_fractions]) / 2) - 1
+                            upper_idx = -1
+                            tick_tock = True
 
-                        var_dict[no_of_fractions].pop(0)
-                        var_dict[no_of_fractions].pop(int(floor(len(working_objects[no_of_fractions]) / 2)))
-                    # working_objects[no_of_fractions].pop(0)
-                    # working_objects[no_of_fractions].pop(floor(int(len(working_objects)/2)))
-                    # working_lateral[no_of_fractions].pop(0)
-                    # working_lateral[no_of_fractions].pop(floor(int(len(working_objects)/2)))
+                        var_dict[no_of_fractions].pop(lower_idx)
+                        var_dict[no_of_fractions].pop(upper_idx)
                     similar_count -= 2
                 else:
+                    if tick_tock:
+                        lower_idx = 0
+                        upper_idx = int(len(working_objects[no_of_fractions])/2)
+                        tick_tock = False
+                    else:
+                        lower_idx = int(len(working_objects[no_of_fractions])/2) - 1
+                        upper_idx = -1
+                        tick_tock = True
                     #print(no_of_fractions, int(ceil(len(working_objects[no_of_fractions])/2)))
-                    obj_start, obj_stop = copy.deepcopy(working_objects[no_of_fractions][0]),\
-                                          copy.deepcopy(working_objects[no_of_fractions]
-                                                        [int(ceil(len(working_objects[no_of_fractions])/2))])
-                    fat_obj_start, fat_obj_stop = copy.deepcopy(working_fatigue[no_of_fractions][0]), \
-                                                  copy.deepcopy(working_fatigue[no_of_fractions]
-                                                                [int(ceil(len(working_objects[no_of_fractions])/2))])
 
-                    lat_start, lat_stop = working_lateral[no_of_fractions][0], \
-                                          working_lateral[no_of_fractions][int(ceil(
-                                              len(working_objects[no_of_fractions])/2))]
+                    obj_start, obj_stop = copy.deepcopy(working_objects[no_of_fractions][lower_idx]),\
+                                          copy.deepcopy(working_objects[no_of_fractions][upper_idx])
 
-                    fat_press_start, fat_press_stop = working_fatigue_press[no_of_fractions][0], \
-                                                      working_fatigue_press[no_of_fractions][
-                                                          int(ceil(len(working_objects[no_of_fractions])/2))]
-                    slam_start, slam_stop = working_slamming[no_of_fractions][0], \
-                                            working_slamming[no_of_fractions][
-                                                int(ceil(len(working_objects[no_of_fractions])/2))]
+                    fat_obj_start, fat_obj_stop = copy.deepcopy(working_fatigue[no_of_fractions][lower_idx]), \
+                                                  copy.deepcopy(working_fatigue[no_of_fractions][upper_idx])
+                    lat_start, lat_stop = working_lateral[no_of_fractions][lower_idx], \
+                                          working_lateral[no_of_fractions][upper_idx]
+                    fat_press_start, fat_press_stop = working_fatigue_press[no_of_fractions][lower_idx], \
+                                                      working_fatigue_press[no_of_fractions][upper_idx]
+                    slam_start, slam_stop = working_slamming[no_of_fractions][lower_idx], \
+                                            working_slamming[no_of_fractions][upper_idx]
+                    # if no_of_fractions == 11:
+                    #     print('Tick/tock', tick_tock, 'lower/opper idx', lower_idx, upper_idx)
 
                     for work, work_input in zip([working_objects[no_of_fractions], working_lateral[no_of_fractions],
                                                  working_fatigue[no_of_fractions],
@@ -371,21 +383,19 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                                                 [(obj_start, obj_stop), (lat_start, lat_stop),
                                                  (fat_obj_start, fat_obj_stop), (fat_press_start, fat_press_stop),
                                                  (slam_start, slam_stop)]):
-
-                        work.insert(0, work_input[0])
-                        work.insert(int(ceil(len(working_objects[no_of_fractions]) / 2)), work_input[1])
-
-                    # working_objects[no_of_fractions].insert(0,obj_start)
-                    # working_objects[no_of_fractions].insert(int(ceil(len(working_objects)/2)), obj_stop)
-                    # working_lateral[no_of_fractions].insert(0,lat_start)
-                    # working_lateral[no_of_fractions].insert(int(ceil(len(working_objects)/2)), lat_stop)
-                    # working_fatigue[no_of_fractions].insert(0,fat_obj_start)
-                    # working_fatigue[no_of_fractions].insert(int(ceil(len(working_objects)/2)), fat_obj_stop)
-                    # working_fatigue_press[no_of_fractions].insert(0,fat_press_start)
-                    # working_fatigue_press[no_of_fractions].insert(int(ceil(len(working_objects)/2)), fat_press_stop)
-                    # working_slamming[no_of_fractions].insert(0,slam_start)
-                    # working_slamming[no_of_fractions].insert(int(ceil(len(working_objects)/2)), slam_stop)
+                        # First iteration tick_tock true, second tick_tock false
+                        if not tick_tock:
+                            lower_idx = lower_idx
+                            upper_idx = upper_idx + 1
+                        else:
+                            lower_idx = lower_idx + 1
+                            upper_idx = -1
+                        work.insert(lower_idx, work_input[0])
+                        work.insert(upper_idx, work_input[1])
                     similar_count += 2
+                # if no_of_fractions == 11:
+                #     [print(item.get_structure_type()) for item in working_objects[no_of_fractions]]
+                #     print('')
         for no_of_fractions, struc_objects in working_objects.items():
             for struc_obj in struc_objects:
                 struc_obj.set_span(tot_len/no_of_fractions)
@@ -1046,10 +1056,10 @@ if __name__ == '__main__':
 
     t1 = time.time()
     #
-    results = run_optmizataion(obj, lower_bounds,upper_bounds, lat_press, deltas, algorithm='anysmart',
-                               fatigue_obj=fat_obj, fat_press_ext_int=fat_press, use_weight_filter=True,
-                               predefined_stiffener_iter=hlp.helper_read_section_file('sections.csv', obj=obj))
-    # print(results)
+    # results = run_optmizataion(obj, lower_bounds,upper_bounds, lat_press, deltas, algorithm='anysmart',
+    #                            fatigue_obj=fat_obj, fat_press_ext_int=fat_press, use_weight_filter=True,
+    #                            predefined_stiffener_iter=hlp.helper_read_section_file('sections.csv', obj=obj))
+    # # print(results)
 
     # t1 = time.time()
     # check_ok_array, check_array, section_array = list(), list(), list()
@@ -1123,13 +1133,12 @@ if __name__ == '__main__':
 
     opt_girder_prop = (0.018, 0.25,0.015, 0,0, 1.1,0.9)
 
-    # results = run_optmizataion(ex.get_geo_opt_object(), lower_bounds, upper_bounds, ex.get_geo_opt_presure(), deltas,
-    #                            is_geometric=True, fatigue_obj=ex.get_geo_opt_fatigue(),
-    #                            fat_press_ext_int=fat_press_ext_int,
-    #                            slamming_press=ex.get_geo_opt_slamming_none(), load_pre=False,
-    #                            opt_girder_prop= opt_girder_prop,
-    #                            predefined_stiffener_iter=hlp.helper_read_section_file('sections.csv', obj=),
-    #                            min_max_span=(1,12), tot_len=12)
+    results = run_optmizataion(ex.get_geo_opt_object(), lower_bounds, upper_bounds, ex.get_geo_opt_presure(), deltas,
+                               is_geometric=True, fatigue_obj=ex.get_geo_opt_fatigue(),
+                               fat_press_ext_int=fat_press_ext_int,
+                               slamming_press=ex.get_geo_opt_slamming_none(), load_pre=False,
+                               opt_girder_prop= opt_girder_prop,
+                               min_max_span=(1,12), tot_len=12)
 
     # import pickle
     # with open('geo_opt_2.pickle', 'rb') as file:
