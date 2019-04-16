@@ -909,6 +909,7 @@ class CreateOptimizeWindow():
 
     def show_calculated(self):
         ''' '''
+        pass
 
     def plot_results(self):
         if len(self._opt_results) != 0:
