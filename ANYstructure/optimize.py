@@ -333,36 +333,40 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
             working_slamming[no_of_fractions] = list(slamming_press)
             similar_count = len(working_objects[no_of_fractions])
             while similar_count != no_of_fractions*2:
+                tick_tock = True
                 if similar_count > no_of_fractions*2:
                     for var_dict in [working_objects, working_lateral, working_fatigue,
                                      working_fatigue_press, working_slamming]:
+                        if tick_tock:
+                            lower_idx = 0
+                            upper_idx = int(floor(len(working_objects[no_of_fractions]) / 2))
+                        else:
+                            lower_idx = int(len(working_objects[no_of_fractions]) / 2) - 1
+                            upper_idx = -1
+                            tick_tock = False
 
-                        var_dict[no_of_fractions].pop(0)
-                        var_dict[no_of_fractions].pop(int(floor(len(working_objects[no_of_fractions]) / 2)))
-                    # working_objects[no_of_fractions].pop(0)
-                    # working_objects[no_of_fractions].pop(floor(int(len(working_objects)/2)))
-                    # working_lateral[no_of_fractions].pop(0)
-                    # working_lateral[no_of_fractions].pop(floor(int(len(working_objects)/2)))
+                        var_dict[no_of_fractions].pop(lower_idx)
+                        var_dict[no_of_fractions].pop(upper_idx)
                     similar_count -= 2
                 else:
+                    if tick_tock:
+                        lower_idx = 0
+                        upper_idx = int(ceil(len(working_objects[no_of_fractions])/2))
+                    else:
+                        lower_idx = int(len(working_objects[no_of_fractions])/2)
+                        upper_idx = -1
                     #print(no_of_fractions, int(ceil(len(working_objects[no_of_fractions])/2)))
-                    obj_start, obj_stop = copy.deepcopy(working_objects[no_of_fractions][0]),\
-                                          copy.deepcopy(working_objects[no_of_fractions]
-                                                        [int(ceil(len(working_objects[no_of_fractions])/2))])
-                    fat_obj_start, fat_obj_stop = copy.deepcopy(working_fatigue[no_of_fractions][0]), \
-                                                  copy.deepcopy(working_fatigue[no_of_fractions]
-                                                                [int(ceil(len(working_objects[no_of_fractions])/2))])
 
-                    lat_start, lat_stop = working_lateral[no_of_fractions][0], \
-                                          working_lateral[no_of_fractions][int(ceil(
-                                              len(working_objects[no_of_fractions])/2))]
-
-                    fat_press_start, fat_press_stop = working_fatigue_press[no_of_fractions][0], \
-                                                      working_fatigue_press[no_of_fractions][
-                                                          int(ceil(len(working_objects[no_of_fractions])/2))]
-                    slam_start, slam_stop = working_slamming[no_of_fractions][0], \
-                                            working_slamming[no_of_fractions][
-                                                int(ceil(len(working_objects[no_of_fractions])/2))]
+                    obj_start, obj_stop = copy.deepcopy(working_objects[no_of_fractions][lower_idx]),\
+                                          copy.deepcopy(working_objects[no_of_fractions][upper_idx])
+                    fat_obj_start, fat_obj_stop = copy.deepcopy(working_fatigue[no_of_fractions][lower_idx]), \
+                                                  copy.deepcopy(working_fatigue[no_of_fractions][upper_idx])
+                    lat_start, lat_stop = working_lateral[no_of_fractions][lower_idx], \
+                                          working_lateral[no_of_fractions][upper_idx]
+                    fat_press_start, fat_press_stop = working_fatigue_press[no_of_fractions][lower_idx], \
+                                                      working_fatigue_press[no_of_fractions][upper_idx]
+                    slam_start, slam_stop = working_slamming[no_of_fractions][lower_idx], \
+                                            working_slamming[no_of_fractions][upper_idx]
 
                     for work, work_input in zip([working_objects[no_of_fractions], working_lateral[no_of_fractions],
                                                  working_fatigue[no_of_fractions],
@@ -372,19 +376,8 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                                                  (fat_obj_start, fat_obj_stop), (fat_press_start, fat_press_stop),
                                                  (slam_start, slam_stop)]):
 
-                        work.insert(0, work_input[0])
-                        work.insert(int(ceil(len(working_objects[no_of_fractions]) / 2)), work_input[1])
-
-                    # working_objects[no_of_fractions].insert(0,obj_start)
-                    # working_objects[no_of_fractions].insert(int(ceil(len(working_objects)/2)), obj_stop)
-                    # working_lateral[no_of_fractions].insert(0,lat_start)
-                    # working_lateral[no_of_fractions].insert(int(ceil(len(working_objects)/2)), lat_stop)
-                    # working_fatigue[no_of_fractions].insert(0,fat_obj_start)
-                    # working_fatigue[no_of_fractions].insert(int(ceil(len(working_objects)/2)), fat_obj_stop)
-                    # working_fatigue_press[no_of_fractions].insert(0,fat_press_start)
-                    # working_fatigue_press[no_of_fractions].insert(int(ceil(len(working_objects)/2)), fat_press_stop)
-                    # working_slamming[no_of_fractions].insert(0,slam_start)
-                    # working_slamming[no_of_fractions].insert(int(ceil(len(working_objects)/2)), slam_stop)
+                        work.insert(lower_idx, work_input[0])
+                        work.insert(upper_idx, work_input[1])
                     similar_count += 2
         for no_of_fractions, struc_objects in working_objects.items():
             for struc_obj in struc_objects:
