@@ -332,14 +332,16 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
             working_fatigue_press[no_of_fractions] = list(fat_press)
             working_slamming[no_of_fractions] = list(slamming_press)
             similar_count = len(working_objects[no_of_fractions])
+            tick_tock = True
             while similar_count != no_of_fractions*2:
-                tick_tock = True
+
                 if similar_count > no_of_fractions*2:
                     for var_dict in [working_objects, working_lateral, working_fatigue,
                                      working_fatigue_press, working_slamming]:
                         if tick_tock:
                             lower_idx = 0
                             upper_idx = int(floor(len(working_objects[no_of_fractions]) / 2))
+                            tick_tock = True
                         else:
                             lower_idx = int(len(working_objects[no_of_fractions]) / 2) - 1
                             upper_idx = -1
@@ -352,9 +354,11 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                     if tick_tock:
                         lower_idx = 0
                         upper_idx = int(ceil(len(working_objects[no_of_fractions])/2))
+                        tick_tock = True
                     else:
                         lower_idx = int(len(working_objects[no_of_fractions])/2)
                         upper_idx = -1
+                        tick_tock = False
                     #print(no_of_fractions, int(ceil(len(working_objects[no_of_fractions])/2)))
 
                     obj_start, obj_stop = copy.deepcopy(working_objects[no_of_fractions][lower_idx]),\
