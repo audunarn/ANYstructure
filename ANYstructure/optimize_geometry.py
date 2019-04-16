@@ -1059,7 +1059,8 @@ class CreateOptGeoWindow():
                 check_ok = [val[3] is True for val in opt_results[key][1]]
 
                 if save_file is not None:
-                    save_file.write('\n' + str(len(check_ok))+'\n')
+                    save_file.write('\n' + 'Plate fields: '+str(len(values[2]['objects']))+ ' Frames: '+
+                                    str(len(values[2]['frames'])) + '\n')
                 self._canvas_select.create_text([start_x + delta, y_loc],
                                                 text=str(len(check_ok))+' panels with weight '+ str(round(values[0],1)),
                                                 anchor='w', font=text_type)
