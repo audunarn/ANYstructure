@@ -580,11 +580,13 @@ class CreateOptGeoWindow():
                                               processes = self._new_processes.get(),
                                               slamming_press=slamming_press, opt_girder_prop=opt_girder_prop)
             self._geo_results = geo_results
-            self._ent_option_fractions.destroy()
-            self._ent_option_fractions = tk.OptionMenu(self._frame, self._new_option_fraction,
-                                                       *tuple([val*2 for val in self._geo_results.keys()]),
-                                                       command=self.get_plate_field_options)
-            self._ent_option_fractions.place(x=self._option_fractions_place[0], y=self._option_fractions_place[1])
+
+            if len([val*2 for val in self._geo_results.keys()]) != 0:
+                self._ent_option_fractions.destroy()
+                self._ent_option_fractions = tk.OptionMenu(self._frame, self._new_option_fraction,
+                                                           *tuple([val*2 for val in self._geo_results.keys()]),
+                                                           command=self.get_plate_field_options)
+                self._ent_option_fractions.place(x=self._option_fractions_place[0], y=self._option_fractions_place[1])
             # #SAVING RESULTS
             # if save_results:
             #     with open('geo_opt_2.pickle', 'wb') as file:
