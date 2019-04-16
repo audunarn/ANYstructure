@@ -1099,9 +1099,12 @@ class CreateOptGeoWindow():
 
                 if save_file is not None:
                     save_file.write('Weight details for this solution:\n')
-                    save_file.write('Weight of main structure: ' + str(values[2]['objects']) + '\n')
-                    save_file.write('Weight of frames: ' + str(values[2]['frames']) + '\n')
-                    save_file.write('Scale on main structure: ' + str(values[2]['scales']) + '\n')
+                    save_file.write('Weight of main structure: ' + str([str(round(val, 1))
+                                                                        for val in values[2]['objects']]) + '\n')
+                    save_file.write('Weight of frames:         ' + str([str(round(val, 1))
+                                                                        for val in values[2]['frames']]) + '\n')
+                    save_file.write('Scales used on frames:    ' +
+                                    str([str(round(val, 1)) for val in values[2]['scales']]) + '\n')
                     save_file.write('----------------------------------------------------------------------------'+'\n')
 
             if save_file is not None:
