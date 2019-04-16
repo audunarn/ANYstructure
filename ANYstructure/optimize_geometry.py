@@ -74,6 +74,7 @@ class CreateOptGeoWindow():
         tk.Label(self._frame, text='-- Plate field span optimizer for plate fields separated by frames. --',
                  font='Verdana 15 bold').place(x=10, y=10)
 
+
         # upper and lower bounds for optimization
         # [0.6, 0.012, 0.3, 0.01, 0.1, 0.01]
         self._new_spacing_upper = tk.DoubleVar()
@@ -115,6 +116,8 @@ class CreateOptGeoWindow():
         self._new_opt_girder_scale_low = tk.DoubleVar()
         self._new_opt_span_max = tk.DoubleVar()
         self._new_opt_span_min = tk.DoubleVar()
+        self._new_option_fraction = tk.IntVar()
+        self._new_option_panel = tk.IntVar()
 
         ent_w = 10
         self._ent_spacing_upper = tk.Entry(self._frame, textvariable=self._new_spacing_upper, width=ent_w)
@@ -337,7 +340,8 @@ class CreateOptGeoWindow():
         self._new_check_fatigue.set(True)
         self._new_check_slamming.set(True)
         self._new_check_local_buckling.set(True)
-
+        self._new_option_fraction.set(None)
+        self._new_option_panel.set(None)
 
         start_y, start_x, dy  = 570, 100, 25
         tk.Label(self._frame,text='Check for minimum section modulus').place(x=start_x+dx*9.7,y=start_y+4*dy)
@@ -386,6 +390,24 @@ class CreateOptGeoWindow():
         self._toggle_btn.place(x=start_x+dx*10.5, y=start_y - dy * 16.8)
         self._toggle_object, self._filez = None, None
 
+        self._options_fractions = (None, )
+        self._options_panels = (None, )
+        tk.Label(self._frame, text='Select number of panels:').place(x=start_x+dx*12, y=start_y - dy * 20.5)
+        tk.Label(self._frame, text='Select panel to plot:   ').place(x=start_x+dx*12, y=start_y - dy * 19.5)
+        self._ent_option_fractions = tk.OptionMenu(self._frame, self._new_option_fraction, *self._options_fractions,
+                                                   command=self.get_plate_field_options)
+        self._ent_option_field = tk.OptionMenu(self._frame, self._new_option_panel, *self._options_panels, 
+                                               command=self.get_plate_field_options)
+        self._option_fractions_place = [start_x+dx*13.5, start_y - dy * 20.5]
+        self._options_panels_place = [start_x+dx*13.5, start_y - dy * 19.5]
+        self._ent_option_fractions.place(x=self._option_fractions_place[0], y=self._option_fractions_place[1])
+        self._ent_option_field.place(x=self._options_panels_place[0], y=self._options_panels_place[1])
+
+        self.run_results = tk.Button(self._frame,text='show calculated', command=self.plot_results, bg='white',
+                                    font='Verdana 10',fg='black')
+        self.run_results.place(x=start_x+dx*13, y=start_y - dy * 18)
+
+
         # ----------------------------------END OF OPTIMIZE SINGLE COPY-----------------------------------------------
         self.progress_count = tk.IntVar()
         self.progress_count.set(0)
@@ -398,8 +420,6 @@ class CreateOptGeoWindow():
         self.draw_select_canvas()
         # if __name__ == '__main__':
         #     self.run_optimizaion(load_pre = True, save_results=True)
-
-
 
     def selected_algorithm(self, event):
         '''
@@ -545,7 +565,6 @@ class CreateOptGeoWindow():
         # else:
         #     predefined_stiffener_iter = None
 
-        
 
         if not load_pre:
 
@@ -560,9 +579,12 @@ class CreateOptGeoWindow():
                                               predefined_stiffener_iter=self._filez,
                                               processes = self._new_processes.get(),
                                               slamming_press=slamming_press, opt_girder_prop=opt_girder_prop)
-
             self._geo_results = geo_results
-
+            self._ent_option_fractions.destroy()
+            self._ent_option_fractions = tk.OptionMenu(self._frame, self._new_option_fraction,
+                                                       *tuple([val*2 for val in self._geo_results.keys()]),
+                                                       command=self.get_plate_field_options)
+            self._ent_option_fractions.place(x=self._option_fractions_place[0], y=self._option_fractions_place[1])
             # #SAVING RESULTS
             # if save_results:
             #     with open('geo_opt_2.pickle', 'wb') as file:
@@ -571,7 +593,11 @@ class CreateOptGeoWindow():
             with open('geo_opt_2.pickle', 'rb') as file:
                 self._geo_results = pickle.load(file)
 
-
+            self._ent_option_fractions.destroy()
+            self._ent_option_fractions = tk.OptionMenu(self._frame, self._new_option_fraction,
+                                                       *tuple([val*2 for val in self._geo_results.keys()]),
+                                                       command=self.get_plate_field_options)
+            self._ent_option_fractions.place(x=self._option_fractions_place[0], y=self._option_fractions_place[1])
 
         save_file, filename = None, None
         if save_results:
@@ -583,7 +609,6 @@ class CreateOptGeoWindow():
 
         save_file = self.draw_result_text(self._geo_results, save_to_file=filename)
         self.draw_select_canvas(opt_results=self._geo_results, save_file = save_file)
-
 
     def opt_get_fractions(self):
         ''' Finding initial number of fractions '''
@@ -1059,7 +1084,10 @@ class CreateOptGeoWindow():
                 check_ok = [val[3] is True for val in opt_results[key][1]]
 
                 if save_file is not None:
-                    save_file.write('\n' + str(len(check_ok))+'\n')
+                    save_file.write('\n')
+                    save_file.write('--------------------------------------------------------------------------' + '\n')
+                    save_file.write('Plate fields: '+str(len(values[2]['objects']))+ ' Frames: '+
+                                    str(len(values[2]['frames'])) + '\n')
                 self._canvas_select.create_text([start_x + delta, y_loc],
                                                 text=str(len(check_ok))+' panels with weight '+ str(round(values[0],1)),
                                                 anchor='w', font=text_type)
@@ -1091,8 +1119,19 @@ class CreateOptGeoWindow():
 
                             if save_file is not None:
                                 save_file.write(stuc_info.get_one_line_string()+' ' + stuc_info.get_extended_string() +
-                                                ' | ' + stuc_info.get_report_stresses()+ endstring)
+                                                ' | ' + stuc_info.get_report_stresses() + endstring)
                             item_count += 1
+
+                if save_file is not None:
+                    save_file.write('Weight details for this solution:\n')
+                    save_file.write('Weight of main structure: ' + str([str(round(val, 1))
+                                                                        for val in values[2]['objects']]) + '\n')
+                    save_file.write('Weight of frames:         ' + str([str(round(val, 1))
+                                                                        for val in values[2]['frames']]) + '\n')
+                    save_file.write('Scales used on frames:    ' +
+                                    str([str(round(val, 3)) for val in values[2]['scales']]) + '\n')
+                    save_file.write('----------------------------------------------------------------------------'+'\n')
+
             if save_file is not None:
                 save_file.write('\n -------------  END  ---------------')
                 save_file.close()
@@ -1162,7 +1201,6 @@ class CreateOptGeoWindow():
 
         if save_to_file:
             return save_file
-
 
     def algorithm_info(self):
         ''' When button is clicked, info is displayed.'''
@@ -1425,6 +1463,22 @@ class CreateOptGeoWindow():
             os.startfile('sections.csv')
         else:
             os.startfile(self._root_dir + '/' + 'sections.csv')
+
+    def plot_results(self):
+        'Plotting a selected panel'
+        if self._geo_results is not None \
+                and type(self._new_option_fraction.get()) == int \
+                and type(self._new_option_panel.get()) == int:
+            op.plot_optimization_results(self._geo_results[int(self._new_option_fraction.get()/2)][1]
+                                         [self._new_option_panel.get()])
+            
+    def get_plate_field_options(self, event):
+
+        if self._geo_results is not None:
+            self._ent_option_field.destroy()
+            to_add = tuple([val for val in range(len(self._geo_results[int(self._new_option_fraction.get()/2)][1]))])
+            self._ent_option_field = tk.OptionMenu(self._frame, self._new_option_panel, *to_add)
+            self._ent_option_field.place(x=self._options_panels_place[0], y=self._options_panels_place[1])
 
 if __name__ == '__main__':
     root = tk.Tk()

@@ -351,7 +351,7 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                                                         [int(ceil(len(working_objects[no_of_fractions])/2))])
                     fat_obj_start, fat_obj_stop = copy.deepcopy(working_fatigue[no_of_fractions][0]), \
                                                   copy.deepcopy(working_fatigue[no_of_fractions]
-                                                                [int(len(working_objects[no_of_fractions])/2)])
+                                                                [int(ceil(len(working_objects[no_of_fractions])/2))])
 
                     lat_start, lat_stop = working_lateral[no_of_fractions][0], \
                                           working_lateral[no_of_fractions][int(ceil(
@@ -423,7 +423,10 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
 
             # Finding weight of this solution.
 
-            tot_weight, frame_spacings, valid, width = 0, [None for dummy in range(len(opt_objects))], True, 10
+            tot_weight, frame_spacings, valid, width, weight_details = 0, [None for dummy in range(len(opt_objects))], \
+                                                                       True, 10, {'frames': list(), 'objects': list(),
+                                                                                  'scales': list()}
+
             #print('Weight for', no_of_fractions)
             for count, opt in enumerate(opt_objects):
                 obj = opt[0]
@@ -432,6 +435,7 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                     weigth_to_add = calc_weight((obj.get_s(),obj.get_pl_thk(),obj.get_web_h(),obj.get_web_thk(),
                                                obj.get_fl_w(),obj.get_fl_thk(),obj.get_span(),width), prt=False)
                     tot_weight += weigth_to_add
+                    weight_details['objects'].append(weigth_to_add)
                     if frame_spacings[count // 2] is None:
                         frame_spacings[count // 2] = obj.get_s()
                     #print('added normal weight', weigth_to_add)
@@ -460,13 +464,15 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                     tot_weight += this_weight * this_scale
                     solution_found = True
                     #print('added frame weight', this_weight * this_scale)
+                    weight_details['frames'].append(this_weight * this_scale)
+                    weight_details['scales'].append(this_scale)
             elif iterations == 2:
                 solution_found = True  # Only iterate once.
 
             if predefiened_stiffener_iter is not None or not reiterate:
                 solution_found = True  # Noe solution may be found, but in this case no more iteations.
 
-        results[no_of_fractions] = tot_weight, opt_objects
+        results[no_of_fractions] = tot_weight, opt_objects, weight_details
     return results
 
 def any_find_min_weight_var(var):
