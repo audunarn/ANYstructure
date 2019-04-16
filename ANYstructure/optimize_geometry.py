@@ -1059,6 +1059,7 @@ class CreateOptGeoWindow():
                 check_ok = [val[3] is True for val in opt_results[key][1]]
 
                 if save_file is not None:
+                    save_file.write('---------------------------------------------------------------------------------')
                     save_file.write('\n' + 'Plate fields: '+str(len(values[2]['objects']))+ ' Frames: '+
                                     str(len(values[2]['frames'])) + '\n')
                 self._canvas_select.create_text([start_x + delta, y_loc],
@@ -1100,6 +1101,7 @@ class CreateOptGeoWindow():
                     save_file.write('Weight of main structure: ' + str(values[2]['objects']))
                     save_file.write('Weight of frames: ' + str(values[2]['frames']))
                     save_file.write('Scale on main structure: ' + str(values[2]['scales']))
+                    save_file.write('---------------------------------------------------------------------------------')
 
             if save_file is not None:
                 save_file.write('\n -------------  END  ---------------')
