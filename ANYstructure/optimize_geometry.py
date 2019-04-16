@@ -1129,7 +1129,7 @@ class CreateOptGeoWindow():
                     save_file.write('Weight of frames:         ' + str([str(round(val, 1))
                                                                         for val in values[2]['frames']]) + '\n')
                     save_file.write('Scales used on frames:    ' +
-                                    str([str(round(val, 1)) for val in values[2]['scales']]) + '\n')
+                                    str([str(round(val, 3)) for val in values[2]['scales']]) + '\n')
                     save_file.write('----------------------------------------------------------------------------'+'\n')
 
             if save_file is not None:
