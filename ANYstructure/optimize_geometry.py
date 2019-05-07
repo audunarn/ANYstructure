@@ -1204,8 +1204,9 @@ class CreateOptGeoWindow():
                                                                   str(round(self._geo_results[key][0] / max_weight, 3))
                                                                   + '\n' if max_weight != 0 else
                 '' + ' ' + str(all(check_ok))+'\n')
-            xplot.append(round(self._geo_results[key][1][0][0].get_span(),4))
-            yplot.append(round(self._geo_results[key][0] / max_weight, 4))
+            if self._geo_results[key][1][0][0] is not None:
+                xplot.append(round(self._geo_results[key][1][0][0].get_span(),4))
+                yplot.append(round(self._geo_results[key][0] / max_weight, 4))
 
         plt.axes(facecolor='lightslategray')
         plt.plot(xplot, yplot,color='yellow', linestyle='solid', marker='o',markerfacecolor='white', markersize=6)

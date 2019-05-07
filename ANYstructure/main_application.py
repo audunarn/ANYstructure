@@ -2738,7 +2738,8 @@ class Application():
             return
 
         messagebox.showinfo(title='Span optimization module', message =
-                                    'Computationally heavy! Will run for a long time.\n\n'
+                                    'Computationally heavy! Will run for a long time.\n'
+                                    'It is HIGHLY recommended to run predefined stiffeners. \n\n'
                                     'WEIGHT INDEX is the most important result.\n'
                                     'Results are presented for information and can not be returned to main model.\n'
                                     'Weight index will show you the span length that will give the lowest weight.\n'
