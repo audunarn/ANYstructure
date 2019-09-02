@@ -2977,7 +2977,7 @@ class Application():
         Open a about messagebox.
         :return:
         '''
-        messagebox.showinfo(title='Input error', message='ANYstructure 0.6.x'
+        messagebox.showinfo(title='Input error', message='ANYstructure 0.7.x'
                                                          '\n'
                                                          '\n'
                                                          'By Audun Arnesen Nyhus \n'
@@ -3001,7 +3001,6 @@ class Application():
 
         save_file.writelines(JS.output_lines)
         save_file.close()
-
 
 
 if __name__ == '__main__':

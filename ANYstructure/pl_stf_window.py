@@ -159,7 +159,7 @@ class CreateStructureWindow():
 
         self.draw_properties()
 
-    def option_choose(self,event):
+    def option_choose(self, event):
         '''
         Action when the option menu is changed.
         :param event:
@@ -284,6 +284,8 @@ class CreateStructureWindow():
                 self._new_fl_w.set(section.stf_flange_width*1000)
                 self._new_fl_thk.set(section.stf_flange_thk*1000)
                 self._new_stiffener_type.set(section.stf_type)
+
+        self.option_choose(None)
 
 class Section:
     '''
