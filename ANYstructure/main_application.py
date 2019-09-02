@@ -23,7 +23,7 @@ import multiprocessing
 from ANYstructure.report_generator import LetterMaker
 import os.path
 import ctypes
-
+import ANYstructure.sesam_interface as sesam
 
 class Application():
     '''
@@ -80,6 +80,10 @@ class Application():
         sub_report = tk.Menu(menu)
         menu.add_cascade(label = 'Reporting', menu = sub_report)
         sub_report.add_command(label = 'Generate PDF report', command = self.report_generate)
+
+        sub_sesam = tk.Menu(menu)
+        menu.add_cascade(label = 'SESAM interface', menu = sub_sesam)
+        sub_sesam.add_command(label = 'Export geometry to JS', command = self.export_to_js)
 
         base_canvas_dim = [1000,720]  #do not modify this, sets the "orignal" canvas dimensions.
         self._canvas_dim = [int(base_canvas_dim[0] *self._global_shrink),
@@ -2977,6 +2981,26 @@ class Application():
                                                          '\n'
                                                          'By Audun Arnesen Nyhus \n'
                                                          '2019')
+
+    def export_to_js(self):
+        '''
+        Printing to a js file
+        :return:
+        '''
+        save_file = filedialog.asksaveasfile(mode="w", defaultextension=".js")
+        if save_file is None:  # ask saveasfile return `None` if dialog closed with "cancel".
+            return
+        # Setting up interface class.
+        JS = sesam.JSfile(self._point_dict, self._line_dict, self._sections)
+
+        JS.write_points()
+        JS.write_lines()
+        JS.write_sections()
+
+        save_file.writelines(JS.output_lines)
+        save_file.close()
+
+
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
