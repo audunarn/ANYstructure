@@ -310,13 +310,18 @@ class Section:
     def __str__(self):
         ''' Returning a string. '''
 
-        base_name = self.stf_type+ ' ' + str(round(self.stf_web_height*1000, 0)) + ' x ' + \
+        base_name = self.stf_type+ '_' + str(round(self.stf_web_height*1000, 0)) + 'x' + \
                    str(round(self.stf_web_thk*1000, 0))
         if self._stf_type == 'FB':
-            return base_name
+            ret_str = base_name
         else:
-            return base_name + ' ' + str(round(self.stf_flange_width*1000, 0)) + ' x ' + \
-                   str(round(self.stf_flange_thk*1000, 0))
+            ret_str = base_name + '__' + str(round(self.stf_flange_width*1000, 0)) + 'x' + \
+                      str(round(self.stf_flange_thk*1000, 0))
+
+        ret_str = ret_str.replace('.', '_')
+
+        return ret_str
+
 
     @property
     def stf_type(self):

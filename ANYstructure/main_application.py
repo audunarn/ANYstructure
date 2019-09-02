@@ -1693,6 +1693,7 @@ class Application():
             if self._active_line not in self._line_to_struc.keys():
                 self._line_to_struc[self._active_line] = [None, None, None, [None], {}]
                 self._line_to_struc[self._active_line][0] = Structure(obj_dict)
+                self._sections = add_new_section(self._sections, obj_dict)
                 self._line_to_struc[self._active_line][1] = CalcScantlings(obj_dict)
                 self._line_to_struc[self._active_line][2] = None
                 if self._line_to_struc[self._active_line][0].get_structure_type() not in \
@@ -2991,11 +2992,12 @@ class Application():
         if save_file is None:  # ask saveasfile return `None` if dialog closed with "cancel".
             return
         # Setting up interface class.
-        JS = sesam.JSfile(self._point_dict, self._line_dict, self._sections)
+        JS = sesam.JSfile(self._point_dict, self._line_dict, self._sections, self._line_to_struc)
 
         JS.write_points()
         JS.write_lines()
         JS.write_sections()
+        JS.write_beams()
 
         save_file.writelines(JS.output_lines)
         save_file.close()
