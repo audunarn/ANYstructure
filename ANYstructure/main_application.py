@@ -150,6 +150,7 @@ class Application():
         self._tank_dict = {} # Main tank dictionary (created when BFS search is executed for the grid) (comp# : TankObj)
         self._load_dict = {} # Main load dictionary (created in separate load window (load# : [LoadObj, lines])
         self._new_load_comb_dict = {} # Load combination dict.(comb,line,load) : [DoubleVar(), DoubleVar], IntVar()]
+        self._sections = list()  #  A list containing section property objects.
         #
         # -------------------------------------------------------------------------------------------------------------
         #
@@ -2507,6 +2508,7 @@ class Application():
         struc_prop = imported['structure_properties']
 
         for line, lines_prop in struc_prop.items():
+
             self._line_to_struc[line] = [None, None, None, [], {}, [True, 'green']]
             self._line_point_to_point_string.append(
                 self.make_point_point_line_string(self._line_dict[line][0], self._line_dict[line][1])[0])
@@ -2518,6 +2520,9 @@ class Application():
                 self._line_to_struc[line][2] = CalcFatigue(lines_prop, imported['fatigue_properties'][line])
             else:
                 self._line_to_struc[line][2] = None
+
+            #  Recording sections.
+            self._sections = add_new_section(self._sections, struc.Section(lines_prop))
 
         # opening the loads
         variables = ['poly_third','poly_second', 'poly_first', 'poly_const', 'load_condition',
@@ -2839,6 +2844,14 @@ class Application():
         self._new_stf_fl_w.set(returned_structure[4])
         self._new_stf_fl_t.set(returned_structure[5])
         self._new_stf_type.set(returned_structure[6])
+
+        section = struc.Section({'stf_type': returned_structure[6],
+                                 'stf_web_height': returned_structure[2],
+                                 'stf_web_thk': returned_structure[3],
+                                 'stf_flange_width': returned_structure[4],
+                                 'stf_flange_thk': returned_structure[5]})
+
+        self._sections = add_new_section(self._sections, section)
 
     def on_close_stresses_window(self,returned_stress_and_km):
         '''

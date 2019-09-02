@@ -4,6 +4,7 @@ Helper funations to be used.
 
 import math, copy, csv
 
+
 def print_helper(properties, prop_text, units):
     '''
     Used to print out the properties
@@ -18,8 +19,10 @@ def dist(p, q):
     return math.sqrt((p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2)
 
 def get_num(x):
-    try: return int(''.join(ele for ele in x if ele.isdigit() or ele == '.'))
-    except ValueError: return x
+    try:
+        return int(''.join(ele for ele in x if ele.isdigit() or ele == '.'))
+    except ValueError:
+        return x
 
 def list_2_string(list):
     new_string = ''
@@ -307,6 +310,21 @@ def open_example_file(root_path = None):
         os.startfile('sections.csv')
     else:
         os.startfile(root_path + '/' + 'sections.csv')
+
+def add_new_section(section_list, new_section):
+    ''' Checking if a section is already in the list. '''
+    existing_section = False
+
+    for section in section_list:
+
+        if section.__str__() == new_section.__str__():
+            existing_section = True
+
+    if existing_section == False:
+        section_list.append(new_section)
+
+    return section_list
+
 
 if __name__ == '__main__':
     import ANYstructure.example_data as ex
