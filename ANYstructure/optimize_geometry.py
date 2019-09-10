@@ -14,6 +14,7 @@ import ANYstructure.helper as hlp
 from tkinter.filedialog import askopenfilenames
 from multiprocessing import cpu_count
 from tkinter import filedialog
+from matplotlib import pyplot as plt
 
 class CreateOptGeoWindow():
     '''
@@ -396,7 +397,7 @@ class CreateOptGeoWindow():
         tk.Label(self._frame, text='Select panel to plot:   ').place(x=start_x+dx*12, y=start_y - dy * 19.5)
         self._ent_option_fractions = tk.OptionMenu(self._frame, self._new_option_fraction, *self._options_fractions,
                                                    command=self.get_plate_field_options)
-        self._ent_option_field = tk.OptionMenu(self._frame, self._new_option_panel, *self._options_panels, 
+        self._ent_option_field = tk.OptionMenu(self._frame, self._new_option_panel, *self._options_panels,
                                                command=self.get_plate_field_options)
         self._option_fractions_place = [start_x+dx*13.5, start_y - dy * 20.5]
         self._options_panels_place = [start_x+dx*13.5, start_y - dy * 19.5]
@@ -1146,6 +1147,8 @@ class CreateOptGeoWindow():
         delta = 25
         start_y = 60
         y_loc = delta + start_y
+        xplot = list()
+        yplot = list()
 
         self._canvas_opt.create_text([start_x, 40],
                                      text='Results seen next. Weight index is tot_weight / max_weight \n'
@@ -1184,7 +1187,8 @@ class CreateOptGeoWindow():
 
             self._canvas_opt.create_text([start_x + 120, y_loc ], text=str('No results\n' if
                                                                            self._geo_results[key][1][0][0] is None else
-                                                                           round(self._geo_results[key][1][0][0].get_span(),4)),
+                                                                           round(self._geo_results[key][1][0][0]
+                                                                                 .get_span(),4)),
                                          anchor='w', font=text_type)
             self._canvas_opt.create_text([start_x + 220, y_loc ],
                                          text=str(round(self._geo_results[key][0] / max_weight, 3))
@@ -1200,7 +1204,17 @@ class CreateOptGeoWindow():
                                                                   str(round(self._geo_results[key][0] / max_weight, 3))
                                                                   + '\n' if max_weight != 0 else
                 '' + ' ' + str(all(check_ok))+'\n')
+            if self._geo_results[key][1][0][0] is not None:
+                xplot.append(round(self._geo_results[key][1][0][0].get_span(),4))
+                yplot.append(round(self._geo_results[key][0] / max_weight, 4))
 
+        plt.axes(facecolor='lightslategray')
+        plt.plot(xplot, yplot,color='yellow', linestyle='solid', marker='o',markerfacecolor='white', markersize=6)
+        plt.xlabel('Length of plate fields [m]')
+        plt.ylabel('Weight / max weight')
+        plt.title('Length of plate fields vs. total weight')
+        plt.grid()
+        plt.show(False)
         if save_to_file:
             return save_file
 
@@ -1473,7 +1487,7 @@ class CreateOptGeoWindow():
                 and type(self._new_option_panel.get()) == int:
             op.plot_optimization_results(self._geo_results[int(self._new_option_fraction.get()/2)][1]
                                          [self._new_option_panel.get()])
-            
+
     def get_plate_field_options(self, event):
 
         if self._geo_results is not None:

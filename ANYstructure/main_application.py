@@ -23,7 +23,7 @@ import multiprocessing
 from ANYstructure.report_generator import LetterMaker
 import os.path
 import ctypes
-
+import ANYstructure.sesam_interface as sesam
 
 class Application():
     '''
@@ -80,6 +80,10 @@ class Application():
         sub_report = tk.Menu(menu)
         menu.add_cascade(label = 'Reporting', menu = sub_report)
         sub_report.add_command(label = 'Generate PDF report', command = self.report_generate)
+
+        sub_sesam = tk.Menu(menu)
+        menu.add_cascade(label = 'SESAM interface', menu = sub_sesam)
+        sub_sesam.add_command(label = 'Export geometry to JS', command = self.export_to_js)
 
         base_canvas_dim = [1000,720]  #do not modify this, sets the "orignal" canvas dimensions.
         self._canvas_dim = [int(base_canvas_dim[0] *self._global_shrink),
@@ -150,6 +154,7 @@ class Application():
         self._tank_dict = {} # Main tank dictionary (created when BFS search is executed for the grid) (comp# : TankObj)
         self._load_dict = {} # Main load dictionary (created in separate load window (load# : [LoadObj, lines])
         self._new_load_comb_dict = {} # Load combination dict.(comb,line,load) : [DoubleVar(), DoubleVar], IntVar()]
+        self._sections = list()  #  A list containing section property objects.
         #
         # -------------------------------------------------------------------------------------------------------------
         #
@@ -1688,6 +1693,7 @@ class Application():
             if self._active_line not in self._line_to_struc.keys():
                 self._line_to_struc[self._active_line] = [None, None, None, [None], {}]
                 self._line_to_struc[self._active_line][0] = Structure(obj_dict)
+                self._sections = add_new_section(self._sections, obj_dict)
                 self._line_to_struc[self._active_line][1] = CalcScantlings(obj_dict)
                 self._line_to_struc[self._active_line][2] = None
                 if self._line_to_struc[self._active_line][0].get_structure_type() not in \
@@ -2507,6 +2513,7 @@ class Application():
         struc_prop = imported['structure_properties']
 
         for line, lines_prop in struc_prop.items():
+
             self._line_to_struc[line] = [None, None, None, [], {}, [True, 'green']]
             self._line_point_to_point_string.append(
                 self.make_point_point_line_string(self._line_dict[line][0], self._line_dict[line][1])[0])
@@ -2518,6 +2525,9 @@ class Application():
                 self._line_to_struc[line][2] = CalcFatigue(lines_prop, imported['fatigue_properties'][line])
             else:
                 self._line_to_struc[line][2] = None
+
+            #  Recording sections.
+            self._sections = add_new_section(self._sections, struc.Section(lines_prop))
 
         # opening the loads
         variables = ['poly_third','poly_second', 'poly_first', 'poly_const', 'load_condition',
@@ -2738,7 +2748,8 @@ class Application():
             return
 
         messagebox.showinfo(title='Span optimization module', message =
-                                    'Computationally heavy! Will run for a long time.\n\n'
+                                    'Computationally heavy! Will run for a long time.\n'
+                                    'It is HIGHLY recommended to run predefined stiffeners. \n\n'
                                     'WEIGHT INDEX is the most important result.\n'
                                     'Results are presented for information and can not be returned to main model.\n'
                                     'Weight index will show you the span length that will give the lowest weight.\n'
@@ -2838,6 +2849,14 @@ class Application():
         self._new_stf_fl_w.set(returned_structure[4])
         self._new_stf_fl_t.set(returned_structure[5])
         self._new_stf_type.set(returned_structure[6])
+
+        section = struc.Section({'stf_type': returned_structure[6],
+                                 'stf_web_height': returned_structure[2],
+                                 'stf_web_thk': returned_structure[3],
+                                 'stf_flange_width': returned_structure[4],
+                                 'stf_flange_thk': returned_structure[5]})
+
+        self._sections = add_new_section(self._sections, section)
 
     def on_close_stresses_window(self,returned_stress_and_km):
         '''
@@ -2958,11 +2977,31 @@ class Application():
         Open a about messagebox.
         :return:
         '''
-        messagebox.showinfo(title='Input error', message='ANYstructure 0.6.x'
+        messagebox.showinfo(title='Input error', message='ANYstructure 0.7.x'
                                                          '\n'
                                                          '\n'
                                                          'By Audun Arnesen Nyhus \n'
                                                          '2019')
+
+    def export_to_js(self):
+        '''
+        Printing to a js file
+        :return:
+        '''
+        save_file = filedialog.asksaveasfile(mode="w", defaultextension=".js")
+        if save_file is None:  # ask saveasfile return `None` if dialog closed with "cancel".
+            return
+        # Setting up interface class.
+        JS = sesam.JSfile(self._point_dict, self._line_dict, self._sections, self._line_to_struc)
+
+        JS.write_points()
+        JS.write_lines()
+        JS.write_sections()
+        JS.write_beams()
+
+        save_file.writelines(JS.output_lines)
+        save_file.close()
+
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()

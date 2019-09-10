@@ -17,19 +17,23 @@ class CreateStructureWindow():
         if __name__ == '__main__':
             self._initial_structure_obj = test.get_structure_calc_object()
             self._initial_calc_obj = test.get_structure_calc_object()
+            self._section_objects = test.get_section_list()
+            self._section_list = [section.__str__() for section in test.get_section_list()]
         else:
             self.app = app
             try:
                 self._initial_structure_obj = self.app._line_to_struc[app._active_line][0]
             except KeyError:
                 self._initial_structure_obj = None
+            self._section_list = [section.__str__() for section in app._sections]
+            self._section_objects = app._sections
         image_dir = os.path.dirname(__file__) + '\\images\\'
         self._opt_runned = False
         self._opt_resutls = ()
         self._draw_scale = 0.5
         self._canvas_dim = (500, 450)
-        self._canvas_struc = tk.Canvas(self._frame, width=self._canvas_dim[0], height=self._canvas_dim[1], background='azure',
-                                    relief='groove', borderwidth=2)
+        self._canvas_struc = tk.Canvas(self._frame, width=self._canvas_dim[0], height=self._canvas_dim[1],
+                                       background='azure', relief='groove', borderwidth=2)
         self.structure_types = ['T','L','FB']
         self._canvas_struc.place(x=10, y=300)
         tk.Label(self._frame, text='-- Define structure properties here --', font='Verdana 15 bold').place(x=10, y=10)
@@ -42,7 +46,10 @@ class CreateStructureWindow():
         self._new_fl_thk = tk.DoubleVar()
         self._new_stiffener_type = tk.StringVar()
         self._new_girder_length = tk.DoubleVar()
+        self._new_section = tk.StringVar()
 
+        self._ent_section_list = tk.OptionMenu(self._frame, self._new_section, command=self.section_choose,
+                                               *self._section_list)
         self._ent_structure_options = tk.OptionMenu(self._frame,self._new_stiffener_type,
                                                    command=self.option_choose,*self.structure_types)
         ent_w = 10
@@ -68,6 +75,8 @@ class CreateStructureWindow():
         tk.Label(self._frame, text='[mm]', font='Verdana 9 bold').place(x=start_x+3*dx, y=start_y + 5*dy)
         tk.Label(self._frame, text='[mm]', font='Verdana 9 bold').place(x=start_x+3*dx, y=start_y + 6*dy)
 
+        tk.Label(self._frame, text='Existing sections:', font='Verdana 9 bold').place(x=start_x+4*dx, y=start_y + 6*dy)
+        self._ent_section_list.place(x=start_x+7*dx, y=start_y + 6*dy)
         # setting default values
         init_dim,init_thk = 0.05,0.002
 
@@ -150,7 +159,7 @@ class CreateStructureWindow():
 
         self.draw_properties()
 
-    def option_choose(self,event):
+    def option_choose(self, event):
         '''
         Action when the option menu is changed.
         :param event:
@@ -264,7 +273,110 @@ class CreateStructureWindow():
                                             self._new_stiffener_type.get()])
         self._frame.destroy()
 
+    def section_choose(self, event):
+        ''' Choosing a section. '''
+        chosen_section = self._new_section.get()
+
+        for section in self._section_objects:
+            if chosen_section == section.__str__():
+                self._new_web_h.set(section.stf_web_height*1000)
+                self._new_web_thk.set(section.stf_web_thk*1000)
+                self._new_fl_w.set(section.stf_flange_width*1000)
+                self._new_fl_thk.set(section.stf_flange_thk*1000)
+                self._new_stiffener_type.set(section.stf_type)
+
+        self.option_choose(None)
+
+class Section:
+    '''
+    Creates a section property.
+    'stf_type': [self._new_stf_type.get(), ''],
+    'stf_web_height': [self._new_stf_web_h.get()/1000, 'm'],
+    'stf_web_thk': [self._new_sft_web_t.get()/1000, 'm'],
+    'stf_flange_width': [self._new_stf_fl_w.get()/1000, 'm'],
+    'stf_flange_thk': [self._new_stf_fl_t.get()/1000, 'm'],
+    '''
+    def __init__(self, input_dict):
+        super(Section, self).__init__()
+        self._stf_type = input_dict['stf_type'] if type(input_dict['stf_type']) != list \
+            else input_dict['stf_type'][0]
+        self._stf_web_height = input_dict['stf_web_height']if type(input_dict['stf_web_height']) != list \
+            else input_dict['stf_web_height'][0]
+        self._stf_web_thk = input_dict['stf_web_thk']if type(input_dict['stf_web_thk']) != list \
+            else input_dict['stf_web_thk'][0]
+        self._stf_flange_width = input_dict['stf_flange_width']if type(input_dict['stf_flange_width']) != list \
+            else input_dict['stf_flange_width'][0]
+        self._stf_flange_thk = input_dict['stf_flange_thk']if type(input_dict['stf_flange_thk']) != list \
+            else input_dict['stf_flange_thk'][0]
+
+    def __str__(self):
+        ''' Returning a string. '''
+
+        base_name = self.stf_type+ '_' + str(round(self.stf_web_height*1000, 0)) + 'x' + \
+                   str(round(self.stf_web_thk*1000, 0))
+        if self._stf_type == 'FB':
+            ret_str = base_name
+        else:
+            ret_str = base_name + '__' + str(round(self.stf_flange_width*1000, 0)) + 'x' + \
+                      str(round(self.stf_flange_thk*1000, 0))
+
+        ret_str = ret_str.replace('.', '_')
+
+        return ret_str
+
+
+    @property
+    def stf_type(self):
+        return self._stf_type
+
+    @stf_type.setter
+    def stf_type(self, value):
+        self._stf_type = value
+
+    @property
+    def stf_web_height(self):
+        return self._stf_web_height
+
+    @stf_web_height.setter
+    def stf_web_height(self, value):
+        self._stf_web_height = value
+
+    @property
+    def stf_web_thk(self):
+        return self._stf_web_thk
+
+    @stf_web_thk.setter
+    def stf_web_thk(self, value):
+        self._stf_web_thk = value
+
+    @property
+    def stf_flange_width(self):
+        return self._stf_flange_width
+
+    @stf_flange_width.setter
+    def stf_flange_width(self, value):
+        self._stf_flange_width = value
+
+    @property
+    def stf_flange_thk(self):
+        return self._stf_flange_thk
+
+    @stf_flange_thk.setter
+    def stf_flange_thk(self, value):
+        self._stf_flange_thk = value
+
+
 if __name__ == '__main__':
+
+    # sec1 = Section({'stf_type': 'T', 'stf_web_height': 0.35, 'stf_web_thk': 0.02, 'stf_flange_width': 0.15,
+    #                 'stf_flange_thk': 0.015})
+    #
+    # sec_list = [sec1, Section({'stf_type': 'FB', 'stf_web_height': 0.35, 'stf_web_thk': 0.02, 'stf_flange_width': 0,
+    #                 'stf_flange_thk': 0}), Section({'stf_type': 'T', 'stf_web_height': 0.4, 'stf_web_thk': 0.02,
+    #                                                     'stf_flange_width': 0.15, 'stf_flange_thk': 0.02})]
+    #
+    # hlp.add_new_section(sec_list, sec1)
+
     root = tk.Tk()
     my_app = CreateStructureWindow(root, app=None)
     root.mainloop()
