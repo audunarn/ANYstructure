@@ -328,8 +328,9 @@ def add_new_section(section_list, new_section):
 
 if __name__ == '__main__':
     import ANYstructure.example_data as ex
-    file = ['bulb.xml', 'flatbar.xml', 'tbar.xml']
-    all_returned = helper_read_section_file(file, obj=ex.get_structure_object(), to_csv=True)
+    from pathlib import Path
+    file = Path('C:/Users/nmm000756/Documents/GitHub/ANYstructure/ANYstructure/sections.json')
+    all_returned = helper_read_section_file(file.name)
 
     import random
     print(random.choice(all_returned))

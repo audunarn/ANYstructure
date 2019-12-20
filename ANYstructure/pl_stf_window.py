@@ -76,7 +76,11 @@ class CreateStructureWindow():
         tk.Label(self._frame, text='[mm]', font='Verdana 9 bold').place(x=start_x+3*dx, y=start_y + 6*dy)
 
         tk.Label(self._frame, text='Existing sections:', font='Verdana 9 bold').place(x=start_x+4*dx, y=start_y + 6*dy)
+
         self._ent_section_list.place(x=start_x+7*dx, y=start_y + 6*dy)
+
+        tk.Button(self._frame, text='Read section list', command=self.read_sections, font='Verdana 10 bold',
+                  bg = 'blue', fg = 'yellow').place(x=start_x+12*dx, y=start_y + 6*dy)
         # setting default values
         init_dim,init_thk = 0.05,0.002
 
@@ -156,6 +160,8 @@ class CreateStructureWindow():
         self.close_and_save = tk.Button(self._frame, text='Save and return structure',
                                         command=self.save_and_close, bg='green', font='Verdana 10 bold', fg='yellow')
         self.close_and_save.place(x=start_x + dx * 12, y=start_y + dy * 20)
+
+
 
         self.draw_properties()
 
@@ -273,7 +279,7 @@ class CreateStructureWindow():
                                             self._new_stiffener_type.get()])
         self._frame.destroy()
 
-    def section_choose(self, event):
+    def section_choose(self, event = None):
         ''' Choosing a section. '''
         chosen_section = self._new_section.get()
 
@@ -284,8 +290,25 @@ class CreateStructureWindow():
                 self._new_fl_w.set(section.stf_flange_width*1000)
                 self._new_fl_thk.set(section.stf_flange_thk*1000)
                 self._new_stiffener_type.set(section.stf_type)
-
         self.option_choose(None)
+
+    def read_sections(self):
+        '''
+        Read a list.
+        '''
+        from tkinter import filedialog
+        import ANYstructure.helper as hlp
+        from pathlib import Path
+
+        file = filedialog.askopenfile('r')
+        file = Path(file.name)
+        m = self._ent_section_list.children['menu']
+
+        for section in hlp.helper_read_section_file(file.name):
+            SecObj = Section(section)
+            self._section_list = hlp.add_new_section(self._section_list, SecObj)
+            self._section_objects.append(SecObj)
+            m.add_command(label=SecObj.__str__(), command=self.section_choose)
 
 class Section:
     '''
