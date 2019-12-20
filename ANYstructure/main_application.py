@@ -294,7 +294,7 @@ class Application():
         self._new_delete_line = tk.IntVar()
         self._new_delete_point = tk.IntVar()
         del_start = (line_start + 90)* self._global_shrink
-        tk.Label(self._main_fr, text='Delete lines and points (input line or point number)',
+        tk.Label(self._main_fr, text='Delete lines and points (or left/right click and use "Delete key")',
                  font=self._text_size['Text 9 bold'], bg = self._general_color)\
             .place(x=10, y=del_start - 30*self._global_shrink)
         self._ent_delete_line = tk.Entry(self._main_fr, textvariable=self._new_delete_line,
