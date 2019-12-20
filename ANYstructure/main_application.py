@@ -48,10 +48,10 @@ class Application():
             self._global_shrink = 1
 
         # Definng general colors
-        self._general_color = 'AntiqueWhite1'  # Color for backgrounds.
+        self._general_color = 'azure2'  # Color for backgrounds.
         self._entry_color = 'white'  # Entry fields color.
         self._entry_text_color = 'black'  # Entry field tex color
-        self._button_bg_color = 'ivory2'
+        self._button_bg_color = 'LightBlue1'
         self._button_fg_color = 'black'
 
         self._root_dir = os.path.dirname(os.path.abspath(__file__))
@@ -59,8 +59,6 @@ class Application():
         self._main_fr = tk.Frame(parent, height=int(990*self._global_shrink), width=int(1920*self._global_shrink),
                                  background=self._general_color)
         self._main_fr.pack()
-
-
 
         # Top open/save/new
         menu = tk.Menu(parent)
@@ -302,22 +300,29 @@ class Application():
         self._ent_delete_line = tk.Entry(self._main_fr, textvariable=self._new_delete_line,
                                         width=int(ent_width * self._global_shrink),
                                          bg = self._entry_color, fg = self._entry_text_color)
-        self._ent_delete_line.place(x=10, y=del_start)
+        self._ent_delete_line.place(x=ent_x, y=del_start)
+
         self._ent_delete_point = tk.Entry(self._main_fr, textvariable=self._new_delete_point,
                                          width=int(ent_width * self._global_shrink),
                                           bg = self._entry_color, fg = self._entry_text_color)
-        self._ent_delete_point.place(x=ent_x, y=del_start)
+        self._ent_delete_point.place(x=ent_x, y=del_start + delta_y)
+
+
+        tk.Label(self._main_fr, text='Line number (left click):',font="Text 9", bg = self._general_color)\
+            .place(x=10, y=del_start)
+        tk.Label(self._main_fr, text='Point number (right click):',font="Text 9", bg = self._general_color)\
+            .place(x=10, y=del_start+ delta_y)
 
         tk.Button(self._main_fr, text='Delete line',bg = self._button_bg_color, fg = self._button_fg_color,
                                          font=self._text_size['Text 9 bold'],command=self.delete_line,
-                                         width = int(9*self._global_shrink)).place(x=ent_x-delta_x*2, y=del_start)
+                                         width = int(11*self._global_shrink)).place(x=ent_x+delta_x*2, y=del_start)
 
         tk.Button(self._main_fr, text='Delete point',bg = self._button_bg_color, fg = self._button_fg_color,
                                           font=self._text_size['Text 9 bold'],command=self.delete_point,
-                                          width = int(11*self._global_shrink)).place(x=ent_x+2*delta_x, y=del_start)
+                                          width = int(11*self._global_shrink)).place(x=ent_x+2*delta_x, y=del_start + delta_y)
 
         # --- structure type information ---
-        prop_vert_start = 300* self._global_shrink
+        prop_vert_start = 320* self._global_shrink
         types_start = 10
         tk.Label(self._main_fr, text='Structural and calculation properties input below:',
                  font=self._text_size['Text 9 bold'],
@@ -542,9 +547,9 @@ class Application():
         self._ent_structure_type.place_configure(width=int(210*self._global_shrink))
 
         self._structure_types_label = \
-            tk.Label(textvariable = self._new_stucture_type_label, font = self._text_size['Text 8'],
+            tk.Label(textvariable = self._new_stucture_type_label, font = self._text_size['Text 9 bold'],
                      bg = self._general_color)\
-                .place(x=ent_x+delta_x*1, y=prop_vert_start +11*delta_y)
+                .place(x=ent_x+delta_x*1.6* self._global_shrink, y=prop_vert_start +11*delta_y)
 
         self._ent_pressure_side.place(x=10 + 7.6 * delta_x, y=prop_vert_start + 5.5 * delta_y)
 
@@ -687,8 +692,8 @@ class Application():
 
         show_compartment = tk.Button(self._main_fr, text='Display current compartments', command=self.grid_display_tanks,
                                   bg = self._button_bg_color, fg = self._button_fg_color,
-                                     font=self._text_size['Text 8 bold'])
-        show_compartment.place(x=ent_x+delta_x*2.5, y=load_vert_start + delta_y * 4.5)
+                                     font=self._text_size['Text 9 bold'])
+        show_compartment.place(x=ent_x+delta_x*1.8, y=load_vert_start + delta_y * 4.5)
 
         try:
 
@@ -1432,13 +1437,13 @@ class Application():
                             'struc_obj': {}, 'scant_calc_obj': {}, 'fatigue_obj': {}}
         :return:
         '''
-        if state is None or self._active_line not in state['struc_obj'].keys():
-            return
 
         self._result_canvas.delete('all')
 
-        if self._line_is_active:
+        if state is None or self._active_line not in state['struc_obj'].keys():
+            return
 
+        if self._line_is_active:
             if self._active_line in self._line_to_struc:
                 x, y, dx, dy = 20, 15, 15, 14
                 m3_to_mm3 = float(math.pow(1000,3))
@@ -1576,6 +1581,8 @@ class Application():
                                                     text='Total damage: NO RESULTS ',
                                                     font=self._text_size["Text 9 bold"],
                                                     anchor='nw')
+            else:
+                pass
         else:
             self._result_canvas.create_text([200*self._global_shrink, 20*self._global_shrink],
                                            text='The results are shown here (select line):',
@@ -1875,13 +1882,13 @@ class Application():
         self._new_tauxy.set(self._default_stresses[self._new_stucture_type.get()][3])
 
         if self._new_stucture_type.get() in self._structure_types['vertical']:
-            text = 'Vertical pressure calc.'
+            text = '(Vertical pressure calc.)'
         elif self._new_stucture_type.get() in self._structure_types['horizontal']:
-            text = 'Horizontal pressure calc.'
+            text = '(Horizontal pressure calc.)'
         elif self._new_stucture_type.get() in self._structure_types['non-wt']:
-            text = text = 'Non-WT (pressure = 0)'
+            text = '(Non-WT (pressure = 0))'
         elif self._new_stucture_type.get() in self._structure_types['internals']:
-            text = 'Internal, pressure from comp.'
+            text = '(Internal, pressure from comp.)'
         else:
             text = ''
 
@@ -2024,7 +2031,7 @@ class Application():
         '''
         try:
             if line is not None:
-                line = 'line'+str(line)
+                line = line
             else:
                 line = 'line' + str(self._ent_delete_line.get())
 
@@ -2046,12 +2053,13 @@ class Application():
         except TclError:
             messagebox.showinfo(title='Input error', message='Input must be a number. Dots used not comma.')
 
-    def delete_point(self, event = None, undo = None):
+    def delete_point(self, event = None, undo = None, point = None):
         '''
         Deleting point and connected lines.
         '''
         try:
-            point = 'point' + str(self._ent_delete_point.get()) if undo is None else undo
+            if point == None:
+                point = 'point' + str(self._ent_delete_point.get()) if undo is None else undo
 
             if point in self._point_dict.keys():
                 line_to_delete = []
@@ -2077,6 +2085,12 @@ class Application():
             self.update_frame()
         except TclError:
             messagebox.showinfo(title='Input error', message='Input must be a number. Dots used not comma.')
+
+    def delete_key_pressed(self, event = None):
+        if self._active_line != '':
+            self.delete_line(line = self._active_line)
+        if self._active_point != '':
+            self.delete_point()
 
     def delete_all_tanks(self):
         '''
@@ -2413,6 +2427,7 @@ class Application():
         self._parent.bind('<Control-m>', self.move_point)
         self._parent.bind('<Control-q>', self.new_line)
         self._parent.bind('<Control-s>', self.new_structure)
+        self._parent.bind('<Delete>', self.delete_key_pressed)
 
     def mouse_scroll(self,event):
         self._canvas_scale +=  event.delta/50
@@ -2748,7 +2763,7 @@ class Application():
         '''
         if self._line_is_active:
 
-            top_opt = tk.Toplevel(self._parent)
+            top_opt = tk.Toplevel(self._parent, background=self._general_color)
             struc.CreateStructureWindow(top_opt, self)
 
         else:
@@ -2762,7 +2777,7 @@ class Application():
 
         if self._line_is_active:
 
-            top_opt = tk.Toplevel(self._parent)
+            top_opt = tk.Toplevel(self._parent, background=self._general_color)
             stress.CreateStressesWindow(top_opt, self)
 
         else:
@@ -2783,7 +2798,7 @@ class Application():
                                                                  'Strucure must be added to line before setting\n'
                                                                  'these properties ("Add structure to line"-button).')
                 return
-            top_opt = tk.Toplevel(self._parent)
+            top_opt = tk.Toplevel(self._parent, background=self._general_color)
             fatigue.CreateFatigueWindow(top_opt, self)
 
 
@@ -2808,7 +2823,7 @@ class Application():
         except TclError:
             pass
 
-        top = tk.Toplevel(self._parent)
+        top = tk.Toplevel(self._parent, background=self._general_color)
         load_window.CreateLoadWindow(top, self)
 
     def on_optimize(self):
@@ -2834,7 +2849,7 @@ class Application():
             elif self._line_to_struc[self._active_line][3] == None:
                 messagebox.showinfo(title='Missing loads', message='Make some loads for the line')
             else:
-                top_opt = tk.Toplevel(self._parent)
+                top_opt = tk.Toplevel(self._parent, background=self._general_color)
                 opw.CreateOptimizeWindow(top_opt, self)
         else:
             messagebox.showinfo(title='Select line',message='You must select a line')
@@ -2864,7 +2879,7 @@ class Application():
                                     'A default range of T properties is chosen. Typical analysis\n'
                                     'steps (deltas) is chosen.')
 
-        top_opt = tk.Toplevel(self._parent)
+        top_opt = tk.Toplevel(self._parent, background=self._general_color)
         opwmult.CreateOptimizeMultipleWindow(top_opt,self)
 
     def on_geometry_optimize(self):
@@ -2895,7 +2910,7 @@ class Application():
                                     'steps (deltas) is chosen.\n'
                                     'Loads are taken from existing structure.')
 
-        top_opt = tk.Toplevel(self._parent)
+        top_opt = tk.Toplevel(self._parent, background=self._general_color)
         optgeo.CreateOptGeoWindow(top_opt,self)
 
     def on_close_load_window(self, returned_loads, counter, load_comb_dict):
