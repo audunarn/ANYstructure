@@ -461,9 +461,8 @@ class Application():
         self._ent_stf_km3 = tk.Entry(self._main_fr, textvariable=self._new_stf_km3,
                                      width = int(5*self._global_shrink), bg = self._entry_color,
                                      fg = self._entry_text_color)
-        self._ent_pressure_side = tk.Entry(self._main_fr, textvariable=self._new_pressure_side,
-                                          width=int(5 * self._global_shrink), bg = self._entry_color,
-                                           fg = self._entry_text_color)
+
+        self._ent_pressure_side = tk.OptionMenu(self._main_fr, self._new_pressure_side, *('p', 's'))
 
         tk.Label(self._main_fr, text='sig_y1', bg = self._general_color).place(x=10 + 2 * delta_x,
                                                                                y=prop_vert_start + 4.5 * delta_y)
@@ -475,8 +474,8 @@ class Application():
                                                                                y=prop_vert_start + 4.5 * delta_y)
         tk.Label(self._main_fr, text='stf type', bg = self._general_color).place(x=10 + 6 * delta_x,
                                                                                  y=prop_vert_start + 4.5 * delta_y)
-        tk.Label(self._main_fr, text='pressure side', bg = self._general_color).place(x=10 + 7.5 * delta_x,
-                                                                                      y=prop_vert_start + 4.5 * delta_y)
+        tk.Label(self._main_fr, text='Pressure side (p-plate, s-stf.):', bg = self._general_color)\
+            .place(x=100, y=prop_vert_start+ 8 * delta_y)
 
         self._ent_sigma_y1= tk.Entry(self._main_fr, textvariable=self._new_sigma_y1, width = int(7*self._global_shrink),
                                      bg = self._entry_color, fg = self._entry_text_color)
@@ -532,7 +531,7 @@ class Application():
         tk.Label(self._main_fr, text='[mm]', bg = self._general_color).place(x=10 + 8*delta_x,
                                                                              y=prop_vert_start + loc_y * delta_y)
 
-        self._ent_mat.place(x=10+5*delta_x , y=prop_vert_start + 7 * delta_y)
+        self._ent_mat.place(x=10+6*delta_x , y=prop_vert_start + 7 * delta_y)
         self._ent_plate_kpp.place(x=10+2*delta_x, y=prop_vert_start + 3.5 * delta_y)
         self._ent_plate_kps.place(x=10+3*delta_x, y=prop_vert_start + 3.5 * delta_y)
         self._ent_stf_km1.place(x=10+4*delta_x, y=prop_vert_start + 3.5 * delta_y)
@@ -551,7 +550,7 @@ class Application():
                      bg = self._general_color)\
                 .place(x=ent_x+delta_x*1.6* self._global_shrink, y=prop_vert_start +11*delta_y)
 
-        self._ent_pressure_side.place(x=10 + 7.6 * delta_x, y=prop_vert_start + 5.5 * delta_y)
+        self._ent_pressure_side.place(x=10+6*delta_x , y=prop_vert_start + 8 * delta_y)
 
         try:
             img_file_name = 'img_stf_button.gif'
