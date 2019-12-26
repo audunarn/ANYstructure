@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+ # -*- coding: utf-8 -*-
 
 import os
 import tkinter as tk
@@ -47,9 +47,17 @@ class Application():
         else:
             self._global_shrink = 1
 
+        # Definng general colors
+        self._general_color = 'azure2'  # Color for backgrounds.
+        self._entry_color = 'white'  # Entry fields color.
+        self._entry_text_color = 'black'  # Entry field tex color
+        self._button_bg_color = 'LightBlue1'
+        self._button_fg_color = 'black'
+
         self._root_dir = os.path.dirname(os.path.abspath(__file__))
         # Main frame for the application
-        self._main_fr = tk.Frame(parent, height=int(990*self._global_shrink), width=int(1920*self._global_shrink))
+        self._main_fr = tk.Frame(parent, height=int(990*self._global_shrink), width=int(1920*self._global_shrink),
+                                 background=self._general_color)
         self._main_fr.pack()
 
         # Top open/save/new
@@ -93,50 +101,51 @@ class Application():
         self._previous_drag_mouse = list(self._canvas_draw_origo)
 
         # Setting the fonts for all items in the application.
-        self._text_size = {'Text 14 bold':'Verdana '+str(int(14*self._global_shrink))+' bold',
+        self._text_size = {'Text 14 bold': 'Verdana '+str(int(14*self._global_shrink))+' bold',
                            'Text 16 bold': 'Verdana ' + str(int(16 * self._global_shrink)) + ' bold',
                            'Text 18 bold': 'Verdana ' + str(int(18 * self._global_shrink)) + ' bold',
-                          'Text 12 bold': 'Verdana ' + str(int(12 * self._global_shrink)) + ' bold',
-                          'Text 10 bold':'Verdana '+str(int(10*self._global_shrink))+' bold',
-                          'Text 9 bold': 'Verdana ' + str(int(9 * self._global_shrink)) + ' bold',
-                          'Text 8 bold': 'Verdana ' + str(int(8 * self._global_shrink)) + ' bold',
-                          'Text 8': 'Verdana ' + str(int(8 * self._global_shrink)),
-                          'Text 9': 'Verdana ' + str(int(8 * self._global_shrink)),
-                          'Text 7': 'Verdana ' + str(int(7 * self._global_shrink)),
-                          'Text 7 bold': 'Verdana ' + str(int(7 * self._global_shrink)) + ' bold'}
+                           'Text 12 bold': 'Verdana ' + str(int(12 * self._global_shrink)) + ' bold',
+                           'Text 10 bold': 'Verdana '+str(int(10*self._global_shrink))+' bold',
+                           'Text 9 bold': 'Verdana ' + str(int(9 * self._global_shrink)) + ' bold',
+                           'Text 8 bold': 'Verdana ' + str(int(8 * self._global_shrink)) + ' bold',
+                           'Text 8': 'Verdana ' + str(int(8 * self._global_shrink)),
+                           'Text 9': 'Verdana ' + str(int(8 * self._global_shrink)),
+                           'Text 7': 'Verdana ' + str(int(7 * self._global_shrink)),
+                           'Text 10': 'Verdana ' + str(int(10 * self._global_shrink)),
+                           'Text 7 bold': 'Verdana ' + str(int(7 * self._global_shrink)) + ' bold'}
 
         self._canvas_scale = 20 # Used for slider and can change
         self._base_scale_factor = 10 # Used for grid and will not change
 
         # Creating the various canvas next.
         self._main_canvas = tk.Canvas(self._main_fr, height=self._canvas_dim[1], width=self._canvas_dim[0]
-                                     , background='azure', relief = 'groove', borderwidth=2)
+                                     , background=self._general_color, bd=0, highlightthickness=0, relief='ridge')
         self._prop_canvas = tk.Canvas(self._main_fr, height=int(230*self._global_shrink),
                                      width=int(self._canvas_dim[0]*0.72*(self._global_shrink+(1-self._global_shrink)/2)),
-                                     background='DarkSeaGreen1', relief = 'groove', borderwidth=2)
+                                     background=self._general_color, bd=0, highlightthickness=0, relief='ridge')
         self._result_canvas = tk.Canvas(self._main_fr, height=int(230*self._global_shrink),
                                        width=int(self._canvas_dim[0]*0.68*(self._global_shrink+(1-self._global_shrink)/2)),
-                                       background='DarkSeaGreen1', relief = 'groove', borderwidth=2)
+                                       background=self._general_color, bd=0, highlightthickness=0, relief='ridge')
         x_canvas_place = int(500*self._global_shrink) #
-        self._main_canvas.place(x=x_canvas_place, y=20)
+        self._main_canvas.place(x=x_canvas_place, y=0)
         self._prop_canvas.place(x=x_canvas_place, y=self._canvas_dim[1]+30)
         self._result_canvas.place(x=x_canvas_place+self._canvas_dim[0]*0.73*(self._global_shrink+(1-self._global_shrink)/2),
                                  y=self._canvas_dim[1]+30)
 
         # These frames are just visual separations in the GUI.
         fr_width = int(x_canvas_place * self._global_shrink)
-        tk.Frame(self._main_fr, width=fr_width, height=5, bg="black", colormap="new")\
-            .place(x=0, y=50* self._global_shrink)
-        tk.Frame(self._main_fr, width=fr_width, height=5, bg="black", colormap="new")\
-            .place(x=1505*self._global_shrink,y=50 * self._global_shrink)
-        tk.Frame(self._main_fr, width=fr_width, height=5, bg="azure", colormap="new")\
-            .place(x=0, y=160* self._global_shrink)
-        tk.Frame(self._main_fr, width=fr_width, height=5, bg="azure", colormap="new")\
-            .place(x=0, y=260* self._global_shrink)
-        tk.Frame(self._main_fr, width=fr_width, height=5, bg="black", colormap="new")\
-            .place(x=0, y=330* self._global_shrink)
-        tk.Frame(self._main_fr, width=fr_width, height=5, bg="black", colormap="new")\
-            .place(x=0, y=675* self._global_shrink)
+        tk.Frame(self._main_fr, width=2000, height=3, bg="black", colormap="new")\
+            .place(x=0, y=720* self._global_shrink)
+        tk.Frame(self._main_fr, width=3, height=1000, bg="black", colormap="new")\
+            .place(x=500*self._global_shrink,y=0 * self._global_shrink)
+        # tk.Frame(self._main_fr, width=fr_width, height=5, bg="azure", colormap="new")\
+        #     .place(x=0, y=160* self._global_shrink)
+        # tk.Frame(self._main_fr, width=fr_width, height=5, bg="azure", colormap="new")\
+        #     .place(x=0, y=260* self._global_shrink)
+        # tk.Frame(self._main_fr, width=fr_width, height=5, bg="black", colormap="new")\
+        #     .place(x=0, y=260* self._global_shrink)
+        # tk.Frame(self._main_fr, width=fr_width, height=5, bg="black", colormap="new")\
+        #     .place(x=0, y=675* self._global_shrink)
 
         # Point frame
         self._pt_frame = tk.Frame(self._main_canvas, width=100, height=100, bg="black", relief='raised')
@@ -205,25 +214,26 @@ class Application():
         delta_x = 50*self._global_shrink
 
         # --- slider (used to zoom) ----
-        tk.Label(self._main_fr, text='Slide to zoom (or use mouse wheel)').place(x=ent_x+delta_x*6.5, y=delta_y)
-        self._slider = tk.Scale(self._main_fr,from_=60,to = 1, command=self.slider_used)
+        # tk.Label(self._main_fr, text='Slide to zoom (or use mouse wheel)',
+        #          bg = self._general_color).place(x=ent_x+delta_x*6.5, y=delta_y)
+        self._slider = tk.Scale(self._main_fr,from_=60,to = 1, command=self.slider_used, background=self._general_color)
         self._slider.set(self._canvas_scale)
         self._slider.place(x=ent_x+delta_x*6.5, y= delta_y*2)
 
         # --- main header image ---
-        try:
-            img_file_name = 'img_title.gif'
-            if os.path.isfile('images/' + img_file_name):
-                file_path = 'images/' + img_file_name
-            else:
-                file_path = self._root_dir + '/images/' + img_file_name
-            photo = tk.PhotoImage(file=file_path)
-            label = tk.Label(self._main_fr,image=photo)
-            label.image = photo  # keep a reference!
-            label.place(x=2, y=10)
-        except TclError: # If the image is not located in the folder
-            label = tk.Label(self._main_fr, text='DNVGL-OS-C101 based calculations')
-            label.place(x=10, y=10)
+        # try:
+        #     img_file_name = 'img_title.gif'
+        #     if os.path.isfile('images/' + img_file_name):
+        #         file_path = 'images/' + img_file_name
+        #     else:
+        #         file_path = self._root_dir + '/images/' + img_file_name
+        #     photo = tk.PhotoImage(file=file_path)
+        #     label = tk.Label(self._main_fr,image=photo)
+        #     label.image = photo  # keep a reference!
+        #     label.place(x=2, y=10)
+        # except TclError: # If the image is not located in the folder
+        #     label = tk.Label(self._main_fr, text='DNVGL-OS-C101 based calculations')
+        #     label.place(x=10, y=10)
 
 
         # ----------------------INITIATION OF THE SMALLER PARTS OF THE GUI STARTS HERE--------------------------
@@ -231,67 +241,92 @@ class Application():
         self._new_point_x = tk.DoubleVar()
         self._new_point_y = tk.DoubleVar()
         self._new_point_fix = tk.StringVar()
-        point_start = 100* self._global_shrink
+        point_start = 50* self._global_shrink
         ent_width = 6  # width of entries
 
-        tk.Label(self._main_fr, text='Input point coordinates [mm]', font=self._text_size['Text 9 bold'])\
+        tk.Label(self._main_fr, text='Input point coordinates [mm]', font=self._text_size['Text 9 bold'],
+                 bg = self._general_color)\
             .place(x=10, y=point_start - 30*self._global_shrink)
-        tk.Label(self._main_fr, text='Point x (horizontal) [mm]:',font="Text 9").place(x=10, y=point_start)
-        tk.Label(self._main_fr, text='Point y (vertical)   [mm]:',font="Text 9").place(x=10, y=point_start + delta_y)
+        tk.Label(self._main_fr, text='Point x (horizontal) [mm]:',font="Text 9", bg = self._general_color)\
+            .place(x=10, y=point_start)
+        tk.Label(self._main_fr, text='Point y (vertical)   [mm]:',font="Text 9", bg = self._general_color)\
+            .place(x=10, y=point_start + delta_y)
 
-        tk.Entry(self._main_fr, textvariable=self._new_point_x, width = int(ent_width * self._global_shrink))\
+        tk.Entry(self._main_fr, textvariable=self._new_point_x, width = int(ent_width * self._global_shrink),
+                 bg = self._entry_color, fg = self._entry_text_color)\
             .place(x=ent_x, y=point_start)
-        tk.Entry(self._main_fr, textvariable=self._new_point_y, width = int(ent_width * self._global_shrink))\
+        tk.Entry(self._main_fr, textvariable=self._new_point_y, width = int(ent_width * self._global_shrink),
+                 bg = self._entry_color, fg = self._entry_text_color)\
             .place(x=ent_x, y=point_start + delta_y)
-        tk.Button(self._main_fr, text='Add point (coords)', command=self.new_point, width = 18,bg = 'green', fg = 'yellow',
+        tk.Button(self._main_fr, text='Add point (coords)', command=self.new_point, width = 18,
+                  bg = self._button_bg_color, fg = self._button_fg_color,
                   font = self._text_size['Text 9 bold']).place(x=ent_x + 2 * delta_x, y=point_start-1.6*delta_y)
-        tk.Button(self._main_fr, text='Copy point (relative)', command=self.copy_point, width = 18,bg = 'white', fg = 'black',
+        tk.Button(self._main_fr, text='Copy point (relative)', command=self.copy_point, width = 18,
+                  bg = self._button_bg_color, fg = self._button_fg_color,
                   font = self._text_size['Text 9 bold']).place(x=ent_x + 2 * delta_x, y=point_start-0.3*delta_y)
-        tk.Button(self._main_fr, text='Move point (relative)', command=self.move_point, width = 18,bg = 'white', fg = 'black',
+        tk.Button(self._main_fr, text='Move point (relative)', command=self.move_point, width = 18,
+                  bg = self._button_bg_color, fg = self._button_fg_color,
                   font = self._text_size['Text 9 bold']).place(x=ent_x + 2 * delta_x, y=point_start+1*delta_y)
 
         # --- line input/output ---
         self._new_line_p1 = tk.IntVar()
         self._new_line_p2 = tk.IntVar()
-        line_start = 200* self._global_shrink
+        line_start = (point_start+90)* self._global_shrink
         tk.Label(self._main_fr, text='Input line from "point number" to "point number"',
-                 font=self._text_size['Text 9 bold']).place(x=10, y=line_start - 30*self._global_shrink)
-        tk.Label(self._main_fr, text='From point number:',font="Text 9").place(x=10, y=line_start)
-        tk.Label(self._main_fr, text='To point number:',font="Text 9").place(x=10, y=line_start + delta_y)
+                 font=self._text_size['Text 9 bold'], bg = self._general_color)\
+            .place(x=10, y=line_start - 30*self._global_shrink)
+        tk.Label(self._main_fr, text='From point number:',font="Text 9", bg = self._general_color)\
+            .place(x=10, y=line_start)
+        tk.Label(self._main_fr, text='To point number:',font="Text 9", bg = self._general_color)\
+            .place(x=10, y=line_start + delta_y)
 
-        tk.Entry(self._main_fr, textvariable=self._new_line_p1, width=int(ent_width * self._global_shrink))\
+        tk.Entry(self._main_fr, textvariable=self._new_line_p1, width=int(ent_width * self._global_shrink),
+                 bg = self._entry_color, fg = self._entry_text_color)\
             .place(x=ent_x, y=line_start)
-        tk.Entry(self._main_fr, textvariable=self._new_line_p2, width=int(ent_width * self._global_shrink))\
+        tk.Entry(self._main_fr, textvariable=self._new_line_p2, width=int(ent_width * self._global_shrink),
+                 bg = self._entry_color, fg = self._entry_text_color)\
             .place(x=ent_x, y=line_start + delta_y)
-        tk.Button(self._main_fr, text='Add line', command=self.new_line, width = 10,bg = 'green', fg = 'yellow',
+        tk.Button(self._main_fr, text='Add line', command=self.new_line, width = 10,
+                  bg = self._button_bg_color, fg = self._button_fg_color,
                   font = self._text_size['Text 9 bold']).place(x=ent_x+2*delta_x, y=line_start)
 
         # --- delete points and lines ---
         self._new_delete_line = tk.IntVar()
         self._new_delete_point = tk.IntVar()
-        del_start = 295* self._global_shrink
-        tk.Label(self._main_fr, text='Delete lines and points (input line or point number)',
-                 font=self._text_size['Text 9 bold']).place(x=10, y=del_start - 30*self._global_shrink)
+        del_start = (line_start + 90)* self._global_shrink
+        tk.Label(self._main_fr, text='Delete lines and points (or left/right click and use "Delete key")',
+                 font=self._text_size['Text 9 bold'], bg = self._general_color)\
+            .place(x=10, y=del_start - 30*self._global_shrink)
         self._ent_delete_line = tk.Entry(self._main_fr, textvariable=self._new_delete_line,
-                                        width=int(ent_width * self._global_shrink))
-        self._ent_delete_line.place(x=10, y=del_start)
+                                        width=int(ent_width * self._global_shrink),
+                                         bg = self._entry_color, fg = self._entry_text_color)
+        self._ent_delete_line.place(x=ent_x, y=del_start)
+
         self._ent_delete_point = tk.Entry(self._main_fr, textvariable=self._new_delete_point,
-                                         width=int(ent_width * self._global_shrink))
-        self._ent_delete_point.place(x=ent_x, y=del_start)
+                                         width=int(ent_width * self._global_shrink),
+                                          bg = self._entry_color, fg = self._entry_text_color)
+        self._ent_delete_point.place(x=ent_x, y=del_start + delta_y)
 
-        tk.Button(self._main_fr, text='Delete line',bg='green', fg='yellow',
+
+        tk.Label(self._main_fr, text='Line number (left click):',font="Text 9", bg = self._general_color)\
+            .place(x=10, y=del_start)
+        tk.Label(self._main_fr, text='Point number (right click):',font="Text 9", bg = self._general_color)\
+            .place(x=10, y=del_start+ delta_y)
+
+        tk.Button(self._main_fr, text='Delete line',bg = self._button_bg_color, fg = self._button_fg_color,
                                          font=self._text_size['Text 9 bold'],command=self.delete_line,
-                                         width = int(9*self._global_shrink)).place(x=ent_x-delta_x*2, y=del_start)
+                                         width = int(11*self._global_shrink)).place(x=ent_x+delta_x*2, y=del_start)
 
-        tk.Button(self._main_fr, text='Delete point',bg='green', fg='yellow',
+        tk.Button(self._main_fr, text='Delete point',bg = self._button_bg_color, fg = self._button_fg_color,
                                           font=self._text_size['Text 9 bold'],command=self.delete_point,
-                                          width = int(11*self._global_shrink)).place(x=ent_x+2*delta_x, y=del_start)
+                                          width = int(11*self._global_shrink)).place(x=ent_x+2*delta_x, y=del_start + delta_y)
 
         # --- structure type information ---
-        prop_vert_start = 370* self._global_shrink
+        prop_vert_start = 320* self._global_shrink
         types_start = 10
         tk.Label(self._main_fr, text='Structural and calculation properties input below:',
-                 font=self._text_size['Text 9 bold']).place(x=10, y=prop_vert_start-1.2*delta_y)
+                 font=self._text_size['Text 9 bold'],
+                 bg = self._general_color ).place(x=10, y=prop_vert_start-1.2*delta_y)
         def show_message():
             messagebox.showinfo(title='Structure type',message='Types - sets default stresses (sigy1/sigy2/sigx/tauxy)'
                                                                '\n FOR DYNAMIC EQUATION THE FOLLOWING APPLIES'
@@ -308,21 +343,27 @@ class Application():
                                                                '\n WT self._main_fr (70/70/60/10):      FRAME_WT '
                                                                '\n Internal BHD WT (70/70/50/10):       INT_BHD'
                                                                '\n Main deck (70/70/40/3) :             MD '
-                                                               '\n General (WT) (90/90/40/5):           GENERAL_INTERNAL_WT'
-                                                               '\n General (NONWT) (70/70/30/3):        GENERAL_INTERNAL_NONWT'
+                                                               '\n General (WT) (90/90/40/5):           '
+                                                               'GENERAL_INTERNAL_WT'
+                                                               '\n General (NONWT) (70/70/30/3):        '
+                                                               'GENERAL_INTERNAL_NONWT'
                                                                '\n Side shell slamming (100/100/50/20): SSS '
                                                                '\n Internal 1 MPa wt (1/1/1/1):         INTERNAL_1_MPA '
-                                                               '\n Internal low stress wt (40/40/20/5): INTERNAL_LOW_STRESS_WT ')
+                                                               '\n Internal low stress wt (40/40/20/5): '
+                                                               'INTERNAL_LOW_STRESS_WT ')
 
-        tk.Button(self._main_fr,text='Show structure types',command=show_message,bg='grey',
-                                font=self._text_size['Text 8']).place(x=types_start,y=prop_vert_start+10*delta_y)
+        tk.Button(self._main_fr,text='Show structure types',command=show_message,
+                  bg = self._button_bg_color, fg = self._button_fg_color, font=self._text_size['Text 8'])\
+            .place(x=types_start,y=prop_vert_start+11.7*delta_y)
 
-        tk.Label(self._main_fr, text='Select structure type ->', font=self._text_size['Text 8'])\
-            .place(x=100, y=prop_vert_start + 8 * delta_y)
+        tk.Label(self._main_fr, text='Select structure type:', font=self._text_size['Text 9 bold'],
+                 bg = self._general_color)\
+            .place(x=10, y=prop_vert_start + 9.5 * delta_y)
         self.add_stucture = tk.Button(self._main_fr, text='Add structure to line', command=self.new_structure,
-                                      font = self._text_size['Text 8 bold'], fg = 'yellow', bg = 'green',
-                                      width = 18, height = 2)
-        self.add_stucture.place(x=types_start+6*delta_x, y=prop_vert_start+delta_y*10+10)
+                                      font = self._text_size['Text 10 bold'],
+                                      bg = self._button_bg_color, fg = self._button_fg_color,
+                                      width = 20, height = 3)
+        self.add_stucture.place(x=10+ delta_x*5.7, y=prop_vert_start+13.5*delta_y)
 
         # --- main variable to define the structural properties ---
         self._new_material = tk.DoubleVar()
@@ -364,64 +405,107 @@ class Application():
 
         # --- main entries and labels to define the structural properties ---
         ent_width = 12 #width of entries
-        tk.Label(self._main_fr, text='Material yield [MPa]', font = self._text_size['Text 8'])\
+        tk.Label(self._main_fr, text='Material yield [MPa]:', font = self._text_size['Text 9'],
+                 bg = self._general_color)\
             .place(x=100, y=prop_vert_start+ 7 * delta_y)
 
-        self._ent_mat = tk.Entry(self._main_fr, textvariable=self._new_material, width = int(ent_width*self._global_shrink))
+        self._ent_mat = tk.Entry(self._main_fr, textvariable=self._new_material,
+                                 width = int(ent_width*self._global_shrink), bg = self._entry_color,
+                                 fg = self._entry_text_color)
         self._ent_field_len = tk.Entry(self._main_fr, textvariable=self._new_field_len,
-                                      width = int(5*self._global_shrink))
+                                      width = int(5*self._global_shrink), bg = self._entry_color,
+                                       fg = self._entry_text_color)
         self._ent_stf_spacing = tk.Entry(self._main_fr, textvariable=self._new_stf_spacing,
-                                        width = int(5*self._global_shrink))
+                                        width = int(5*self._global_shrink), bg = self._entry_color,
+                                         fg = self._entry_text_color)
         self._ent_plate_thk = tk.Entry(self._main_fr, textvariable=self._new_plate_thk,
-                                      width = int(5*self._global_shrink))
+                                      width = int(5*self._global_shrink), bg = self._entry_color,
+                                       fg = self._entry_text_color)
         self._ent_stf_web_h = tk.Entry(self._main_fr, textvariable=self._new_stf_web_h,
-                                      width = int(5*self._global_shrink))
+                                      width = int(5*self._global_shrink), bg = self._entry_color,
+                                       fg = self._entry_text_color)
         self._ent_stf_web_t = tk.Entry(self._main_fr, textvariable=self._new_sft_web_t,
-                                      width = int(5*self._global_shrink))
+                                      width = int(5*self._global_shrink), bg = self._entry_color,
+                                       fg = self._entry_text_color)
         self._ent_stf_fl_w = tk.Entry(self._main_fr, textvariable=self._new_stf_fl_w,
-                                     width = int(5*self._global_shrink))
+                                     width = int(5*self._global_shrink), bg = self._entry_color,
+                                      fg = self._entry_text_color)
         self._ent_str_fl_t = tk.Entry(self._main_fr, textvariable=self._new_stf_fl_t,
-                                     width = int(5*self._global_shrink))
+                                     width = int(5*self._global_shrink), bg = self._entry_color,
+                                      fg = self._entry_text_color)
 
-        tk.Label(self._main_fr,text='kpp').place(x=10+2*delta_x, y=prop_vert_start + 2.5 * delta_y)
-        tk.Label(self._main_fr, text='kps').place(x=10 + 3 * delta_x, y=prop_vert_start + 2.5 * delta_y)
-        tk.Label(self._main_fr, text='km1').place(x=10 + 4 * delta_x, y=prop_vert_start + 2.5 * delta_y)
-        tk.Label(self._main_fr, text='km2').place(x=10 + 5 * delta_x, y=prop_vert_start + 2.5 * delta_y)
-        tk.Label(self._main_fr, text='k3').place(x=10 + 6 * delta_x, y=prop_vert_start + 2.5 * delta_y)
+        tk.Label(self._main_fr,text='kpp', bg = self._general_color).place(x=10+2*delta_x,
+                                                                           y=prop_vert_start + 2.5 * delta_y)
+        tk.Label(self._main_fr, text='kps', bg = self._general_color).place(x=10 + 3 * delta_x,
+                                                                            y=prop_vert_start + 2.5 * delta_y)
+        tk.Label(self._main_fr, text='km1', bg = self._general_color).place(x=10 + 4 * delta_x,
+                                                                            y=prop_vert_start + 2.5 * delta_y)
+        tk.Label(self._main_fr, text='km2', bg = self._general_color).place(x=10 + 5 * delta_x,
+                                                                            y=prop_vert_start + 2.5 * delta_y)
+        tk.Label(self._main_fr, text='k3', bg = self._general_color).place(x=10 + 6 * delta_x,
+                                                                           y=prop_vert_start + 2.5 * delta_y)
 
 
-        self._ent_plate_kpp = tk.Entry(self._main_fr, textvariable=self._new_plate_kpp, width = int(5*self._global_shrink))
-        self._ent_plate_kps = tk.Entry(self._main_fr, textvariable=self._new_stf_kps, width = int(5*self._global_shrink))
-        self._ent_stf_km1 = tk.Entry(self._main_fr, textvariable=self._new_stf_km1, width = int(5*self._global_shrink))
-        self._ent_stf_km2 = tk.Entry(self._main_fr, textvariable=self._new_stf_km2, width = int(5*self._global_shrink))
-        self._ent_stf_km3 = tk.Entry(self._main_fr, textvariable=self._new_stf_km3, width = int(5*self._global_shrink))
-        self._ent_pressure_side = tk.Entry(self._main_fr, textvariable=self._new_pressure_side,
-                                          width=int(5 * self._global_shrink))
+        self._ent_plate_kpp = tk.Entry(self._main_fr, textvariable=self._new_plate_kpp,
+                                       width = int(5*self._global_shrink), bg = self._entry_color,
+                                       fg = self._entry_text_color)
+        self._ent_plate_kps = tk.Entry(self._main_fr, textvariable=self._new_stf_kps,
+                                       width = int(5*self._global_shrink), bg = self._entry_color,
+                                       fg = self._entry_text_color)
+        self._ent_stf_km1 = tk.Entry(self._main_fr, textvariable=self._new_stf_km1,
+                                     width = int(5*self._global_shrink), bg = self._entry_color,
+                                     fg = self._entry_text_color)
+        self._ent_stf_km2 = tk.Entry(self._main_fr, textvariable=self._new_stf_km2,
+                                     width = int(5*self._global_shrink), bg = self._entry_color,
+                                     fg = self._entry_text_color)
+        self._ent_stf_km3 = tk.Entry(self._main_fr, textvariable=self._new_stf_km3,
+                                     width = int(5*self._global_shrink), bg = self._entry_color,
+                                     fg = self._entry_text_color)
 
-        tk.Label(self._main_fr, text='sig_y1').place(x=10 + 2 * delta_x, y=prop_vert_start + 4.5 * delta_y)
-        tk.Label(self._main_fr, text='sig_y2').place(x=10 + 3 * delta_x, y=prop_vert_start + 4.5 * delta_y)
-        tk.Label(self._main_fr, text='sig_x').place(x=10 + 4 * delta_x, y=prop_vert_start + 4.5 * delta_y)
-        tk.Label(self._main_fr, text='tau_y1').place(x=10 + 5 * delta_x, y=prop_vert_start + 4.5 * delta_y)
-        tk.Label(self._main_fr, text='stf type').place(x=10 + 6 * delta_x, y=prop_vert_start + 4.5 * delta_y)
-        tk.Label(self._main_fr, text='pressure side').place(x=10 + 7.5 * delta_x, y=prop_vert_start + 4.5 * delta_y)
+        self._ent_pressure_side = tk.OptionMenu(self._main_fr, self._new_pressure_side, *('p', 's'))
 
-        self._ent_sigma_y1= tk.Entry(self._main_fr, textvariable=self._new_sigma_y1, width = int(7*self._global_shrink))
-        self._ent_sigma_y2 = tk.Entry(self._main_fr, textvariable=self._new_sigma_y2, width=int(7*self._global_shrink))
-        self._ent_sigma_x = tk.Entry(self._main_fr, textvariable=self._new_sigma_x, width=int(7*self._global_shrink))
-        self._ent_tauxy = tk.Entry(self._main_fr, textvariable=self._new_tauxy, width=int(7*self._global_shrink))
-        self._ent_stf_type = tk.Entry(self._main_fr, textvariable=self._new_stf_type, width=int(7*self._global_shrink))
+        tk.Label(self._main_fr, text='sig_y1', bg = self._general_color).place(x=10 + 2 * delta_x,
+                                                                               y=prop_vert_start + 4.5 * delta_y)
+        tk.Label(self._main_fr, text='sig_y2', bg = self._general_color).place(x=10 + 3 * delta_x,
+                                                                               y=prop_vert_start + 4.5 * delta_y)
+        tk.Label(self._main_fr, text='sig_x', bg = self._general_color).place(x=10 + 4 * delta_x,
+                                                                              y=prop_vert_start + 4.5 * delta_y)
+        tk.Label(self._main_fr, text='tau_y1', bg = self._general_color).place(x=10 + 5 * delta_x,
+                                                                               y=prop_vert_start + 4.5 * delta_y)
+        tk.Label(self._main_fr, text='stf type', bg = self._general_color).place(x=10 + 6 * delta_x,
+                                                                                 y=prop_vert_start + 4.5 * delta_y)
+        tk.Label(self._main_fr, text='Pressure side (p-plate, s-stf.):', bg = self._general_color)\
+            .place(x=100, y=prop_vert_start+ 8 * delta_y)
+
+        self._ent_sigma_y1= tk.Entry(self._main_fr, textvariable=self._new_sigma_y1, width = int(7*self._global_shrink),
+                                     bg = self._entry_color, fg = self._entry_text_color)
+        self._ent_sigma_y2 = tk.Entry(self._main_fr, textvariable=self._new_sigma_y2, width=int(7*self._global_shrink),
+                                      bg = self._entry_color, fg = self._entry_text_color)
+        self._ent_sigma_x = tk.Entry(self._main_fr, textvariable=self._new_sigma_x, width=int(7*self._global_shrink),
+                                     bg = self._entry_color, fg = self._entry_text_color)
+        self._ent_tauxy = tk.Entry(self._main_fr, textvariable=self._new_tauxy, width=int(7*self._global_shrink),
+                                   bg = self._entry_color, fg = self._entry_text_color)
+        self._ent_stf_type = tk.Entry(self._main_fr, textvariable=self._new_stf_type, width=int(7*self._global_shrink),
+                                      bg = self._entry_color, fg = self._entry_text_color)
         self._ent_structure_type = tk.OptionMenu(self._main_fr, self._new_stucture_type,
                                                  command = self.option_meny_structure_type_trace, *self._options_type)
 
 
         loc_y = -0.2
-        tk.Label(self._main_fr, text='span',).place(x=10 + 2 * delta_x, y=prop_vert_start +loc_y * delta_y)
-        tk.Label(self._main_fr, text='s').place(x=10 + 3*delta_x, y=prop_vert_start+loc_y * delta_y)
-        tk.Label(self._main_fr, text='pl_thk').place(x=10 + 4*delta_x, y=prop_vert_start +loc_y  * delta_y)
-        tk.Label(self._main_fr, text='web_h').place(x=10 + 5*delta_x, y=prop_vert_start +loc_y * delta_y)
-        tk.Label(self._main_fr, text='web_thk').place(x=10 + 6*delta_x, y=prop_vert_start+loc_y * delta_y)
-        tk.Label(self._main_fr, text='fl_w').place(x=10 + 7*delta_x, y=prop_vert_start + loc_y  * delta_y)
-        tk.Label(self._main_fr, text='fl_thk').place(x=10 + 8*delta_x, y=prop_vert_start + loc_y  * delta_y)
+        tk.Label(self._main_fr, text='span', bg = self._general_color).place(x=10 + 2 * delta_x,
+                                                                             y=prop_vert_start +loc_y * delta_y)
+        tk.Label(self._main_fr, text='s', bg = self._general_color).place(x=10 + 3*delta_x,
+                                                                          y=prop_vert_start+loc_y * delta_y)
+        tk.Label(self._main_fr, text='pl_thk', bg = self._general_color).place(x=10 + 4*delta_x,
+                                                                               y=prop_vert_start +loc_y  * delta_y)
+        tk.Label(self._main_fr, text='web_h', bg = self._general_color).place(x=10 + 5*delta_x,
+                                                                              y=prop_vert_start +loc_y * delta_y)
+        tk.Label(self._main_fr, text='web_thk', bg = self._general_color).place(x=10 + 6*delta_x,
+                                                                                y=prop_vert_start+loc_y * delta_y)
+        tk.Label(self._main_fr, text='fl_w', bg = self._general_color).place(x=10 + 7*delta_x,
+                                                                             y=prop_vert_start + loc_y  * delta_y)
+        tk.Label(self._main_fr, text='fl_thk', bg = self._general_color).place(x=10 + 8*delta_x,
+                                                                               y=prop_vert_start + loc_y  * delta_y)
 
         loc_y = 0.8
         self._ent_field_len.place(x=10 + 2*delta_x, y=prop_vert_start + loc_y * delta_y)
@@ -432,15 +516,22 @@ class Application():
         self._ent_stf_fl_w.place(x=10 + 7*delta_x, y=prop_vert_start + loc_y  * delta_y)
         self._ent_str_fl_t.place(x=10 + 8*delta_x, y=prop_vert_start + loc_y  * delta_y)
         loc_y = 1.7
-        tk.Label(self._main_fr, text='[m]').place(x=10 + 2 * delta_x, y=prop_vert_start + loc_y * delta_y)
-        tk.Label(self._main_fr, text='[mm]').place(x=10 + 3*delta_x, y=prop_vert_start + loc_y * delta_y)
-        tk.Label(self._main_fr, text='[mm]').place(x=10 + 4*delta_x, y=prop_vert_start + loc_y * delta_y)
-        tk.Label(self._main_fr, text='[mm]').place(x=10 + 5*delta_x, y=prop_vert_start + loc_y * delta_y)
-        tk.Label(self._main_fr, text='[mm]').place(x=10 + 6*delta_x, y=prop_vert_start + loc_y * delta_y)
-        tk.Label(self._main_fr, text='[mm]').place(x=10 + 7*delta_x, y=prop_vert_start + loc_y * delta_y)
-        tk.Label(self._main_fr, text='[mm]').place(x=10 + 8*delta_x, y=prop_vert_start + loc_y * delta_y)
+        tk.Label(self._main_fr, text='[m]', bg = self._general_color).place(x=10 + 2 * delta_x,
+                                                                            y=prop_vert_start + loc_y * delta_y)
+        tk.Label(self._main_fr, text='[mm]', bg = self._general_color).place(x=10 + 3*delta_x,
+                                                                             y=prop_vert_start + loc_y * delta_y)
+        tk.Label(self._main_fr, text='[mm]', bg = self._general_color).place(x=10 + 4*delta_x,
+                                                                             y=prop_vert_start + loc_y * delta_y)
+        tk.Label(self._main_fr, text='[mm]', bg = self._general_color).place(x=10 + 5*delta_x,
+                                                                             y=prop_vert_start + loc_y * delta_y)
+        tk.Label(self._main_fr, text='[mm]', bg = self._general_color).place(x=10 + 6*delta_x,
+                                                                             y=prop_vert_start + loc_y * delta_y)
+        tk.Label(self._main_fr, text='[mm]', bg = self._general_color).place(x=10 + 7*delta_x,
+                                                                             y=prop_vert_start + loc_y * delta_y)
+        tk.Label(self._main_fr, text='[mm]', bg = self._general_color).place(x=10 + 8*delta_x,
+                                                                             y=prop_vert_start + loc_y * delta_y)
 
-        self._ent_mat.place(x=delta_x*6 , y=prop_vert_start + 7 * delta_y)
+        self._ent_mat.place(x=10+6*delta_x , y=prop_vert_start + 7 * delta_y)
         self._ent_plate_kpp.place(x=10+2*delta_x, y=prop_vert_start + 3.5 * delta_y)
         self._ent_plate_kps.place(x=10+3*delta_x, y=prop_vert_start + 3.5 * delta_y)
         self._ent_stf_km1.place(x=10+4*delta_x, y=prop_vert_start + 3.5 * delta_y)
@@ -451,14 +542,15 @@ class Application():
         self._ent_sigma_x.place(x=10+4*delta_x, y=prop_vert_start + 5.5 * delta_y)
         self._ent_tauxy.place(x=10+5*delta_x, y=prop_vert_start + 5.5 * delta_y)
         self._ent_stf_type.place(x=10+6*delta_x, y=prop_vert_start + 5.5 * delta_y)
-        self._ent_structure_type.place(x=ent_x+delta_x*1.9, y=prop_vert_start +8*delta_y, width = ent_width*6)
+        self._ent_structure_type.place(x=10, y=prop_vert_start +10.5*delta_y, width = ent_width*6)
         self._ent_structure_type.place_configure(width=int(210*self._global_shrink))
 
         self._structure_types_label = \
-            tk.Label(textvariable = self._new_stucture_type_label, font = self._text_size['Text 8'], fg= 'red')\
-                .place(x=ent_x+delta_x*1.9, y=prop_vert_start +9.4*delta_y)
+            tk.Label(textvariable = self._new_stucture_type_label, font = self._text_size['Text 9 bold'],
+                     bg = self._general_color)\
+                .place(x=ent_x+delta_x*1.6* self._global_shrink, y=prop_vert_start +11*delta_y)
 
-        self._ent_pressure_side.place(x=10 + 7.6 * delta_x, y=prop_vert_start + 5.5 * delta_y)
+        self._ent_pressure_side.place(x=10+6*delta_x , y=prop_vert_start + 8 * delta_y)
 
         try:
             img_file_name = 'img_stf_button.gif'
@@ -467,11 +559,13 @@ class Application():
             else:
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
-            stf_button = tk.Button(self._main_fr,image = photo,command=self.on_open_structure_window)
+            stf_button = tk.Button(self._main_fr,image = photo,command=self.on_open_structure_window,
+                                   bg = self._button_bg_color, fg = self._button_fg_color,)
             stf_button.image = photo
             stf_button.place(x=10,y=prop_vert_start)
         except TclError:
-            tk.Button(self._main_fr, text='STF.', command=self.on_open_structure_window).place(x=10,y=prop_vert_start)
+            tk.Button(self._main_fr, text='STF.', command=self.on_open_structure_window,
+                      bg = self._button_bg_color, fg = self._button_fg_color).place(x=10,y=prop_vert_start)
 
         try:
             img_file_name = 'img_stress_button.gif'
@@ -480,11 +574,13 @@ class Application():
             else:
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
-            stress_button = tk.Button(self._main_fr,image = photo,command=self.on_open_stresses_window)
+            stress_button = tk.Button(self._main_fr,image = photo,command=self.on_open_stresses_window,
+                                      bg = self._button_bg_color, fg = self._button_fg_color)
             stress_button.image = photo
             stress_button.place(x=10,y=prop_vert_start+3*delta_y)
         except TclError:
-            tk.Button(self._main_fr, text='STRESS', command=self.on_open_stresses_window)\
+            tk.Button(self._main_fr, text='STRESS', command=self.on_open_stresses_window,
+                      bg = self._button_bg_color, fg = self._button_fg_color)\
                 .place(x=10,y=prop_vert_start+3*delta_y)
 
         try:
@@ -498,72 +594,80 @@ class Application():
             fls_button.image = photo
             fls_button.place(x=10,y=prop_vert_start+6*delta_y)
         except TclError:
-            tk.Button(self._main_fr, text='FLS', command=self.on_open_fatigue_window)\
+            tk.Button(self._main_fr, text='FLS', command=self.on_open_fatigue_window,
+                      bg = self._button_bg_color, fg = self._button_fg_color,)\
                 .place(x=10,y=prop_vert_start+6*delta_y)
 
         # --- tank load input and information ---
         load_vert_start = 690* self._global_shrink
-        tk.Label(self._main_fr,text = 'Comp. no.:', font=self._text_size['Text 8 bold'])\
+        tk.Label(self._main_fr,text = 'Comp. no.:', font=self._text_size['Text 8 bold'], bg = self._general_color)\
             .place(x=10, y=load_vert_start + 3.5*delta_y)
 
-        self._selected_tank = tk.Label(self._main_fr,text='',font = self._text_size['Text 12 bold'],fg='red')
+        self._selected_tank = tk.Label(self._main_fr,text='',font = self._text_size['Text 12 bold'],fg='red',
+                                       bg = self._general_color)
         self._selected_tank.place(x=120, y=load_vert_start + 3.5*delta_y)
 
         self._compartments_listbox = tk.Listbox(self._main_fr, height = int(10 * self._global_shrink),
                                                width = int(5 * self._global_shrink),
                                                font=self._text_size["Text 10 bold"]
-                                               ,bg = 'DarkSeaGreen1', selectmode = 'extended' )
+                                               ,background=self._general_color, selectmode = 'extended' )
         self._compartments_listbox.place(x=10, y=load_vert_start + 4.2*delta_y)
         self._compartments_listbox.bind('<<ListboxSelect>>', self.button_1_click_comp_box)
 
 
         tk.Button(self._main_fr, text="Set compartment\n""properties.",command = self.update_tank,
-                                            font=self._text_size['Text 8 bold'], bg = 'white', fg = 'blue')\
-            .place(x=ent_x+delta_x*3, y=load_vert_start + delta_y * 5)
+                                            font=self._text_size['Text 8 bold'],
+                  bg = self._button_bg_color, fg = self._button_fg_color)\
+            .place(x=ent_x+delta_x*3, y=load_vert_start + delta_y * 6)
 
         tk.Button(self._main_fr, text="Delete all tanks", command=self.delete_all_tanks,
-                  font=self._text_size['Text 8 bold'], bg = 'white', fg = 'blue')\
-            .place(x=ent_x+delta_x*3, y=load_vert_start + delta_y * 7)
+                  font=self._text_size['Text 8 bold'],bg = self._button_bg_color, fg = self._button_fg_color)\
+            .place(x=ent_x+delta_x*3, y=load_vert_start + delta_y * 8)
         self._new_content_type = tk.StringVar()
 
         self._ent_content_type = tk.OptionMenu(self._main_fr, self._new_content_type, *self._tank_options)
         ent_width = 10
         self._new_overpresure = tk.DoubleVar()
         self._ent_overpressure = tk.Entry(self._main_fr, textvariable = self._new_overpresure,
-                                         width = int(ent_width * self._global_shrink))
+                                         width = int(ent_width * self._global_shrink),
+                                          bg = self._entry_color, fg = self._entry_text_color)
         self._new_overpresure.set(25000)
         self._new_density = tk.DoubleVar()
         self._ent_density = tk.Entry(self._main_fr, textvariable = self._new_density,
-                                    width = int(ent_width * self._global_shrink))
+                                    width = int(ent_width * self._global_shrink),
+                                     bg = self._entry_color, fg = self._entry_text_color)
         self._new_density.set(1025)
         self._new_max_el = tk.DoubleVar()
         self._ent_max_el = tk.Entry(self._main_fr, textvariable=self._new_max_el,
-                                   width=int(ent_width * self._global_shrink),bg = 'grey')
+                                   width=int(ent_width * self._global_shrink),
+                                    bg = self._entry_color, fg = self._entry_text_color)
         self._new_min_el = tk.DoubleVar()
         self._ent_min_el = tk.Entry(self._main_fr, textvariable=self._new_min_el,
-                                   width=int(ent_width * self._global_shrink),bg = 'grey')
-        tk.Label(self._main_fr, text = '', font = self._text_size["Text 12 bold"])\
+                                   width=int(ent_width * self._global_shrink),
+                                    bg = self._entry_color, fg = self._entry_text_color)
+        tk.Label(self._main_fr, text = '', font = self._text_size["Text 12 bold"], bg = self._general_color)\
             .place(x=100, y=load_vert_start + 3.4*delta_y)
-        tk.Label(self._main_fr, text='Tank content :', font = self._text_size['Text 8'])\
+        tk.Label(self._main_fr, text='Tank content :', font = self._text_size['Text 8'], bg = self._general_color)\
             .place(x=ent_x-2*delta_x, y=load_vert_start + delta_y * 4.5)
         self._ent_content_type.place(x= ent_x+0.35*delta_x, y=load_vert_start + delta_y * 4.5)
-        tk.Label(self._main_fr, text='Tank density :', font = self._text_size['Text 8'])\
+        tk.Label(self._main_fr, text='Tank density :', font = self._text_size['Text 8'], bg = self._general_color)\
             .place(x=ent_x-2*delta_x, y=load_vert_start + delta_y * 6)
         self._ent_density.place(x=ent_x+0.4*delta_x, y=load_vert_start + delta_y * 6)
-        tk.Label(self._main_fr,text='[kg/m^3]', font = self._text_size['Text 8'])\
+        tk.Label(self._main_fr,text='[kg/m^3]', font = self._text_size['Text 8'], bg = self._general_color)\
             .place(x= ent_x+delta_x*1.5, y=load_vert_start + delta_y * 6)
-        tk.Label(self._main_fr, text='Overpressure :', font = self._text_size['Text 8'])\
+        tk.Label(self._main_fr, text='Overpressure :', font = self._text_size['Text 8'], bg = self._general_color)\
             .place(x=ent_x-2*delta_x, y=load_vert_start + delta_y * 7)
         self._ent_overpressure.place(x=ent_x+0.4*delta_x, y=load_vert_start + delta_y * 7)
-        tk.Label(self._main_fr,text='[Pa]', font = self._text_size['Text 8'])\
+        tk.Label(self._main_fr,text='[Pa]', font = self._text_size['Text 8'], bg = self._general_color)\
             .place(x= ent_x+delta_x*1.5, y=load_vert_start + delta_y * 7)
-        tk.Label(self._main_fr, text='Max elevation :', font = self._text_size['Text 8'])\
+        tk.Label(self._main_fr, text='Max elevation :', font = self._text_size['Text 8'], bg = self._general_color)\
             .place(x=ent_x-2*delta_x, y=load_vert_start + delta_y * 8)
         self._ent_max_el.place(x=ent_x+0.4*delta_x, y=load_vert_start + delta_y * 8)
-        tk.Label(self._main_fr, text='Min elevation :', font = self._text_size['Text 8'])\
+        tk.Label(self._main_fr, text='Min elevation :', font = self._text_size['Text 8'], bg = self._general_color)\
             .place(x=ent_x-2*delta_x, y=load_vert_start + delta_y * 9)
         self._ent_min_el.place(x=ent_x+0.4*delta_x, y=load_vert_start + delta_y * 9)
-        self._tank_acc_label = tk.Label(self._main_fr, text = 'Acceleration [m/s^2]: ', font = self._text_size['Text 8'])
+        self._tank_acc_label = tk.Label(self._main_fr, text = 'Acceleration [m/s^2]: ',
+                                        font = self._text_size['Text 8'], bg = self._general_color)
         self._tank_acc_label.place(x=ent_x-2*delta_x, y=load_vert_start + delta_y * 10)
 
         # --- button to create compartments and define external pressures ---
@@ -578,16 +682,17 @@ class Application():
 
             self._int_button = tk.Button(self._main_fr,image = photo,command=self.grid_find_tanks)
             self._int_button.image = photo
-            self._int_button.place(x=10, y=load_vert_start+0*delta_y)
+            self._int_button.place(x=10, y=load_vert_start+1.5*delta_y)
         except TclError:
             tk.Button(self._main_fr, text='New tanks - start search \n'
                                   'to find compartments', command=self.grid_find_tanks,
-                      bg='green', fg='yellow', font=self._text_size['Text 8 bold']) \
+                      bg = self._button_bg_color, fg = self._button_fg_color, font=self._text_size['Text 8 bold']) \
                 .place(x=10, y=load_vert_start + 0 * delta_y)
 
         show_compartment = tk.Button(self._main_fr, text='Display current compartments', command=self.grid_display_tanks,
-                                  bg = 'white', fg = 'blue', font=self._text_size['Text 8 bold'])
-        show_compartment.place(x=10, y=load_vert_start+2*delta_y)
+                                  bg = self._button_bg_color, fg = self._button_fg_color,
+                                     font=self._text_size['Text 9 bold'])
+        show_compartment.place(x=ent_x+delta_x*1.8, y=load_vert_start + delta_y * 4.5)
 
         try:
 
@@ -598,80 +703,96 @@ class Application():
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
 
-            self._ext_button = tk.Button(self._main_fr,image=photo, command = self.on_show_loads)
+            self._ext_button = tk.Button(self._main_fr,image=photo, command = self.on_show_loads,
+                                         bg = self._button_bg_color, fg = self._button_fg_color)
             self._ext_button.image = photo
-            self._ext_button.place(x=ent_x+delta_x*1.5, y=load_vert_start+0*delta_y)
+            self._ext_button.place(x=ent_x+delta_x*1.5, y=load_vert_start+1.5*delta_y)
         except TclError:
             tk.Button(self._main_fr, text='New external load window \nsea - static/dynamic',
-                      command=self.on_show_loads, bg='green',fg='yellow', font=self._text_size['Text 8 bold'])\
+                      command=self.on_show_loads, bg = self._button_bg_color, fg = self._button_fg_color,
+                      font=self._text_size['Text 8 bold'])\
                 .place(x=ent_x+delta_x*2, y=load_vert_start+0*delta_y)
 
         lc_x, lc_x_delta, lc_y, lc_y_delta = 1510*self._global_shrink, 30*self._global_shrink, \
-                                             190*self._global_shrink, 25*self._global_shrink
+                                             130*self._global_shrink, 25*self._global_shrink
 
         # --- infomation on accelerations ----
         tk.Label(self._main_fr,text='Static and dynamic accelerations',
-                 font = self._text_size["Text 9 bold"], fg = 'black').place(x=lc_x, y=lc_y - 5 * lc_y_delta)
-        tk.Label(self._main_fr,text='Static acceleration [m/s^2]: ', font = self._text_size["Text 9"] )\
+                 font = self._text_size["Text 9 bold"], fg = 'black', bg = self._general_color)\
+            .place(x=lc_x, y=lc_y - 5 * lc_y_delta)
+        tk.Label(self._main_fr,text='Static acceleration [m/s^2]: ', font = self._text_size["Text 9"],
+                 bg = self._general_color )\
             .place(x=lc_x, y=lc_y - 4 * lc_y_delta)
-        tk.Label(self._main_fr,text='Dyn. acc. loaded [m/s^2]:', font = self._text_size["Text 9"])\
+        tk.Label(self._main_fr,text='Dyn. acc. loaded [m/s^2]:', font = self._text_size["Text 9"],
+                 bg = self._general_color)\
             .place(x=lc_x, y=lc_y - 3 * lc_y_delta)
-        tk.Label(self._main_fr,text='Dyn. acc. ballast [m/s^2]:', font = self._text_size["Text 9"])\
+        tk.Label(self._main_fr,text='Dyn. acc. ballast [m/s^2]:', font = self._text_size["Text 9"],
+                 bg = self._general_color)\
             .place(x=lc_x, y=lc_y - 2 * lc_y_delta)
         self._new_dyn_acc_loaded = tk.DoubleVar()
         self._new_dyn_acc_ballast = tk.DoubleVar()
         self._new_static_acc = tk.DoubleVar()
         self._new_static_acc.set(9.81), self._new_dyn_acc_loaded.set(0), self._new_dyn_acc_ballast.set(0)
-        tk.Entry(self._main_fr, textvariable = self._new_static_acc,width = 10)\
+        tk.Entry(self._main_fr, textvariable = self._new_static_acc,width = 10,
+                 bg = self._entry_color, fg = self._entry_text_color)\
             .place(x=lc_x + delta_x*4.2, y=lc_y - 4 * lc_y_delta)
-        tk.Entry(self._main_fr, textvariable = self._new_dyn_acc_loaded,width = 10)\
+        tk.Entry(self._main_fr, textvariable = self._new_dyn_acc_loaded,width = 10,
+                 bg = self._entry_color, fg = self._entry_text_color)\
             .place(x=lc_x + delta_x*4.2, y=lc_y - 3 * lc_y_delta)
-        tk.Entry(self._main_fr, textvariable = self._new_dyn_acc_ballast,width = 10)\
+        tk.Entry(self._main_fr, textvariable = self._new_dyn_acc_ballast,width = 10,
+                 bg = self._entry_color, fg = self._entry_text_color)\
             .place(x=lc_x + delta_x*4.2, y=lc_y - 2 * lc_y_delta)
         tk.Button(self._main_fr, text = 'Set\naccelerations', command = self.create_accelerations,
                   font = self._text_size['Text 8 bold'],
-                  fg = 'yellow',bg = 'green').place(x=lc_x + delta_x*6, y=lc_y - 3 * lc_y_delta)
+                  bg = self._button_bg_color, fg = self._button_fg_color).place(x=lc_x + delta_x*6, y=lc_y - 3 * lc_y_delta)
 
         # --- checkbuttons and labels ---
         self._dnv_a_chk,self._dnv_b_chk  = tk.IntVar(),tk.IntVar()
         self._tank_test_chk,self._manual_chk = tk.IntVar(),tk.IntVar()
         self._check_button_load_comb = [self._dnv_a_chk,self._dnv_b_chk, self._tank_test_chk, self._manual_chk]
-        self._active_label = tk.Label(self._main_fr, text = '', font = self._text_size["Text 12 bold"], fg = 'blue')
+        self._active_label = tk.Label(self._main_fr, text = '', font = self._text_size["Text 12 bold"], fg = 'blue',
+                                      bg = self._general_color)
         self._active_label.place(x=lc_x+lc_x_delta*10,y=lc_y-lc_y_delta*5)
         tk.Label(self._main_fr, text='Combination for line (select line). Change with slider.: ',
-                 font=self._text_size["Text 8 bold"], fg='black').place(x=lc_x, y=lc_y + 2.5*delta_y)
+                 font=self._text_size["Text 8 bold"], fg='black', bg = self._general_color)\
+            .place(x=lc_x, y=lc_y + 2.5*delta_y)
 
 
         lc_y += 160*self._global_shrink
 
         self._combination_slider = tk.Scale(self._main_fr, from_=1, to=3, command=self.gui_load_combinations,length=400,
-                                           orient = 'horizontal', bg = 'azure',
+                                           orient = 'horizontal', background=self._general_color,
                                             label='OS-C101 Table 1    1: DNV a)    2: DNV b)    3: TankTest',
                                             relief='groove')
 
         self._combination_slider.place(x=lc_x +0*lc_x_delta, y=lc_y - 3*lc_y_delta)
         self._combination_slider_map = {1:'dnva',2:'dnvb',3:'tanktest'}
-        tk.Label(self._main_fr, text='Name:', font = self._text_size['Text 7'])\
+        tk.Label(self._main_fr, text='Name:', font = self._text_size['Text 7'], bg = self._general_color)\
             .place(x=lc_x + 0 * lc_x_delta, y=lc_y)
-        tk.Label(self._main_fr, text='Stat LF', font = self._text_size['Text 7'])\
+        tk.Label(self._main_fr, text='Stat LF', font = self._text_size['Text 7'], bg = self._general_color)\
             .place(x=lc_x + 8.5 * lc_x_delta, y=lc_y)
-        tk.Label(self._main_fr, text='Dyn LF', font = self._text_size['Text 7'])\
+        tk.Label(self._main_fr, text='Dyn LF', font = self._text_size['Text 7'], bg = self._general_color)\
             .place(x=lc_x + 10.2 * lc_x_delta, y=lc_y)
-        tk.Label(self._main_fr, text='Include?',font = self._text_size['Text 7'])\
+        tk.Label(self._main_fr, text='Include?',font = self._text_size['Text 7'], bg = self._general_color)\
             .place(x=lc_x + 11.8 * lc_x_delta, y=lc_y)
 
-        self._result_label_dnva = tk.Label(self._main_fr, text='DNV a [Pa]: ',font='Text 8')
-        self._result_label_dnvb = tk.Label(self._main_fr, text='DNV b [Pa]: ',font=self._text_size["Text 8"])
-        self._result_label_tanktest = tk.Label(self._main_fr, text='Tank test [Pa]: ',font=self._text_size["Text 8"])
-        self._result_label_manual = tk.Label(self._main_fr, text='Manual [Pa]: ',font=self._text_size["Text 8"])
-        self.results_gui_start = 650*self._global_shrink
+        self._result_label_dnva = tk.Label(self._main_fr, text='DNV a [Pa]: ',font='Text 8', bg = self._general_color)
+        self._result_label_dnvb = tk.Label(self._main_fr, text='DNV b [Pa]: ',font=self._text_size["Text 8"],
+                                           bg = self._general_color)
+        self._result_label_tanktest = tk.Label(self._main_fr, text='Tank test [Pa]: ',font=self._text_size["Text 8"],
+                                               bg = self._general_color)
+        self._result_label_manual = tk.Label(self._main_fr, text='Manual [Pa]: ',font=self._text_size["Text 8"],
+                                             bg = self._general_color)
+        self.results_gui_start = 600*self._global_shrink
         tk.Label(self._main_fr, text = 'Pressures for this line: \n(DNV a/b [loaded/ballast], tank test, manual)\n'
-                               'Note that ch. 4.3.7 and 4.3.8 is accounted for.',font=self._text_size["Text 8"])\
+                               'Note that ch. 4.3.7 and 4.3.8 is accounted for.',font=self._text_size["Text 10"],
+                 bg = self._general_color)\
             .place(x = lc_x, y = self.results_gui_start)
 
         # --- optimize button ---
         tk.Label(self._main_fr,text='Optimize selected line/structure (right click line):',
-                 font = self._text_size['Text 9 bold'],fg='black').place(x=lc_x, y=lc_y - 7 * lc_y_delta)
+                 font = self._text_size['Text 9 bold'],fg='black', bg = self._general_color)\
+            .place(x=lc_x, y=lc_y - 7 * lc_y_delta)
         try:
             img_file_name = 'img_optimize.gif'
             if os.path.isfile('images/' + img_file_name):
@@ -679,11 +800,13 @@ class Application():
             else:
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
-            opt_button = tk.Button(self._main_fr,image=photo, command = self.on_optimize)
+            opt_button = tk.Button(self._main_fr,image=photo, command = self.on_optimize,
+                                   bg = self._button_bg_color, fg = self._button_fg_color)
             opt_button.image = photo
             opt_button.place(x=lc_x, y=lc_y - 6 * lc_y_delta)
         except TclError:
-            tk.Button(self._main_fr, text='Optimize', command=self.on_optimize_multiple)\
+            tk.Button(self._main_fr, text='Optimize', command=self.on_optimize_multiple,
+                      bg = self._button_bg_color, fg = self._button_fg_color)\
                 .place(x=lc_x, y=lc_y - 6 * lc_y_delta)
         try:
             img_file_name = 'img_multi_opt.gif'
@@ -692,15 +815,18 @@ class Application():
             else:
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
-            opt_button_mult = tk.Button(self._main_fr,image=photo, command = self.on_optimize_multiple)
+            opt_button_mult = tk.Button(self._main_fr,image=photo, command = self.on_optimize_multiple,
+                                        bg = self._button_bg_color, fg = self._button_fg_color)
             opt_button_mult.image = photo
             opt_button_mult.place(x=lc_x+delta_x*4, y=lc_y - 6 * lc_y_delta)
         except TclError:
-            tk.Button(self._main_fr, text='MultiOpt', command=self.on_optimize_multiple).place(x=lc_x + delta_x*7,
+            tk.Button(self._main_fr, text='MultiOpt', command=self.on_optimize_multiple,
+                      bg = self._button_bg_color, fg = self._button_fg_color).place(x=lc_x + delta_x*7,
                                                                                                y=lc_y - 6 * lc_y_delta)
 
         tk.Button(self._main_fr, text='SPAN', command=self.on_geometry_optimize,
-                 font = self._text_size['Text 14 bold'], fg='green', height = 1, bg = 'white')\
+                 font = self._text_size['Text 14 bold'], height = 1,
+                  bg = self._button_bg_color, fg = self._button_fg_color)\
            .place(x=lc_x + delta_x * 6.7,y=lc_y - 6 * lc_y_delta)
         # try:
         #     photo_report = tk.PhotoImage(file=self._root_dir + '\\images\\' +"img_generate_report.gif")
@@ -721,7 +847,7 @@ class Application():
 
         if self._line_is_active and self._active_line in self._line_to_struc.keys():
             lc_x, lc_x_delta, lc_y, lc_y_delta = 1520*self._global_shrink, 50*self._global_shrink, \
-                                                 380*self._global_shrink, 25*self._global_shrink
+                                                 310*self._global_shrink, 25*self._global_shrink
             self._active_label.config(text=self._active_line)
             combination = self._combination_slider_map[self._combination_slider.get()]
 
@@ -732,7 +858,7 @@ class Application():
 
             if self._line_to_struc[self._active_line][0].get_structure_type() == '':
                 self._info_created.append(tk.Label(self._main_fr, text='No structure type selected',
-                                               font=self._text_size["Text 10 bold"]))
+                                               font=self._text_size["Text 10 bold"], bg = self._general_color))
                 self._info_created[0].place(x=lc_x , y = lc_y + 3*lc_y_delta)
 
             else:
@@ -745,13 +871,16 @@ class Application():
                         if self._active_line in self._load_dict[load][1] and data[0].get_limit_state() == 'ULS':
                             name = (combination,self._active_line,str(load)) #tuple to identify combinations on line
                             self._lc_comb_created.append(tk.Label(self._main_fr, text = load,
-                                                                 font = self._text_size['Text 8 bold']))
+                                                                 font = self._text_size['Text 8 bold'],
+                                                                  bg = self._general_color))
                             self._lc_comb_created.append(tk.Entry(self._main_fr,
                                                                  textvariable =self._new_load_comb_dict[name][0],
-                                                                 width = 5))
+                                                                  width=5, bg = self._entry_color,
+                                                                  fg = self._entry_text_color))
                             self._lc_comb_created.append(tk.Entry(self._main_fr,
                                                                  textvariable=self._new_load_comb_dict[name][1],
-                                                                 width=5))
+                                                                 width=5, bg = self._entry_color,
+                                                                  fg = self._entry_text_color))
                             self._lc_comb_created.append(tk.Checkbutton(self._main_fr,
                                                                        variable =self._new_load_comb_dict[name][2]))
 
@@ -771,9 +900,13 @@ class Application():
                         self._comp_comb_created.append(tk.Label(self._main_fr, text='Compartment'+str(compartment),
                                                                font=self._text_size['Text 8 bold']))
                         self._comp_comb_created.append(tk.Entry(self._main_fr,
-                                                               textvariable=self._new_load_comb_dict[name][0], width=5))
+                                                               textvariable=self._new_load_comb_dict[name][0],
+                                                                width=5, bg = self._entry_color,
+                                                                fg = self._entry_text_color))
                         self._comp_comb_created.append(tk.Entry(self._main_fr,
-                                                               textvariable=self._new_load_comb_dict[name][1], width=5))
+                                                               textvariable=self._new_load_comb_dict[name][1],
+                                                                width=5, bg = self._entry_color,
+                                                                fg = self._entry_text_color))
                         self._comp_comb_created.append(tk.Checkbutton(self._main_fr,
                                                                      variable = self._new_load_comb_dict[name][2]))
 
@@ -790,11 +923,14 @@ class Application():
                 name = ('manual', self._active_line, 'manual')  # tuple to identify combinations on line
                 if name in self._new_load_comb_dict.keys():
                     self._manual_created.append(tk.Label(self._main_fr, text='Manual (pressure/LF)',
-                                                        font=self._text_size['Text 8 bold']))
+                                                        font=self._text_size['Text 8 bold'],
+                                                         bg = self._general_color))
                     self._manual_created.append(
-                        tk.Entry(self._main_fr, textvariable=self._new_load_comb_dict[name][0], width=15))
+                        tk.Entry(self._main_fr, textvariable=self._new_load_comb_dict[name][0], width=15,
+                                 bg = self._entry_color, fg = self._entry_text_color))
                     self._manual_created.append(
-                        tk.Entry(self._main_fr, textvariable=self._new_load_comb_dict[name][1], width=6))
+                        tk.Entry(self._main_fr, textvariable=self._new_load_comb_dict[name][1], width=6,
+                                 bg = self._entry_color, fg = self._entry_text_color))
                     self._manual_created.append(tk.Checkbutton(self._main_fr, variable=self._new_load_comb_dict[name][2]))
                     self._manual_created[0].place(x=lc_x, y=lc_y)
                     self._manual_created[1].place(x=lc_x + 4 * lc_x_delta, y=lc_y)
@@ -804,11 +940,11 @@ class Application():
             #printing the results
             results = self.calculate_all_load_combinations_for_line(self._active_line)
             self._result_label_dnva.config(text = 'DNV a [Pa]: ' + str(results['dnva']),
-                                          font = self._text_size['Text 7'])
+                                          font = self._text_size['Text 8'])
             self._result_label_dnvb.config(text = 'DNV b [Pa]: ' + str(results['dnvb']),
-                                          font = self._text_size['Text 7'])
+                                          font = self._text_size['Text 8'])
             self._result_label_tanktest.config(text = 'TT [Pa]: ' + str(results['tanktest']),
-                                              font = self._text_size['Text 7'])
+                                              font = self._text_size['Text 8'])
 
             try:
                 self._result_label_manual.config(text = 'Manual [Pa]: ' + str(results['manual']))
@@ -1129,7 +1265,7 @@ class Application():
         self._main_canvas.create_line(0, self._canvas_draw_origo[1], self._canvas_dim[0], self._canvas_draw_origo[1],
                                      stipple='gray50')
         self._main_canvas.create_text(self._canvas_draw_origo[0] - 30*self._global_shrink,
-                                     self._canvas_draw_origo[1] + 20* self._global_shrink, text='(0,0)',
+                                     self._canvas_draw_origo[1] + 12* self._global_shrink, text='(0,0)',
                                      font = 'Text 10')
         self._main_canvas.create_text([880*self._global_shrink,20*self._global_shrink],
                                      text = 'Mouse left click:  select line\n'
@@ -1201,7 +1337,7 @@ class Application():
                 if data[0].is_static():
                     draft = self.get_canvas_coords_from_point_coords((0,data[0].get_static_draft()))[1]
                     self._main_canvas.create_line(0,draft,self._canvas_dim[0],draft, fill="blue", dash=(4, 4))
-                    self._main_canvas.create_text(930,draft-10,text=str(get_num(data[0].get_name()))+' [m]',fill ='blue')
+                    self._main_canvas.create_text(900,draft-10,text=str(get_num(data[0].get_name()))+' [m]',fill ='blue')
                 else:
                     pass
 
@@ -1221,9 +1357,9 @@ class Application():
 
             # printing the properties to the active line
             if self._line_is_active:
-                self._prop_canvas.create_text([175*self._global_shrink, 110*self._global_shrink],
+                self._prop_canvas.create_text([160*self._global_shrink, 100*self._global_shrink],
                                              text=self._line_to_struc[self._active_line][0],
-                                             font = self._text_size["Text 7"],justify=tk.LEFT)
+                                             font = self._text_size["Text 9"],justify=tk.LEFT)
 
                 # setting the input field to active line properties
                 self.set_selected_variables(self._active_line)
@@ -1287,9 +1423,10 @@ class Application():
                                              text='No line is selected. Click on a line to show properies',
                                              font=self._text_size['Text 9 bold'])
         else:
-            self._prop_canvas.create_text([160*self._global_shrink, 20*self._global_shrink],
-                                         text='Properties displayed here (select line):',
-                                         font=self._text_size['Text 9 bold'])
+            pass
+            # self._prop_canvas.create_text([160*self._global_shrink, 20*self._global_shrink],
+            #                              text='Properties displayed here (select line):',
+            #                              font=self._text_size['Text 9 bold'])
 
     def draw_results(self, state = None):
         '''
@@ -1299,13 +1436,13 @@ class Application():
                             'struc_obj': {}, 'scant_calc_obj': {}, 'fatigue_obj': {}}
         :return:
         '''
-        if state is None or self._active_line not in state['struc_obj'].keys():
-            return
 
         self._result_canvas.delete('all')
 
-        if self._line_is_active:
+        if state is None or self._active_line not in state['struc_obj'].keys():
+            return
 
+        if self._line_is_active:
             if self._active_line in self._line_to_struc:
                 x, y, dx, dy = 20, 15, 15, 14
                 m3_to_mm3 = float(math.pow(1000,3))
@@ -1443,6 +1580,8 @@ class Application():
                                                     text='Total damage: NO RESULTS ',
                                                     font=self._text_size["Text 9 bold"],
                                                     anchor='nw')
+            else:
+                pass
         else:
             self._result_canvas.create_text([200*self._global_shrink, 20*self._global_shrink],
                                            text='The results are shown here (select line):',
@@ -1742,13 +1881,13 @@ class Application():
         self._new_tauxy.set(self._default_stresses[self._new_stucture_type.get()][3])
 
         if self._new_stucture_type.get() in self._structure_types['vertical']:
-            text = 'Vertical pressure calc.'
+            text = '(Vertical pressure calc.)'
         elif self._new_stucture_type.get() in self._structure_types['horizontal']:
-            text = 'Horizontal pressure calc.'
+            text = '(Horizontal pressure calc.)'
         elif self._new_stucture_type.get() in self._structure_types['non-wt']:
-            text = text = 'Non-WT (pressure = 0)'
+            text = '(Non-WT (pressure = 0))'
         elif self._new_stucture_type.get() in self._structure_types['internals']:
-            text = 'Internal, pressure from comp.'
+            text = '(Internal, pressure from comp.)'
         else:
             text = ''
 
@@ -1891,7 +2030,7 @@ class Application():
         '''
         try:
             if line is not None:
-                line = 'line'+str(line)
+                line = line
             else:
                 line = 'line' + str(self._ent_delete_line.get())
 
@@ -1913,12 +2052,13 @@ class Application():
         except TclError:
             messagebox.showinfo(title='Input error', message='Input must be a number. Dots used not comma.')
 
-    def delete_point(self, event = None, undo = None):
+    def delete_point(self, event = None, undo = None, point = None):
         '''
         Deleting point and connected lines.
         '''
         try:
-            point = 'point' + str(self._ent_delete_point.get()) if undo is None else undo
+            if point == None:
+                point = 'point' + str(self._ent_delete_point.get()) if undo is None else undo
 
             if point in self._point_dict.keys():
                 line_to_delete = []
@@ -1944,6 +2084,12 @@ class Application():
             self.update_frame()
         except TclError:
             messagebox.showinfo(title='Input error', message='Input must be a number. Dots used not comma.')
+
+    def delete_key_pressed(self, event = None):
+        if self._active_line != '':
+            self.delete_line(line = self._active_line)
+        if self._active_point != '':
+            self.delete_point()
 
     def delete_all_tanks(self):
         '''
@@ -2280,6 +2426,7 @@ class Application():
         self._parent.bind('<Control-m>', self.move_point)
         self._parent.bind('<Control-q>', self.new_line)
         self._parent.bind('<Control-s>', self.new_structure)
+        self._parent.bind('<Delete>', self.delete_key_pressed)
 
     def mouse_scroll(self,event):
         self._canvas_scale +=  event.delta/50
@@ -2434,10 +2581,14 @@ class Application():
         new_upper_br = tk.IntVar()
         new_lower_br = tk.IntVar()
         wid = 5
-        ent_left = tk.Entry(self._pt_frame,textvariable=new_left_br, width=wid)
-        ent_right = tk.Entry(self._pt_frame, textvariable=new_right_br, width=wid)
-        ent_upper = tk.Entry(self._pt_frame, textvariable=new_upper_br, width=wid)
-        ent_lower = tk.Entry(self._pt_frame, textvariable=new_lower_br, width=wid)
+        ent_left = tk.Entry(self._pt_frame,textvariable=new_left_br, width=wid, bg = self._entry_color,
+                            fg = self._entry_text_color)
+        ent_right = tk.Entry(self._pt_frame, textvariable=new_right_br, width=wid, bg = self._entry_color,
+                             fg = self._entry_text_color)
+        ent_upper = tk.Entry(self._pt_frame, textvariable=new_upper_br, width=wid, bg = self._entry_color,
+                             fg = self._entry_text_color)
+        ent_lower = tk.Entry(self._pt_frame, textvariable=new_lower_br, width=wid, bg = self._entry_color,
+                             fg = self._entry_text_color)
         ent_lower.place(x=35, y=10)
         ent_upper.place(x=35, y=75)
         ent_left.place(x=5, y=40)
@@ -2611,7 +2762,7 @@ class Application():
         '''
         if self._line_is_active:
 
-            top_opt = tk.Toplevel(self._parent)
+            top_opt = tk.Toplevel(self._parent, background=self._general_color)
             struc.CreateStructureWindow(top_opt, self)
 
         else:
@@ -2625,7 +2776,7 @@ class Application():
 
         if self._line_is_active:
 
-            top_opt = tk.Toplevel(self._parent)
+            top_opt = tk.Toplevel(self._parent, background=self._general_color)
             stress.CreateStressesWindow(top_opt, self)
 
         else:
@@ -2646,7 +2797,7 @@ class Application():
                                                                  'Strucure must be added to line before setting\n'
                                                                  'these properties ("Add structure to line"-button).')
                 return
-            top_opt = tk.Toplevel(self._parent)
+            top_opt = tk.Toplevel(self._parent, background=self._general_color)
             fatigue.CreateFatigueWindow(top_opt, self)
 
 
@@ -2671,7 +2822,7 @@ class Application():
         except TclError:
             pass
 
-        top = tk.Toplevel(self._parent)
+        top = tk.Toplevel(self._parent, background=self._general_color)
         load_window.CreateLoadWindow(top, self)
 
     def on_optimize(self):
@@ -2697,7 +2848,7 @@ class Application():
             elif self._line_to_struc[self._active_line][3] == None:
                 messagebox.showinfo(title='Missing loads', message='Make some loads for the line')
             else:
-                top_opt = tk.Toplevel(self._parent)
+                top_opt = tk.Toplevel(self._parent, background=self._general_color)
                 opw.CreateOptimizeWindow(top_opt, self)
         else:
             messagebox.showinfo(title='Select line',message='You must select a line')
@@ -2727,7 +2878,7 @@ class Application():
                                     'A default range of T properties is chosen. Typical analysis\n'
                                     'steps (deltas) is chosen.')
 
-        top_opt = tk.Toplevel(self._parent)
+        top_opt = tk.Toplevel(self._parent, background=self._general_color)
         opwmult.CreateOptimizeMultipleWindow(top_opt,self)
 
     def on_geometry_optimize(self):
@@ -2758,7 +2909,7 @@ class Application():
                                     'steps (deltas) is chosen.\n'
                                     'Loads are taken from existing structure.')
 
-        top_opt = tk.Toplevel(self._parent)
+        top_opt = tk.Toplevel(self._parent, background=self._general_color)
         optgeo.CreateOptGeoWindow(top_opt,self)
 
     def on_close_load_window(self, returned_loads, counter, load_comb_dict):
