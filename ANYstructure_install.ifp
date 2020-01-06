@@ -2,7 +2,7 @@
 ProjectFileVersion = "1.1"
 [General]
 Program name = ANYstructure
-Program version = 0.7.0
+Program version = 1.0
 Windows 2000 = 1
 Windows XP = 1
 Windows Server 2003 = 1
@@ -19,15 +19,15 @@ SFA = 0
 DFA = 0
 Comp = 1
 [Graphics]
-Wizard image = C:\Users\nmm000756\Desktop\2019-09-02 15_51_41-_ ANYstructure _.jpg
+Wizard image = C:\Users\nmm000756\Desktop\2020-01-06 12_20_47-_ ANYstructure _.jpg
 Header image = C:\Users\nmm000756\Documents\GitHub\ANYstructure\ANYstructure\images\ANYstructure_logo.jpg
 Install-icon image = <main>
 Show Label = 1
 Windows style = 1
 XpStyle = 1
 [Files]
-Include Zipfile = 0
-Zipfile = C:\Users\nmm000756\Documents\GitHub\ANYstructure\dist\ANYstructure-0.7.0.zip
+Include Zipfile = 1
+Zipfile = C:\Users\nmm000756\Documents\GitHub\ANYstructure\ANYstructure 1.0.zip
 Installation path = C:\ANYstructure\
 Autcip = 1
 [Uninstall]
@@ -57,7 +57,7 @@ Time = 2
 PlaySound = 0
 Allow = 0
 [Build]
-File = C:\Users\nmm000756\Desktop\ANYstructure_0.7.0.exe
+File = C:\Users\nmm000756\Documents\GitHub\ANYstructure\dist\ANYstructure-1.0.exe
 [Updater]
 Allow = 0
 1 = <appname>
@@ -73,9 +73,6 @@ Execdlls = 0
 [Languages]
 3
 [Files/Dirs]
-C:\Users\nmm000756\Documents\GitHub\ANYstructure\dist\ANYstructure\
-n/a
-[Folder]
 [Licence_Begin]
 38607
 {\rtf1\ansi\ansicpg1252\deff0\deflang1044{\fonttbl{\f0\fnil\fcharset0 MS Shell Dlg;}}
@@ -762,13 +759,13 @@ Desktop
 ANYstructure
 <installpath>\ANYstructure\ANYstructure.exe
 
-
+<installpath>\ANYstructure\ANYicon.ico
 0
 Startmenu
 ANYstructure
 <installpath>\ANYstructure\ANYstructure.exe
 
-
+<installpath>\ANYstructure\ANYicon.ico
 0
 [IFP_End]
 [Serials]

@@ -27,13 +27,13 @@ setup(
     name='ANYstructure',  # Required
     url = 'https://github.com/audunarn/ANYstructure',
     entry_points={'gui_scripts': ['ANYstructure = ANYstructure.__main__:main']},
-    version='1.0',  # Required
+    version='1.0.1',  # Required
     description='A plate field optimization tool for offshore structures calculated according to DNVGL standards',
     long_description = readme(),
     author='Audun Arnesen Nyhus',  # Optional
     author_email='audunarn@gmail.com',  # Optional
     classifiers=[  # Optional
-        'Development Status ::  5 - Production/Stable',
+        'Development Status :: 5 - Production/Stable',
         'Environment :: X11 Applications',
         'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
         'Programming Language :: Python :: 3.7',
