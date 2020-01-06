@@ -9,9 +9,9 @@ After installing on PIP run ANYstructure (.exe) in the command line to execute t
 
 Alternatively: 
 
-import ANYstructure.\_\_.main.\_\_ as run
+import ANYstructure.\_\_main\_\_ as run
 
-run main()
+run.main()
 
 ------------------------------------------------------------------------
 
