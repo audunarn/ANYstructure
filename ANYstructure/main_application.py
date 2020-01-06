@@ -79,11 +79,6 @@ class Application():
         undo_redo.add_command(label='New line (right click two points) (CTRL-Q)', command=self.new_line)
         undo_redo.add_command(label='Assign structure properties (from clicked line (CTRL-S)',
                               command=self.new_structure)
-        sub_help = tk.Menu(menu)
-        menu.add_cascade(label='Help', menu = sub_help)
-        sub_help.add_command(label = 'Open documentation', command = self.open_documentation)
-        sub_help.add_command(label = 'Open example file', command = self.open_example)
-        sub_help.add_command(label='About ANYstructure', command=self.open_about)
 
         sub_report = tk.Menu(menu)
         menu.add_cascade(label = 'Reporting', menu = sub_report)
@@ -92,6 +87,12 @@ class Application():
         sub_sesam = tk.Menu(menu)
         menu.add_cascade(label = 'SESAM interface', menu = sub_sesam)
         sub_sesam.add_command(label = 'Export geometry to JS', command = self.export_to_js)
+
+        sub_help = tk.Menu(menu)
+        menu.add_cascade(label='Help', menu = sub_help)
+        sub_help.add_command(label = 'Open documentation', command = self.open_documentation)
+        sub_help.add_command(label = 'Open example file', command = self.open_example)
+        sub_help.add_command(label='About ANYstructure', command=self.open_about)
 
         base_canvas_dim = [1000,720]  #do not modify this, sets the "orignal" canvas dimensions.
         self._canvas_dim = [int(base_canvas_dim[0] *self._global_shrink),
@@ -3128,11 +3129,14 @@ class Application():
         Open a about messagebox.
         :return:
         '''
-        messagebox.showinfo(title='Input error', message='ANYstructure 0.7.x'
+        messagebox.showinfo(title='Information', message='ANYstructure 0.7.x'
                                                          '\n'
                                                          '\n'
                                                          'By Audun Arnesen Nyhus \n'
-                                                         '2019')
+                                                         '2019\n\n'
+                                                         'All technical calculation based on:'
+                                                         '- DNVGL-OS-C101'
+                                                         '- Supporting DNVGL RPs and standards')
 
     def export_to_js(self):
         '''
