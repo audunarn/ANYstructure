@@ -361,7 +361,7 @@ class Grid:
         :param grid:
         :return:
         '''
-        if np.array(grid).shape[1] == 2:
+        if np.array(grid, dtype=object).shape[1] == 2:
             self._cells = self.rebuild_compressed(grid)
         else:
             self.cells = np.array(grid) # old large save files

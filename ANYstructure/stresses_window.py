@@ -154,7 +154,12 @@ class CreateStressesWindow():
             self._new_kps.set(1)
             self._new_max_pressure_side.set('p')
         try:
-            photo_transverse = tk.PhotoImage(file='images/'+"img_transverse_stress.gif")
+            img_file_name = 'img_transverse_stress.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path ='images/' + img_file_name
+            else:
+                file_path = app._root_dir + '/images/' + img_file_name
+            photo_transverse = tk.PhotoImage(file=file_path)
             label_trans = tk.Label(self._frame, image=photo_transverse)
             label_trans.image = photo_transverse  # keep a reference!
             label_trans.place(x=start_x, y=60)
@@ -162,18 +167,24 @@ class CreateStressesWindow():
             pass
 
         try:
-            photo_axial = tk.PhotoImage(file='images/'+"img_axial_stresses.gif")
+            img_file_name = "img_axial_stresses.gif"
+            if os.path.isfile('images/' + img_file_name):
+                file_path ='images/' + img_file_name
+            else:
+                file_path = app._root_dir + '/images/' + img_file_name
+            photo_axial = tk.PhotoImage(file=file_path)
             label_axial = tk.Label(self._frame, image=photo_axial)
             label_axial.image = photo_axial  # keep a reference!
             label_axial.place(x=start_x+5*dx, y=60)
         except TclError:
             pass
+
         try:
             img_file_name = 'img_fixation_parameters.gif'
             if os.path.isfile('images/' + img_file_name):
-                file_path = 'images/' + img_file_name
+                file_path ='images/' + img_file_name
             else:
-                file_path = self._root_dir + '/images/' + img_file_name
+                file_path = app._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
             label_fix = tk.Label(self._frame, image=photo)
             label_fix.image = photo  # keep a reference!

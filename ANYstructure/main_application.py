@@ -2092,6 +2092,9 @@ class Application():
         if self._active_point != '':
             self.delete_point()
 
+    # def enter_key_pressed(self, event = None):
+    #     self.new_point()
+
     def delete_all_tanks(self):
         '''
         Delete the tank that has been selected in the Listbox
@@ -2428,6 +2431,7 @@ class Application():
         self._parent.bind('<Control-q>', self.new_line)
         self._parent.bind('<Control-s>', self.new_structure)
         self._parent.bind('<Delete>', self.delete_key_pressed)
+        #self._parent.bind('<Enter>', self.enter_key_pressed)
 
     def mouse_scroll(self,event):
         self._canvas_scale +=  event.delta/50
