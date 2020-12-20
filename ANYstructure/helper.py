@@ -321,6 +321,8 @@ def add_new_section(section_list, new_section):
             existing_section = True
 
     if existing_section == False:
+        # print('The new section', new_section)
+        # print('The section list', section_list)
         section_list.append(new_section)
 
     return section_list
