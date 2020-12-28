@@ -1,6 +1,6 @@
  # -*- coding: utf-8 -*-
 
-import os
+import os, time
 import tkinter as tk
 from tkinter import filedialog
 from tkinter import messagebox
@@ -77,8 +77,10 @@ class Application():
         undo_redo.add_command(label='Copy selected point (CTRL-C)', command=self.copy_point)
         undo_redo.add_command(label='Move selected point (CTRL-M)', command=self.move_point)
         undo_redo.add_command(label='New line (right click two points) (CTRL-Q)', command=self.new_line)
-        undo_redo.add_command(label='Assign structure properties (from clicked line (CTRL-S)',
+        undo_redo.add_command(label='Assign structure properties to clicked line (CTRL-S)',
                               command=self.new_structure)
+        undo_redo.add_command(label='Delete structure properties from clicked line (CTRL-DELETE)',
+                              command=self.delete_properties_pressed)
 
         sub_report = tk.Menu(menu)
         menu.add_cascade(label = 'Reporting', menu = sub_report)
@@ -93,11 +95,14 @@ class Application():
         sub_help.add_command(label = 'Open documentation', command = self.open_documentation)
         sub_help.add_command(label = 'Open example file', command = self.open_example)
         sub_help.add_command(label='About ANYstructure', command=self.open_about)
-
+        #base_mult = 1.2
+        #base_canvas_dim = [int(1000 * base_mult),int(720*base_mult)]  #do not modify this, sets the "orignal" canvas dimensions.
         base_canvas_dim = [1000,720]  #do not modify this, sets the "orignal" canvas dimensions.
+
         self._canvas_dim = [int(base_canvas_dim[0] *self._global_shrink),
                            int(base_canvas_dim[1] *self._global_shrink)]
-        self._canvas_base_origo = [50, base_canvas_dim[1] - 50] # bottom left location of the canvas, (0,0)
+        self._canvas_base_origo = [50, base_canvas_dim[1] - 50] # 50 bottom left location of the canvas, (0,0)
+
         self._canvas_draw_origo = list(self._canvas_base_origo)
         self._previous_drag_mouse = list(self._canvas_draw_origo)
 
@@ -116,7 +121,7 @@ class Application():
                            'Text 7 bold': 'Verdana ' + str(int(7 * self._global_shrink)) + ' bold'}
 
         self._canvas_scale = 20 # Used for slider and can change
-        self._base_scale_factor = 10 # Used for grid and will not change
+        self._base_scale_factor = 10 # Used for grid and will not change, 10 is default
 
         # Creating the various canvas next.
         self._main_canvas = tk.Canvas(self._main_fr, height=self._canvas_dim[1], width=self._canvas_dim[0]
@@ -206,6 +211,8 @@ class Application():
 
         # Initsializing the calculation grid used for tank definition
         self._grid_dimensions = [self._canvas_base_origo[1] + 1, base_canvas_dim[0] - self._canvas_base_origo[0] + 1]
+        #self._grid_dimensions = [self._canvas_base_origo[1], base_canvas_dim[0] - self._canvas_base_origo[0] + 1]
+
         self._main_grid  = grid.Grid(self._grid_dimensions[0], self._grid_dimensions[1])
         self._grid_calc = None
 
@@ -317,6 +324,9 @@ class Application():
         tk.Button(self._main_fr, text='Delete line',bg = self._button_bg_color, fg = self._button_fg_color,
                                          font=self._text_size['Text 9 bold'],command=self.delete_line,
                                          width = int(11*self._global_shrink)).place(x=ent_x+delta_x*2, y=del_start)
+        tk.Button(self._main_fr, text='Delete prop.',bg = self._button_bg_color, fg = self._button_fg_color,
+                                         font=self._text_size['Text 9 bold'],command=self.delete_properties_pressed,
+                                         width = int(11*self._global_shrink)).place(x=ent_x+delta_x*4, y=del_start)
 
         tk.Button(self._main_fr, text='Delete point',bg = self._button_bg_color, fg = self._button_fg_color,
                                           font=self._text_size['Text 9 bold'],command=self.delete_point,
@@ -985,6 +995,9 @@ class Application():
         :return:
         '''
 
+        if self._line_to_struc == {}:
+            tk.messagebox.showerror('Search error','No geometry with properties exist.')
+            return
         #setting the button to red
         try:
             img_file_name = 'img_int_pressure_button_search.gif'
@@ -998,7 +1011,8 @@ class Application():
         except TclError:
             pass
 
-        if tk.messagebox.askquestion('Search for compartments','Searching for compartments will use a large matrix to '
+
+        animate = tk.messagebox.askquestion('Search for compartments','Searching for compartments will use a large matrix to '
                                                                'identify watertight members and consequently the '
                                                                'enclosed compartments. \n'
                                                                'You may animate the search for vizualization and '
@@ -1009,10 +1023,8 @@ class Application():
                                                                'Yes - Show search animation\n'
                                                                'No - Draw final result only\n'
                                                                '\n'
-                                                               'Choose yes or no.' ):
-            animate = True
-        else:
-            animate = False
+                                                               'Choose yes or no.' )
+        animate = True if animate == 'yes' else False
 
         self._main_grid.clear()
         self._tank_dict = {}
@@ -1069,8 +1081,8 @@ class Application():
             self._int_button.image = photo
         except TclError:
             pass
-
-        if not animate:
+        print(animate)
+        if animate == False:
             self._grid_calc.draw_grid(tank_count=None if len(self._tank_dict)==0 else len(self._tank_dict))
         else:
             self._grid_calc.animate_grid(grids_to_animate=compartment_search_return['grids'],
@@ -2095,6 +2107,19 @@ class Application():
     # def enter_key_pressed(self, event = None):
     #     self.new_point()
 
+    def delete_properties_pressed(self, event = None):
+        if self._active_line != '' and self._active_line in self._line_to_struc.keys():
+            self._line_to_struc.pop(self._active_line)
+            self._state_logger.pop(self._active_line)
+            self.draw_prop()
+            for line, obj in self._line_to_struc.items():
+                obj[1].need_recalc = True
+
+            state = self.get_color_and_calc_state()
+
+            self.draw_results(state=state)
+            self.draw_canvas(state=state)
+
     def delete_all_tanks(self):
         '''
         Delete the tank that has been selected in the Listbox
@@ -2149,7 +2174,7 @@ class Application():
         if limit_state == 'ULS':
             pressures = self.calculate_all_load_combinations_for_line(line)
             for key, value in pressures.items():
-                if key is not 'slamming':
+                if key != 'slamming':
                     all_press.append(max(value))
                 else:
                     if value is not None:
@@ -2431,6 +2456,7 @@ class Application():
         self._parent.bind('<Control-q>', self.new_line)
         self._parent.bind('<Control-s>', self.new_structure)
         self._parent.bind('<Delete>', self.delete_key_pressed)
+        self._parent.bind('<Control-Delete>', self.delete_properties_pressed)
         #self._parent.bind('<Enter>', self.enter_key_pressed)
 
     def mouse_scroll(self,event):
@@ -2732,10 +2758,14 @@ class Application():
 
             tank_inp = dict()
             if 'search_data' in imported['tank_properties'].keys():
-                for key, value in imported['tank_properties']['search_data'].items():
-                    tank_inp[int(key)] = value
-                self._main_grid.bfs_search_data = tank_inp
-                self._grid_calc.bfs_search_data = tank_inp
+                try:
+                    for key, value in imported['tank_properties']['search_data'].items():
+                        tank_inp[int(key)] = value
+                    self._main_grid.bfs_search_data = tank_inp
+                    self._grid_calc.bfs_search_data = tank_inp
+                except AttributeError:
+                    self._main_grid.bfs_search_data = None
+                    self._grid_calc.bfs_search_data = None
             else:
                 self._main_grid.bfs_search_data = None
                 self._grid_calc.bfs_search_data = None

@@ -1214,7 +1214,7 @@ class CreateOptGeoWindow():
         plt.ylabel('Weight / max weight')
         plt.title('Length of plate fields vs. total weight')
         plt.grid()
-        plt.show(False)
+        plt.show()
         if save_to_file:
             return save_file
 

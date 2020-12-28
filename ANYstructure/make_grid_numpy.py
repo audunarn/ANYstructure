@@ -15,7 +15,7 @@ class Grid:
         Initializes grid to be empty, take height and width of grid as parameters
         Indexed by rows (left to right), then by columns (top to bottom)
         """
-
+        #print('Grid initsialised with', grid_height, grid_width)
         self._grid_height = grid_height
         self._grid_width = grid_width
         self._cells = np.zeros((self._grid_height,self._grid_width))
@@ -212,8 +212,8 @@ class Grid:
         return (point[1] / cell_size, point[0] / cell_size)
 
     def get_value(self, row, col):
-        #print('ROW COL: ', row, col)
-        #print('CURRENT CELL LEN: ',len(self._cells))
+        # print('requested ROW COL: ', row, col)
+        # print('CURRENT CELL LEN: ',len(self._cells), 'Shape is ',self._cells.shape)
         #print(self._cells[row])
         return self._cells[row][col]
 
@@ -379,7 +379,7 @@ class Grid:
         :return:
         '''
         save_list = list()
-
+        print()
         # Compressing horizontally
         for row in self._cells:
             this_counter, this_number, save_row = 1, row[0], list()
@@ -407,10 +407,18 @@ class Grid:
                 this_number = save_list[row_idx +1]
                 this_counter = 1
             elif last:
+                print('To last')
                 save_vertical.append([this_number, this_counter])
                 if save_list[row_idx+1] != save_list[row_idx]:
                     save_vertical.append([save_list[row_idx+1], 1])
+                if save_vertical[0][-1] != self.cells.shape[0]:
+                    save_vertical[0][-1] += 1 # TODO this is a dirty fix. See the assertion below.
+                # assert this_counter == self.cells.shape[0], 'Error. Shape of compressed grid is not equal to input grid. ' \
+                #                                             'The counter has skipped a step. The saved is '\
+                #                                             +str(save_vertical) + ' and the shape is ' + \
+                #                                             str(self.cells.shape)
 
+        print('Grid to save', save_vertical)
         return save_vertical
 
     def rebuild_compressed(self, compressed_grid = None):
@@ -437,20 +445,26 @@ class Grid:
                 value_count = values[1]
                 for dummy_i in range(value_count):
                     expanded_list[row_count].append(value)
-
+        #print('Shape of rebuilt grid is',np.array(expanded_list).shape)
         return np.array(expanded_list)
 
 if __name__ ==  '__main__':
     import ANYstructure.example_data as ex
     import ANYstructure.grid_window as grd
-
+    from matplotlib import pyplot as plt
     lines = ex.line_dict
     points = ex.point_dict
 
     canvas_dim = [1000,720]
     canvas_origo = (50,670)
-    my_grid = grd.CreateGridWindow(ex.get_grid_no_inp(), canvas_dim, ex.get_to_draw(), canvas_origo)
-    search_return = my_grid.search_bfs(animate = True)
+    empty_grid = np.zeros((720, 1000))
+    my_grid = grd.CreateGridWindow(ex.get_grid_no_inp(empty_grid=True), canvas_dim, {}, canvas_origo)
+    # print('before search', my_grid.grid.get_array().shape)
+    # search_return = my_grid.search_bfs(animate = True)
+    # print('after search', my_grid.grid.get_array().shape)
     grid_only = my_grid.grid
-    grid_only.export_compressed_grid()
-    grid_only.rebuild_compressed(grid_only._compressed_grid)
+    print('Initial shape is', grid_only.cells.shape)
+    compgrd = grid_only.export_compressed_grid()
+    rebuilt_grid = grid_only.rebuild_compressed(compgrd)
+
+

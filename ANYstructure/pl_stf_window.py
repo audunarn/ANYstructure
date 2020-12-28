@@ -22,7 +22,7 @@ class CreateStructureWindow():
         else:
             self.app = app
             try:
-                self._initial_structure_obj = self.app._line_to_struc[app._active_line][0]
+                self._initial_structure_obj =  self.app._line_to_struc[app._active_line][0]
             except KeyError:
                 self._initial_structure_obj = None
             self._section_list = [section.__str__() for section in app._sections]
@@ -48,8 +48,9 @@ class CreateStructureWindow():
         self._new_girder_length = tk.DoubleVar()
         self._new_section = tk.StringVar()
 
+        # TODO this may cause error when there is no list.
         self._ent_section_list = tk.OptionMenu(self._frame, self._new_section, command=self.section_choose,
-                                               *self._section_list)
+                                               *['',] if self._section_list == [] else self._section_list)
         self._ent_structure_options = tk.OptionMenu(self._frame,self._new_stiffener_type,
                                                    command=self.option_choose,*self.structure_types)
         ent_w = 10
@@ -274,7 +275,8 @@ class CreateStructureWindow():
             self._frame.destroy()
             return
 
-        self.app.on_close_structure_window([self._new_spacing.get(),self._new_pl_thk.get(),self._new_web_h.get(),
+        self.app.on_close_structure_window([self._new_spacing.get(),self._new_pl_thk.get(),
+                                                                 self._new_web_h.get(),
                                             self._new_web_thk.get(),self._new_fl_w.get(),self._new_fl_thk.get(),
                                             self._new_stiffener_type.get()])
         self._frame.destroy()
@@ -282,7 +284,7 @@ class CreateStructureWindow():
     def section_choose(self, event = None):
         ''' Choosing a section. '''
         chosen_section = self._new_section.get()
-
+        # TODO en feil her.AttributeError: 'NoneType' object has no attribute 'name'. Seksjoner vises ikke riktig i neddroppsmeny.
         for section in self._section_objects:
             if chosen_section == section.__str__():
                 self._new_web_h.set(section.stf_web_height*1000)
@@ -334,7 +336,6 @@ class Section:
 
     def __str__(self):
         ''' Returning a string. '''
-
         base_name = self.stf_type+ '_' + str(round(self.stf_web_height*1000, 0)) + 'x' + \
                    str(round(self.stf_web_thk*1000, 0))
         if self._stf_type == 'FB':

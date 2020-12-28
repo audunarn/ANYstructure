@@ -187,14 +187,18 @@ def get_line_dict():
 def get_grid(origo,base_canvas_dim):
     return grid.Grid(origo[1] + 1, base_canvas_dim[0] - origo[0] + 1)
 
-def get_grid_no_inp():
+def get_grid_no_inp(empty_grid = False):
+
     origo = (50,670)
     base_canvas_dim = [1000,720]
     grid_return = grid.Grid(origo[1] + 1, base_canvas_dim[0] - origo[0] + 1)
+    if empty_grid:
+        return grid_return
+
     for line,coords in get_to_draw().items():
         for point in grid_return.get_points_along_line(coords[0],coords[1]):
             grid_return.set_barrier(point[0],point[1])
-    return  grid_return
+    return grid_return
 
 def get_grid_empty():
     origo = (50,670)
