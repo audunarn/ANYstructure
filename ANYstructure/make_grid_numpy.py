@@ -445,7 +445,7 @@ class Grid:
                 value_count = values[1]
                 for dummy_i in range(value_count):
                     expanded_list[row_count].append(value)
-        print('Shape of rebuilt grid is',np.array(expanded_list).shape)
+        #print('Shape of rebuilt grid is',np.array(expanded_list).shape)
         return np.array(expanded_list)
 
 if __name__ ==  '__main__':
