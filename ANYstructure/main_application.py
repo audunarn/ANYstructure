@@ -2780,6 +2780,12 @@ class Application():
 
                 self.grid_operations(line_name, [point_coord_x,point_coord_y])
 
+        # Setting the scale of the canvas
+        points = self._point_dict
+        highest_y = max([coord[1] for coord in points.values()])
+        highest_x = max([coord[0] for coord in points.values()])
+        self._canvas_scale = min(800 / highest_y, 800 / highest_x, 15)
+        print(self._canvas_scale)
         imp_file.close()
         self.update_frame()
 
