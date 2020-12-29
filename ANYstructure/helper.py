@@ -53,24 +53,24 @@ def one_load_combination(line_name_obj, coord, defined_loads, load_condition,
     elif load_condition == 'slamming':
         return helper_slamming(defined_loads)
     else:
-        return None
+        return [None, ' ']
 
 def helper_dnva_dnvb(line_name_obj, coord, defined_loads, load_condition,
                          defined_tanks, comb_name, acc, load_factors_all, print_to_file = False):
 
     # calculate the defined loads
-    calc_load, load_print = [], []
+    calc_load, load_print = [], ['',]
     line_name = line_name_obj[0]
     structure_type = line_name_obj[1].get_structure_type()
-    if line_name_obj[0] == 'line29' and print_it:
+    if print_it:
         load_print.append('Load calculation for '+line_name_obj[0] + ' ' + comb_name+ ' ' + load_condition)
     static_pressure,dynamic_pressure = 0,0
 
     if len(defined_loads) !=  0:
         for load in defined_loads :
             if load != None:
-                if line_name_obj[0] == 'line29':
-                    print('LOAD NAME: ',comb_name, line_name, load.get_name())
+                if print_it:
+                    load_print.append('LOAD NAME: '+' '+ comb_name+ ' '+ line_name+' '+ load.get_name())
                 load_factors = load_factors_all[(comb_name, line_name, load.get_name())]
                 # USE GET() (static,dyn, on/off)
                 if load_condition == load.get_load_condition():
@@ -78,7 +78,7 @@ def helper_dnva_dnvb(line_name_obj, coord, defined_loads, load_condition,
                                       *load.get_calculated_pressure(coord, acc[0],structure_type)
                     dynamic_pressure = (load_factors[2].get())*(load_factors[1].get())\
                                        *load.get_calculated_pressure(coord, acc[1],structure_type)
-                    if line_name_obj[0] == 'line29' and print_it:
+                    if print_it:
                         load_print.append('load (NON-TANK) calculation for load condition:' + load_condition + ' - Load is: '+ \
                              load.get_name() + ' - Type is: ')
                         load_print.append('static with acc:'+ str(acc[0])+ ' is: '+str(load_factors[2].get())+'*'+\
@@ -113,7 +113,7 @@ def helper_dnva_dnvb(line_name_obj, coord, defined_loads, load_condition,
                                    +tank_name_obj[1].get_overpressure()*overpress_lf[1]
 
                 temp_tank[tank_name_obj[0]] = static_pressure + dynamic_pressure# .append((static_pressure + dynamic_pressure))
-                if line_name_obj[0] == 'line29' and print_it:
+                if print_it:
                     load_print.append('load (TANK) calculation for load condition:'+ load_condition+ ' - Tank is: '+ tank_name_obj[0])
                     load_print.append('load factors : '+ str(load_factors[0].get())+str(load_factors[1].get())+str(load_factors[2].get()))
                     load_print.append('static: '+ str(load_factors[2].get())+ '*'+ str(load_factors[0].get()) + '*'+\
@@ -136,25 +136,26 @@ def helper_dnva_dnvb(line_name_obj, coord, defined_loads, load_condition,
             calc_load.append(-highest_tank_pressure if highest_tank_pressure else 0)
         else:
             pass
-    if line_name_obj[0] == 'line29' and print_it:
+    if print_it:
         load_print.append('-----LOAD CALCULATION END, RESULT IS: ' + str(calc_load) +'-----')
 
-    return int(abs(sum(calc_load)))
+    return [int(abs(sum(calc_load))), load_print]
 
 def helper_slamming(defined_loads):
 
     # calculate the defined loads
-
+    calc_load, load_print = [], ['',]
     if len(defined_loads) != 0:
         for load in defined_loads:
             if load != None and load.get_load_condition() == 'slamming':
-                return load.get_calculated_pressure(0, 0, 'slamming')
+                return [load.get_calculated_pressure(0, 0, 'slamming'), load_print]
+    return [None, ' ']
 
 
 def helper_tank_test(line_name_obj, coord, defined_loads, load_condition,
                                 defined_tanks, comb_name, acc, load_factors_all):
     # calculate the defined loads
-    calc_load = []
+    calc_load, load_print = [], ['',]
     static_pressure, dynamic_pressure = 0, 0
     line_name = line_name_obj[0]
     structure_type = line_name_obj[1].get_structure_type()
@@ -180,7 +181,9 @@ def helper_tank_test(line_name_obj, coord, defined_loads, load_condition,
 
         for tank_name_obj in defined_tanks:
             load_factors = load_factors_all[(comb_name, line_name, tank_name_obj[0])]
-            tt0 = 'tank test LF: '+ str(load_factors[0])+' '+str(load_factors[1])+' '+ str(load_factors[2])
+            if print_it:
+                load_print.append('tank test LF: '+ str(load_factors[0])+' '+str(load_factors[1])+' '+
+                                  str(load_factors[2]))
                 # USE GET() (static,dyn, on/off)
             overpress_lf = [1.3, 0] if load_factors[0].get() == 1.2 else [1, 0]
             static_pressure = (load_factors[2].get()) * (load_factors[0].get())\
@@ -197,13 +200,14 @@ def helper_tank_test(line_name_obj, coord, defined_loads, load_condition,
             calc_load.append(-highest_tank_pressure[0] if len(highest_tank_pressure) > 0 else 0)
         else:
             pass
-    return int(abs(sum(calc_load)))
+    return [int(abs(sum(calc_load))), load_print]
 
 def helper_manual(line_name, comb_name,load_factors_all):
-
+    calc_load, load_print = [], ['',]
     load_factors = load_factors_all[(comb_name, line_name[0], 'manual')]
-
-    return load_factors[0].get() * load_factors[1].get() * load_factors[2].get()
+    if print_it:
+        load_print.append('Manual pressure')
+    return [load_factors[0].get() * load_factors[1].get() * load_factors[2].get(), load_print]
 
 def helper_read_section_file(files, obj = None, to_json = False, to_csv = False):
     ''' Read a xml file. '''
