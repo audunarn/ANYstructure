@@ -846,6 +846,12 @@ class Application():
                  font = self._text_size['Text 14 bold'], height = 1,
                   bg = self._button_bg_color, fg = self._button_fg_color)\
            .place(x=lc_x + delta_x * 6.7,y=lc_y - 6 * lc_y_delta)
+
+        # Load information button
+        tk.Button(self._main_fr, text='Load info', command=self.button_load_info_click,
+                 font = self._text_size['Text 10 bold'], height = 1,
+                  bg = self._button_bg_color, fg = self._button_fg_color)\
+           .place(x=lc_x + delta_x * 6.7,y=lc_y + delta_y*16)
         # try:
         #     photo_report = tk.PhotoImage(file=self._root_dir + '\\images\\' +"img_generate_report.gif")
         #     report_button = tk.Button(self._main_fr,image=photo_report, command = self.report_generate)
@@ -1948,7 +1954,7 @@ class Application():
 
         return line_results
 
-    def calculate_all_load_combinations_for_line(self, line, limit_state = 'ULS'):
+    def calculate_all_load_combinations_for_line(self, line, limit_state = 'ULS', get_load_info = False):
         '''
         Calculating pressure for line.
         self._load_factors_dict = {'dnva':[1.3,1.2,0.7], 'dnvb':[1,1,1.3], 'tanktest':[1,1,1]} # DNV  loads factors
@@ -1958,28 +1964,35 @@ class Application():
         if limit_state == 'FLS':
             return
         results = {} #dict - dnva/dnvb/tanktest/manual
-
+        load_info = []
         # calculating for DNV a and DNV b
         for dnv_ab in ['dnva', 'dnvb']: #, load_factors in self._load_factors_dict.items():
             results[dnv_ab] = []
-
-
             for load_condition in self._load_conditions[0:2]:
                 returned = self.calculate_one_load_combination(line, dnv_ab, load_condition)
                 if returned != None:
-                    results[dnv_ab].append(returned)
+                    results[dnv_ab].append(returned[0])
+                    [load_info.append(val) for val in returned[1]]
 
         # calculating for tank test condition
         results['tanktest'] = []
-        results['tanktest'].append(self.calculate_one_load_combination(line, "tanktest", 'tanktest'))
+        res_val = self.calculate_one_load_combination(line, "tanktest", 'tanktest')
+        results['tanktest'].append(res_val[0])
+        [load_info.append(val) for val in res_val[1]]
 
         # calculating for manual condition
         results['manual'] = []
-        results['manual'].append(self.calculate_one_load_combination(line, 'manual', 'manual'))
+        res_val = self.calculate_one_load_combination(line, 'manual', 'manual')
+        results['manual'].append(res_val[0])
+        [load_info.append(val) for val in res_val[1]]
 
         results['slamming'] = []
-        results['slamming'].append(self.calculate_one_load_combination(line, 'slamming', 'slamming'))
+        res_val = self.calculate_one_load_combination(line, 'slamming', 'slamming')
+        results['slamming'].append(res_val[0])
+        [load_info.append(val) for val in res_val[1]]
 
+        if get_load_info:
+            return load_info
         return results
 
     def calculate_one_load_combination(self, line_name, comb_name, load_condition):
@@ -2011,7 +2024,7 @@ class Application():
         line_name_obj = [line_name, self._line_to_struc[line_name][0]]
 
         if self._line_to_struc[line_name][0].get_structure_type() in ['', 'FRAME','GENERAL_INTERNAL_NONWT']:
-            return 0
+            return [0, '']
         else:
 
             return_value = one_load_combination(line_name_obj, coord, defined_loads, load_condition,
@@ -2625,6 +2638,12 @@ class Application():
 
 
         self.update_frame()
+
+    def button_load_info_click(self, event = None):
+        ''' Get the load information for one line.'''
+        if self._active_line != '':
+            load_text = self.calculate_all_load_combinations_for_line(self._active_line, get_load_info=True)
+            tk.messagebox.showinfo('Load info for '+self._active_line, [val for val in load_text])
 
     def draw_point_frame(self):
         ''' Frame to define brackets on selected point. '''
