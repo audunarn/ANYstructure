@@ -14,6 +14,7 @@ from reportlab.pdfgen import canvas
 from reportlab.platypus import Image, Paragraph, Table
 from time import strftime, gmtime
 import os
+import ANYstructure.helper as hlp
 
 def create_report(input_data):
     '''
@@ -283,7 +284,9 @@ class LetterMaker(object):
         lines = self.data['lines']
         colors = self.data['colors']
         highest_y = max([coord[1] for coord in points.values()])
-        scale = 300/highest_y
+        highest_x = max([coord[0] for coord in points.values()])
+        scale = min(500/highest_y, 500/highest_x, 10)
+        print(scale)
         origo = (50,350)
         self.c.setLineWidth(2)
         self.c.setStrokeColor('red')
@@ -302,7 +305,7 @@ class LetterMaker(object):
             textobject = self.c.beginText()
             textobject.setTextOrigin(x1+(x2-x1)*0.5-5, y1 + (y2-y1)*0.5+2 )
             textobject.setFont("Helvetica-Oblique", 9)
-            textobject.textLine(line)
+            textobject.textLine(str(hlp.get_num(line)))
             self.c.drawText(textobject)
 
 

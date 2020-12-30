@@ -81,6 +81,12 @@ class Application():
                               command=self.new_structure)
         undo_redo.add_command(label='Delete structure properties from clicked line (CTRL-DELETE)',
                               command=self.delete_properties_pressed)
+        undo_redo.add_command(label='Delete active line and/or point (DELETE)',
+                              command=self.delete_key_pressed)
+        undo_redo.add_command(label='Copy line properties from active line (CTRL-E)',
+                              command=self.copy_property)
+        undo_redo.add_command(label='Paste line propeties to active line (CTRL-D)',
+                              command=self.paste_property)
 
         sub_report = tk.Menu(menu)
         menu.add_cascade(label = 'Reporting', menu = sub_report)
@@ -177,7 +183,7 @@ class Application():
         # Load combinations definition used in method gui_load_combinations
         # These are created and destroyed and is not permanent in the application.
         self._lc_comb_created,self._comp_comb_created,self._manual_created, self._info_created = [],[],[], []
-        self._state_logger = dict()
+        self._state_logger = dict()  # Used to see if recalculation is needed.
 
         # The next dictionaries feed various infomation to the application
         self._load_factors_dict = {'dnva':[1.3,1.2,0.7], 'dnvb':[1,1,1.3], 'tanktest':[1,1,0]} # DNV  loads factors
@@ -200,6 +206,7 @@ class Application():
         self._load_window_couter = 1 # this is used to create the naming of the tanks in the load window
         self._logger = {'added': list(), 'deleted': list()}  # used to log operations for geometry operations, to be used for undo/redo
         self.__returned_load_data = None # Temporary data for returned loads from the load window.
+        self.__copied_line_prop = None  # Used to copy line properties to another.
 
         self._p1_p2_select = False
         self._line_is_active = False # True when a line is clicked
@@ -839,6 +846,12 @@ class Application():
                  font = self._text_size['Text 14 bold'], height = 1,
                   bg = self._button_bg_color, fg = self._button_fg_color)\
            .place(x=lc_x + delta_x * 6.7,y=lc_y - 6 * lc_y_delta)
+
+        # Load information button
+        tk.Button(self._main_fr, text='Load info', command=self.button_load_info_click,
+                 font = self._text_size['Text 10 bold'], height = 1,
+                  bg = self._button_bg_color, fg = self._button_fg_color)\
+           .place(x=lc_x + delta_x * 6.7,y=lc_y + delta_y*16)
         # try:
         #     photo_report = tk.PhotoImage(file=self._root_dir + '\\images\\' +"img_generate_report.gif")
         #     report_button = tk.Button(self._main_fr,image=photo_report, command = self.report_generate)
@@ -1125,6 +1138,7 @@ class Application():
 
     def update_frame(self):
         state = self.get_color_and_calc_state()
+        self.draw_results(state=state)
         self.draw_canvas(state=state)
         self.draw_prop()
 
@@ -1940,7 +1954,7 @@ class Application():
 
         return line_results
 
-    def calculate_all_load_combinations_for_line(self, line, limit_state = 'ULS'):
+    def calculate_all_load_combinations_for_line(self, line, limit_state = 'ULS', get_load_info = False):
         '''
         Calculating pressure for line.
         self._load_factors_dict = {'dnva':[1.3,1.2,0.7], 'dnvb':[1,1,1.3], 'tanktest':[1,1,1]} # DNV  loads factors
@@ -1950,28 +1964,35 @@ class Application():
         if limit_state == 'FLS':
             return
         results = {} #dict - dnva/dnvb/tanktest/manual
-
+        load_info = []
         # calculating for DNV a and DNV b
         for dnv_ab in ['dnva', 'dnvb']: #, load_factors in self._load_factors_dict.items():
             results[dnv_ab] = []
-
-
             for load_condition in self._load_conditions[0:2]:
                 returned = self.calculate_one_load_combination(line, dnv_ab, load_condition)
                 if returned != None:
-                    results[dnv_ab].append(returned)
+                    results[dnv_ab].append(returned[0])
+                    [load_info.append(val) for val in returned[1]]
 
         # calculating for tank test condition
         results['tanktest'] = []
-        results['tanktest'].append(self.calculate_one_load_combination(line, "tanktest", 'tanktest'))
+        res_val = self.calculate_one_load_combination(line, "tanktest", 'tanktest')
+        results['tanktest'].append(res_val[0])
+        [load_info.append(val) for val in res_val[1]]
 
         # calculating for manual condition
         results['manual'] = []
-        results['manual'].append(self.calculate_one_load_combination(line, 'manual', 'manual'))
+        res_val = self.calculate_one_load_combination(line, 'manual', 'manual')
+        results['manual'].append(res_val[0])
+        [load_info.append(val) for val in res_val[1]]
 
         results['slamming'] = []
-        results['slamming'].append(self.calculate_one_load_combination(line, 'slamming', 'slamming'))
+        res_val = self.calculate_one_load_combination(line, 'slamming', 'slamming')
+        results['slamming'].append(res_val[0])
+        [load_info.append(val) for val in res_val[1]]
 
+        if get_load_info:
+            return load_info
         return results
 
     def calculate_one_load_combination(self, line_name, comb_name, load_condition):
@@ -2003,7 +2024,7 @@ class Application():
         line_name_obj = [line_name, self._line_to_struc[line_name][0]]
 
         if self._line_to_struc[line_name][0].get_structure_type() in ['', 'FRAME','GENERAL_INTERNAL_NONWT']:
-            return 0
+            return [0, '']
         else:
 
             return_value = one_load_combination(line_name_obj, coord, defined_loads, load_condition,
@@ -2104,8 +2125,26 @@ class Application():
         if self._active_point != '':
             self.delete_point()
 
-    # def enter_key_pressed(self, event = None):
-    #     self.new_point()
+    def copy_property(self, event = None):
+        ''' Copy a property of a line'''
+        if self._active_line not in self._line_to_struc.keys():
+            tk.messagebox.showinfo('No properties', 'This line does not have properties.')
+            return
+        else:
+            self.__copied_line_prop = [self._line_to_struc[self._active_line][0],
+                                       self._line_to_struc[self._active_line][1]]
+
+    def paste_property(self, event = None):
+        ''' Paste property to line '''
+        if self._line_to_struc[self._active_line][0].get_structure_type() != \
+                self.__copied_line_prop[0].get_structure_type():
+            tk.messagebox.showerror('Paste error', 'Can only paste to same structure type. This is to avoid problems '
+                                                   'with compartments not detecting changes to watertightness.')
+            return
+        self._line_to_struc[self._active_line][0] = self.__copied_line_prop[0]
+        self._line_to_struc[self._active_line][1] = self.__copied_line_prop[1]
+
+        self.update_frame()
 
     def delete_properties_pressed(self, event = None):
         if self._active_line != '' and self._active_line in self._line_to_struc.keys():
@@ -2114,11 +2153,7 @@ class Application():
             self.draw_prop()
             for line, obj in self._line_to_struc.items():
                 obj[1].need_recalc = True
-
-            state = self.get_color_and_calc_state()
-
-            self.draw_results(state=state)
-            self.draw_canvas(state=state)
+            self.update_frame()
 
     def delete_all_tanks(self):
         '''
@@ -2457,6 +2492,8 @@ class Application():
         self._parent.bind('<Control-s>', self.new_structure)
         self._parent.bind('<Delete>', self.delete_key_pressed)
         self._parent.bind('<Control-Delete>', self.delete_properties_pressed)
+        self._parent.bind('<Control-e>', self.copy_property)
+        self._parent.bind('<Control-d>', self.paste_property)
         #self._parent.bind('<Enter>', self.enter_key_pressed)
 
     def mouse_scroll(self,event):
@@ -2601,6 +2638,14 @@ class Application():
 
 
         self.update_frame()
+
+    def button_load_info_click(self, event = None):
+        ''' Get the load information for one line.'''
+        if self._active_line != '' and self._active_line in self._line_to_struc.keys():
+            load_text = self.calculate_all_load_combinations_for_line(self._active_line, get_load_info=True)
+            tk.messagebox.showinfo('Load info for '+self._active_line, ''.join(load_text))
+        else:
+            tk.messagebox.showerror('No data', 'No load data for this line')
 
     def draw_point_frame(self):
         ''' Frame to define brackets on selected point. '''
@@ -2779,6 +2824,12 @@ class Application():
                 point_coord_y = self._canvas_base_origo[1] - self._point_dict[point_no][1] * self._canvas_scale
 
                 self.grid_operations(line_name, [point_coord_x,point_coord_y])
+
+        # Setting the scale of the canvas
+        points = self._point_dict
+        highest_y = max([coord[1] for coord in points.values()])
+        highest_x = max([coord[0] for coord in points.values()])
+        self._canvas_scale = min(800 / highest_y, 800 / highest_x, 15)
 
         imp_file.close()
         self.update_frame()
@@ -3167,7 +3218,7 @@ class Application():
                                                          '\n'
                                                          '\n'
                                                          'By Audun Arnesen Nyhus \n'
-                                                         '2019\n\n'
+                                                         '2020\n\n'
                                                          'All technical calculation based on:'
                                                          '- DNVGL-OS-C101'
                                                          '- Supporting DNVGL RPs and standards')

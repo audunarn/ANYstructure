@@ -34,6 +34,7 @@ class Structure():
 
         self.sigma_y = self.sigma_y2 + (self.sigma_y1-self.sigma_y2)\
                                        *(min(0.25*self.span,0.5*self.spacing)/self.span)
+
         try:
             self.girder_lg=main_dict['girder_lg'][0]
         except KeyError:
