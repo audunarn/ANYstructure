@@ -2643,7 +2643,7 @@ class Application():
         ''' Get the load information for one line.'''
         if self._active_line != '':
             load_text = self.calculate_all_load_combinations_for_line(self._active_line, get_load_info=True)
-            tk.messagebox.showinfo('Load info for '+self._active_line, [val for val in load_text])
+            tk.messagebox.showinfo('Load info for '+self._active_line, ''.join(load_text))
 
     def draw_point_frame(self):
         ''' Frame to define brackets on selected point. '''
