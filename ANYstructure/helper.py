@@ -70,9 +70,14 @@ def helper_dnva_dnvb(line_name_obj, coord, defined_loads, load_condition,
     if len(defined_loads) !=  0:
         for load in defined_loads :
             if load != None:
-                if print_it:
-                    load_print.append('LOAD NAME: '+' '+ comb_name+ ' '+ line_name+' '+ load.get_name())
+
                 load_factors = load_factors_all[(comb_name, line_name, load.get_name())]
+                if print_it:
+                    if load_factors[0].get() != 0:
+                        load_print.append('LOAD NAME: '+' '+ comb_name+ ' '+ line_name+' '+ load.get_name()+'\n')
+                if load_factors[1].get() != 0:
+                    if load_factors[0].get() != 0:
+                        load_print.append('LOAD NAME: '+' '+ comb_name+ ' '+ line_name+' '+ load.get_name()+'\n')
                 # USE GET() (static,dyn, on/off)
                 if load_condition == load.get_load_condition():
                     static_pressure = (load_factors[2].get())*(load_factors[0].get())\
@@ -82,15 +87,18 @@ def helper_dnva_dnvb(line_name_obj, coord, defined_loads, load_condition,
                     if print_it:
                         # load_print.append('load (NON-TANK) calculation for load condition:' + load_condition + ' - Load is: '+ \
                         #      load.get_name() + ' - Type is: \n')
-                        load_print.append('\n'+'static with acc: '+ str(acc[0])+ ' is: '+str(load_factors[2].get())+'*'+\
-                             str(load_factors[0].get())+'*'+\
-                             str(load.get_calculated_pressure(coord, acc[0],structure_type))+ ' = '+ \
-                             str(static_pressure)+'\n')
-
-                        load_print.append('dynamic with acc: '+ str(acc[1])+' is: '+str(load_factors[2].get())+'*'+\
-                             str(load_factors[1].get())+'*'+\
-                             str(load.get_calculated_pressure(coord, acc[1],structure_type))+ ' = '+ \
-                             str(dynamic_pressure)+'\n')
+                        if load_factors[0].get() != 0:
+                            load_print.append(' static with acceleration: '+ str(acc[0])+ ' is: \n '+
+                                              str(load_factors[2].get())+'*'+\
+                                 str(load_factors[0].get())+'*'+\
+                                 str(round(load.get_calculated_pressure(coord, acc[0],structure_type),1))+ ' = '+ \
+                                 str(round(static_pressure,1))+'\n')
+                        if load_factors[1].get() != 0:
+                            load_print.append(' dynamic with acceleration: '+ str(acc[1])+' is: \n '+
+                                              str(load_factors[2].get())+'*'+\
+                                 str(load_factors[1].get())+'*'+\
+                                 str(round(load.get_calculated_pressure(coord, acc[1],structure_type),1))+ ' = '+ \
+                                 str(round(dynamic_pressure,1))+'\n')
                     calc_load.append(static_pressure+dynamic_pressure)
 
     # calculate the tank loads
@@ -139,10 +147,11 @@ def helper_dnva_dnvb(line_name_obj, coord, defined_loads, load_condition,
             pass
     if print_it:
         if len(calc_load) == 2:
-            load_print.append('\n Result: ' + str(calc_load[0]) +' + '+ str(calc_load[1]) + ' = ' + str(sum(calc_load)) +'\n')
+            load_print.append('\nRESULT: ' + str(round(calc_load[0], 1)) +' + '+
+                              str(round(calc_load[1])) + ' = ' + str(round(sum(calc_load),1)) +'\n')
         else:
             load_print.append(
-                '\n Result: ' + str(calc_load[0])+'\n')
+                '\nRESULT: ' + str(round(calc_load[0],1))+'\n')
 
         load_print.append('------------------------------------------------------------------\n')
     return [int(abs(sum(calc_load))), load_print]
