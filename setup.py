@@ -27,7 +27,7 @@ setup(
     name='ANYstructure',  # Required
     url = 'https://github.com/audunarn/ANYstructure',
     entry_points={'gui_scripts': ['ANYstructure = ANYstructure.__main__:main']},
-    version='1.4',  # Required
+    version='1.5',  # Required
     license='MIT',
     description='A plate field optimization tool for offshore structures calculated according to DNVGL standards',
     long_description = readme(),
@@ -42,5 +42,5 @@ setup(
     keywords='dnvgl-gl-os-c101 naval_architecture structural_engineering steel buckling fatigue local_scantlings optimization weight',
     include_package_data=True,
     packages=['ANYstructure'],
-    install_requires=['scipy', 'numpy', 'matplotlib==3.2', 'reportlab', 'pytest']
+    install_requires=['scipy', 'numpy', 'matplotlib', 'reportlab', 'pytest']
 )
