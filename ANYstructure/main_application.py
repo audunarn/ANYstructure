@@ -2834,12 +2834,12 @@ class Application():
         imp_file.close()
         self.update_frame()
 
-    def open_example(self):
+    def open_example(self, file_name = 'ship_section_example.txt'):
         ''' Open the example file. To be used in help menu. '''
-        if os.path.isfile('ship_section_example.txt') :
-            self.openfile(defined = 'ship_section_example.txt')
+        if os.path.isfile(file_name) :
+            self.openfile(defined = file_name)
         else:
-            self.openfile(defined= self._root_dir + '/' + 'ship_section_example.txt')
+            self.openfile(defined= self._root_dir + '/' + file_name)
 
     def on_open_structure_window(self):
         '''

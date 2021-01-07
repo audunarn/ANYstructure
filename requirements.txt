@@ -2,5 +2,6 @@ matplotlib==3.2
 numpy
 pytest
 reportlab
-scipy
+scipy==1.5.4
 
+pip
