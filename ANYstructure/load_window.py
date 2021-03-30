@@ -67,6 +67,13 @@ class CreateLoadWindow():
         self._main_canvas = tk.Canvas(self._frame,width=self._canvas_dim[0], height=self._canvas_dim[1],
                                      background='azure', relief = 'groove', borderwidth=2)
         self._main_canvas.place(relx=0.32,rely=0.25)
+        self._global_shrink = 1
+        base_canvas_dim = [1000, 720]  # do not modify this, sets the "orignal" canvas dimensions.
+        self._canvas_dim = [int(base_canvas_dim[0] *self._global_shrink),
+                           int(base_canvas_dim[1] *self._global_shrink)]
+        self._canvas_base_origo = [50, base_canvas_dim[1] - 50] # 50 bottom left location of the canvas, (0,0)
+        self._canvas_draw_origo = list(self._canvas_base_origo)
+        self._previous_drag_mouse = list(self._canvas_draw_origo)
 
         # --- slider (used to zoom) ----
         self._slider = tk.Scale(self._frame,from_=60,to = 1, command = self.slider_used,
@@ -283,6 +290,19 @@ class CreateLoadWindow():
                     self._main_canvas.create_text(coord1[0] - 20 + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 + 10,
                                                  text='line' + str(get_num(line)), font="Text 8", fill='black')
 
+    def button_2_click_and_drag(self,event):
+
+        self._canvas_draw_origo = (self._canvas_draw_origo[0]-(self._previous_drag_mouse[0]-event.x),
+                                  self._canvas_draw_origo[1]-(self._previous_drag_mouse[1]-event.y))
+        self._previous_drag_mouse = (event.x,event.y)
+        self.draw_canvas()
+
+    def mouse_scroll(self,event):
+        self._canvas_scale +=  event.delta/50
+        self._canvas_scale = 0 if self._canvas_scale < 0 else self._canvas_scale
+
+        self.draw_canvas()
+
     def get_loads(self):
         '''
         Returning loads
@@ -303,9 +323,9 @@ class CreateLoadWindow():
             if load != 'manual':# and (combination, line, load) not in self._load_comb_dict.keys():
                 #print(combination, line, load)
                 self._load_comb_dict[(combination, line, load)] = [tk.DoubleVar(), tk.DoubleVar(), tk.IntVar()]
-                if combination is not 'tanktest':
+                if combination != 'tanktest':
                     if self._load_objects[load][0].is_static():
-                        if self._load_objects[load][0].get_limit_state() is 'FLS':
+                        if self._load_objects[load][0].get_limit_state() == 'FLS':
                             self._load_comb_dict[(combination, line, load)][0].set(0)
                         elif self._load_objects[load][0].is_tank_test():
                             self._load_comb_dict[(combination, line, load)][0].set(0)
@@ -317,7 +337,7 @@ class CreateLoadWindow():
 
                     else:
                         self._load_comb_dict[(combination, line, load)][0].set(0)
-                        if self._load_objects[load][0].get_limit_state() is 'FLS':
+                        if self._load_objects[load][0].get_limit_state() == 'FLS':
                             self._load_comb_dict[(combination, line, load)][1].set(1)
                         else:
                             self._load_comb_dict[(combination, line, load)][1].set(factors[2])
@@ -489,8 +509,8 @@ class CreateLoadWindow():
         Returning the canvas coordinates of the point. This value will change with slider.
         '''
 
-        point_coord_x = self._canvas_origo[0] + self._point_dict[point_no][0]* self._canvas_scale
-        point_coord_y = self._canvas_origo[1] - self._point_dict[point_no][1]* self._canvas_scale
+        point_coord_x = self._canvas_draw_origo[0] + self._point_dict[point_no][0] * self._canvas_scale
+        point_coord_y = self._canvas_draw_origo[1] - self._point_dict[point_no][1] * self._canvas_scale
 
         return [point_coord_x, point_coord_y]
 
@@ -506,6 +526,8 @@ class CreateLoadWindow():
         self._frame.bind('<Shift_R>', self.shift_pressed)
         self._frame.bind('<Control_L>', self.ctrl_pressed)
         self._frame.bind('<Control_R>', self.ctrl_pressed)
+        self._main_canvas.bind("<MouseWheel>", self.mouse_scroll)
+        self._main_canvas.bind("<B2-Motion>", self.button_2_click_and_drag)
 
     def shift_pressed(self,event=None):
         '''
