@@ -254,12 +254,12 @@ class CreateLoadWindow():
 
         # grid for the canavs
 
-        self._main_canvas.create_line(self._canvas_origo[0], 0, self._canvas_origo[0], self._canvas_dim[1],
+        self._main_canvas.create_line(self._canvas_draw_origo[0], 0, self._canvas_draw_origo[0], self._canvas_dim[1],
                                      stipple='gray50')
-        self._main_canvas.create_line(0, self._canvas_origo[1], self._canvas_dim[0], self._canvas_origo[1],
+        self._main_canvas.create_line(0, self._canvas_draw_origo[1], self._canvas_dim[0], self._canvas_draw_origo[1],
                                      stipple='gray50')
-        self._main_canvas.create_text(self._canvas_origo[0] - 30 ,
-                                     self._canvas_origo[1] + 20 , text='(0,0)',
+        self._main_canvas.create_text(self._canvas_draw_origo[0] - 30 ,
+                                     self._canvas_draw_origo[1] + 20 , text='(0,0)',
                                      font='Text 10')
         self._main_canvas.create_text([800 ,50],
                                      text='Mouse left click:  select lines to loads\n'
@@ -277,15 +277,11 @@ class CreateLoadWindow():
                 vector = [coord2[0] - coord1[0], coord2[1] - coord1[1]]
                 # drawing a bold line if it is selected
                 if line in self._active_lines:
-                    if load_selected and line in self._load_obj_lines_box.get(0,'end'):
-                        color = 'red'
                     self._main_canvas.create_line(coord1, coord2, width=6, fill=color)
                     self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 + 10,
                                                  text='Line ' + str(get_num(line)), font='Verdand 10 bold',
                                                  fill='red')
                 else:
-                    if load_selected and line in self._load_obj_lines_box.get(0,'end'):
-                        color = 'red'
                     self._main_canvas.create_line(coord1, coord2, width=3, fill=color)
                     self._main_canvas.create_text(coord1[0] - 20 + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 + 10,
                                                  text='line' + str(get_num(line)), font="Text 8", fill='black')
@@ -294,6 +290,7 @@ class CreateLoadWindow():
 
         self._canvas_draw_origo = (self._canvas_draw_origo[0]-(self._previous_drag_mouse[0]-event.x),
                                   self._canvas_draw_origo[1]-(self._previous_drag_mouse[1]-event.y))
+
         self._previous_drag_mouse = (event.x,event.y)
         self.draw_canvas()
 

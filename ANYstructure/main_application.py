@@ -18,6 +18,7 @@ import ANYstructure.optimize_geometry as optgeo
 import ANYstructure.pl_stf_window as struc
 import ANYstructure.stresses_window as stress
 import ANYstructure.fatigue_window as fatigue
+import ANYstructure.load_factor_window as load_factors
 from _tkinter import TclError
 import multiprocessing
 from ANYstructure.report_generator import LetterMaker
@@ -852,6 +853,12 @@ class Application():
                  font = self._text_size['Text 10 bold'], height = 1,
                   bg = self._button_bg_color, fg = self._button_fg_color)\
            .place(x=lc_x + delta_x * 6.7,y=lc_y + delta_y*16)
+
+        # Load information button
+        tk.Button(self._main_fr, text='Load facors', command=self.on_open_load_factor_window,
+                 font = self._text_size['Text 10 bold'], height = 1,
+                  bg = self._button_bg_color, fg = self._button_fg_color)\
+           .place(x=lc_x + delta_x * 4,y=lc_y + delta_y*16)
         # try:
         #     photo_report = tk.PhotoImage(file=self._root_dir + '\\images\\' +"img_generate_report.gif")
         #     report_button = tk.Button(self._main_fr,image=photo_report, command = self.report_generate)
@@ -2887,8 +2894,17 @@ class Application():
             fatigue.CreateFatigueWindow(top_opt, self)
 
 
+
         else:
             messagebox.showinfo(title='Select line',message='You must select a line')
+
+    def on_open_load_factor_window(self):
+        '''
+        Set the default load factors and change all.
+        :return:
+        '''
+        lf_tkinter = tk.Toplevel(self._parent, background=self._general_color)
+        load_factors.CreateLoadFactorWindow(lf_tkinter, self)
 
     def on_show_loads(self):
         '''
@@ -3146,6 +3162,15 @@ class Application():
             self._ext_button.image = photo
         except TclError:
             pass
+
+    def on_close_load_factor_window(self, returned_load_factors):
+        '''
+
+        :param returned_load_factors: list [stat lf, dyn lf]
+        :return:
+        '''
+
+        print(self._load_factors_dict)
 
     def close_main_window(self):
         '''
