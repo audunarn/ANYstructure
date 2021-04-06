@@ -2,6 +2,8 @@
 
 import tkinter as tk
 import ANYstructure.example_data as test
+import os
+from _tkinter import TclError
 
 class CreateLoadFactorWindow:
     '''
@@ -14,6 +16,7 @@ class CreateLoadFactorWindow:
         self._frame.wm_title("Load factor modifications here.")
         self._frame.geometry('800x800')
         self._frame.grab_set()
+        self._app = app
         if __name__ == '__main__':
             self._load_factors_dict = {'dnva': [1.3, 1.2, 0.7], 'dnvb': [1, 1, 1.3],
                                        'tanktest': [1, 1, 0]}  # DNV  loads factors
@@ -46,7 +49,7 @@ class CreateLoadFactorWindow:
         self.new_condtt_lff3.set(self._load_factors_dict['tanktest'][2])
 
         ent_w = 20
-        tk.Label(self._frame, text='Static and dynamic load factors is specified here.', font='Verdana 8 bold')\
+        tk.Label(self._frame, text='Static and dynamic load factors is specified here', font='Verdana 15 bold')\
             .grid(row = 1, column = 1, sticky = tk.W)
         tk.Label(self._frame, text='Note that DNV is used as reference, '
                                    'but the load factors can be any other rule set such as ISO.', font='Verdana 8 bold')\
@@ -102,12 +105,62 @@ class CreateLoadFactorWindow:
         self.ent_condtt_lf2.grid(row=13, column=2)
         self.ent_condtt_lf3.grid(row=14, column=2)
 
+        tk.Label(self._frame, text=' ', font='Verdana 8 bold')\
+            .grid(row = 15, column = 1, sticky = tk.W)
+        # tk.Label(self._frame, text='Change all current load factors', font='Verdana 8 bold')\
+        #     .grid(row = 16, column = 1, sticky = tk.W)
+        # tk.Checkbutton(self._frame, variable=self.new_change_existing)\
+        #     .grid(row=17, column=1, sticky = tk.W)
+        # tk.Label(self._frame, text='Change default load factors', font='Verdana 8 bold')\
+        #     .grid(row = 18, column = 1, sticky = tk.W)
+        # tk.Checkbutton(self._frame, variable=self.new_change_default)\
+        #     .grid(row=19, column=1, sticky=tk.W)
+        #
+        tk.Label(self._frame, text=' ', font='Verdana 8 bold')\
+            .grid(row = 16, column = 1, sticky = tk.W)
 
+        destroy_and_return = tk.Button(self._frame, text='Return specified load factors and change existing',
+                                        command=self.return_load_factors, bg='green', font='Verdana 12', fg='yellow')
+        destroy_and_return.grid(row = 17, column = 1)
 
+        tk.Label(self._frame, text=' ', font='Verdana 8 bold')\
+            .grid(row = 18, column = 1)
 
+        try:
+            img_file_name = 'img_dnv_load_combinations.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path ='images/' + img_file_name
+            else:
+                file_path = app._root_dir + '/images/' + img_file_name
+            photo_transverse = tk.PhotoImage(file=file_path)
+            label_trans = tk.Label(self._frame, image=photo_transverse)
+            label_trans.image = photo_transverse  # keep a reference!
+            label_trans.grid(row = 19, column = 1, columnspan = 2)
+        except TclError:
+            pass
 
+    def return_load_factors(self):
+        '''
+        self._load_factors_dict = {'dnva':[1.3,1.2,0.7], 'dnvb':[1,1,1.3], 'tanktest':[1,1,0]} # DNV  loads factors
+        :return:
+        '''
+        self._load_factors_dict['dnva'] = [self.new_conda_lff1.get(), self.new_conda_lff2.get(),
+                                           self.new_conda_lff3.get()]
+        self._load_factors_dict['dnvb'] = [self.new_condb_lff1.get(), self.new_condb_lff2.get(),
+                                           self.new_condb_lff3.get()]
+        self._load_factors_dict['tanktest'] = [self.new_condtt_lff1.get(), self.new_condtt_lff2.get(),
+                                           self.new_condtt_lff3.get()]
+        if __name__ == '__main__':
+            self._frame.destroy()
+            print({'returned lf dict': self._load_factors_dict,
+                                               'change exisiting': self.new_change_existing.get(),
+                                               'change default': self.new_change_default.get()})
+            return
 
-        print(self._load_factors_dict)
+        self._app.on_close_load_factor_window({'returned lf dict': self._load_factors_dict,
+                                               'change exisiting': self.new_change_existing.get(),
+                                               'change default': self.new_change_default.get()})
+        self._frame.destroy()
 if __name__ == '__main__':
     root = tk.Tk()
     my_app = CreateLoadFactorWindow(root,app=None)

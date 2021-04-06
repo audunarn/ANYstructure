@@ -1874,7 +1874,6 @@ class Application():
                     self._tank_dict = {}
                     self._main_grid.clear()
                     self._compartments_listbox.delete(0, 'end')
-
             else:
                 prev_type = self._line_to_struc[self._active_line][0].get_structure_type()
                 self._line_to_struc[self._active_line][0].set_main_properties(obj_dict)
@@ -1900,8 +1899,6 @@ class Application():
             obj[1].need_recalc = True
 
         state = self.get_color_and_calc_state()
-        # except AttributeError:
-        #     state = None
 
         self.draw_results(state=state)
         self.draw_canvas(state=state)
@@ -3165,12 +3162,24 @@ class Application():
 
     def on_close_load_factor_window(self, returned_load_factors):
         '''
-
+        self._load_factors_dict = {'dnva':[1.3,1.2,0.7], 'dnvb':[1,1,1.3], 'tanktest':[1,1,0]} # DNV  loads factors
+        self._new_load_comb_dict = {(dnv cond, line, load type) : (stat lf, dyn lf, include)}
         :param returned_load_factors: list [stat lf, dyn lf]
         :return:
         '''
 
-        print(self._load_factors_dict)
+
+        self._load_factors_dict = returned_load_factors['returned lf dict']
+
+        for name, data in self._new_load_comb_dict.items():
+            if name[0] == 'manual':
+                continue
+            if data[0].get() != 0:
+                data[0].set(self._load_factors_dict[name[0]][1])
+            if data[1].get() != 0:
+                data[1].set(self._load_factors_dict[name[0]][2])
+
+
 
     def close_main_window(self):
         '''
