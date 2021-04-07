@@ -56,28 +56,33 @@ def one_load_combination(line_name_obj, coord, defined_loads, load_condition,
         return [None, ' ']
 
 def helper_dnva_dnvb(line_name_obj, coord, defined_loads, load_condition,
-                         defined_tanks, comb_name, acc, load_factors_all, print_to_file = False):
+                         defined_tanks, comb_name, acc, load_factors_all):
 
     # calculate the defined loads
-    calc_load, load_print = [], ['',]
+    calc_load, load_print, prt_conditions = [], ['',], []
     line_name = line_name_obj[0]
     structure_type = line_name_obj[1].get_structure_type()
     if print_it:
         #load_print.append('Load calculation for '+line_name_obj[0] + ' ' + comb_name+ ' ' + load_condition)
         pass
-    static_pressure,dynamic_pressure = 0,0
+
+    # if print_line != None and line_name == print_line:
+    #     print('Load calculation for '+line_name_obj[0] + ' ' + comb_name+ ' ' + load_condition)
 
     if len(defined_loads) !=  0:
         for load in defined_loads :
+            if comb_name+load_condition not in prt_conditions:
+                load_print.append("Loads for condition: " + load_condition + ' - ' + comb_name +' ' + '\n')
+                prt_conditions.append(comb_name+load_condition)
             if load != None:
 
                 load_factors = load_factors_all[(comb_name, line_name, load.get_name())]
-                if print_it:
-                    if load_factors[0].get() != 0:
-                        load_print.append('LOAD NAME: '+' '+ comb_name+ ' '+ line_name+' '+ load.get_name()+'\n')
-                if load_factors[1].get() != 0:
-                    if load_factors[0].get() != 0:
-                        load_print.append('LOAD NAME: '+' '+ comb_name+ ' '+ line_name+' '+ load.get_name()+'\n')
+                # if print_it:
+                #     if load_factors[0].get() != 0:
+                #         load_print.append('LOAD NAME: '+' '+ comb_name+ ' '+ line_name+' '+ load.get_name()+'\n')
+                # if load_factors[1].get() != 0:
+                #     if load_factors[0].get() != 0:
+                #         load_print.append('LOAD NAME: '+' '+ comb_name+ ' '+ line_name+' '+ load.get_name()+'\n')
                 # USE GET() (static,dyn, on/off)
                 if load_condition == load.get_load_condition():
                     static_pressure = (load_factors[2].get())*(load_factors[0].get())\
@@ -99,13 +104,16 @@ def helper_dnva_dnvb(line_name_obj, coord, defined_loads, load_condition,
                                  str(load_factors[1].get())+'*'+\
                                  str(round(load.get_calculated_pressure(coord, acc[1],structure_type),1))+ ' = '+ \
                                  str(round(dynamic_pressure,1))+'\n')
+
                     calc_load.append(static_pressure+dynamic_pressure)
 
     # calculate the tank loads
 
     if len(defined_tanks) != 0:
         temp_tank = {}
-
+        if comb_name + load_condition not in prt_conditions:
+            load_print.append("Loads for condition: " + load_condition + ' - ' + comb_name + ' ' + '\n')
+            prt_conditions.append(comb_name + load_condition)
         for tank_name_obj in defined_tanks:
             temp_tank[tank_name_obj[0]] = 0
 
@@ -122,7 +130,8 @@ def helper_dnva_dnvb(line_name_obj, coord, defined_loads, load_condition,
                                    +tank_name_obj[1].get_overpressure()*overpress_lf[1]
 
                 temp_tank[tank_name_obj[0]] = static_pressure + dynamic_pressure# .append((static_pressure + dynamic_pressure))
-                if print_it:
+                if print_it and tank_name_obj[0]+load_condition not in prt_conditions:
+                    prt_conditions.append(tank_name_obj[0]+load_condition)
                     #load_print.append('load (TANK) calculation for load condition:'+ load_condition+ ' - Tank is: '+ tank_name_obj[0]+'\n')
                     #load_print.append('load factors : '+ str(load_factors[0].get())+str(load_factors[1].get())+str(load_factors[2].get())+'\n')
                     load_print.append('\n' + tank_name_obj[0] + ' - static: '+ str(load_factors[2].get())+ '*'+ str(load_factors[0].get()) + '*'+\
@@ -135,14 +144,19 @@ def helper_dnva_dnvb(line_name_obj, coord, defined_loads, load_condition,
 
         if len(defined_loads) == 0:
             line_tank_pressure_calc = max([pressure for pressure in temp_tank.values()])
+
+            #print('line_tank_pressure_calc', line_tank_pressure_calc)
             highest_dnv_tank_pressure  = tank_name_obj[1].get_tank_dnv_minimum_pressure(load_factors[0].get(),
                                                                                         load_factors[1].get())
+            #print('highest_dnv_tank_pressure', highest_dnv_tank_pressure)
             line_dnv_tank_pressure = tank_name_obj[1].get_line_pressure_from_max_pressure(highest_dnv_tank_pressure,
                                                                                           coord)
+            #print('line_dnv_tank_pressure', line_dnv_tank_pressure)
             # if line_name_obj[0] == 'line29':
             #     print('Tank load to append is max( ',highest_tank_pressure_calc,highest_dnv_tank_pressure,')')
             highest_tank_pressure = max(line_tank_pressure_calc,line_dnv_tank_pressure)
             calc_load.append(-highest_tank_pressure if highest_tank_pressure else 0)
+            load_print.append('\nDNVGL-OS-C101 4.3.7 and 4.3.8 (Tank pressures) = '+ str(highest_tank_pressure)+'\n')
         else:
             pass
     if print_it:

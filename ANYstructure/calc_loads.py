@@ -65,10 +65,9 @@ class Loads():
 
         if self.load_condition == 'slamming':
             psl = self.__calculate_poly_value(0)
+            return max(press, psl)
         else:
-            psl = 0
-
-        return max(press, psl)
+            return press
 
     def __calculate_poly_value(self, variable):
         '''
