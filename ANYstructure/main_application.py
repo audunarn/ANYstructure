@@ -3252,7 +3252,7 @@ class Application():
                                                          '\n'
                                                          '\n'
                                                          'By Audun Arnesen Nyhus \n'
-                                                         '2020\n\n'
+                                                         '2021\n\n'
                                                          'All technical calculation based on:'
                                                          '- DNVGL-OS-C101'
                                                          '- Supporting DNVGL RPs and standards')
