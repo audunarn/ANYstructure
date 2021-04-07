@@ -219,7 +219,7 @@ class CreateLoadWindow():
         # --- delete a created load ---
         tk.Button(self._frame, text="Delete selected load",command=self.delete_load,
                   font='Verdana 9 bold', fg='yellow', bg = 'red' )\
-            .place(x=270, y=start_y + 1.5 * delta_y)
+            .place(x=10, y=start_y + 12 * delta_y)
 
         # --- updating the imported loads from main window ---
         if len(self._load_objects) > 0:
@@ -459,9 +459,10 @@ class CreateLoadWindow():
 
         current_load = self._new_assisiate_load.get()
         if current_load != '':
+            self._load_objects[current_load][1] = []
             for line in self._active_lines:
-                if line not in self._load_objects[current_load][1]:
-                    self._load_objects[current_load][1].append(line)
+                #if line not in self._load_objects[current_load][1]:
+                self._load_objects[current_load][1].append(line)
         else:
             mess = tk.messagebox.showwarning('Select load',message='Select a load to apply to the selected lines.',
                                              type='ok')

@@ -655,7 +655,7 @@ class Application():
         self._ent_density = tk.Entry(self._main_fr, textvariable = self._new_density,
                                     width = int(ent_width * self._global_shrink),
                                      bg = self._entry_color, fg = self._entry_text_color)
-        self._new_density.set(1025)
+        self._new_density.set(0)
         self._new_max_el = tk.DoubleVar()
         self._ent_max_el = tk.Entry(self._main_fr, textvariable=self._new_max_el,
                                    width=int(ent_width * self._global_shrink),
