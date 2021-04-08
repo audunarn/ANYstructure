@@ -306,10 +306,10 @@ class Grid:
         :param point:
         :return:
         '''
-        return tuple(set([int(self.get_value(neighbor[0], neighbor[1]))
-                          for neighbor in self.four_neighbors_extend_1(cell[0], cell[1])]))
         # return tuple(set([int(self.get_value(neighbor[0], neighbor[1]))
-        #                   for neighbor in self.four_neighbors(cell[0], cell[1])]))
+        #                   for neighbor in self.four_neighbors_extend_1(cell[0], cell[1])]))
+        return tuple(set([int(self.get_value(neighbor[0], neighbor[1]))
+                          for neighbor in self.four_neighbors(cell[0], cell[1])]))
 
     def get_adjacent_values_duplicates(self,cell):
         '''
@@ -318,10 +318,10 @@ class Grid:
         :return:
         '''
 
-        # return_tuple = tuple(list([int(self.get_value(neighbor[0], neighbor[1]))
-        #                            for neighbor in self.four_neighbors(cell[0], cell[1])]))
         return_tuple = tuple(list([int(self.get_value(neighbor[0], neighbor[1]))
-                                   for neighbor in self.four_neighbors_extend_1(cell[0], cell[1])]))
+                                   for neighbor in self.four_neighbors(cell[0], cell[1])]))
+        # return_tuple = tuple(list([int(self.get_value(neighbor[0], neighbor[1]))
+        #                            for neighbor in self.four_neighbors_extend_1(cell[0], cell[1])]))
 
         len(tuple(set(return_tuple)))
 
