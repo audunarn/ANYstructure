@@ -1,1 +1,3 @@
-C:\Python\Python391_64\Scripts\pyinstaller "C://GitHub/ANYstructure/__main__.py" -y -i "C:/GitHub/ANYstructure/ANYstructure/ANYicon.ico" --add-data "C:/GitHub/ANYstructure/ANYstructure/ANYstructure_documentation.pdf";"." --add-data "C:/GitHub/ANYstructure/ANYstructure/sections.csv";"." --add-data "C:/GitHub/ANYstructure/ANYstructure/ship_section_example.txt";"." --add-data "C:/GitHub/ANYstructure/ANYstructure/images";"images/" -n ANYstructure --noconsole
+C:\Python\Python391_64\Scripts\pyinstaller "C://GitHub/ANYstructure/__main__.py" -y -i "C:/GitHub/ANYstructure/ANYstructure/ANYicon.ico" --add-data "C:/GitHub/ANYstructure/ANYstructure/ANYstructure_documentation.
+pdf";"." --add-data "C:/GitHub/ANYstructure/ANYstructure/sections.csv";"." --add-data "C:/GitHub/ANYstructure/ANYstructure/ship_section_example.txt";"." --add-data "C:/GitHub/ANYstructure/ANYstructure/images";"images/"
+--add-data "C:/GitHub/ANYstructure/matplotlibrc";"." --noconsole -n ANYstructure
