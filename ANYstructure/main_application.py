@@ -1921,10 +1921,10 @@ class Application():
 
 
         self._new_stucture_type_label.set(text)
+
     def tank_density_trace(self, event):
         ''' Setting tank densities '''
         self._new_density.set(self._tank_options[self._new_content_type.get()])
-
 
     def new_tank(self,comp_no,cells, min_el, max_el):
         '''

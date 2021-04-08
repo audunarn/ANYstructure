@@ -171,13 +171,13 @@ class Grid:
         """
         ans = []
         if row > 0:
-            ans.append((row - 4, col))
+            ans.append((row - 2, col))
         if row < self._grid_height - 1:
-            ans.append((row + 4, col))
+            ans.append((row + 2, col))
         if col > 0:
-            ans.append((row, col - 4))
+            ans.append((row, col - 2))
         if col < self._grid_width - 1:
-            ans.append((row, col + 4))
+            ans.append((row, col + 2))
         return ans
 
     def four_neighbors(self, row, col):
@@ -411,11 +411,10 @@ class Grid:
                     this_counter = 1
                 elif last:
                     save_row.append([this_number, this_counter+1])
-
             save_list.append(save_row)
 
         # Compressing vertically
-        this_counter, this_number, save_vertical = 1, save_list[0], list()
+        this_counter, this_number, save_vertical = 0, save_list[0], list()
         for row_idx in range(len(save_list) - 1):
             last = row_idx == len(save_list) - 2
             if save_list[row_idx] == save_list[row_idx +1] and not last:
@@ -425,7 +424,6 @@ class Grid:
                 this_number = save_list[row_idx +1]
                 this_counter = 1
             elif last:
-
                 save_vertical.append([this_number, this_counter])
                 if save_list[row_idx+1] != save_list[row_idx]:
                     save_vertical.append([save_list[row_idx+1], 1])
