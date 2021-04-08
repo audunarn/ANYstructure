@@ -31,6 +31,12 @@ class Structure():
         self.km2 = main_dict['stf_km2'][0]
         self.km3 = main_dict['stf_km3'][0]
         self.stiffener_type=main_dict['stf_type'][0]
+        self.structure_types = main_dict['structure_types'][0]
+        self.dynamic_variable_orientation = None
+        if self.structure_type in self.structure_types['vertical']:
+            self.dynamic_variable_orientation = 'z - vertical'
+        elif self.structure_type in self.structure_types['horizontal']:
+            self.dynamic_variable_orientation = 'x - horizontal'
 
         self.sigma_y = self.sigma_y2 + (self.sigma_y1-self.sigma_y2)\
                                        *(min(0.25*self.span,0.5*self.spacing)/self.span)
@@ -59,6 +65,7 @@ class Structure():
             '\n Stiffener flange thickness:    ' + str(self.flange_th*1000)+' mm'+
             '\n Material yield:                ' + str(self.mat_yield/1e6)+' MPa'+
             '\n Structure type/stiffener type: ' + str(self.structure_type)+'/'+(self.stiffener_type)+
+            '\n Dynamic load varible_          ' + str(self.dynamic_variable_orientation)+
             '\n Plate fixation paramter,kpp:   ' + str(self.plate_kpp) + ' ' +
             '\n Stf. fixation paramter,kps:    ' + str(self.stf_kps) + ' ' +
             '\n Global stress, sig_y1/sig_y2:  ' + str(round(self.sigma_y1,1))+'/'+str(round(self.sigma_y2,1))+ ' MPa' +

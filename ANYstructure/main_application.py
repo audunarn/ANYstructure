@@ -1858,7 +1858,8 @@ class Application():
                         'stf_km1': [self._new_stf_km1.get(), ''],
                         'stf_km2': [self._new_stf_km2.get(), ''],
                         'stf_km3': [self._new_stf_km3.get(), ''],
-                        'press_side': [self._new_pressure_side.get(), '']}
+                        'press_side': [self._new_pressure_side.get(), ''],
+                        'structure_types':[self._structure_types, '']}
 
             if self._active_line not in self._line_to_struc.keys():
                 self._line_to_struc[self._active_line] = [None, None, None, [None], {}]
@@ -2751,6 +2752,7 @@ class Application():
                 self.make_point_point_line_string(self._line_dict[line][0], self._line_dict[line][1])[0])
             self._line_point_to_point_string.append(
                 self.make_point_point_line_string(self._line_dict[line][0], self._line_dict[line][1])[1])
+            lines_prop['structure_types'] = [self._structure_types, ' ']
             self._line_to_struc[line][0] = Structure(lines_prop)
             self._line_to_struc[line][1] = CalcScantlings(lines_prop)
             if imported['fatigue_properties'][line] is not None:
