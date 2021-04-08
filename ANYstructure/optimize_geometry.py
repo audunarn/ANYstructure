@@ -54,6 +54,10 @@ class CreateOptGeoWindow():
         self._frame.geometry('1800x950')
         self._frame.grab_set()
         self._canvas_origo = (50, 720 - 50)
+        
+        self._canvas_base_origo = self._canvas_origo
+        self._canvas_draw_origo = list(self._canvas_base_origo)
+        self._previous_drag_mouse = list(self._canvas_draw_origo)
 
         self._active_lines = []
         self._add_to_lines = True
@@ -974,12 +978,12 @@ class CreateOptGeoWindow():
         if opt_results is None:
             # stippled lines and text.
 
-            self._canvas_select.create_line(self._canvas_origo[0], 0, self._canvas_origo[0], self._select_canvas_dim[1],
+            self._canvas_select.create_line(self._canvas_draw_origo[0], 0, self._canvas_draw_origo[0], self._select_canvas_dim[1],
                                             stipple='gray50')
-            self._canvas_select.create_line(0, self._canvas_origo[1], self._select_canvas_dim[0], self._canvas_origo[1],
+            self._canvas_select.create_line(0, self._canvas_draw_origo[1], self._select_canvas_dim[0], self._canvas_draw_origo[1],
                                             stipple='gray50')
-            self._canvas_select.create_text(self._canvas_origo[0] - 30,
-                                            self._canvas_origo[1] + 20, text='(0,0)',
+            self._canvas_select.create_text(self._canvas_draw_origo[0] - 30,
+                                            self._canvas_draw_origo[1] + 20, text='(0,0)',
                                             font='Text 10')
             self._canvas_select.create_text([700, 50],
                                             text='How to:\n'
@@ -1287,8 +1291,8 @@ class CreateOptGeoWindow():
         :param point_no:
         :return:
         '''
-        point_coord_x = self._canvas_origo[0] + self._point_dict[point_no][0] * self._canvas_scale
-        point_coord_y = self._canvas_origo[1] - self._point_dict[point_no][1] * self._canvas_scale
+        point_coord_x = self._canvas_draw_origo[0] + self._point_dict[point_no][0]* self._canvas_scale
+        point_coord_y = self._canvas_draw_origo[1] - self._point_dict[point_no][1]* self._canvas_scale
 
         return [point_coord_x, point_coord_y]
 
@@ -1298,8 +1302,8 @@ class CreateOptGeoWindow():
         :param point_no:
         :return:
         '''
-        point_coord_x = self._canvas_origo[0] + coord[0] * self._canvas_scale
-        point_coord_y = self._canvas_origo[1] - coord[1] * self._canvas_scale
+        point_coord_x = self._canvas_draw_origo[0] + coord[0] * self._canvas_scale
+        point_coord_y = self._canvas_draw_origo[1] - coord[1] * self._canvas_scale
 
         return [point_coord_x, point_coord_y]
 
@@ -1316,6 +1320,9 @@ class CreateOptGeoWindow():
         self._frame.bind('<Shift_R>', self.shift_pressed)
         self._frame.bind('<Control_L>', self.ctrl_pressed)
         self._frame.bind('<Control_R>', self.ctrl_pressed)
+
+        self._frame.bind("<MouseWheel>", self.mouse_scroll)
+        self._frame.bind("<B2-Motion>", self.button_2_click_and_drag)
 
     def shift_pressed(self, event=None):
         '''
@@ -1337,6 +1344,7 @@ class CreateOptGeoWindow():
         When clicking the right button, this method is called.
         method is referenced in
         '''
+        self._previous_drag_mouse = [event.x, event.y]
         if type(self._geo_results) is not list():
             if self._geo_results is not None:
                 return
@@ -1369,6 +1377,7 @@ class CreateOptGeoWindow():
         :param evnet:
         :return:
         '''
+        self._previous_drag_mouse = [event.x, event.y]
         self._active_lines = []
         self._active_points = []
         self.draw_select_canvas()
@@ -1379,6 +1388,7 @@ class CreateOptGeoWindow():
         :param evnet:
         :return:
         '''
+        self._previous_drag_mouse = [event.x, event.y]
         click_x = self._canvas_select.winfo_pointerx() - self._canvas_select.winfo_rootx()
         click_y = self._canvas_select.winfo_pointery() - self._canvas_select.winfo_rooty()
 
@@ -1495,6 +1505,20 @@ class CreateOptGeoWindow():
             to_add = tuple([val for val in range(len(self._geo_results[int(self._new_option_fraction.get()/2)][1]))])
             self._ent_option_field = tk.OptionMenu(self._frame, self._new_option_panel, *to_add)
             self._ent_option_field.place(x=self._options_panels_place[0], y=self._options_panels_place[1])
+
+    def mouse_scroll(self,event):
+        self._canvas_scale +=  event.delta/50
+        self._canvas_scale = 0 if self._canvas_scale < 0 else self._canvas_scale
+
+        self.draw_select_canvas()
+
+    def button_2_click_and_drag(self,event):
+
+        self._canvas_draw_origo = (self._canvas_draw_origo[0]-(self._previous_drag_mouse[0]-event.x),
+                                  self._canvas_draw_origo[1]-(self._previous_drag_mouse[1]-event.y))
+
+        self._previous_drag_mouse = (event.x,event.y)
+        self.draw_select_canvas()
 
 if __name__ == '__main__':
     root = tk.Tk()

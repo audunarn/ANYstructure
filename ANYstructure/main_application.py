@@ -3248,7 +3248,7 @@ class Application():
         Open a about messagebox.
         :return:
         '''
-        messagebox.showinfo(title='Information', message='ANYstructure 1.x (Stable/Production)'
+        messagebox.showinfo(title='Information', message='ANYstructure 2.x (Stable/Production)'
                                                          '\n'
                                                          '\n'
                                                          'By Audun Arnesen Nyhus \n'

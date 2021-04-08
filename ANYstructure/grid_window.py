@@ -82,7 +82,8 @@ class CreateGridWindow():
             ax.tick_params(labelsize=8)
             fig.subplots_adjust(left=0.05, right=0.90, top=0.95, bottom=0.05)
             # get discrete colormap
-            cmap = plt.get_cmap('Accent_r', np.int(np.max(data)) - np.int(np.min(data)) + 1)
+            #cmap = plt.get_cmap('Accent_r', np.int(np.max(data)) - np.int(np.min(data)) + 1)
+            cmap = plt.get_cmap('jet', np.int(np.max(data)) - np.int(np.min(data)) + 1)
             # set limits .5 outside true range
             cax = ax.matshow(data, cmap=cmap, vmin=np.min(data) - .5, vmax=np.max(data) + .5)
             # tell the colorbar to tick at integers
