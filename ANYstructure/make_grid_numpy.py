@@ -165,6 +165,21 @@ class Grid:
         return [self.get_value(item[0],item[1]) for item in
                 self.eight_neighbors(point[0],point[1])].count(self.barrier) > 4
 
+    def four_neighbors_extend_1(self, row, col):
+        """
+        Returns horiz/vert neighbors of cell (row, col)
+        """
+        ans = []
+        if row > 0:
+            ans.append((row - 4, col))
+        if row < self._grid_height - 1:
+            ans.append((row + 4, col))
+        if col > 0:
+            ans.append((row, col - 4))
+        if col < self._grid_width - 1:
+            ans.append((row, col + 4))
+        return ans
+
     def four_neighbors(self, row, col):
         """
         Returns horiz/vert neighbors of cell (row, col)
@@ -291,9 +306,10 @@ class Grid:
         :param point:
         :return:
         '''
-
         return tuple(set([int(self.get_value(neighbor[0], neighbor[1]))
-                          for neighbor in self.four_neighbors(cell[0], cell[1])]))
+                          for neighbor in self.four_neighbors_extend_1(cell[0], cell[1])]))
+        # return tuple(set([int(self.get_value(neighbor[0], neighbor[1]))
+        #                   for neighbor in self.four_neighbors(cell[0], cell[1])]))
 
     def get_adjacent_values_duplicates(self,cell):
         '''
@@ -302,8 +318,10 @@ class Grid:
         :return:
         '''
 
+        # return_tuple = tuple(list([int(self.get_value(neighbor[0], neighbor[1]))
+        #                            for neighbor in self.four_neighbors(cell[0], cell[1])]))
         return_tuple = tuple(list([int(self.get_value(neighbor[0], neighbor[1]))
-                                   for neighbor in self.four_neighbors(cell[0], cell[1])]))
+                                   for neighbor in self.four_neighbors_extend_1(cell[0], cell[1])]))
 
         len(tuple(set(return_tuple)))
 
@@ -379,7 +397,7 @@ class Grid:
         :return:
         '''
         save_list = list()
-        print()
+
         # Compressing horizontally
         for row in self._cells:
             this_counter, this_number, save_row = 1, row[0], list()
@@ -407,7 +425,7 @@ class Grid:
                 this_number = save_list[row_idx +1]
                 this_counter = 1
             elif last:
-                print('To last')
+
                 save_vertical.append([this_number, this_counter])
                 if save_list[row_idx+1] != save_list[row_idx]:
                     save_vertical.append([save_list[row_idx+1], 1])
@@ -418,7 +436,7 @@ class Grid:
                 #                                             +str(save_vertical) + ' and the shape is ' + \
                 #                                             str(self.cells.shape)
 
-        print('Grid to save', save_vertical)
+
         return save_vertical
 
     def rebuild_compressed(self, compressed_grid = None):
