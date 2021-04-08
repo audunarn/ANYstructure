@@ -527,6 +527,7 @@ class CreateLoadWindow():
         :return:
         '''
         self._main_canvas.bind('<Button-1>', self.left_click)
+        self._main_canvas.bind('<Button-2>', self.button_2_click)
         self._main_canvas.bind('<Button-3>', self.right_click)
         self._load_obj_box.bind('<Button-1>', self.left_click_load_box)
         self._frame.bind('<Shift_L>', self.shift_pressed)
@@ -551,12 +552,20 @@ class CreateLoadWindow():
         '''
         self._add_to_lines = False
 
+    def button_2_click(self, event):
+        '''
+        Event when right click.
+        :param evnet:
+        :return:
+        '''
+        self._previous_drag_mouse = [event.x, event.y]
+
     def left_click(self, event):
         '''
         When clicking the right button, this method is called.
         method is referenced in
         '''
-
+        self._previous_drag_mouse = [event.x, event.y]
         click_x = self._main_canvas.winfo_pointerx() - self._main_canvas.winfo_rootx()
         click_y = self._main_canvas.winfo_pointery() - self._main_canvas.winfo_rooty()
         stop = False
@@ -596,6 +605,7 @@ class CreateLoadWindow():
         :param evnet:
         :return:
         '''
+        self._previous_drag_mouse = [event.x, event.y]
         self._active_lines = []
         self._main_canvas.delete('all')
         self.draw_canvas()

@@ -48,6 +48,9 @@ class CreateOptimizeMultipleWindow():
         self._frame.grab_set()
         self._canvas_origo = (50, 720 - 50)
 
+        self._canvas_base_origo = self._canvas_origo
+        self._canvas_draw_origo = list(self._canvas_base_origo)
+        self._previous_drag_mouse = list(self._canvas_draw_origo)
 
         self._active_lines = []
         self._add_to_lines = True
@@ -293,6 +296,7 @@ class CreateOptimizeMultipleWindow():
         self._new_check_fatigue = tk.BooleanVar()
         self._new_check_slamming = tk.BooleanVar()
         self._new_check_local_buckling = tk.BooleanVar()
+        self._new_harmonizer = tk.BooleanVar()
         self._new_check_sec_mod.set(True)
         self._new_check_min_pl_thk.set(True)
         self._new_check_shear_area.set(True)
@@ -300,6 +304,8 @@ class CreateOptimizeMultipleWindow():
         self._new_check_fatigue.set(True)
         self._new_check_slamming.set(False)
         self._new_check_local_buckling.set(True)
+        self._new_harmonizer.set(False)
+
 
         start_y, start_x, dy = 530, 200, 35
         tk.Label(self._frame,text='Check for minimum section modulus').place(x=start_x+dx*9.7,y=start_y+4*dy)
@@ -309,6 +315,8 @@ class CreateOptimizeMultipleWindow():
         tk.Label(self._frame, text='Check for fatigue (RP-C203)').place(x=start_x + dx * 9.7, y=start_y + 8 * dy)
         tk.Label(self._frame, text='Check for bow slamming').place(x=start_x + dx * 9.7, y=start_y + 9 * dy)
         tk.Label(self._frame, text='Check for local stf. buckling').place(x=start_x + dx * 9.7, y=start_y + 10 * dy)
+        tk.Label(self._frame, text='Check to harmonize results (same stiffener dimensions).').place(x=start_x + dx * +9.5,
+                                                                                                    y=start_y - 10 * dy)
 
         tk.Checkbutton(self._frame,variable=self._new_check_sec_mod).place(x=start_x+dx*12,y=start_y+4*dy)
         tk.Checkbutton(self._frame, variable=self._new_check_min_pl_thk).place(x=start_x+dx*12,y=start_y+5*dy)
@@ -318,10 +326,16 @@ class CreateOptimizeMultipleWindow():
         tk.Checkbutton(self._frame, variable=self._new_check_slamming).place(x=start_x + dx * 12, y=start_y + 9 * dy)
         tk.Checkbutton(self._frame, variable=self._new_check_local_buckling).place(x=start_x + dx * 12,
                                                                                    y=start_y + 10 * dy)
+        tk.Checkbutton(self._frame, variable=self._new_harmonizer).place(x=start_x + dx * 9, y=start_y - 10 * dy)
+
         self._toggle_btn = tk.Button(self._frame, text="Iterate predefiened stiffeners", relief="raised",
                                      command=self.toggle, bg = 'salmon')
+
         self._toggle_btn.place(x=start_x+dx*8.2, y=start_y - dy * 13)
         self._toggle_object, self._filez = None, None
+
+
+
         self.draw_properties()
 
         # ----------------------------------END OF OPTIMIZE SINGLE COPY-----------------------------------------------
@@ -492,9 +506,32 @@ class CreateOptimizeMultipleWindow():
                                                          + str(time.time() - t_start) + ' sec')
             else:
                 pass
+
+        if self._new_harmonizer.get() == True:
+            self.opt_harmonizer()
+
         counter += 1
         self.progress_bar.stop()
         self.run_button.config(bg='green')
+
+    def opt_harmonizer(self):
+        '''
+        Harmonizes the results of you run.
+        :return:
+        '''
+
+        # Find highest section modulus.
+        highest, lines = 0, []
+        for line in self._opt_results.keys():
+            lines.append(line)
+            if min(self._opt_results[line][0].get_section_modulus()) > highest:
+                highest = min(self._opt_results[line][0].get_section_modulus())
+                highest_line = line
+        harminized_value = self._opt_results[highest_line]
+
+        for line in lines:
+            print(line)
+            self._opt_results[line] = harminized_value
 
     def get_running_time(self):
         '''
@@ -701,19 +738,21 @@ class CreateOptimizeMultipleWindow():
 
         # grid for the canavs
 
-        self._canvas_select.create_line(self._canvas_origo[0], 0, self._canvas_origo[0], self._select_canvas_dim[1],
+        self._canvas_select.create_line(self._canvas_draw_origo[0], 0, self._canvas_draw_origo[0], self._select_canvas_dim[1],
                                      stipple='gray50')
-        self._canvas_select.create_line(0, self._canvas_origo[1], self._select_canvas_dim[0], self._canvas_origo[1],
+        self._canvas_select.create_line(0, self._canvas_draw_origo[1], self._select_canvas_dim[0], self._canvas_draw_origo[1],
                                      stipple='gray50')
-        self._canvas_select.create_text(self._canvas_origo[0] - 30 ,
-                                     self._canvas_origo[1] + 20 , text='(0,0)',
+        self._canvas_select.create_text(self._canvas_draw_origo[0] - 30 ,
+                                     self._canvas_draw_origo[1] + 20 , text='(0,0)',
                                      font='Text 10')
-        self._canvas_select.create_text([800 ,50],
+        self._canvas_select.create_text([800 ,60],
                                      text='Mouse left click:  select lines to loads\n'
                                           'Mouse mid click: show properties for one line\n'
                                           'Mouse right click: clear all selection\n'
                                           'Shift key press: add selected line\n'
-                                          'Control key press: remove selected line', font='Verdana 8 bold',
+                                          'Control key press: remove selected line\n\n'
+                                          'NOTE! Select lines you want to return before\n'
+                                          'pressing return button.', font='Verdana 8 bold',
                                      fill='red')
         # drawing the line dictionary.
         if len(self._line_dict) != 0:
@@ -725,11 +764,14 @@ class CreateOptimizeMultipleWindow():
                 vector = [coord2[0] - coord1[0], coord2[1] - coord1[1]]
                 # drawing a bold line if it is selected
                 if line in self._active_lines:
+
                     self._canvas_select.create_line(coord1, coord2, width=6, fill=color)
                     self._canvas_select.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 + 10,
                                                  text='Line ' + str(get_num(line)), font='Verdand 10 bold',
                                                  fill='red')
                 else:
+                    if line in self._opt_results.keys():
+                        color = 'red'
                     self._canvas_select.create_line(coord1, coord2, width=3, fill=color)
                     self._canvas_select.create_text(coord1[0] - 20 + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 + 10,
                                                  text='line' + str(get_num(line)), font="Text 8", fill='black')
@@ -803,8 +845,8 @@ class CreateOptimizeMultipleWindow():
         :param point_no: 
         :return: 
         '''
-        point_coord_x = self._canvas_origo[0] + self._point_dict[point_no][0]* self._canvas_scale
-        point_coord_y = self._canvas_origo[1] - self._point_dict[point_no][1]* self._canvas_scale
+        point_coord_x = self._canvas_draw_origo[0] + self._point_dict[point_no][0]* self._canvas_scale
+        point_coord_y = self._canvas_draw_origo[1] - self._point_dict[point_no][1]* self._canvas_scale
 
         return [point_coord_x, point_coord_y]
 
@@ -821,6 +863,8 @@ class CreateOptimizeMultipleWindow():
         self._frame.bind('<Shift_R>', self.shift_pressed)
         self._frame.bind('<Control_L>', self.ctrl_pressed)
         self._frame.bind('<Control_R>', self.ctrl_pressed)
+        self._frame.bind("<MouseWheel>", self.mouse_scroll)
+        self._frame.bind("<B2-Motion>", self.button_2_click_and_drag)
 
     def shift_pressed(self,event=None):
         '''
@@ -842,7 +886,7 @@ class CreateOptimizeMultipleWindow():
         When clicking the right button, this method is called.
         method is referenced in
         '''
-
+        self._previous_drag_mouse = [event.x, event.y]
         click_x = self._canvas_select.winfo_pointerx() - self._canvas_select.winfo_rootx()
         click_y = self._canvas_select.winfo_pointery() - self._canvas_select.winfo_rooty()
         stop = False
@@ -884,6 +928,7 @@ class CreateOptimizeMultipleWindow():
         :param evnet:
         :return:
         '''
+        self._previous_drag_mouse = [event.x, event.y]
         self._active_lines = []
         self._canvas_select.delete('all')
         self.draw_select_canvas()
@@ -895,6 +940,7 @@ class CreateOptimizeMultipleWindow():
         :param evnet:
         :return:
         '''
+        self._previous_drag_mouse = [event.x, event.y]
         click_x = self._canvas_select.winfo_pointerx() - self._canvas_select.winfo_rootx()
         click_y = self._canvas_select.winfo_pointery() - self._canvas_select.winfo_rooty()
 
@@ -987,11 +1033,27 @@ class CreateOptimizeMultipleWindow():
 
         return found_files, predefined_structure
 
+    def toggle_harmonizer(self):
+        pass
+
     def plot_results(self):
         if self._mid_click_line is not None:
             if len(self._opt_results[self._mid_click_line]) != 0:
                 op.plot_optimization_results(self._opt_results[self._mid_click_line])
 
+    def mouse_scroll(self,event):
+        self._canvas_scale +=  event.delta/50
+        self._canvas_scale = 0 if self._canvas_scale < 0 else self._canvas_scale
+
+        self.draw_select_canvas()
+
+    def button_2_click_and_drag(self,event):
+
+        self._canvas_draw_origo = (self._canvas_draw_origo[0]-(self._previous_drag_mouse[0]-event.x),
+                                  self._canvas_draw_origo[1]-(self._previous_drag_mouse[1]-event.y))
+
+        self._previous_drag_mouse = (event.x,event.y)
+        self.draw_select_canvas()
 
     def open_example_file(self):
         import os
