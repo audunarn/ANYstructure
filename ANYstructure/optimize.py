@@ -47,7 +47,7 @@ def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lat
         fat_dict = None if fatigue_obj is None else fatigue_obj.get_fatigue_properties()
 
     if use_weight_filter:
-        if is_geometric or algorithm is 'pso':
+        if is_geometric or algorithm == 'pso':
 
             init_filter_weight = float('inf')
         else:
@@ -408,14 +408,14 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                 min_var[0:6] += deltas/2
                 max_var[0:6] -= deltas/2
 
-            if algorithm is 'pso':
+            if algorithm == 'pso':
                 opt_objects = particle_search_geometric(min_var=min_var,max_var=max_var,deltas=deltas,
                                                         initial_structure_obj=working_objects[no_of_fractions],
                                                         lateral_pressure=working_lateral[no_of_fractions],
                                                         init_filter = init_filter,side=side,const_chk=const_chk,
                                                         pso_options=pso_options, fat_obj = fat_obj,
                                                         fat_press = fat_press)
-            elif algorithm is 'anysmart':
+            elif algorithm == 'anysmart':
                 if load_pre:
                     import pickle
                     with open('geo_opt_2.pickle', 'rb') as file:

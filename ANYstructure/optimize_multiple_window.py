@@ -271,8 +271,8 @@ class CreateOptimizeMultipleWindow():
                                                                                    y=start_y + 1 * dy)
         self._ent_algorithm.place(x=start_x + dx * 10, y=start_y + dy)
         self.algorithm_random_label = tk.Label(self._frame, text='Number of trials')
-        tk.Button(self._frame, text='algorith information', command=self.algorithm_info, bg='white') \
-            .place(x=start_x + dx * 10, y=start_y + dy * 2)
+        tk.Button(self._frame, text='algorithm information', command=self.algorithm_info, bg='white') \
+            .place(x=start_x + dx * 15, y=start_y + dy *-0.5)
         self.run_button = tk.Button(self._frame, text='RUN OPTIMIZATION!', command=self.run_optimizaion, bg='red',
                                     font='Verdana 10', fg='Yellow')
         self.run_button.place(x=start_x + dx * 8, y=start_y)
@@ -315,8 +315,9 @@ class CreateOptimizeMultipleWindow():
         tk.Label(self._frame, text='Check for fatigue (RP-C203)').place(x=start_x + dx * 9.7, y=start_y + 8 * dy)
         tk.Label(self._frame, text='Check for bow slamming').place(x=start_x + dx * 9.7, y=start_y + 9 * dy)
         tk.Label(self._frame, text='Check for local stf. buckling').place(x=start_x + dx * 9.7, y=start_y + 10 * dy)
-        tk.Label(self._frame, text='Check to harmonize results (same stiffener dimensions).').place(x=start_x + dx * +9.5,
-                                                                                                    y=start_y - 10 * dy)
+        tk.Label(self._frame, text='Check to harmonize results. Same stiffener and plate dimensions. \n'
+                                   '(defined by largest in opt).', font='Verdana 10 bold')\
+            .place(x=start_x + dx * +9.3, y=start_y - 10.5 * dy)
 
         tk.Checkbutton(self._frame,variable=self._new_check_sec_mod).place(x=start_x+dx*12,y=start_y+4*dy)
         tk.Checkbutton(self._frame, variable=self._new_check_min_pl_thk).place(x=start_x+dx*12,y=start_y+5*dy)
@@ -325,8 +326,8 @@ class CreateOptimizeMultipleWindow():
         tk.Checkbutton(self._frame, variable=self._new_check_fatigue).place(x=start_x + dx * 12, y=start_y + 8 * dy)
         tk.Checkbutton(self._frame, variable=self._new_check_slamming).place(x=start_x + dx * 12, y=start_y + 9 * dy)
         tk.Checkbutton(self._frame, variable=self._new_check_local_buckling).place(x=start_x + dx * 12,
-                                                                                   y=start_y + 10 * dy)
-        tk.Checkbutton(self._frame, variable=self._new_harmonizer).place(x=start_x + dx * 9, y=start_y - 10 * dy)
+                                                                                   y=start_y + 9.5 * dy)
+        tk.Checkbutton(self._frame, variable=self._new_harmonizer).place(x=start_x + dx * 9, y=start_y - 10.5 * dy)
 
         self._toggle_btn = tk.Button(self._frame, text="Iterate predefiened stiffeners", relief="raised",
                                      command=self.toggle, bg = 'salmon')
@@ -779,7 +780,7 @@ class CreateOptimizeMultipleWindow():
     def algorithm_info(self):
         ''' When button is clicked, info is displayed.'''
 
-        messagebox.showinfo(title='Algorith information',
+        messagebox.showinfo(title='Algorithm information',
                             message='The algorithms currently included is:\n'
                                     'ANYSMART:  \n'
                                     '           Calculates all alternatives using upper and lower bounds.\n'
