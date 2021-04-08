@@ -1102,7 +1102,7 @@ class Application():
             self._int_button.image = photo
         except TclError:
             pass
-        print(animate)
+
         if animate == False:
             self._grid_calc.draw_grid(tank_count=None if len(self._tank_dict)==0 else len(self._tank_dict))
         else:
@@ -1291,9 +1291,6 @@ class Application():
 
         self._main_canvas.delete('all')
 
-        # grid for the canavs
-        # print('***')
-        # print('drawing canvas')
 
         self._main_canvas.create_line(self._canvas_draw_origo[0], 0, self._canvas_draw_origo[0], self._canvas_dim[1],
                                      stipple='gray50')
@@ -1386,8 +1383,7 @@ class Application():
 
         '''
         self._prop_canvas.delete('all')
-        # print('***')
-        # print('drawing prop')
+
         if self._active_line in self._line_to_struc:
 
             # printing the properties to the active line
@@ -2035,8 +2031,7 @@ class Application():
         if self._line_to_struc[line_name][0].get_structure_type() in ['', 'FRAME','GENERAL_INTERNAL_NONWT']:
             return [0, '']
         else:
-            # if line_name == 'line158':
-            #     print(defined_tanks)
+
             return_value = one_load_combination(line_name_obj, coord, defined_loads, load_condition,
                                                 defined_tanks, comb_name, acc, load_factors_all)
 
@@ -2309,10 +2304,6 @@ class Application():
         end_point = self._point_dict['point' + str(self._line_dict[line][1])]
         mid_point = self._main_grid.get_mid_point(self.get_grid_coord_from_points_coords(start_point),
                                                  self.get_grid_coord_from_points_coords(end_point))
-        if line in ('line138', 'line158'):
-            print(line, start_point, mid_point, end_point)
-            print(self._main_grid.get_adjacent_values_duplicates(mid_point))
-            print(' ')
 
         return list(filter(lambda x: x > 1, self._main_grid.get_adjacent_values_duplicates(mid_point)))
 
@@ -3067,7 +3058,7 @@ class Application():
         :param returned_structure:
         :return:
         '''
-        #print(returned_objects)
+
         self._line_to_struc[self._active_line][0]=returned_objects[0]
         self._line_to_struc[self._active_line][1]=returned_objects[1]
         self._line_to_struc[self._active_line][1].need_recalc = True

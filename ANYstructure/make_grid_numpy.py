@@ -397,7 +397,7 @@ class Grid:
         :return:
         '''
         save_list = list()
-        print()
+
         # Compressing horizontally
         for row in self._cells:
             this_counter, this_number, save_row = 1, row[0], list()
@@ -425,7 +425,7 @@ class Grid:
                 this_number = save_list[row_idx +1]
                 this_counter = 1
             elif last:
-                print('To last')
+
                 save_vertical.append([this_number, this_counter])
                 if save_list[row_idx+1] != save_list[row_idx]:
                     save_vertical.append([save_list[row_idx+1], 1])
@@ -436,7 +436,7 @@ class Grid:
                 #                                             +str(save_vertical) + ' and the shape is ' + \
                 #                                             str(self.cells.shape)
 
-        print('Grid to save', save_vertical)
+
         return save_vertical
 
     def rebuild_compressed(self, compressed_grid = None):
