@@ -143,7 +143,7 @@ class Tanks():
         self.acc_static = tank_dict['acc']['static']
         self.acc_dyn_loaded = tank_dict['acc']['dyn_loaded']
         self.acc_dyn_ballast = tank_dict['acc']['dyn_ballast']
-        self.all_types = ['crude_oil', 'diesel', 'slop', 'ballast']
+        self.all_types = ['crude_oil', 'diesel', 'slop', 'fresh water', 'ballast']
 
     def __str__(self):
         '''
@@ -311,7 +311,7 @@ class Tanks():
         self.tank_options = ['crude_oil', 'diesel', 'slop', 'ballast']
         :return:
         '''
-        try: return self.content in self.all_types[0:3]
+        try: return self.content in self.all_types[0:4]
         except AttributeError: return False
 
     def is_ballast_condition(self):
@@ -319,7 +319,7 @@ class Tanks():
         Check to see if the tank shall be in cluded in loaded condition.
         :return:
         '''
-        try: return self.content == self.all_types[3]
+        try: return self.content == self.all_types[4]
         except AttributeError: return False
 
     def is_tank_test_condition(self):

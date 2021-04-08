@@ -118,7 +118,7 @@ class CreateLoadWindow():
         self._new_slamming_pressure_name.set('slamming')
 
         ent_w = 15
-        ent_dyn_load_name = tk.Entry(self._frame, textvariable=self._new_dynamic_load_name, width=ent_w)
+        ent_dyn_load_name = tk.Entry(self._frame, textvariable=self._new_dynamic_load_name, width=ent_w*2)
         ent_load_poly_third = tk.Entry(self._frame, textvariable=self._new_load_poly_third, width=ent_w)
         ent_load_poly_second = tk.Entry(self._frame, textvariable=self._new_load_poly_second, width=ent_w)
         ent_load_poly_first = tk.Entry(self._frame, textvariable=self._new_load_poly_first,width=ent_w)
@@ -193,11 +193,20 @@ class CreateLoadWindow():
                                        relief = 'groove', borderwidth=2)
         self._load_obj_box.place(x=10, y=start_y + 3 * delta_y)
         self._load_obj_box.bind('<<ListboxSelect>>', self.left_click_load_box)
+        loads_scrollbar = tk.Scrollbar(self._frame)
+        loads_scrollbar.config(command = self._load_obj_box.yview)
+        loads_scrollbar.place(x=140, y=start_y + 3 * delta_y)
+        self._load_obj_box.config(yscrollcommand=loads_scrollbar.set)
         tk.Label(self._frame, text = 'Select to see assosiated lines: ').place(x=10, y=start_y +  2*delta_y)
 
         # --- showing the lines applied to the load above ---
         self._load_obj_lines_box = tk.Listbox(self._frame, height = 15, selectmode = listbox_select, bg = 'azure',
                                              relief = 'groove', borderwidth=2)
+        lines_scrollbar = tk.Scrollbar(self._frame)
+        lines_scrollbar.config(command = self._load_obj_lines_box.yview)
+        lines_scrollbar.place(x=330, y=start_y+ 3 * delta_y)
+        self._load_obj_lines_box.config(yscrollcommand=lines_scrollbar.set)
+
         self._load_obj_lines_box.place(x=200, y=start_y+ 3 * delta_y)
         self._load_obj_lines_box.bind('<<ListboxSelect>>', self.left_click_load_box)
         tk.Label(self._frame, text = '-->',font="Verdana 8 bold").place(x=160, y= load_vert_start + 15 * delta_y )

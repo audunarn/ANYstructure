@@ -190,7 +190,7 @@ class Application():
         self._load_factors_dict = {'dnva':[1.3,1.2,0.7], 'dnvb':[1,1,1.3], 'tanktest':[1,1,0]} # DNV  loads factors
         self._accelerations_dict = {'static':9.81, 'dyn_loaded':0, 'dyn_ballast':0} # Vertical acclerations
         self._load_conditions = ['loaded','ballast','tanktest', 'part','slamming'] # Should not be modified. Load conditions.
-        self._tank_options = ['crude_oil', 'diesel', 'slop', 'ballast'] # Should not be modified.
+        self._tank_options = {'crude_oil': 900, 'diesel': 850 , 'slop': 1050, 'ballast': 1025, 'fresh water': 1000} # Should not be modified.
         self._default_stresses = {'BOTTOM':(100,100,50,5), 'BBS':(70,70,30,3), 'BBT':(80,80,30,3), 'HOPPER':(70,70,50,3),
                                  'SIDE_SHELL':(100,100,40,3),'INNER_SIDE':(80,80,40,5), 'FRAME':(70,70,60,10),
                                  'FRAME_WT':(70,70,60,10),'SSS':(100,100,50,20), 'MD':(70,70,40,3),
@@ -635,16 +635,17 @@ class Application():
 
 
         tk.Button(self._main_fr, text="Set compartment\n""properties.",command = self.update_tank,
-                                            font=self._text_size['Text 8 bold'],
-                  bg = self._button_bg_color, fg = self._button_fg_color)\
-            .place(x=ent_x+delta_x*3, y=load_vert_start + delta_y * 6)
+                                            font=self._text_size['Text 9 bold'],
+                  bg = self._button_bg_color, fg = self._button_fg_color, width = 15)\
+            .place(x=ent_x+delta_x*3, y=load_vert_start + delta_y * 6.5)
 
         tk.Button(self._main_fr, text="Delete all tanks", command=self.delete_all_tanks,
-                  font=self._text_size['Text 8 bold'],bg = self._button_bg_color, fg = self._button_fg_color)\
-            .place(x=ent_x+delta_x*3, y=load_vert_start + delta_y * 8)
+                  font=self._text_size['Text 9 bold'],bg = self._button_bg_color, fg = self._button_fg_color,
+                  width = 15).place(x=ent_x+delta_x*3, y=load_vert_start + delta_y * 8.5)
         self._new_content_type = tk.StringVar()
 
-        self._ent_content_type = tk.OptionMenu(self._main_fr, self._new_content_type, *self._tank_options)
+        self._ent_content_type = tk.OptionMenu(self._main_fr, self._new_content_type, *list(self._tank_options.keys()),
+                                               command=self.tank_density_trace)
         ent_width = 10
         self._new_overpresure = tk.DoubleVar()
         self._ent_overpressure = tk.Entry(self._main_fr, textvariable = self._new_overpresure,
@@ -708,10 +709,10 @@ class Application():
                       bg = self._button_bg_color, fg = self._button_fg_color, font=self._text_size['Text 8 bold']) \
                 .place(x=10, y=load_vert_start + 0 * delta_y)
 
-        show_compartment = tk.Button(self._main_fr, text='Display current compartments', command=self.grid_display_tanks,
+        show_compartment = tk.Button(self._main_fr, text='Display current\n compartments', command=self.grid_display_tanks,
                                   bg = self._button_bg_color, fg = self._button_fg_color,
-                                     font=self._text_size['Text 9 bold'])
-        show_compartment.place(x=ent_x+delta_x*1.8, y=load_vert_start + delta_y * 4.5)
+                                     font=self._text_size['Text 9 bold'], width = 15)
+        show_compartment.place(x=ent_x+delta_x*3, y=load_vert_start + delta_y * 4.5)
 
         try:
 
@@ -855,7 +856,7 @@ class Application():
            .place(x=lc_x + delta_x * 6.7,y=lc_y + delta_y*16)
 
         # Load information button
-        tk.Button(self._main_fr, text='Load facors', command=self.on_open_load_factor_window,
+        tk.Button(self._main_fr, text='Load factors', command=self.on_open_load_factor_window,
                  font = self._text_size['Text 10 bold'], height = 1,
                   bg = self._button_bg_color, fg = self._button_fg_color)\
            .place(x=lc_x + delta_x * 4,y=lc_y + delta_y*16)
@@ -1924,6 +1925,10 @@ class Application():
 
 
         self._new_stucture_type_label.set(text)
+    def tank_density_trace(self, event):
+        ''' Setting tank densities '''
+        self._new_density.set(self._tank_options[self._new_content_type.get()])
+
 
     def new_tank(self,comp_no,cells, min_el, max_el):
         '''
@@ -2030,7 +2035,8 @@ class Application():
         if self._line_to_struc[line_name][0].get_structure_type() in ['', 'FRAME','GENERAL_INTERNAL_NONWT']:
             return [0, '']
         else:
-
+            # if line_name == 'line158':
+            #     print(defined_tanks)
             return_value = one_load_combination(line_name_obj, coord, defined_loads, load_condition,
                                                 defined_tanks, comb_name, acc, load_factors_all)
 
@@ -2303,6 +2309,10 @@ class Application():
         end_point = self._point_dict['point' + str(self._line_dict[line][1])]
         mid_point = self._main_grid.get_mid_point(self.get_grid_coord_from_points_coords(start_point),
                                                  self.get_grid_coord_from_points_coords(end_point))
+        if line in ('line138', 'line158'):
+            print(line, start_point, mid_point, end_point)
+            print(self._main_grid.get_adjacent_values_duplicates(mid_point))
+            print(' ')
 
         return list(filter(lambda x: x > 1, self._main_grid.get_adjacent_values_duplicates(mid_point)))
 
@@ -2836,6 +2846,7 @@ class Application():
         self._canvas_scale = min(800 / highest_y, 800 / highest_x, 15)
 
         imp_file.close()
+        self._parent.wm_title('| ANYstructure |     ' + imp_file.name)
         self.update_frame()
 
     def open_example(self, file_name = 'ship_section_example.txt'):
@@ -3178,8 +3189,6 @@ class Application():
                 data[0].set(self._load_factors_dict[name[0]][1])
             if data[1].get() != 0:
                 data[1].set(self._load_factors_dict[name[0]][2])
-
-
 
     def close_main_window(self):
         '''
