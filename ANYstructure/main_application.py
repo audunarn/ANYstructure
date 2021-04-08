@@ -257,6 +257,8 @@ class Application():
         self._new_point_x = tk.DoubleVar()
         self._new_point_y = tk.DoubleVar()
         self._new_point_fix = tk.StringVar()
+        self._new_zstar_optimization = tk.BooleanVar()
+        self._new_zstar_optimization.set(True)
         point_start = 50* self._global_shrink
         ent_width = 6  # width of entries
 
@@ -374,6 +376,12 @@ class Application():
         tk.Button(self._main_fr,text='Show structure types',command=show_message,
                   bg = self._button_bg_color, fg = self._button_fg_color, font=self._text_size['Text 8'])\
             .place(x=types_start,y=prop_vert_start+11.7*delta_y)
+
+        self._zstar_chk = tk.Checkbutton(self._main_fr, variable=self._new_zstar_optimization)\
+            .place(x=types_start,y=prop_vert_start+13.*delta_y)
+        tk.Label(self._main_fr, text='z* optimization', font=self._text_size['Text 9 bold'],
+                 bg = self._general_color)\
+            .place(x=types_start + 0.8*delta_x,y=prop_vert_start+13.*delta_y)
 
         tk.Label(self._main_fr, text='Select structure type:', font=self._text_size['Text 9 bold'],
                  bg = self._general_color)\
@@ -1563,7 +1571,7 @@ class Application():
                 # buckling results
 
                 self._result_canvas.create_text([x * self._global_shrink, (y+9*dy) * self._global_shrink],
-                                               text='Buckling results DNV-RP-C201 (z* optimized):',
+                                               text='Buckling results DNV-RP-C201:',
                                                font=self._text_size["Text 9 bold"], anchor='nw')
                 if sum(buckling)==0:
                     self._result_canvas.create_text([x * self._global_shrink, (y+10*dy) * self._global_shrink],
@@ -1859,7 +1867,8 @@ class Application():
                         'stf_km2': [self._new_stf_km2.get(), ''],
                         'stf_km3': [self._new_stf_km3.get(), ''],
                         'press_side': [self._new_pressure_side.get(), ''],
-                        'structure_types':[self._structure_types, '']}
+                        'structure_types':[self._structure_types, ''],
+                        'zstar_optimization': [self._new_zstar_optimization.get(), '']}
 
             if self._active_line not in self._line_to_struc.keys():
                 self._line_to_struc[self._active_line] = [None, None, None, [None], {}]
@@ -2753,6 +2762,7 @@ class Application():
             self._line_point_to_point_string.append(
                 self.make_point_point_line_string(self._line_dict[line][0], self._line_dict[line][1])[1])
             lines_prop['structure_types'] = [self._structure_types, ' ']
+            lines_prop['zstar_optimization'] = [self._new_zstar_optimization.get(), '']
             self._line_to_struc[line][0] = Structure(lines_prop)
             self._line_to_struc[line][1] = CalcScantlings(lines_prop)
             if imported['fatigue_properties'][line] is not None:

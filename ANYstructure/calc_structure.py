@@ -41,6 +41,8 @@ class Structure():
         self.sigma_y = self.sigma_y2 + (self.sigma_y1-self.sigma_y2)\
                                        *(min(0.25*self.span,0.5*self.spacing)/self.span)
 
+        self._zstar_optimization = main_dict['zstar_optimization'][0]
+
         try:
             self.girder_lg=main_dict['girder_lg'][0]
         except KeyError:
@@ -362,6 +364,7 @@ class Structure():
             self.pressure_side = main_dict['press_side'][0]
         except KeyError:
             self.pressure_side = 'p'
+        self._zstar_optimization = main_dict['zstar_optimization'][0]
 
     def set_stresses(self,sigy1,sigy2,sigx,tauxy):
         '''
@@ -925,7 +928,10 @@ class CalcScantlings(Structure):
         #print('CENTROID ', 'zp', 'zt', self.get_cross_section_centroid_with_effective_plate(se)*1000,zp,zt)
 
         eq7_19 = sigySd/(ksp*sigyRd) #checked ok
-
+        if self._zstar_optimization:
+            zstar_range = np.arange(-zt/2,zp,0.002)
+        else:
+            zstar_range = [0]
         # Lateral pressure on plate side:
         if checked_side == 'p':
             # print('eq7_50 = ',Nsd ,'/', NksRd,'+' ,M1Sd,'-' , Nsd ,'*', zstar, '/' ,Ms1Rd,'*',1,'-', Nsd ,'/', Ne,'+', u)
@@ -933,7 +939,7 @@ class CalcScantlings(Structure):
             #print('eq7_52 = ',Nsd,'/', NksRd,'-', 2, '*',Nsd,'/', Nrd,'+',M2Sd,'-', Nsd,'*', zstar,'/',MstRd,'*',1, '-',Nsd,'/', Ne,'+', u)
             max_lfs = []
             ufs = []
-            for zstar in np.arange(-zt/2,zp,0.002):
+            for zstar in zstar_range:
                 eq7_50 = (Nsd / NksRd) + (M1Sd - Nsd * zstar) / (Ms1Rd * (1 - Nsd / Ne)) + u
                 eq7_51 = (Nsd / NkpRd) - 2 * (Nsd / Nrd) + ((M1Sd - Nsd * zstar) / (MpRd * (1 - (Nsd / Ne)))) + u
                 eq7_52 = (Nsd / NksRd) - 2 * (Nsd / Nrd) + ((M2Sd + Nsd * zstar) / (MstRd * (1 - (Nsd / Ne)))) + u
@@ -948,7 +954,7 @@ class CalcScantlings(Structure):
         else:
             max_lfs = []
             ufs = []
-            for zstar in np.arange(-zt / 2, zp, 0.002):
+            for zstar in zstar_range:
                 eq7_54 = (Nsd / NksRd) - 2 * (Nsd / Nrd) + ((M1Sd + Nsd * zstar) / (MstRd * (1 - (Nsd / Ne)))) + u
                 eq7_55 = (Nsd / NkpRd) + ((M1Sd + Nsd * zstar) / (MpRd * (1 - (Nsd / Ne)))) + u
                 eq7_56 = (Nsd / NksRd) + ((M2Sd - Nsd * zstar) / (Ms2Rd * (1 - (Nsd / Ne)))) + u
