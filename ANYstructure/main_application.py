@@ -71,7 +71,7 @@ class Application():
         sub_menu.add_command(label='Save project', command=self.savefile)
         sub_menu.add_command(label='Open project', command=self.openfile)
         self._shortcut_text = 'CTRL-Z Undo geometry action\n' \
-                              'CTRL-C Copy selected point\n' \
+                              'CTRL-P Copy selected point\n' \
                               'CTRL-M Move selected point)\n' \
                               'CTRL-Q New line (right click two points)\n' \
                               'CTRL-S Assign structure properties to clicked line\n' \
@@ -79,12 +79,13 @@ class Application():
                               'DELETE Delete active line and/or point \n' \
                               'CTRL-E Copy line properties from active line\n' \
                               'CTRL-D Paste line propeties to active line\n' \
-                              'Mouse click left/right - select line/point'
+                              'Mouse click left/right - select line/point\n' \
+                              'Arrows left/right - prvious/next line'
         undo_redo = tk.Menu(menu)
         menu.add_cascade(label='Geometry', menu=undo_redo)
         undo_redo.add_command(label='Undo geometry action (CTRL-Z)', command=self.undo)
         #undo_redo.add_command(label='Redo geometry action (CTRL-Y)', command=self.redo)
-        undo_redo.add_command(label='Copy selected point (CTRL-C)', command=self.copy_point)
+        undo_redo.add_command(label='Copy selected point (CTRL-P)', command=self.copy_point)
         undo_redo.add_command(label='Move selected point (CTRL-M)', command=self.move_point)
         undo_redo.add_command(label='New line (right click two points) (CTRL-Q)', command=self.new_line)
         undo_redo.add_command(label='Assign structure properties to clicked line (CTRL-S)',
@@ -2522,9 +2523,9 @@ class Application():
         self._main_canvas.bind("<MouseWheel>", self.mouse_scroll)
         self._parent.bind('<Control-z>', self.undo)
         #self._parent.bind('<Control-y>', self.redo)
-        self._parent.bind('<Control-p>', self.delete_point)
+        #self._parent.bind('<Control-p>', self.delete_point)
         self._parent.bind('<Control-l>', self.delete_line)
-        self._parent.bind('<Control-c>', self.copy_point)
+        self._parent.bind('<Control-p>', self.copy_point)
         self._parent.bind('<Control-m>', self.move_point)
         self._parent.bind('<Control-q>', self.new_line)
         self._parent.bind('<Control-s>', self.new_structure)
