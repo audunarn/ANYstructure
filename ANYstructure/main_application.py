@@ -2815,8 +2815,10 @@ class Application():
                 self.make_point_point_line_string(self._line_dict[line][0], self._line_dict[line][1])[0])
             self._line_point_to_point_string.append(
                 self.make_point_point_line_string(self._line_dict[line][0], self._line_dict[line][1])[1])
-            lines_prop['structure_types'] = [self._structure_types, ' ']
-            lines_prop['zstar_optimization'] = [self._new_zstar_optimization.get(), '']
+            if 'structure_types' not in lines_prop.keys():
+                lines_prop['structure_types'] = [self._structure_types, ' ']
+            if 'zstar_optimization' not in lines_prop.keys():
+                lines_prop['zstar_optimization'] = [self._new_zstar_optimization.get(), '']
             self._line_to_struc[line][0] = Structure(lines_prop)
             self._line_to_struc[line][1] = CalcScantlings(lines_prop)
             if imported['fatigue_properties'][line] is not None:
