@@ -1808,7 +1808,6 @@ class Application():
         '''
 
         try:
-
             # if's ensure that the new line does not exist already and that the point input is not an invalid point.
             if redo is None:
                 first_point, second_point = 'point' + str(self._new_line_p1.get()), \
@@ -1840,6 +1839,8 @@ class Application():
                     self._line_point_to_point_string.append(line_str_rev)
 
                     self.add_to_combinations_dict(current_name)
+            for line, obj in self._line_to_struc.items():
+                obj[1].need_recalc = True
         except TclError:
             messagebox.showinfo(title='Input error', message='Input must be a line number.')
 
@@ -2123,6 +2124,7 @@ class Application():
                         self._line_to_struc.pop(line)
                     self._line_point_to_point_string.pop(self._line_point_to_point_string.index(point_str))
                     self._line_point_to_point_string.pop(self._line_point_to_point_string.index(point_str_rev))
+                    self._active_line = ''
 
 
                 self.update_frame()
@@ -2148,16 +2150,18 @@ class Application():
                         line_to_delete.append(line)
                 # deleting the lines and the connected properties. also deleting point to point string list items.
                 for line in list(line_to_delete):
-                    point_str = 'p' + str(self._line_dict[line][0]) + 'p' + str(self._line_dict[line][1])
-                    point_str_rev = 'p' + str(self._line_dict[line][1]) + 'p' + str(self._line_dict[line][0])
-                    self._line_point_to_point_string.pop(self._line_point_to_point_string.index(point_str))
-                    self._line_point_to_point_string.pop(self._line_point_to_point_string.index(point_str_rev))
-                    self._line_dict.pop(line)
-                    # properties are deleted here
-                    if line in self._line_to_struc.keys():
-                        self._line_to_struc.pop(line)
+                    self.delete_line(line = line)
+                    # point_str = 'p' + str(self._line_dict[line][0]) + 'p' + str(self._line_dict[line][1])
+                    # point_str_rev = 'p' + str(self._line_dict[line][1]) + 'p' + str(self._line_dict[line][0])
+                    # self._line_point_to_point_string.pop(self._line_point_to_point_string.index(point_str))
+                    # self._line_point_to_point_string.pop(self._line_point_to_point_string.index(point_str_rev))
+                    # self._line_dict.pop(line)
+                    # # properties are deleted here
+                    # if line in self._line_to_struc.keys():
+                    #     self._line_to_struc.pop(line)
                 # at the en, the points is deleted from the point dict.
                 self._point_dict.pop(point)
+                self._active_point = ''
             else:
                 messagebox.showinfo(title='No point.', message='Input point does not exist.')
 
@@ -2192,11 +2196,19 @@ class Application():
 
         self.update_frame()
 
-    def delete_properties_pressed(self, event = None):
-        if self._active_line != '' and self._active_line in self._line_to_struc.keys():
+    def delete_properties_pressed(self, event = None, line = None):
+
+        action_taken = False
+        if line != None:
+            self._line_to_struc.pop(line)
+            self._state_logger.pop(line)
+            action_taken = True
+        elif self._active_line != '' and self._active_line in self._line_to_struc.keys():
             self._line_to_struc.pop(self._active_line)
             self._state_logger.pop(self._active_line)
-            self.draw_prop()
+            action_taken = True
+
+        if action_taken:
             for line, obj in self._line_to_struc.items():
                 obj[1].need_recalc = True
             self.update_frame()
