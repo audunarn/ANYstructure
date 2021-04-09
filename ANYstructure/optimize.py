@@ -672,14 +672,16 @@ def create_new_calc_obj(init_obj,x, fat_dict=None):
         stf_type = init_obj.get_stiffener_type()
 
     main_dict = {'mat_yield': [init_obj.get_fy(), 'Pa'],'span': [init_obj.get_span(), 'm'],
-                                'spacing': [x[0], 'm'],'plate_thk': [x[1], 'm'],'stf_web_height':[ x[2], 'm'],
-                                'stf_web_thk': [x[3], 'm'],'stf_flange_width': [x[4], 'm'],
-                                'stf_flange_thk': [x[5], 'm'],'structure_type': [init_obj.get_structure_type(), ''],
-                                'stf_type': [stf_type, ''],'sigma_y1': [sigma_y1_new, 'MPa'],
-                                'sigma_y2': [sigma_y2_new, 'MPa'],'sigma_x': [sigma_x_new, 'MPa'],
-                                'tau_xy': [tau_xy_new, 'MPa'],'plate_kpp': [init_obj.get_kpp(), ''],
-                                'stf_kps': [init_obj.get_kps(), ''],'stf_km1': [init_obj.get_km1(), ''],
-                                'stf_km2': [init_obj.get_km2(), ''],'stf_km3': [init_obj.get_km3(), '']}
+                 'spacing': [x[0], 'm'],'plate_thk': [x[1], 'm'],'stf_web_height':[ x[2], 'm'],
+                 'stf_web_thk': [x[3], 'm'],'stf_flange_width': [x[4], 'm'],
+                 'stf_flange_thk': [x[5], 'm'],'structure_type': [init_obj.get_structure_type(), ''],
+                 'stf_type': [stf_type, ''],'sigma_y1': [sigma_y1_new, 'MPa'],
+                 'sigma_y2': [sigma_y2_new, 'MPa'],'sigma_x': [sigma_x_new, 'MPa'],
+                 'tau_xy': [tau_xy_new, 'MPa'],'plate_kpp': [init_obj.get_kpp(), ''],
+                 'stf_kps': [init_obj.get_kps(), ''],'stf_km1': [init_obj.get_km1(), ''],
+                 'stf_km2': [init_obj.get_km2(), ''],'stf_km3': [init_obj.get_km3(), ''],
+                 'structure_types':[init_obj.get_structure_types(), ''],
+                 'zstar_optimization': [init_obj.get_z_opt(), '']}
     if fat_dict == None:
         return calc.CalcScantlings(main_dict), None
     else:
@@ -705,14 +707,17 @@ def create_new_structure_obj(init_obj, x, fat_dict=None):
         stf_type = init_obj.get_stiffener_type()
 
     main_dict = {'mat_yield': [init_obj.get_fy(), 'Pa'], 'span': [init_obj.get_span(), 'm'],
-                               'spacing': [x[0], 'm'], 'plate_thk': [x[1], 'm'], 'stf_web_height': [x[2], 'm'],
-                               'stf_web_thk': [x[3], 'm'], 'stf_flange_width': [x[4], 'm'],
-                               'stf_flange_thk': [x[5], 'm'], 'structure_type': [init_obj.get_structure_type(), ''],
-                               'stf_type': [stf_type, ''], 'sigma_y1': [sigma_y1_new, 'MPa'],
-                               'sigma_y2': [sigma_y2_new, 'MPa'], 'sigma_x': [sigma_x_new, 'MPa'],
-                               'tau_xy': [tau_xy_new, 'MPa'], 'plate_kpp': [init_obj.get_kpp(), ''],
-                               'stf_kps': [init_obj.get_kps(), ''], 'stf_km1': [init_obj.get_km1(), ''],
-                               'stf_km2': [init_obj.get_km2(), ''], 'stf_km3': [init_obj.get_km3(), '']}
+                   'spacing': [x[0], 'm'], 'plate_thk': [x[1], 'm'], 'stf_web_height': [x[2], 'm'],
+                   'stf_web_thk': [x[3], 'm'], 'stf_flange_width': [x[4], 'm'],
+                   'stf_flange_thk': [x[5], 'm'], 'structure_type': [init_obj.get_structure_type(), ''],
+                   'stf_type': [stf_type, ''], 'sigma_y1': [sigma_y1_new, 'MPa'],
+                   'sigma_y2': [sigma_y2_new, 'MPa'], 'sigma_x': [sigma_x_new, 'MPa'],
+                   'tau_xy': [tau_xy_new, 'MPa'], 'plate_kpp': [init_obj.get_kpp(), ''],
+                   'stf_kps': [init_obj.get_kps(), ''], 'stf_km1': [init_obj.get_km1(), ''],
+                   'stf_km2': [init_obj.get_km2(), ''], 'stf_km3': [init_obj.get_km3(), ''],
+                 'structure_types': [init_obj.get_structure_types(), ''],
+                 'zstar_optimization': [init_obj.get_z_opt(), '']}
+
     if fat_dict == None:
         return calc.Structure(main_dict)
 

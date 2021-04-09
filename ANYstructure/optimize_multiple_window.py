@@ -772,7 +772,7 @@ class CreateOptimizeMultipleWindow():
                                                  fill='red')
                 else:
                     if line in self._opt_results.keys():
-                        color = 'red'
+                        color = 'orange'
                     self._canvas_select.create_line(coord1, coord2, width=3, fill=color)
                     self._canvas_select.create_text(coord1[0] - 20 + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 + 10,
                                                  text='line' + str(get_num(line)), font="Text 8", fill='black')

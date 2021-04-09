@@ -70,7 +70,16 @@ class Application():
         sub_menu.add_command(label='New project', command=self.reset)
         sub_menu.add_command(label='Save project', command=self.savefile)
         sub_menu.add_command(label='Open project', command=self.openfile)
-
+        self._shortcut_text = 'CTRL-Z Undo geometry action\n' \
+                              'CTRL-C Copy selected point\n' \
+                              'CTRL-M Move selected point)\n' \
+                              'CTRL-Q New line (right click two points)\n' \
+                              'CTRL-S Assign structure properties to clicked line\n' \
+                              'CTRL-DELETE Delete structure properties from clicked line\n' \
+                              'DELETE Delete active line and/or point \n' \
+                              'CTRL-E Copy line properties from active line\n' \
+                              'CTRL-D Paste line propeties to active line\n' \
+                              'Mouse click left/right - select line/point'
         undo_redo = tk.Menu(menu)
         menu.add_cascade(label='Geometry', menu=undo_redo)
         undo_redo.add_command(label='Undo geometry action (CTRL-Z)', command=self.undo)
@@ -232,9 +241,9 @@ class Application():
         # --- slider (used to zoom) ----
         # tk.Label(self._main_fr, text='Slide to zoom (or use mouse wheel)',
         #          bg = self._general_color).place(x=ent_x+delta_x*6.5, y=delta_y)
-        self._slider = tk.Scale(self._main_fr,from_=60,to = 1, command=self.slider_used, background=self._general_color)
-        self._slider.set(self._canvas_scale)
-        self._slider.place(x=ent_x+delta_x*6.5, y= delta_y*2)
+        # self._slider = tk.Scale(self._main_fr,from_=60,to = 1, command=self.slider_used, background=self._general_color)
+        # self._slider.set(self._canvas_scale)
+        # self._slider.place(x=ent_x+delta_x*6.5, y= delta_y*2)
 
         # --- main header image ---
         # try:
@@ -289,6 +298,8 @@ class Application():
         # --- line input/output ---
         self._new_line_p1 = tk.IntVar()
         self._new_line_p2 = tk.IntVar()
+        self._new_shortcut_backdrop = tk.BooleanVar()
+        self._new_shortcut_backdrop.set(True)
         line_start = (point_start+90)* self._global_shrink
         tk.Label(self._main_fr, text='Input line from "point number" to "point number"',
                  font=self._text_size['Text 9 bold'], bg = self._general_color)\
@@ -297,6 +308,9 @@ class Application():
             .place(x=10, y=line_start)
         tk.Label(self._main_fr, text='To point number:',font="Text 9", bg = self._general_color)\
             .place(x=10, y=line_start + delta_y)
+        tk.Checkbutton(self._main_fr, variable = self._new_shortcut_backdrop, command = self.update_frame)\
+            .place(x=500, y=10)
+        tk.Label(self._main_fr, text='Check to see avaliable shortcuts', font="Text 9").place(x=520, y=10)
 
         tk.Entry(self._main_fr, textvariable=self._new_line_p1, width=int(ent_width * self._global_shrink),
                  bg = self._entry_color, fg = self._entry_text_color)\
@@ -877,6 +891,7 @@ class Application():
         #     tk.Button(self._main_fr, text='Generate report', command=self.report_generate).place(x=1600,y=0)
 
         #self.openfile(defined='general_section_slm.txt')
+        self.update_frame()
 
     def gui_load_combinations(self,event):
         '''
@@ -1152,7 +1167,7 @@ class Application():
         else:
             pass
 
-    def update_frame(self):
+    def update_frame(self, event = None):
         state = self.get_color_and_calc_state()
         self.draw_results(state=state)
         self.draw_canvas(state=state)
@@ -1291,7 +1306,7 @@ class Application():
                 pass
         return return_dict
 
-    def draw_canvas(self, state = None):
+    def draw_canvas(self, state = None, event = None):
         '''
         Canvas is drawn here.
         '''
@@ -1307,10 +1322,15 @@ class Application():
         self._main_canvas.create_text(self._canvas_draw_origo[0] - 30*self._global_shrink,
                                      self._canvas_draw_origo[1] + 12* self._global_shrink, text='(0,0)',
                                      font = 'Text 10')
-        self._main_canvas.create_text([880*self._global_shrink,20*self._global_shrink],
-                                     text = 'Mouse left click:  select line\n'
-                                                     'Mouse right click: select point',
-                                     font = self._text_size['Text 8 bold'], fill='red')
+        # self._main_canvas.create_text([880*self._global_shrink,20*self._global_shrink],
+        #                              text = 'Mouse left click:  select line\n'
+        #                                              'Mouse right click: select point',
+        #                              font = self._text_size['Text 8 bold'], fill='red')
+
+        # Drawing shortcut information if selected.
+        if self._new_shortcut_backdrop.get() == True:
+            self._main_canvas.create_text(800, 70, text = self._shortcut_text, font=self._text_size["Text 8"],
+                                          fill = 'red')
 
         # drawing the point dictionary
         pt_size = 3
@@ -1822,7 +1842,7 @@ class Application():
         except TclError:
             messagebox.showinfo(title='Input error', message='Input must be a line number.')
 
-    def new_structure(self, event = None):
+    def new_structure(self, event = None, pasted_structure = None):
         '''
         This method maps the structure to the line when clicking "add structure to line" button.
         The result is put in a dictionary. Key is line name and value is the structure object.
@@ -1846,29 +1866,32 @@ class Application():
         if self._line_is_active:
             # structure dictionary: name of line : [ 0.Structure class, 1.calc scantling class,
             # 2.calc fatigue class, 3.load object, 4.load combinations result ]
+            if pasted_structure == None:
+                obj_dict = {'mat_yield': [self._new_material.get()*1e6, 'Pa'],
+                            'span': [self._new_field_len.get(), 'm'],
+                            'spacing': [self._new_stf_spacing.get()/1000, 'm'],
+                            'plate_thk': [self._new_plate_thk.get()/1000, 'm'],
+                            'stf_web_height': [self._new_stf_web_h.get()/1000, 'm'],
+                            'stf_web_thk': [self._new_sft_web_t.get()/1000, 'm'],
+                            'stf_flange_width': [self._new_stf_fl_w.get()/1000, 'm'],
+                            'stf_flange_thk': [self._new_stf_fl_t.get()/1000, 'm'],
+                            'structure_type': [self._new_stucture_type.get(), ''],
+                            'stf_type': [self._new_stf_type.get(), ''],
+                            'sigma_y1': [self._new_sigma_y1.get(), 'MPa'],
+                            'sigma_y2': [self._new_sigma_y2.get(), 'MPa'],
+                            'sigma_x': [self._new_sigma_x.get(), 'MPa'],
+                            'tau_xy': [self._new_tauxy.get(), 'MPa'],
+                            'plate_kpp': [self._new_plate_kpp.get(), ''],
+                            'stf_kps': [self._new_stf_kps.get(), ''],
+                            'stf_km1': [self._new_stf_km1.get(), ''],
+                            'stf_km2': [self._new_stf_km2.get(), ''],
+                            'stf_km3': [self._new_stf_km3.get(), ''],
+                            'press_side': [self._new_pressure_side.get(), ''],
+                            'structure_types':[self._structure_types, ''],
+                            'zstar_optimization': [self._new_zstar_optimization.get(), '']}
+            else:
+                obj_dict = pasted_structure.get_structure_prop()
 
-            obj_dict = {'mat_yield': [self._new_material.get()*1e6, 'Pa'],
-                        'span': [self._new_field_len.get(), 'm'],
-                        'spacing': [self._new_stf_spacing.get()/1000, 'm'],
-                        'plate_thk': [self._new_plate_thk.get()/1000, 'm'],
-                        'stf_web_height': [self._new_stf_web_h.get()/1000, 'm'],
-                        'stf_web_thk': [self._new_sft_web_t.get()/1000, 'm'],
-                        'stf_flange_width': [self._new_stf_fl_w.get()/1000, 'm'],
-                        'stf_flange_thk': [self._new_stf_fl_t.get()/1000, 'm'],
-                        'structure_type': [self._new_stucture_type.get(), ''],
-                        'stf_type': [self._new_stf_type.get(), ''],
-                        'sigma_y1': [self._new_sigma_y1.get(), 'MPa'],
-                        'sigma_y2': [self._new_sigma_y2.get(), 'MPa'],
-                        'sigma_x': [self._new_sigma_x.get(), 'MPa'],
-                        'tau_xy': [self._new_tauxy.get(), 'MPa'],
-                        'plate_kpp': [self._new_plate_kpp.get(), ''],
-                        'stf_kps': [self._new_stf_kps.get(), ''],
-                        'stf_km1': [self._new_stf_km1.get(), ''],
-                        'stf_km2': [self._new_stf_km2.get(), ''],
-                        'stf_km3': [self._new_stf_km3.get(), ''],
-                        'press_side': [self._new_pressure_side.get(), ''],
-                        'structure_types':[self._structure_types, ''],
-                        'zstar_optimization': [self._new_zstar_optimization.get(), '']}
 
             if self._active_line not in self._line_to_struc.keys():
                 self._line_to_struc[self._active_line] = [None, None, None, [None], {}]
@@ -1901,14 +1924,14 @@ class Application():
         else:
             pass
 
-        self.draw_prop()
         for line, obj in self._line_to_struc.items():
             obj[1].need_recalc = True
 
-        state = self.get_color_and_calc_state()
+        self.update_frame()
+        #state = self.get_color_and_calc_state()
 
-        self.draw_results(state=state)
-        self.draw_canvas(state=state)
+        # self.draw_results(state=state)
+        # self.draw_canvas(state=state)
 
     def option_meny_structure_type_trace(self, event):
         ''' Updating of the values in the structure type option menu. '''
@@ -2146,18 +2169,18 @@ class Application():
             tk.messagebox.showinfo('No properties', 'This line does not have properties.')
             return
         else:
-            self.__copied_line_prop = [self._line_to_struc[self._active_line][0],
-                                       self._line_to_struc[self._active_line][1]]
+            self.__copied_line_prop = self._active_line
 
     def paste_property(self, event = None):
         ''' Paste property to line '''
-        if self._line_to_struc[self._active_line][0].get_structure_type() != \
-                self.__copied_line_prop[0].get_structure_type():
+        if self._line_to_struc[self._active_line][0].get_structure_type() !=\
+                self._line_to_struc[self.__copied_line_prop][0].get_structure_type():
+
             tk.messagebox.showerror('Paste error', 'Can only paste to same structure type. This is to avoid problems '
                                                    'with compartments not detecting changes to watertightness.')
             return
-        self._line_to_struc[self._active_line][0] = self.__copied_line_prop[0]
-        self._line_to_struc[self._active_line][1] = self.__copied_line_prop[1]
+        else:
+            self.new_structure(pasted_structure= self._line_to_struc[self.__copied_line_prop][0])
 
         self.update_frame()
 
@@ -2509,7 +2532,35 @@ class Application():
         self._parent.bind('<Control-Delete>', self.delete_properties_pressed)
         self._parent.bind('<Control-e>', self.copy_property)
         self._parent.bind('<Control-d>', self.paste_property)
+        self._parent.bind('<Left>', self.left_arrow)
+        self._parent.bind('<Right>', self.right_arrow)
         #self._parent.bind('<Enter>', self.enter_key_pressed)
+
+    def left_arrow(self, event):
+
+        if self._active_line == '':
+            return
+        else:
+            idx = list(self._line_dict.keys()).index(self._active_line)
+
+            if idx -1 >= 0:
+                self._active_line =list(self._line_dict.keys())[idx-1]
+            else:
+                self._active_line = list(self._line_dict.keys())[-1]
+        self.update_frame()
+
+    def right_arrow(self, event):
+
+        if self._active_line == '':
+            return
+        else:
+            idx = list(self._line_dict.keys()).index(self._active_line)
+
+            if idx + 1 < len(list(self._line_dict.keys())):
+                self._active_line = list(self._line_dict.keys())[idx+1]
+            else:
+                self._active_line = list(self._line_dict.keys())[0]
+        self.update_frame()
 
     def mouse_scroll(self,event):
         self._canvas_scale +=  event.delta/50
@@ -2518,7 +2569,7 @@ class Application():
             state = self.get_color_and_calc_state()
         except AttributeError:
             state = None
-        self.draw_canvas(state=state)
+        self.update_frame()
 
     def button_2_click(self, event):
         self._previous_drag_mouse = [event.x, event.y]
@@ -2531,7 +2582,8 @@ class Application():
             state = self.get_color_and_calc_state()
         except AttributeError:
             state = None
-        self.draw_canvas(state=state)
+        self.update_frame()
+        #self.draw_canvas(state=state)
 
     def button_1_click(self, event = None):
         '''
@@ -2583,9 +2635,10 @@ class Application():
         except AttributeError:
             state = None
 
-        self.draw_canvas(state = state)
-        self.draw_prop()
-        self.draw_results(state = state)
+        # self.draw_canvas(state = state)
+        # self.draw_prop()
+        # self.draw_results(state = state)
+        self.update_frame()
         self._combination_slider.set(1)
         if self._line_is_active:
             try:

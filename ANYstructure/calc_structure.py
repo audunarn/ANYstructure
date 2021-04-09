@@ -42,7 +42,6 @@ class Structure():
                                        *(min(0.25*self.span,0.5*self.spacing)/self.span)
 
         self._zstar_optimization = main_dict['zstar_optimization'][0]
-
         try:
             self.girder_lg=main_dict['girder_lg'][0]
         except KeyError:
@@ -75,6 +74,12 @@ class Structure():
             '\n Global shear, tau_xy:          ' + str(round(self.tauxy,1)) + ' MPa' +
             '\n km1,km2,km3:                   ' + str(self.km1)+'/'+str(self.km2)+'/'+str(self.km3)+
             '\n Pressure side (p-plate/s-stf): ' + str(self.pressure_side) + ' ')
+
+    def get_structure_types(self):
+        return self.structure_types
+
+    def get_z_opt(self):
+        return self._zstar_optimization
 
     def get_one_line_string(self):
         ''' Returning a one line string. '''
