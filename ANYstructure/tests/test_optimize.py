@@ -35,7 +35,15 @@ def test_optimization(opt_input):
                                              'sigma_y1': [80.0, 'MPa'], 'sigma_y2': [80.0, 'MPa'],
                                              'sigma_x': [89.9820895522388, 'MPa'], 'tau_xy': [5.0, 'MPa'],
                                              'plate_kpp': [1, ''], 'stf_kps': [1, ''], 'stf_km1': [12, ''],
-                                             'stf_km2': [24, ''], 'stf_km3': [12, '']}
+                                             'stf_km2': [24, ''], 'stf_km3': [12, ''],
+                                             'structure_types': [{'horizontal': ['BOTTOM', 'BBT', 'HOPPER', 'MD'],
+                                                                   'internals': ['INNER_SIDE','FRAME_WT',
+                                                                                 'GENERAL_INTERNAL_WT',
+                                                                                 'INTERNAL_ZERO_STRESS_WT',
+                                                                                 'INTERNAL_LOW_STRESS_WT'],
+                                                                   'non-wt': ['FRAME','GENERAL_INTERNAL_NONWT'],
+                                                                   'vertical': ['BBS', 'SIDE_SHELL', 'SSS']},''],
+                                              'zstar_optimization': [True, '']}
 
 def test_weight_calc(opt_input):
     assert opt.calc_weight(opt_input[-1]) == 8873.64
