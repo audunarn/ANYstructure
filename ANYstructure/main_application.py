@@ -2086,7 +2086,8 @@ class Application():
         Updating properties of the tank object that was created during BFS search.
         :return:
         '''
-
+        if len(list(self._tank_dict.keys())) == 0:
+            return
         current_tank = self._tank_dict['comp' + str(self._compartments_listbox.get('active'))]
         current_tank.set_overpressure(self._new_overpresure.get())
         current_tank.set_content(self._new_content_type.get())
@@ -2113,11 +2114,17 @@ class Application():
                 point_str_rev = 'p' + str(self._line_dict[line][1]) + 'p' + str(self._line_dict[line][0])
 
                 if line in self._line_dict.keys():
+                    if line in self._line_to_struc.keys():
+                        if self._line_to_struc[line][0].get_structure_type() not in self._structure_types['non-wt']:
+                            self.delete_properties_pressed()
+                            self.delete_all_tanks()
                     self._line_dict.pop(line)
                     if line in self._line_to_struc.keys():
                         self._line_to_struc.pop(line)
                     self._line_point_to_point_string.pop(self._line_point_to_point_string.index(point_str))
                     self._line_point_to_point_string.pop(self._line_point_to_point_string.index(point_str_rev))
+
+
                 self.update_frame()
             else:
                 messagebox.showinfo(title='No line.', message='Input line does noe exist.')
