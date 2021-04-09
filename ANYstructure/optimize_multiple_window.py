@@ -11,6 +11,7 @@ from ANYstructure.helper import *
 import ANYstructure.helper as hlp
 from tkinter.filedialog import askopenfilenames
 from multiprocessing import cpu_count
+import ANYstructure.optimize as opt
 
 class CreateOptimizeMultipleWindow():
     '''
@@ -484,7 +485,7 @@ class CreateOptimizeMultipleWindow():
             else:
                 predefined_stiffener_iter = None
 
-            self._opt_results[line] = op.run_optmizataion(init_obj, self.get_lower_bounds(init_obj),
+            self._opt_results[line] = list(op.run_optmizataion(init_obj, self.get_lower_bounds(init_obj),
                                                           self.get_upper_bounds(init_obj),
                                                           lateral_press,self.get_deltas(),
                                                           algorithm=self._new_algorithm.get(),
@@ -497,7 +498,8 @@ class CreateOptimizeMultipleWindow():
                                                           slamming_press=slamming_pressure,
                                                           predefined_stiffener_iter = predefined_stiffener_iter,
                                                           processes=self._new_processes.get(),
-                                                          min_max_span=max_min_span)
+                                                          min_max_span=max_min_span))
+
             counter += 1
             self.progress_count.set(counter)
             self.progress_bar.update_idletasks()
@@ -522,17 +524,18 @@ class CreateOptimizeMultipleWindow():
         '''
 
         # Find highest section modulus.
-        highest, lines = 0, []
+        highest = 0
         for line in self._opt_results.keys():
-            lines.append(line)
-            if min(self._opt_results[line][0].get_section_modulus()) > highest:
-                highest = min(self._opt_results[line][0].get_section_modulus())
+            if min(self._opt_results[line][1].get_section_modulus()) > highest:
+                print(line,self._opt_results[line][1].get_section_modulus())
+                highest = min(self._opt_results[line][1].get_section_modulus())
                 highest_line = line
-        harminized_value = self._opt_results[highest_line]
+                print(highest_line)
 
-        for line in lines:
-            print(line)
-            self._opt_results[line] = harminized_value
+        harmonized_x = self._opt_results[highest_line][1].get_tuple()
+        for line in self._opt_results.keys():
+            self._opt_results[line][0] = opt.create_new_structure_obj(self._opt_results[line][0], harmonized_x)
+            self._opt_results[line][1] = opt.create_new_calc_obj(self._opt_results[line][1], harmonized_x)[0]
 
     def get_running_time(self):
         '''
@@ -992,7 +995,7 @@ class CreateOptimizeMultipleWindow():
             for line in self._active_lines:
                 to_return[line] = self._opt_results[line]
             self.app.on_close_opt_multiple_window(to_return)
-            messagebox.showinfo(title='Return info', message='Returning: '+str(to_return.keys()))
+            messagebox.showinfo(title='Return info', message='Returning: '+str(list(to_return.keys())))
         except IndexError:
             messagebox.showinfo(title='Nothing to return', message='No results to return.')
             return

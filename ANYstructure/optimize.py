@@ -656,6 +656,7 @@ def create_new_calc_obj(init_obj,x, fat_dict=None):
     :param init_obj:
     :return:
     '''
+
     x_old = [init_obj.get_s(), init_obj.get_plate_thk(), init_obj.get_web_h() , init_obj.get_web_thk(),
              init_obj.get_fl_w() ,init_obj.get_fl_thk(), init_obj.get_span(), init_obj.get_lg()]
 

@@ -1209,16 +1209,16 @@ class Application():
                 except KeyError:
                     design_pressure = 0
 
-                sec_mod = [round(obj_structure.get_section_modulus()[0], 5),
-                           round(obj_structure.get_section_modulus()[1], 5)]
+                sec_mod = [round(obj_scnt_calc.get_section_modulus()[0], 5),
+                           round(obj_scnt_calc.get_section_modulus()[1], 5)]
 
-                shear_area = obj_structure.get_shear_area()
+                shear_area = obj_scnt_calc.get_shear_area()
                 min_shear = obj_scnt_calc.get_minimum_shear_area(design_pressure)
                 min_sec_mod = obj_scnt_calc.get_dnv_min_section_modulus(design_pressure)
                 min_thk = obj_scnt_calc.get_dnv_min_thickness(design_pressure)
                 buckling = [round(res, 2) for res in obj_scnt_calc.calculate_buckling_all(
                     design_lat_press=design_pressure,
-                    checked_side=obj_structure.get_side())]
+                    checked_side=obj_scnt_calc.get_side())]
 
                 return_dict['slamming'][current_line] = dict()
                 if slamming_pressure is not None and slamming_pressure > 0:
@@ -1277,8 +1277,9 @@ class Application():
                 return_dict['pressure_uls'][current_line] = design_pressure
                 return_dict['pressure_fls'][current_line] = {'p_int': p_int, 'p_ext': p_ext}
                 return_dict['section_modulus'][current_line] = {'sec_mod': sec_mod, 'min_sec_mod': min_sec_mod}
+                #print(current_line, {'sec_mod': sec_mod, 'min_sec_mod': min_sec_mod})
                 return_dict['shear_area'][current_line] = {'shear_area': shear_area, 'min_shear_area': min_shear}
-                return_dict['thickness'][current_line] = {'thk': obj_structure.get_plate_thk(), 'min_thk': min_thk}
+                return_dict['thickness'][current_line] = {'thk': obj_scnt_calc.get_plate_thk(), 'min_thk': min_thk}
                 return_dict['struc_obj'][current_line] = obj_structure
                 return_dict['scant_calc_obj'][current_line] = obj_scnt_calc
                 return_dict['fatigue_obj'][current_line] = fatigue_obj
@@ -1857,7 +1858,7 @@ class Application():
             [4] load combinations result (currently not used)
         :return:
         '''
-        if pasted_structure == None or multi_return == None:
+        if all([pasted_structure == None, multi_return == None]):
             if any([self._new_stf_spacing.get()==0, self._new_plate_thk.get()==0, self._new_stf_web_h.get()==0,
                     self._new_sft_web_t.get()==0]):
                 mess = tk.messagebox.showwarning('No propertied defined', 'No properties is defined for the line!\n'
@@ -1870,8 +1871,8 @@ class Application():
             # structure dictionary: name of line : [ 0.Structure class, 1.calc scantling class,
             # 2.calc fatigue class, 3.load object, 4.load combinations result ]
             if multi_return != None:
-                obj_dict = multi_return[0][1].get_structure_prop()
-                self._active_line = multi_return[1]
+                obj_dict = multi_return[1].get_structure_prop()
+
             elif pasted_structure == None:
                 obj_dict = {'mat_yield': [self._new_material.get()*1e6, 'Pa'],
                             'span': [self._new_field_len.get(), 'm'],
@@ -3142,14 +3143,14 @@ class Application():
         # Storing the the returned data to temporary variable.
         self.__returned_load_data = [returned_loads, counter, load_comb_dict]
 
-    def on_close_opt_window(self,returned_objects):
+    def on_close_opt_window(self,returned_object):
         '''
         Sets the returned properties.
         :param returned_structure:
         :return:
         '''
 
-        self.new_structure(multi_return=[returned_objects, self._active_line])
+        self.new_structure(multi_return = returned_object[0:3])
         # self._line_to_struc[self._active_line][0]=returned_objects[0]
         # self._line_to_struc[self._active_line][1]=returned_objects[1]
         # self._line_to_struc[self._active_line][1].need_recalc = True
@@ -3167,8 +3168,10 @@ class Application():
         :return:
         '''
 
-        for line,struc_obj in returned_objects.items():
-            self.new_structure(multi_return= [struc_obj, line])
+        for line,all_objs in returned_objects.items():
+            self._active_line = line
+            #self._line_to_struc[line][1].need_recalc = True
+            self.new_structure(multi_return= all_objs[0:3])
         self.update_frame()
 
     def on_close_structure_window(self,returned_structure):
