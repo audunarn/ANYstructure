@@ -1844,7 +1844,7 @@ class Application():
         except TclError:
             messagebox.showinfo(title='Input error', message='Input must be a line number.')
 
-    def new_structure(self, event = None, pasted_structure = None):
+    def new_structure(self, event = None, pasted_structure = None, multi_return = None):
         '''
         This method maps the structure to the line when clicking "add structure to line" button.
         The result is put in a dictionary. Key is line name and value is the structure object.
@@ -1857,18 +1857,22 @@ class Application():
             [4] load combinations result (currently not used)
         :return:
         '''
-        if any([self._new_stf_spacing.get()==0, self._new_plate_thk.get()==0, self._new_stf_web_h.get()==0,
-                self._new_sft_web_t.get()==0]):
-            mess = tk.messagebox.showwarning('No propertied defined', 'No properties is defined for the line!\n'
-                                                                      'Define spacing, web height, web thickness etc.\n'
-                                                                      'Either press button with stiffener or input'
-                                                                      'manually.', type='ok')
-            return
+        if pasted_structure == None or multi_return == None:
+            if any([self._new_stf_spacing.get()==0, self._new_plate_thk.get()==0, self._new_stf_web_h.get()==0,
+                    self._new_sft_web_t.get()==0]):
+                mess = tk.messagebox.showwarning('No propertied defined', 'No properties is defined for the line!\n'
+                                                                          'Define spacing, web height, web thickness etc.\n'
+                                                                          'Either press button with stiffener or input'
+                                                                          'manually.', type='ok')
+                return
 
-        if self._line_is_active:
+        if self._line_is_active or multi_return != None:
             # structure dictionary: name of line : [ 0.Structure class, 1.calc scantling class,
             # 2.calc fatigue class, 3.load object, 4.load combinations result ]
-            if pasted_structure == None:
+            if multi_return != None:
+                obj_dict = multi_return[0][1].get_structure_prop()
+                self._active_line = multi_return[1]
+            elif pasted_structure == None:
                 obj_dict = {'mat_yield': [self._new_material.get()*1e6, 'Pa'],
                             'span': [self._new_field_len.get(), 'm'],
                             'spacing': [self._new_stf_spacing.get()/1000, 'm'],
@@ -1893,7 +1897,6 @@ class Application():
                             'zstar_optimization': [self._new_zstar_optimization.get(), '']}
             else:
                 obj_dict = pasted_structure.get_structure_prop()
-
 
             if self._active_line not in self._line_to_struc.keys():
                 self._line_to_struc[self._active_line] = [None, None, None, [None], {}]
@@ -3146,14 +3149,15 @@ class Application():
         :return:
         '''
 
-        self._line_to_struc[self._active_line][0]=returned_objects[0]
-        self._line_to_struc[self._active_line][1]=returned_objects[1]
-        self._line_to_struc[self._active_line][1].need_recalc = True
-        self.set_selected_variables(self._active_line)
-        if returned_objects[2] is not None:
-            self._line_to_struc[self._active_line][2] = CalcFatigue(returned_objects[0].get_structure_prop(),
-                                                                    returned_objects[2])
-        self.new_structure()
+        self.new_structure(multi_return=[returned_objects, self._active_line])
+        # self._line_to_struc[self._active_line][0]=returned_objects[0]
+        # self._line_to_struc[self._active_line][1]=returned_objects[1]
+        # self._line_to_struc[self._active_line][1].need_recalc = True
+        # self.set_selected_variables(self._active_line)
+        # if returned_objects[2] is not None:
+        #     self._line_to_struc[self._active_line][2] = CalcFatigue(returned_objects[0].get_structure_prop(),
+        #                                                             returned_objects[2])
+        # self.new_structure()
         self.update_frame()
 
     def on_close_opt_multiple_window(self, returned_objects):
@@ -3162,16 +3166,9 @@ class Application():
         :param returned_structure:
         :return:
         '''
-        for line,objects in returned_objects.items():
-            self._line_to_struc[line][0] = returned_objects[line][0]
-            self._line_to_struc[line][0].need_recalc = True
-            self._line_to_struc[line][1] = returned_objects[line][1]
-            self.set_selected_variables(line)
-            if returned_objects[line][2] is not None:
-                self._line_to_struc[line][2] = CalcFatigue(returned_objects[line][0].get_structure_prop(),
-                                                           returned_objects[line][2])
-            self._active_line = line
-            self.new_structure()
+
+        for line,struc_obj in returned_objects.items():
+            self.new_structure(multi_return= [struc_obj, line])
         self.update_frame()
 
     def on_close_structure_window(self,returned_structure):
