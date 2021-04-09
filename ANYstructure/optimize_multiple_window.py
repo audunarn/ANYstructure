@@ -525,17 +525,21 @@ class CreateOptimizeMultipleWindow():
 
         # Find highest section modulus.
         highest = 0
-        for line in self._opt_results.keys():
-            if min(self._opt_results[line][1].get_section_modulus()) > highest:
-                print(line,self._opt_results[line][1].get_section_modulus())
-                highest = min(self._opt_results[line][1].get_section_modulus())
+        for line in self._opt_results.keys(): # TODO stresses not set correctly when returning.
+            # print(line, self._opt_results[line][1].get_section_modulus())
+            # print(self._opt_results[line][1])
+            init_obj = self._opt_results[line][1]
+            weight = op.calc_weight([init_obj.get_s(), init_obj.get_pl_thk(), init_obj.get_web_h(),
+                                     init_obj.get_web_thk(), init_obj.get_fl_w(), init_obj.get_fl_thk(),
+                                     init_obj.get_span(),init_obj.get_lg()])
+            if weight > highest:
+                highest = weight
                 highest_line = line
-                print(highest_line)
 
         harmonized_x = self._opt_results[highest_line][1].get_tuple()
         for line in self._opt_results.keys():
-            self._opt_results[line][0] = opt.create_new_structure_obj(self._opt_results[line][0], harmonized_x)
-            self._opt_results[line][1] = opt.create_new_calc_obj(self._opt_results[line][1], harmonized_x)[0]
+            self._opt_results[line][0] = opt.create_new_structure_obj(self._line_to_struc[line][0], harmonized_x)
+            self._opt_results[line][1] = opt.create_new_calc_obj(self._line_to_struc[line][1], harmonized_x)[0]
 
     def get_running_time(self):
         '''
