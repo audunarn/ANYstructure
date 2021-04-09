@@ -31,10 +31,17 @@ class Structure():
         self.km2 = main_dict['stf_km2'][0]
         self.km3 = main_dict['stf_km3'][0]
         self.stiffener_type=main_dict['stf_type'][0]
+        self.structure_types = main_dict['structure_types'][0]
+        self.dynamic_variable_orientation = None
+        if self.structure_type in self.structure_types['vertical']:
+            self.dynamic_variable_orientation = 'z - vertical'
+        elif self.structure_type in self.structure_types['horizontal']:
+            self.dynamic_variable_orientation = 'x - horizontal'
 
         self.sigma_y = self.sigma_y2 + (self.sigma_y1-self.sigma_y2)\
                                        *(min(0.25*self.span,0.5*self.spacing)/self.span)
 
+        self._zstar_optimization = main_dict['zstar_optimization'][0]
         try:
             self.girder_lg=main_dict['girder_lg'][0]
         except KeyError:
@@ -59,6 +66,7 @@ class Structure():
             '\n Stiffener flange thickness:    ' + str(self.flange_th*1000)+' mm'+
             '\n Material yield:                ' + str(self.mat_yield/1e6)+' MPa'+
             '\n Structure type/stiffener type: ' + str(self.structure_type)+'/'+(self.stiffener_type)+
+            '\n Dynamic load varible_          ' + str(self.dynamic_variable_orientation)+
             '\n Plate fixation paramter,kpp:   ' + str(self.plate_kpp) + ' ' +
             '\n Stf. fixation paramter,kps:    ' + str(self.stf_kps) + ' ' +
             '\n Global stress, sig_y1/sig_y2:  ' + str(round(self.sigma_y1,1))+'/'+str(round(self.sigma_y2,1))+ ' MPa' +
@@ -66,6 +74,12 @@ class Structure():
             '\n Global shear, tau_xy:          ' + str(round(self.tauxy,1)) + ' MPa' +
             '\n km1,km2,km3:                   ' + str(self.km1)+'/'+str(self.km2)+'/'+str(self.km3)+
             '\n Pressure side (p-plate/s-stf): ' + str(self.pressure_side) + ' ')
+
+    def get_structure_types(self):
+        return self.structure_types
+
+    def get_z_opt(self):
+        return self._zstar_optimization
 
     def get_one_line_string(self):
         ''' Returning a one line string. '''
@@ -355,6 +369,7 @@ class Structure():
             self.pressure_side = main_dict['press_side'][0]
         except KeyError:
             self.pressure_side = 'p'
+        self._zstar_optimization = main_dict['zstar_optimization'][0]
 
     def set_stresses(self,sigy1,sigy2,sigx,tauxy):
         '''
@@ -918,7 +933,10 @@ class CalcScantlings(Structure):
         #print('CENTROID ', 'zp', 'zt', self.get_cross_section_centroid_with_effective_plate(se)*1000,zp,zt)
 
         eq7_19 = sigySd/(ksp*sigyRd) #checked ok
-
+        if self._zstar_optimization:
+            zstar_range = np.arange(-zt/2,zp,0.002)
+        else:
+            zstar_range = [0]
         # Lateral pressure on plate side:
         if checked_side == 'p':
             # print('eq7_50 = ',Nsd ,'/', NksRd,'+' ,M1Sd,'-' , Nsd ,'*', zstar, '/' ,Ms1Rd,'*',1,'-', Nsd ,'/', Ne,'+', u)
@@ -926,7 +944,7 @@ class CalcScantlings(Structure):
             #print('eq7_52 = ',Nsd,'/', NksRd,'-', 2, '*',Nsd,'/', Nrd,'+',M2Sd,'-', Nsd,'*', zstar,'/',MstRd,'*',1, '-',Nsd,'/', Ne,'+', u)
             max_lfs = []
             ufs = []
-            for zstar in np.arange(-zt/2,zp,0.002):
+            for zstar in zstar_range:
                 eq7_50 = (Nsd / NksRd) + (M1Sd - Nsd * zstar) / (Ms1Rd * (1 - Nsd / Ne)) + u
                 eq7_51 = (Nsd / NkpRd) - 2 * (Nsd / Nrd) + ((M1Sd - Nsd * zstar) / (MpRd * (1 - (Nsd / Ne)))) + u
                 eq7_52 = (Nsd / NksRd) - 2 * (Nsd / Nrd) + ((M2Sd + Nsd * zstar) / (MstRd * (1 - (Nsd / Ne)))) + u
@@ -941,7 +959,7 @@ class CalcScantlings(Structure):
         else:
             max_lfs = []
             ufs = []
-            for zstar in np.arange(-zt / 2, zp, 0.002):
+            for zstar in zstar_range:
                 eq7_54 = (Nsd / NksRd) - 2 * (Nsd / Nrd) + ((M1Sd + Nsd * zstar) / (MstRd * (1 - (Nsd / Ne)))) + u
                 eq7_55 = (Nsd / NkpRd) + ((M1Sd + Nsd * zstar) / (MpRd * (1 - (Nsd / Ne)))) + u
                 eq7_56 = (Nsd / NksRd) + ((M2Sd - Nsd * zstar) / (Ms2Rd * (1 - (Nsd / Ne)))) + u

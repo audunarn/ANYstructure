@@ -6,13 +6,19 @@ import ANYstructure.calc_structure as calc_structure
 import ANYstructure.helper as hlp
 import random
 
+structure_types = {'vertical': ['BBS', 'SIDE_SHELL', 'SSS'],
+                         'horizontal': ['BOTTOM', 'BBT', 'HOPPER', 'MD'],
+                         'non-wt': ['FRAME', 'GENERAL_INTERNAL_NONWT'],
+                         'internals': ['INNER_SIDE', 'FRAME_WT', 'GENERAL_INTERNAL_WT',
+                                       'INTERNAL_ZERO_STRESS_WT', 'INTERNAL_LOW_STRESS_WT']}
+
 obj_dict = {'mat_yield': [355e6, 'Pa'], 'span': [4, 'm'], 'spacing': [0.75, 'm'],
             'plate_thk': [0.015, 'm'],
             'stf_web_height': [0.4, 'm'], 'stf_web_thk': [0.018, 'm'], 'stf_flange_width': [0.15, 'm'],
             'stf_flange_thk': [0.02, 'm'], 'structure_type': ['BOTTOM', ''], 'plate_kpp': [1, ''],
             'stf_kps': [1, ''], 'stf_km1': [12, ''], 'stf_km2': [24, ''], 'stf_km3': [12, ''],
             'sigma_y1': [80, 'MPa'], 'sigma_y2': [80, 'MPa'], 'sigma_x': [80, 'MPa'], 'tau_xy': [5, 'MPa'],
-            'stf_type': ['T', '']}
+            'stf_type': ['T', ''], 'structure_types': [structure_types, ''], 'zstar_optimization': [True, ''] }
 
 obj_dict_heavy = {'mat_yield': [355e6, 'Pa'], 'span': [4, 'm'], 'spacing': [0.75, 'm'],
             'plate_thk': [0.015, 'm'],
@@ -20,7 +26,7 @@ obj_dict_heavy = {'mat_yield': [355e6, 'Pa'], 'span': [4, 'm'], 'spacing': [0.75
             'stf_flange_thk': [0.03, 'm'], 'structure_type': ['BOTTOM', ''], 'plate_kpp': [1, ''],
             'stf_kps': [1, ''], 'stf_km1': [12, ''], 'stf_km2': [24, ''], 'stf_km3': [12, ''],
             'sigma_y1': [80, 'MPa'], 'sigma_y2': [80, 'MPa'], 'sigma_x': [80, 'MPa'], 'tau_xy': [5, 'MPa'],
-            'stf_type': ['T', '']}
+            'stf_type': ['T', ''], 'structure_types': [structure_types, ''], 'zstar_optimization': [True, ''] }
 
 obj_dict2 = {'mat_yield': [355e6, 'Pa'], 'span': [4, 'm'], 'spacing': [0.7, 'm'],
             'plate_thk': [0.018, 'm'],
@@ -28,7 +34,7 @@ obj_dict2 = {'mat_yield': [355e6, 'Pa'], 'span': [4, 'm'], 'spacing': [0.7, 'm']
             'stf_flange_thk': [0.02, 'm'], 'structure_type': ['BOTTOM', ''], 'plate_kpp': [1, ''],
             'stf_kps': [1, ''], 'stf_km1': [12, ''], 'stf_km2': [24, ''], 'stf_km3': [12, ''],
             'sigma_y1': [100, 'MPa'], 'sigma_y2': [100, 'MPa'], 'sigma_x': [50, 'MPa'], 'tau_xy': [5, 'MPa'],
-            'stf_type': ['T', '']}
+            'stf_type': ['T', ''], 'structure_types': [structure_types, ''], 'zstar_optimization': [True, ''] }
 
 obj_dict_L = {'mat_yield': [355e6, 'Pa'], 'span': [2, 'm'], 'spacing': [0.6, 'm'],
             'plate_thk': [0.010, 'm'],
@@ -36,7 +42,7 @@ obj_dict_L = {'mat_yield': [355e6, 'Pa'], 'span': [2, 'm'], 'spacing': [0.6, 'm'
             'stf_flange_thk': [0.012, 'm'], 'structure_type': ['BOTTOM', ''], 'plate_kpp': [0.5, ''],
             'stf_kps': [1, ''], 'stf_km1': [12, ''], 'stf_km2': [24, ''], 'stf_km3': [12, ''],
             'sigma_y1': [30, 'MPa'], 'sigma_y2': [5, 'MPa'], 'sigma_x': [15, 'MPa'], 'tau_xy': [20, 'MPa'],
-            'stf_type': ['L', '']}
+            'stf_type': ['L', ''], 'structure_types': [structure_types, ''], 'zstar_optimization': [True, ''] }
 
 obj_dict_fr = {'mat_yield': [355e6, 'Pa'], 'span': [3.5, 'm'], 'spacing': [0.7, 'm'],
                'plate_thk': [0.015, 'm'],
@@ -44,7 +50,7 @@ obj_dict_fr = {'mat_yield': [355e6, 'Pa'], 'span': [3.5, 'm'], 'spacing': [0.7, 
                'stf_flange_thk': [0.02, 'm'], 'structure_type': ['FRAME', ''], 'plate_kpp': [1, ''],
                'stf_kps': [1, ''], 'stf_km1': [12, ''], 'stf_km2': [24, ''], 'stf_km3': [12, ''],
                'sigma_y1': [80, 'MPa'], 'sigma_y2': [80, 'MPa'], 'sigma_x': [80, 'MPa'], 'tau_xy': [5, 'MPa'],
-               'stf_type': ['T', '']}
+               'stf_type': ['T', ''], 'structure_types': [structure_types, ''], 'zstar_optimization': [True, ''] }
 
 point_dict = {'point5': [12.0, 2.5], 'point8': [0.0, 2.5], 'point3': [8.0, 0.0], 'point2': [4.0, 0.0],
               'point6': [8.0, 2.5], 'point7': [4.0, 2.5], 'point9': [0.0, 20.0], 'point4': [12.0, 0.0],
@@ -232,33 +238,38 @@ def get_geo_opt_object():
              'stf_web_height': [0.4, 'm'], 'stf_web_thk': [0.012, 'm'], 'stf_flange_width': [0.15, 'm'],
              'stf_flange_thk': [0.02, 'm'], 'structure_type': ['BOTTOM', ''], 'plate_kpp': [1, ''], 'stf_kps': [1, ''],
              'stf_km1': [12, ''], 'stf_km2': [24, ''], 'stf_km3': [12, ''], 'sigma_y1': [80, 'MPa'],
-             'sigma_y2': [80, 'MPa'], 'sigma_x': [80, 'MPa'], 'tau_xy': [5, 'MPa'], 'stf_type': ['T', '']},
+             'sigma_y2': [80, 'MPa'], 'sigma_x': [80, 'MPa'], 'tau_xy': [5, 'MPa'], 'stf_type': ['T', ''],
+              'structure_types': [structure_types, ''], 'zstar_optimization': [True, ''] },
              {'mat_yield': [355000000.0, 'Pa'], 'span': [4.0, 'm'], 'spacing': [0.7, 'm'], 'plate_thk': [0.015, 'm'],
               'stf_web_height': [0.4, 'm'], 'stf_web_thk': [0.012, 'm'], 'stf_flange_width': [0.15, 'm'],
               'stf_flange_thk': [0.02, 'm'], 'structure_type': ['BOTTOM', ''], 'plate_kpp': [1, ''],
               'stf_kps': [1, ''], 'stf_km1': [12, ''], 'stf_km2': [24, ''], 'stf_km3': [12, ''],
               'sigma_y1': [80, 'MPa'], 'sigma_y2': [80, 'MPa'], 'sigma_x': [80, 'MPa'], 'tau_xy': [5, 'MPa'],
-              'stf_type': ['T', '']},
+              'stf_type': ['T', ''], 'structure_types': [structure_types, ''], 'zstar_optimization': [True, ''] },
              {'mat_yield': [355000000.0, 'Pa'], 'span': [4.0, 'm'], 'spacing': [0.7, 'm'], 'plate_thk': [0.015, 'm'],
               'stf_web_height': [0.4, 'm'], 'stf_web_thk': [0.012, 'm'], 'stf_flange_width': [0.15, 'm'],
               'stf_flange_thk': [0.02, 'm'], 'structure_type': ['BOTTOM', ''], 'plate_kpp': [1, ''], 'stf_kps': [1, ''],
               'stf_km1': [12, ''], 'stf_km2': [24, ''], 'stf_km3': [12, ''], 'sigma_y1': [80, 'MPa'],
-              'sigma_y2': [80, 'MPa'], 'sigma_x': [80, 'MPa'], 'tau_xy': [5, 'MPa'], 'stf_type': ['T', '']},
+              'sigma_y2': [80, 'MPa'], 'sigma_x': [80, 'MPa'], 'tau_xy': [5, 'MPa'], 'stf_type': ['T', ''],
+              'structure_types': [structure_types, ''], 'zstar_optimization': [True, ''] },
              {'mat_yield': [355000000.0, 'Pa'], 'span': [4.0, 'm'], 'spacing': [0.7, 'm'], 'plate_thk': [0.015, 'm'],
               'stf_web_height': [0.4, 'm'], 'stf_web_thk': [0.012, 'm'], 'stf_flange_width': [0.15, 'm'],
               'stf_flange_thk': [0.02, 'm'], 'structure_type': ['GENERAL_INTERNAL_WT', ''], 'plate_kpp': [1, ''], 'stf_kps': [1, ''],
               'stf_km1': [12, ''], 'stf_km2': [24, ''], 'stf_km3': [12, ''], 'sigma_y1': [80, 'MPa'],
-              'sigma_y2': [80, 'MPa'], 'sigma_x': [80, 'MPa'], 'tau_xy': [5, 'MPa'], 'stf_type': ['T', '']},
+              'sigma_y2': [80, 'MPa'], 'sigma_x': [80, 'MPa'], 'tau_xy': [5, 'MPa'], 'stf_type': ['T', ''],
+              'structure_types': [structure_types, ''], 'zstar_optimization': [True, ''] },
              {'mat_yield': [355000000.0, 'Pa'], 'span': [4.0, 'm'], 'spacing': [0.7, 'm'], 'plate_thk': [0.015, 'm'],
               'stf_web_height': [0.4, 'm'], 'stf_web_thk': [0.012, 'm'], 'stf_flange_width': [0.15, 'm'],
               'stf_flange_thk': [0.02, 'm'], 'structure_type': ['GENERAL_INTERNAL_WT', ''], 'plate_kpp': [1, ''], 'stf_kps': [1, ''],
               'stf_km1': [12, ''], 'stf_km2': [24, ''], 'stf_km3': [12, ''], 'sigma_y1': [80, 'MPa'],
-              'sigma_y2': [80, 'MPa'], 'sigma_x': [80, 'MPa'], 'tau_xy': [5, 'MPa'], 'stf_type': ['T', '']},
+              'sigma_y2': [80, 'MPa'], 'sigma_x': [80, 'MPa'], 'tau_xy': [5, 'MPa'], 'stf_type': ['T', ''],
+              'structure_types': [structure_types, ''], 'zstar_optimization': [True, ''] },
              {'mat_yield': [355000000.0, 'Pa'], 'span': [4.0, 'm'], 'spacing': [0.7, 'm'], 'plate_thk': [0.015, 'm'],
               'stf_web_height': [0.4, 'm'], 'stf_web_thk': [0.012, 'm'], 'stf_flange_width': [0.15, 'm'],
               'stf_flange_thk': [0.02, 'm'], 'structure_type': ['GENERAL_INTERNAL_WT', ''], 'plate_kpp': [1, ''], 'stf_kps': [1, ''],
               'stf_km1': [12, ''], 'stf_km2': [24, ''], 'stf_km3': [12, ''], 'sigma_y1': [80, 'MPa'],
-              'sigma_y2': [80, 'MPa'], 'sigma_x': [80, 'MPa'], 'tau_xy': [5, 'MPa'], 'stf_type': ['T', '']})
+              'sigma_y2': [80, 'MPa'], 'sigma_x': [80, 'MPa'], 'tau_xy': [5, 'MPa'], 'stf_type': ['T', ''],
+              'structure_types': [structure_types, ''], 'zstar_optimization': [True, ''] })
     return [calc_structure.CalcScantlings(dic) for dic in dicts]
 
 def get_geo_opt_fatigue():
