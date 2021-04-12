@@ -551,7 +551,7 @@ class CreateOptGeoWindow():
                 lateral_press.append(gotten_lat_press['normal'] / 1000)
                 slamming_press.append(gotten_lat_press['slamming'])
                 try:
-                    fat_press_single = self.app.get_fatigue_pressures(line, fat_obj_single.get_accelerations())
+                    fat_press_single = self.app.get_fatigue_pressures(closet_line, fat_obj_single.get_accelerations())
                     fat_press_tuple = ((fat_press_single['p_ext']['loaded'], fat_press_single['p_ext']['ballast'],
                                         fat_press_single['p_ext']['part']),
                                        (fat_press_single['p_int']['loaded'], fat_press_single['p_int']['ballast'],
