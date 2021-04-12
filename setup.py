@@ -11,7 +11,8 @@ from codecs import open
 from os import path
 
 here = path.abspath(path.dirname(__file__))
-version = 2.2
+def get_version():
+    return 2.2
 
 # Get the long description from the README file
 with open(path.join(here, 'README.md'), encoding='utf-8') as f:
@@ -21,14 +22,14 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 # Fields marked as "Optional" may be commented out.
 
 def readme():
-    with open('README.rst') as file:
+    with open(here +'\\' + 'README.rst') as file:
         return file.read()
 
 setup(
     name='ANYstructure',  # Required
     url = 'https://github.com/audunarn/ANYstructure',
     entry_points={'gui_scripts': ['ANYstructure = ANYstructure.__main__:main']},
-    version=version,  # Required
+    version=get_version(),  # Required
     license='MIT',
     description='A plate field optimization tool for offshore structures calculated according to DNVGL standards',
     long_description = readme(),
