@@ -1,6 +1,6 @@
 # __init__.py
-from setup import get_version
 # Project information.
+from __main__ import get_version
 __title__ = 'ANYstructure'
 __version__ = get_version()
 __author__ = 'Audun Arnesen Nyhus'

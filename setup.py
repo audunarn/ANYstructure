@@ -9,10 +9,9 @@ from setuptools import setup, find_packages
 # To use a consistent encoding
 from codecs import open
 from os import path
+from __main__ import get_version
 
 here = path.abspath(path.dirname(__file__))
-def get_version():
-    return 2.2
 
 # Get the long description from the README file
 with open(path.join(here, 'README.md'), encoding='utf-8') as f:
@@ -22,7 +21,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 # Fields marked as "Optional" may be commented out.
 
 def readme():
-    with open(here +'\\' + 'README.rst') as file:
+    with open('README.rst') as file:
         return file.read()
 
 setup(
