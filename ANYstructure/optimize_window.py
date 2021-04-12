@@ -824,7 +824,7 @@ class CreateOptimizeWindow():
         Save and close
         :return:
         '''
-        print(self._opt_results)
+
         if __name__ == '__main__':
             self._frame.destroy()
             return

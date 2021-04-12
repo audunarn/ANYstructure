@@ -80,7 +80,10 @@ class Application():
                               'CTRL-E Copy line properties from active line\n' \
                               'CTRL-D Paste line propeties to active line\n' \
                               'Mouse click left/right - select line/point\n' \
-                              'Arrows left/right - prvious/next line'
+                              'Arrows left/right - previous/next line\n' \
+                              'Arrows up/down - previous/next point'
+
+
         undo_redo = tk.Menu(menu)
         menu.add_cascade(label='Geometry', menu=undo_redo)
         undo_redo.add_command(label='Undo geometry action (CTRL-Z)', command=self.undo)
@@ -1183,6 +1186,8 @@ class Application():
         line_iterator, slamming_pressure = [], None
         return_dict['slamming'][current_line] = {}
 
+
+
         if current_line is None and active_line_only:
             line_iterator = [self._active_line, ]
         elif current_line is None and not active_line_only and len(self._line_dict) != 0:
@@ -1193,6 +1198,10 @@ class Application():
             return return_dict
 
         for current_line in line_iterator:
+            assert self._line_to_struc[current_line][1].get_tuple() == self._line_to_struc[current_line][0].get_tuple(), \
+                'Structure object dimensions and calculation object dimensions are not simlar.\n' + \
+                str(self._line_to_struc[current_line][1].get_tuple()) + str(
+                    self._line_to_struc[current_line][0].get_tuple())
             slamming_pressure = 0
             if current_line in self._line_to_struc.keys():
                 obj_structure = self._line_to_struc[current_line][0]
@@ -1209,16 +1218,16 @@ class Application():
                 except KeyError:
                     design_pressure = 0
 
-                sec_mod = [round(obj_structure.get_section_modulus()[0], 5),
-                           round(obj_structure.get_section_modulus()[1], 5)]
+                sec_mod = [round(obj_scnt_calc.get_section_modulus()[0], 5),
+                           round(obj_scnt_calc.get_section_modulus()[1], 5)]
 
-                shear_area = obj_structure.get_shear_area()
+                shear_area = obj_scnt_calc.get_shear_area()
                 min_shear = obj_scnt_calc.get_minimum_shear_area(design_pressure)
                 min_sec_mod = obj_scnt_calc.get_dnv_min_section_modulus(design_pressure)
                 min_thk = obj_scnt_calc.get_dnv_min_thickness(design_pressure)
                 buckling = [round(res, 2) for res in obj_scnt_calc.calculate_buckling_all(
                     design_lat_press=design_pressure,
-                    checked_side=obj_structure.get_side())]
+                    checked_side=obj_scnt_calc.get_side())]
 
                 return_dict['slamming'][current_line] = dict()
                 if slamming_pressure is not None and slamming_pressure > 0:
@@ -1277,8 +1286,9 @@ class Application():
                 return_dict['pressure_uls'][current_line] = design_pressure
                 return_dict['pressure_fls'][current_line] = {'p_int': p_int, 'p_ext': p_ext}
                 return_dict['section_modulus'][current_line] = {'sec_mod': sec_mod, 'min_sec_mod': min_sec_mod}
+                #print(current_line, {'sec_mod': sec_mod, 'min_sec_mod': min_sec_mod})
                 return_dict['shear_area'][current_line] = {'shear_area': shear_area, 'min_shear_area': min_shear}
-                return_dict['thickness'][current_line] = {'thk': obj_structure.get_plate_thk(), 'min_thk': min_thk}
+                return_dict['thickness'][current_line] = {'thk': obj_scnt_calc.get_plate_thk(), 'min_thk': min_thk}
                 return_dict['struc_obj'][current_line] = obj_structure
                 return_dict['scant_calc_obj'][current_line] = obj_scnt_calc
                 return_dict['fatigue_obj'][current_line] = fatigue_obj
@@ -1330,8 +1340,8 @@ class Application():
 
         # Drawing shortcut information if selected.
         if self._new_shortcut_backdrop.get() == True:
-            self._main_canvas.create_text(800, 70, text = self._shortcut_text, font=self._text_size["Text 8"],
-                                          fill = 'red')
+            self._main_canvas.create_text(800, 80, text = self._shortcut_text, font=self._text_size["Text 8"],
+                                          fill = 'black')
 
         # drawing the point dictionary
         pt_size = 3
@@ -1844,7 +1854,7 @@ class Application():
         except TclError:
             messagebox.showinfo(title='Input error', message='Input must be a line number.')
 
-    def new_structure(self, event = None, pasted_structure = None):
+    def new_structure(self, event = None, pasted_structure = None, multi_return = None):
         '''
         This method maps the structure to the line when clicking "add structure to line" button.
         The result is put in a dictionary. Key is line name and value is the structure object.
@@ -1857,18 +1867,22 @@ class Application():
             [4] load combinations result (currently not used)
         :return:
         '''
-        if any([self._new_stf_spacing.get()==0, self._new_plate_thk.get()==0, self._new_stf_web_h.get()==0,
-                self._new_sft_web_t.get()==0]):
-            mess = tk.messagebox.showwarning('No propertied defined', 'No properties is defined for the line!\n'
-                                                                      'Define spacing, web height, web thickness etc.\n'
-                                                                      'Either press button with stiffener or input'
-                                                                      'manually.', type='ok')
-            return
+        if all([pasted_structure == None, multi_return == None]):
+            if any([self._new_stf_spacing.get()==0, self._new_plate_thk.get()==0, self._new_stf_web_h.get()==0,
+                    self._new_sft_web_t.get()==0]):
+                mess = tk.messagebox.showwarning('No propertied defined', 'No properties is defined for the line!\n'
+                                                                          'Define spacing, web height, web thickness etc.\n'
+                                                                          'Either press button with stiffener or input'
+                                                                          'manually.', type='ok')
+                return
 
-        if self._line_is_active:
+        if self._line_is_active or multi_return != None:
             # structure dictionary: name of line : [ 0.Structure class, 1.calc scantling class,
             # 2.calc fatigue class, 3.load object, 4.load combinations result ]
-            if pasted_structure == None:
+            if multi_return != None:
+                obj_dict = multi_return[1].get_structure_prop()
+
+            elif pasted_structure == None:
                 obj_dict = {'mat_yield': [self._new_material.get()*1e6, 'Pa'],
                             'span': [self._new_field_len.get(), 'm'],
                             'spacing': [self._new_stf_spacing.get()/1000, 'm'],
@@ -1893,7 +1907,6 @@ class Application():
                             'zstar_optimization': [self._new_zstar_optimization.get(), '']}
             else:
                 obj_dict = pasted_structure.get_structure_prop()
-
 
             if self._active_line not in self._line_to_struc.keys():
                 self._line_to_struc[self._active_line] = [None, None, None, [None], {}]
@@ -2554,6 +2567,8 @@ class Application():
         self._parent.bind('<Control-d>', self.paste_property)
         self._parent.bind('<Left>', self.left_arrow)
         self._parent.bind('<Right>', self.right_arrow)
+        self._parent.bind('<Down>', self.up_arrow)
+        self._parent.bind('<Up>', self.down_arrow)
         #self._parent.bind('<Enter>', self.enter_key_pressed)
 
     def left_arrow(self, event):
@@ -2580,6 +2595,32 @@ class Application():
                 self._active_line = list(self._line_dict.keys())[idx+1]
             else:
                 self._active_line = list(self._line_dict.keys())[0]
+        self.update_frame()
+
+    def up_arrow(self, event):
+
+        if self._active_point == '':
+            return
+        else:
+            idx = list(self._point_dict.keys()).index(self._active_point)
+
+            if idx - 1 >= 0:
+                self._active_point = list(self._point_dict.keys())[idx - 1]
+            else:
+                self._active_point = list(self._point_dict.keys())[-1]
+        self.update_frame()
+
+    def down_arrow(self, event):
+
+        if self._active_point == '':
+            return
+        else:
+            idx = list(self._point_dict.keys()).index(self._active_point)
+
+            if idx + 1 < len(list(self._point_dict.keys())):
+                self._active_point = list(self._point_dict.keys())[idx + 1]
+            else:
+                self._active_point = list(self._point_dict.keys())[0]
         self.update_frame()
 
     def mouse_scroll(self,event):
@@ -3139,21 +3180,22 @@ class Application():
         # Storing the the returned data to temporary variable.
         self.__returned_load_data = [returned_loads, counter, load_comb_dict]
 
-    def on_close_opt_window(self,returned_objects):
+    def on_close_opt_window(self,returned_object):
         '''
         Sets the returned properties.
         :param returned_structure:
         :return:
         '''
 
-        self._line_to_struc[self._active_line][0]=returned_objects[0]
-        self._line_to_struc[self._active_line][1]=returned_objects[1]
-        self._line_to_struc[self._active_line][1].need_recalc = True
-        self.set_selected_variables(self._active_line)
-        if returned_objects[2] is not None:
-            self._line_to_struc[self._active_line][2] = CalcFatigue(returned_objects[0].get_structure_prop(),
-                                                                    returned_objects[2])
-        self.new_structure()
+        self.new_structure(multi_return = returned_object[0:3])
+        # self._line_to_struc[self._active_line][0]=returned_objects[0]
+        # self._line_to_struc[self._active_line][1]=returned_objects[1]
+        # self._line_to_struc[self._active_line][1].need_recalc = True
+        # self.set_selected_variables(self._active_line)
+        # if returned_objects[2] is not None:
+        #     self._line_to_struc[self._active_line][2] = CalcFatigue(returned_objects[0].get_structure_prop(),
+        #                                                             returned_objects[2])
+        # self.new_structure()
         self.update_frame()
 
     def on_close_opt_multiple_window(self, returned_objects):
@@ -3162,16 +3204,11 @@ class Application():
         :param returned_structure:
         :return:
         '''
-        for line,objects in returned_objects.items():
-            self._line_to_struc[line][0] = returned_objects[line][0]
-            self._line_to_struc[line][0].need_recalc = True
-            self._line_to_struc[line][1] = returned_objects[line][1]
-            self.set_selected_variables(line)
-            if returned_objects[line][2] is not None:
-                self._line_to_struc[line][2] = CalcFatigue(returned_objects[line][0].get_structure_prop(),
-                                                           returned_objects[line][2])
+
+        for line,all_objs in returned_objects.items():
             self._active_line = line
-            self.new_structure()
+            #self._line_to_struc[line][1].need_recalc = True
+            self.new_structure(multi_return= all_objs[0:3])
         self.update_frame()
 
     def on_close_structure_window(self,returned_structure):
@@ -3231,6 +3268,12 @@ class Application():
         self._line_to_struc[self._active_line][1].need_recalc = True
         if self.__returned_load_data is not None:
             map(self.on_close_load_window, self.__returned_load_data)
+
+        # adding values to the line dictionary. resetting first.
+        for key, value in self._line_to_struc.items():
+            self._line_to_struc[key][1].need_recalc = True  # All lines need recalculations.
+
+        self.update_frame()
 
     def on_aborted_load_window(self):
         '''

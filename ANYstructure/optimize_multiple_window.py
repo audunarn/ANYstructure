@@ -11,6 +11,7 @@ from ANYstructure.helper import *
 import ANYstructure.helper as hlp
 from tkinter.filedialog import askopenfilenames
 from multiprocessing import cpu_count
+import ANYstructure.optimize as opt
 
 class CreateOptimizeMultipleWindow():
     '''
@@ -445,7 +446,7 @@ class CreateOptimizeMultipleWindow():
         counter = 0
         found_files = self._filez
         for line in self._active_lines:
-            init_obj = self._line_to_struc[line][0]
+            init_obj = self._line_to_struc[line][1]
 
             if __name__ == '__main__':
                 lateral_press = 200 #for testing
@@ -484,7 +485,7 @@ class CreateOptimizeMultipleWindow():
             else:
                 predefined_stiffener_iter = None
 
-            self._opt_results[line] = op.run_optmizataion(init_obj, self.get_lower_bounds(init_obj),
+            self._opt_results[line] = list(op.run_optmizataion(init_obj, self.get_lower_bounds(init_obj),
                                                           self.get_upper_bounds(init_obj),
                                                           lateral_press,self.get_deltas(),
                                                           algorithm=self._new_algorithm.get(),
@@ -497,7 +498,8 @@ class CreateOptimizeMultipleWindow():
                                                           slamming_press=slamming_pressure,
                                                           predefined_stiffener_iter = predefined_stiffener_iter,
                                                           processes=self._new_processes.get(),
-                                                          min_max_span=max_min_span)
+                                                          min_max_span=max_min_span))
+
             counter += 1
             self.progress_count.set(counter)
             self.progress_bar.update_idletasks()
@@ -514,6 +516,7 @@ class CreateOptimizeMultipleWindow():
         counter += 1
         self.progress_bar.stop()
         self.run_button.config(bg='green')
+        self.draw_properties()
 
     def opt_harmonizer(self):
         '''
@@ -522,17 +525,26 @@ class CreateOptimizeMultipleWindow():
         '''
 
         # Find highest section modulus.
-        highest, lines = 0, []
-        for line in self._opt_results.keys():
-            lines.append(line)
-            if min(self._opt_results[line][0].get_section_modulus()) > highest:
-                highest = min(self._opt_results[line][0].get_section_modulus())
-                highest_line = line
-        harminized_value = self._opt_results[highest_line]
+        highest = 0
 
-        for line in lines:
-            print(line)
-            self._opt_results[line] = harminized_value
+        for line in self._opt_results.keys(): # TODO stresses not set correctly when returning.
+            # print(line, self._opt_results[line][1].get_section_modulus())
+            # print(self._opt_results[line][1])
+            assert self._opt_results[line][1].get_tuple() == self._opt_results[line][1].get_tuple(), \
+                'Structure object dimensions and calculation object dimensions are not similar.\n'+ \
+                str(self._opt_results[line][1].get_tuple()) + str(self._opt_results[line][1].get_tuple())
+            init_obj = self._opt_results[line][1]
+            weight = op.calc_weight([init_obj.get_s(), init_obj.get_pl_thk(), init_obj.get_web_h(),
+                                     init_obj.get_web_thk(), init_obj.get_fl_w(), init_obj.get_fl_thk(),
+                                     init_obj.get_span(),init_obj.get_lg()])
+            if weight > highest:
+                highest = weight
+                highest_line = line
+
+        harmonized_x = self._opt_results[highest_line][1].get_tuple()
+        for line in self._opt_results.keys():
+            self._opt_results[line][0] = opt.create_new_structure_obj(self._line_to_struc[line][0], harmonized_x)
+            self._opt_results[line][1] = opt.create_new_calc_obj(self._line_to_struc[line][1], harmonized_x)[0]
 
     def get_running_time(self):
         '''
@@ -620,9 +632,9 @@ class CreateOptimizeMultipleWindow():
         ctr_y = self._prop_canvas_dim[1] / 2 + 200
         opt_color, opt_stippe = 'red', 'gray12'
         m = self._draw_scale
-
+        self._canvas_opt.delete('all')
         if init_obj != None:
-            self._canvas_opt.delete('all')
+
             self.checkered(10)
             init_color, init_stipple = 'blue', 'gray12'
 
@@ -715,9 +727,14 @@ class CreateOptimizeMultipleWindow():
                                                                                 opt_obj.get_span(),
                                                                                 opt_obj.get_lg()]))),
                                         font='Verdana 8', fill=opt_color)
+        elif self._opt_results != {}:
+            self._canvas_opt.config(bg='green')
+            self._canvas_opt.create_text(200, 200, text='Optimization results avaliable.\n\n'
+                                                       'Middle click line to view results.', font = 'Verdana 14 bold')
+
         else:
             self._canvas_opt.config(bg='mistyrose')
-            self._canvas_opt.create_text(200, 60, text='No optimized solution found.', font = 'Verdana 14 bold')
+            self._canvas_opt.create_text(200, 60, text='No optimization results found.', font = 'Verdana 14 bold')
 
 
 
@@ -727,7 +744,7 @@ class CreateOptimizeMultipleWindow():
             else:
                 lateral_press = self.app.get_highest_pressure(line)['normal'] / 1000
             self._canvas_opt.create_text(250, self._prop_canvas_dim[1]-10,
-                                        text='Lateral pressure: '+str(lateral_press)+' kPa',
+                                        text= line + ' lateral pressure: '+str(lateral_press)+' kPa',
                                         font='Verdana 10 bold',fill='red')
             
     def draw_select_canvas(self, load_selected=False):
@@ -765,8 +782,10 @@ class CreateOptimizeMultipleWindow():
                 vector = [coord2[0] - coord1[0], coord2[1] - coord1[1]]
                 # drawing a bold line if it is selected
                 if line in self._active_lines:
-
-                    self._canvas_select.create_line(coord1, coord2, width=6, fill=color)
+                    width = 6
+                    if line in self._opt_results.keys():
+                        color, width = 'orange', 8
+                    self._canvas_select.create_line(coord1, coord2, width=width, fill=color)
                     self._canvas_select.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 + 10,
                                                  text='Line ' + str(get_num(line)), font='Verdand 10 bold',
                                                  fill='red')
@@ -941,7 +960,10 @@ class CreateOptimizeMultipleWindow():
         :param evnet:
         :return:
         '''
+
         self._previous_drag_mouse = [event.x, event.y]
+        if self._opt_results == {}:
+            return
         click_x = self._canvas_select.winfo_pointerx() - self._canvas_select.winfo_rootx()
         click_y = self._canvas_select.winfo_pointery() - self._canvas_select.winfo_rooty()
 
@@ -992,7 +1014,7 @@ class CreateOptimizeMultipleWindow():
             for line in self._active_lines:
                 to_return[line] = self._opt_results[line]
             self.app.on_close_opt_multiple_window(to_return)
-            messagebox.showinfo(title='Return info', message='Returning: '+str(to_return.keys()))
+            messagebox.showinfo(title='Return info', message='Returning: '+str(list(to_return.keys())))
         except IndexError:
             messagebox.showinfo(title='Nothing to return', message='No results to return.')
             return
