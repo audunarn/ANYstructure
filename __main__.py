@@ -15,9 +15,5 @@ def main(args=None):
     # Do argument parsing here (eg. with argparse) and anything else
     # you want your project to do.
 
-
-def get_version():
-    return 2.2
-
 if __name__ == "__main__":
     main()
