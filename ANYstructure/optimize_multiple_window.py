@@ -516,6 +516,7 @@ class CreateOptimizeMultipleWindow():
         counter += 1
         self.progress_bar.stop()
         self.run_button.config(bg='green')
+        self.draw_properties()
 
     def opt_harmonizer(self):
         '''
@@ -627,9 +628,9 @@ class CreateOptimizeMultipleWindow():
         ctr_y = self._prop_canvas_dim[1] / 2 + 200
         opt_color, opt_stippe = 'red', 'gray12'
         m = self._draw_scale
-
+        self._canvas_opt.delete('all')
         if init_obj != None:
-            self._canvas_opt.delete('all')
+
             self.checkered(10)
             init_color, init_stipple = 'blue', 'gray12'
 
@@ -722,9 +723,14 @@ class CreateOptimizeMultipleWindow():
                                                                                 opt_obj.get_span(),
                                                                                 opt_obj.get_lg()]))),
                                         font='Verdana 8', fill=opt_color)
+        elif self._opt_results != {}:
+            self._canvas_opt.config(bg='green')
+            self._canvas_opt.create_text(200, 200, text='Optimization results avaliable.\n\n'
+                                                       'Middle click line to view results.', font = 'Verdana 14 bold')
+
         else:
             self._canvas_opt.config(bg='mistyrose')
-            self._canvas_opt.create_text(200, 60, text='No optimized solution found.', font = 'Verdana 14 bold')
+            self._canvas_opt.create_text(200, 60, text='No optimization results found.', font = 'Verdana 14 bold')
 
 
 
@@ -734,7 +740,7 @@ class CreateOptimizeMultipleWindow():
             else:
                 lateral_press = self.app.get_highest_pressure(line)['normal'] / 1000
             self._canvas_opt.create_text(250, self._prop_canvas_dim[1]-10,
-                                        text='Lateral pressure: '+str(lateral_press)+' kPa',
+                                        text= line + ' lateral pressure: '+str(lateral_press)+' kPa',
                                         font='Verdana 10 bold',fill='red')
             
     def draw_select_canvas(self, load_selected=False):
@@ -772,8 +778,10 @@ class CreateOptimizeMultipleWindow():
                 vector = [coord2[0] - coord1[0], coord2[1] - coord1[1]]
                 # drawing a bold line if it is selected
                 if line in self._active_lines:
-
-                    self._canvas_select.create_line(coord1, coord2, width=6, fill=color)
+                    width = 6
+                    if line in self._opt_results.keys():
+                        color, width = 'orange', 8
+                    self._canvas_select.create_line(coord1, coord2, width=width, fill=color)
                     self._canvas_select.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 + 10,
                                                  text='Line ' + str(get_num(line)), font='Verdand 10 bold',
                                                  fill='red')
@@ -948,7 +956,10 @@ class CreateOptimizeMultipleWindow():
         :param evnet:
         :return:
         '''
+
         self._previous_drag_mouse = [event.x, event.y]
+        if self._opt_results == {}:
+            return
         click_x = self._canvas_select.winfo_pointerx() - self._canvas_select.winfo_rootx()
         click_y = self._canvas_select.winfo_pointery() - self._canvas_select.winfo_rooty()
 

@@ -3263,6 +3263,12 @@ class Application():
         if self.__returned_load_data is not None:
             map(self.on_close_load_window, self.__returned_load_data)
 
+        # adding values to the line dictionary. resetting first.
+        for key, value in self._line_to_struc.items():
+            self._line_to_struc[key][1].need_recalc = True  # All lines need recalculations.
+
+        self.update_frame()
+
     def on_aborted_load_window(self):
         '''
         When it is aborted due to closing.

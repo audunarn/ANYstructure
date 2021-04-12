@@ -286,7 +286,7 @@ class CreateLoadWindow():
                 vector = [coord2[0] - coord1[0], coord2[1] - coord1[1]]
                 # drawing a bold line if it is selected
                 if line in self._active_lines:
-                    self._main_canvas.create_line(coord1, coord2, width=6, fill=color)
+                    self._main_canvas.create_line(coord1, coord2, width=6, fill='orange')
                     self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 + 10,
                                                  text='Line ' + str(get_num(line)), font='Verdand 10 bold',
                                                  fill='red')
