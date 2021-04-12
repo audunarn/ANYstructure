@@ -109,13 +109,13 @@ class Structure():
         Return sigma_y2
         :return:
         '''
-        return self.sigma_y1
+        return self.sigma_y2
     def get_sigma_x(self):
         '''
         Return sigma_x
         :return:
         '''
-        return self.sigma_y1
+        return self.sigma_x
     def get_tau_xy(self):
         '''
         Return tau_xy

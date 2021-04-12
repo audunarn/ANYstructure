@@ -1186,6 +1186,8 @@ class Application():
         line_iterator, slamming_pressure = [], None
         return_dict['slamming'][current_line] = {}
 
+
+
         if current_line is None and active_line_only:
             line_iterator = [self._active_line, ]
         elif current_line is None and not active_line_only and len(self._line_dict) != 0:
@@ -1196,6 +1198,10 @@ class Application():
             return return_dict
 
         for current_line in line_iterator:
+            assert self._line_to_struc[current_line][1].get_tuple() == self._line_to_struc[current_line][0].get_tuple(), \
+                'Structure object dimensions and calculation object dimensions are not simlar.\n' + \
+                str(self._line_to_struc[current_line][1].get_tuple()) + str(
+                    self._line_to_struc[current_line][0].get_tuple())
             slamming_pressure = 0
             if current_line in self._line_to_struc.keys():
                 obj_structure = self._line_to_struc[current_line][0]
