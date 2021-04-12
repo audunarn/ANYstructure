@@ -1198,10 +1198,6 @@ class Application():
             return return_dict
 
         for current_line in line_iterator:
-            assert self._line_to_struc[current_line][1].get_tuple() == self._line_to_struc[current_line][0].get_tuple(), \
-                'Structure object dimensions and calculation object dimensions are not simlar.\n' + \
-                str(self._line_to_struc[current_line][1].get_tuple()) + str(
-                    self._line_to_struc[current_line][0].get_tuple())
             slamming_pressure = 0
             if current_line in self._line_to_struc.keys():
                 obj_structure = self._line_to_struc[current_line][0]
@@ -2079,7 +2075,6 @@ class Application():
         if self._line_to_struc[line_name][0].get_structure_type() in ['', 'FRAME','GENERAL_INTERNAL_NONWT']:
             return [0, '']
         else:
-
             return_value = one_load_combination(line_name_obj, coord, defined_loads, load_condition,
                                                 defined_tanks, comb_name, acc, load_factors_all)
 
@@ -3059,8 +3054,9 @@ class Application():
         User open window to optimize current structure
         :return:
         '''
+
         if [self.get_highest_pressure(line)['normal'] for line in self._line_to_struc.keys()] == []:
-            messagebox.showinfo(title='Missing something', message='Make something')
+            messagebox.showinfo(title='Missing something', message='Missing properties/loads etc.')
             return
 
         try:

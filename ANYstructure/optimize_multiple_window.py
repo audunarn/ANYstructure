@@ -530,9 +530,9 @@ class CreateOptimizeMultipleWindow():
         for line in self._opt_results.keys(): # TODO stresses not set correctly when returning.
             # print(line, self._opt_results[line][1].get_section_modulus())
             # print(self._opt_results[line][1])
-            assert self._opt_results[line][1].get_tuple() == self._opt_results[line][1].get_tuple(), \
-                'Structure object dimensions and calculation object dimensions are not similar.\n'+ \
-                str(self._opt_results[line][1].get_tuple()) + str(self._opt_results[line][1].get_tuple())
+            # assert self._opt_results[line][1].get_tuple() == self._opt_results[line][1].get_tuple(), \
+            #     'Structure object dimensions and calculation object dimensions are not similar.\n'+ \
+            #     str(self._opt_results[line][1].get_tuple()) + str(self._opt_results[line][1].get_tuple())
             init_obj = self._opt_results[line][1]
             weight = op.calc_weight([init_obj.get_s(), init_obj.get_pl_thk(), init_obj.get_web_h(),
                                      init_obj.get_web_thk(), init_obj.get_fl_w(), init_obj.get_fl_thk(),
