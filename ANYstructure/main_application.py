@@ -80,7 +80,10 @@ class Application():
                               'CTRL-E Copy line properties from active line\n' \
                               'CTRL-D Paste line propeties to active line\n' \
                               'Mouse click left/right - select line/point\n' \
-                              'Arrows left/right - prvious/next line'
+                              'Arrows left/right - previous/next line\n' \
+                              'Arrows up/down - previous/next point'
+
+
         undo_redo = tk.Menu(menu)
         menu.add_cascade(label='Geometry', menu=undo_redo)
         undo_redo.add_command(label='Undo geometry action (CTRL-Z)', command=self.undo)
@@ -1331,8 +1334,8 @@ class Application():
 
         # Drawing shortcut information if selected.
         if self._new_shortcut_backdrop.get() == True:
-            self._main_canvas.create_text(800, 70, text = self._shortcut_text, font=self._text_size["Text 8"],
-                                          fill = 'red')
+            self._main_canvas.create_text(800, 80, text = self._shortcut_text, font=self._text_size["Text 8"],
+                                          fill = 'black')
 
         # drawing the point dictionary
         pt_size = 3
@@ -2558,6 +2561,8 @@ class Application():
         self._parent.bind('<Control-d>', self.paste_property)
         self._parent.bind('<Left>', self.left_arrow)
         self._parent.bind('<Right>', self.right_arrow)
+        self._parent.bind('<Down>', self.up_arrow)
+        self._parent.bind('<Up>', self.down_arrow)
         #self._parent.bind('<Enter>', self.enter_key_pressed)
 
     def left_arrow(self, event):
@@ -2584,6 +2589,32 @@ class Application():
                 self._active_line = list(self._line_dict.keys())[idx+1]
             else:
                 self._active_line = list(self._line_dict.keys())[0]
+        self.update_frame()
+
+    def up_arrow(self, event):
+
+        if self._active_point == '':
+            return
+        else:
+            idx = list(self._point_dict.keys()).index(self._active_point)
+
+            if idx - 1 >= 0:
+                self._active_point = list(self._point_dict.keys())[idx - 1]
+            else:
+                self._active_point = list(self._point_dict.keys())[-1]
+        self.update_frame()
+
+    def down_arrow(self, event):
+
+        if self._active_point == '':
+            return
+        else:
+            idx = list(self._point_dict.keys()).index(self._active_point)
+
+            if idx + 1 < len(list(self._point_dict.keys())):
+                self._active_point = list(self._point_dict.keys())[idx + 1]
+            else:
+                self._active_point = list(self._point_dict.keys())[0]
         self.update_frame()
 
     def mouse_scroll(self,event):
