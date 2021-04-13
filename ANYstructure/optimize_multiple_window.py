@@ -425,7 +425,7 @@ class CreateOptimizeMultipleWindow():
         :return:
         '''
         self.run_button.config(bg = 'white')
-
+        self._opt_results = {}
         t_start = time.time()
 
         self.progress_bar.config(maximum=len(self._active_lines))
@@ -525,26 +525,33 @@ class CreateOptimizeMultipleWindow():
         '''
 
         # Find highest section modulus.
-        highest = 0
+        highest, highest_line = 0, None
 
         for line in self._opt_results.keys(): # TODO stresses not set correctly when returning.
-            # print(line, self._opt_results[line][1].get_section_modulus())
-            # print(self._opt_results[line][1])
-            # assert self._opt_results[line][1].get_tuple() == self._opt_results[line][1].get_tuple(), \
-            #     'Structure object dimensions and calculation object dimensions are not similar.\n'+ \
-            #     str(self._opt_results[line][1].get_tuple()) + str(self._opt_results[line][1].get_tuple())
-            init_obj = self._opt_results[line][1]
-            weight = op.calc_weight([init_obj.get_s(), init_obj.get_pl_thk(), init_obj.get_web_h(),
-                                     init_obj.get_web_thk(), init_obj.get_fl_w(), init_obj.get_fl_thk(),
-                                     init_obj.get_span(),init_obj.get_lg()])
-            if weight > highest:
-                highest = weight
-                highest_line = line
-
-        harmonized_x = self._opt_results[highest_line][1].get_tuple()
-        for line in self._opt_results.keys():
-            self._opt_results[line][0] = opt.create_new_structure_obj(self._line_to_struc[line][0], harmonized_x)
-            self._opt_results[line][1] = opt.create_new_calc_obj(self._line_to_struc[line][1], harmonized_x)[0]
+            if self._opt_results[line][1] is not None:
+                init_obj = self._opt_results[line][1]
+                weight = op.calc_weight([init_obj.get_s(), init_obj.get_pl_thk(), init_obj.get_web_h(),
+                                         init_obj.get_web_thk(), init_obj.get_fl_w(), init_obj.get_fl_thk(),
+                                         init_obj.get_span(),init_obj.get_lg()])
+                if weight > highest:
+                    highest = weight
+                    highest_line = line
+        if highest != 0 and highest_line is not None:
+            harmonized_x = self._opt_results[highest_line][1].get_tuple()
+            for line in self._opt_results.keys():
+                self._opt_results[line][0] = opt.create_new_structure_obj(self._line_to_struc[line][0], harmonized_x)
+                self._opt_results[line][1] = opt.create_new_calc_obj(self._line_to_struc[line][1], harmonized_x)[0]
+                if self._line_to_struc[line][2] != None:
+                    self._opt_results[line][2] = opt.create_new_calc_obj(init_obj= self._line_to_struc[line][1],
+                                                                         x = harmonized_x,
+                                                                         fat_dict=self._line_to_struc[line]
+                                                                         [2].get_fatigue_properties())[1]
+                else:
+                    self._line_to_struc[line][2] = None
+        else:
+            for line in self._opt_results.keys():
+                self._opt_results[line][0] = None
+                self._opt_results[line][1] = None
 
     def get_running_time(self):
         '''
@@ -730,7 +737,8 @@ class CreateOptimizeMultipleWindow():
         elif self._opt_results != {}:
             self._canvas_opt.config(bg='green')
             self._canvas_opt.create_text(200, 200, text='Optimization results avaliable.\n\n'
-                                                       'Middle click line to view results.', font = 'Verdana 14 bold')
+                                                       'Middle click orange lines to\n view results.',
+                                         font = 'Verdana 14 bold')
 
         else:
             self._canvas_opt.config(bg='mistyrose')
@@ -1009,15 +1017,20 @@ class CreateOptimizeMultipleWindow():
         if __name__ == '__main__':
             self._frame.destroy()
             return
-        try:
-            to_return = {}
-            for line in self._active_lines:
-                to_return[line] = self._opt_results[line]
-            self.app.on_close_opt_multiple_window(to_return)
-            messagebox.showinfo(title='Return info', message='Returning: '+str(list(to_return.keys())))
-        except IndexError:
+        if self._opt_results == {}:
             messagebox.showinfo(title='Nothing to return', message='No results to return.')
             return
+        else:
+            to_return = {}
+            for line in self._active_lines:
+                if self._opt_results[line][1] is not None:
+                    to_return[line] = self._opt_results[line]
+            self.app.on_close_opt_multiple_window(to_return)
+            messagebox.showinfo(title='Return info', message='Returning: '+str(list(to_return.keys())) +
+                                                             '\nLines withot results are not returned.')
+        # except IndexError:
+        #     messagebox.showinfo(title='Nothing to return', message='No results to return.')
+        #     return
         self._frame.destroy()
 
     def toggle(self, found_files = None, obj = None, iterating = False):
