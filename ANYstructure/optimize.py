@@ -47,8 +47,8 @@ def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lat
         fat_dict = None if fatigue_obj is None else fatigue_obj.get_fatigue_properties()
 
     if use_weight_filter:
-        if is_geometric or algorithm == 'pso':
 
+        if is_geometric or algorithm == 'pso':
             init_filter_weight = float('inf')
         else:
 
@@ -61,7 +61,8 @@ def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lat
                                                     len(predefined_stiffener_iter),
                                                     fat_dict=fat_dict,
                                                     fat_press=None if fat_press_ext_int is None else fat_press_ext_int,
-                                                    predefined_stiffener_iter = predefined_stiffener_iter)
+                                                    predefined_stiffener_iter = predefined_stiffener_iter,
+                                                    slamming_press=slamming_press)
 
     if algorithm == 'anysmart' and not is_geometric:
         to_return = any_smart_loop(min_var, max_var, deltas, initial_structure_obj, lateral_pressure,
@@ -210,7 +211,6 @@ def any_smart_loop_geometric(min_var,max_var,deltas,initial_structure_obj,latera
             this_predefiened_objects = hlp.helper_read_section_file(predefiened_stiffener_iter, struc_obj)
         else:
             this_predefiened_objects = None
-
 
         opt_obj = any_smart_loop(min_var = min_var,max_var = max_var,deltas = deltas,initial_structure_obj = struc_obj,
                                  lateral_pressure = lat_press, init_filter = init_filter, side=side,
@@ -421,6 +421,7 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                     with open('geo_opt_2.pickle', 'rb') as file:
                         opt_objects = pickle.load(file)[no_of_fractions][1]
                 else:
+
                     opt_objects = any_smart_loop_geometric(min_var=min_var,max_var=max_var,deltas=deltas,
                                                            initial_structure_obj=working_objects[no_of_fractions],
                                                            lateral_pressure=working_lateral[no_of_fractions],
@@ -505,6 +506,7 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
     '''
     all_checks = [0,0,0,0,0,0,0,0]
     this_weight = calc_weight(x)
+
     if this_weight > init_weight:
         weigt_frac = this_weight / init_weight
         if print_result:
@@ -568,9 +570,11 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
             return False, 'Shear area', x,  all_checks
 
     # Fatigue
-    if chk[4] and fat_dict is not None:
+    if chk[4] and fat_dict is not None and fat_press is not None:
+
         fatigue_uf = calc_object[1].get_total_damage(ext_press=fat_press[0],
                                                      int_press=fat_press[1])*calc_object[1].get_dff()
+
         all_checks[6] = fatigue_uf
         if fatigue_uf > 1:
             if print_result:
@@ -578,6 +582,7 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
             return False, 'Fatigue', x, all_checks
 
     # Slamming
+
     if chk[5] and slamming_press != 0:
         slam_check = calc_object[0].check_all_slamming(slamming_press)
         all_checks[7] = slam_check[1]
@@ -831,7 +836,7 @@ def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight
     :param chk:
     :return:
     '''
-    #print('Init filter weigh', init_filter_weight)
+    #print('Init filter weight', init_filter_weight)
 
     iter_var = ((item,init_stuc_obj,lat_press,init_filter_weight,side,chk,fat_dict,fat_press,slamming_press)
                 for item in iterable_all)
@@ -911,7 +916,8 @@ def any_get_all_combs(min_var, max_var,deltas, init_weight = float('inf'), prede
 
     return comb
 
-def get_initial_weight(obj,lat_press,min_var,max_var,deltas,trials,fat_dict,fat_press, predefined_stiffener_iter):
+def get_initial_weight(obj,lat_press,min_var,max_var,deltas,trials,fat_dict,fat_press, predefined_stiffener_iter,
+                       slamming_press):
     '''
     Return a guess of the initial weight used to filter the constraints.
     Only aim is to reduce running time of the algorithm.
@@ -927,7 +933,7 @@ def get_initial_weight(obj,lat_press,min_var,max_var,deltas,trials,fat_dict,fat_
 
     for x in trial_selection:
         if any_constraints_all(x=x,obj=obj,lat_press=lat_press,init_weight=min_weight,
-                               fat_dict=fat_dict,fat_press = fat_press)[0]:
+                               fat_dict=fat_dict,fat_press = fat_press,slamming_press=slamming_press)[0]:
             current_weight = calc_weight(x)
             if current_weight < min_weight:
                 min_weight = current_weight

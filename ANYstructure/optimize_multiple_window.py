@@ -327,7 +327,7 @@ class CreateOptimizeMultipleWindow():
         tk.Checkbutton(self._frame, variable=self._new_check_fatigue).place(x=start_x + dx * 12, y=start_y + 8 * dy)
         tk.Checkbutton(self._frame, variable=self._new_check_slamming).place(x=start_x + dx * 12, y=start_y + 9 * dy)
         tk.Checkbutton(self._frame, variable=self._new_check_local_buckling).place(x=start_x + dx * 12,
-                                                                                   y=start_y + 9.5 * dy)
+                                                                                   y=start_y + 10 * dy)
         tk.Checkbutton(self._frame, variable=self._new_harmonizer).place(x=start_x + dx * 9, y=start_y - 10.5 * dy)
 
         self._toggle_btn = tk.Button(self._frame, text="Iterate predefiened stiffeners", relief="raised",

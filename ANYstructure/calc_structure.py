@@ -491,6 +491,7 @@ class CalcScantlings(Structure):
         ''' Slamming pressure input is Pa '''
         ka1 = 1.1
         ka2 = min(max(0.4, self.spacing / self.span), 1)
+
         ka = math.pow(ka1 - 0.25*ka2,2)
         sigmaf = self.mat_yield/1e6  # MPa
         psl = slamming_pressure/1000  # kPa
@@ -531,7 +532,7 @@ class CalcScantlings(Structure):
             return False, chk1
 
         stf_res = self.calculate_slamming_stiffener(slamming_pressure)
-
+        #print('Slamming checked')
         if self.web_th*1000 < stf_res['tw_req']:
             chk2 = stf_res['tw_req'] / self.web_th*1000
             return False, chk2
