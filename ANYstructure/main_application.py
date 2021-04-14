@@ -1299,7 +1299,7 @@ class Application():
                 shear_util = 0 if shear_area == 0 else min_shear / shear_area
                 thk_util = 0 if obj_structure.get_plate_thk() == 0 else min_thk / (1000 * obj_structure.get_plate_thk())
                 sec_util = 0 if min(sec_mod) == 0 else min_sec_mod / min(sec_mod)
-                buc_util = 1 if float('inf') in buckling else max(buckling)
+                buc_util = 1 if float('inf') in buckling else max(buckling[0:5])
                 return_dict['utilization'][current_line] = {'buckling': buc_util,
                                                             'fatigue': fat_util,
                                                             'section': sec_util,

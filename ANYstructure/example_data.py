@@ -36,6 +36,14 @@ obj_dict2 = {'mat_yield': [355e6, 'Pa'], 'span': [4, 'm'], 'spacing': [0.7, 'm']
             'sigma_y1': [100, 'MPa'], 'sigma_y2': [100, 'MPa'], 'sigma_x': [50, 'MPa'], 'tau_xy': [5, 'MPa'],
             'stf_type': ['T', ''], 'structure_types': [structure_types, ''], 'zstar_optimization': [True, ''] }
 
+obj_dict_sec_error = {'mat_yield': [355e6, 'Pa'], 'span': [3.5, 'm'], 'spacing': [0.875, 'm'],
+            'plate_thk': [0.023, 'm'],
+            'stf_web_height': [0.41, 'm'], 'stf_web_thk': [0.012, 'm'], 'stf_flange_width': [0.17, 'm'],
+            'stf_flange_thk': [0.015, 'm'], 'structure_type': ['SIDE_SHELL', ''], 'plate_kpp': [1, ''],
+            'stf_kps': [1, ''], 'stf_km1': [12, ''], 'stf_km2': [24, ''], 'stf_km3': [12, ''],
+            'sigma_y1': [93, 'MPa'], 'sigma_y2': [93, 'MPa'], 'sigma_x': [39.7, 'MPa'], 'tau_xy': [2.8, 'MPa'],
+            'stf_type': ['T', ''], 'structure_types': [structure_types, ''], 'zstar_optimization': [True, ''] }
+
 obj_dict_L = {'mat_yield': [355e6, 'Pa'], 'span': [2, 'm'], 'spacing': [0.6, 'm'],
             'plate_thk': [0.010, 'm'],
             'stf_web_height': [0.188, 'm'], 'stf_web_thk': [0.009, 'm'], 'stf_flange_width': [0.09, 'm'],
@@ -68,9 +76,14 @@ fat_obj_dict = {'SN-curve': 'Ec','SCF': 1,'Design life': 20, 'n0':10000, 'Weibul
                 'Period': (9, 9, 9), 'Fraction': (1, 0, 0), 'CorrLoc': (0.5, 0.5, 0.5),
                 'Order': ('Loaded', 'Ballast', 'Part'), 'Accelerations':(0.5, 0.5, 0.5), 'DFF':2}
 
-fat_obj_dict2 = {'SN-curve': 'Ec','SCF': 1,'Design life': 20, 'n0':10000, 'Weibull': (0, 1, 0),
-                'Period': (0, 9, 0), 'Fraction': (0, 1, 0), 'CorrLoc': (0, 0.5, 0),
-                'Order': ('Loaded', 'Ballast', 'Part'), 'Accelerations':(0, 2, 0), 'DFF':2}
+fat_obj_dict2 = {'SN-curve': 'Ec','SCF': 1,'Design life': 20, 'n0':10000, 'Weibull': (0.8, 0.8, 0.8),
+                'Period': (9, 9, 9), 'Fraction': (1, 0, 0), 'CorrLoc': (0.5, 0.5, 0.5),
+                'Order': ('Loaded', 'Ballast', 'Part'), 'Accelerations':(0.5, 0.5, 0.5), 'DFF':2}
+
+fat_obj_dict_problematic = {'SN-curve': 'Ec','SCF': 1,'Design life': 20, 'n0':500571428.0, 'Weibull': (0.8, 0.8, 0),
+                'Period': (8, 8, 0), 'Fraction': (0.5, 0.5, 0), 'CorrLoc': (0.5, 0.5, 0),
+                'Order': ('Loaded', 'Ballast', 'Part'), 'Accelerations':(0.5, 0.5, 0), 'DFF':2}
+
 
 loa_fls = {'static_draft':None,'poly_third':1,'poly_second':50,'poly_first':10,'poly_const':5000,'man_press':0,
            'load_condition':'loaded','name_of_load':'test_load_laoded_FLS','limit_state':'FLS'}
@@ -136,6 +149,10 @@ def get_slamming_pressure():
 def get_fatigue_pressures():
     return {'p_ext':{'loaded':50000,'ballast':60000,'part':0}, 'p_int':{'loaded':0, 'ballast':20000,'part':0}}
 
+def get_fatigue_pressures_problematic():
+    return {'p_ext': {'loaded': 192632, 'ballast': 198705.5, 'part': 0},
+            'p_int': {'loaded': 0, 'ballast': 15118, 'part': 0}}
+
 def get_loa_fls_load():
     return load.Loads(loa_fls)
 
@@ -165,6 +182,9 @@ def get_structure_calc_object(line=None, heavy = False):
 
 def get_fatigue_object():
     return calc_structure.CalcFatigue(obj_dict, fat_obj_dict)
+
+def get_fatigue_object_problematic():
+    return calc_structure.CalcFatigue(obj_dict_sec_error, fat_obj_dict_problematic)
 
 def get_tank_object():
     return load.Tanks(tank_dict=tank_dict_ballast)

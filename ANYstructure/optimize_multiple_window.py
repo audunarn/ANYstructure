@@ -447,7 +447,7 @@ class CreateOptimizeMultipleWindow():
         found_files = self._filez
         for line in self._active_lines:
             init_obj = self._line_to_struc[line][1]
-
+            print('Checking', line)
             if __name__ == '__main__':
                 lateral_press = 200 #for testing
                 fat_obj = test.get_fatigue_object()
@@ -509,7 +509,7 @@ class CreateOptimizeMultipleWindow():
                                                          + str(time.time() - t_start) + ' sec')
             else:
                 pass
-
+            print('Done checking', line)
         if self._new_harmonizer.get() == True:
             self.opt_harmonizer()
 
@@ -536,6 +536,8 @@ class CreateOptimizeMultipleWindow():
                 if weight > highest:
                     highest = weight
                     highest_line = line
+
+        print(highest, highest_line)
         if highest != 0 and highest_line is not None:
             harmonized_x = self._opt_results[highest_line][1].get_tuple()
             for line in self._opt_results.keys():
