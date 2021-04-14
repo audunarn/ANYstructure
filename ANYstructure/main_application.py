@@ -1214,8 +1214,8 @@ class Application():
                 except KeyError:
                     design_pressure = 0
 
-                sec_mod = [round(obj_scnt_calc.get_section_modulus()[0], 5),
-                           round(obj_scnt_calc.get_section_modulus()[1], 5)]
+                sec_mod = [obj_scnt_calc.get_section_modulus()[0],
+                           obj_scnt_calc.get_section_modulus()[1]]
 
                 shear_area = obj_scnt_calc.get_shear_area()
                 min_shear = obj_scnt_calc.get_minimum_shear_area(design_pressure)

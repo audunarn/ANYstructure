@@ -787,7 +787,7 @@ class CalcScantlings(Structure):
         sig_min, sig_max = min(sigy1Sd,sigy2Sd),max(sigy1Sd,sigy2Sd) # self-made
         sigySd = sig_min+(sig_max-sig_min)*(1-l1/l) # see 6.8, page 15
 
-        if not sigySd<=sigyRd:
+        if not sigySd <= sigyRd:
             return [float('inf'),0,0,0,0,0]
 
         try:

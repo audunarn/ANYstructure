@@ -214,8 +214,8 @@ class CreateOptimizeMultipleWindow():
         self._ent_fl_thk_lower.place(x=start_x + dx * 7, y=start_y + 2 * dy)
 
         # setting default values
-        init_dim = float(50)  # mm
-        init_thk = float(2)  # mm
+        init_dim = float(10)  # mm
+        init_thk = float(1)  # mm
         self._new_delta_spacing.set(init_dim)
         self._new_delta_pl_thk.set(init_thk)
         self._new_delta_web_h.set(init_dim)
@@ -225,15 +225,15 @@ class CreateOptimizeMultipleWindow():
         self._new_spacing_upper.set(round(800, 5))
         self._new_spacing_lower.set(round(600, 5))
         self._new_pl_thk_upper.set(round(25, 5))
-        self._new_pl_thk_lower.set(round(10, 5))
+        self._new_pl_thk_lower.set(round(12, 5))
         self._new_web_h_upper.set(round(500, 5))
         self._new_web_h_lower.set(round(300, 5))
-        self._new_web_thk_upper.set(round(22, 5))
-        self._new_web_thk_lower.set(round(10, 5))
-        self._new_fl_w_upper.set(round(250, 5))
-        self._new_fl_w_lower.set(round(50, 5))
+        self._new_web_thk_upper.set(round(20, 5))
+        self._new_web_thk_lower.set(round(12, 5))
+        self._new_fl_w_upper.set(round(200, 5))
+        self._new_fl_w_lower.set(round(100, 5))
         self._new_fl_thk_upper.set(round(30, 5))
-        self._new_fl_thk_lower.set(round(10, 5))
+        self._new_fl_thk_lower.set(round(15, 5))
         self._new_algorithm.set('anysmart')
         self._new_algorithm_random_trials.set(10000)
 
@@ -350,6 +350,7 @@ class CreateOptimizeMultipleWindow():
         self._active_lines = []
         self.controls()
         self.draw_select_canvas()
+        self._harmonizer_data = {}
 
     def selected_algorithm(self, event):
         '''
@@ -419,6 +420,34 @@ class CreateOptimizeMultipleWindow():
             self._ent_minstep.place(x=start_x + dx*15, y=start_y + 0 * dy)
             self._ent_minfunc.place(x=start_x + dx*15, y=start_y + 1 * dy)
 
+    def get_pressure_input(self, line):
+        lateral_press = self.app.get_highest_pressure(line)['normal'] / 1000
+
+        fat_obj = self.app._line_to_struc[line][2]
+        if fat_obj is not None:
+            try:
+                fat_press = self.app.get_fatigue_pressures(line, fat_obj.get_accelerations())
+            except AttributeError:
+                fat_press = None
+        else:
+            fat_press = {'p_ext': {'loaded': 0, 'ballast': 0, 'part': 0},
+                         'p_int': {'loaded': 0, 'ballast': 0, 'part': 0}}
+
+        try:
+            if self.app.get_highest_pressure(line)['slamming'] is None:
+                slamming_pressure = 0
+            else:
+                slamming_pressure = self.app.get_highest_pressure(line)['slamming']
+        except KeyError:
+            slamming_pressure = 0
+
+        fat_press = ((fat_press['p_ext']['loaded'], fat_press['p_ext']['ballast'],
+                      fat_press['p_ext']['part']),
+                     (fat_press['p_int']['loaded'], fat_press['p_int']['ballast'],
+                      fat_press['p_int']['part']))
+        return {'lateral pressure': lateral_press, 'fatigue pressure': fat_press,
+                'slamming pressure': slamming_pressure, 'fatigue object': fat_obj}
+
     def run_optimizaion(self):
         '''
         Function when pressing the optimization botton inside this window.
@@ -447,7 +476,7 @@ class CreateOptimizeMultipleWindow():
         found_files = self._filez
         for line in self._active_lines:
             init_obj = self._line_to_struc[line][1]
-            print('Checking', line)
+
             if __name__ == '__main__':
                 lateral_press = 200 #for testing
                 fat_obj = test.get_fatigue_object()
@@ -455,29 +484,11 @@ class CreateOptimizeMultipleWindow():
                 slamming_pressure = test.get_slamming_pressure()
 
             else:
-                lateral_press = self.app.get_highest_pressure(line)['normal']/1000
-
-                fat_obj = self.app._line_to_struc[line][2]
-                if fat_obj is not None:
-                    try:
-                        fat_press = self.app.get_fatigue_pressures(line, fat_obj.get_accelerations())
-                    except AttributeError:
-                        fat_press = None
-                else:
-                    fat_press = {'p_ext':{'loaded':0,'ballast':0,'part':0}, 'p_int':{'loaded':0, 'ballast':0,'part':0}}
-
-                try:
-                    if self.app.get_highest_pressure(line)['slamming'] is None:
-                        slamming_pressure = 0
-                    else:
-                        slamming_pressure = self.app.get_highest_pressure(line)['slamming']
-                except KeyError:
-                    slamming_pressure = 0
-
-            fat_press = ((fat_press['p_ext']['loaded'], fat_press['p_ext']['ballast'],
-                          fat_press['p_ext']['part']),
-                         (fat_press['p_int']['loaded'], fat_press['p_int']['ballast'],
-                          fat_press['p_int']['part']))
+                input_pressures = self.get_pressure_input(line)
+                lateral_press = input_pressures['lateral pressure']
+                fat_press = input_pressures['fatigue pressure']
+                slamming_pressure = input_pressures['slamming pressure']
+                fat_obj = input_pressures['fatigue object']
 
             if self._toggle_btn.config('relief')[-1] == 'sunken':
                 found_files, predefined_stiffener_iter = self.toggle(found_files=found_files, obj = init_obj,
@@ -499,6 +510,7 @@ class CreateOptimizeMultipleWindow():
                                                           predefined_stiffener_iter = predefined_stiffener_iter,
                                                           processes=self._new_processes.get(),
                                                           min_max_span=max_min_span))
+            self._harmonizer_data[line] = {}
 
             counter += 1
             self.progress_count.set(counter)
@@ -509,7 +521,7 @@ class CreateOptimizeMultipleWindow():
                                                          + str(time.time() - t_start) + ' sec')
             else:
                 pass
-            print('Done checking', line)
+
         if self._new_harmonizer.get() == True:
             self.opt_harmonizer()
 
@@ -525,21 +537,61 @@ class CreateOptimizeMultipleWindow():
         '''
 
         # Find highest section modulus.
-        highest, highest_line = 0, None
+        harm_res= {}
+        chk = (self._new_check_sec_mod.get(), self._new_check_min_pl_thk.get(),
+                      self._new_check_shear_area.get(), self._new_check_buckling.get(),
+                      self._new_check_fatigue.get(), self._new_check_slamming.get(),
+                      self._new_check_local_buckling.get())
+        for master_line in self._opt_results.keys():
+            master_obj = self._opt_results[master_line][1]
+            master_x = [master_obj.get_s(), master_obj.get_pl_thk(), master_obj.get_web_h(),
+                        master_obj.get_web_thk(), master_obj.get_fl_w(), master_obj.get_fl_thk(),
+                        master_obj.get_span(),master_obj.get_lg()]
+            harm_res[master_line] = []
+            for slave_line in self._opt_results.keys():
+                input_pressures = self.get_pressure_input(slave_line)
+                lateral_press = input_pressures['lateral pressure']
+                fat_press = input_pressures['fatigue pressure']
+                fat_obj = input_pressures['fatigue object']
+                slamming_pressure = input_pressures['slamming pressure']
+                chk_calc_obj = self._opt_results[slave_line][1]
+                # chk_result = opt.any_constraints_all(master_x, chk_calc_obj, lat_press=lateral_press, chk = chk,
+                #                                      fat_dict = None if fat_obj is None else
+                #                                      fat_obj.get_fatigue_propertie(),init_weight=float('inf'),
+                #                                      fat_press=fat_press, slamming_press=slamming_pressure)
 
-        for line in self._opt_results.keys(): # TODO stresses not set correctly when returning.
-            if self._opt_results[line][1] is not None:
-                init_obj = self._opt_results[line][1]
-                weight = op.calc_weight([init_obj.get_s(), init_obj.get_pl_thk(), init_obj.get_web_h(),
-                                         init_obj.get_web_thk(), init_obj.get_fl_w(), init_obj.get_fl_thk(),
-                                         init_obj.get_span(),init_obj.get_lg()])
-                if weight > highest:
-                    highest = weight
-                    highest_line = line
+                chk_result = list(op.run_optmizataion(chk_calc_obj, master_x,
+                                                          master_x,
+                                                          lateral_press,self.get_deltas(),
+                                                          algorithm=self._new_algorithm.get(),
+                                                          trials=self._new_algorithm_random_trials.get(),
+                                                          side=chk_calc_obj.get_side(),
+                                                          const_chk=chk,
+                                                          pso_options=self.pso_parameters,
+                                                          fatigue_obj=fat_obj,
+                                                          fat_press_ext_int=fat_press,
+                                                          slamming_press=slamming_pressure,
+                                                          predefined_stiffener_iter = None,
+                                                          processes=self._new_processes.get(),
+                                                          min_max_span=None, use_weight_filter=False))[0:4]
 
-        print(highest, highest_line)
-        if highest != 0 and highest_line is not None:
-            harmonized_x = self._opt_results[highest_line][1].get_tuple()
+                harm_res[master_line].append(chk_result)
+
+        harmonized_area, harmonized_line =float('inf'), None
+        for master_line, all_slave_res in harm_res.items():
+            [print(res) for res in all_slave_res]
+            if all([slave_line_res[-1] for slave_line_res in all_slave_res]):
+                master_obj = self._opt_results[master_line][1]
+                master_area = sum(op.get_field_tot_area([master_obj.get_s(), master_obj.get_pl_thk(),
+                                                         master_obj.get_web_h(), master_obj.get_web_thk(),
+                                                         master_obj.get_fl_w(), master_obj.get_fl_thk(),
+                                                         master_obj.get_span(),master_obj.get_lg()]))
+                if master_area < harmonized_area:
+                    harmonized_area = master_area
+                    harmonized_line = master_line
+
+        if harmonized_area != 0 and harmonized_line is not None:
+            harmonized_x = self._opt_results[harmonized_line][1].get_tuple()
             for line in self._opt_results.keys():
                 self._opt_results[line][0] = opt.create_new_structure_obj(self._line_to_struc[line][0], harmonized_x)
                 self._opt_results[line][1] = opt.create_new_calc_obj(self._line_to_struc[line][1], harmonized_x)[0]
