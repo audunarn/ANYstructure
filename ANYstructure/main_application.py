@@ -310,6 +310,8 @@ class Application():
         self._new_colorcode_beams.set(False)
         self._new_colorcode_plates = tk.BooleanVar()
         self._new_colorcode_plates.set(False)
+        self._new_colorcode_pressure = tk.BooleanVar()
+        self._new_colorcode_plates.set(False)
 
         line_start = (point_start+90)* self._global_shrink
         tk.Label(self._main_fr, text='Input line from "point number" to "point number"',
@@ -320,14 +322,17 @@ class Application():
         tk.Label(self._main_fr, text='To point number:',font="Text 9", bg = self._general_color)\
             .place(x=10, y=line_start + delta_y)
         tk.Checkbutton(self._main_fr, variable = self._new_shortcut_backdrop, command = self.update_frame)\
-            .place(x=500, y=10)
+            .place(x=485, y=0)
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_beams, command = self.on_color_code_check)\
-            .place(x=500, y=30)
+            .place(x=485, y=20)
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_plates, command = self.on_color_code_check)\
-            .place(x=500, y=50)
-        tk.Label(self._main_fr, text='Check to see avaliable shortcuts', font="Text 9").place(x=520, y=10)
-        tk.Label(self._main_fr, text='Color code beams', font="Text 9").place(x=520, y=30)
-        tk.Label(self._main_fr, text='Color code plates', font="Text 9").place(x=520, y=50)
+            .place(x=485, y=40)
+        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_pressure, command = self.on_color_code_check)\
+            .place(x=485, y=60)
+        tk.Label(self._main_fr, text='Check to see avaliable shortcuts', font="Text 9").place(x=510, y=0)
+        tk.Label(self._main_fr, text='Color code beams', font="Text 9").place(x=510, y=20)
+        tk.Label(self._main_fr, text='Color code plates', font="Text 9").place(x=510, y=40)
+        tk.Label(self._main_fr, text='Color code pressure', font="Text 9").place(x=510, y=60)
 
         tk.Entry(self._main_fr, textvariable=self._new_line_p1, width=int(ent_width * self._global_shrink),
                  bg = self._entry_color, fg = self._entry_text_color)\
@@ -1347,11 +1352,11 @@ class Application():
             import matplotlib
             cmap_sections = plt.get_cmap('jet')
             for idx, section in enumerate(self._sections):
-                self._main_canvas.create_text(12, 82+20*idx, text=str(section.__str__()),
+                self._main_canvas.create_text(12, 92+20*idx, text=str(section.__str__()),
                                               font=self._text_size["Text 10 bold"],
                                               fill='black',
                                               anchor="nw")
-                self._main_canvas.create_text(10, 80+20*idx, text=str(section.__str__()),
+                self._main_canvas.create_text(10, 90+20*idx, text=str(section.__str__()),
                                               font=self._text_size["Text 10 bold"],
                                               fill=matplotlib.colors.rgb2hex(cmap_sections(idx/len(self._sections))),
                                               anchor="nw")
@@ -1362,15 +1367,31 @@ class Application():
             thickest_plate = max(all_thicknesses)
             cmap_sections = plt.get_cmap('jet')
             for idx, thk in enumerate(all_thicknesses):
-                self._main_canvas.create_text(12, 82+20*idx, text=str('Plate '+ str(thk)),
+                self._main_canvas.create_text(12, 92+20*idx, text=str('Plate '+ str(thk)),
                                               font=self._text_size["Text 10 bold"],
                                               fill='black',
                                               anchor="nw")
-                self._main_canvas.create_text(10, 80+20*idx, text=str('Plate '+ str(thk)),
+                self._main_canvas.create_text(10, 90+20*idx, text=str('Plate '+ str(thk)),
                                               font=self._text_size["Text 10 bold"],
                                               fill=matplotlib.colors.rgb2hex(cmap_sections(thk/thickest_plate)),
                                               anchor="nw")
-
+        elif self._new_colorcode_pressure.get() == True:
+            from matplotlib import pyplot as plt
+            import matplotlib
+            all_pressures = sorted([self.get_highest_pressure(line)['normal'] for line in list(self._line_dict.keys())])
+            cmap_sections = plt.get_cmap('jet')
+            highest_pressure = max(all_pressures)
+            press_map = [round(val, 1) for val in
+                         np.arange(all_pressures[0], all_pressures[-1], (all_pressures[-1]-all_pressures[0])/10)]
+            for idx, press in enumerate(press_map):
+                self._main_canvas.create_text(12, 92+20*idx, text=str(str(press) + ' Pa'),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill='black',
+                                              anchor="nw")
+                self._main_canvas.create_text(10, 90+20*idx, text=str(str(press) + ' Pa'),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill=matplotlib.colors.rgb2hex(cmap_sections(press/highest_pressure)),
+                                              anchor="nw")
 
 
         # Drawing shortcut information if selected.
@@ -1419,7 +1440,8 @@ class Application():
 
                 coord1 = self.get_point_canvas_coord('point' + str(value[0]))
                 coord2 = self.get_point_canvas_coord('point' + str(value[1]))
-                if all([self._new_colorcode_beams.get() != True, self._new_colorcode_plates.get() != True]):
+                if all([self._new_colorcode_beams.get() != True, self._new_colorcode_plates.get() != True,
+                        self._new_colorcode_pressure.get() != True]):
                     try:
                         color = 'red' if 'red' in state['colors'][line].values() else 'green'
                     except (KeyError, TypeError):
@@ -1438,6 +1460,8 @@ class Application():
                 elif self._new_colorcode_plates.get() == True and line in list(self._line_to_struc.keys()):
                     this_obj = self._line_to_struc[line][0]
                     color = matplotlib.colors.rgb2hex(cmap_sections(round(this_obj.get_pl_thk(),5)/thickest_plate))
+                elif self._new_colorcode_pressure.get() == True and line in list(self._line_to_struc.keys()):
+                    color = matplotlib.colors.rgb2hex(cmap_sections(self.get_highest_pressure(line)['normal']/highest_pressure))
                 else:
                     color = 'black'
 
@@ -3380,10 +3404,12 @@ class Application():
             pass
 
     def on_color_code_check(self, event = None):
-        if all([self._new_colorcode_beams.get(), self._new_colorcode_plates.get()]):
+        if [self._new_colorcode_beams.get() == True, self._new_colorcode_plates.get() == True,
+            self._new_colorcode_pressure.get() == True].count(True) > 1:
             messagebox.showinfo(title='Information', message='Can only select on color code at the time.')
             self._new_colorcode_beams.set(False)
             self._new_colorcode_plates.set(False)
+            self._new_colorcode_pressure.set(False)
         self.update_frame()
 
 
