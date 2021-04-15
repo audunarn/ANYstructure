@@ -14,6 +14,34 @@ from multiprocessing import cpu_count
 import ANYstructure.optimize as opt
 from multiprocessing import Pool, cpu_count
 
+
+def helper_harmonizer_multi(iterator):
+    '''
+    :param :
+    :return:
+    '''
+
+    this_check, master_x = list(), None
+    for slave_line in iterator['info']['lines']:
+        lateral_press = iterator['info'][slave_line]['lateral pressure']
+        fat_press = iterator['info'][slave_line]['fatigue pressure']
+        fat_obj = iterator['info'][slave_line]['fatigue object']
+        slamming_pressure = iterator['info'][slave_line]['slamming pressure']
+        chk_calc_obj = iterator['info'][slave_line]['chk_calc_obj']
+        master_x = list(iterator['x'])
+        x = master_x + [chk_calc_obj.get_span(), chk_calc_obj.get_lg()]
+
+        chk_any = op.any_constraints_all(x=x, obj=chk_calc_obj, lat_press=lateral_press,
+                                         init_weight=float('inf'), side='p', chk=iterator['info']['checks'],
+                                         fat_dict=None if fat_obj == None else fat_obj.get_fatigue_properties(),
+                                         fat_press=fat_press, slamming_press=slamming_pressure)
+        this_check.append(chk_any[0])
+
+    if all(this_check) and master_x is not None:
+        return tuple(master_x)
+    else:
+        return None
+
 class CreateOptimizeMultipleWindow():
     '''
     This class initiates the MultiOpt window.
@@ -527,14 +555,8 @@ class CreateOptimizeMultipleWindow():
         self.draw_select_canvas()
 
         if self._new_harmonizer.get() == True:
-            #self.opt_harmonizer()
+            print('Harmonizing')
             self.opt_harmonizer_historic()
-            # if self.opt_harmonizer_historic():
-            #     print('Historic success')
-            # elif self.opt_harmonizer():
-            #     print('Running success')
-            # else:
-            #     print('Both fail')
 
         counter += 1
         self.progress_bar.stop()
@@ -544,52 +566,43 @@ class CreateOptimizeMultipleWindow():
     def opt_harmonizer_historic(self):
 
         # getting all acceptable solutions.
-        all_ok_checks, line_checks = [], {}
+        all_ok_checks = []
         for line, data in self._opt_results.items():
-            line_checks[line] = []
             for fail_ok in data[4]:
                 if fail_ok[0] == True:
-                    line_checks[line].append(tuple([round(val, 10) for val in fail_ok[2]][0:6]))
                     all_ok_checks.append(tuple([round(val,10) for val in fail_ok[2]][0:6]))
-        for line, data in self._opt_results.items():
-            line_checks[line] = set(line_checks[line])
-
         all_ok_checks = set(all_ok_checks)
-        same_in_all = list()
-        print('All ok checks', len(list(all_ok_checks)))
 
-        # for chk in all_ok_checks:
-        #     if all([chk in line_list for line_list in line_checks.values()]):
-        #         same_in_all.append(chk)
-        # print('Same in all', len(same_in_all))
-        all_checked_ok = list()
-
+        # make iterator for multiprocessing
+        iterator = list()
+        to_check = (self._new_check_sec_mod.get(), self._new_check_min_pl_thk.get(),
+                    self._new_check_shear_area.get(), self._new_check_buckling.get(),
+                    self._new_check_fatigue.get(), self._new_check_slamming.get(),
+                    self._new_check_local_buckling.get())
+        iter_run_info = dict()
+        for slave_line in self._opt_results.keys():
+            input_pressures = self.get_pressure_input(slave_line)
+            iter_run_info[slave_line] = {'lateral pressure': input_pressures['lateral pressure'],
+                                         'fatigue pressure': input_pressures['fatigue pressure'],
+                                         'fatigue object':input_pressures['fatigue object'],
+                                         'slamming pressure':input_pressures['slamming pressure'],
+                                         'chk_calc_obj': self._opt_results[slave_line][1]}
+        iter_run_info['lines'] = list(self._opt_results.keys())
+        iter_run_info['checks'] = to_check
         for x_check in all_ok_checks:
-            this_check = list()
-            for slave_line in self._opt_results.keys():
-                input_pressures = self.get_pressure_input(slave_line)
-                lateral_press = input_pressures['lateral pressure']
-                fat_press = input_pressures['fatigue pressure']
-                fat_obj = input_pressures['fatigue object']
-                slamming_pressure = input_pressures['slamming pressure']
-                chk_calc_obj = self._opt_results[slave_line][1]
-                master_x = list(x_check)
-                x = master_x + [chk_calc_obj.get_span(), chk_calc_obj.get_lg()]
-                to_check =  (self._new_check_sec_mod.get(), self._new_check_min_pl_thk.get(),
-                      self._new_check_shear_area.get(), self._new_check_buckling.get(),
-                      self._new_check_fatigue.get(), self._new_check_slamming.get(),
-                      self._new_check_local_buckling.get())
-                chk_any = op.any_constraints_all(x=x, obj=chk_calc_obj, lat_press=lateral_press,
-                                                 init_weight=float('inf'),side = 'p',chk=to_check,
-                                                 fat_dict = None if fat_obj == None else fat_obj.get_fatigue_properties(),
-                                                 fat_press=fat_press,slamming_press=slamming_pressure)
-                this_check.append(chk_any[0])
+            iterator.append({'x': x_check, 'info': iter_run_info})
 
-            if all(this_check):
-                all_checked_ok.append(tuple(master_x))
+        processes = max(cpu_count() - 1, 1)
+        with Pool(processes) as my_process:
+            res_pre = my_process.map(helper_harmonizer_multi, iterator)
+
+        after_multirun_check_ok = list()
+        for res in res_pre:
+            if res is not None:
+                after_multirun_check_ok.append(res)
 
         lowest_area, lowest_x  = float('inf'), None
-        for ok_chkd in set(all_checked_ok):
+        for ok_chkd in set(after_multirun_check_ok):
             if sum(op.get_field_tot_area(ok_chkd )) < lowest_area:
                 lowest_area = sum(op.get_field_tot_area(ok_chkd))
                 lowest_x = ok_chkd
@@ -686,6 +699,44 @@ class CreateOptimizeMultipleWindow():
                 self._opt_results[line][0] = None
                 self._opt_results[line][1] = None
             return False
+
+    # def opt_harmonizer_multi(self, iterator):
+    #     '''
+    #         for slave_line in self._opt_results.keys():
+    #             input_pressures = self.get_pressure_input(slave_line)
+    #             iter_run_info[line] = {'lateral_press': input_pressures['lateral pressure'],
+    #                                    'fatigue pressure': input_pressures['fatigue pressure'],
+    #                                    'fatigue object':input_pressures['fatigue object'],
+    #                                    'slamming pressure':input_pressures['slamming pressure'],
+    #                                    'chk_calc_obj': self._opt_results[slave_line][1]}
+    #         iter_run_info['lines'] = list(self._opt_results.keys())
+    #         iter_run_info['checks'] = to_check
+    #         for x_check in all_ok_checks:
+    #             iterator.append((x_check, iter_run_info))
+    #     :param x_check:
+    #     :return:
+    #     '''
+    #
+    #     this_check, master_x = list(), None
+    #     for slave_line in iterator['lines']:
+    #         lateral_press = iterator[1][slave_line]['lateral pressure']
+    #         fat_press = iterator[1][slave_line]['fatigue pressure']
+    #         fat_obj = iterator[1][slave_line]['fatigue object']
+    #         slamming_pressure = iterator[1][slave_line]['slamming pressure']
+    #         chk_calc_obj = iterator[1][slave_line]['chk_calc_obj']
+    #         master_x = list(iterator[0])
+    #         x = master_x + [chk_calc_obj.get_span(), chk_calc_obj.get_lg()]
+    #
+    #         chk_any = op.any_constraints_all(x=x, obj=chk_calc_obj, lat_press=lateral_press,
+    #                                          init_weight=float('inf'), side='p', chk=iterator['checks'],
+    #                                          fat_dict=None if fat_obj == None else fat_obj.get_fatigue_properties(),
+    #                                          fat_press=fat_press, slamming_press=slamming_pressure)
+    #         this_check.append(chk_any[0])
+    #
+    #     if all(this_check) and master_x is not None:
+    #         return tuple(master_x)
+    #     else:
+    #         return None
 
     def get_running_time(self):
         '''
