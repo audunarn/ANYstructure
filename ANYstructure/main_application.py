@@ -200,7 +200,7 @@ class Application():
         self._state_logger = dict()  # Used to see if recalculation is needed.
 
         # The next dictionaries feed various infomation to the application
-        self._load_factors_dict = {'dnva':[1.3,1.2,0.7], 'dnvb':[1,1,1.3], 'tanktest':[1,1,0]} # DNV  loads factors
+        self._load_factors_dict = {'dnva':[1.3,1.2,0.7], 'dnvb':[1,1,1.2], 'tanktest':[1,1,0]} # DNV  loads factors
         self._accelerations_dict = {'static':9.81, 'dyn_loaded':0, 'dyn_ballast':0} # Vertical acclerations
         self._load_conditions = ['loaded','ballast','tanktest', 'part','slamming'] # Should not be modified. Load conditions.
         self._tank_options = {'crude_oil': 900, 'diesel': 850 , 'slop': 1050, 'ballast': 1025, 'fresh water': 1000} # Should not be modified.
@@ -302,8 +302,19 @@ class Application():
         # --- line input/output ---
         self._new_line_p1 = tk.IntVar()
         self._new_line_p2 = tk.IntVar()
+
+        # Check boxes
         self._new_shortcut_backdrop = tk.BooleanVar()
         self._new_shortcut_backdrop.set(True)
+        self._new_colorcode_beams = tk.BooleanVar()
+        self._new_colorcode_beams.set(False)
+        self._new_colorcode_plates = tk.BooleanVar()
+        self._new_colorcode_plates.set(False)
+        self._new_colorcode_pressure = tk.BooleanVar()
+        self._new_colorcode_plates.set(False)
+        self._new_colorcode_utilization = tk.BooleanVar()
+        self._new_colorcode_utilization.set(False)
+
         line_start = (point_start+90)* self._global_shrink
         tk.Label(self._main_fr, text='Input line from "point number" to "point number"',
                  font=self._text_size['Text 9 bold'], bg = self._general_color)\
@@ -313,8 +324,20 @@ class Application():
         tk.Label(self._main_fr, text='To point number:',font="Text 9", bg = self._general_color)\
             .place(x=10, y=line_start + delta_y)
         tk.Checkbutton(self._main_fr, variable = self._new_shortcut_backdrop, command = self.update_frame)\
-            .place(x=500, y=10)
-        tk.Label(self._main_fr, text='Check to see avaliable shortcuts', font="Text 9").place(x=520, y=10)
+            .place(x=485, y=0)
+        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_beams, command = self.on_color_code_check)\
+            .place(x=485, y=20)
+        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_plates, command = self.on_color_code_check)\
+            .place(x=485, y=40)
+        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_pressure, command = self.on_color_code_check)\
+            .place(x=485, y=60)
+        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_utilization, command = self.on_color_code_check)\
+            .place(x=485, y=80)
+        tk.Label(self._main_fr, text='Check to see avaliable shortcuts', font="Text 9").place(x=510, y=0)
+        tk.Label(self._main_fr, text='Color beam prop.', font="Text 9").place(x=510, y=20)
+        tk.Label(self._main_fr, text='Color plate thk.', font="Text 9").place(x=510, y=40)
+        tk.Label(self._main_fr, text='Color line pressure', font="Text 9").place(x=510, y=60)
+        tk.Label(self._main_fr, text='Color utilization', font="Text 9").place(x=510, y=80)
 
         tk.Entry(self._main_fr, textvariable=self._new_line_p1, width=int(ent_width * self._global_shrink),
                  bg = self._entry_color, fg = self._entry_text_color)\
@@ -1131,10 +1154,14 @@ class Application():
             pass
 
         if animate == False:
-            self._grid_calc.draw_grid(tank_count=None if len(self._tank_dict)==0 else len(self._tank_dict))
+            tank_count = None if len(self._tank_dict)==0 else len(self._tank_dict)
+            if tank_count is not None:
+                self._grid_calc.draw_grid(tank_count=tank_count)
         else:
-            self._grid_calc.animate_grid(grids_to_animate=compartment_search_return['grids'],
-                                         tank_count = None if len(self._tank_dict)==0 else len(self._tank_dict))
+            tank_count = None if len(self._tank_dict) == 0 else len(self._tank_dict)
+            if tank_count is not None:
+                self._grid_calc.animate_grid(grids_to_animate=compartment_search_return['grids'],
+                                             tank_count = None if len(self._tank_dict)==0 else len(self._tank_dict))
 
     def grid_display_tanks(self, save = False):
         '''
@@ -1214,8 +1241,8 @@ class Application():
                 except KeyError:
                     design_pressure = 0
 
-                sec_mod = [round(obj_scnt_calc.get_section_modulus()[0], 5),
-                           round(obj_scnt_calc.get_section_modulus()[1], 5)]
+                sec_mod = [obj_scnt_calc.get_section_modulus()[0],
+                           obj_scnt_calc.get_section_modulus()[1]]
 
                 shear_area = obj_scnt_calc.get_shear_area()
                 min_shear = obj_scnt_calc.get_minimum_shear_area(design_pressure)
@@ -1299,7 +1326,7 @@ class Application():
                 shear_util = 0 if shear_area == 0 else min_shear / shear_area
                 thk_util = 0 if obj_structure.get_plate_thk() == 0 else min_thk / (1000 * obj_structure.get_plate_thk())
                 sec_util = 0 if min(sec_mod) == 0 else min_sec_mod / min(sec_mod)
-                buc_util = 1 if float('inf') in buckling else max(buckling)
+                buc_util = 1 if float('inf') in buckling else max(buckling[0:5])
                 return_dict['utilization'][current_line] = {'buckling': buc_util,
                                                             'fatigue': fat_util,
                                                             'section': sec_util,
@@ -1313,14 +1340,13 @@ class Application():
                 pass
         return return_dict
 
-    def draw_canvas(self, state = None, event = None):
+    def draw_canvas(self, state = None, event = None, get_color_for_line = None):
         '''
         Canvas is drawn here.
         '''
 
-
         self._main_canvas.delete('all')
-
+        color = 'black' #by default
 
         self._main_canvas.create_line(self._canvas_draw_origo[0], 0, self._canvas_draw_origo[0], self._canvas_dim[1],
                                      stipple='gray50')
@@ -1329,10 +1355,74 @@ class Application():
         self._main_canvas.create_text(self._canvas_draw_origo[0] - 30*self._global_shrink,
                                      self._canvas_draw_origo[1] + 12* self._global_shrink, text='(0,0)',
                                      font = 'Text 10')
-        # self._main_canvas.create_text([880*self._global_shrink,20*self._global_shrink],
-        #                              text = 'Mouse left click:  select line\n'
-        #                                              'Mouse right click: select point',
-        #                              font = self._text_size['Text 8 bold'], fill='red')
+
+        if self._new_colorcode_beams.get() == True and self._line_to_struc != {}:
+            from matplotlib import pyplot as plt
+            import matplotlib
+            cmap_sections = plt.get_cmap('jet')
+            for idx, section in enumerate(self._sections):
+                self._main_canvas.create_text(11, 111+20*idx, text=str(section.__str__()),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill='black',
+                                              anchor="nw")
+                self._main_canvas.create_text(10, 110+20*idx, text=str(section.__str__()),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill=matplotlib.colors.rgb2hex(cmap_sections(idx/len(self._sections))),
+                                              anchor="nw")
+
+        elif self._new_colorcode_plates.get() == True and self._line_to_struc != {}:
+            from matplotlib import pyplot as plt
+            import matplotlib
+            all_thicknesses = set([round(objs[0].get_pl_thk(), 5) for objs in self._line_to_struc.values()])
+            thickest_plate = max(all_thicknesses)
+            cmap_sections = plt.get_cmap('jet')
+            for idx, thk in enumerate(all_thicknesses):
+                self._main_canvas.create_text(11, 111+20*idx, text=str('Plate '+ str(thk)),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill='black',
+                                              anchor="nw")
+                self._main_canvas.create_text(10, 110+20*idx, text=str('Plate '+ str(thk)),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill=matplotlib.colors.rgb2hex(cmap_sections(thk/thickest_plate)),
+                                              anchor="nw")
+        elif self._new_colorcode_pressure.get() == True and self._line_to_struc != {}:
+            from matplotlib import pyplot as plt
+            import matplotlib
+            try:
+                all_pressures = sorted([self.get_highest_pressure(line)['normal']
+                                        for line in list(self._line_dict.keys())])
+            except KeyError:
+                all_pressures = [0,1]
+            cmap_sections = plt.get_cmap('jet')
+            highest_pressure = max(all_pressures)
+            press_map = [round(val, 1) for val in
+                         np.arange(all_pressures[0], all_pressures[-1], (all_pressures[-1]-all_pressures[0])/10)]+\
+                        [round(all_pressures[-1],1)]
+            for idx, press in enumerate(press_map):
+                self._main_canvas.create_text(11, 111+20*idx, text=str(str(press) + ' Pa'),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill='black',
+                                              anchor="nw")
+                self._main_canvas.create_text(10, 110+20*idx, text=str(str(press) + ' Pa'),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill=matplotlib.colors.rgb2hex(cmap_sections(press/highest_pressure)),
+                                              anchor="nw")
+
+        elif self._new_colorcode_utilization.get() == True and self._line_to_struc != {}:
+            from matplotlib import pyplot as plt
+            import matplotlib
+            cmap_sections = plt.get_cmap('jet')
+            for idx, uf in enumerate(np.arange(0,1.1,0.1)):
+                self._main_canvas.create_text(11, 111 + 20 * idx, text=str('UF = ' +str(round(uf,1))),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill='black',
+                                              anchor="nw")
+                self._main_canvas.create_text(10, 110 + 20 * idx, text=str('UF = ' +str(round(uf,1))),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill=matplotlib.colors.rgb2hex(cmap_sections(uf)),
+                                              anchor="nw")
+
+
 
         # Drawing shortcut information if selected.
         if self._new_shortcut_backdrop.get() == True:
@@ -1380,9 +1470,42 @@ class Application():
 
                 coord1 = self.get_point_canvas_coord('point' + str(value[0]))
                 coord2 = self.get_point_canvas_coord('point' + str(value[1]))
-                try:
-                    color = 'red' if 'red' in state['colors'][line].values() else 'green'
-                except (KeyError, TypeError):
+                if all([self._new_colorcode_beams.get() != True, self._new_colorcode_plates.get() != True,
+                        self._new_colorcode_pressure.get() != True, self._new_colorcode_utilization.get() != True]):
+                    try:
+                        color = 'red' if 'red' in state['colors'][line].values() else 'green'
+                    except (KeyError, TypeError):
+                        color = 'black'
+                elif self._new_colorcode_beams.get() == True and line in list(self._line_to_struc.keys()):
+                    this_obj = self._line_to_struc[line][0]
+                    this_section = struc.Section({'stf_type': [this_obj.get_stiffener_type(), ''],
+                                                  'stf_web_height': [this_obj.get_web_h(), 'm'],
+                                                  'stf_web_thk': [this_obj.get_web_thk(), 'm'],
+                                                  'stf_flange_width': [this_obj.get_fl_w(), 'm'],
+                                                  'stf_flange_thk': [this_obj.get_fl_thk(), 'm'],})
+                    for idx, section in enumerate(self._sections):
+                        if this_section.__str__() == section.__str__():
+                            color = matplotlib.colors.rgb2hex(cmap_sections(idx/len(self._sections)))
+                            if get_color_for_line == line:
+                                return color, this_section.__str__()
+                elif self._new_colorcode_plates.get() == True and line in list(self._line_to_struc.keys()):
+                    this_obj = self._line_to_struc[line][0]
+                    color = matplotlib.colors.rgb2hex(cmap_sections(round(this_obj.get_pl_thk(),5)/thickest_plate))
+                    if get_color_for_line == line:
+                        return color, round(this_obj.get_pl_thk(),5)
+                elif self._new_colorcode_pressure.get() == True and line in list(self._line_to_struc.keys()):
+                    if all_pressures == [0,1]:
+                        color = 'black'
+                    else:
+                        color = matplotlib.colors.rgb2hex(cmap_sections(self.get_highest_pressure(line)['normal']
+                                                                        /highest_pressure))
+                    if get_color_for_line == line:
+                        return color, press_map
+
+                elif self._new_colorcode_utilization.get() == True:
+                    color = matplotlib.colors.rgb2hex(
+                        cmap_sections(max(list(state['utilization'][line].values()))))
+                else:
                     color = 'black'
 
                 vector = [coord2[0] - coord1[0], coord2[1] - coord1[1]]
@@ -1653,17 +1776,21 @@ class Application():
                                            text='The results are shown here (select line):',
                                            font=self._text_size["Text 10 bold"])
 
-    def report_generate(self):
+    def report_generate(self, autosave = False):
         '''
         Button is pressed to generate a report of the current structure.
         :return:
         '''
-        to_report_gen ={}
-        # Compartments, make
-        save_file = filedialog.asksaveasfile(mode="w", defaultextension=".pdf")
-        if save_file is None:  # ask saveasfile return `None` if dialog closed with "cancel".
-            return
-        filename = save_file.name
+
+
+        if not autosave:
+            save_file = filedialog.asksaveasfile(mode="w", defaultextension=".pdf")
+            filename = save_file.name
+            if save_file is None:  # ask saveasfile return `None` if dialog closed with "cancel".
+                return
+        else:
+            filename = 'testrun.pdf'
+
         if self._line_dict == {}:
             tk.messagebox.showerror('No lines', 'No lines defined. Cannot make report.')
             return
@@ -1674,36 +1801,17 @@ class Application():
         else:
             self.grid_display_tanks(save=True)
 
-        # Results
-        to_report_gen = self.get_color_and_calc_state()
-
-        # Load objects
-        to_report_gen['loads'] = {}
-        for line in self._line_dict.keys():
-            try:
-                to_report_gen['loads'][line] = self._line_to_struc[line][3]
-            except KeyError:
-                pass
-
-        # Comparments
-        to_report_gen['compartments'] = {}
-        if len(self._tank_dict) != 0:
-            to_report_gen['compartments'] = self._tank_dict
-
-        # Points
-        to_report_gen['points'] = self._point_dict
-        # Lines
-        to_report_gen['lines'] = self._line_dict
-
-        to_report_gen['path'] = self._root_dir
-
-        doc = LetterMaker(filename, "Section results", 10, to_report_gen)
+        doc = LetterMaker(filename, "Section results", 10, self)
         doc.createDocument()
         doc.savePDF()
         try:
             os.startfile(filename)
         except FileNotFoundError:
             pass
+        self._new_colorcode_beams.set(False)
+        self._new_colorcode_plates.set(False)
+        self._new_colorcode_pressure.set(False)
+        self.update_frame()
 
     def create_accelerations(self):
         '''
@@ -1907,7 +2015,7 @@ class Application():
             if self._active_line not in self._line_to_struc.keys():
                 self._line_to_struc[self._active_line] = [None, None, None, [None], {}]
                 self._line_to_struc[self._active_line][0] = Structure(obj_dict)
-                self._sections = add_new_section(self._sections, obj_dict)
+                self._sections = add_new_section(self._sections, struc.Section(obj_dict))
                 self._line_to_struc[self._active_line][1] = CalcScantlings(obj_dict)
                 self._line_to_struc[self._active_line][2] = None
                 if self._line_to_struc[self._active_line][0].get_structure_type() not in \
@@ -2844,7 +2952,7 @@ class Application():
         json.dump(export_all, save_file)#, sort_keys=True, indent=4)
         save_file.close()
 
-    def openfile(self, defined = None):
+    def openfile(self, defined = None, alone = False):
         '''
         Opens a file with data (JSON).
         '''
@@ -2857,6 +2965,7 @@ class Application():
             imp_file = open(defined,'r')
 
         imported = json.load(imp_file)
+
         self.reset()
 
         self._point_dict = imported['point_dict']
@@ -2907,6 +3016,7 @@ class Application():
             self._accelerations_dict = imported['accelerations_dict']
         except IndexError:
             self._accelerations_dict = {'static':9.81, 'dyn_loaded':0, 'dyn_ballast':0}
+
 
         self._new_static_acc.set(self._accelerations_dict['static'])
         self._new_dyn_acc_loaded.set(self._accelerations_dict['dyn_loaded'])
@@ -3223,10 +3333,10 @@ class Application():
         self._new_stf_type.set(returned_structure[6])
 
         section = struc.Section({'stf_type': returned_structure[6],
-                                 'stf_web_height': returned_structure[2],
-                                 'stf_web_thk': returned_structure[3],
-                                 'stf_flange_width': returned_structure[4],
-                                 'stf_flange_thk': returned_structure[5]})
+                                 'stf_web_height': returned_structure[2]/1000,
+                                 'stf_web_thk': returned_structure[3]/1000,
+                                 'stf_flange_width': returned_structure[4]/1000,
+                                 'stf_flange_thk': returned_structure[5]/1000})
 
         self._sections = add_new_section(self._sections, section)
 
@@ -3323,6 +3433,16 @@ class Application():
         elif mess == 'cancel':
             pass
 
+    def on_color_code_check(self, event = None):
+        if [self._new_colorcode_beams.get(), self._new_colorcode_plates.get(),
+            self._new_colorcode_pressure.get(), self._new_colorcode_utilization.get()].count(True) > 1:
+            messagebox.showinfo(title='Information', message='Can only select on color code at the time.')
+            self._new_colorcode_beams.set(False)
+            self._new_colorcode_plates.set(False)
+            self._new_colorcode_pressure.set(False)
+            self._new_colorcode_utilization.set(False)
+        self.update_frame()
+
     def logger(self, line = None, point = None, move_coords = None):
         ''' Log to be used for undo and redo. '''
 
@@ -3404,8 +3524,10 @@ class Application():
 
 
 if __name__ == '__main__':
+
     multiprocessing.freeze_support()
     errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
     root = tk.Tk()
     my_app = Application(root)
     root.mainloop()
+    #Application(None).openfile(r'C:\Github\ANYstructure\ANYstructure\ship_section_example.txt', alone=True)

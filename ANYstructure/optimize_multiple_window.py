@@ -12,6 +12,35 @@ import ANYstructure.helper as hlp
 from tkinter.filedialog import askopenfilenames
 from multiprocessing import cpu_count
 import ANYstructure.optimize as opt
+from multiprocessing import Pool, cpu_count
+
+
+def helper_harmonizer_multi(iterator):
+    '''
+    :param :
+    :return:
+    '''
+
+    this_check, master_x = list(), None
+    for slave_line in iterator['info']['lines']:
+        lateral_press = iterator['info'][slave_line]['lateral pressure']
+        fat_press = iterator['info'][slave_line]['fatigue pressure']
+        fat_obj = iterator['info'][slave_line]['fatigue object']
+        slamming_pressure = iterator['info'][slave_line]['slamming pressure']
+        chk_calc_obj = iterator['info'][slave_line]['chk_calc_obj']
+        master_x = list(iterator['x'])
+        x = master_x + [chk_calc_obj.get_span(), chk_calc_obj.get_lg()]
+
+        chk_any = op.any_constraints_all(x=x, obj=chk_calc_obj, lat_press=lateral_press,
+                                         init_weight=float('inf'), side='p', chk=iterator['info']['checks'],
+                                         fat_dict=None if fat_obj == None else fat_obj.get_fatigue_properties(),
+                                         fat_press=fat_press, slamming_press=slamming_pressure)
+        this_check.append(chk_any[0])
+
+    if all(this_check) and master_x is not None:
+        return tuple(master_x)
+    else:
+        return None
 
 class CreateOptimizeMultipleWindow():
     '''
@@ -214,8 +243,8 @@ class CreateOptimizeMultipleWindow():
         self._ent_fl_thk_lower.place(x=start_x + dx * 7, y=start_y + 2 * dy)
 
         # setting default values
-        init_dim = float(50)  # mm
-        init_thk = float(2)  # mm
+        init_dim = float(10)  # mm
+        init_thk = float(1)  # mm
         self._new_delta_spacing.set(init_dim)
         self._new_delta_pl_thk.set(init_thk)
         self._new_delta_web_h.set(init_dim)
@@ -225,15 +254,15 @@ class CreateOptimizeMultipleWindow():
         self._new_spacing_upper.set(round(800, 5))
         self._new_spacing_lower.set(round(600, 5))
         self._new_pl_thk_upper.set(round(25, 5))
-        self._new_pl_thk_lower.set(round(10, 5))
+        self._new_pl_thk_lower.set(round(12, 5))
         self._new_web_h_upper.set(round(500, 5))
         self._new_web_h_lower.set(round(300, 5))
-        self._new_web_thk_upper.set(round(22, 5))
-        self._new_web_thk_lower.set(round(10, 5))
-        self._new_fl_w_upper.set(round(250, 5))
-        self._new_fl_w_lower.set(round(50, 5))
+        self._new_web_thk_upper.set(round(20, 5))
+        self._new_web_thk_lower.set(round(12, 5))
+        self._new_fl_w_upper.set(round(200, 5))
+        self._new_fl_w_lower.set(round(100, 5))
         self._new_fl_thk_upper.set(round(30, 5))
-        self._new_fl_thk_lower.set(round(10, 5))
+        self._new_fl_thk_lower.set(round(15, 5))
         self._new_algorithm.set('anysmart')
         self._new_algorithm_random_trials.set(10000)
 
@@ -327,7 +356,7 @@ class CreateOptimizeMultipleWindow():
         tk.Checkbutton(self._frame, variable=self._new_check_fatigue).place(x=start_x + dx * 12, y=start_y + 8 * dy)
         tk.Checkbutton(self._frame, variable=self._new_check_slamming).place(x=start_x + dx * 12, y=start_y + 9 * dy)
         tk.Checkbutton(self._frame, variable=self._new_check_local_buckling).place(x=start_x + dx * 12,
-                                                                                   y=start_y + 9.5 * dy)
+                                                                                   y=start_y + 10 * dy)
         tk.Checkbutton(self._frame, variable=self._new_harmonizer).place(x=start_x + dx * 9, y=start_y - 10.5 * dy)
 
         self._toggle_btn = tk.Button(self._frame, text="Iterate predefiened stiffeners", relief="raised",
@@ -350,6 +379,7 @@ class CreateOptimizeMultipleWindow():
         self._active_lines = []
         self.controls()
         self.draw_select_canvas()
+        self._harmonizer_data = {}
 
     def selected_algorithm(self, event):
         '''
@@ -419,6 +449,34 @@ class CreateOptimizeMultipleWindow():
             self._ent_minstep.place(x=start_x + dx*15, y=start_y + 0 * dy)
             self._ent_minfunc.place(x=start_x + dx*15, y=start_y + 1 * dy)
 
+    def get_pressure_input(self, line):
+        lateral_press = self.app.get_highest_pressure(line)['normal'] / 1000
+
+        fat_obj = self.app._line_to_struc[line][2]
+        if fat_obj is not None:
+            try:
+                fat_press = self.app.get_fatigue_pressures(line, fat_obj.get_accelerations())
+            except AttributeError:
+                fat_press = None
+        else:
+            fat_press = {'p_ext': {'loaded': 0, 'ballast': 0, 'part': 0},
+                         'p_int': {'loaded': 0, 'ballast': 0, 'part': 0}}
+
+        try:
+            if self.app.get_highest_pressure(line)['slamming'] is None:
+                slamming_pressure = 0
+            else:
+                slamming_pressure = self.app.get_highest_pressure(line)['slamming']
+        except KeyError:
+            slamming_pressure = 0
+
+        fat_press = ((fat_press['p_ext']['loaded'], fat_press['p_ext']['ballast'],
+                      fat_press['p_ext']['part']),
+                     (fat_press['p_int']['loaded'], fat_press['p_int']['ballast'],
+                      fat_press['p_int']['part']))
+        return {'lateral pressure': lateral_press, 'fatigue pressure': fat_press,
+                'slamming pressure': slamming_pressure, 'fatigue object': fat_obj}
+
     def run_optimizaion(self):
         '''
         Function when pressing the optimization botton inside this window.
@@ -455,36 +513,18 @@ class CreateOptimizeMultipleWindow():
                 slamming_pressure = test.get_slamming_pressure()
 
             else:
-                lateral_press = self.app.get_highest_pressure(line)['normal']/1000
-
-                fat_obj = self.app._line_to_struc[line][2]
-                if fat_obj is not None:
-                    try:
-                        fat_press = self.app.get_fatigue_pressures(line, fat_obj.get_accelerations())
-                    except AttributeError:
-                        fat_press = None
-                else:
-                    fat_press = {'p_ext':{'loaded':0,'ballast':0,'part':0}, 'p_int':{'loaded':0, 'ballast':0,'part':0}}
-
-                try:
-                    if self.app.get_highest_pressure(line)['slamming'] is None:
-                        slamming_pressure = 0
-                    else:
-                        slamming_pressure = self.app.get_highest_pressure(line)['slamming']
-                except KeyError:
-                    slamming_pressure = 0
-
-            fat_press = ((fat_press['p_ext']['loaded'], fat_press['p_ext']['ballast'],
-                          fat_press['p_ext']['part']),
-                         (fat_press['p_int']['loaded'], fat_press['p_int']['ballast'],
-                          fat_press['p_int']['part']))
+                input_pressures = self.get_pressure_input(line)
+                lateral_press = input_pressures['lateral pressure']
+                fat_press = input_pressures['fatigue pressure']
+                slamming_pressure = input_pressures['slamming pressure']
+                fat_obj = input_pressures['fatigue object']
 
             if self._toggle_btn.config('relief')[-1] == 'sunken':
                 found_files, predefined_stiffener_iter = self.toggle(found_files=found_files, obj = init_obj,
                                                                      iterating=True)
             else:
                 predefined_stiffener_iter = None
-
+            print('Running', line)
             self._opt_results[line] = list(op.run_optmizataion(init_obj, self.get_lower_bounds(init_obj),
                                                           self.get_upper_bounds(init_obj),
                                                           lateral_press,self.get_deltas(),
@@ -498,7 +538,8 @@ class CreateOptimizeMultipleWindow():
                                                           slamming_press=slamming_pressure,
                                                           predefined_stiffener_iter = predefined_stiffener_iter,
                                                           processes=self._new_processes.get(),
-                                                          min_max_span=max_min_span))
+                                                          min_max_span=max_min_span, use_weight_filter=False))
+            self._harmonizer_data[line] = {}
 
             counter += 1
             self.progress_count.set(counter)
@@ -507,16 +548,85 @@ class CreateOptimizeMultipleWindow():
             if self._opt_results[line] != None:
                 self._opt_actual_running_time.config(text='Accumulated running time: \n'
                                                          + str(time.time() - t_start) + ' sec')
+                print('Runned', line, 'OK')
             else:
-                pass
+                print('Runned', line, 'NOT OK - no results')
+
+        self.draw_select_canvas()
 
         if self._new_harmonizer.get() == True:
-            self.opt_harmonizer()
+            print('Harmonizing')
+            self.opt_harmonizer_historic()
 
         counter += 1
         self.progress_bar.stop()
         self.run_button.config(bg='green')
         self.draw_properties()
+
+    def opt_harmonizer_historic(self):
+
+        # getting all acceptable solutions.
+        all_ok_checks = []
+        for line, data in self._opt_results.items():
+            for fail_ok in data[4]:
+                if fail_ok[0] == True:
+                    all_ok_checks.append(tuple([round(val,10) for val in fail_ok[2]][0:6]))
+        all_ok_checks = set(all_ok_checks)
+
+        # make iterator for multiprocessing
+        iterator = list()
+        to_check = (self._new_check_sec_mod.get(), self._new_check_min_pl_thk.get(),
+                    self._new_check_shear_area.get(), self._new_check_buckling.get(),
+                    self._new_check_fatigue.get(), self._new_check_slamming.get(),
+                    self._new_check_local_buckling.get())
+        iter_run_info = dict()
+        for slave_line in self._opt_results.keys():
+            input_pressures = self.get_pressure_input(slave_line)
+            iter_run_info[slave_line] = {'lateral pressure': input_pressures['lateral pressure'],
+                                         'fatigue pressure': input_pressures['fatigue pressure'],
+                                         'fatigue object':input_pressures['fatigue object'],
+                                         'slamming pressure':input_pressures['slamming pressure'],
+                                         'chk_calc_obj': self._opt_results[slave_line][1]}
+        iter_run_info['lines'] = list(self._opt_results.keys())
+        iter_run_info['checks'] = to_check
+        for x_check in all_ok_checks:
+            iterator.append({'x': x_check, 'info': iter_run_info})
+
+        processes = max(cpu_count() - 1, 1)
+        with Pool(processes) as my_process:
+            res_pre = my_process.map(helper_harmonizer_multi, iterator)
+
+        after_multirun_check_ok = list()
+        for res in res_pre:
+            if res is not None:
+                after_multirun_check_ok.append(res)
+
+        lowest_area, lowest_x  = float('inf'), None
+        for ok_chkd in set(after_multirun_check_ok):
+            if sum(op.get_field_tot_area(ok_chkd )) < lowest_area:
+                lowest_area = sum(op.get_field_tot_area(ok_chkd))
+                lowest_x = ok_chkd
+
+        if lowest_area != float('inf'):
+            for line in self._opt_results.keys():
+                this_x = list(lowest_x) + [self._line_to_struc[line][0].get_span(),
+                                           self._line_to_struc[line][0].get_lg()]
+
+                self._opt_results[line][0] = opt.create_new_structure_obj(self._line_to_struc[line][0], this_x)
+                self._opt_results[line][1] = opt.create_new_calc_obj(self._line_to_struc[line][1], this_x)[0]
+                if self._line_to_struc[line][2] != None:
+                    self._opt_results[line][2] = opt.create_new_calc_obj(init_obj= self._line_to_struc[line][1],
+                                                                         x = this_x,
+                                                                         fat_dict=self._line_to_struc[line]
+                                                                         [2].get_fatigue_properties())[1]
+                else:
+                    self._line_to_struc[line][2] = None
+            return True
+        else:
+            for line in self._opt_results.keys():
+                self._opt_results[line][0] = None
+                self._opt_results[line][1] = None
+            return False
 
     def opt_harmonizer(self):
         '''
@@ -525,19 +635,54 @@ class CreateOptimizeMultipleWindow():
         '''
 
         # Find highest section modulus.
-        highest, highest_line = 0, None
+        harm_res= {}
+        chk = (self._new_check_sec_mod.get(), self._new_check_min_pl_thk.get(),
+                      self._new_check_shear_area.get(), self._new_check_buckling.get(),
+                      self._new_check_fatigue.get(), self._new_check_slamming.get(),
+                      self._new_check_local_buckling.get())
+        for master_line in self._opt_results.keys():
+            master_obj = self._opt_results[master_line][1]
+            master_x = [master_obj.get_s(), master_obj.get_pl_thk(), master_obj.get_web_h(),
+                        master_obj.get_web_thk(), master_obj.get_fl_w(), master_obj.get_fl_thk(),
+                        master_obj.get_span(),master_obj.get_lg()]
+            harm_res[master_line] = []
+            for slave_line in self._opt_results.keys():
+                input_pressures = self.get_pressure_input(slave_line)
+                lateral_press = input_pressures['lateral pressure']
+                fat_press = input_pressures['fatigue pressure']
+                fat_obj = input_pressures['fatigue object']
+                slamming_pressure = input_pressures['slamming pressure']
+                chk_calc_obj = self._opt_results[slave_line][1]
 
-        for line in self._opt_results.keys(): # TODO stresses not set correctly when returning.
-            if self._opt_results[line][1] is not None:
-                init_obj = self._opt_results[line][1]
-                weight = op.calc_weight([init_obj.get_s(), init_obj.get_pl_thk(), init_obj.get_web_h(),
-                                         init_obj.get_web_thk(), init_obj.get_fl_w(), init_obj.get_fl_thk(),
-                                         init_obj.get_span(),init_obj.get_lg()])
-                if weight > highest:
-                    highest = weight
-                    highest_line = line
-        if highest != 0 and highest_line is not None:
-            harmonized_x = self._opt_results[highest_line][1].get_tuple()
+                chk_result = list(op.run_optmizataion(chk_calc_obj,
+                                                      master_x[0:6]+[chk_calc_obj.get_span(),chk_calc_obj.get_lg()],
+                                                      master_x[0:6]+[chk_calc_obj.get_span(),chk_calc_obj.get_lg()],
+                                                      lateral_press,self.get_deltas(),
+                                                      algorithm=self._new_algorithm.get(),
+                                                      trials=self._new_algorithm_random_trials.get(),
+                                                      side=chk_calc_obj.get_side(), const_chk=chk,
+                                                      pso_options=self.pso_parameters,fatigue_obj=fat_obj,
+                                                      fat_press_ext_int=fat_press, slamming_press=slamming_pressure,
+                                                      predefined_stiffener_iter = None,
+                                                      processes=self._new_processes.get(), min_max_span=None,
+                                                      use_weight_filter=True))[0:4]
+                print('Master:', master_line, 'Slave', slave_line, 'Check', chk_result[-1])
+                harm_res[master_line].append(chk_result)
+
+        harmonized_area, harmonized_line =float('inf'), None
+        for master_line, all_slave_res in harm_res.items():
+            if all([slave_line_res[-1] for slave_line_res in all_slave_res]):
+                master_obj = self._opt_results[master_line][1]
+                master_area = sum(op.get_field_tot_area([master_obj.get_s(), master_obj.get_pl_thk(),
+                                                         master_obj.get_web_h(), master_obj.get_web_thk(),
+                                                         master_obj.get_fl_w(), master_obj.get_fl_thk(),
+                                                         master_obj.get_span(),master_obj.get_lg()]))
+                if master_area < harmonized_area:
+                    harmonized_area = master_area
+                    harmonized_line = master_line
+
+        if harmonized_area != 0 and harmonized_line is not None:
+            harmonized_x = self._opt_results[harmonized_line][1].get_tuple()
             for line in self._opt_results.keys():
                 self._opt_results[line][0] = opt.create_new_structure_obj(self._line_to_struc[line][0], harmonized_x)
                 self._opt_results[line][1] = opt.create_new_calc_obj(self._line_to_struc[line][1], harmonized_x)[0]
@@ -548,10 +693,50 @@ class CreateOptimizeMultipleWindow():
                                                                          [2].get_fatigue_properties())[1]
                 else:
                     self._line_to_struc[line][2] = None
+            return True
         else:
             for line in self._opt_results.keys():
                 self._opt_results[line][0] = None
                 self._opt_results[line][1] = None
+            return False
+
+    # def opt_harmonizer_multi(self, iterator):
+    #     '''
+    #         for slave_line in self._opt_results.keys():
+    #             input_pressures = self.get_pressure_input(slave_line)
+    #             iter_run_info[line] = {'lateral_press': input_pressures['lateral pressure'],
+    #                                    'fatigue pressure': input_pressures['fatigue pressure'],
+    #                                    'fatigue object':input_pressures['fatigue object'],
+    #                                    'slamming pressure':input_pressures['slamming pressure'],
+    #                                    'chk_calc_obj': self._opt_results[slave_line][1]}
+    #         iter_run_info['lines'] = list(self._opt_results.keys())
+    #         iter_run_info['checks'] = to_check
+    #         for x_check in all_ok_checks:
+    #             iterator.append((x_check, iter_run_info))
+    #     :param x_check:
+    #     :return:
+    #     '''
+    #
+    #     this_check, master_x = list(), None
+    #     for slave_line in iterator['lines']:
+    #         lateral_press = iterator[1][slave_line]['lateral pressure']
+    #         fat_press = iterator[1][slave_line]['fatigue pressure']
+    #         fat_obj = iterator[1][slave_line]['fatigue object']
+    #         slamming_pressure = iterator[1][slave_line]['slamming pressure']
+    #         chk_calc_obj = iterator[1][slave_line]['chk_calc_obj']
+    #         master_x = list(iterator[0])
+    #         x = master_x + [chk_calc_obj.get_span(), chk_calc_obj.get_lg()]
+    #
+    #         chk_any = op.any_constraints_all(x=x, obj=chk_calc_obj, lat_press=lateral_press,
+    #                                          init_weight=float('inf'), side='p', chk=iterator['checks'],
+    #                                          fat_dict=None if fat_obj == None else fat_obj.get_fatigue_properties(),
+    #                                          fat_press=fat_press, slamming_press=slamming_pressure)
+    #         this_check.append(chk_any[0])
+    #
+    #     if all(this_check) and master_x is not None:
+    #         return tuple(master_x)
+    #     else:
+    #         return None
 
     def get_running_time(self):
         '''
@@ -1025,6 +1210,11 @@ class CreateOptimizeMultipleWindow():
             for line in self._active_lines:
                 if self._opt_results[line][1] is not None:
                     to_return[line] = self._opt_results[line]
+                else:
+                    messagebox.showinfo(title='None in results, cannot return', message='None in results, c'
+                                                                                        'annot return values.')
+                    return
+
             self.app.on_close_opt_multiple_window(to_return)
             messagebox.showinfo(title='Return info', message='Returning: '+str(list(to_return.keys())) +
                                                              '\nLines withot results are not returned.')

@@ -550,15 +550,19 @@ class CreateOptGeoWindow():
                 gotten_lat_press = self.app.get_highest_pressure(closet_line)
                 lateral_press.append(gotten_lat_press['normal'] / 1000)
                 slamming_press.append(gotten_lat_press['slamming'])
-                try:
+                if fat_obj_single is not None:
                     fat_press_single = self.app.get_fatigue_pressures(closet_line, fat_obj_single.get_accelerations())
                     fat_press_tuple = ((fat_press_single['p_ext']['loaded'], fat_press_single['p_ext']['ballast'],
                                         fat_press_single['p_ext']['part']),
                                        (fat_press_single['p_int']['loaded'], fat_press_single['p_int']['ballast'],
                                         fat_press_single['p_int']['part']))
                     fat_press_ext_int.append(fat_press_tuple)
-                except AttributeError:
-                    fat_press_ext_int.append(None)
+                else:
+                    fat_press_ext_int.append(((0, 0, 0), (0, 0,0)))
+
+                # except AttributeError:
+                #     print('AttributeError')
+                #     fat_press_ext_int.append(None)
         if broke:
             messagebox.showinfo(title='Selection error.',
                                 message='This field cannot be subdivided or there are no loads. Error.')
@@ -1389,6 +1393,9 @@ class CreateOptGeoWindow():
         :return:
         '''
         self._previous_drag_mouse = [event.x, event.y]
+
+        if self._opt_resutls =={}:
+            return
         click_x = self._canvas_select.winfo_pointerx() - self._canvas_select.winfo_rootx()
         click_y = self._canvas_select.winfo_pointery() - self._canvas_select.winfo_rooty()
 

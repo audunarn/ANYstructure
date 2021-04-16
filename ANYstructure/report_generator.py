@@ -16,6 +16,7 @@ from time import strftime, gmtime
 import os
 import ANYstructure.helper as hlp
 
+
 def create_report(input_data):
     '''
     This class uses the module REPORTLAB to generate a report.
@@ -123,31 +124,32 @@ class LetterMaker(object):
         self.createParagraph(ptext, 10, voffset + 85)
         delta = 0
         h_start = 130
-        for name, obj in self.data['compartments'].items():
-            
-            ptext = '<font size="7" color = "black">' + 'Name: '+ name + ', content: ' \
-                    + obj.get_content() + '</font>'
-            self.createParagraph(ptext, h_start, voffset + 100 + delta)
+        if self.data._tank_dict != {}:
+            for name, obj in self.data._tank_dict.items():
 
-            delta += 3
-            ptext = '<font size="7" color = "black">' + 'Min. elevation: ' + str(obj.get_lowest_elevation()) + \
-                    ', Max. elevation: ' + str(obj.get_highest_elevation()) + '</font>'
-            self.createParagraph(ptext, h_start, voffset + 100 + delta)
+                ptext = '<font size="7" color = "black">' + 'Name: '+ name + ', content: ' \
+                        + obj.get_content() + '</font>'
+                self.createParagraph(ptext, h_start, voffset + 100 + delta)
 
-            delta += 3
-            ptext = '<font size="7" color = "black">' + 'Applied overpressure: ' + str(obj.get_overpressure()) + \
-                    '</font>'
-            self.createParagraph(ptext, h_start, voffset + 100 + delta)
+                delta += 3
+                ptext = '<font size="7" color = "black">' + 'Min. elevation: ' + str(obj.get_lowest_elevation()) + \
+                        ', Max. elevation: ' + str(obj.get_highest_elevation()) + '</font>'
+                self.createParagraph(ptext, h_start, voffset + 100 + delta)
 
-            delta += 3
-            ptext = '<font size="7" color = "black">'+'(a_stat, a_dyn_loa, a_dyn_bal): ' + \
-                    str(obj.get_accelerations()) + '</font>'
-            self.createParagraph(ptext, h_start, voffset + 100 + delta)
-            delta += 4
-        try:
-            self.c.drawImage('current_comps.png', 10,50, width=350, height=250)
-        except OSError:
-            self.c.drawImage('current_comps_NONE.png', 10, 50, width=350, height=250)
+                delta += 3
+                ptext = '<font size="7" color = "black">' + 'Applied overpressure: ' + str(obj.get_overpressure()) + \
+                        '</font>'
+                self.createParagraph(ptext, h_start, voffset + 100 + delta)
+
+                delta += 3
+                ptext = '<font size="7" color = "black">'+'(a_stat, a_dyn_loa, a_dyn_bal): ' + \
+                        str(obj.get_accelerations()) + '</font>'
+                self.createParagraph(ptext, h_start, voffset + 100 + delta)
+                delta += 4
+            try:
+                self.c.drawImage('current_comps.png', 10,50, width=350, height=250)
+            except OSError:
+                self.c.drawImage('current_comps_NONE.png', 10, 50, width=350, height=250)
 
         # insert body of letter
 
@@ -158,12 +160,12 @@ class LetterMaker(object):
         delta = 160
         vpos = 950
 
-        for line in sorted(self.data['lines'].keys()):
+        for line in sorted(self.data._line_dict.keys()):
             vpos -= delta
-            if line in self.data['struc_obj'].keys():
-                struc_obj = self.data['struc_obj'][line]
-                fo = self.data['fatigue_obj'][line]
-                pressure = self.data['pressure_uls'][line]/1000
+            if line in self.data._line_to_struc.keys():
+                struc_obj = self.data._line_to_struc[line][1]
+                fo = self.data._line_to_struc[line][2]
+                pressure = self.data.get_highest_pressure(line)['normal']/1000
                 textobject = self.c.beginText()
                 textobject.setTextOrigin(30,vpos)
                 textobject.setFont("Helvetica-Oblique", 10)
@@ -192,76 +194,75 @@ class LetterMaker(object):
 
                 if fo is not None:
                     textobject.textLine('Fatigue pressure [Pa]: '+' p_int:'+' loaded/ballast/part = '
-                                        + str(round(self.data['pressure_fls'][line]['p_int']['loaded'],0))
-                                        +'/'+str(round(self.data['pressure_fls'][line]['p_int']['ballast'],0))
-                                        +'/'+str(round(self.data['pressure_fls'][line]['p_int']['part'],0))
+                                        + str(round(self.data.get_color_and_calc_state()['pressure_fls'][line]['p_int']['loaded'],0))
+                                        +'/'+str(round(self.data.get_color_and_calc_state()['pressure_fls'][line]['p_int']['ballast'],0))
+                                        +'/'+str(round(self.data.get_color_and_calc_state()['pressure_fls'][line]['p_int']['part'],0))
                                         + ' p_ext:'+' loaded/ballast/part = '+
-                                        str(round(self.data['pressure_fls'][line]['p_ext']['loaded'],0))
-                                        +'/'+str(round(self.data['pressure_fls'][line]['p_ext']['ballast'],0))
-                                        +'/'+str(round(self.data['pressure_fls'][line]['p_ext']['part'],0)))
+                                        str(round(self.data.get_color_and_calc_state()['pressure_fls'][line]['p_ext']['loaded'],0))
+                                        +'/'+str(round(self.data.get_color_and_calc_state()['pressure_fls'][line]['p_ext']['ballast'],0))
+                                        +'/'+str(round(self.data.get_color_and_calc_state()['pressure_fls'][line]['p_ext']['part'],0)))
                 else:
                     textobject.textLine(' Fatigue pressure: No pressures defined')
 
-                textobject.setFillColor('red') if self.data['colors'][line]['section'] == 'red' \
+                textobject.setFillColor('red') if self.data.get_color_and_calc_state()['colors'][line]['section'] == 'red' \
                     else textobject.setFillColor('black')
-                textobject.textLine('Section modulus: '+str(int(min(self.data['section_modulus'][line]['sec_mod'])
-                                                                *1000**3))+
-                                    ' [mm3]'+'  Min. section modulus: '+
-                                    str(int(self.data['section_modulus'][line]['min_sec_mod']*1000**3))+' [mm3]'+
-                                    ' -> ' + 'OK' if int(min(self.data['section_modulus'][line]['sec_mod'])*1000**3) >=
-                                                     int(self.data['section_modulus'][line]['min_sec_mod']*1000**3)
-                                    else 'Section modulus: '+str(int(min(self.data['section_modulus'][line]['sec_mod'])
-                                                                     *1000**3))+
-                                         ' [mm3]'+ '  Min. section modulus: '+
-                                    str(int(self.data['section_modulus'][line]['min_sec_mod']*1000**3))+' [mm3]'+
+
+                textobject.textLine('Section modulus: '+str(int(min(self.data.get_color_and_calc_state()['section_modulus'][line]['sec_mod'])
+                                                                *1000**3))+ ' [mm3]'+'  Min. section modulus: '+
+                                    str(int(self.data.get_color_and_calc_state()['section_modulus'][line]['min_sec_mod']*1000**3))+' [mm3]'+
+                                    ' -> ' + 'OK' if int(min(self.data.get_color_and_calc_state()['section_modulus'][line]['sec_mod'])*1000**3) >=
+                                                     int(self.data.get_color_and_calc_state()['section_modulus'][line]['min_sec_mod']*1000**3)
+                                    else 'Section modulus: '+str(int(min(self.data.get_color_and_calc_state()['section_modulus'][line]['sec_mod'])
+                                                                     *1000**3))+ ' [mm3]'+ '  Min. section modulus: '+
+                                    str(int(self.data.get_color_and_calc_state()['section_modulus'][line]['min_sec_mod']*1000**3))+' [mm3]'+
                                     ' -> ' + 'NOT OK')
                 textobject.setFillColor('black')
-                textobject.setFillColor('red') if self.data['colors'][line]['thickness'] == 'red' \
+                textobject.setFillColor('red') if self.data.get_color_and_calc_state()['colors'][line]['thickness'] == 'red' \
                     else textobject.setFillColor('black')
                 textobject.textLine('Min plate thickness:  '+
-                                    str(round(self.data['thickness'][line]['min_thk'],2)) + ' [mm] '
+                                    str(round(self.data.get_color_and_calc_state()['thickness'][line]['min_thk'],2)) + ' [mm] '
                                     ' -> ' +
                                     'OK' if struc_obj.get_pl_thk()*1000 >=
-                                            self.data['thickness'][line]['min_thk'] else
+                                            self.data.get_color_and_calc_state()['thickness'][line]['min_thk'] else
                                     'Min plate thickness:  '+ str(round(
-                                        self.data['thickness'][line]['min_thk'],2)) + ' [mm] '
+                                        self.data.get_color_and_calc_state()['thickness'][line]['min_thk'],2)) + ' [mm] '
                                     ' -> '+'NOT OK')
                 textobject.setFillColor('black')
-                textobject.setFillColor('red') if self.data['colors'][line]['shear'] == 'red' \
+                textobject.setFillColor('red') if self.data.get_color_and_calc_state()['colors'][line]['shear'] == 'red' \
                     else textobject.setFillColor('black')
-                textobject.textLine('Shear area: '+str(int(self.data['shear_area'][line]['shear_area']*1000**2))+' [mm2] '+
-                                    '   Min shear area: '+str(int(self.data['shear_area'][line]['min_shear_area']*1000**2))
+                textobject.textLine('Shear area: '+str(int(self.data.get_color_and_calc_state()['shear_area'][line]['shear_area']*1000**2))+' [mm2] '+
+                                    '   Min shear area: '+str(int(self.data.get_color_and_calc_state()['shear_area'][line]['min_shear_area']*1000**2))
                                     + ' [mm2] ' +
-                                    ' -> ' + 'OK' if self.data['shear_area'][line]['shear_area'] >=
-                                                     self.data['shear_area'][line]['min_shear_area']
-                                    else 'Shear area: '+str(int(self.data['shear_area'][line]['shear_area']*1000**2))+
+                                    ' -> ' + 'OK' if self.data.get_color_and_calc_state()['shear_area'][line]['shear_area'] >=
+                                                     self.data.get_color_and_calc_state()['shear_area'][line]['min_shear_area']
+                                    else 'Shear area: '+str(int(self.data.get_color_and_calc_state()['shear_area'][line]['shear_area']*1000**2))+
                                          ' [mm2] ' +
-                                         '   Min shear area: '+str(int(self.data['shear_area'][line]['min_shear_area']*1000**2))
+                                         '   Min shear area: '+str(int(self.data.get_color_and_calc_state()['shear_area'][line]['min_shear_area']*1000**2))
                                          + ' [mm2] ' + ' -> ' + 'NOT OK')
                 textobject.setFillColor('black')
-                textobject.setFillColor('red') if self.data['colors'][line]['buckling'] == 'red' \
+                textobject.setFillColor('red') if self.data.get_color_and_calc_state()['colors'][line]['buckling'] == 'red' \
                     else textobject.setFillColor('black')
                 textobject.textLine('Highest buckling utilization: '+
-                                    str(round(max(self.data['buckling'][line]),2))+
-                                    ' -> '+'OK' if max(self.data['buckling'][line]) < 1 else
+                                    str(round(max(self.data.get_color_and_calc_state()['buckling'][line]),2))+
+                                    ' -> '+'OK' if max(self.data.get_color_and_calc_state()['buckling'][line]) < 1 else
                                     'Highest buckling utilization: '+
-                                    str(round(max(self.data['buckling'][line]),2))+' -> '+'NOT OK')
+                                    str(round(max(self.data.get_color_and_calc_state()['buckling'][line]),2))+' -> '+'NOT OK')
                 textobject.setFillColor('black')
-                textobject.setFillColor('red') if self.data['colors'][line]['fatigue'] == 'red' \
+                textobject.setFillColor('red') if self.data.get_color_and_calc_state()['colors'][line]['fatigue'] == 'red' \
                     else textobject.setFillColor('black')
-                if self.data['fatigue'][line]['damage'] is not None:
+                if self.data.get_color_and_calc_state()['fatigue'][line]['damage'] is not None:
                     textobject.textLine('Fatigue (plate/stiffeners) utilization: '+
-                                        str(round(self.data['fatigue'][line]['damage'],2))+ ' * DFF('+
-                                        str(self.data['fatigue'][line]['dff']) + ') = ' +
-                                        str(round(self.data['fatigue'][line]['damage']*
-                                                  self.data['fatigue'][line]['dff'],2)) + ' (SN-curve = '+
-                                        self.data['fatigue'][line]['curve']+')')
+                                        str(round(self.data.get_color_and_calc_state()['fatigue'][line]['damage'],2))+ ' * DFF('+
+                                        str(self.data.get_color_and_calc_state()['fatigue'][line]['dff']) + ') = ' +
+                                        str(round(self.data.get_color_and_calc_state()['fatigue'][line]['damage']*
+                                                  self.data.get_color_and_calc_state()['fatigue'][line]['dff'],2)) + ' (SN-curve = '+
+                                        self.data.get_color_and_calc_state()['fatigue'][line]['curve']+')')
 
                 else:
                     textobject.textLine('No fatigue results')
 
                 textobject.textLine('Utilization percentage (highest calculated): '+
-                                    str(int(max(self.data['utilization'][line].values())*100))+ '%')
+                                    str(int(max(self.data.get_color_and_calc_state()['utilization'][line].values())*100))+ '%')
 
                 textobject.setFillColor('black')
                 self.c.drawText(textobject)
@@ -274,28 +275,97 @@ class LetterMaker(object):
                 vpos = 950
 
     # ----------------------------------------------------------------------
+        self.c.showPage()
+        self.draw_lines(draw_type='section')
+        self.c.showPage()
+        self.draw_lines(draw_type='plate')
+        self.c.showPage()
+        self.draw_lines(draw_type='pressure')
+        self.c.showPage()
+        self.draw_lines(draw_type='utilization')
 
-    def draw_lines(self):
+    def draw_lines(self, draw_type = 'UF'):
         '''
         Draw the defined lines.
         :return:
         '''
-        points = self.data['points']
-        lines = self.data['lines']
-        colors = self.data['colors']
+        import matplotlib
+        points = self.data._point_dict
+        lines = self.data._line_dict
+        colors = self.data.get_color_and_calc_state()['colors']
         highest_y = max([coord[1] for coord in points.values()])
         highest_x = max([coord[0] for coord in points.values()])
-        scale = min(500/highest_y, 500/highest_x, 10)
-        print(scale)
-        origo = (50,350)
+        if any([highest_x == 0, highest_y == 0]):
+            scale = 10
+        else:
+            scale = min(500/highest_y, 500/highest_x, 10)
+        if draw_type == 'UF':
+            origo = (50,350)
+        else:
+            origo = (50, 450)
         self.c.setLineWidth(2)
         self.c.setStrokeColor('red')
-
+        idx, drawed_data = 0, list()
         for line, pt in lines.items():
-            try:
-                self.c.setStrokeColor('red' if 'red' in colors[line].values() else 'green')
-            except KeyError:
-                self.c.setStrokeColor('black')
+            if draw_type == 'UF':
+                try:
+                    self.c.setStrokeColor('red' if 'red' in colors[line].values() else 'green')
+                except KeyError:
+                    self.c.setStrokeColor('black')
+            elif draw_type == 'section':
+                self.data._new_colorcode_beams.set(True)
+                self.data._new_colorcode_plates.set(False)
+                self.data._new_colorcode_pressure.set(False)
+                line_data = self.data.draw_canvas(get_color_for_line = line)
+                self.c.setStrokeColor(line_data[0])
+                if line_data[1] not in drawed_data:
+                    textobject = self.c.beginText()
+                    if 400 - 20 * idx > 20:
+                        textobject.setTextOrigin(50, 400 - 20 * idx)
+                    else:
+                        textobject.setTextOrigin(300, 400 - 20 * idx)
+                    textobject.setFillColor(line_data[0])
+                    textobject.setFont("Helvetica-Oblique", 10)
+                    textobject.textLine(line_data[1])
+                    self.c.drawText(textobject)
+                    drawed_data.append(line_data[1])
+                    idx += 1
+
+            elif draw_type == 'plate':
+                self.data._new_colorcode_beams.set(False)
+                self.data._new_colorcode_plates.set(True)
+                self.data._new_colorcode_pressure.set(False)
+                line_data = self.data.draw_canvas(get_color_for_line=line)
+                self.c.setStrokeColor(line_data[0])
+                if line_data[1] not in drawed_data:
+                    textobject = self.c.beginText()
+                    if 400 - 20 * idx > 20:
+                        textobject.setTextOrigin(50, 400 - 20 * idx)
+                    else:
+                        textobject.setTextOrigin(300, 400 - 20 * idx)
+                    textobject.setFillColor(line_data[0])
+                    textobject.setFont("Helvetica-Oblique", 10)
+                    textobject.textLine(str(line_data[1]))
+                    self.c.drawText(textobject)
+                    drawed_data.append(line_data[1])
+                    idx += 1
+            elif draw_type == 'pressure':
+                self.data._new_colorcode_beams.set(False)
+                self.data._new_colorcode_plates.set(False)
+                self.data._new_colorcode_pressure.set(True)
+                line_data = self.data.draw_canvas(get_color_for_line=line)
+                self.c.setStrokeColor(line_data[0])
+            elif draw_type == 'utilization':
+                from matplotlib import pyplot as plt
+                import matplotlib
+                cmap_sections = plt.get_cmap('jet')
+                all_utils = [max(list(self.data.get_color_and_calc_state()['utilization'][line].values()))
+                             for line in self.data._line_to_struc.keys()]
+                this_util = max(list(self.data.get_color_and_calc_state()['utilization'][line].values()))
+                norm_uf = this_util/(max(all_utils))
+                self.c.setStrokeColor(matplotlib.colors.rgb2hex(cmap_sections(norm_uf)))
+
+
             x1, y1 = points['point'+str(pt[0])][0] * scale + origo[0], \
                      points['point'+str(pt[0])][1] * scale + origo[1]
             x2, y2 = points['point'+str(pt[1])][0] * scale + origo[0], \
@@ -308,6 +378,68 @@ class LetterMaker(object):
             textobject.textLine(str(hlp.get_num(line)))
             self.c.drawText(textobject)
 
+
+        if draw_type == 'UF':
+            pass
+        elif draw_type == 'section':
+            textobject = self.c.beginText()
+            textobject.setTextOrigin(50,800)
+            textobject.setFont("Helvetica-Oblique", 15)
+            textobject.setFillColor('black')
+            textobject.textLine('Model beam section properties')
+            self.c.drawText(textobject)
+
+        elif draw_type == 'plate':
+            textobject = self.c.beginText()
+            textobject.setTextOrigin(50, 800)
+            textobject.setFillColor('black')
+            textobject.setFont("Helvetica-Oblique", 15)
+            textobject.textLine('Model plate thicknesses')
+            self.c.drawText(textobject)
+
+        elif draw_type == 'pressure':
+            textobject = self.c.beginText()
+            textobject.setTextOrigin(50, 800)
+            textobject.setFillColor('black')
+            textobject.setFont("Helvetica-Oblique", 15)
+            textobject.textLine('Highest pressures for lines in model')
+            self.c.drawText(textobject)
+            idx = 0
+            from matplotlib import pyplot as plt
+            cmap_sections = plt.get_cmap('jet')
+            for press in line_data[1]:
+                textobject = self.c.beginText()
+                if 400 - 20 * idx > 20:
+                    textobject.setTextOrigin(50, 400 - 20 * idx)
+                else:
+                    textobject.setTextOrigin(300, 400 - 20 * idx)
+
+                textobject.setFillColor(matplotlib.colors.rgb2hex(cmap_sections(press/max(line_data[1]))))
+                textobject.setFont("Helvetica-Oblique", 10)
+                textobject.textLine(str(press))
+                self.c.drawText(textobject)
+                drawed_data.append(line_data[1])
+                idx += 1
+        elif draw_type == 'utilization':
+            textobject = self.c.beginText()
+            textobject.setTextOrigin(50, 800)
+            textobject.setFillColor('black')
+            textobject.setFont("Helvetica-Oblique", 15)
+            textobject.textLine('Utilization factors (max of all checks)')
+            self.c.drawText(textobject)
+            import numpy as np
+            from matplotlib import pyplot as plt
+            cmap_sections = plt.get_cmap('jet')
+            for idx, uf in enumerate(np.arange(0, 1.1, 0.1)):
+                textobject = self.c.beginText()
+                if 400 - 20 * idx > 20:
+                    textobject.setTextOrigin(50, 400 - 20 * idx)
+                else:
+                    textobject.setTextOrigin(300, 400 - 20 * idx)
+                textobject.setFillColor(matplotlib.colors.rgb2hex(cmap_sections(uf)))
+                textobject.setFont("Helvetica-Oblique", 10)
+                textobject.textLine(str('UF = ' +str(round(uf,1))))
+                self.c.drawText(textobject)
 
     def coord(self, x, y, unit=1):
         """
@@ -334,64 +466,17 @@ class LetterMaker(object):
 
     # ----------------------------------------------------------------------
 
-
 if __name__ == '__main__':
-    line_to_struc = test.get_line_to_struc()
-    point_dict = test.point_dict
-    line_dict = test.line_dict
-    to_report_gen = {}
-
-    # Highest pressures
-    to_report_gen['pressures'] = {}
-    for line in line_to_struc.keys():
-        try:
-            to_report_gen['pressures'][line] = test.get_random_pressure()
-        except KeyError:
-            pass
-
-    # Calc structure object
-    to_report_gen['calc_structure'] = {}
-    for line in line_to_struc.keys():
-        try:
-            to_report_gen['calc_structure'][line] = line_to_struc[line][1]
-        except KeyError:
-            pass
-
-    # Calc fatigue object
-    to_report_gen['calc_fatigue'] = {}
-    for line in line_to_struc.keys():
-        try:
-            to_report_gen['calc_fatigue'][line] = line_to_struc[line][2]
-        except KeyError:
-            pass
-
-    # Load objects
-    to_report_gen['loads'] = {}
-    for line in line_to_struc.keys():
-        try:
-            to_report_gen['loads'][line] = line_to_struc[line][3]
-        except KeyError:
-            pass
-
-    # Points
-    to_report_gen['points'] = {}
-    for point, value in point_dict.items():
-        try:
-            to_report_gen['points'][point] = value
-        except KeyError:
-            pass
-
-    # Lines
-    to_report_gen['lines'] = {}
-    to_report_gen['colors'] = {}
-    for line,value in line_dict.items():
-        try:
-            to_report_gen['lines'][line] = value
-            to_report_gen['colors'][line] = test.get_random_color()
-        except KeyError:
-            pass
-
-    doc = LetterMaker("example.pdf", "The MVP", 10, to_report_gen)
-    doc.createDocument()
-    doc.savePDF()
+    import multiprocessing, ctypes, tkinter
+    import ANYstructure.main_application as app
+    multiprocessing.freeze_support()
+    errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
+    root = tkinter.Tk()
+    my_app = app.Application(root)
+    ship_example = r'C:\Github\ANYstructure\ANYstructure\ship_section_example.txt'
+    my_app.openfile(ship_example)
+    my_app.report_generate(autosave=True)
+    # doc = LetterMaker("example.pdf", "The MVP", 10, to_report_gen)
+    # doc.createDocument()
+    # doc.savePDF()
 

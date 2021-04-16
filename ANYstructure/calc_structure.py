@@ -38,8 +38,6 @@ class Structure():
         elif self.structure_type in self.structure_types['horizontal']:
             self.dynamic_variable_orientation = 'x - horizontal'
 
-        self.sigma_y = self.sigma_y2 + (self.sigma_y1-self.sigma_y2)\
-                                       *(min(0.25*self.span,0.5*self.spacing)/self.span)
 
         self._zstar_optimization = main_dict['zstar_optimization'][0]
         try:
@@ -491,6 +489,7 @@ class CalcScantlings(Structure):
         ''' Slamming pressure input is Pa '''
         ka1 = 1.1
         ka2 = min(max(0.4, self.spacing / self.span), 1)
+
         ka = math.pow(ka1 - 0.25*ka2,2)
         sigmaf = self.mat_yield/1e6  # MPa
         psl = slamming_pressure/1000  # kPa
@@ -531,7 +530,7 @@ class CalcScantlings(Structure):
             return False, chk1
 
         stf_res = self.calculate_slamming_stiffener(slamming_pressure)
-
+        #print('Slamming checked')
         if self.web_th*1000 < stf_res['tw_req']:
             chk2 = stf_res['tw_req'] / self.web_th*1000
             return False, chk2
@@ -569,15 +568,18 @@ class CalcScantlings(Structure):
 
         return zpl
 
-    def get_dnv_min_section_modulus(self, design_pressure_kpa):
+    def get_dnv_min_section_modulus(self, design_pressure_kpa, printit = False):
         ''' Section modulus according to DNV rules '''
 
         design_pressure = design_pressure_kpa
         fy = self.mat_yield / 1e6
         fyd = fy/1.15
 
-        sigma_jd = math.sqrt(math.pow(self.sigma_x,2)+math.pow(self.sigma_y,2)-
-                             self.sigma_x*self.sigma_y+3*math.pow(self.tauxy,2))
+        sigma_y = self.sigma_y2 + (self.sigma_y1-self.sigma_y2)\
+                                       *(min(0.25*self.span,0.5*self.spacing)/self.span)
+
+        sigma_jd = math.sqrt(math.pow(self.sigma_x,2)+math.pow(sigma_y,2)-
+                             self.sigma_x*sigma_y+3*math.pow(self.tauxy,2))
 
         sigma_pd2 = fyd-sigma_jd  # design_bending_stress_mpa
 
@@ -587,7 +589,8 @@ class CalcScantlings(Structure):
 
         Zs = ((math.pow(self.span, 2) * self.spacing * design_pressure) /
               (min(km_middle, km_sides) * (sigma_pd2) * kps)) * math.pow(10, 6)
-
+        if printit:
+            print('Sigma y1', self.sigma_y1, 'Sigma y2', self.sigma_y2, 'Sigma x', self.sigma_x, 'Pressure', design_pressure)
         return max(math.pow(15, 3) / math.pow(1000, 3), Zs / math.pow(1000, 3))
 
     def get_dnv_min_thickness(self, design_pressure_kpa):
@@ -599,8 +602,10 @@ class CalcScantlings(Structure):
 
         design_pressure = design_pressure_kpa
         #print(self.sigma_x)
-        sigma_jd = math.sqrt(math.pow(self.sigma_x,2)+math.pow(self.sigma_y,2)-
-                             self.sigma_x*self.sigma_y+3*math.pow(self.tauxy,2))
+        sigma_y = self.sigma_y2 + (self.sigma_y1-self.sigma_y2)\
+                                       *(min(0.25*self.span,0.5*self.spacing)/self.span)
+        sigma_jd = math.sqrt(math.pow(self.sigma_x,2)+math.pow(sigma_y,2)-
+                             self.sigma_x*sigma_y+3*math.pow(self.tauxy,2))
         fy = self.mat_yield / 1000000
         fyd = fy/1.15
         sigma_pd1 = min(1.3*(fyd-sigma_jd), fyd)
@@ -739,6 +744,7 @@ class CalcScantlings(Structure):
         bf = self.flange_width
         fy = self.mat_yield  # ok
         stf_type = self.get_stiffener_type()
+        zstar = self._zstar_optimization  # simplification as per 7.7.1 Continuous stiffeners
 
         E = 2.1e11 #ok
         Lg = 10 #girder length, ok
@@ -781,8 +787,8 @@ class CalcScantlings(Structure):
         sig_min, sig_max = min(sigy1Sd,sigy2Sd),max(sigy1Sd,sigy2Sd) # self-made
         sigySd = sig_min+(sig_max-sig_min)*(1-l1/l) # see 6.8, page 15
 
-        if not sigySd<=sigyRd:
-            return [float('inf'),0,0,0,0]
+        if not sigySd <= sigyRd:
+            return [float('inf'),0,0,0,0,0]
 
         try:
             psi = sigy2Sd/sigy1Sd # eq. 7.11 checked, if input is 0, the psi is set to 1
@@ -921,7 +927,7 @@ class CalcScantlings(Structure):
 
         Nsd = sigxSd * (As + s*t) + tautf * s *t #  Equation 7.1, section 7.2, checked ok
 
-        zstar = 0 #simplification as per 7.7.1 Continuous stiffeners
+
         MstRd = Wes*(fy/1.15) #eq7.70 checked ok, no ex
         MpRd = Wep*(fy/1.15) #eq7.71 checked ok, no ex
 
@@ -953,7 +959,6 @@ class CalcScantlings(Structure):
                 ufs.append([eq7_19, eq7_50, eq7_51, eq7_52, eq7_53,zstar])
                 #print(zstar, eq7_50, eq7_51, eq7_52, eq7_53, 'MAX LF is: ', max(eq7_50, eq7_51, eq7_52, eq7_53))
             min_of_max_ufs_idx = max_lfs.index(min(max_lfs))
-            #print(ufs[min_of_max_ufs_idx])
             return ufs[min_of_max_ufs_idx]
         # Lateral pressure on stiffener side:
         else:

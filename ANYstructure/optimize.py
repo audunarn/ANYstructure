@@ -47,8 +47,8 @@ def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lat
         fat_dict = None if fatigue_obj is None else fatigue_obj.get_fatigue_properties()
 
     if use_weight_filter:
-        if is_geometric or algorithm == 'pso':
 
+        if is_geometric or algorithm == 'pso':
             init_filter_weight = float('inf')
         else:
 
@@ -61,7 +61,8 @@ def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lat
                                                     len(predefined_stiffener_iter),
                                                     fat_dict=fat_dict,
                                                     fat_press=None if fat_press_ext_int is None else fat_press_ext_int,
-                                                    predefined_stiffener_iter = predefined_stiffener_iter)
+                                                    predefined_stiffener_iter = predefined_stiffener_iter,
+                                                    slamming_press=slamming_press)
 
     if algorithm == 'anysmart' and not is_geometric:
         to_return = any_smart_loop(min_var, max_var, deltas, initial_structure_obj, lateral_pressure,
@@ -210,7 +211,6 @@ def any_smart_loop_geometric(min_var,max_var,deltas,initial_structure_obj,latera
             this_predefiened_objects = hlp.helper_read_section_file(predefiened_stiffener_iter, struc_obj)
         else:
             this_predefiened_objects = None
-
 
         opt_obj = any_smart_loop(min_var = min_var,max_var = max_var,deltas = deltas,initial_structure_obj = struc_obj,
                                  lateral_pressure = lat_press, init_filter = init_filter, side=side,
@@ -421,6 +421,7 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                     with open('geo_opt_2.pickle', 'rb') as file:
                         opt_objects = pickle.load(file)[no_of_fractions][1]
                 else:
+
                     opt_objects = any_smart_loop_geometric(min_var=min_var,max_var=max_var,deltas=deltas,
                                                            initial_structure_obj=working_objects[no_of_fractions],
                                                            lateral_pressure=working_lateral[no_of_fractions],
@@ -505,6 +506,7 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
     '''
     all_checks = [0,0,0,0,0,0,0,0]
     this_weight = calc_weight(x)
+
     if this_weight > init_weight:
         weigt_frac = this_weight / init_weight
         if print_result:
@@ -520,7 +522,7 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
     if chk[0]:
         section_modulus = min(calc_object[0].get_section_modulus())
         min_section_modulus = calc_object[0].get_dnv_min_section_modulus(lat_press)
-        section_frac = min_section_modulus / section_modulus
+        section_frac = section_modulus / min_section_modulus # TODO is this correct
         all_checks[1] = section_frac
         if not section_modulus > min_section_modulus :
             if print_result:
@@ -538,7 +540,7 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
 
     # Buckling
     if chk[3]:
-        buckling_results = calc_object[0].calculate_buckling_all(design_lat_press=lat_press, checked_side=side)
+        buckling_results = calc_object[0].calculate_buckling_all(design_lat_press=lat_press, checked_side=side)[0:5]
         all_checks[3] = max(buckling_results)
         if not all([uf<=1 for uf in buckling_results]):
             if print_result:
@@ -568,7 +570,8 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
             return False, 'Shear area', x,  all_checks
 
     # Fatigue
-    if chk[4] and fat_dict is not None:
+    if chk[4] and fat_dict is not None and fat_press is not None:
+
         fatigue_uf = calc_object[1].get_total_damage(ext_press=fat_press[0],
                                                      int_press=fat_press[1])*calc_object[1].get_dff()
         all_checks[6] = fatigue_uf
@@ -578,6 +581,7 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
             return False, 'Fatigue', x, all_checks
 
     # Slamming
+
     if chk[5] and slamming_press != 0:
         slam_check = calc_object[0].check_all_slamming(slamming_press)
         all_checks[7] = slam_check[1]
@@ -614,9 +618,10 @@ def any_constraints_all_number(x,*args):
     if not calc_object[0].buckling_local_stiffener():
         return -1
     # Buckling
+
     if chk[3]:
         if not all([uf<=1 for uf in calc_object[0].calculate_buckling_all(design_lat_press=lat_press,
-                                                                          checked_side=side)]):
+                                                                          checked_side=side)[0:5]]):
             return -1
     #Minimum plate thickeness
     if chk[1]:
@@ -658,7 +663,7 @@ def create_new_calc_obj(init_obj,x, fat_dict=None):
     '''
 
     x_old = [init_obj.get_s(), init_obj.get_plate_thk(), init_obj.get_web_h() , init_obj.get_web_thk(),
-             init_obj.get_fl_w() ,init_obj.get_fl_thk(), init_obj.get_span(), init_obj.get_lg()]
+             init_obj.get_fl_w(),init_obj.get_fl_thk(), init_obj.get_span(), init_obj.get_lg()]
 
     sigma_y1_new = stress_scaling(init_obj.get_sigma_y1(), init_obj.get_plate_thk(), x[1])
     sigma_y2_new = stress_scaling(init_obj.get_sigma_y2(), init_obj.get_plate_thk(), x[1])
@@ -831,7 +836,7 @@ def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight
     :param chk:
     :return:
     '''
-    #print('Init filter weigh', init_filter_weight)
+    #print('Init filter weight', init_filter_weight)
 
     iter_var = ((item,init_stuc_obj,lat_press,init_filter_weight,side,chk,fat_dict,fat_press,slamming_press)
                 for item in iterable_all)
@@ -911,7 +916,8 @@ def any_get_all_combs(min_var, max_var,deltas, init_weight = float('inf'), prede
 
     return comb
 
-def get_initial_weight(obj,lat_press,min_var,max_var,deltas,trials,fat_dict,fat_press, predefined_stiffener_iter):
+def get_initial_weight(obj,lat_press,min_var,max_var,deltas,trials,fat_dict,fat_press, predefined_stiffener_iter,
+                       slamming_press):
     '''
     Return a guess of the initial weight used to filter the constraints.
     Only aim is to reduce running time of the algorithm.
@@ -927,7 +933,7 @@ def get_initial_weight(obj,lat_press,min_var,max_var,deltas,trials,fat_dict,fat_
 
     for x in trial_selection:
         if any_constraints_all(x=x,obj=obj,lat_press=lat_press,init_weight=min_weight,
-                               fat_dict=fat_dict,fat_press = fat_press)[0]:
+                               fat_dict=fat_dict,fat_press = fat_press,slamming_press=slamming_press)[0]:
             current_weight = calc_weight(x)
             if current_weight < min_weight:
                 min_weight = current_weight
@@ -1044,28 +1050,30 @@ def plot_optimization_results(results, multiple = False):
 
 if __name__ == '__main__':
     import ANYstructure.example_data as ex
-    obj_dict = ex.obj_dict
-    fat_obj = ex.get_fatigue_object()
-    fp = ex.get_fatigue_pressures()
+    obj_dict = ex.obj_dict_sec_error
+    fat_obj = ex.get_fatigue_object_problematic()
+    fp = ex.get_fatigue_pressures_problematic()
     fat_press = ((fp['p_ext']['loaded'],fp['p_ext']['ballast'],fp['p_ext']['part']),
                  (fp['p_int']['loaded'],fp['p_int']['ballast'],fp['p_int']['part']))
     x0 = [obj_dict['spacing'][0], obj_dict['plate_thk'][0], obj_dict['stf_web_height'][0], obj_dict['stf_web_thk'][0],
           obj_dict['stf_flange_width'][0], obj_dict['stf_flange_thk'][0], obj_dict['span'][0], 10]
 
     obj = calc.Structure(obj_dict)
-    lat_press = 271.124
+    lat_press = 427.235
     calc_object = calc.CalcScantlings(obj_dict)
-    lower_bounds = np.array([0.6, 0.01, 0.3, 0.01, 0.1, 0.01, 3.5, 10])
-    upper_bounds = np.array([0.8, 0.02, 0.5, 0.02, 0.22, 0.03, 3.5, 10])
-    deltas = np.array([0.025, 0.0025, 0.025, 0.0025, 0.025, 0.0025])
+    lower_bounds = np.array([0.875, 0.012, 0.3, 0.012, 0.1, 0.012, 3.5, 10])
+    upper_bounds = np.array([0.875, 0.025, 0.5, 0.018, 0.2, 0.03, 3.5, 10])
+    deltas = np.array([0.025, 0.001, 0.01, 0.001, 0.01, 0.001])
 
 
     t1 = time.time()
     #
-    # results = run_optmizataion(obj, lower_bounds,upper_bounds, lat_press, deltas, algorithm='anysmart',
-    #                            fatigue_obj=fat_obj, fat_press_ext_int=fat_press, use_weight_filter=True,
-    #                            predefined_stiffener_iter=hlp.helper_read_section_file('sections.csv', obj=obj))
-    # # print(results)
+    results = run_optmizataion(obj, lower_bounds,upper_bounds, lat_press, deltas, algorithm='anysmart',
+                               fatigue_obj=fat_obj, fat_press_ext_int=fat_press, use_weight_filter=True)
+
+    print(results[1])
+    print(results[1].get_dnv_min_section_modulus(lat_press))
+    print(min([round(results[1].get_section_modulus()[0], 5), round(results[1].get_section_modulus()[1], 5)]))
 
     # t1 = time.time()
     # check_ok_array, check_array, section_array = list(), list(), list()
@@ -1130,21 +1138,21 @@ if __name__ == '__main__':
     #     results = run_optmizataion(obj, upper_bounds, lower_bounds, lat_press, deltas, algorithm='anysmart',
     #                            fatigue_obj=fat_obj, fat_press_ext_int=fat_press, pso_options=pso_options)[0]
     #     print('Swarm size', swarm_size, 'running time', time.time()-t1, results.get_one_line_string())
-    fat_press_ext_int = list()
-    for pressure in ex.get_geo_opt_fat_press():
-        fat_press_ext_int.append(((pressure['p_ext']['loaded'], pressure['p_ext']['ballast'],
-                                   pressure['p_ext']['part']),
-                                  (pressure['p_int']['loaded'], pressure['p_int']['ballast'],
-                                   pressure['p_int']['part'])))
-
-    opt_girder_prop = (0.018, 0.25,0.015, 0,0, 1.1,0.9)
-
-    results = run_optmizataion(ex.get_geo_opt_object(), lower_bounds, upper_bounds, ex.get_geo_opt_presure(), deltas,
-                               is_geometric=True, fatigue_obj=ex.get_geo_opt_fatigue(),
-                               fat_press_ext_int=fat_press_ext_int,
-                               slamming_press=ex.get_geo_opt_slamming_none(), load_pre=False,
-                               opt_girder_prop= opt_girder_prop,
-                               min_max_span=(1,12), tot_len=12)
+    # fat_press_ext_int = list()
+    # for pressure in ex.get_geo_opt_fat_press():
+    #     fat_press_ext_int.append(((pressure['p_ext']['loaded'], pressure['p_ext']['ballast'],
+    #                                pressure['p_ext']['part']),
+    #                               (pressure['p_int']['loaded'], pressure['p_int']['ballast'],
+    #                                pressure['p_int']['part'])))
+    #
+    # opt_girder_prop = (0.018, 0.25,0.015, 0,0, 1.1,0.9)
+    #
+    # results = run_optmizataion(ex.get_geo_opt_object(), lower_bounds, upper_bounds, ex.get_geo_opt_presure(), deltas,
+    #                            is_geometric=True, fatigue_obj=ex.get_geo_opt_fatigue(),
+    #                            fat_press_ext_int=fat_press_ext_int,
+    #                            slamming_press=ex.get_geo_opt_slamming_none(), load_pre=False,
+    #                            opt_girder_prop= opt_girder_prop,
+    #                            min_max_span=(1,12), tot_len=12)
 
     # import pickle
     # with open('geo_opt_2.pickle', 'rb') as file:
