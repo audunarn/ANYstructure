@@ -1331,7 +1331,7 @@ class Application():
                 pass
         return return_dict
 
-    def draw_canvas(self, state = None, event = None):
+    def draw_canvas(self, state = None, event = None, get_color_for_line = None):
         '''
         Canvas is drawn here.
         '''
@@ -1360,6 +1360,7 @@ class Application():
                                               font=self._text_size["Text 10 bold"],
                                               fill=matplotlib.colors.rgb2hex(cmap_sections(idx/len(self._sections))),
                                               anchor="nw")
+
         elif self._new_colorcode_plates.get() == True:
             from matplotlib import pyplot as plt
             import matplotlib
@@ -1382,7 +1383,8 @@ class Application():
             cmap_sections = plt.get_cmap('jet')
             highest_pressure = max(all_pressures)
             press_map = [round(val, 1) for val in
-                         np.arange(all_pressures[0], all_pressures[-1], (all_pressures[-1]-all_pressures[0])/10)]
+                         np.arange(all_pressures[0], all_pressures[-1], (all_pressures[-1]-all_pressures[0])/10)]+\
+                        [round(all_pressures[-1],1)]
             for idx, press in enumerate(press_map):
                 self._main_canvas.create_text(12, 92+20*idx, text=str(str(press) + ' Pa'),
                                               font=self._text_size["Text 10 bold"],
@@ -1456,12 +1458,17 @@ class Application():
                     for idx, section in enumerate(self._sections):
                         if this_section.__str__() == section.__str__():
                             color = matplotlib.colors.rgb2hex(cmap_sections(idx/len(self._sections)))
-
+                            if get_color_for_line == line:
+                                return color, this_section.__str__()
                 elif self._new_colorcode_plates.get() == True and line in list(self._line_to_struc.keys()):
                     this_obj = self._line_to_struc[line][0]
                     color = matplotlib.colors.rgb2hex(cmap_sections(round(this_obj.get_pl_thk(),5)/thickest_plate))
+                    if get_color_for_line == line:
+                        return color, round(this_obj.get_pl_thk(),5)
                 elif self._new_colorcode_pressure.get() == True and line in list(self._line_to_struc.keys()):
                     color = matplotlib.colors.rgb2hex(cmap_sections(self.get_highest_pressure(line)['normal']/highest_pressure))
+                    if get_color_for_line == line:
+                        return color, press_map
                 else:
                     color = 'black'
 
@@ -1733,17 +1740,21 @@ class Application():
                                            text='The results are shown here (select line):',
                                            font=self._text_size["Text 10 bold"])
 
-    def report_generate(self):
+    def report_generate(self, autosave = False):
         '''
         Button is pressed to generate a report of the current structure.
         :return:
         '''
         to_report_gen ={}
         # Compartments, make
-        save_file = filedialog.asksaveasfile(mode="w", defaultextension=".pdf")
-        if save_file is None:  # ask saveasfile return `None` if dialog closed with "cancel".
-            return
-        filename = save_file.name
+        if not autosave:
+            save_file = filedialog.asksaveasfile(mode="w", defaultextension=".pdf")
+            filename = save_file.name
+            if save_file is None:  # ask saveasfile return `None` if dialog closed with "cancel".
+                return
+        else:
+            filename = 'testrun.pdf'
+
         if self._line_dict == {}:
             tk.messagebox.showerror('No lines', 'No lines defined. Cannot make report.')
             return
@@ -1757,27 +1768,7 @@ class Application():
         # Results
         to_report_gen = self.get_color_and_calc_state()
 
-        # Load objects
-        to_report_gen['loads'] = {}
-        for line in self._line_dict.keys():
-            try:
-                to_report_gen['loads'][line] = self._line_to_struc[line][3]
-            except KeyError:
-                pass
-
-        # Comparments
-        to_report_gen['compartments'] = {}
-        if len(self._tank_dict) != 0:
-            to_report_gen['compartments'] = self._tank_dict
-
-        # Points
-        to_report_gen['points'] = self._point_dict
-        # Lines
-        to_report_gen['lines'] = self._line_dict
-
-        to_report_gen['path'] = self._root_dir
-
-        doc = LetterMaker(filename, "Section results", 10, to_report_gen)
+        doc = LetterMaker(filename, "Section results", 10, self)
         doc.createDocument()
         doc.savePDF()
         try:
@@ -2924,7 +2915,7 @@ class Application():
         json.dump(export_all, save_file)#, sort_keys=True, indent=4)
         save_file.close()
 
-    def openfile(self, defined = None):
+    def openfile(self, defined = None, alone = False):
         '''
         Opens a file with data (JSON).
         '''
@@ -2937,6 +2928,7 @@ class Application():
             imp_file = open(defined,'r')
 
         imported = json.load(imp_file)
+
         self.reset()
 
         self._point_dict = imported['point_dict']
@@ -2987,6 +2979,7 @@ class Application():
             self._accelerations_dict = imported['accelerations_dict']
         except IndexError:
             self._accelerations_dict = {'static':9.81, 'dyn_loaded':0, 'dyn_ballast':0}
+
 
         self._new_static_acc.set(self._accelerations_dict['static'])
         self._new_dyn_acc_loaded.set(self._accelerations_dict['dyn_loaded'])
@@ -3412,7 +3405,6 @@ class Application():
             self._new_colorcode_pressure.set(False)
         self.update_frame()
 
-
     def logger(self, line = None, point = None, move_coords = None):
         ''' Log to be used for undo and redo. '''
 
@@ -3494,8 +3486,10 @@ class Application():
 
 
 if __name__ == '__main__':
+
     multiprocessing.freeze_support()
     errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
     root = tk.Tk()
     my_app = Application(root)
     root.mainloop()
+    #Application(None).openfile(r'C:\Github\ANYstructure\ANYstructure\ship_section_example.txt', alone=True)
