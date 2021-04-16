@@ -1360,14 +1360,23 @@ class Application():
             from matplotlib import pyplot as plt
             import matplotlib
             cmap_sections = plt.get_cmap('jet')
-            for idx, section in enumerate(self._sections):
-                self._main_canvas.create_text(11, 111+20*idx, text=str(section.__str__()),
+            sec_in_model, idx, recorded_sections = dict(), 0, list()
+            for data in self._line_to_struc.values():
+                if data[1].get_beam_string() not in recorded_sections:
+                    sec_in_model[data[1].get_beam_string()]= idx
+                    recorded_sections.append(data[1].get_beam_string())
+                    idx+=1
+            sec_in_model['length'] = len(recorded_sections)
+            for section, idx in sec_in_model.items():
+                if section =='length':
+                    continue
+                self._main_canvas.create_text(11, 111+20*idx, text=section,
                                               font=self._text_size["Text 10 bold"],
                                               fill='black',
                                               anchor="nw")
-                self._main_canvas.create_text(10, 110+20*idx, text=str(section.__str__()),
+                self._main_canvas.create_text(10, 110+20*idx, text=section,
                                               font=self._text_size["Text 10 bold"],
-                                              fill=matplotlib.colors.rgb2hex(cmap_sections(idx/len(self._sections))),
+                                              fill=matplotlib.colors.rgb2hex(cmap_sections(idx/sec_in_model['length'])),
                                               anchor="nw")
 
         elif self._new_colorcode_plates.get() == True and self._line_to_struc != {}:
@@ -1377,11 +1386,11 @@ class Application():
             thickest_plate = max(all_thicknesses)
             cmap_sections = plt.get_cmap('jet')
             for idx, thk in enumerate(all_thicknesses):
-                self._main_canvas.create_text(11, 111+20*idx, text=str('Plate '+ str(thk)),
+                self._main_canvas.create_text(11, 111+20*idx, text=str('Plate '+ str(thk*1000) + ' mm'),
                                               font=self._text_size["Text 10 bold"],
                                               fill='black',
                                               anchor="nw")
-                self._main_canvas.create_text(10, 110+20*idx, text=str('Plate '+ str(thk)),
+                self._main_canvas.create_text(10, 110+20*idx, text=str('Plate '+ str(thk*1000) + ' mm'),
                                               font=self._text_size["Text 10 bold"],
                                               fill=matplotlib.colors.rgb2hex(cmap_sections(thk/thickest_plate)),
                                               anchor="nw")
@@ -1412,7 +1421,10 @@ class Application():
             from matplotlib import pyplot as plt
             import matplotlib
             cmap_sections = plt.get_cmap('jet')
-            for idx, uf in enumerate(np.arange(0,1.1,0.1)):
+            all_utils = [max(list(self.get_color_and_calc_state()['utilization'][line].values()))
+                         for line in self._line_to_struc.keys()]
+            for idx, uf in enumerate(np.arange(min(all_utils), max(all_utils) + (max(all_utils) - min(all_utils)) / 10,
+                                               (max(all_utils) - min(all_utils)) / 10)):
                 self._main_canvas.create_text(11, 111 + 20 * idx, text=str('UF = ' +str(round(uf,1))),
                                               font=self._text_size["Text 10 bold"],
                                               fill='black',
@@ -1478,16 +1490,10 @@ class Application():
                         color = 'black'
                 elif self._new_colorcode_beams.get() == True and line in list(self._line_to_struc.keys()):
                     this_obj = self._line_to_struc[line][0]
-                    this_section = struc.Section({'stf_type': [this_obj.get_stiffener_type(), ''],
-                                                  'stf_web_height': [this_obj.get_web_h(), 'm'],
-                                                  'stf_web_thk': [this_obj.get_web_thk(), 'm'],
-                                                  'stf_flange_width': [this_obj.get_fl_w(), 'm'],
-                                                  'stf_flange_thk': [this_obj.get_fl_thk(), 'm'],})
-                    for idx, section in enumerate(self._sections):
-                        if this_section.__str__() == section.__str__():
-                            color = matplotlib.colors.rgb2hex(cmap_sections(idx/len(self._sections)))
-                            if get_color_for_line == line:
-                                return color, this_section.__str__()
+                    color = matplotlib.colors.rgb2hex(cmap_sections(sec_in_model[this_obj.get_beam_string()]/
+                                                                    sec_in_model['length']))
+                    if get_color_for_line == line:
+                        return color, this_obj.get_beam_string()
                 elif self._new_colorcode_plates.get() == True and line in list(self._line_to_struc.keys()):
                     this_obj = self._line_to_struc[line][0]
                     color = matplotlib.colors.rgb2hex(cmap_sections(round(this_obj.get_pl_thk(),5)/thickest_plate))
