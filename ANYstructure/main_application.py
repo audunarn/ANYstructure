@@ -1775,6 +1775,9 @@ class Application():
             os.startfile(filename)
         except FileNotFoundError:
             pass
+        self._new_colorcode_beams.set(False)
+        self._new_colorcode_plates.set(False)
+        self._new_colorcode_pressure.set(False)
 
     def create_accelerations(self):
         '''

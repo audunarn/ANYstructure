@@ -15,7 +15,7 @@ from reportlab.platypus import Image, Paragraph, Table
 from time import strftime, gmtime
 import os
 import ANYstructure.helper as hlp
-import ANYstructure.main_application as app
+
 
 def create_report(input_data):
     '''
@@ -315,7 +315,10 @@ class LetterMaker(object):
                 self.c.setStrokeColor(line_data[0])
                 if line_data[1] not in drawed_data:
                     textobject = self.c.beginText()
-                    textobject.setTextOrigin(50, 400-20*idx)
+                    if 400 - 20 * idx > 20:
+                        textobject.setTextOrigin(50, 400 - 20 * idx)
+                    else:
+                        textobject.setTextOrigin(300, 400 - 20 * idx)
                     textobject.setFillColor(line_data[0])
                     textobject.setFont("Helvetica-Oblique", 10)
                     textobject.textLine(line_data[1])
@@ -331,7 +334,10 @@ class LetterMaker(object):
                 self.c.setStrokeColor(line_data[0])
                 if line_data[1] not in drawed_data:
                     textobject = self.c.beginText()
-                    textobject.setTextOrigin(50, 400-20*idx)
+                    if 400 - 20 * idx > 20:
+                        textobject.setTextOrigin(50, 400 - 20 * idx)
+                    else:
+                        textobject.setTextOrigin(300, 400 - 20 * idx)
                     textobject.setFillColor(line_data[0])
                     textobject.setFont("Helvetica-Oblique", 10)
                     textobject.textLine(str(line_data[1]))
@@ -363,12 +369,14 @@ class LetterMaker(object):
             textobject = self.c.beginText()
             textobject.setTextOrigin(50,800)
             textobject.setFont("Helvetica-Oblique", 15)
+            textobject.setFillColor('black')
             textobject.textLine('Model beam section properties')
             self.c.drawText(textobject)
 
         elif draw_type == 'plate':
             textobject = self.c.beginText()
             textobject.setTextOrigin(50, 800)
+            textobject.setFillColor('black')
             textobject.setFont("Helvetica-Oblique", 15)
             textobject.textLine('Model plate thicknesses')
             self.c.drawText(textobject)
@@ -376,6 +384,7 @@ class LetterMaker(object):
         elif draw_type == 'pressure':
             textobject = self.c.beginText()
             textobject.setTextOrigin(50, 800)
+            textobject.setFillColor('black')
             textobject.setFont("Helvetica-Oblique", 15)
             textobject.textLine('Highest pressures for lines in model')
             self.c.drawText(textobject)
@@ -384,7 +393,11 @@ class LetterMaker(object):
             cmap_sections = plt.get_cmap('jet')
             for press in line_data[1]:
                 textobject = self.c.beginText()
-                textobject.setTextOrigin(50, 400 - 20 * idx)
+                if 400 - 20 * idx > 20:
+                    textobject.setTextOrigin(50, 400 - 20 * idx)
+                else:
+                    textobject.setTextOrigin(300, 400 - 20 * idx)
+
                 textobject.setFillColor(matplotlib.colors.rgb2hex(cmap_sections(press/max(line_data[1]))))
                 textobject.setFont("Helvetica-Oblique", 10)
                 textobject.textLine(str(press))
@@ -419,6 +432,7 @@ class LetterMaker(object):
 
 if __name__ == '__main__':
     import multiprocessing, ctypes, tkinter
+    import ANYstructure.main_application as app
     multiprocessing.freeze_support()
     errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
     root = tkinter.Tk()
