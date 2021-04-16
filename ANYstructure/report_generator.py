@@ -345,7 +345,7 @@ class LetterMaker(object):
                         textobject.setTextOrigin(300, 400 - 20 * idx)
                     textobject.setFillColor(line_data[0])
                     textobject.setFont("Helvetica-Oblique", 10)
-                    textobject.textLine(str(line_data[1]))
+                    textobject.textLine('Plate ' + str(line_data[1]*1000) + ' mm')
                     self.c.drawText(textobject)
                     drawed_data.append(line_data[1])
                     idx += 1
@@ -359,11 +359,10 @@ class LetterMaker(object):
                 from matplotlib import pyplot as plt
                 import matplotlib
                 cmap_sections = plt.get_cmap('jet')
-                all_utils = [max(list(self.data.get_color_and_calc_state()['utilization'][line].values()))
-                             for line in self.data._line_to_struc.keys()]
+                # all_utils = [max(list(self.data.get_color_and_calc_state()['utilization'][line].values()))
+                #              for line in self.data._line_to_struc.keys()]
                 this_util = max(list(self.data.get_color_and_calc_state()['utilization'][line].values()))
-                norm_uf = this_util/(max(all_utils))
-                self.c.setStrokeColor(matplotlib.colors.rgb2hex(cmap_sections(norm_uf)))
+                self.c.setStrokeColor(matplotlib.colors.rgb2hex(cmap_sections(this_util)))
 
 
             x1, y1 = points['point'+str(pt[0])][0] * scale + origo[0], \
@@ -427,10 +426,13 @@ class LetterMaker(object):
             textobject.setFont("Helvetica-Oblique", 15)
             textobject.textLine('Utilization factors (max of all checks)')
             self.c.drawText(textobject)
+            all_utils = [max(list(self.data.get_color_and_calc_state()['utilization'][line].values()))
+                         for line in self.data._line_to_struc.keys()]
             import numpy as np
             from matplotlib import pyplot as plt
             cmap_sections = plt.get_cmap('jet')
-            for idx, uf in enumerate(np.arange(0, 1.1, 0.1)):
+            for idx, uf in enumerate(np.arange(min(all_utils), max(all_utils) + (max(all_utils)-min(all_utils))/10,
+                                               (max(all_utils)-min(all_utils))/10)):
                 textobject = self.c.beginText()
                 if 400 - 20 * idx > 20:
                     textobject.setTextOrigin(50, 400 - 20 * idx)

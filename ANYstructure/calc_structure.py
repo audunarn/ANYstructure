@@ -73,6 +73,20 @@ class Structure():
             '\n km1,km2,km3:                   ' + str(self.km1)+'/'+str(self.km2)+'/'+str(self.km3)+
             '\n Pressure side (p-plate/s-stf): ' + str(self.pressure_side) + ' ')
 
+    def get_beam_string(self):
+        ''' Returning a string. '''
+        base_name = self.stiffener_type+ '_' + str(round(self.web_height*1000, 0)) + 'x' + \
+                   str(round(self.web_th*1000, 0))
+        if self.stiffener_type == 'FB':
+            ret_str = base_name
+        else:
+            ret_str = base_name + '__' + str(round(self.flange_width*1000, 0)) + 'x' + \
+                      str(round(self.flange_th*1000, 0))
+
+        ret_str = ret_str.replace('.', '_')
+
+        return ret_str
+
     def get_structure_types(self):
         return self.structure_types
 
