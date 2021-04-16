@@ -200,7 +200,7 @@ class Application():
         self._state_logger = dict()  # Used to see if recalculation is needed.
 
         # The next dictionaries feed various infomation to the application
-        self._load_factors_dict = {'dnva':[1.3,1.2,0.7], 'dnvb':[1,1,1.3], 'tanktest':[1,1,0]} # DNV  loads factors
+        self._load_factors_dict = {'dnva':[1.3,1.2,0.7], 'dnvb':[1,1,1.2], 'tanktest':[1,1,0]} # DNV  loads factors
         self._accelerations_dict = {'static':9.81, 'dyn_loaded':0, 'dyn_ballast':0} # Vertical acclerations
         self._load_conditions = ['loaded','ballast','tanktest', 'part','slamming'] # Should not be modified. Load conditions.
         self._tank_options = {'crude_oil': 900, 'diesel': 850 , 'slop': 1050, 'ballast': 1025, 'fresh water': 1000} # Should not be modified.
@@ -1352,7 +1352,7 @@ class Application():
             import matplotlib
             cmap_sections = plt.get_cmap('jet')
             for idx, section in enumerate(self._sections):
-                self._main_canvas.create_text(12, 92+20*idx, text=str(section.__str__()),
+                self._main_canvas.create_text(11, 92+20*idx, text=str(section.__str__()),
                                               font=self._text_size["Text 10 bold"],
                                               fill='black',
                                               anchor="nw")
@@ -1368,7 +1368,7 @@ class Application():
             thickest_plate = max(all_thicknesses)
             cmap_sections = plt.get_cmap('jet')
             for idx, thk in enumerate(all_thicknesses):
-                self._main_canvas.create_text(12, 92+20*idx, text=str('Plate '+ str(thk)),
+                self._main_canvas.create_text(11, 92+20*idx, text=str('Plate '+ str(thk)),
                                               font=self._text_size["Text 10 bold"],
                                               fill='black',
                                               anchor="nw")
@@ -1386,7 +1386,7 @@ class Application():
                          np.arange(all_pressures[0], all_pressures[-1], (all_pressures[-1]-all_pressures[0])/10)]+\
                         [round(all_pressures[-1],1)]
             for idx, press in enumerate(press_map):
-                self._main_canvas.create_text(12, 92+20*idx, text=str(str(press) + ' Pa'),
+                self._main_canvas.create_text(11, 92+20*idx, text=str(str(press) + ' Pa'),
                                               font=self._text_size["Text 10 bold"],
                                               fill='black',
                                               anchor="nw")
