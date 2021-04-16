@@ -281,6 +281,8 @@ class LetterMaker(object):
         self.draw_lines(draw_type='plate')
         self.c.showPage()
         self.draw_lines(draw_type='pressure')
+        self.c.showPage()
+        self.draw_lines(draw_type='utilization')
 
     def draw_lines(self, draw_type = 'UF'):
         '''
@@ -293,7 +295,10 @@ class LetterMaker(object):
         colors = self.data.get_color_and_calc_state()['colors']
         highest_y = max([coord[1] for coord in points.values()])
         highest_x = max([coord[0] for coord in points.values()])
-        scale = min(500/highest_y, 500/highest_x, 10)
+        if any([highest_x == 0, highest_y == 0]):
+            scale = 10
+        else:
+            scale = min(500/highest_y, 500/highest_x, 10)
         if draw_type == 'UF':
             origo = (50,350)
         else:
@@ -350,6 +355,16 @@ class LetterMaker(object):
                 self.data._new_colorcode_pressure.set(True)
                 line_data = self.data.draw_canvas(get_color_for_line=line)
                 self.c.setStrokeColor(line_data[0])
+            elif draw_type == 'utilization':
+                from matplotlib import pyplot as plt
+                import matplotlib
+                cmap_sections = plt.get_cmap('jet')
+                all_utils = [max(list(self.data.get_color_and_calc_state()['utilization'][line].values()))
+                             for line in self.data._line_to_struc.keys()]
+                this_util = max(list(self.data.get_color_and_calc_state()['utilization'][line].values()))
+                norm_uf = this_util/(max(all_utils))
+                self.c.setStrokeColor(matplotlib.colors.rgb2hex(cmap_sections(norm_uf)))
+
 
             x1, y1 = points['point'+str(pt[0])][0] * scale + origo[0], \
                      points['point'+str(pt[0])][1] * scale + origo[1]
@@ -362,6 +377,7 @@ class LetterMaker(object):
             textobject.setFont("Helvetica-Oblique", 9)
             textobject.textLine(str(hlp.get_num(line)))
             self.c.drawText(textobject)
+
 
         if draw_type == 'UF':
             pass
@@ -404,6 +420,26 @@ class LetterMaker(object):
                 self.c.drawText(textobject)
                 drawed_data.append(line_data[1])
                 idx += 1
+        elif draw_type == 'utilization':
+            textobject = self.c.beginText()
+            textobject.setTextOrigin(50, 800)
+            textobject.setFillColor('black')
+            textobject.setFont("Helvetica-Oblique", 15)
+            textobject.textLine('Utilization factors (max of all checks)')
+            self.c.drawText(textobject)
+            import numpy as np
+            from matplotlib import pyplot as plt
+            cmap_sections = plt.get_cmap('jet')
+            for idx, uf in enumerate(np.arange(0, 1.1, 0.1)):
+                textobject = self.c.beginText()
+                if 400 - 20 * idx > 20:
+                    textobject.setTextOrigin(50, 400 - 20 * idx)
+                else:
+                    textobject.setTextOrigin(300, 400 - 20 * idx)
+                textobject.setFillColor(matplotlib.colors.rgb2hex(cmap_sections(uf)))
+                textobject.setFont("Helvetica-Oblique", 10)
+                textobject.textLine(str('UF = ' +str(round(uf,1))))
+                self.c.drawText(textobject)
 
     def coord(self, x, y, unit=1):
         """

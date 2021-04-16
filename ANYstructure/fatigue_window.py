@@ -182,6 +182,8 @@ class CreateFatigueWindow():
 
         count = 1
         for load in self.load_objects:
+            if load == None:
+                continue
             press = []
             if load.get_limit_state() == 'FLS':
                 tk.Label(self._frame, text=str(count)+'. '+load.get_name(), font='Verdana 8')\
@@ -199,7 +201,8 @@ class CreateFatigueWindow():
                 count += 1
         press = []
         for comp in self.comp_objects:
-
+            if comp == None:
+                continue
             tk.Label(self._frame, text=str(count) + '. ' +str(comp.get_name()), font='Verdana 8') \
                 .place(x=start_x + 5 * dx, y=start_y + (5 + count) * dy)
 

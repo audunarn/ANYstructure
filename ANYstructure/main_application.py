@@ -312,6 +312,8 @@ class Application():
         self._new_colorcode_plates.set(False)
         self._new_colorcode_pressure = tk.BooleanVar()
         self._new_colorcode_plates.set(False)
+        self._new_colorcode_utilization = tk.BooleanVar()
+        self._new_colorcode_utilization.set(False)
 
         line_start = (point_start+90)* self._global_shrink
         tk.Label(self._main_fr, text='Input line from "point number" to "point number"',
@@ -329,10 +331,13 @@ class Application():
             .place(x=485, y=40)
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_pressure, command = self.on_color_code_check)\
             .place(x=485, y=60)
+        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_utilization, command = self.on_color_code_check)\
+            .place(x=485, y=80)
         tk.Label(self._main_fr, text='Check to see avaliable shortcuts', font="Text 9").place(x=510, y=0)
-        tk.Label(self._main_fr, text='Color code beams', font="Text 9").place(x=510, y=20)
-        tk.Label(self._main_fr, text='Color code plates', font="Text 9").place(x=510, y=40)
-        tk.Label(self._main_fr, text='Color code pressure', font="Text 9").place(x=510, y=60)
+        tk.Label(self._main_fr, text='Color beam prop.', font="Text 9").place(x=510, y=20)
+        tk.Label(self._main_fr, text='Color plate thk.', font="Text 9").place(x=510, y=40)
+        tk.Label(self._main_fr, text='Color line pressure', font="Text 9").place(x=510, y=60)
+        tk.Label(self._main_fr, text='Color utilization', font="Text 9").place(x=510, y=80)
 
         tk.Entry(self._main_fr, textvariable=self._new_line_p1, width=int(ent_width * self._global_shrink),
                  bg = self._entry_color, fg = self._entry_text_color)\
@@ -1149,10 +1154,14 @@ class Application():
             pass
 
         if animate == False:
-            self._grid_calc.draw_grid(tank_count=None if len(self._tank_dict)==0 else len(self._tank_dict))
+            tank_count = None if len(self._tank_dict)==0 else len(self._tank_dict)
+            if tank_count is not None:
+                self._grid_calc.draw_grid(tank_count=tank_count)
         else:
-            self._grid_calc.animate_grid(grids_to_animate=compartment_search_return['grids'],
-                                         tank_count = None if len(self._tank_dict)==0 else len(self._tank_dict))
+            tank_count = None if len(self._tank_dict) == 0 else len(self._tank_dict)
+            if tank_count is not None:
+                self._grid_calc.animate_grid(grids_to_animate=compartment_search_return['grids'],
+                                             tank_count = None if len(self._tank_dict)==0 else len(self._tank_dict))
 
     def grid_display_tanks(self, save = False):
         '''
@@ -1336,9 +1345,8 @@ class Application():
         Canvas is drawn here.
         '''
 
-
         self._main_canvas.delete('all')
-
+        color = 'black' #by default
 
         self._main_canvas.create_line(self._canvas_draw_origo[0], 0, self._canvas_draw_origo[0], self._canvas_dim[1],
                                      stipple='gray50')
@@ -1347,53 +1355,73 @@ class Application():
         self._main_canvas.create_text(self._canvas_draw_origo[0] - 30*self._global_shrink,
                                      self._canvas_draw_origo[1] + 12* self._global_shrink, text='(0,0)',
                                      font = 'Text 10')
-        if self._new_colorcode_beams.get() == True:
+
+        if self._new_colorcode_beams.get() == True and self._line_to_struc != {}:
             from matplotlib import pyplot as plt
             import matplotlib
             cmap_sections = plt.get_cmap('jet')
             for idx, section in enumerate(self._sections):
-                self._main_canvas.create_text(11, 92+20*idx, text=str(section.__str__()),
+                self._main_canvas.create_text(11, 111+20*idx, text=str(section.__str__()),
                                               font=self._text_size["Text 10 bold"],
                                               fill='black',
                                               anchor="nw")
-                self._main_canvas.create_text(10, 90+20*idx, text=str(section.__str__()),
+                self._main_canvas.create_text(10, 110+20*idx, text=str(section.__str__()),
                                               font=self._text_size["Text 10 bold"],
                                               fill=matplotlib.colors.rgb2hex(cmap_sections(idx/len(self._sections))),
                                               anchor="nw")
 
-        elif self._new_colorcode_plates.get() == True:
+        elif self._new_colorcode_plates.get() == True and self._line_to_struc != {}:
             from matplotlib import pyplot as plt
             import matplotlib
             all_thicknesses = set([round(objs[0].get_pl_thk(), 5) for objs in self._line_to_struc.values()])
             thickest_plate = max(all_thicknesses)
             cmap_sections = plt.get_cmap('jet')
             for idx, thk in enumerate(all_thicknesses):
-                self._main_canvas.create_text(11, 92+20*idx, text=str('Plate '+ str(thk)),
+                self._main_canvas.create_text(11, 111+20*idx, text=str('Plate '+ str(thk)),
                                               font=self._text_size["Text 10 bold"],
                                               fill='black',
                                               anchor="nw")
-                self._main_canvas.create_text(10, 90+20*idx, text=str('Plate '+ str(thk)),
+                self._main_canvas.create_text(10, 110+20*idx, text=str('Plate '+ str(thk)),
                                               font=self._text_size["Text 10 bold"],
                                               fill=matplotlib.colors.rgb2hex(cmap_sections(thk/thickest_plate)),
                                               anchor="nw")
-        elif self._new_colorcode_pressure.get() == True:
+        elif self._new_colorcode_pressure.get() == True and self._line_to_struc != {}:
             from matplotlib import pyplot as plt
             import matplotlib
-            all_pressures = sorted([self.get_highest_pressure(line)['normal'] for line in list(self._line_dict.keys())])
+            try:
+                all_pressures = sorted([self.get_highest_pressure(line)['normal']
+                                        for line in list(self._line_dict.keys())])
+            except KeyError:
+                all_pressures = [0,1]
             cmap_sections = plt.get_cmap('jet')
             highest_pressure = max(all_pressures)
             press_map = [round(val, 1) for val in
                          np.arange(all_pressures[0], all_pressures[-1], (all_pressures[-1]-all_pressures[0])/10)]+\
                         [round(all_pressures[-1],1)]
             for idx, press in enumerate(press_map):
-                self._main_canvas.create_text(11, 92+20*idx, text=str(str(press) + ' Pa'),
+                self._main_canvas.create_text(11, 111+20*idx, text=str(str(press) + ' Pa'),
                                               font=self._text_size["Text 10 bold"],
                                               fill='black',
                                               anchor="nw")
-                self._main_canvas.create_text(10, 90+20*idx, text=str(str(press) + ' Pa'),
+                self._main_canvas.create_text(10, 110+20*idx, text=str(str(press) + ' Pa'),
                                               font=self._text_size["Text 10 bold"],
                                               fill=matplotlib.colors.rgb2hex(cmap_sections(press/highest_pressure)),
                                               anchor="nw")
+
+        elif self._new_colorcode_utilization.get() == True and self._line_to_struc != {}:
+            from matplotlib import pyplot as plt
+            import matplotlib
+            cmap_sections = plt.get_cmap('jet')
+            for idx, uf in enumerate(np.arange(0,1.1,0.1)):
+                self._main_canvas.create_text(11, 111 + 20 * idx, text=str('UF = ' +str(round(uf,1))),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill='black',
+                                              anchor="nw")
+                self._main_canvas.create_text(10, 110 + 20 * idx, text=str('UF = ' +str(round(uf,1))),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill=matplotlib.colors.rgb2hex(cmap_sections(uf)),
+                                              anchor="nw")
+
 
 
         # Drawing shortcut information if selected.
@@ -1443,7 +1471,7 @@ class Application():
                 coord1 = self.get_point_canvas_coord('point' + str(value[0]))
                 coord2 = self.get_point_canvas_coord('point' + str(value[1]))
                 if all([self._new_colorcode_beams.get() != True, self._new_colorcode_plates.get() != True,
-                        self._new_colorcode_pressure.get() != True]):
+                        self._new_colorcode_pressure.get() != True, self._new_colorcode_utilization.get() != True]):
                     try:
                         color = 'red' if 'red' in state['colors'][line].values() else 'green'
                     except (KeyError, TypeError):
@@ -1466,9 +1494,17 @@ class Application():
                     if get_color_for_line == line:
                         return color, round(this_obj.get_pl_thk(),5)
                 elif self._new_colorcode_pressure.get() == True and line in list(self._line_to_struc.keys()):
-                    color = matplotlib.colors.rgb2hex(cmap_sections(self.get_highest_pressure(line)['normal']/highest_pressure))
+                    if all_pressures == [0,1]:
+                        color = 'black'
+                    else:
+                        color = matplotlib.colors.rgb2hex(cmap_sections(self.get_highest_pressure(line)['normal']
+                                                                        /highest_pressure))
                     if get_color_for_line == line:
                         return color, press_map
+
+                elif self._new_colorcode_utilization.get() == True:
+                    color = matplotlib.colors.rgb2hex(
+                        cmap_sections(max(list(state['utilization'][line].values()))))
                 else:
                     color = 'black'
 
@@ -1745,8 +1781,8 @@ class Application():
         Button is pressed to generate a report of the current structure.
         :return:
         '''
-        to_report_gen ={}
-        # Compartments, make
+
+
         if not autosave:
             save_file = filedialog.asksaveasfile(mode="w", defaultextension=".pdf")
             filename = save_file.name
@@ -1765,9 +1801,6 @@ class Application():
         else:
             self.grid_display_tanks(save=True)
 
-        # Results
-        to_report_gen = self.get_color_and_calc_state()
-
         doc = LetterMaker(filename, "Section results", 10, self)
         doc.createDocument()
         doc.savePDF()
@@ -1778,6 +1811,7 @@ class Application():
         self._new_colorcode_beams.set(False)
         self._new_colorcode_plates.set(False)
         self._new_colorcode_pressure.set(False)
+        self.update_frame()
 
     def create_accelerations(self):
         '''
@@ -1981,7 +2015,7 @@ class Application():
             if self._active_line not in self._line_to_struc.keys():
                 self._line_to_struc[self._active_line] = [None, None, None, [None], {}]
                 self._line_to_struc[self._active_line][0] = Structure(obj_dict)
-                self._sections = add_new_section(self._sections, obj_dict)
+                self._sections = add_new_section(self._sections, struc.Section(obj_dict))
                 self._line_to_struc[self._active_line][1] = CalcScantlings(obj_dict)
                 self._line_to_struc[self._active_line][2] = None
                 if self._line_to_struc[self._active_line][0].get_structure_type() not in \
@@ -3299,10 +3333,10 @@ class Application():
         self._new_stf_type.set(returned_structure[6])
 
         section = struc.Section({'stf_type': returned_structure[6],
-                                 'stf_web_height': returned_structure[2],
-                                 'stf_web_thk': returned_structure[3],
-                                 'stf_flange_width': returned_structure[4],
-                                 'stf_flange_thk': returned_structure[5]})
+                                 'stf_web_height': returned_structure[2]/1000,
+                                 'stf_web_thk': returned_structure[3]/1000,
+                                 'stf_flange_width': returned_structure[4]/1000,
+                                 'stf_flange_thk': returned_structure[5]/1000})
 
         self._sections = add_new_section(self._sections, section)
 
@@ -3400,12 +3434,13 @@ class Application():
             pass
 
     def on_color_code_check(self, event = None):
-        if [self._new_colorcode_beams.get() == True, self._new_colorcode_plates.get() == True,
-            self._new_colorcode_pressure.get() == True].count(True) > 1:
+        if [self._new_colorcode_beams.get(), self._new_colorcode_plates.get(),
+            self._new_colorcode_pressure.get(), self._new_colorcode_utilization.get()].count(True) > 1:
             messagebox.showinfo(title='Information', message='Can only select on color code at the time.')
             self._new_colorcode_beams.set(False)
             self._new_colorcode_plates.set(False)
             self._new_colorcode_pressure.set(False)
+            self._new_colorcode_utilization.set(False)
         self.update_frame()
 
     def logger(self, line = None, point = None, move_coords = None):
