@@ -275,10 +275,10 @@ class CreateStructureWindow():
             self._frame.destroy()
             return
 
-        self.app.on_close_structure_window([self._new_spacing.get(),self._new_pl_thk.get(),
-                                                                 self._new_web_h.get(),
-                                            self._new_web_thk.get(),self._new_fl_w.get(),self._new_fl_thk.get(),
-                                            self._new_stiffener_type.get()])
+        self.app.on_close_structure_window([float(num) for num in [self._new_spacing.get(),self._new_pl_thk.get(),
+                                                                   self._new_web_h.get(),self._new_web_thk.get(),
+                                                                   self._new_fl_w.get(),self._new_fl_thk.get()]] +
+                                           [self._new_stiffener_type.get()])
         self._frame.destroy()
 
     def section_choose(self, event = None):
