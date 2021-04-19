@@ -39,7 +39,7 @@ class CreateGridWindow():
 
 
     def __str__(self):
-        return 'Not implemented'
+        return 'class CreateGridWindow(): __str__ - Not implemented'
 
     @property
     def grid(self):

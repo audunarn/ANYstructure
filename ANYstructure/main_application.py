@@ -314,6 +314,10 @@ class Application():
         self._new_colorcode_plates.set(False)
         self._new_colorcode_utilization = tk.BooleanVar()
         self._new_colorcode_utilization.set(False)
+        self._new_draw_point_name = tk.BooleanVar()
+        self._new_draw_point_name.set(True)
+        self._new_line_name = tk.BooleanVar()
+        self._new_line_name.set(True)
 
         line_start = (point_start+90)* self._global_shrink
         tk.Label(self._main_fr, text='Input line from "point number" to "point number"',
@@ -333,11 +337,18 @@ class Application():
             .place(x=485, y=60)
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_utilization, command = self.on_color_code_check)\
             .place(x=485, y=80)
+        tk.Checkbutton(self._main_fr, variable = self._new_line_name, command = self.on_color_code_check)\
+            .place(relx=0.21, rely=0.14)
+        tk.Checkbutton(self._main_fr, variable = self._new_draw_point_name, command = self.on_color_code_check)\
+            .place(relx=0.21, rely=0.25)
+
         tk.Label(self._main_fr, text='Check to see avaliable shortcuts', font="Text 9").place(x=510, y=0)
         tk.Label(self._main_fr, text='Color beam prop.', font="Text 9").place(x=510, y=20)
         tk.Label(self._main_fr, text='Color plate thk.', font="Text 9").place(x=510, y=40)
         tk.Label(self._main_fr, text='Color line pressure', font="Text 9").place(x=510, y=60)
         tk.Label(self._main_fr, text='Color utilization', font="Text 9").place(x=510, y=80)
+        tk.Label(self._main_fr, text='Show line\nname', font="Text 9").place(relx=0.2, rely=0.16)
+        tk.Label(self._main_fr, text='Show point\nname', font="Text 9").place(relx=0.2, rely=0.27)
 
         tk.Entry(self._main_fr, textvariable=self._new_line_p1, width=int(ent_width * self._global_shrink),
                  bg = self._entry_color, fg = self._entry_text_color)\
@@ -1168,6 +1179,7 @@ class Application():
         Opening matplotlib grid illustation
         :return:
         '''
+        print(self._grid_calc)
         try:
             if self._grid_calc != None:
                 self._grid_calc.draw_grid(save = save,
@@ -1449,31 +1461,32 @@ class Application():
                                              self.get_point_canvas_coord(key)[1] - pt_size+2,
                                              self.get_point_canvas_coord(key)[0] + pt_size+2,
                                              self.get_point_canvas_coord(key)[1] + pt_size+2, fill='blue')
-                #printing 'pt.#'
-                self._main_canvas.create_text(self.get_point_canvas_coord(key)[0] - 5,
-                                             self.get_point_canvas_coord(key)[1] - 14, text='pt.'+str(get_num(key)),
-                                             font=self._text_size["Text 10 bold"], fill = 'red')
-                #printing the coordinates of the point
-                self._main_canvas.create_text(self.get_point_canvas_coord(key)[0],
-                                              self.get_point_canvas_coord(key)[1] - 25,
-                                             text='(' + str(round(self.get_point_actual_coord(key)[0],2)) + ' , ' +
-                                                  str(round(self.get_point_actual_coord(key)[1],2)) + ')',
-                                              font="Text 10", fill = 'red')
+                if self._new_draw_point_name.get():
+                    self._main_canvas.create_text(self.get_point_canvas_coord(key)[0] - 5,
+                                                 self.get_point_canvas_coord(key)[1] - 14, text='pt.'+str(get_num(key)),
+                                                 font=self._text_size["Text 10 bold"], fill = 'red')
+                    #printing the coordinates of the point
+                    self._main_canvas.create_text(self.get_point_canvas_coord(key)[0],
+                                                  self.get_point_canvas_coord(key)[1] - 25,
+                                                 text='(' + str(round(self.get_point_actual_coord(key)[0],2)) + ' , ' +
+                                                      str(round(self.get_point_actual_coord(key)[1],2)) + ')',
+                                                  font="Text 10", fill = 'red')
 
             else:
                 self._main_canvas.create_oval(self.get_point_canvas_coord(key)[0] - pt_size,
                                              self.get_point_canvas_coord(key)[1] - pt_size,
                                              self.get_point_canvas_coord(key)[0] + pt_size,
                                              self.get_point_canvas_coord(key)[1] + pt_size, fill='red')
-                #printing 'pt.#'
-                self._main_canvas.create_text(self.get_point_canvas_coord(key)[0] - 5,
-                                             self.get_point_canvas_coord(key)[1] - 14, text='pt.'+str(get_num(key)))
-                #printing the coordinates of the point
-                self._main_canvas.create_text(self.get_point_canvas_coord(key)[0]+20,
-                                              self.get_point_canvas_coord(key)[1] - 25,
-                                             text='(' + str(round(self.get_point_actual_coord(key)[0],2)) + ' , ' +
-                                                  str(round(self.get_point_actual_coord(key)[1],2)) + ')',
-                                              font="Text 6")
+                if self._new_draw_point_name.get():
+                    #printing 'pt.#'
+                    self._main_canvas.create_text(self.get_point_canvas_coord(key)[0] - 5,
+                                                 self.get_point_canvas_coord(key)[1] - 14, text='pt.'+str(get_num(key)))
+                    #printing the coordinates of the point
+                    self._main_canvas.create_text(self.get_point_canvas_coord(key)[0]+20,
+                                                  self.get_point_canvas_coord(key)[1] - 25,
+                                                 text='(' + str(round(self.get_point_actual_coord(key)[0],2)) + ' , ' +
+                                                      str(round(self.get_point_actual_coord(key)[1],2)) + ')',
+                                                  font="Text 6")
 
         # drawing the line dictionary.
         if len(self._line_dict) != 0:
@@ -1518,13 +1531,15 @@ class Application():
                 # drawing a bold line if it is selected
                 if line == self._active_line and self._line_is_active:
                     self._main_canvas.create_line(coord1, coord2, width=6, fill = color)
-                    self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2+10,
-                                                 text='Line ' + str(get_num(line)), font=self._text_size["Text 10 bold"],
-                                                 fill = 'red')
+                    if self._new_line_name.get():
+                        self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2+10,
+                                                     text='Line ' + str(get_num(line)), font=self._text_size["Text 10 bold"],
+                                                     fill = 'red')
                 else:
                     self._main_canvas.create_line(coord1, coord2, width=3, fill = color)
-                    self._main_canvas.create_text(coord1[0]-20 + vector[0] / 2 + 5, coord1[1] + vector[1] / 2+10,
-                                                 text='l.' + str(get_num(line)), font="Text 8", fill = 'black')
+                    if self._new_line_name.get():
+                        self._main_canvas.create_text(coord1[0]-20 + vector[0] / 2 + 5, coord1[1] + vector[1] / 2+10,
+                                                     text='l.' + str(get_num(line)), font="Text 8", fill = 'black')
 
         # drawing waterline
         if len(self._load_dict) != 0:
@@ -2172,8 +2187,10 @@ class Application():
             if load_obj is not None:
                 if load_obj.get_limit_state() != 'FLS':
                     defined_loads.append(load_obj)
-
-        defined_tanks = [['comp'+str(int(tank_num)), self._tank_dict['comp'+str(int(tank_num))]]
+        if self._tank_dict == {}:
+            defined_tanks =  []
+        else:
+            defined_tanks = [['comp'+str(int(tank_num)), self._tank_dict['comp'+str(int(tank_num))]]
                      for tank_num in self.get_compartments_for_line_duplicates(line_name)]
 
         coord = (self.get_line_radial_mid(line_name), self.get_line_low_elevation(line_name))
@@ -2307,9 +2324,11 @@ class Application():
 
     def paste_property(self, event = None):
         ''' Paste property to line '''
+        if self._active_line not in self._line_to_struc.keys():
+            self.new_structure(pasted_structure=self._line_to_struc[self.__copied_line_prop][0])
+
         if self._line_to_struc[self._active_line][0].get_structure_type() !=\
                 self._line_to_struc[self.__copied_line_prop][0].get_structure_type():
-
             tk.messagebox.showerror('Paste error', 'Can only paste to same structure type. This is to avoid problems '
                                                    'with compartments not detecting changes to watertightness.')
             return
@@ -2340,15 +2359,15 @@ class Application():
         Delete the tank that has been selected in the Listbox
         :return:
         '''
-        if self._grid_calc != None:
-            self._tank_dict = {}
-            self._compartments_listbox.delete(0,'end')
-            self._main_grid.clear()
-            self._grid_calc = None
-            if self.__returned_load_data is not None:
-                map(self.on_close_load_window, self.__returned_load_data)
-        else:
-            pass
+        #if self._grid_calc != None:
+        self._tank_dict = {}
+        self._compartments_listbox.delete(0,'end')
+        self._main_grid.clear()
+        self._grid_calc = None
+        if self.__returned_load_data is not None:
+            map(self.on_close_load_window, self.__returned_load_data)
+        # else:
+        #     pass
 
     def set_selected_variables(self, line):
         '''
@@ -2441,7 +2460,11 @@ class Application():
                                                                                     accelerations[2],
                                                                                     self._line_to_struc[line][
                                                                                         0].get_structure_type())
-        compartments = [self._tank_dict['comp'+str(tank)] for tank in self.get_compartments_for_line(line)]
+
+        if self._tank_dict == {}:
+            compartments = []
+        else:
+            compartments = [self._tank_dict['comp'+str(tank)] for tank in self.get_compartments_for_line(line)]
         pressures['p_int'] = {'loaded':0, 'ballast':0, 'part':0}
 
         for comp in compartments:
@@ -2957,6 +2980,8 @@ class Application():
         export_all['fatigue_properties'] = fatigue_properties
         json.dump(export_all, save_file)#, sort_keys=True, indent=4)
         save_file.close()
+        self._parent.wm_title('| ANYstructure |     ' + save_file.name)
+        self.update_frame()
 
     def openfile(self, defined = None, alone = False):
         '''
