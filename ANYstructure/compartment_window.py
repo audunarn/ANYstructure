@@ -60,7 +60,7 @@ class CreateCompartmentWindow():
         tk.Button(self.frame,text='DRAW',command=self.draw_grid).place(relx=0.1,rely=0.1)
 
     def __str__(self):
-        return 'Not implemented'
+        return 'class CreateCompartmentWindow(): Compartment string not implemented'
 
     def draw_grid(self):
         '''
