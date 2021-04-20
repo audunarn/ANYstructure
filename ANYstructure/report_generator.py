@@ -15,6 +15,9 @@ from reportlab.platypus import Image, Paragraph, Table
 from time import strftime, gmtime
 import os
 import ANYstructure.helper as hlp
+from matplotlib import pyplot as plt
+import matplotlib
+cmap_sections = plt.get_cmap('jet')
 
 
 def create_report(input_data):
@@ -283,18 +286,29 @@ class LetterMaker(object):
         self.draw_lines(draw_type='pressure')
         self.c.showPage()
         self.draw_lines(draw_type='utilization')
+        self.c.showPage()
+        self.draw_lines(draw_type='sigma x')
+        self.c.showPage()
+        self.draw_lines(draw_type='sigma y1')
+        self.c.showPage()
+        self.draw_lines(draw_type='sigma y2')
+        self.c.showPage()
+        self.draw_lines(draw_type='tau xy')
+        self.c.showPage()
+        self.draw_lines(draw_type='structure type')
 
     def draw_lines(self, draw_type = 'UF'):
         '''
         Draw the defined lines.
         :return:
         '''
-        import matplotlib
+
         points = self.data._point_dict
         lines = self.data._line_dict
         colors = self.data.get_color_and_calc_state()['colors']
         highest_y = max([coord[1] for coord in points.values()])
         highest_x = max([coord[0] for coord in points.values()])
+
         if any([highest_x == 0, highest_y == 0]):
             scale = 10
         else:
@@ -306,6 +320,7 @@ class LetterMaker(object):
         self.c.setLineWidth(2)
         self.c.setStrokeColor('red')
         idx, drawed_data = 0, list()
+        all_line_data = self.data.get_color_and_calc_state()
         for line, pt in lines.items():
             if draw_type == 'UF':
                 try:
@@ -313,56 +328,48 @@ class LetterMaker(object):
                 except KeyError:
                     self.c.setStrokeColor('black')
             elif draw_type == 'section':
-                self.data._new_colorcode_beams.set(True)
-                self.data._new_colorcode_plates.set(False)
-                self.data._new_colorcode_pressure.set(False)
-                line_data = self.data.draw_canvas(get_color_for_line = line)
-                self.c.setStrokeColor(line_data[0])
-                if line_data[1] not in drawed_data:
+                self.c.setStrokeColor(all_line_data['color code']['lines'][line]['section'])
+                if self.data._line_to_struc[line][1].get_beam_string() not in drawed_data:
                     textobject = self.c.beginText()
                     if 400 - 20 * idx > 20:
                         textobject.setTextOrigin(50, 400 - 20 * idx)
                     else:
                         textobject.setTextOrigin(300, 400 - 20 * idx)
-                    textobject.setFillColor(line_data[0])
+                    textobject.setFillColor(all_line_data['color code']['lines'][line]['section'])
                     textobject.setFont("Helvetica-Oblique", 10)
-                    textobject.textLine(line_data[1])
+                    textobject.textLine(self.data._line_to_struc[line][1].get_beam_string())
                     self.c.drawText(textobject)
-                    drawed_data.append(line_data[1])
+                    drawed_data.append(self.data._line_to_struc[line][1].get_beam_string())
                     idx += 1
 
             elif draw_type == 'plate':
-                self.data._new_colorcode_beams.set(False)
-                self.data._new_colorcode_plates.set(True)
-                self.data._new_colorcode_pressure.set(False)
-                line_data = self.data.draw_canvas(get_color_for_line=line)
-                self.c.setStrokeColor(line_data[0])
-                if line_data[1] not in drawed_data:
+                self.c.setStrokeColor(all_line_data['color code']['lines'][line]['plate'])
+                if self.data._line_to_struc[line][0].get_pl_thk() not in drawed_data:
                     textobject = self.c.beginText()
                     if 400 - 20 * idx > 20:
                         textobject.setTextOrigin(50, 400 - 20 * idx)
                     else:
                         textobject.setTextOrigin(300, 400 - 20 * idx)
-                    textobject.setFillColor(line_data[0])
+                    textobject.setFillColor(all_line_data['color code']['lines'][line]['plate'])
                     textobject.setFont("Helvetica-Oblique", 10)
-                    textobject.textLine('Plate ' + str(line_data[1]*1000) + ' mm')
+                    textobject.textLine('Plate ' + str(self.data._line_to_struc[line][0].get_pl_thk()*1000) + ' mm')
                     self.c.drawText(textobject)
-                    drawed_data.append(line_data[1])
+                    drawed_data.append(self.data._line_to_struc[line][0].get_pl_thk())
                     idx += 1
             elif draw_type == 'pressure':
-                self.data._new_colorcode_beams.set(False)
-                self.data._new_colorcode_plates.set(False)
-                self.data._new_colorcode_pressure.set(True)
-                line_data = self.data.draw_canvas(get_color_for_line=line)
-                self.c.setStrokeColor(line_data[0])
+                self.c.setStrokeColor(all_line_data['color code']['lines'][line]['pressure'])
             elif draw_type == 'utilization':
-                from matplotlib import pyplot as plt
-                import matplotlib
-                cmap_sections = plt.get_cmap('jet')
-                # all_utils = [max(list(self.data.get_color_and_calc_state()['utilization'][line].values()))
-                #              for line in self.data._line_to_struc.keys()]
-                this_util = max(list(self.data.get_color_and_calc_state()['utilization'][line].values()))
-                self.c.setStrokeColor(matplotlib.colors.rgb2hex(cmap_sections(this_util)))
+                self.c.setStrokeColor(all_line_data['color code']['lines'][line]['utilization'])
+            elif draw_type == 'sigma x':
+                self.c.setStrokeColor(all_line_data['color code']['lines'][line]['utilization'])
+            elif draw_type == 'sigma y1':
+                self.c.setStrokeColor(all_line_data['color code']['lines'][line]['sigma y1'])
+            elif draw_type == 'sigma y2':
+                self.c.setStrokeColor(all_line_data['color code']['lines'][line]['sigma y2'])
+            elif draw_type == 'tau xy':
+                self.c.setStrokeColor(all_line_data['color code']['lines'][line]['tau xy'])
+            elif draw_type == 'structure type':
+                self.c.setStrokeColor(all_line_data['color code']['lines'][line]['structure type'])
 
 
             x1, y1 = points['point'+str(pt[0])][0] * scale + origo[0], \
@@ -404,20 +411,21 @@ class LetterMaker(object):
             textobject.textLine('Highest pressures for lines in model')
             self.c.drawText(textobject)
             idx = 0
-            from matplotlib import pyplot as plt
-            cmap_sections = plt.get_cmap('jet')
-            for press in line_data[1]:
+
+            pressure_map =self.data.get_color_and_calc_state()['color code']['pressure map']
+            for press in pressure_map:
                 textobject = self.c.beginText()
                 if 400 - 20 * idx > 20:
                     textobject.setTextOrigin(50, 400 - 20 * idx)
                 else:
                     textobject.setTextOrigin(300, 400 - 20 * idx)
 
-                textobject.setFillColor(matplotlib.colors.rgb2hex(cmap_sections(press/max(line_data[1]))))
+                textobject.setFillColor(matplotlib.colors.rgb2hex(cmap_sections(list(pressure_map).index(press)/
+                                                                                len(list(pressure_map)))))
                 textobject.setFont("Helvetica-Oblique", 10)
                 textobject.textLine(str(press))
                 self.c.drawText(textobject)
-                drawed_data.append(line_data[1])
+                drawed_data.append(press)
                 idx += 1
         elif draw_type == 'utilization':
             textobject = self.c.beginText()
@@ -426,13 +434,9 @@ class LetterMaker(object):
             textobject.setFont("Helvetica-Oblique", 15)
             textobject.textLine('Utilization factors (max of all checks)')
             self.c.drawText(textobject)
-            all_utils = [max(list(self.data.get_color_and_calc_state()['utilization'][line].values()))
-                         for line in self.data._line_to_struc.keys()]
-            import numpy as np
-            from matplotlib import pyplot as plt
-            cmap_sections = plt.get_cmap('jet')
-            for idx, uf in enumerate(np.arange(min(all_utils), max(all_utils) + (max(all_utils)-min(all_utils))/10,
-                                               (max(all_utils)-min(all_utils))/10)):
+            all_utils = all_line_data['color code']['utilization map']
+
+            for idx, uf in enumerate(all_utils):
                 textobject = self.c.beginText()
                 if 400 - 20 * idx > 20:
                     textobject.setTextOrigin(50, 400 - 20 * idx)
@@ -442,6 +446,112 @@ class LetterMaker(object):
                 textobject.setFont("Helvetica-Oblique", 10)
                 textobject.textLine(str('UF = ' +str(round(uf,1))))
                 self.c.drawText(textobject)
+        elif draw_type == 'structure type':
+            textobject = self.c.beginText()
+            textobject.setTextOrigin(50,800)
+            textobject.setFont("Helvetica-Oblique", 15)
+            textobject.setFillColor('black')
+            textobject.textLine('Structure types')
+            self.c.drawText(textobject)
+            for idx, value in enumerate(list(all_line_data['color code']['structure types map'])):
+                textobject = self.c.beginText()
+                if 400 - 20 * idx > 20:
+                    textobject.setTextOrigin(50, 400 - 20 * idx)
+                else:
+                    textobject.setTextOrigin(300, 400 - 20 * idx)
+
+                textobject.setFillColor(matplotlib.colors.rgb2hex(cmap_sections(
+                    list(all_line_data['color code']['structure types map']).index(value)/
+                    len(list(all_line_data['color code']['structure types map'])))))
+                textobject.setFont("Helvetica-Oblique", 10)
+                textobject.textLine(str(value))
+                self.c.drawText(textobject)
+                drawed_data.append(value)
+        elif draw_type == 'sigma x':
+            textobject = self.c.beginText()
+            textobject.setTextOrigin(50,800)
+            textobject.setFont("Helvetica-Oblique", 15)
+            textobject.setFillColor('black')
+            textobject.textLine('Global stresses - sigma x')
+            self.c.drawText(textobject)
+            print(all_line_data['color code']['sigma x map'])
+            for idx, value in enumerate(list(all_line_data['color code']['sigma x map'])):
+                textobject = self.c.beginText()
+                if 400 - 20 * idx > 20:
+                    textobject.setTextOrigin(50, 400 - 20 * idx)
+                else:
+                    textobject.setTextOrigin(300, 400 - 20 * idx)
+
+                textobject.setFillColor(matplotlib.colors.rgb2hex(cmap_sections(
+                    list(all_line_data['color code']['sigma x map']).index(value)/
+                    len(list(all_line_data['color code']['sigma x map'])))))
+                textobject.setFont("Helvetica-Oblique", 10)
+                textobject.textLine(str(value))
+                self.c.drawText(textobject)
+                drawed_data.append(value)
+        elif draw_type == 'sigma y1':
+            textobject = self.c.beginText()
+            textobject.setTextOrigin(50,800)
+            textobject.setFont("Helvetica-Oblique", 15)
+            textobject.setFillColor('black')
+            textobject.textLine('Global stresses - sigma y1')
+            self.c.drawText(textobject)
+            for idx, value in enumerate(list(all_line_data['color code']['sigma y1 map'])):
+                textobject = self.c.beginText()
+                if 400 - 20 * idx > 20:
+                    textobject.setTextOrigin(50, 400 - 20 * idx)
+                else:
+                    textobject.setTextOrigin(300, 400 - 20 * idx)
+
+                textobject.setFillColor(matplotlib.colors.rgb2hex(cmap_sections(
+                    list(all_line_data['color code']['sigma y1 map']).index(value)/
+                    len(list(all_line_data['color code']['sigma y1 map'])))))
+                textobject.setFont("Helvetica-Oblique", 10)
+                textobject.textLine(str(value))
+                self.c.drawText(textobject)
+                drawed_data.append(value)
+        elif draw_type == 'sigma y2':
+            textobject = self.c.beginText()
+            textobject.setTextOrigin(50,800)
+            textobject.setFont("Helvetica-Oblique", 15)
+            textobject.setFillColor('black')
+            textobject.textLine('Global stresses - sigma y2')
+            self.c.drawText(textobject)
+            for idx, value in enumerate(list(all_line_data['color code']['sigma y2 map'])):
+                textobject = self.c.beginText()
+                if 400 - 20 * idx > 20:
+                    textobject.setTextOrigin(50, 400 - 20 * idx)
+                else:
+                    textobject.setTextOrigin(300, 400 - 20 * idx)
+
+                textobject.setFillColor(matplotlib.colors.rgb2hex(cmap_sections(
+                    list(all_line_data['color code']['sigma y2 map']).index(value)/
+                    len(list(all_line_data['color code']['sigma y2 map'])))))
+                textobject.setFont("Helvetica-Oblique", 10)
+                textobject.textLine(str(value))
+                self.c.drawText(textobject)
+                drawed_data.append(value)
+        elif draw_type == 'tau xy':
+            textobject = self.c.beginText()
+            textobject.setTextOrigin(50,800)
+            textobject.setFont("Helvetica-Oblique", 15)
+            textobject.setFillColor('black')
+            textobject.textLine('Global stresses - tau xy')
+            self.c.drawText(textobject)
+            for idx, value in enumerate(list(all_line_data['color code']['tau xy map'])):
+                textobject = self.c.beginText()
+                if 400 - 20 * idx > 20:
+                    textobject.setTextOrigin(50, 400 - 20 * idx)
+                else:
+                    textobject.setTextOrigin(300, 400 - 20 * idx)
+
+                textobject.setFillColor(matplotlib.colors.rgb2hex(cmap_sections(
+                    list(all_line_data['color code']['tau xy map']).index(value)/
+                    len(list(all_line_data['color code']['tau xy map'])))))
+                textobject.setFont("Helvetica-Oblique", 10)
+                textobject.textLine(str(value))
+                self.c.drawText(textobject)
+                drawed_data.append(value)
 
     def coord(self, x, y, unit=1):
         """

@@ -63,7 +63,7 @@ class Structure():
             '\n Stiffener flange width:        ' + str(self.flange_width*1000)+' mm'+
             '\n Stiffener flange thickness:    ' + str(self.flange_th*1000)+' mm'+
             '\n Material yield:                ' + str(self.mat_yield/1e6)+' MPa'+
-            '\n Structure type/stiffener type: ' + str(self.structure_type)+'/'+(self.stiffener_type)+
+            '\n Structure/stiffener type:      ' + str(self.structure_type)+'/'+(self.stiffener_type)+
             '\n Dynamic load varible_          ' + str(self.dynamic_variable_orientation)+
             '\n Plate fixation paramter,kpp:   ' + str(self.plate_kpp) + ' ' +
             '\n Stf. fixation paramter,kps:    ' + str(self.stf_kps) + ' ' +

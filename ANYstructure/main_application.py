@@ -617,7 +617,7 @@ class Application():
         tk.Label(text='<-- check to color-\ncode stresses', font=self._text_size['Text 9'],
                  bg=self._general_color).place(relx=ent_relx + 4.5*drelx, rely=ent_rely+1.5*drely)
 
-        self._ent_structure_type.place(relx=types_start, rely=ent_rely+3*drely, width = ent_width*6)
+        self._ent_structure_type.place(relx=types_start, rely=ent_rely+3.5*drely, width = ent_width*6)
         self._ent_structure_type.place_configure(width=int(210*self._global_shrink))
 
         self._structure_types_label = \
