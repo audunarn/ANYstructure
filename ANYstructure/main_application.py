@@ -1420,16 +1420,38 @@ class Application():
                                      'max tau xy': max(tau_xy), 'min tau xy': min(tau_xy), 'tau xy map': tau_xy_map,
                                      'structure types map': set(structure_type),  'sections in model': sec_in_model,
                                      'recorded sections': recorded_sections}
+        line_color_coding = {}
+        cmap_sections = plt.get_cmap('jet')
+        for line, line_data in self._line_to_struc.items():
+            line_color_coding[line] = {'plate': matplotlib.colors.rgb2hex(cmap_sections(line_data[1]
+                                                                          .get_pl_thk()/max(all_thicknesses))),
+                                       'section': matplotlib.colors.rgb2hex(cmap_sections(sec_in_model[line_data[1]
+                                                                            .get_beam_string()]
+                                                  /len(list(recorded_sections)))),
+                                       'structure type': matplotlib.colors.rgb2hex(cmap_sections(list(set(structure_type))
+                                                                                   .index(line_data[1]
+                                                                                         .get_structure_type())/
+                                                         len(list(set(structure_type))))),
+                                       'pressure': matplotlib.colors.rgb2hex(cmap_sections(
+                                           self.get_highest_pressure(line)['normal']/highest_pressure)),
+                                       'utilization': matplotlib.colors.rgb2hex(cmap_sections(
+                                           max(list(return_dict['utilization'][line].values()))/max(all_utils))),
+                                       'sigma x': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_x()/max(sig_x))),
+                                       'sigma y1': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_y1()/max(sig_y1))),
+                                       'sigma y2': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_y2()/max(sig_y2))),
+                                       'tau xy': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_tau_xy()/max(tau_xy)))}
+
+
+            return_dict['color code']['lines'] = line_color_coding
         return return_dict
 
-    def draw_canvas(self, state = None, event = None, get_color_for_line = None):
+    def draw_canvas(self, state = None, event = None):
         '''
         Canvas is drawn here.
         '''
 
         self._main_canvas.delete('all')
         color = 'black' #by default
-
         self._main_canvas.create_line(self._canvas_draw_origo[0], 0, self._canvas_draw_origo[0], self._canvas_dim[1],
                                      stipple='gray50')
         self._main_canvas.create_line(0, self._canvas_draw_origo[1], self._canvas_dim[0], self._canvas_draw_origo[1],
@@ -1484,12 +1506,10 @@ class Application():
                                                  text='(' + str(round(self.get_point_actual_coord(key)[0],2)) + ' , ' +
                                                       str(round(self.get_point_actual_coord(key)[1],2)) + ')',
                                                   font="Text 6")
-
         # drawing the line dictionary.
+
         if len(self._line_dict) != 0:
-
             for line, value in self._line_dict.items():
-
                 coord1 = self.get_point_canvas_coord('point' + str(value[0]))
                 coord2 = self.get_point_canvas_coord('point' + str(value[1]))
                 if not chk_box_active and state != None:
@@ -1498,9 +1518,7 @@ class Application():
                     except (KeyError, TypeError):
                         color = 'black'
                 elif chk_box_active and state != None:
-                    color, report_return = self.color_code_line(state, line, get_color_for_line=get_color_for_line)
-                    if get_color_for_line:
-                        return color, report_return
+                    color, report_return = self.color_code_line(state, line)
                 else:
                     color = 'black'
 
@@ -1676,7 +1694,9 @@ class Application():
         elif self._new_colorcode_plates.get() == True and line in list(self._line_to_struc.keys()):
             this_obj = self._line_to_struc[line][0]
             color = matplotlib.colors.rgb2hex(cmap_sections(round(this_obj.get_pl_thk(), 5) / cc_state['thickest plate']))
+            print(get_color_for_line, line)
             if get_color_for_line == line:
+                print(color, round(this_obj.get_pl_thk(), 5), line)
                 return color, round(this_obj.get_pl_thk(), 5)
 
         elif self._new_colorcode_pressure.get() == True and line in list(self._line_to_struc.keys()):
@@ -1740,9 +1760,9 @@ class Application():
 
             # printing the properties to the active line
             if self._line_is_active:
-                self._prop_canvas.create_text([170*self._global_shrink, 110*self._global_shrink],
+                self._prop_canvas.create_text([170*self._global_shrink, 120*self._global_shrink],
                                              text=self._line_to_struc[self._active_line][0],
-                                             font = self._text_size["Text 9"],justify=tk.LEFT)
+                                             font = self._text_size["Text 9"])
 
                 # setting the input field to active line properties
                 self.set_selected_variables(self._active_line)
