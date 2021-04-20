@@ -147,11 +147,11 @@ class Application():
 
         # Creating the various canvas next.
         self._main_canvas = tk.Canvas(self._main_fr,
-                                      background=self._general_color, bd=2, highlightthickness=0, relief='ridge')
+                                      background=self._general_color, bd=0, highlightthickness=0, relief='ridge')
         self._prop_canvas = tk.Canvas(self._main_fr,
-                                     background=self._general_color, bd=2, highlightthickness=0, relief='ridge')
+                                     background=self._general_color, bd=0, highlightthickness=0, relief='ridge')
         self._result_canvas = tk.Canvas(self._main_fr,
-                                       background=self._general_color, bd=2, highlightthickness=0, relief='ridge')
+                                       background=self._general_color, bd=0, highlightthickness=0, relief='ridge')
         x_canvas_place = 0.26
         self._main_canvas.place(relx=x_canvas_place, rely=0,relwidth=0.523, relheight = 0.73)
         self._prop_canvas.place(relx=x_canvas_place, rely=0.73, relwidth=0.38, relheight = 0.27)
@@ -467,7 +467,7 @@ class Application():
         ent_width = 12 #width of entries
         tk.Label(self._main_fr, text='Material yield [MPa]:', font = self._text_size['Text 9'],
                  bg = self._general_color)\
-            .place(relx=0.19, rely=0.386)
+            .place(relx=0.19, rely=prop_vert_start + 2.5 * delta_y)
 
         self._ent_mat = tk.Entry(self._main_fr, textvariable=self._new_material,
                                  width = int(ent_width*self._global_shrink), bg = self._entry_color,
@@ -1166,7 +1166,7 @@ class Application():
         Opening matplotlib grid illustation
         :return:
         '''
-        print(self._grid_calc)
+
         try:
             if self._grid_calc != None:
                 self._grid_calc.draw_grid(save = save,
@@ -3739,7 +3739,6 @@ if __name__ == '__main__':
     root = tk.Tk()
     width = root.winfo_screenwidth()
     height = root.winfo_screenheight()
-    print(width, height)
     root.geometry(f'{width}x{height}')
     my_app = Application(root)
     root.mainloop()

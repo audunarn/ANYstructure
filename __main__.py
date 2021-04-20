@@ -1,4 +1,4 @@
-import sys, multiprocessing
+import sys, multiprocessing, ctypes
 import tkinter as tk
 from ANYstructure.main_application import Application
 
@@ -8,7 +8,11 @@ def main(args=None):
         args = sys.argv[1:]
 
     multiprocessing.freeze_support()
+    errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
     root = tk.Tk()
+    width = root.winfo_screenwidth()
+    height = root.winfo_screenheight()
+    root.geometry(f'{width}x{height}')
     my_app = Application(root)
     root.mainloop()
 
