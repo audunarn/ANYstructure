@@ -25,6 +25,8 @@ from ANYstructure.report_generator import LetterMaker
 import os.path
 import ctypes
 import ANYstructure.sesam_interface as sesam
+from matplotlib import pyplot as plt
+import matplotlib
 
 class Application():
     '''
@@ -145,18 +147,17 @@ class Application():
 
         # Creating the various canvas next.
         self._main_canvas = tk.Canvas(self._main_fr, height=self._canvas_dim[1], width=self._canvas_dim[0]
-                                     , background=self._general_color, bd=0, highlightthickness=0, relief='ridge')
+                                     , background=self._general_color, bd=2, highlightthickness=0, relief='ridge')
         self._prop_canvas = tk.Canvas(self._main_fr, height=int(230*self._global_shrink),
                                      width=int(self._canvas_dim[0]*0.72*(self._global_shrink+(1-self._global_shrink)/2)),
-                                     background=self._general_color, bd=0, highlightthickness=0, relief='ridge')
+                                     background=self._general_color, bd=2, highlightthickness=0, relief='ridge')
         self._result_canvas = tk.Canvas(self._main_fr, height=int(230*self._global_shrink),
                                        width=int(self._canvas_dim[0]*0.68*(self._global_shrink+(1-self._global_shrink)/2)),
-                                       background=self._general_color, bd=0, highlightthickness=0, relief='ridge')
-        x_canvas_place = int(500*self._global_shrink) #
-        self._main_canvas.place(x=x_canvas_place, y=0)
-        self._prop_canvas.place(x=x_canvas_place, y=self._canvas_dim[1]+30)
-        self._result_canvas.place(x=x_canvas_place+self._canvas_dim[0]*0.73*(self._global_shrink+(1-self._global_shrink)/2),
-                                 y=self._canvas_dim[1]+30)
+                                       background=self._general_color, bd=2, highlightthickness=0, relief='ridge')
+        x_canvas_place = 0.273*self._global_shrink
+        self._main_canvas.place(relx=x_canvas_place, rely=0)
+        self._prop_canvas.place(relx=x_canvas_place, rely=0.75)
+        self._result_canvas.place(relx=x_canvas_place+0.38, rely=0.75)
 
         # These frames are just visual separations in the GUI.
         fr_width = int(x_canvas_place * self._global_shrink)
@@ -318,6 +319,18 @@ class Application():
         self._new_draw_point_name.set(True)
         self._new_line_name = tk.BooleanVar()
         self._new_line_name.set(True)
+        self._new_colorcode_sigmax = tk.BooleanVar()
+        self._new_colorcode_sigmax.set(False)
+        self._new_colorcode_sigmay1 = tk.BooleanVar()
+        self._new_colorcode_sigmay1.set(False)
+        self._new_colorcode_sigmay2 = tk.BooleanVar()
+        self._new_colorcode_sigmay2.set(False)
+        self._new_colorcode_tauxy = tk.BooleanVar()
+        self._new_colorcode_tauxy.set(False)
+        self._new_colorcode_structure_type = tk.BooleanVar()
+        self._new_colorcode_structure_type.set(False)
+
+
 
         line_start = (point_start+90)* self._global_shrink
         tk.Label(self._main_fr, text='Input line from "point number" to "point number"',
@@ -341,6 +354,7 @@ class Application():
             .place(relx=0.21, rely=0.14)
         tk.Checkbutton(self._main_fr, variable = self._new_draw_point_name, command = self.on_color_code_check)\
             .place(relx=0.21, rely=0.25)
+
 
         tk.Label(self._main_fr, text='Check to see avaliable shortcuts', font="Text 9").place(x=510, y=0)
         tk.Label(self._main_fr, text='Color beam prop.', font="Text 9").place(x=510, y=20)
@@ -486,7 +500,7 @@ class Application():
         ent_width = 12 #width of entries
         tk.Label(self._main_fr, text='Material yield [MPa]:', font = self._text_size['Text 9'],
                  bg = self._general_color)\
-            .place(x=100, y=prop_vert_start+ 7 * delta_y)
+            .place(relx=0.19, rely=0.386)
 
         self._ent_mat = tk.Entry(self._main_fr, textvariable=self._new_material,
                                  width = int(ent_width*self._global_shrink), bg = self._entry_color,
@@ -609,19 +623,34 @@ class Application():
                                                                              y=prop_vert_start + loc_y * delta_y)
         tk.Label(self._main_fr, text='[mm]', bg = self._general_color).place(x=10 + 8*delta_x,
                                                                              y=prop_vert_start + loc_y * delta_y)
+        ent_rely, ent_relx, drelx = 0.41, 0.059, 0.026
+        self._ent_mat.place(relx=0.195, rely=ent_rely)
+        self._ent_plate_kpp.place(relx = ent_relx , rely=ent_rely)
+        self._ent_plate_kps.place(relx=ent_relx + drelx, rely=ent_rely)
+        self._ent_stf_km1.place(relx=ent_relx + 2*drelx, rely=ent_rely)
+        self._ent_stf_km2.place(relx=ent_relx + 3*drelx, rely=ent_rely)
+        self._ent_stf_km3.place(relx=ent_relx + 4*drelx, rely=ent_rely)
+        drely = 0.05
+        self._ent_sigma_y1.place(relx = ent_relx, rely=ent_rely+drely)
+        self._ent_sigma_y2.place(relx=ent_relx + drelx, rely=ent_rely+drely)
+        self._ent_sigma_x.place(relx=ent_relx + 2*drelx, rely=ent_rely+drely)
+        self._ent_tauxy.place(relx=ent_relx + 3*drelx, rely=ent_rely+drely)
+        self._ent_stf_type.place(relx=ent_relx + 4*drelx, rely=ent_rely+drely)
 
-        self._ent_mat.place(x=10+6*delta_x , y=prop_vert_start + 7 * delta_y)
-        self._ent_plate_kpp.place(x=10+2*delta_x, y=prop_vert_start + 3.5 * delta_y)
-        self._ent_plate_kps.place(x=10+3*delta_x, y=prop_vert_start + 3.5 * delta_y)
-        self._ent_stf_km1.place(x=10+4*delta_x, y=prop_vert_start + 3.5 * delta_y)
-        self._ent_stf_km2.place(x=10+5*delta_x, y=prop_vert_start + 3.5 * delta_y)
-        self._ent_stf_km3.place(x=10+6*delta_x, y=prop_vert_start + 3.5 * delta_y)
-        self._ent_sigma_y1.place(x=10+2*delta_x, y=prop_vert_start + 5.5 * delta_y)
-        self._ent_sigma_y2.place(x=10+3*delta_x, y=prop_vert_start + 5.5 * delta_y)
-        self._ent_sigma_x.place(x=10+4*delta_x, y=prop_vert_start + 5.5 * delta_y)
-        self._ent_tauxy.place(x=10+5*delta_x, y=prop_vert_start + 5.5 * delta_y)
-        self._ent_stf_type.place(x=10+6*delta_x, y=prop_vert_start + 5.5 * delta_y)
-        self._ent_structure_type.place(x=10, y=prop_vert_start +10.5*delta_y, width = ent_width*6)
+        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_sigmax, command = self.on_color_code_check)\
+            .place(relx=ent_relx, rely=ent_rely+1.5*drely)
+        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_sigmay1, command = self.on_color_code_check)\
+            .place(relx=ent_relx + drelx, rely=ent_rely+1.5*drely)
+        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_sigmay2, command = self.on_color_code_check)\
+            .place(relx=ent_relx + 2*drelx, rely=ent_rely+1.5*drely)
+        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_tauxy, command = self.on_color_code_check)\
+            .place(relx=ent_relx + 3*drelx, rely=ent_rely+1.5*drely)
+        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_structure_type, command = self.on_color_code_check)\
+            .place(relx=ent_relx + 4*drelx, rely=ent_rely+1.5*drely)
+        tk.Label(text='<-- check to colorcode\nstresses', font=self._text_size['Text 10'],
+                 bg=self._general_color).place(relx=ent_relx + 4.5*drelx, rely=ent_rely+1.5*drely)
+
+        self._ent_structure_type.place(x=10, rely=ent_rely+3*drely, width = ent_width*6)
         self._ent_structure_type.place_configure(width=int(210*self._global_shrink))
 
         self._structure_types_label = \
@@ -1221,7 +1250,8 @@ class Application():
 
         return_dict = {'colors': {}, 'section_modulus': {}, 'thickness': {}, 'shear_area': {}, 'buckling': {},
                        'fatigue': {}, 'pressure_uls': {}, 'pressure_fls': {},
-                       'struc_obj': {}, 'scant_calc_obj': {}, 'fatigue_obj': {}, 'utilization': {}, 'slamming': {}}
+                       'struc_obj': {}, 'scant_calc_obj': {}, 'fatigue_obj': {}, 'utilization': {}, 'slamming': {},
+                       'color code': {}}
         line_iterator, slamming_pressure = [], None
         return_dict['slamming'][current_line] = {}
 
@@ -1234,6 +1264,8 @@ class Application():
         elif current_line is not None:
             line_iterator = [current_line, ]
         elif current_line not in self._line_to_struc.keys() and active_line_only:
+            return return_dict
+        else:
             return return_dict
 
         for current_line in line_iterator:
@@ -1327,6 +1359,7 @@ class Application():
                 return_dict['struc_obj'][current_line] = obj_structure
                 return_dict['scant_calc_obj'][current_line] = obj_scnt_calc
                 return_dict['fatigue_obj'][current_line] = fatigue_obj
+                return_dict['color code'][current_line] = {}
 
                 if fatigue_obj is not None:
                     return_dict['fatigue'][current_line] = {'damage': damage, 'dff': dff,
@@ -1345,11 +1378,90 @@ class Application():
                                                             'shear': shear_util,
                                                             'thickness': thk_util}
 
+                # Color coding state
+
                 self._state_logger[current_line] = return_dict #  Logging the current state of the line.
                 self._line_to_struc[current_line][1].need_recalc = False
 
             else:
                 pass
+
+        cmap_sections = plt.get_cmap('jet')
+        sec_in_model, idx, recorded_sections = dict(), 0, list()
+        for data in self._line_to_struc.values():
+            if data[1].get_beam_string() not in recorded_sections:
+                sec_in_model[data[1].get_beam_string()] = idx
+                recorded_sections.append(data[1].get_beam_string())
+                idx += 1
+        sec_in_model['length'] = len(recorded_sections)
+        for section, idx in sec_in_model.items():
+            if section == 'length':
+                continue
+            self._main_canvas.create_text(11, 111 + 20 * idx, text=section,
+                                          font=self._text_size["Text 10 bold"],
+                                          fill='black',
+                                          anchor="nw")
+            self._main_canvas.create_text(10, 110 + 20 * idx, text=section,
+                                          font=self._text_size["Text 10 bold"],
+                                          fill=matplotlib.colors.rgb2hex(
+                                              cmap_sections(idx / sec_in_model['length'])),
+                                          anchor="nw")
+
+        all_thicknesses = [round(objs[0].get_pl_thk(), 5) for objs in self._line_to_struc.values()]
+        thickest_plate = max(all_thicknesses)
+        thk_map = np.arange(min(all_thicknesses), max(all_thicknesses) + (max(all_thicknesses) - min(all_thicknesses)) / 10,
+                             (max(all_thicknesses) - min(all_thicknesses)) / 10)
+
+        try:
+            all_pressures = sorted([self.get_highest_pressure(line)['normal']
+                                    for line in list(self._line_dict.keys())])
+        except KeyError:
+            all_pressures = [0, 1]
+
+
+        highest_pressure, lowest_pressure = max(all_pressures), min(all_pressures)
+        press_map = [round(val, 1) for val in
+                     np.arange(all_pressures[0], all_pressures[-1],
+                               (all_pressures[-1] - all_pressures[0]) / 10)] + \
+                    [round(all_pressures[-1], 1)]
+
+        all_utils = [max(list(return_dict['utilization'][line].values()))
+                     for line in self._line_to_struc.keys()]
+        util_map = np.arange(min(all_utils), max(all_utils) + (max(all_utils) - min(all_utils)) / 10,
+                             (max(all_utils) - min(all_utils)) / 10)
+
+        sig_x = [self._line_to_struc[line][1].get_sigma_x() for line in self._line_to_struc.keys()]
+        sig_x_map = np.arange(min(sig_x), max(sig_x) + (max(sig_x) - min(sig_x)) / 10,
+                              (max(sig_x) - min(sig_x)) / 10)
+
+        sig_y1 = [self._line_to_struc[line][1].get_sigma_y1() for line in self._line_to_struc.keys()]
+        sig_y1_map = np.arange(min(sig_y1), max(sig_y1) + (max(sig_y1) - min(sig_y1)) / 10,
+                               (max(sig_y1) - min(sig_y1)) / 10)
+
+        sig_y2 = [self._line_to_struc[line][1].get_sigma_y2() for line in self._line_to_struc.keys()]
+        sig_y2_map = np.arange(min(sig_y2), max(sig_y2) + (max(sig_y2) - min(sig_y2)) / 10,
+                               (max(sig_y2) - min(sig_y2)) / 10)
+
+        tau_xy = [self._line_to_struc[line][1].get_tau_xy() for line in self._line_to_struc.keys()]
+        tau_xy_map = np.arange(min(tau_xy), max(tau_xy) + (max(tau_xy) - min(tau_xy)) / 10,
+                               (max(tau_xy) - min(tau_xy)) / 10)
+
+        structure_type = [self._line_to_struc[line][1].get_structure_type() for line in
+                          self._line_to_struc.keys()]
+
+        return_dict['color code'] = {'thickest plate': thickest_plate, 'thickness map': thk_map,
+                                     'all thicknesses': all_thicknesses,
+                                     'highest pressure': highest_pressure, 'lowest pressure': lowest_pressure,
+                                     'pressure map': press_map, 'all pressures':all_pressures,
+                                     'all utilizations': all_utils, 'utilization map': util_map,
+                                     'max sigma x': max(sig_x), 'min sigma x': min(sig_x), 'sigma x map': sig_x_map,
+                                     'max sigma y1': max(sig_y1), 'min sigma y1': min(sig_y1),
+                                     'sigma y1 map': sig_y1_map,
+                                     'max sigma y2': max(sig_y2), 'min sigma y2': min(sig_y2),
+                                     'sigma y2 map': sig_y2_map,
+                                     'max tau xy': max(tau_xy), 'min tau xy': min(tau_xy), 'tau xy map': tau_xy_map,
+                                     'structure types map': set(structure_type),  'sections in model': sec_in_model,
+                                     'recorded sections': recorded_sections}
         return return_dict
 
     def draw_canvas(self, state = None, event = None, get_color_for_line = None):
@@ -1367,86 +1479,13 @@ class Application():
         self._main_canvas.create_text(self._canvas_draw_origo[0] - 30*self._global_shrink,
                                      self._canvas_draw_origo[1] + 12* self._global_shrink, text='(0,0)',
                                      font = 'Text 10')
+        chk_box_active = [self._new_colorcode_beams.get(), self._new_colorcode_plates.get(),
+            self._new_colorcode_pressure.get(), self._new_colorcode_utilization.get(),
+            self._new_colorcode_sigmax.get(), self._new_colorcode_sigmay1.get(), self._new_colorcode_sigmay2.get(),
+            self._new_colorcode_tauxy.get(), self._new_colorcode_structure_type.get()].count(True)> 0
 
-        if self._new_colorcode_beams.get() == True and self._line_to_struc != {}:
-            from matplotlib import pyplot as plt
-            import matplotlib
-            cmap_sections = plt.get_cmap('jet')
-            sec_in_model, idx, recorded_sections = dict(), 0, list()
-            for data in self._line_to_struc.values():
-                if data[1].get_beam_string() not in recorded_sections:
-                    sec_in_model[data[1].get_beam_string()]= idx
-                    recorded_sections.append(data[1].get_beam_string())
-                    idx+=1
-            sec_in_model['length'] = len(recorded_sections)
-            for section, idx in sec_in_model.items():
-                if section =='length':
-                    continue
-                self._main_canvas.create_text(11, 111+20*idx, text=section,
-                                              font=self._text_size["Text 10 bold"],
-                                              fill='black',
-                                              anchor="nw")
-                self._main_canvas.create_text(10, 110+20*idx, text=section,
-                                              font=self._text_size["Text 10 bold"],
-                                              fill=matplotlib.colors.rgb2hex(cmap_sections(idx/sec_in_model['length'])),
-                                              anchor="nw")
-
-        elif self._new_colorcode_plates.get() == True and self._line_to_struc != {}:
-            from matplotlib import pyplot as plt
-            import matplotlib
-            all_thicknesses = set([round(objs[0].get_pl_thk(), 5) for objs in self._line_to_struc.values()])
-            thickest_plate = max(all_thicknesses)
-            cmap_sections = plt.get_cmap('jet')
-            for idx, thk in enumerate(all_thicknesses):
-                self._main_canvas.create_text(11, 111+20*idx, text=str('Plate '+ str(thk*1000) + ' mm'),
-                                              font=self._text_size["Text 10 bold"],
-                                              fill='black',
-                                              anchor="nw")
-                self._main_canvas.create_text(10, 110+20*idx, text=str('Plate '+ str(thk*1000) + ' mm'),
-                                              font=self._text_size["Text 10 bold"],
-                                              fill=matplotlib.colors.rgb2hex(cmap_sections(thk/thickest_plate)),
-                                              anchor="nw")
-        elif self._new_colorcode_pressure.get() == True and self._line_to_struc != {}:
-            from matplotlib import pyplot as plt
-            import matplotlib
-            try:
-                all_pressures = sorted([self.get_highest_pressure(line)['normal']
-                                        for line in list(self._line_dict.keys())])
-            except KeyError:
-                all_pressures = [0,1]
-            cmap_sections = plt.get_cmap('jet')
-            highest_pressure = max(all_pressures)
-            press_map = [round(val, 1) for val in
-                         np.arange(all_pressures[0], all_pressures[-1], (all_pressures[-1]-all_pressures[0])/10)]+\
-                        [round(all_pressures[-1],1)]
-            for idx, press in enumerate(press_map):
-                self._main_canvas.create_text(11, 111+20*idx, text=str(str(press) + ' Pa'),
-                                              font=self._text_size["Text 10 bold"],
-                                              fill='black',
-                                              anchor="nw")
-                self._main_canvas.create_text(10, 110+20*idx, text=str(str(press) + ' Pa'),
-                                              font=self._text_size["Text 10 bold"],
-                                              fill=matplotlib.colors.rgb2hex(cmap_sections(press/highest_pressure)),
-                                              anchor="nw")
-
-        elif self._new_colorcode_utilization.get() == True and self._line_to_struc != {}:
-            from matplotlib import pyplot as plt
-            import matplotlib
-            cmap_sections = plt.get_cmap('jet')
-            all_utils = [max(list(self.get_color_and_calc_state()['utilization'][line].values()))
-                         for line in self._line_to_struc.keys()]
-            for idx, uf in enumerate(np.arange(min(all_utils), max(all_utils) + (max(all_utils) - min(all_utils)) / 10,
-                                               (max(all_utils) - min(all_utils)) / 10)):
-                self._main_canvas.create_text(11, 111 + 20 * idx, text=str('UF = ' +str(round(uf,1))),
-                                              font=self._text_size["Text 10 bold"],
-                                              fill='black',
-                                              anchor="nw")
-                self._main_canvas.create_text(10, 110 + 20 * idx, text=str('UF = ' +str(round(uf,1))),
-                                              font=self._text_size["Text 10 bold"],
-                                              fill=matplotlib.colors.rgb2hex(cmap_sections(uf)),
-                                              anchor="nw")
-
-
+        if chk_box_active and state != None:
+            self.color_code_text(state)
 
         # Drawing shortcut information if selected.
         if self._new_shortcut_backdrop.get() == True:
@@ -1495,35 +1534,15 @@ class Application():
 
                 coord1 = self.get_point_canvas_coord('point' + str(value[0]))
                 coord2 = self.get_point_canvas_coord('point' + str(value[1]))
-                if all([self._new_colorcode_beams.get() != True, self._new_colorcode_plates.get() != True,
-                        self._new_colorcode_pressure.get() != True, self._new_colorcode_utilization.get() != True]):
+                if not chk_box_active and state != None:
                     try:
                         color = 'red' if 'red' in state['colors'][line].values() else 'green'
                     except (KeyError, TypeError):
                         color = 'black'
-                elif self._new_colorcode_beams.get() == True and line in list(self._line_to_struc.keys()):
-                    this_obj = self._line_to_struc[line][0]
-                    color = matplotlib.colors.rgb2hex(cmap_sections(sec_in_model[this_obj.get_beam_string()]/
-                                                                    sec_in_model['length']))
-                    if get_color_for_line == line:
-                        return color, this_obj.get_beam_string()
-                elif self._new_colorcode_plates.get() == True and line in list(self._line_to_struc.keys()):
-                    this_obj = self._line_to_struc[line][0]
-                    color = matplotlib.colors.rgb2hex(cmap_sections(round(this_obj.get_pl_thk(),5)/thickest_plate))
-                    if get_color_for_line == line:
-                        return color, round(this_obj.get_pl_thk(),5)
-                elif self._new_colorcode_pressure.get() == True and line in list(self._line_to_struc.keys()):
-                    if all_pressures == [0,1]:
-                        color = 'black'
-                    else:
-                        color = matplotlib.colors.rgb2hex(cmap_sections(self.get_highest_pressure(line)['normal']
-                                                                        /highest_pressure))
-                    if get_color_for_line == line:
-                        return color, press_map
-
-                elif self._new_colorcode_utilization.get() == True:
-                    color = matplotlib.colors.rgb2hex(
-                        cmap_sections(max(list(state['utilization'][line].values()))))
+                elif chk_box_active and state != None:
+                    color, report_return = self.color_code_line(state, line, get_color_for_line=get_color_for_line)
+                    if get_color_for_line:
+                        return color, report_return
                 else:
                     color = 'black'
 
@@ -1551,6 +1570,202 @@ class Application():
                     self._main_canvas.create_text(900,draft-10,text=str(get_num(data[0].get_name()))+' [m]',fill ='blue')
                 else:
                     pass
+
+    def color_code_text(self, state):
+        '''
+        return_dict['color code'] = {'thickest plate': thickest_plate, 'thickness map': thk_map,
+                                     'highest pressure': highest_pressure, 'lowest pressure': lowest_pressure,
+                                     'pressure map': press_map,
+                                     'all utilizations': all_utils, 'utilization map': util_map,
+                                     'max sigma x': max(sig_x), 'min sigma x': min(sig_x), 'sigma x map': sig_x_map,
+                                     'max sigma y1': max(sig_y1), 'min sigma y1': min(sig_y1),
+                                     'sigma y1 map': sig_y1_map,
+                                     'max sigma y2': max(sig_y2), 'min sigma y2': min(sig_y2),
+                                     'sigma y2 map': sig_y2_map,
+                                     'max tau xy': max(tau_xy), 'min tau xy': min(tau_xy), 'tau_xy map': tau_xy_map,
+                                     'structure types map': set(structure_type),  'sections in model': sec_in_model,
+                                     'recorded sections': recorded_sections}
+                                               }
+        :param state:
+        :return:
+        '''
+
+        cc_state = state['color code']
+        if cc_state == {}:
+            return
+
+        cmap_sections = plt.get_cmap('jet')
+        if self._new_colorcode_beams.get() == True and self._line_to_struc != {}:
+            sec_in_model = cc_state['sections in model']
+            for section, idx in sec_in_model.items():
+                if section =='length':
+                    continue
+                self._main_canvas.create_text(11, 111+20*idx, text=section,
+                                              font=self._text_size["Text 10 bold"],
+                                              fill='black',
+                                              anchor="nw")
+                self._main_canvas.create_text(10, 110+20*idx, text=section,
+                                              font=self._text_size["Text 10 bold"],
+                                              fill=matplotlib.colors.rgb2hex(cmap_sections(idx/sec_in_model['length'])),
+                                              anchor="nw")
+
+        elif self._new_colorcode_plates.get() == True and self._line_to_struc != {}:
+
+            all_thicknesses = cc_state['all thicknesses']
+            thickest_plate = cc_state['thickest plate']
+            for idx, thk in enumerate(set(all_thicknesses)):
+                self._main_canvas.create_text(11, 111+20*idx, text=str('Plate '+ str(thk*1000) + ' mm'),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill='black',
+                                              anchor="nw")
+                self._main_canvas.create_text(10, 110+20*idx, text=str('Plate '+ str(thk*1000) + ' mm'),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill=matplotlib.colors.rgb2hex(cmap_sections(thk/thickest_plate)),
+                                              anchor="nw")
+        elif self._new_colorcode_pressure.get() == True and self._line_to_struc != {}:
+            highest_pressure = cc_state['highest pressure']
+            press_map = cc_state['pressure map']
+            for idx, press in enumerate(press_map):
+                self._main_canvas.create_text(11, 111+20*idx, text=str(str(press) + ' Pa'),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill='black',
+                                              anchor="nw")
+                self._main_canvas.create_text(10, 110+20*idx, text=str(str(press) + ' Pa'),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill=matplotlib.colors.rgb2hex(cmap_sections(press/highest_pressure)),
+                                              anchor="nw")
+
+        elif self._new_colorcode_utilization.get() == True and self._line_to_struc != {}:
+            for idx, uf in enumerate(cc_state['utilization map']):
+                self._main_canvas.create_text(11, 111 + 20 * idx, text=str('UF = ' +str(round(uf,1))),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill='black',
+                                              anchor="nw")
+                self._main_canvas.create_text(10, 110 + 20 * idx, text=str('UF = ' +str(round(uf,1))),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill=matplotlib.colors.rgb2hex(cmap_sections(uf)),
+                                              anchor="nw")
+        elif self._new_colorcode_sigmax.get() == True:
+            for idx, value in enumerate(cc_state['sigma x map']):
+                self._main_canvas.create_text(11, 111+20*idx, text=str(str(value) + ' MPa'),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill='black',
+                                              anchor="nw")
+                self._main_canvas.create_text(10, 110+20*idx, text=str(str(value) + ' MPa'),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill=matplotlib.colors.rgb2hex(
+                                                  cmap_sections(value/cc_state['max sigma x'])),
+                                              anchor="nw")
+        elif self._new_colorcode_sigmay1.get() == True:
+            for idx, value in enumerate(cc_state['sigma y1 map']):
+                self._main_canvas.create_text(11, 111+20*idx, text=str(str(value) + ' MPa'),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill='black',
+                                              anchor="nw")
+                self._main_canvas.create_text(10, 110+20*idx, text=str(str(value) + ' MPa'),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill=matplotlib.colors.rgb2hex(
+                                                  cmap_sections(value/cc_state['max sigma y1'])),
+                                              anchor="nw")
+        elif self._new_colorcode_sigmay2.get() == True:
+            for idx, value in enumerate(cc_state['sigma y2 map']):
+                self._main_canvas.create_text(11, 111+20*idx, text=str(str(value) + ' MPa'),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill='black',
+                                              anchor="nw")
+                self._main_canvas.create_text(10, 110+20*idx, text=str(str(value) + ' MPa'),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill=matplotlib.colors.rgb2hex(
+                                                  cmap_sections(value/cc_state['max sigma y2'])),
+                                              anchor="nw")
+        elif self._new_colorcode_tauxy.get() == True:
+            for idx, value in enumerate(cc_state['tau xy map']):
+                self._main_canvas.create_text(11, 111+20*idx, text=str(str(value) + ' MPa'),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill='black',
+                                              anchor="nw")
+                self._main_canvas.create_text(10, 110+20*idx, text=str(str(value) + ' MPa'),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill=matplotlib.colors.rgb2hex(
+                                                  cmap_sections(value/cc_state['max tau xy'])),
+                                              anchor="nw")
+        elif self._new_colorcode_structure_type.get() == True:
+            structure_type_map = list(cc_state['structure types map'])
+            for idx, structure_type in enumerate(structure_type_map):
+                self._main_canvas.create_text(11, 111+20*idx, text=structure_type,
+                                              font=self._text_size["Text 10 bold"],
+                                              fill='black',
+                                              anchor="nw")
+                self._main_canvas.create_text(10, 110+20*idx, text=structure_type,
+                                              font=self._text_size["Text 10 bold"],
+                                              fill=matplotlib.colors.rgb2hex(cmap_sections(structure_type_map
+                                                                                           .index(structure_type)/
+                                                                             len(structure_type_map))),
+                                              anchor="nw")
+
+    def color_code_line(self, state, line, get_color_for_line = None):
+
+        cc_state = state['color code']
+        cmap_sections = plt.get_cmap('jet')
+        if self._new_colorcode_beams.get() == True and line in list(self._line_to_struc.keys()):
+            this_obj = self._line_to_struc[line][0]
+            sec_in_model = cc_state['sections in model']
+            color = matplotlib.colors.rgb2hex(cmap_sections(sec_in_model[this_obj.get_beam_string()] /
+                                                            sec_in_model['length']))
+            if get_color_for_line == line:
+                return color, this_obj.get_beam_string()
+
+        elif self._new_colorcode_plates.get() == True and line in list(self._line_to_struc.keys()):
+            this_obj = self._line_to_struc[line][0]
+            color = matplotlib.colors.rgb2hex(cmap_sections(round(this_obj.get_pl_thk(), 5) / cc_state['thickest plate']))
+            if get_color_for_line == line:
+                return color, round(this_obj.get_pl_thk(), 5)
+
+        elif self._new_colorcode_pressure.get() == True and line in list(self._line_to_struc.keys()):
+            if cc_state['all pressures'] == [0, 1]:
+                color = 'black'
+            else:
+                color = matplotlib.colors.rgb2hex(cmap_sections(self.get_highest_pressure(line)['normal']
+                                                                 / cc_state['highest pressure']))
+            if get_color_for_line == line:
+                return color, cc_state['pressure map']
+
+        elif self._new_colorcode_utilization.get() == True:
+            color = matplotlib.colors.rgb2hex(cmap_sections(max(list(state['utilization'][line].values()))))
+            if get_color_for_line == line:
+                return color, cc_state['utilization map']
+
+        elif self._new_colorcode_sigmax.get() == True:
+            this_obj = self._line_to_struc[line][1]
+            color = matplotlib.colors.rgb2hex(cmap_sections(round(this_obj.get_sigma_x(), 5) / cc_state['max sigma x']))
+            if get_color_for_line == line:
+                return color, round(this_obj.get_sigma_x(), 5)
+        elif self._new_colorcode_sigmay1.get() == True:
+            this_obj = self._line_to_struc[line][1]
+            color = matplotlib.colors.rgb2hex(cmap_sections(round(this_obj.get_sigma_y1(), 5) / cc_state['max sigma y1']))
+            if get_color_for_line == line:
+                return color, round(this_obj.get_sigma_y1(), 5)
+        elif self._new_colorcode_sigmay2.get() == True:
+            this_obj = self._line_to_struc[line][1]
+            color = matplotlib.colors.rgb2hex(cmap_sections(round(this_obj.get_sigma_y2(), 5) / cc_state['max sigma y2']))
+            if get_color_for_line == line:
+                return color, round(this_obj.get_sigma_y2(), 5)
+        elif self._new_colorcode_tauxy.get() == True:
+            this_obj = self._line_to_struc[line][1]
+            color = matplotlib.colors.rgb2hex(cmap_sections(round(this_obj.get_tau_xy(), 5) / cc_state['max tau xy']))
+            if get_color_for_line == line:
+                return color, round(this_obj.get_tau_xy(), 5)
+        elif self._new_colorcode_structure_type.get() == True:
+            this_obj = self._line_to_struc[line][1]
+            structure_type_map = list(cc_state['structure types map'])
+            color = matplotlib.colors.rgb2hex(cmap_sections(structure_type_map.index(this_obj.get_structure_type()) /
+                                                            len(structure_type_map)))
+            if get_color_for_line == line:
+                return color, this_obj.get_structure_type()
+        else:
+            color = 'black', None
+
+        return color, None
 
     def draw_prop(self):
         '''
@@ -3466,12 +3681,19 @@ class Application():
 
     def on_color_code_check(self, event = None):
         if [self._new_colorcode_beams.get(), self._new_colorcode_plates.get(),
-            self._new_colorcode_pressure.get(), self._new_colorcode_utilization.get()].count(True) > 1:
+            self._new_colorcode_pressure.get(), self._new_colorcode_utilization.get(),
+            self._new_colorcode_sigmax.get(), self._new_colorcode_sigmay1.get(), self._new_colorcode_sigmay2.get(),
+            self._new_colorcode_tauxy.get(), self._new_colorcode_structure_type.get()].count(True) > 1:
             messagebox.showinfo(title='Information', message='Can only select on color code at the time.')
             self._new_colorcode_beams.set(False)
             self._new_colorcode_plates.set(False)
             self._new_colorcode_pressure.set(False)
             self._new_colorcode_utilization.set(False)
+            self._new_colorcode_sigmax.set(False)
+            self._new_colorcode_sigmay1.set(False)
+            self._new_colorcode_sigmay2.set(False)
+            self._new_colorcode_tauxy.set(False)
+            self._new_colorcode_structure_type.set(False)
         self.update_frame()
 
     def logger(self, line = None, point = None, move_coords = None):
