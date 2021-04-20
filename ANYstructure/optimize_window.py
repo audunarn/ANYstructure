@@ -343,8 +343,8 @@ class CreateOptimizeWindow():
         self._ent_slamming_pressure.place(x=start_x + dx * 8, y=start_y + 18.5 * dy)
 
         #setting default values
-        init_dim = float(50) #mm
-        init_thk = float(2) #mm
+        init_dim = float(10) #mm
+        init_thk = float(1) #mm
         self._new_delta_spacing.set(init_dim)
         self._new_delta_pl_thk.set(init_thk)
         self._new_delta_web_h.set(init_dim)
@@ -373,10 +373,10 @@ class CreateOptimizeWindow():
         self._new_web_thk_upper.set(round(self._stf_web_thk*1000+10,5))
         self._new_web_thk_lower.set(round(max(self._stf_web_thk*1000-10,float(10)),5))
         if self._initial_structure_obj.get_stiffener_type() != 'FB':
-            self._new_fl_w_upper.set(round(self._fl_w*1000+100,5))
+            self._new_fl_w_upper.set(min(round(self._fl_w*1000+100,5), 200))
             self._new_fl_w_lower.set(round(max(self._fl_w*1000-100,0),5))
-            self._new_fl_thk_upper.set(round(self._fl_thk*1000+10,5))
-            self._new_fl_thk_lower.set(round(max(self._fl_thk*1000-10,10),5))
+            self._new_fl_thk_upper.set(round(self._fl_thk*1000+10,15))
+            self._new_fl_thk_lower.set(round(max(self._fl_thk*1000-10,10),15))
         else:
             self._new_fl_w_upper.set(0)
             self._new_fl_w_lower.set(0)
