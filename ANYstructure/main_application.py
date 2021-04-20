@@ -1679,67 +1679,43 @@ class Application():
                                                                              len(structure_type_map))),
                                               anchor="nw")
 
-    def color_code_line(self, state, line, get_color_for_line = None):
+    def color_code_line(self, state, line):
 
         cc_state = state['color code']
         cmap_sections = plt.get_cmap('jet')
         if self._new_colorcode_beams.get() == True and line in list(self._line_to_struc.keys()):
-            this_obj = self._line_to_struc[line][0]
-            sec_in_model = cc_state['sections in model']
-            color = matplotlib.colors.rgb2hex(cmap_sections(sec_in_model[this_obj.get_beam_string()] /
-                                                            sec_in_model['length']))
-            if get_color_for_line == line:
-                return color, this_obj.get_beam_string()
+            color = state['color code']['lines'][line]['section']
+
 
         elif self._new_colorcode_plates.get() == True and line in list(self._line_to_struc.keys()):
-            this_obj = self._line_to_struc[line][0]
-            color = matplotlib.colors.rgb2hex(cmap_sections(round(this_obj.get_pl_thk(), 5) / cc_state['thickest plate']))
-            print(get_color_for_line, line)
-            if get_color_for_line == line:
-                print(color, round(this_obj.get_pl_thk(), 5), line)
-                return color, round(this_obj.get_pl_thk(), 5)
+            color = state['color code']['lines'][line]['plate']
 
         elif self._new_colorcode_pressure.get() == True and line in list(self._line_to_struc.keys()):
             if cc_state['all pressures'] == [0, 1]:
                 color = 'black'
             else:
-                color = matplotlib.colors.rgb2hex(cmap_sections(self.get_highest_pressure(line)['normal']
-                                                                 / cc_state['highest pressure']))
-            if get_color_for_line == line:
-                return color, cc_state['pressure map']
+                color = state['color code']['lines'][line]['pressure']
+
 
         elif self._new_colorcode_utilization.get() == True:
-            color = matplotlib.colors.rgb2hex(cmap_sections(max(list(state['utilization'][line].values()))))
-            if get_color_for_line == line:
-                return color, cc_state['utilization map']
+            color = state['color code']['lines'][line]['utilization']
+
 
         elif self._new_colorcode_sigmax.get() == True:
-            this_obj = self._line_to_struc[line][1]
-            color = matplotlib.colors.rgb2hex(cmap_sections(round(this_obj.get_sigma_x(), 5) / cc_state['max sigma x']))
-            if get_color_for_line == line:
-                return color, round(this_obj.get_sigma_x(), 5)
+            color = state['color code']['lines'][line]['sigma x']
+
         elif self._new_colorcode_sigmay1.get() == True:
-            this_obj = self._line_to_struc[line][1]
-            color = matplotlib.colors.rgb2hex(cmap_sections(round(this_obj.get_sigma_y1(), 5) / cc_state['max sigma y1']))
-            if get_color_for_line == line:
-                return color, round(this_obj.get_sigma_y1(), 5)
+            color = state['color code']['lines'][line]['sigma y1']
+
         elif self._new_colorcode_sigmay2.get() == True:
-            this_obj = self._line_to_struc[line][1]
-            color = matplotlib.colors.rgb2hex(cmap_sections(round(this_obj.get_sigma_y2(), 5) / cc_state['max sigma y2']))
-            if get_color_for_line == line:
-                return color, round(this_obj.get_sigma_y2(), 5)
+            color = state['color code']['lines'][line]['sigma y2']
+
         elif self._new_colorcode_tauxy.get() == True:
-            this_obj = self._line_to_struc[line][1]
-            color = matplotlib.colors.rgb2hex(cmap_sections(round(this_obj.get_tau_xy(), 5) / cc_state['max tau xy']))
-            if get_color_for_line == line:
-                return color, round(this_obj.get_tau_xy(), 5)
+            color = state['color code']['lines'][line]['tau xy']
+
         elif self._new_colorcode_structure_type.get() == True:
-            this_obj = self._line_to_struc[line][1]
-            structure_type_map = list(cc_state['structure types map'])
-            color = matplotlib.colors.rgb2hex(cmap_sections(structure_type_map.index(this_obj.get_structure_type()) /
-                                                            len(structure_type_map)))
-            if get_color_for_line == line:
-                return color, this_obj.get_structure_type()
+            color = state['color code']['lines'][line]['structure type']
+
         else:
             color = 'black', None
 
