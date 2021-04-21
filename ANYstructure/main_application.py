@@ -76,8 +76,8 @@ class Application():
                               'CTRL-P Copy selected point\n' \
                               'CTRL-M Move selected point)\n' \
                               'CTRL-Q New line (right click two points)\n' \
-                              'CTRL-S Assign structure properties to clicked line\n' \
-                              'CTRL-DELETE Delete structure properties from clicked line\n' \
+                              'CTRL-S Assign structure prop. to line\n' \
+                              'CTRL-DELETE Delete structure prop. from line\n' \
                               'DELETE Delete active line and/or point \n' \
                               'CTRL-E Copy line properties from active line\n' \
                               'CTRL-D Paste line propeties to active line\n' \
@@ -125,7 +125,7 @@ class Application():
                            int(base_canvas_dim[1] *self._global_shrink)]
         self._canvas_base_origo = [50, base_canvas_dim[1] - 50] # 50 bottom left location of the canvas, (0,0)
 
-        self._canvas_draw_origo = list(self._canvas_base_origo)
+        self._canvas_draw_origo = [self._canvas_base_origo[0], self._canvas_base_origo[1]+60]
         self._previous_drag_mouse = list(self._canvas_draw_origo)
 
         # Setting the fonts for all items in the application.
@@ -1408,23 +1408,28 @@ class Application():
                           self._line_to_struc.keys()]
 
         return_dict['color code'] = {'thickest plate': thickest_plate, 'thickness map': thk_map,
-                                     'all thicknesses': all_thicknesses,
+                                     'all thicknesses': np.unique(all_thicknesses).tolist(),
                                      'highest pressure': highest_pressure, 'lowest pressure': lowest_pressure,
-                                     'pressure map': press_map, 'all pressures':all_pressures,
-                                     'all utilizations': all_utils, 'utilization map': util_map,
+                                     'pressure map': press_map, 'all pressures':np.unique(all_pressures).tolist(),
+                                     'all utilizations': np.unique(all_utils).tolist(), 'utilization map': util_map,
                                      'max sigma x': max(sig_x), 'min sigma x': min(sig_x), 'sigma x map': sig_x_map,
                                      'max sigma y1': max(sig_y1), 'min sigma y1': min(sig_y1),
                                      'sigma y1 map': sig_y1_map,
                                      'max sigma y2': max(sig_y2), 'min sigma y2': min(sig_y2),
                                      'sigma y2 map': sig_y2_map,
                                      'max tau xy': max(tau_xy), 'min tau xy': min(tau_xy), 'tau xy map': tau_xy_map,
-                                     'structure types map': set(structure_type),  'sections in model': sec_in_model,
+                                     'structure types map': np.unique(structure_type),
+                                     'sections in model': sec_in_model,
                                      'recorded sections': recorded_sections}
         line_color_coding = {}
         cmap_sections = plt.get_cmap('jet')
+        thk_sort_unique = return_dict['color code']['all thicknesses']
+        uf_sort_unique = return_dict['color code']['all utilizations']
+        press_sort_unique = return_dict['color code']['all pressures']
         for line, line_data in self._line_to_struc.items():
-            line_color_coding[line] = {'plate': matplotlib.colors.rgb2hex(cmap_sections(line_data[1]
-                                                                          .get_pl_thk()/max(all_thicknesses))),
+
+            line_color_coding[line] = {'plate': matplotlib.colors.rgb2hex(cmap_sections(thk_sort_unique.index(round(line_data[1]
+                                                                          .get_pl_thk(),10))/len(thk_sort_unique))),
                                        'section': matplotlib.colors.rgb2hex(cmap_sections(sec_in_model[line_data[1]
                                                                             .get_beam_string()]
                                                   /len(list(recorded_sections)))),
@@ -1435,11 +1440,16 @@ class Application():
                                        'pressure': matplotlib.colors.rgb2hex(cmap_sections(
                                            self.get_highest_pressure(line)['normal']/highest_pressure)),
                                        'utilization': matplotlib.colors.rgb2hex(cmap_sections(
-                                           max(list(return_dict['utilization'][line].values()))/max(all_utils))),
-                                       'sigma x': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_x()/max(sig_x))),
-                                       'sigma y1': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_y1()/max(sig_y1))),
-                                       'sigma y2': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_y2()/max(sig_y2))),
-                                       'tau xy': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_tau_xy()/max(tau_xy)))}
+                                           uf_sort_unique.index(max(list(return_dict['utilization'][line].values())))/
+                                           len(uf_sort_unique))),
+                                       'sigma x': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_x()/
+                                                                                          max(sig_x))),
+                                       'sigma y1': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_y1()/
+                                                                                           max(sig_y1))),
+                                       'sigma y2': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_y2()/
+                                                                                           max(sig_y2))),
+                                       'tau xy': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_tau_xy()/
+                                                                                         max(tau_xy)))}
 
 
             return_dict['color code']['lines'] = line_color_coding
@@ -1452,8 +1462,8 @@ class Application():
 
         self._main_canvas.delete('all')
         color = 'black' #by default
-        self._main_canvas.create_line(self._canvas_draw_origo[0], 0, self._canvas_draw_origo[0], self._canvas_dim[1],
-                                     stipple='gray50')
+        self._main_canvas.create_line(self._canvas_draw_origo[0], 0, self._canvas_draw_origo[0], self._canvas_dim[1]+50,
+                                     stipple= 'gray50')
         self._main_canvas.create_line(0, self._canvas_draw_origo[1], self._canvas_dim[0], self._canvas_draw_origo[1],
                                      stipple='gray50')
         self._main_canvas.create_text(self._canvas_draw_origo[0] - 30*self._global_shrink,
@@ -1469,7 +1479,7 @@ class Application():
 
         # Drawing shortcut information if selected.
         if self._new_shortcut_backdrop.get() == True:
-            self._main_canvas.create_text(800, 80, text = self._shortcut_text, font=self._text_size["Text 8"],
+            self._main_canvas.create_text(860, 80, text = self._shortcut_text, font=self._text_size["Text 8"],
                                           fill = 'black')
 
         # drawing the point dictionary
@@ -1587,17 +1597,19 @@ class Application():
 
         elif self._new_colorcode_plates.get() == True and self._line_to_struc != {}:
 
-            all_thicknesses = cc_state['all thicknesses']
+            all_thicknesses = np.unique(cc_state['all thicknesses']).tolist()
             thickest_plate = cc_state['thickest plate']
-            for idx, thk in enumerate(set(all_thicknesses)):
+            for idx, thk in enumerate(np.unique(all_thicknesses).tolist()):
                 self._main_canvas.create_text(11, 111+20*idx, text=str('Plate '+ str(thk*1000) + ' mm'),
                                               font=self._text_size["Text 10 bold"],
                                               fill='black',
                                               anchor="nw")
                 self._main_canvas.create_text(10, 110+20*idx, text=str('Plate '+ str(thk*1000) + ' mm'),
                                               font=self._text_size["Text 10 bold"],
-                                              fill=matplotlib.colors.rgb2hex(cmap_sections(thk/thickest_plate)),
+                                              fill=matplotlib.colors.rgb2hex(cmap_sections(all_thicknesses.index(thk)
+                                                                                           /len(all_thicknesses))),
                                               anchor="nw")
+
         elif self._new_colorcode_pressure.get() == True and self._line_to_struc != {}:
             highest_pressure = cc_state['highest pressure']
             press_map = cc_state['pressure map']
@@ -1695,7 +1707,6 @@ class Application():
                 color = 'black'
             else:
                 color = state['color code']['lines'][line]['pressure']
-
 
         elif self._new_colorcode_utilization.get() == True:
             color = state['color code']['lines'][line]['utilization']
@@ -1971,7 +1982,6 @@ class Application():
         Button is pressed to generate a report of the current structure.
         :return:
         '''
-
 
         if not autosave:
             save_file = filedialog.asksaveasfile(mode="w", defaultextension=".pdf")
