@@ -862,9 +862,9 @@ class CalcScantlings(Structure):
         fEpt = 5.0*E*math.pow(t/s,2) # eq 7.44, checked, ok
         c = 2-(s/l) # eq 7.41, checked, ok
 
-        alphae = math.sqrt( (fy/sigjSD) * math.pow(math.pow(sigxSd/fEpx, c)+
-                                                   math.pow(sigySd/fEpy, c)+
-                                                   math.pow(tauSd/fEpt, c), 1/c)) # eq 7.40, checed, ok.
+        alphae = math.sqrt( (fy/sigjSD) * math.pow(math.pow(abs(sigxSd)/fEpx, c)+
+                                                   math.pow(abs(sigySd)/fEpy, c)+
+                                                   math.pow(abs(tauSd)/fEpt, c), 1/c)) # eq 7.40, checed, ok.
         fep = fy / math.sqrt(1+math.pow(alphae,4)) # eq 7.39, checked, ok.
         eta = min(sigjSD/fep, 1) # eq. 7.37, chekced
 

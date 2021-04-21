@@ -1364,95 +1364,115 @@ class Application():
                                           fill=matplotlib.colors.rgb2hex(
                                               cmap_sections(idx / sec_in_model['length'])),
                                           anchor="nw")
+        if self._line_to_struc != {}:
+            all_thicknesses = [round(objs[0].get_pl_thk(), 5) for objs in self._line_to_struc.values()]
+            all_thicknesses = np.unique(all_thicknesses).tolist()
+            thickest_plate = max(all_thicknesses)
+            if len(all_thicknesses) > 1:
+                thk_map = np.arange(min(all_thicknesses), max(all_thicknesses) + (max(all_thicknesses) - min(all_thicknesses)) / 10,
+                                     (max(all_thicknesses) - min(all_thicknesses)) / 10)
+            else:
+                thk_map = all_thicknesses
 
-        all_thicknesses = [round(objs[0].get_pl_thk(), 5) for objs in self._line_to_struc.values()]
-        thickest_plate = max(all_thicknesses)
-        thk_map = np.arange(min(all_thicknesses), max(all_thicknesses) + (max(all_thicknesses) - min(all_thicknesses)) / 10,
-                             (max(all_thicknesses) - min(all_thicknesses)) / 10)
+            try:
+                all_pressures = sorted([self.get_highest_pressure(line)['normal']
+                                        for line in list(self._line_dict.keys())])
+            except KeyError:
+                all_pressures = [0, 1]
 
-        try:
-            all_pressures = sorted([self.get_highest_pressure(line)['normal']
-                                    for line in list(self._line_dict.keys())])
-        except KeyError:
-            all_pressures = [0, 1]
+            all_pressures = np.unique(all_pressures).tolist()
+
+            highest_pressure, lowest_pressure = max(all_pressures), min(all_pressures)
+            if len(all_pressures) > 1:
+                press_map = [round(val, 1) for val in
+                             np.arange(all_pressures[0], all_pressures[-1],
+                                       (all_pressures[-1] - all_pressures[0]) / 10)] + \
+                            [round(all_pressures[-1], 1)]
+            else:
+                press_map = all_pressures
+
+            all_utils = [max(list(return_dict['utilization'][line].values()))
+                         for line in self._line_to_struc.keys()]
+            all_utils = np.unique(all_utils).tolist()
+            if len(all_utils) >1:
+                util_map = np.arange(min(all_utils), max(all_utils) + (max(all_utils) - min(all_utils)) / 10,
+                                     (max(all_utils) - min(all_utils)) / 10)
+            else:
+                util_map = all_utils
+            sig_x = np.unique([self._line_to_struc[line][1].get_sigma_x() for line in self._line_to_struc.keys()]).tolist()
+            if len(sig_x) > 1:
+                sig_x_map = np.arange(min(sig_x), max(sig_x) + (max(sig_x) - min(sig_x)) / 10,
+                                      (max(sig_x) - min(sig_x)) / 10)
+            else:
+                sig_x_map = sig_x
+            sig_y1 = np.unique([self._line_to_struc[line][1].get_sigma_y1() for line in self._line_to_struc.keys()]).tolist()
+            if len(sig_y1) > 1:
+                sig_y1_map = np.arange(min(sig_y1), max(sig_y1) + (max(sig_y1) - min(sig_y1)) / 10,
+                                       (max(sig_y1) - min(sig_y1)) / 10)
+            else:
+                sig_y1_map = sig_y1
+
+            sig_y2 = np.unique([self._line_to_struc[line][1].get_sigma_y2() for line in self._line_to_struc.keys()]).tolist()
+            if len(sig_y2) > 1:
+
+                sig_y2_map = np.arange(min(sig_y2), max(sig_y2) + (max(sig_y2) - min(sig_y2)) / 10,
+                                       (max(sig_y2) - min(sig_y2)) / 10)
+            else:
+                sig_y2_map = sig_y2
+            tau_xy = np.unique([self._line_to_struc[line][1].get_tau_xy() for line in self._line_to_struc.keys()]).tolist()
+            if len(tau_xy) > 1:
+                tau_xy_map = np.arange(min(tau_xy), max(tau_xy) + (max(tau_xy) - min(tau_xy)) / 10,
+                                       (max(tau_xy) - min(tau_xy)) / 10)
+            else:
+                tau_xy_map = tau_xy
+
+            structure_type = [self._line_to_struc[line][1].get_structure_type() for line in
+                              self._line_to_struc.keys()]
+
+            return_dict['color code'] = {'thickest plate': thickest_plate, 'thickness map': thk_map,
+                                         'all thicknesses': all_thicknesses,
+                                         'highest pressure': highest_pressure, 'lowest pressure': lowest_pressure,
+                                         'pressure map': press_map, 'all pressures':all_pressures,
+                                         'all utilizations': all_utils, 'utilization map': util_map,
+                                         'max sigma x': max(sig_x), 'min sigma x': min(sig_x), 'sigma x map': sig_x_map,
+                                         'max sigma y1': max(sig_y1), 'min sigma y1': min(sig_y1),
+                                         'sigma y1 map': sig_y1_map,
+                                         'max sigma y2': max(sig_y2), 'min sigma y2': min(sig_y2),
+                                         'sigma y2 map': sig_y2_map,
+                                         'max tau xy': max(tau_xy), 'min tau xy': min(tau_xy), 'tau xy map': tau_xy_map,
+                                         'structure types map': np.unique(structure_type).tolist(),
+                                         'sections in model': sec_in_model,
+                                         'recorded sections': recorded_sections}
+            line_color_coding = {}
+            cmap_sections = plt.get_cmap('jet')
+            thk_sort_unique = return_dict['color code']['all thicknesses']
+            uf_sort_unique = return_dict['color code']['all utilizations']
+            structure_type_unique = return_dict['color code']['structure types map']
+            for line, line_data in self._line_to_struc.items():
+
+                line_color_coding[line] = {'plate': matplotlib.colors.rgb2hex(cmap_sections(thk_sort_unique.index(round(line_data[1]
+                                                                              .get_pl_thk(),10))/len(thk_sort_unique))),
+                                           'section': matplotlib.colors.rgb2hex(cmap_sections(sec_in_model[line_data[1]
+                                                                                .get_beam_string()]
+                                                      /len(list(recorded_sections)))),
+                                           'structure type': matplotlib.colors.rgb2hex(
+                                               cmap_sections(structure_type_unique.index(line_data[1].get_structure_type())
+                                                             /len(structure_type_unique))),
+                                           'pressure': 'black' if all_pressures == [0,1] else matplotlib.colors.rgb2hex(cmap_sections(
+                                               self.get_highest_pressure(line)['normal']/highest_pressure)),
+                                           'utilization': matplotlib.colors.rgb2hex(cmap_sections(
+                                               max(list(return_dict['utilization'][line].values()))/max(all_utils))),
+                                           'sigma x': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_x()/
+                                                                                              max(sig_x))),
+                                           'sigma y1': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_y1()/
+                                                                                               max(sig_y1))),
+                                           'sigma y2': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_y2()/
+                                                                                               max(sig_y2))),
+                                           'tau xy': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_tau_xy()/
+                                                                                             max(tau_xy)))}
 
 
-        highest_pressure, lowest_pressure = max(all_pressures), min(all_pressures)
-        press_map = [round(val, 1) for val in
-                     np.arange(all_pressures[0], all_pressures[-1],
-                               (all_pressures[-1] - all_pressures[0]) / 10)] + \
-                    [round(all_pressures[-1], 1)]
-
-        all_utils = [max(list(return_dict['utilization'][line].values()))
-                     for line in self._line_to_struc.keys()]
-        util_map = np.arange(min(all_utils), max(all_utils) + (max(all_utils) - min(all_utils)) / 10,
-                             (max(all_utils) - min(all_utils)) / 10)
-
-        sig_x = [self._line_to_struc[line][1].get_sigma_x() for line in self._line_to_struc.keys()]
-        sig_x_map = np.arange(min(sig_x), max(sig_x) + (max(sig_x) - min(sig_x)) / 10,
-                              (max(sig_x) - min(sig_x)) / 10)
-
-        sig_y1 = [self._line_to_struc[line][1].get_sigma_y1() for line in self._line_to_struc.keys()]
-        sig_y1_map = np.arange(min(sig_y1), max(sig_y1) + (max(sig_y1) - min(sig_y1)) / 10,
-                               (max(sig_y1) - min(sig_y1)) / 10)
-
-        sig_y2 = [self._line_to_struc[line][1].get_sigma_y2() for line in self._line_to_struc.keys()]
-        sig_y2_map = np.arange(min(sig_y2), max(sig_y2) + (max(sig_y2) - min(sig_y2)) / 10,
-                               (max(sig_y2) - min(sig_y2)) / 10)
-
-        tau_xy = [self._line_to_struc[line][1].get_tau_xy() for line in self._line_to_struc.keys()]
-        tau_xy_map = np.arange(min(tau_xy), max(tau_xy) + (max(tau_xy) - min(tau_xy)) / 10,
-                               (max(tau_xy) - min(tau_xy)) / 10)
-
-        structure_type = [self._line_to_struc[line][1].get_structure_type() for line in
-                          self._line_to_struc.keys()]
-
-        return_dict['color code'] = {'thickest plate': thickest_plate, 'thickness map': thk_map,
-                                     'all thicknesses': np.unique(all_thicknesses).tolist(),
-                                     'highest pressure': highest_pressure, 'lowest pressure': lowest_pressure,
-                                     'pressure map': press_map, 'all pressures':np.unique(all_pressures).tolist(),
-                                     'all utilizations': np.unique(all_utils).tolist(), 'utilization map': util_map,
-                                     'max sigma x': max(sig_x), 'min sigma x': min(sig_x), 'sigma x map': sig_x_map,
-                                     'max sigma y1': max(sig_y1), 'min sigma y1': min(sig_y1),
-                                     'sigma y1 map': sig_y1_map,
-                                     'max sigma y2': max(sig_y2), 'min sigma y2': min(sig_y2),
-                                     'sigma y2 map': sig_y2_map,
-                                     'max tau xy': max(tau_xy), 'min tau xy': min(tau_xy), 'tau xy map': tau_xy_map,
-                                     'structure types map': np.unique(structure_type),
-                                     'sections in model': sec_in_model,
-                                     'recorded sections': recorded_sections}
-        line_color_coding = {}
-        cmap_sections = plt.get_cmap('jet')
-        thk_sort_unique = return_dict['color code']['all thicknesses']
-        uf_sort_unique = return_dict['color code']['all utilizations']
-        press_sort_unique = return_dict['color code']['all pressures']
-        for line, line_data in self._line_to_struc.items():
-
-            line_color_coding[line] = {'plate': matplotlib.colors.rgb2hex(cmap_sections(thk_sort_unique.index(round(line_data[1]
-                                                                          .get_pl_thk(),10))/len(thk_sort_unique))),
-                                       'section': matplotlib.colors.rgb2hex(cmap_sections(sec_in_model[line_data[1]
-                                                                            .get_beam_string()]
-                                                  /len(list(recorded_sections)))),
-                                       'structure type': matplotlib.colors.rgb2hex(cmap_sections(list(set(structure_type))
-                                                                                   .index(line_data[1]
-                                                                                         .get_structure_type())/
-                                                         len(list(set(structure_type))))),
-                                       'pressure': matplotlib.colors.rgb2hex(cmap_sections(
-                                           self.get_highest_pressure(line)['normal']/highest_pressure)),
-                                       'utilization': matplotlib.colors.rgb2hex(cmap_sections(
-                                           uf_sort_unique.index(max(list(return_dict['utilization'][line].values())))/
-                                           len(uf_sort_unique))),
-                                       'sigma x': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_x()/
-                                                                                          max(sig_x))),
-                                       'sigma y1': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_y1()/
-                                                                                           max(sig_y1))),
-                                       'sigma y2': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_y2()/
-                                                                                           max(sig_y2))),
-                                       'tau xy': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_tau_xy()/
-                                                                                         max(tau_xy)))}
-
-
-            return_dict['color code']['lines'] = line_color_coding
+                return_dict['color code']['lines'] = line_color_coding
         return return_dict
 
     def draw_canvas(self, state = None, event = None):
@@ -1527,8 +1547,8 @@ class Application():
                         color = 'red' if 'red' in state['colors'][line].values() else 'green'
                     except (KeyError, TypeError):
                         color = 'black'
-                elif chk_box_active and state != None:
-                    color, report_return = self.color_code_line(state, line)
+                elif chk_box_active and state != None and self._line_to_struc != {}:
+                    color = self.color_code_line(state, line)
                 else:
                     color = 'black'
 
@@ -1613,6 +1633,7 @@ class Application():
         elif self._new_colorcode_pressure.get() == True and self._line_to_struc != {}:
             highest_pressure = cc_state['highest pressure']
             press_map = cc_state['pressure map']
+
             for idx, press in enumerate(press_map):
                 self._main_canvas.create_text(11, 111+20*idx, text=str(str(press) + ' Pa'),
                                               font=self._text_size["Text 10 bold"],
@@ -1624,6 +1645,7 @@ class Application():
                                               anchor="nw")
 
         elif self._new_colorcode_utilization.get() == True and self._line_to_struc != {}:
+            all_utils = cc_state['all utilizations']
             for idx, uf in enumerate(cc_state['utilization map']):
                 self._main_canvas.create_text(11, 111 + 20 * idx, text=str('UF = ' +str(round(uf,1))),
                                               font=self._text_size["Text 10 bold"],
@@ -1631,7 +1653,7 @@ class Application():
                                               anchor="nw")
                 self._main_canvas.create_text(10, 110 + 20 * idx, text=str('UF = ' +str(round(uf,1))),
                                               font=self._text_size["Text 10 bold"],
-                                              fill=matplotlib.colors.rgb2hex(cmap_sections(uf)),
+                                              fill=matplotlib.colors.rgb2hex(cmap_sections(uf/max(all_utils))),
                                               anchor="nw")
         elif self._new_colorcode_sigmax.get() == True:
             for idx, value in enumerate(cc_state['sigma x map']):
@@ -1694,10 +1716,10 @@ class Application():
     def color_code_line(self, state, line):
 
         cc_state = state['color code']
-        cmap_sections = plt.get_cmap('jet')
+        if line not in state['color code']['lines'].keys():
+            return 'black'
         if self._new_colorcode_beams.get() == True and line in list(self._line_to_struc.keys()):
             color = state['color code']['lines'][line]['section']
-
 
         elif self._new_colorcode_plates.get() == True and line in list(self._line_to_struc.keys()):
             color = state['color code']['lines'][line]['plate']
@@ -1710,7 +1732,6 @@ class Application():
 
         elif self._new_colorcode_utilization.get() == True:
             color = state['color code']['lines'][line]['utilization']
-
 
         elif self._new_colorcode_sigmax.get() == True:
             color = state['color code']['lines'][line]['sigma x']
@@ -1726,11 +1747,10 @@ class Application():
 
         elif self._new_colorcode_structure_type.get() == True:
             color = state['color code']['lines'][line]['structure type']
-
         else:
-            color = 'black', None
+            color = 'black'
 
-        return color, None
+        return color
 
     def draw_prop(self):
         '''
@@ -3485,14 +3505,16 @@ class Application():
                 self._line_to_struc[key][1].need_recalc = True  # All lines need recalculations.
 
             for main_line in self._line_dict.keys():
-                for object, load_line in self._load_dict.values():
+                for load_obj, load_line in self._load_dict.values():
+                    if load_line not in self._line_to_struc.keys():
+                        continue
                     if main_line in load_line:
-                        self._line_to_struc[main_line][3].append(object)
+                        self._line_to_struc[main_line][3].append(load_obj)
 
-        # Displaying the loads
-        self.update_frame()
         # Storing the the returned data to temporary variable.
         self.__returned_load_data = [returned_loads, counter, load_comb_dict]
+        # Displaying the loads
+        self.update_frame()
 
     def on_close_opt_window(self,returned_object):
         '''

@@ -524,7 +524,7 @@ class CreateOptimizeMultipleWindow():
                                                                      iterating=True)
             else:
                 predefined_stiffener_iter = None
-            print('Running', line)
+
             self._opt_results[line] = list(op.run_optmizataion(init_obj, self.get_lower_bounds(init_obj),
                                                           self.get_upper_bounds(init_obj),
                                                           lateral_press,self.get_deltas(),
@@ -555,10 +555,13 @@ class CreateOptimizeMultipleWindow():
         self.draw_select_canvas()
 
         if self._new_harmonizer.get() == True:
-            print('Harmonizing')
+            self._canvas_opt.config(bg='yellow')
+            self._canvas_opt.create_text(200, 200, text='Harmonizing results',
+                                         font='Verdana 14 bold')
             self.opt_harmonizer_historic()
 
         counter += 1
+
         self.progress_bar.stop()
         self.run_button.config(bg='green')
         self.draw_properties()
@@ -699,44 +702,6 @@ class CreateOptimizeMultipleWindow():
                 self._opt_results[line][0] = None
                 self._opt_results[line][1] = None
             return False
-
-    # def opt_harmonizer_multi(self, iterator):
-    #     '''
-    #         for slave_line in self._opt_results.keys():
-    #             input_pressures = self.get_pressure_input(slave_line)
-    #             iter_run_info[line] = {'lateral_press': input_pressures['lateral pressure'],
-    #                                    'fatigue pressure': input_pressures['fatigue pressure'],
-    #                                    'fatigue object':input_pressures['fatigue object'],
-    #                                    'slamming pressure':input_pressures['slamming pressure'],
-    #                                    'chk_calc_obj': self._opt_results[slave_line][1]}
-    #         iter_run_info['lines'] = list(self._opt_results.keys())
-    #         iter_run_info['checks'] = to_check
-    #         for x_check in all_ok_checks:
-    #             iterator.append((x_check, iter_run_info))
-    #     :param x_check:
-    #     :return:
-    #     '''
-    #
-    #     this_check, master_x = list(), None
-    #     for slave_line in iterator['lines']:
-    #         lateral_press = iterator[1][slave_line]['lateral pressure']
-    #         fat_press = iterator[1][slave_line]['fatigue pressure']
-    #         fat_obj = iterator[1][slave_line]['fatigue object']
-    #         slamming_pressure = iterator[1][slave_line]['slamming pressure']
-    #         chk_calc_obj = iterator[1][slave_line]['chk_calc_obj']
-    #         master_x = list(iterator[0])
-    #         x = master_x + [chk_calc_obj.get_span(), chk_calc_obj.get_lg()]
-    #
-    #         chk_any = op.any_constraints_all(x=x, obj=chk_calc_obj, lat_press=lateral_press,
-    #                                          init_weight=float('inf'), side='p', chk=iterator['checks'],
-    #                                          fat_dict=None if fat_obj == None else fat_obj.get_fatigue_properties(),
-    #                                          fat_press=fat_press, slamming_press=slamming_pressure)
-    #         this_check.append(chk_any[0])
-    #
-    #     if all(this_check) and master_x is not None:
-    #         return tuple(master_x)
-    #     else:
-    #         return None
 
     def get_running_time(self):
         '''
@@ -919,6 +884,7 @@ class CreateOptimizeMultipleWindow():
                                                                                 opt_obj.get_span(),
                                                                                 opt_obj.get_lg()]))),
                                         font='Verdana 8', fill=opt_color)
+
         elif self._opt_results != {}:
             self._canvas_opt.config(bg='green')
             self._canvas_opt.create_text(200, 200, text='Optimization results avaliable.\n\n'
@@ -928,8 +894,6 @@ class CreateOptimizeMultipleWindow():
         else:
             self._canvas_opt.config(bg='mistyrose')
             self._canvas_opt.create_text(200, 60, text='No optimization results found.', font = 'Verdana 14 bold')
-
-
 
         if line != None:
             if __name__ == '__main__':
