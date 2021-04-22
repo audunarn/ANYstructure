@@ -39,11 +39,12 @@ class Application():
         The GUI is general initiated in the method gui_init.
         :param parent:
         '''
+
         super(Application, self).__init__()
         parent.wm_title('| ANYstructure |')
         self._parent = parent
         parent.protocol("WM_DELETE_WINDOW", self.close_main_window)
-
+        parent.bind("<Configure>", self.resize)
         # GLOBAL SHRINK NOT USED. Relative x/y used instead.
         if parent.winfo_screenwidth() < 2000:
             self._global_shrink = 1
@@ -62,7 +63,6 @@ class Application():
         self._main_fr = tk.Frame(parent,
                                  background=self._general_color)
         self._main_fr.place(in_=parent, relwidth=1, relheight = 1)
-
         # Top open/save/new
         menu = tk.Menu(parent)
         parent.config(menu=menu)
@@ -76,8 +76,8 @@ class Application():
                               'CTRL-P Copy selected point\n' \
                               'CTRL-M Move selected point)\n' \
                               'CTRL-Q New line (right click two points)\n' \
-                              'CTRL-S Assign structure properties to clicked line\n' \
-                              'CTRL-DELETE Delete structure properties from clicked line\n' \
+                              'CTRL-S Assign structure prop. to line\n' \
+                              'CTRL-DELETE Delete structure prop. from line\n' \
                               'DELETE Delete active line and/or point \n' \
                               'CTRL-E Copy line properties from active line\n' \
                               'CTRL-D Paste line propeties to active line\n' \
@@ -125,22 +125,24 @@ class Application():
                            int(base_canvas_dim[1] *self._global_shrink)]
         self._canvas_base_origo = [50, base_canvas_dim[1] - 50] # 50 bottom left location of the canvas, (0,0)
 
-        self._canvas_draw_origo = list(self._canvas_base_origo)
+        self._canvas_draw_origo = [self._canvas_base_origo[0], self._canvas_base_origo[1]+60]
         self._previous_drag_mouse = list(self._canvas_draw_origo)
 
         # Setting the fonts for all items in the application.
-        self._text_size = {'Text 14 bold': 'Verdana '+str(int(14*self._global_shrink))+' bold',
-                           'Text 16 bold': 'Verdana ' + str(int(16 * self._global_shrink)) + ' bold',
-                           'Text 18 bold': 'Verdana ' + str(int(18 * self._global_shrink)) + ' bold',
-                           'Text 12 bold': 'Verdana ' + str(int(12 * self._global_shrink)) + ' bold',
-                           'Text 10 bold': 'Verdana '+str(int(10*self._global_shrink))+' bold',
-                           'Text 9 bold': 'Verdana ' + str(int(9 * self._global_shrink)) + ' bold',
-                           'Text 8 bold': 'Verdana ' + str(int(8 * self._global_shrink)) + ' bold',
-                           'Text 8': 'Verdana ' + str(int(8 * self._global_shrink)),
-                           'Text 9': 'Verdana ' + str(int(8 * self._global_shrink)),
-                           'Text 7': 'Verdana ' + str(int(7 * self._global_shrink)),
-                           'Text 10': 'Verdana ' + str(int(10 * self._global_shrink)),
-                           'Text 7 bold': 'Verdana ' + str(int(7 * self._global_shrink)) + ' bold'}
+
+        self.text_scale = 1
+        self._text_size = {'Text 14 bold': 'Verdana '+str(int(14*self.text_scale))+' bold',
+                           'Text 16 bold': 'Verdana ' + str(int(16 * self.text_scale)) + ' bold',
+                           'Text 18 bold': 'Verdana ' + str(int(18 * self.text_scale)) + ' bold',
+                           'Text 12 bold': 'Verdana ' + str(int(12 * self.text_scale)) + ' bold',
+                           'Text 10 bold': 'Verdana '+str(int(10*self.text_scale))+' bold',
+                           'Text 9 bold': 'Verdana ' + str(int(9 * self.text_scale)) + ' bold',
+                           'Text 8 bold': 'Verdana ' + str(int(8 * self.text_scale)) + ' bold',
+                           'Text 8': 'Verdana ' + str(int(8 * self.text_scale)),
+                           'Text 9': 'Verdana ' + str(int(8 * self.text_scale)),
+                           'Text 7': 'Verdana ' + str(int(7 * self.text_scale)),
+                           'Text 10': 'Verdana ' + str(int(10 * self.text_scale)),
+                           'Text 7 bold': 'Verdana ' + str(int(7 * self.text_scale)) + ' bold'}
 
         self._canvas_scale = 20 # Used for slider and can change
         self._base_scale_factor = 10 # Used for grid and will not change, 10 is default
@@ -257,15 +259,18 @@ class Application():
         tk.Entry(self._main_fr, textvariable=self._new_point_y, width = int(ent_width * self._global_shrink),
                  bg = self._entry_color, fg = self._entry_text_color)\
             .place(relx=ent_x, rely=point_start + delta_y)
-        tk.Button(self._main_fr, text='Add point (coords)', command=self.new_point, width = 18,
+        tk.Button(self._main_fr, text='Add point (coords)', command=self.new_point,
                   bg = self._button_bg_color, fg = self._button_fg_color,
-                  font = self._text_size['Text 9 bold']).place(relx=ent_x + 2 * delta_x, rely=point_start-1.6*delta_y)
-        tk.Button(self._main_fr, text='Copy point (relative)', command=self.copy_point, width = 18,
+                  font = self._text_size['Text 9 bold']).place(relx=ent_x + 2 * delta_x, rely=point_start-1.6*delta_y,
+                                                               relwidth = 0.08)
+        tk.Button(self._main_fr, text='Copy point (relative)', command=self.copy_point,
                   bg = self._button_bg_color, fg = self._button_fg_color,
-                  font = self._text_size['Text 9 bold']).place(relx=ent_x + 2 * delta_x, rely=point_start-0.3*delta_y)
-        tk.Button(self._main_fr, text='Move point (relative)', command=self.move_point, width = 18,
+                  font = self._text_size['Text 9 bold']).place(relx=ent_x + 2 * delta_x, rely=point_start-0.3*delta_y,
+                                                               relwidth = 0.08)
+        tk.Button(self._main_fr, text='Move point (relative)', command=self.move_point,
                   bg = self._button_bg_color, fg = self._button_fg_color,
-                  font = self._text_size['Text 9 bold']).place(relx=ent_x + 2 * delta_x, rely=point_start+1*delta_y)
+                  font = self._text_size['Text 9 bold']).place(relx=ent_x + 2 * delta_x, rely=point_start+1*delta_y,
+                                                               relwidth = 0.08)
 
         # --- line input/output ---
         self._new_line_p1 = tk.IntVar()
@@ -330,9 +335,9 @@ class Application():
         tk.Entry(self._main_fr, textvariable=self._new_line_p2, width=int(ent_width * self._global_shrink),
                  bg = self._entry_color, fg = self._entry_text_color)\
             .place(relx=ent_x, rely=line_start + delta_y)
-        tk.Button(self._main_fr, text='Add line', command=self.new_line, width = 10,
+        tk.Button(self._main_fr, text='Add line', command=self.new_line,
                   bg = self._button_bg_color, fg = self._button_fg_color,
-                  font = self._text_size['Text 9 bold']).place(relx=ent_x+2*delta_x, rely=line_start)
+                  font = self._text_size['Text 9 bold']).place(relx=ent_x+2*delta_x, rely=line_start,relwidth = 0.05)
 
         # --- delete points and lines ---
         self._new_delete_line = tk.IntVar()
@@ -358,14 +363,17 @@ class Application():
 
         tk.Button(self._main_fr, text='Delete line',bg = self._button_bg_color, fg = self._button_fg_color,
                                          font=self._text_size['Text 9 bold'],command=self.delete_line,
-                                         width = int(11*self._global_shrink)).place(relx=ent_x+delta_x*2, rely=del_start)
+                                         ).place(relx=ent_x+delta_x*2, rely=del_start,
+                                                                                    relwidth = 0.05)
         tk.Button(self._main_fr, text='Delete prop.',bg = self._button_bg_color, fg = self._button_fg_color,
                                          font=self._text_size['Text 9 bold'],command=self.delete_properties_pressed,
-                                         width = int(11*self._global_shrink)).place(relx=ent_x+delta_x*4, rely=del_start)
+                                         ).place(relx=ent_x+delta_x*4, rely=del_start,
+                                                                                    relwidth = 0.05)
 
         tk.Button(self._main_fr, text='Delete point',bg = self._button_bg_color, fg = self._button_fg_color,
                                           font=self._text_size['Text 9 bold'],command=self.delete_point,
-                                          width = int(11*self._global_shrink)).place(relx=ent_x+2*delta_x, rely=del_start + delta_y)
+                                          ).place(relx=ent_x+2*delta_x, rely=del_start + delta_y,
+                                                                                     relwidth = 0.05)
 
         # --- structure type information ---
         prop_vert_start = 0.296296296
@@ -400,7 +408,7 @@ class Application():
 
         tk.Button(self._main_fr,text='Show structure types',command=show_message,
                   bg = self._button_bg_color, fg = self._button_fg_color, font=self._text_size['Text 8'])\
-            .place(relx=types_start,rely=prop_vert_start+13*delta_y)
+            .place(relx=types_start,rely=prop_vert_start+13*delta_y,relwidth = 0.1)
 
         self._zstar_chk = tk.Checkbutton(self._main_fr, variable=self._new_zstar_optimization)\
             .place(relx=types_start,rely=prop_vert_start+14.*delta_y)
@@ -421,9 +429,9 @@ class Application():
             .place(relx=types_start, rely=prop_vert_start + 9.5 * delta_y)
         self.add_stucture = tk.Button(self._main_fr, text='Add structure to line', command=self.new_structure,
                                       font = self._text_size['Text 10 bold'],
-                                      bg = self._button_bg_color, fg = self._button_fg_color,
-                                      width = 20, height = 3)
-        self.add_stucture.place(relx=types_start+ delta_x*5.7, rely=prop_vert_start+15*delta_y)
+                                      bg = self._button_bg_color, fg = self._button_fg_color)
+        self.add_stucture.place(relx=types_start+ delta_x*5.7, rely=prop_vert_start+15*delta_y, relwidth = 0.1,
+                                relheight = 0.04)
 
         # --- main variable to define the structural properties ---
         self._new_material = tk.DoubleVar()
@@ -637,10 +645,11 @@ class Application():
             stf_button = tk.Button(self._main_fr,image = photo,command=self.on_open_structure_window,
                                    bg = self._button_bg_color, fg = self._button_fg_color,)
             stf_button.image = photo
-            stf_button.place(relx=types_start,rely=prop_vert_start)
+            stf_button.place(relx=types_start,rely=prop_vert_start,relheight = 0.062, relwidth = 0.042)
         except TclError:
             tk.Button(self._main_fr, text='STF.', command=self.on_open_structure_window,
-                      bg = self._button_bg_color, fg = self._button_fg_color).place(relx=types_start,rely=prop_vert_start)
+                      bg = self._button_bg_color, fg = self._button_fg_color)\
+                .place(relx=types_start,rely=prop_vert_start,relheight = 0.062, relwidth = 0.042)
 
         try:
             img_file_name = 'img_stress_button.gif'
@@ -652,11 +661,11 @@ class Application():
             stress_button = tk.Button(self._main_fr,image = photo,command=self.on_open_stresses_window,
                                       bg = self._button_bg_color, fg = self._button_fg_color)
             stress_button.image = photo
-            stress_button.place(relx=10,rely=prop_vert_start+3*delta_y)
+            stress_button.place(relx=types_start,rely=prop_vert_start+3*delta_y,relheight = 0.062, relwidth = 0.042)
         except TclError:
             tk.Button(self._main_fr, text='STRESS', command=self.on_open_stresses_window,
                       bg = self._button_bg_color, fg = self._button_fg_color)\
-                .place(relx=10,rely=prop_vert_start+3*delta_y)
+                .place(relx=types_start,rely=prop_vert_start+3*delta_y,relheight = 0.062, relwidth = 0.042)
 
         try:
             img_file_name = 'fls_button.gif'
@@ -667,11 +676,11 @@ class Application():
             photo = tk.PhotoImage(file=file_path)
             fls_button = tk.Button(self._main_fr,image = photo,command=self.on_open_fatigue_window)
             fls_button.image = photo
-            fls_button.place(relx=types_start,rely=prop_vert_start+6*delta_y)
+            fls_button.place(relx=types_start,rely=prop_vert_start+6*delta_y,relheight = 0.062, relwidth = 0.042)
         except TclError:
             tk.Button(self._main_fr, text='FLS', command=self.on_open_fatigue_window,
                       bg = self._button_bg_color, fg = self._button_fg_color,)\
-                .place(relx=types_start,rely=prop_vert_start+6*delta_y)
+                .place(relx=types_start,rely=prop_vert_start+6*delta_y,relheight = 0.062, relwidth = 0.042)
 
         # --- tank load input and information ---
         load_vert_start = frame_horizontal -0.03
@@ -693,12 +702,12 @@ class Application():
 
         tk.Button(self._main_fr, text="Set compartment\n""properties.",command = self.update_tank,
                                             font=self._text_size['Text 9 bold'],
-                  bg = self._button_bg_color, fg = self._button_fg_color, width = 15)\
-            .place(relx=ent_x+delta_x*3, rely=load_vert_start + delta_y * 6.5)
+                  bg = self._button_bg_color, fg = self._button_fg_color)\
+            .place(relx=ent_x+delta_x*3, rely=load_vert_start + delta_y * 6.5, relwidth = 0.08)
 
         tk.Button(self._main_fr, text="Delete all tanks", command=self.delete_all_tanks,
-                  font=self._text_size['Text 9 bold'],bg = self._button_bg_color, fg = self._button_fg_color,
-                  width = 15).place(relx=ent_x+delta_x*3, rely=load_vert_start + delta_y * 8.5)
+                  font=self._text_size['Text 9 bold'],bg = self._button_bg_color, fg = self._button_fg_color
+                  ).place(relx=ent_x+delta_x*3, rely=load_vert_start + delta_y * 8.5, relwidth = 0.08)
         self._new_content_type = tk.StringVar()
 
         self._ent_content_type = tk.OptionMenu(self._main_fr, self._new_content_type, *list(self._tank_options.keys()),
@@ -759,17 +768,18 @@ class Application():
 
             self._int_button = tk.Button(self._main_fr,image = photo,command=self.grid_find_tanks)
             self._int_button.image = photo
-            self._int_button.place(relx=types_start, rely=load_vert_start+1.5*delta_y)
+            self._int_button.place(relx=types_start, rely=load_vert_start+1.5*delta_y,
+                                   relheight = 0.044, relwidth = 0.12)
         except TclError:
             tk.Button(self._main_fr, text='New tanks - start search \n'
                                   'to find compartments', command=self.grid_find_tanks,
                       bg = self._button_bg_color, fg = self._button_fg_color, font=self._text_size['Text 8 bold']) \
-                .place(relx=types_start, rely=load_vert_start + 0 * delta_y)
+                .place(relx=types_start, rely=load_vert_start + 0 * delta_y, relheight = 0.044, relwidth = 0.12)
 
         show_compartment = tk.Button(self._main_fr, text='Display current\n compartments', command=self.grid_display_tanks,
                                   bg = self._button_bg_color, fg = self._button_fg_color,
-                                     font=self._text_size['Text 9 bold'], width = 15)
-        show_compartment.place(relx=ent_x+delta_x*3, rely=load_vert_start + delta_y * 4.5)
+                                     font=self._text_size['Text 9 bold'])
+        show_compartment.place(relx=ent_x+delta_x*3, rely=load_vert_start + delta_y * 4.5, relwidth = 0.08)
 
         try:
 
@@ -783,12 +793,13 @@ class Application():
             self._ext_button = tk.Button(self._main_fr,image=photo, command = self.on_show_loads,
                                          bg = self._button_bg_color, fg = self._button_fg_color)
             self._ext_button.image = photo
-            self._ext_button.place(relx=ent_x+delta_x*1.5, rely=load_vert_start+1.5*delta_y)
+            self._ext_button.place(relx=ent_x+delta_x*1.5, rely=load_vert_start+1.5*delta_y,
+                                   relheight = 0.044, relwidth = 0.11)
         except TclError:
             tk.Button(self._main_fr, text='New external load window \nsea - static/dynamic',
                       command=self.on_show_loads, bg = self._button_bg_color, fg = self._button_fg_color,
                       font=self._text_size['Text 8 bold'])\
-                .place(relx=ent_x+delta_x*2, rely=load_vert_start+0*delta_y)
+                .place(relx=ent_x+delta_x*2, rely=load_vert_start+0*delta_y, relheight = 0.044, relwidth = 0.11)
 
         lc_x, lc_x_delta, lc_y, lc_y_delta = 0.786458333, 0.015625, 0.12037037, 0.023148148
 
@@ -820,7 +831,8 @@ class Application():
             .place(relx=lc_x + delta_x*4.2, rely=lc_y - 2 * lc_y_delta)
         tk.Button(self._main_fr, text = 'Set\naccelerations', command = self.create_accelerations,
                   font = self._text_size['Text 8 bold'],
-                  bg = self._button_bg_color, fg = self._button_fg_color).place(relx=lc_x + delta_x*6, rely=lc_y - 3 * lc_y_delta)
+                  bg = self._button_bg_color, fg = self._button_fg_color)\
+            .place(relx=lc_x + delta_x*6, rely=lc_y - 3 * lc_y_delta)
 
         # --- checkbuttons and labels ---
         self._dnv_a_chk,self._dnv_b_chk  = tk.IntVar(),tk.IntVar()
@@ -878,7 +890,7 @@ class Application():
             opt_button = tk.Button(self._main_fr,image=photo, command = self.on_optimize,
                                    bg = self._button_bg_color, fg = self._button_fg_color)
             opt_button.image = photo
-            opt_button.place(relx=lc_x, rely=lc_y - 6 * lc_y_delta)
+            opt_button.place(relx=lc_x, rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.095)
         except TclError:
             tk.Button(self._main_fr, text='Optimize', command=self.on_optimize_multiple,
                       bg = self._button_bg_color, fg = self._button_fg_color)\
@@ -893,30 +905,33 @@ class Application():
             opt_button_mult = tk.Button(self._main_fr,image=photo, command = self.on_optimize_multiple,
                                         bg = self._button_bg_color, fg = self._button_fg_color)
             opt_button_mult.image = photo
-            opt_button_mult.place(relx=lc_x+delta_x*4, rely=lc_y - 6 * lc_y_delta)
+            opt_button_mult.place(relx=lc_x+delta_x*3.75, rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.065)
         except TclError:
             tk.Button(self._main_fr, text='MultiOpt', command=self.on_optimize_multiple,
                       bg = self._button_bg_color, fg = self._button_fg_color).place(relx=lc_x + delta_x*7,
                                                                                                rely=lc_y - 6 * lc_y_delta)
 
         tk.Button(self._main_fr, text='SPAN', command=self.on_geometry_optimize,
-                 font = self._text_size['Text 14 bold'], height = 1,
+                 font = self._text_size['Text 14 bold'],
                   bg = self._button_bg_color, fg = self._button_fg_color)\
-           .place(relx=lc_x + delta_x * 6.7,rely=lc_y - 6 * lc_y_delta)
+           .place(relx=lc_x + delta_x * 6.4,rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.04)
 
         # Load information button
         tk.Button(self._main_fr, text='Load info', command=self.button_load_info_click,
                  font = self._text_size['Text 10 bold'], height = 1,
                   bg = self._button_bg_color, fg = self._button_fg_color)\
-           .place(relx=lc_x + delta_x * 6.5,rely=lc_y + delta_y*18)
+           .place(relx=lc_x + delta_x * 6,rely=lc_y + delta_y*18, relwidth = 0.05)
 
         # Load information button
         tk.Button(self._main_fr, text='Load factors', command=self.on_open_load_factor_window,
                  font = self._text_size['Text 10 bold'], height = 1,
                   bg = self._button_bg_color, fg = self._button_fg_color)\
-           .place(relx=lc_x + delta_x * 4,rely=lc_y + delta_y*18)
+           .place(relx=lc_x + delta_x * 4,rely=lc_y + delta_y*18, relwidth = 0.05)
 
         self.update_frame()
+
+    def resize(self, event):
+        pass
 
     def gui_load_combinations(self,event):
         '''
@@ -1311,7 +1326,8 @@ class Application():
                 return_dict['pressure_uls'][current_line] = design_pressure
                 return_dict['pressure_fls'][current_line] = {'p_int': p_int, 'p_ext': p_ext}
                 return_dict['section_modulus'][current_line] = {'sec_mod': sec_mod, 'min_sec_mod': min_sec_mod}
-                #print(current_line, {'sec_mod': sec_mod, 'min_sec_mod': min_sec_mod})
+
+
                 return_dict['shear_area'][current_line] = {'shear_area': shear_area, 'min_shear_area': min_shear}
                 return_dict['thickness'][current_line] = {'thk': obj_scnt_calc.get_plate_thk(), 'min_thk': min_thk}
                 return_dict['struc_obj'][current_line] = obj_structure
@@ -1364,85 +1380,114 @@ class Application():
                                           fill=matplotlib.colors.rgb2hex(
                                               cmap_sections(idx / sec_in_model['length'])),
                                           anchor="nw")
+        if self._line_to_struc != {}:
+            all_thicknesses = [round(objs[0].get_pl_thk(), 5) for objs in self._line_to_struc.values()]
+            all_thicknesses = np.unique(all_thicknesses).tolist()
+            thickest_plate = max(all_thicknesses)
+            if len(all_thicknesses) > 1:
+                thk_map = np.arange(min(all_thicknesses), max(all_thicknesses) + (max(all_thicknesses) - min(all_thicknesses)) / 10,
+                                     (max(all_thicknesses) - min(all_thicknesses)) / 10)
+            else:
+                thk_map = all_thicknesses
 
-        all_thicknesses = [round(objs[0].get_pl_thk(), 5) for objs in self._line_to_struc.values()]
-        thickest_plate = max(all_thicknesses)
-        thk_map = np.arange(min(all_thicknesses), max(all_thicknesses) + (max(all_thicknesses) - min(all_thicknesses)) / 10,
-                             (max(all_thicknesses) - min(all_thicknesses)) / 10)
+            try:
+                all_pressures = sorted([self.get_highest_pressure(line)['normal']
+                                        for line in list(self._line_dict.keys())])
+            except KeyError:
+                all_pressures = [0, 1]
 
-        try:
-            all_pressures = sorted([self.get_highest_pressure(line)['normal']
-                                    for line in list(self._line_dict.keys())])
-        except KeyError:
-            all_pressures = [0, 1]
+            all_pressures = np.unique(all_pressures).tolist()
+
+            highest_pressure, lowest_pressure = max(all_pressures), min(all_pressures)
+            if len(all_pressures) > 1:
+                press_map = [round(val, 1) for val in
+                             np.arange(all_pressures[0], all_pressures[-1],
+                                       (all_pressures[-1] - all_pressures[0]) / 10)] + \
+                            [round(all_pressures[-1], 1)]
+            else:
+                press_map = all_pressures
+
+            all_utils = [max(list(return_dict['utilization'][line].values()))
+                         for line in self._line_to_struc.keys()]
+            all_utils = np.unique(all_utils).tolist()
+            if len(all_utils) >1:
+                util_map = np.arange(min(all_utils), max(all_utils) + (max(all_utils) - min(all_utils)) / 10,
+                                     (max(all_utils) - min(all_utils)) / 10)
+            else:
+                util_map = all_utils
+            sig_x = np.unique([self._line_to_struc[line][1].get_sigma_x() for line in self._line_to_struc.keys()]).tolist()
+            if len(sig_x) > 1:
+                sig_x_map = np.arange(min(sig_x), max(sig_x) + (max(sig_x) - min(sig_x)) / 10,
+                                      (max(sig_x) - min(sig_x)) / 10)
+            else:
+                sig_x_map = sig_x
+            sig_y1 = np.unique([self._line_to_struc[line][1].get_sigma_y1() for line in self._line_to_struc.keys()]).tolist()
+            if len(sig_y1) > 1:
+                sig_y1_map = np.arange(min(sig_y1), max(sig_y1) + (max(sig_y1) - min(sig_y1)) / 10,
+                                       (max(sig_y1) - min(sig_y1)) / 10)
+            else:
+                sig_y1_map = sig_y1
+
+            sig_y2 = np.unique([self._line_to_struc[line][1].get_sigma_y2() for line in self._line_to_struc.keys()]).tolist()
+            if len(sig_y2) > 1:
+
+                sig_y2_map = np.arange(min(sig_y2), max(sig_y2) + (max(sig_y2) - min(sig_y2)) / 10,
+                                       (max(sig_y2) - min(sig_y2)) / 10)
+            else:
+                sig_y2_map = sig_y2
+            tau_xy = np.unique([self._line_to_struc[line][1].get_tau_xy() for line in self._line_to_struc.keys()]).tolist()
+            if len(tau_xy) > 1:
+                tau_xy_map = np.arange(min(tau_xy), max(tau_xy) + (max(tau_xy) - min(tau_xy)) / 10,
+                                       (max(tau_xy) - min(tau_xy)) / 10)
+            else:
+                tau_xy_map = tau_xy
+
+            structure_type = [self._line_to_struc[line][1].get_structure_type() for line in
+                              self._line_to_struc.keys()]
+
+            return_dict['color code'] = {'thickest plate': thickest_plate, 'thickness map': thk_map,
+                                         'all thicknesses': all_thicknesses,
+                                         'highest pressure': highest_pressure, 'lowest pressure': lowest_pressure,
+                                         'pressure map': press_map, 'all pressures':all_pressures,
+                                         'all utilizations': all_utils, 'utilization map': util_map,
+                                         'max sigma x': max(sig_x), 'min sigma x': min(sig_x), 'sigma x map': sig_x_map,
+                                         'max sigma y1': max(sig_y1), 'min sigma y1': min(sig_y1),
+                                         'sigma y1 map': sig_y1_map,
+                                         'max sigma y2': max(sig_y2), 'min sigma y2': min(sig_y2),
+                                         'sigma y2 map': sig_y2_map,
+                                         'max tau xy': max(tau_xy), 'min tau xy': min(tau_xy), 'tau xy map': tau_xy_map,
+                                         'structure types map': np.unique(structure_type).tolist(),
+                                         'sections in model': sec_in_model,
+                                         'recorded sections': recorded_sections}
+            line_color_coding = {}
+            cmap_sections = plt.get_cmap('jet')
+            thk_sort_unique = return_dict['color code']['all thicknesses']
+            uf_sort_unique = return_dict['color code']['all utilizations']
+            structure_type_unique = return_dict['color code']['structure types map']
+            for line, line_data in self._line_to_struc.items():
+                line_color_coding[line] = {'plate': matplotlib.colors.rgb2hex(cmap_sections(thk_sort_unique.index(round(line_data[1]
+                                                                              .get_pl_thk(),10))/len(thk_sort_unique))),
+                                           'section': matplotlib.colors.rgb2hex(cmap_sections(sec_in_model[line_data[1]
+                                                                                .get_beam_string()]
+                                                      /len(list(recorded_sections)))),
+                                           'structure type': matplotlib.colors.rgb2hex(
+                                               cmap_sections(structure_type_unique.index(line_data[1].get_structure_type())
+                                                             /len(structure_type_unique))),
+                                           'pressure': 'black' if all_pressures in [[0],[0,1]] else matplotlib.colors.rgb2hex(cmap_sections(
+                                               self.get_highest_pressure(line)['normal']/highest_pressure)),
+                                           'utilization': matplotlib.colors.rgb2hex(cmap_sections(
+                                               max(list(return_dict['utilization'][line].values()))/max(all_utils))),
+                                           'sigma x': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_x()/
+                                                                                              max(sig_x))),
+                                           'sigma y1': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_y1()/
+                                                                                               max(sig_y1))),
+                                           'sigma y2': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_y2()/
+                                                                                               max(sig_y2))),
+                                           'tau xy': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_tau_xy()/
+                                                                                             max(tau_xy)))}
 
 
-        highest_pressure, lowest_pressure = max(all_pressures), min(all_pressures)
-        press_map = [round(val, 1) for val in
-                     np.arange(all_pressures[0], all_pressures[-1],
-                               (all_pressures[-1] - all_pressures[0]) / 10)] + \
-                    [round(all_pressures[-1], 1)]
-
-        all_utils = [max(list(return_dict['utilization'][line].values()))
-                     for line in self._line_to_struc.keys()]
-        util_map = np.arange(min(all_utils), max(all_utils) + (max(all_utils) - min(all_utils)) / 10,
-                             (max(all_utils) - min(all_utils)) / 10)
-
-        sig_x = [self._line_to_struc[line][1].get_sigma_x() for line in self._line_to_struc.keys()]
-        sig_x_map = np.arange(min(sig_x), max(sig_x) + (max(sig_x) - min(sig_x)) / 10,
-                              (max(sig_x) - min(sig_x)) / 10)
-
-        sig_y1 = [self._line_to_struc[line][1].get_sigma_y1() for line in self._line_to_struc.keys()]
-        sig_y1_map = np.arange(min(sig_y1), max(sig_y1) + (max(sig_y1) - min(sig_y1)) / 10,
-                               (max(sig_y1) - min(sig_y1)) / 10)
-
-        sig_y2 = [self._line_to_struc[line][1].get_sigma_y2() for line in self._line_to_struc.keys()]
-        sig_y2_map = np.arange(min(sig_y2), max(sig_y2) + (max(sig_y2) - min(sig_y2)) / 10,
-                               (max(sig_y2) - min(sig_y2)) / 10)
-
-        tau_xy = [self._line_to_struc[line][1].get_tau_xy() for line in self._line_to_struc.keys()]
-        tau_xy_map = np.arange(min(tau_xy), max(tau_xy) + (max(tau_xy) - min(tau_xy)) / 10,
-                               (max(tau_xy) - min(tau_xy)) / 10)
-
-        structure_type = [self._line_to_struc[line][1].get_structure_type() for line in
-                          self._line_to_struc.keys()]
-
-        return_dict['color code'] = {'thickest plate': thickest_plate, 'thickness map': thk_map,
-                                     'all thicknesses': all_thicknesses,
-                                     'highest pressure': highest_pressure, 'lowest pressure': lowest_pressure,
-                                     'pressure map': press_map, 'all pressures':all_pressures,
-                                     'all utilizations': all_utils, 'utilization map': util_map,
-                                     'max sigma x': max(sig_x), 'min sigma x': min(sig_x), 'sigma x map': sig_x_map,
-                                     'max sigma y1': max(sig_y1), 'min sigma y1': min(sig_y1),
-                                     'sigma y1 map': sig_y1_map,
-                                     'max sigma y2': max(sig_y2), 'min sigma y2': min(sig_y2),
-                                     'sigma y2 map': sig_y2_map,
-                                     'max tau xy': max(tau_xy), 'min tau xy': min(tau_xy), 'tau xy map': tau_xy_map,
-                                     'structure types map': set(structure_type),  'sections in model': sec_in_model,
-                                     'recorded sections': recorded_sections}
-        line_color_coding = {}
-        cmap_sections = plt.get_cmap('jet')
-        for line, line_data in self._line_to_struc.items():
-            line_color_coding[line] = {'plate': matplotlib.colors.rgb2hex(cmap_sections(line_data[1]
-                                                                          .get_pl_thk()/max(all_thicknesses))),
-                                       'section': matplotlib.colors.rgb2hex(cmap_sections(sec_in_model[line_data[1]
-                                                                            .get_beam_string()]
-                                                  /len(list(recorded_sections)))),
-                                       'structure type': matplotlib.colors.rgb2hex(cmap_sections(list(set(structure_type))
-                                                                                   .index(line_data[1]
-                                                                                         .get_structure_type())/
-                                                         len(list(set(structure_type))))),
-                                       'pressure': matplotlib.colors.rgb2hex(cmap_sections(
-                                           self.get_highest_pressure(line)['normal']/highest_pressure)),
-                                       'utilization': matplotlib.colors.rgb2hex(cmap_sections(
-                                           max(list(return_dict['utilization'][line].values()))/max(all_utils))),
-                                       'sigma x': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_x()/max(sig_x))),
-                                       'sigma y1': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_y1()/max(sig_y1))),
-                                       'sigma y2': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_y2()/max(sig_y2))),
-                                       'tau xy': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_tau_xy()/max(tau_xy)))}
-
-
-            return_dict['color code']['lines'] = line_color_coding
+                return_dict['color code']['lines'] = line_color_coding
         return return_dict
 
     def draw_canvas(self, state = None, event = None):
@@ -1452,8 +1497,9 @@ class Application():
 
         self._main_canvas.delete('all')
         color = 'black' #by default
-        self._main_canvas.create_line(self._canvas_draw_origo[0], 0, self._canvas_draw_origo[0], self._canvas_dim[1],
-                                     stipple='gray50')
+
+        self._main_canvas.create_line(self._canvas_draw_origo[0], 0, self._canvas_draw_origo[0], self._canvas_dim[1]+50,
+                                     stipple= 'gray50')
         self._main_canvas.create_line(0, self._canvas_draw_origo[1], self._canvas_dim[0], self._canvas_draw_origo[1],
                                      stipple='gray50')
         self._main_canvas.create_text(self._canvas_draw_origo[0] - 30*self._global_shrink,
@@ -1469,7 +1515,7 @@ class Application():
 
         # Drawing shortcut information if selected.
         if self._new_shortcut_backdrop.get() == True:
-            self._main_canvas.create_text(800, 80, text = self._shortcut_text, font=self._text_size["Text 8"],
+            self._main_canvas.create_text(860, 80, text = self._shortcut_text, font=self._text_size["Text 8"],
                                           fill = 'black')
 
         # drawing the point dictionary
@@ -1517,8 +1563,8 @@ class Application():
                         color = 'red' if 'red' in state['colors'][line].values() else 'green'
                     except (KeyError, TypeError):
                         color = 'black'
-                elif chk_box_active and state != None:
-                    color, report_return = self.color_code_line(state, line)
+                elif chk_box_active and state != None and self._line_to_struc != {}:
+                    color = self.color_code_line(state, line)
                 else:
                     color = 'black'
 
@@ -1587,20 +1633,23 @@ class Application():
 
         elif self._new_colorcode_plates.get() == True and self._line_to_struc != {}:
 
-            all_thicknesses = cc_state['all thicknesses']
+            all_thicknesses = np.unique(cc_state['all thicknesses']).tolist()
             thickest_plate = cc_state['thickest plate']
-            for idx, thk in enumerate(set(all_thicknesses)):
+            for idx, thk in enumerate(np.unique(all_thicknesses).tolist()):
                 self._main_canvas.create_text(11, 111+20*idx, text=str('Plate '+ str(thk*1000) + ' mm'),
                                               font=self._text_size["Text 10 bold"],
                                               fill='black',
                                               anchor="nw")
                 self._main_canvas.create_text(10, 110+20*idx, text=str('Plate '+ str(thk*1000) + ' mm'),
                                               font=self._text_size["Text 10 bold"],
-                                              fill=matplotlib.colors.rgb2hex(cmap_sections(thk/thickest_plate)),
+                                              fill=matplotlib.colors.rgb2hex(cmap_sections(all_thicknesses.index(thk)
+                                                                                           /len(all_thicknesses))),
                                               anchor="nw")
+
         elif self._new_colorcode_pressure.get() == True and self._line_to_struc != {}:
             highest_pressure = cc_state['highest pressure']
             press_map = cc_state['pressure map']
+
             for idx, press in enumerate(press_map):
                 self._main_canvas.create_text(11, 111+20*idx, text=str(str(press) + ' Pa'),
                                               font=self._text_size["Text 10 bold"],
@@ -1612,6 +1661,7 @@ class Application():
                                               anchor="nw")
 
         elif self._new_colorcode_utilization.get() == True and self._line_to_struc != {}:
+            all_utils = cc_state['all utilizations']
             for idx, uf in enumerate(cc_state['utilization map']):
                 self._main_canvas.create_text(11, 111 + 20 * idx, text=str('UF = ' +str(round(uf,1))),
                                               font=self._text_size["Text 10 bold"],
@@ -1619,7 +1669,7 @@ class Application():
                                               anchor="nw")
                 self._main_canvas.create_text(10, 110 + 20 * idx, text=str('UF = ' +str(round(uf,1))),
                                               font=self._text_size["Text 10 bold"],
-                                              fill=matplotlib.colors.rgb2hex(cmap_sections(uf)),
+                                              fill=matplotlib.colors.rgb2hex(cmap_sections(uf/max(all_utils))),
                                               anchor="nw")
         elif self._new_colorcode_sigmax.get() == True:
             for idx, value in enumerate(cc_state['sigma x map']):
@@ -1682,10 +1732,10 @@ class Application():
     def color_code_line(self, state, line):
 
         cc_state = state['color code']
-        cmap_sections = plt.get_cmap('jet')
+        if line not in state['color code']['lines'].keys():
+            return 'black'
         if self._new_colorcode_beams.get() == True and line in list(self._line_to_struc.keys()):
             color = state['color code']['lines'][line]['section']
-
 
         elif self._new_colorcode_plates.get() == True and line in list(self._line_to_struc.keys()):
             color = state['color code']['lines'][line]['plate']
@@ -1696,10 +1746,8 @@ class Application():
             else:
                 color = state['color code']['lines'][line]['pressure']
 
-
         elif self._new_colorcode_utilization.get() == True:
             color = state['color code']['lines'][line]['utilization']
-
 
         elif self._new_colorcode_sigmax.get() == True:
             color = state['color code']['lines'][line]['sigma x']
@@ -1715,11 +1763,10 @@ class Application():
 
         elif self._new_colorcode_structure_type.get() == True:
             color = state['color code']['lines'][line]['structure type']
-
         else:
-            color = 'black', None
+            color = 'black'
 
-        return color, None
+        return color
 
     def draw_prop(self):
         '''
@@ -1971,7 +2018,6 @@ class Application():
         Button is pressed to generate a report of the current structure.
         :return:
         '''
-
 
         if not autosave:
             save_file = filedialog.asksaveasfile(mode="w", defaultextension=".pdf")
@@ -2433,6 +2479,14 @@ class Application():
                     self._line_point_to_point_string.pop(self._line_point_to_point_string.index(point_str))
                     self._line_point_to_point_string.pop(self._line_point_to_point_string.index(point_str_rev))
                     self._active_line = ''
+
+                    # Removing from load dict
+                    if self._load_dict != {}:
+                        loads = list(self._load_dict.keys())
+                        for load in loads:
+                            if line in self._load_dict[load][1]:
+                                self._load_dict[load][1].pop(self._load_dict[load][1].index(line))
+
 
 
                 self.update_frame()
@@ -3363,9 +3417,9 @@ class Application():
         :return:
         '''
 
-        if [self.get_highest_pressure(line)['normal'] for line in self._line_to_struc.keys()] == []:
-            messagebox.showinfo(title='Missing something', message='Missing properties/loads etc.')
-            return
+        # if [self.get_highest_pressure(line)['normal'] for line in self._line_to_struc.keys()] == []:
+        #     # messagebox.showinfo(title='Missing something', message='Missing properties/loads etc.')
+        #     # return
 
         try:
             self.get_highest_pressure(self._active_line)['normal']
@@ -3475,14 +3529,18 @@ class Application():
                 self._line_to_struc[key][1].need_recalc = True  # All lines need recalculations.
 
             for main_line in self._line_dict.keys():
-                for object, load_line in self._load_dict.values():
-                    if main_line in load_line:
-                        self._line_to_struc[main_line][3].append(object)
+                for load_obj, load_line in self._load_dict.values():
+                    # print(load_line, self._line_to_struc.keys())
+                    # if load_line not in self._line_to_struc.keys():
+                    #     continue
+                    if main_line in load_line and main_line in self._line_to_struc.keys():
+                        self._line_to_struc[main_line][3].append(load_obj)
 
-        # Displaying the loads
-        self.update_frame()
         # Storing the the returned data to temporary variable.
         self.__returned_load_data = [returned_loads, counter, load_comb_dict]
+        # Displaying the loads
+
+        self.update_frame()
 
     def on_close_opt_window(self,returned_object):
         '''

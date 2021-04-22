@@ -344,18 +344,6 @@ class LetterMaker(object):
 
             elif draw_type == 'plate':
                 self.c.setStrokeColor(all_line_data['color code']['lines'][line]['plate'])
-                if self.data._line_to_struc[line][0].get_pl_thk() not in drawed_data:
-                    textobject = self.c.beginText()
-                    if 400 - 20 * idx > 20:
-                        textobject.setTextOrigin(50, 400 - 20 * idx)
-                    else:
-                        textobject.setTextOrigin(300, 400 - 20 * idx)
-                    textobject.setFillColor(all_line_data['color code']['lines'][line]['plate'])
-                    textobject.setFont("Helvetica-Oblique", 10)
-                    textobject.textLine('Plate ' + str(self.data._line_to_struc[line][0].get_pl_thk()*1000) + ' mm')
-                    self.c.drawText(textobject)
-                    drawed_data.append(self.data._line_to_struc[line][0].get_pl_thk())
-                    idx += 1
             elif draw_type == 'pressure':
                 self.c.setStrokeColor(all_line_data['color code']['lines'][line]['pressure'])
             elif draw_type == 'utilization':
@@ -402,6 +390,20 @@ class LetterMaker(object):
             textobject.setFont("Helvetica-Oblique", 15)
             textobject.textLine('Model plate thicknesses')
             self.c.drawText(textobject)
+            all_thicknesses =self.data.get_color_and_calc_state()['color code']['all thicknesses']
+            for idx, thk in enumerate(all_thicknesses):
+                textobject = self.c.beginText()
+                if 400 - 20 * idx > 20:
+                    textobject.setTextOrigin(50, 400 - 20 * idx)
+                else:
+                    textobject.setTextOrigin(300, 400 - 20 * idx)
+
+                textobject.setFillColor(matplotlib.colors.rgb2hex(cmap_sections(all_thicknesses.index(thk)/
+                                                                                len(all_thicknesses))))
+                textobject.setFont("Helvetica-Oblique", 10)
+                textobject.textLine(str(thk*1000) + ' mm')
+                self.c.drawText(textobject)
+
 
         elif draw_type == 'pressure':
             textobject = self.c.beginText()
