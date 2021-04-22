@@ -476,7 +476,6 @@ class LetterMaker(object):
             textobject.setFillColor('black')
             textobject.textLine('Global stresses - sigma x')
             self.c.drawText(textobject)
-            print(all_line_data['color code']['sigma x map'])
             for idx, value in enumerate(list(all_line_data['color code']['sigma x map'])):
                 textobject = self.c.beginText()
                 if 400 - 20 * idx > 20:
