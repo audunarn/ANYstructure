@@ -43,7 +43,7 @@ class Application():
         parent.wm_title('| ANYstructure |')
         self._parent = parent
         parent.protocol("WM_DELETE_WINDOW", self.close_main_window)
-
+        parent.bind("<Configure>", self.resize)
         # GLOBAL SHRINK NOT USED. Relative x/y used instead.
         if parent.winfo_screenwidth() < 2000:
             self._global_shrink = 1
@@ -918,6 +918,9 @@ class Application():
 
         self.update_frame()
 
+    def resize(self, event):
+        pass
+
     def gui_load_combinations(self,event):
         '''
         Initsializing and updating gui for load combinations.
@@ -1482,6 +1485,7 @@ class Application():
 
         self._main_canvas.delete('all')
         color = 'black' #by default
+
         self._main_canvas.create_line(self._canvas_draw_origo[0], 0, self._canvas_draw_origo[0], self._canvas_dim[1]+50,
                                      stipple= 'gray50')
         self._main_canvas.create_line(0, self._canvas_draw_origo[1], self._canvas_dim[0], self._canvas_draw_origo[1],
