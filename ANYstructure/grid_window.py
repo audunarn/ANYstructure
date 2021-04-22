@@ -72,7 +72,8 @@ class CreateGridWindow():
             area_mult = self._parent_dimensions[0]/(10*self._parent_dimensions[0]) * \
                         self._parent_dimensions[1]/(10*self._parent_dimensions[1])
             plt_txt = list()
-            for num in range(tank_count):
+            tank_iter = [] if tank_count == None else range(tank_count)
+            for num in tank_iter:
                 if self._bfs_search_data is not None:
                     tank_area = comp_cell_count[num + 2] * area_mult
                     plt_txt.append('Comp' + str(num + 2) + ' Approx. area: ' + str(round(tank_area,1)))
@@ -262,6 +263,8 @@ class CreateGridWindow():
         comp_sum = np.sum([data for data in barrier_comp_count.values()])
         for comp_no, data in compartments.items():
             barrier_ratio_of_total = barrier_comp_count[comp_no] / comp_sum
+            if np.isnan(barriers_where[0].shape[0] * barrier_ratio_of_total):
+                continue
             cells_modified[comp_no] = data[0] + int(barriers_where[0].shape[0] * barrier_ratio_of_total)
 
         to_return = {'compartments': compartments, 'grids':all_grids, 'modified_cell_count': cells_modified}

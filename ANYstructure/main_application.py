@@ -1311,7 +1311,8 @@ class Application():
                 return_dict['pressure_uls'][current_line] = design_pressure
                 return_dict['pressure_fls'][current_line] = {'p_int': p_int, 'p_ext': p_ext}
                 return_dict['section_modulus'][current_line] = {'sec_mod': sec_mod, 'min_sec_mod': min_sec_mod}
-                #print(current_line, {'sec_mod': sec_mod, 'min_sec_mod': min_sec_mod})
+
+
                 return_dict['shear_area'][current_line] = {'shear_area': shear_area, 'min_shear_area': min_shear}
                 return_dict['thickness'][current_line] = {'thk': obj_scnt_calc.get_plate_thk(), 'min_thk': min_thk}
                 return_dict['struc_obj'][current_line] = obj_structure
@@ -1449,7 +1450,6 @@ class Application():
             uf_sort_unique = return_dict['color code']['all utilizations']
             structure_type_unique = return_dict['color code']['structure types map']
             for line, line_data in self._line_to_struc.items():
-
                 line_color_coding[line] = {'plate': matplotlib.colors.rgb2hex(cmap_sections(thk_sort_unique.index(round(line_data[1]
                                                                               .get_pl_thk(),10))/len(thk_sort_unique))),
                                            'section': matplotlib.colors.rgb2hex(cmap_sections(sec_in_model[line_data[1]
@@ -1458,7 +1458,7 @@ class Application():
                                            'structure type': matplotlib.colors.rgb2hex(
                                                cmap_sections(structure_type_unique.index(line_data[1].get_structure_type())
                                                              /len(structure_type_unique))),
-                                           'pressure': 'black' if all_pressures == [0,1] else matplotlib.colors.rgb2hex(cmap_sections(
+                                           'pressure': 'black' if all_pressures in [[0],[0,1]] else matplotlib.colors.rgb2hex(cmap_sections(
                                                self.get_highest_pressure(line)['normal']/highest_pressure)),
                                            'utilization': matplotlib.colors.rgb2hex(cmap_sections(
                                                max(list(return_dict['utilization'][line].values()))/max(all_utils))),
@@ -2464,6 +2464,14 @@ class Application():
                     self._line_point_to_point_string.pop(self._line_point_to_point_string.index(point_str_rev))
                     self._active_line = ''
 
+                    # Removing from load dict
+                    if self._load_dict != {}:
+                        loads = list(self._load_dict.keys())
+                        for load in loads:
+                            if line in self._load_dict[load][1]:
+                                self._load_dict[load][1].pop(self._load_dict[load][1].index(line))
+
+
 
                 self.update_frame()
             else:
@@ -3393,9 +3401,9 @@ class Application():
         :return:
         '''
 
-        if [self.get_highest_pressure(line)['normal'] for line in self._line_to_struc.keys()] == []:
-            messagebox.showinfo(title='Missing something', message='Missing properties/loads etc.')
-            return
+        # if [self.get_highest_pressure(line)['normal'] for line in self._line_to_struc.keys()] == []:
+        #     # messagebox.showinfo(title='Missing something', message='Missing properties/loads etc.')
+        #     # return
 
         try:
             self.get_highest_pressure(self._active_line)['normal']
@@ -3506,14 +3514,16 @@ class Application():
 
             for main_line in self._line_dict.keys():
                 for load_obj, load_line in self._load_dict.values():
-                    if load_line not in self._line_to_struc.keys():
-                        continue
-                    if main_line in load_line:
+                    # print(load_line, self._line_to_struc.keys())
+                    # if load_line not in self._line_to_struc.keys():
+                    #     continue
+                    if main_line in load_line and main_line in self._line_to_struc.keys():
                         self._line_to_struc[main_line][3].append(load_obj)
 
         # Storing the the returned data to temporary variable.
         self.__returned_load_data = [returned_loads, counter, load_comb_dict]
         # Displaying the loads
+
         self.update_frame()
 
     def on_close_opt_window(self,returned_object):
