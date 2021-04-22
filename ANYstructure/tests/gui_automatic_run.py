@@ -7,7 +7,6 @@ multiprocessing.freeze_support()
 errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
 root = tk.Tk()
 my_app = main_application.Application(root)
-
 my_dict = my_app.__dict__
 print(my_dict)
 my_dict["_new_field_len"].set(4)

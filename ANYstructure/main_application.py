@@ -39,6 +39,7 @@ class Application():
         The GUI is general initiated in the method gui_init.
         :param parent:
         '''
+
         super(Application, self).__init__()
         parent.wm_title('| ANYstructure |')
         self._parent = parent
@@ -62,7 +63,6 @@ class Application():
         self._main_fr = tk.Frame(parent,
                                  background=self._general_color)
         self._main_fr.place(in_=parent, relwidth=1, relheight = 1)
-
         # Top open/save/new
         menu = tk.Menu(parent)
         parent.config(menu=menu)
@@ -129,18 +129,20 @@ class Application():
         self._previous_drag_mouse = list(self._canvas_draw_origo)
 
         # Setting the fonts for all items in the application.
-        self._text_size = {'Text 14 bold': 'Verdana '+str(int(14*self._global_shrink))+' bold',
-                           'Text 16 bold': 'Verdana ' + str(int(16 * self._global_shrink)) + ' bold',
-                           'Text 18 bold': 'Verdana ' + str(int(18 * self._global_shrink)) + ' bold',
-                           'Text 12 bold': 'Verdana ' + str(int(12 * self._global_shrink)) + ' bold',
-                           'Text 10 bold': 'Verdana '+str(int(10*self._global_shrink))+' bold',
-                           'Text 9 bold': 'Verdana ' + str(int(9 * self._global_shrink)) + ' bold',
-                           'Text 8 bold': 'Verdana ' + str(int(8 * self._global_shrink)) + ' bold',
-                           'Text 8': 'Verdana ' + str(int(8 * self._global_shrink)),
-                           'Text 9': 'Verdana ' + str(int(8 * self._global_shrink)),
-                           'Text 7': 'Verdana ' + str(int(7 * self._global_shrink)),
-                           'Text 10': 'Verdana ' + str(int(10 * self._global_shrink)),
-                           'Text 7 bold': 'Verdana ' + str(int(7 * self._global_shrink)) + ' bold'}
+
+        self.text_scale = 1
+        self._text_size = {'Text 14 bold': 'Verdana '+str(int(14*self.text_scale))+' bold',
+                           'Text 16 bold': 'Verdana ' + str(int(16 * self.text_scale)) + ' bold',
+                           'Text 18 bold': 'Verdana ' + str(int(18 * self.text_scale)) + ' bold',
+                           'Text 12 bold': 'Verdana ' + str(int(12 * self.text_scale)) + ' bold',
+                           'Text 10 bold': 'Verdana '+str(int(10*self.text_scale))+' bold',
+                           'Text 9 bold': 'Verdana ' + str(int(9 * self.text_scale)) + ' bold',
+                           'Text 8 bold': 'Verdana ' + str(int(8 * self.text_scale)) + ' bold',
+                           'Text 8': 'Verdana ' + str(int(8 * self.text_scale)),
+                           'Text 9': 'Verdana ' + str(int(8 * self.text_scale)),
+                           'Text 7': 'Verdana ' + str(int(7 * self.text_scale)),
+                           'Text 10': 'Verdana ' + str(int(10 * self.text_scale)),
+                           'Text 7 bold': 'Verdana ' + str(int(7 * self.text_scale)) + ' bold'}
 
         self._canvas_scale = 20 # Used for slider and can change
         self._base_scale_factor = 10 # Used for grid and will not change, 10 is default
@@ -257,15 +259,18 @@ class Application():
         tk.Entry(self._main_fr, textvariable=self._new_point_y, width = int(ent_width * self._global_shrink),
                  bg = self._entry_color, fg = self._entry_text_color)\
             .place(relx=ent_x, rely=point_start + delta_y)
-        tk.Button(self._main_fr, text='Add point (coords)', command=self.new_point, width = 18,
+        tk.Button(self._main_fr, text='Add point (coords)', command=self.new_point,
                   bg = self._button_bg_color, fg = self._button_fg_color,
-                  font = self._text_size['Text 9 bold']).place(relx=ent_x + 2 * delta_x, rely=point_start-1.6*delta_y)
-        tk.Button(self._main_fr, text='Copy point (relative)', command=self.copy_point, width = 18,
+                  font = self._text_size['Text 9 bold']).place(relx=ent_x + 2 * delta_x, rely=point_start-1.6*delta_y,
+                                                               relwidth = 0.08)
+        tk.Button(self._main_fr, text='Copy point (relative)', command=self.copy_point,
                   bg = self._button_bg_color, fg = self._button_fg_color,
-                  font = self._text_size['Text 9 bold']).place(relx=ent_x + 2 * delta_x, rely=point_start-0.3*delta_y)
-        tk.Button(self._main_fr, text='Move point (relative)', command=self.move_point, width = 18,
+                  font = self._text_size['Text 9 bold']).place(relx=ent_x + 2 * delta_x, rely=point_start-0.3*delta_y,
+                                                               relwidth = 0.08)
+        tk.Button(self._main_fr, text='Move point (relative)', command=self.move_point,
                   bg = self._button_bg_color, fg = self._button_fg_color,
-                  font = self._text_size['Text 9 bold']).place(relx=ent_x + 2 * delta_x, rely=point_start+1*delta_y)
+                  font = self._text_size['Text 9 bold']).place(relx=ent_x + 2 * delta_x, rely=point_start+1*delta_y,
+                                                               relwidth = 0.08)
 
         # --- line input/output ---
         self._new_line_p1 = tk.IntVar()
@@ -330,9 +335,9 @@ class Application():
         tk.Entry(self._main_fr, textvariable=self._new_line_p2, width=int(ent_width * self._global_shrink),
                  bg = self._entry_color, fg = self._entry_text_color)\
             .place(relx=ent_x, rely=line_start + delta_y)
-        tk.Button(self._main_fr, text='Add line', command=self.new_line, width = 10,
+        tk.Button(self._main_fr, text='Add line', command=self.new_line,
                   bg = self._button_bg_color, fg = self._button_fg_color,
-                  font = self._text_size['Text 9 bold']).place(relx=ent_x+2*delta_x, rely=line_start)
+                  font = self._text_size['Text 9 bold']).place(relx=ent_x+2*delta_x, rely=line_start,relwidth = 0.05)
 
         # --- delete points and lines ---
         self._new_delete_line = tk.IntVar()
@@ -358,14 +363,17 @@ class Application():
 
         tk.Button(self._main_fr, text='Delete line',bg = self._button_bg_color, fg = self._button_fg_color,
                                          font=self._text_size['Text 9 bold'],command=self.delete_line,
-                                         width = int(11*self._global_shrink)).place(relx=ent_x+delta_x*2, rely=del_start)
+                                         ).place(relx=ent_x+delta_x*2, rely=del_start,
+                                                                                    relwidth = 0.05)
         tk.Button(self._main_fr, text='Delete prop.',bg = self._button_bg_color, fg = self._button_fg_color,
                                          font=self._text_size['Text 9 bold'],command=self.delete_properties_pressed,
-                                         width = int(11*self._global_shrink)).place(relx=ent_x+delta_x*4, rely=del_start)
+                                         ).place(relx=ent_x+delta_x*4, rely=del_start,
+                                                                                    relwidth = 0.05)
 
         tk.Button(self._main_fr, text='Delete point',bg = self._button_bg_color, fg = self._button_fg_color,
                                           font=self._text_size['Text 9 bold'],command=self.delete_point,
-                                          width = int(11*self._global_shrink)).place(relx=ent_x+2*delta_x, rely=del_start + delta_y)
+                                          ).place(relx=ent_x+2*delta_x, rely=del_start + delta_y,
+                                                                                     relwidth = 0.05)
 
         # --- structure type information ---
         prop_vert_start = 0.296296296
@@ -400,7 +408,7 @@ class Application():
 
         tk.Button(self._main_fr,text='Show structure types',command=show_message,
                   bg = self._button_bg_color, fg = self._button_fg_color, font=self._text_size['Text 8'])\
-            .place(relx=types_start,rely=prop_vert_start+13*delta_y)
+            .place(relx=types_start,rely=prop_vert_start+13*delta_y,relwidth = 0.1)
 
         self._zstar_chk = tk.Checkbutton(self._main_fr, variable=self._new_zstar_optimization)\
             .place(relx=types_start,rely=prop_vert_start+14.*delta_y)
@@ -421,9 +429,9 @@ class Application():
             .place(relx=types_start, rely=prop_vert_start + 9.5 * delta_y)
         self.add_stucture = tk.Button(self._main_fr, text='Add structure to line', command=self.new_structure,
                                       font = self._text_size['Text 10 bold'],
-                                      bg = self._button_bg_color, fg = self._button_fg_color,
-                                      width = 20, height = 3)
-        self.add_stucture.place(relx=types_start+ delta_x*5.7, rely=prop_vert_start+15*delta_y)
+                                      bg = self._button_bg_color, fg = self._button_fg_color)
+        self.add_stucture.place(relx=types_start+ delta_x*5.7, rely=prop_vert_start+15*delta_y, relwidth = 0.1,
+                                relheight = 0.04)
 
         # --- main variable to define the structural properties ---
         self._new_material = tk.DoubleVar()
@@ -637,10 +645,11 @@ class Application():
             stf_button = tk.Button(self._main_fr,image = photo,command=self.on_open_structure_window,
                                    bg = self._button_bg_color, fg = self._button_fg_color,)
             stf_button.image = photo
-            stf_button.place(relx=types_start,rely=prop_vert_start)
+            stf_button.place(relx=types_start,rely=prop_vert_start,relheight = 0.062, relwidth = 0.042)
         except TclError:
             tk.Button(self._main_fr, text='STF.', command=self.on_open_structure_window,
-                      bg = self._button_bg_color, fg = self._button_fg_color).place(relx=types_start,rely=prop_vert_start)
+                      bg = self._button_bg_color, fg = self._button_fg_color)\
+                .place(relx=types_start,rely=prop_vert_start,relheight = 0.062, relwidth = 0.042)
 
         try:
             img_file_name = 'img_stress_button.gif'
@@ -652,11 +661,11 @@ class Application():
             stress_button = tk.Button(self._main_fr,image = photo,command=self.on_open_stresses_window,
                                       bg = self._button_bg_color, fg = self._button_fg_color)
             stress_button.image = photo
-            stress_button.place(relx=10,rely=prop_vert_start+3*delta_y)
+            stress_button.place(relx=types_start,rely=prop_vert_start+3*delta_y,relheight = 0.062, relwidth = 0.042)
         except TclError:
             tk.Button(self._main_fr, text='STRESS', command=self.on_open_stresses_window,
                       bg = self._button_bg_color, fg = self._button_fg_color)\
-                .place(relx=10,rely=prop_vert_start+3*delta_y)
+                .place(relx=types_start,rely=prop_vert_start+3*delta_y,relheight = 0.062, relwidth = 0.042)
 
         try:
             img_file_name = 'fls_button.gif'
@@ -667,11 +676,11 @@ class Application():
             photo = tk.PhotoImage(file=file_path)
             fls_button = tk.Button(self._main_fr,image = photo,command=self.on_open_fatigue_window)
             fls_button.image = photo
-            fls_button.place(relx=types_start,rely=prop_vert_start+6*delta_y)
+            fls_button.place(relx=types_start,rely=prop_vert_start+6*delta_y,relheight = 0.062, relwidth = 0.042)
         except TclError:
             tk.Button(self._main_fr, text='FLS', command=self.on_open_fatigue_window,
                       bg = self._button_bg_color, fg = self._button_fg_color,)\
-                .place(relx=types_start,rely=prop_vert_start+6*delta_y)
+                .place(relx=types_start,rely=prop_vert_start+6*delta_y,relheight = 0.062, relwidth = 0.042)
 
         # --- tank load input and information ---
         load_vert_start = frame_horizontal -0.03
@@ -693,12 +702,12 @@ class Application():
 
         tk.Button(self._main_fr, text="Set compartment\n""properties.",command = self.update_tank,
                                             font=self._text_size['Text 9 bold'],
-                  bg = self._button_bg_color, fg = self._button_fg_color, width = 15)\
-            .place(relx=ent_x+delta_x*3, rely=load_vert_start + delta_y * 6.5)
+                  bg = self._button_bg_color, fg = self._button_fg_color)\
+            .place(relx=ent_x+delta_x*3, rely=load_vert_start + delta_y * 6.5, relwidth = 0.08)
 
         tk.Button(self._main_fr, text="Delete all tanks", command=self.delete_all_tanks,
-                  font=self._text_size['Text 9 bold'],bg = self._button_bg_color, fg = self._button_fg_color,
-                  width = 15).place(relx=ent_x+delta_x*3, rely=load_vert_start + delta_y * 8.5)
+                  font=self._text_size['Text 9 bold'],bg = self._button_bg_color, fg = self._button_fg_color
+                  ).place(relx=ent_x+delta_x*3, rely=load_vert_start + delta_y * 8.5, relwidth = 0.08)
         self._new_content_type = tk.StringVar()
 
         self._ent_content_type = tk.OptionMenu(self._main_fr, self._new_content_type, *list(self._tank_options.keys()),
@@ -759,17 +768,18 @@ class Application():
 
             self._int_button = tk.Button(self._main_fr,image = photo,command=self.grid_find_tanks)
             self._int_button.image = photo
-            self._int_button.place(relx=types_start, rely=load_vert_start+1.5*delta_y)
+            self._int_button.place(relx=types_start, rely=load_vert_start+1.5*delta_y,
+                                   relheight = 0.044, relwidth = 0.12)
         except TclError:
             tk.Button(self._main_fr, text='New tanks - start search \n'
                                   'to find compartments', command=self.grid_find_tanks,
                       bg = self._button_bg_color, fg = self._button_fg_color, font=self._text_size['Text 8 bold']) \
-                .place(relx=types_start, rely=load_vert_start + 0 * delta_y)
+                .place(relx=types_start, rely=load_vert_start + 0 * delta_y, relheight = 0.044, relwidth = 0.12)
 
         show_compartment = tk.Button(self._main_fr, text='Display current\n compartments', command=self.grid_display_tanks,
                                   bg = self._button_bg_color, fg = self._button_fg_color,
-                                     font=self._text_size['Text 9 bold'], width = 15)
-        show_compartment.place(relx=ent_x+delta_x*3, rely=load_vert_start + delta_y * 4.5)
+                                     font=self._text_size['Text 9 bold'])
+        show_compartment.place(relx=ent_x+delta_x*3, rely=load_vert_start + delta_y * 4.5, relwidth = 0.08)
 
         try:
 
@@ -783,12 +793,13 @@ class Application():
             self._ext_button = tk.Button(self._main_fr,image=photo, command = self.on_show_loads,
                                          bg = self._button_bg_color, fg = self._button_fg_color)
             self._ext_button.image = photo
-            self._ext_button.place(relx=ent_x+delta_x*1.5, rely=load_vert_start+1.5*delta_y)
+            self._ext_button.place(relx=ent_x+delta_x*1.5, rely=load_vert_start+1.5*delta_y,
+                                   relheight = 0.044, relwidth = 0.11)
         except TclError:
             tk.Button(self._main_fr, text='New external load window \nsea - static/dynamic',
                       command=self.on_show_loads, bg = self._button_bg_color, fg = self._button_fg_color,
                       font=self._text_size['Text 8 bold'])\
-                .place(relx=ent_x+delta_x*2, rely=load_vert_start+0*delta_y)
+                .place(relx=ent_x+delta_x*2, rely=load_vert_start+0*delta_y, relheight = 0.044, relwidth = 0.11)
 
         lc_x, lc_x_delta, lc_y, lc_y_delta = 0.786458333, 0.015625, 0.12037037, 0.023148148
 
@@ -820,7 +831,8 @@ class Application():
             .place(relx=lc_x + delta_x*4.2, rely=lc_y - 2 * lc_y_delta)
         tk.Button(self._main_fr, text = 'Set\naccelerations', command = self.create_accelerations,
                   font = self._text_size['Text 8 bold'],
-                  bg = self._button_bg_color, fg = self._button_fg_color).place(relx=lc_x + delta_x*6, rely=lc_y - 3 * lc_y_delta)
+                  bg = self._button_bg_color, fg = self._button_fg_color)\
+            .place(relx=lc_x + delta_x*6, rely=lc_y - 3 * lc_y_delta)
 
         # --- checkbuttons and labels ---
         self._dnv_a_chk,self._dnv_b_chk  = tk.IntVar(),tk.IntVar()
@@ -878,7 +890,7 @@ class Application():
             opt_button = tk.Button(self._main_fr,image=photo, command = self.on_optimize,
                                    bg = self._button_bg_color, fg = self._button_fg_color)
             opt_button.image = photo
-            opt_button.place(relx=lc_x, rely=lc_y - 6 * lc_y_delta)
+            opt_button.place(relx=lc_x, rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.095)
         except TclError:
             tk.Button(self._main_fr, text='Optimize', command=self.on_optimize_multiple,
                       bg = self._button_bg_color, fg = self._button_fg_color)\
@@ -893,28 +905,28 @@ class Application():
             opt_button_mult = tk.Button(self._main_fr,image=photo, command = self.on_optimize_multiple,
                                         bg = self._button_bg_color, fg = self._button_fg_color)
             opt_button_mult.image = photo
-            opt_button_mult.place(relx=lc_x+delta_x*4, rely=lc_y - 6 * lc_y_delta)
+            opt_button_mult.place(relx=lc_x+delta_x*3.75, rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.065)
         except TclError:
             tk.Button(self._main_fr, text='MultiOpt', command=self.on_optimize_multiple,
                       bg = self._button_bg_color, fg = self._button_fg_color).place(relx=lc_x + delta_x*7,
                                                                                                rely=lc_y - 6 * lc_y_delta)
 
         tk.Button(self._main_fr, text='SPAN', command=self.on_geometry_optimize,
-                 font = self._text_size['Text 14 bold'], height = 1,
+                 font = self._text_size['Text 14 bold'],
                   bg = self._button_bg_color, fg = self._button_fg_color)\
-           .place(relx=lc_x + delta_x * 6.7,rely=lc_y - 6 * lc_y_delta)
+           .place(relx=lc_x + delta_x * 6.4,rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.04)
 
         # Load information button
         tk.Button(self._main_fr, text='Load info', command=self.button_load_info_click,
                  font = self._text_size['Text 10 bold'], height = 1,
                   bg = self._button_bg_color, fg = self._button_fg_color)\
-           .place(relx=lc_x + delta_x * 6.5,rely=lc_y + delta_y*18)
+           .place(relx=lc_x + delta_x * 6,rely=lc_y + delta_y*18, relwidth = 0.05)
 
         # Load information button
         tk.Button(self._main_fr, text='Load factors', command=self.on_open_load_factor_window,
                  font = self._text_size['Text 10 bold'], height = 1,
                   bg = self._button_bg_color, fg = self._button_fg_color)\
-           .place(relx=lc_x + delta_x * 4,rely=lc_y + delta_y*18)
+           .place(relx=lc_x + delta_x * 4,rely=lc_y + delta_y*18, relwidth = 0.05)
 
         self.update_frame()
 
