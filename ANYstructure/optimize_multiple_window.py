@@ -1105,11 +1105,13 @@ class CreateOptimizeMultipleWindow():
         :param evnet:
         :return:
         '''
+
         self._previous_drag_mouse = [event.x, event.y]
         self._active_lines = []
         self._canvas_select.delete('all')
         self.draw_select_canvas()
         self.update_running_time()
+
 
     def mid_click(self,event):
         '''

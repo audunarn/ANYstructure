@@ -931,7 +931,19 @@ class Application():
         self.update_frame()
 
     def resize(self, event):
-        pass
+        self.text_scale = self._main_fr.winfo_width()/1920
+        self._text_size = {'Text 14 bold': 'Verdana '+str(int(14*self.text_scale))+' bold',
+                           'Text 16 bold': 'Verdana ' + str(int(16 * self.text_scale)) + ' bold',
+                           'Text 18 bold': 'Verdana ' + str(int(18 * self.text_scale)) + ' bold',
+                           'Text 12 bold': 'Verdana ' + str(int(12 * self.text_scale)) + ' bold',
+                           'Text 10 bold': 'Verdana '+str(int(10*self.text_scale))+' bold',
+                           'Text 9 bold': 'Verdana ' + str(int(9 * self.text_scale)) + ' bold',
+                           'Text 8 bold': 'Verdana ' + str(int(8 * self.text_scale)) + ' bold',
+                           'Text 8': 'Verdana ' + str(int(8 * self.text_scale)),
+                           'Text 9': 'Verdana ' + str(int(8 * self.text_scale)),
+                           'Text 7': 'Verdana ' + str(int(7 * self.text_scale)),
+                           'Text 10': 'Verdana ' + str(int(10 * self.text_scale)),
+                           'Text 7 bold': 'Verdana ' + str(int(7 * self.text_scale)) + ' bold'}
 
     def gui_load_combinations(self,event):
         '''
@@ -1673,44 +1685,44 @@ class Application():
                                               anchor="nw")
         elif self._new_colorcode_sigmax.get() == True:
             for idx, value in enumerate(cc_state['sigma x map']):
-                self._main_canvas.create_text(11, 111+20*idx, text=str(str(value) + ' MPa'),
+                self._main_canvas.create_text(11, 111+20*idx, text=str(str(round(value,5)) + ' MPa'),
                                               font=self._text_size["Text 10 bold"],
                                               fill='black',
                                               anchor="nw")
-                self._main_canvas.create_text(10, 110+20*idx, text=str(str(value) + ' MPa'),
+                self._main_canvas.create_text(10, 110+20*idx, text=str(str(round(value,5)) + ' MPa'),
                                               font=self._text_size["Text 10 bold"],
                                               fill=matplotlib.colors.rgb2hex(
                                                   cmap_sections(value/cc_state['max sigma x'])),
                                               anchor="nw")
         elif self._new_colorcode_sigmay1.get() == True:
             for idx, value in enumerate(cc_state['sigma y1 map']):
-                self._main_canvas.create_text(11, 111+20*idx, text=str(str(value) + ' MPa'),
+                self._main_canvas.create_text(11, 111+20*idx, text=str(str(round(value,5)) + ' MPa'),
                                               font=self._text_size["Text 10 bold"],
                                               fill='black',
                                               anchor="nw")
-                self._main_canvas.create_text(10, 110+20*idx, text=str(str(value) + ' MPa'),
+                self._main_canvas.create_text(10, 110+20*idx, text=str(str(round(value,5)) + ' MPa'),
                                               font=self._text_size["Text 10 bold"],
                                               fill=matplotlib.colors.rgb2hex(
                                                   cmap_sections(value/cc_state['max sigma y1'])),
                                               anchor="nw")
         elif self._new_colorcode_sigmay2.get() == True:
             for idx, value in enumerate(cc_state['sigma y2 map']):
-                self._main_canvas.create_text(11, 111+20*idx, text=str(str(value) + ' MPa'),
+                self._main_canvas.create_text(11, 111+20*idx, text=str(str(round(value,5)) + ' MPa'),
                                               font=self._text_size["Text 10 bold"],
                                               fill='black',
                                               anchor="nw")
-                self._main_canvas.create_text(10, 110+20*idx, text=str(str(value) + ' MPa'),
+                self._main_canvas.create_text(10, 110+20*idx, text=str(str(round(value,5)) + ' MPa'),
                                               font=self._text_size["Text 10 bold"],
                                               fill=matplotlib.colors.rgb2hex(
                                                   cmap_sections(value/cc_state['max sigma y2'])),
                                               anchor="nw")
         elif self._new_colorcode_tauxy.get() == True:
             for idx, value in enumerate(cc_state['tau xy map']):
-                self._main_canvas.create_text(11, 111+20*idx, text=str(str(value) + ' MPa'),
+                self._main_canvas.create_text(11, 111+20*idx, text=str(str(round(value,5)) + ' MPa'),
                                               font=self._text_size["Text 10 bold"],
                                               fill='black',
                                               anchor="nw")
-                self._main_canvas.create_text(10, 110+20*idx, text=str(str(value) + ' MPa'),
+                self._main_canvas.create_text(10, 110+20*idx, text=str(str(round(value,5)) + ' MPa'),
                                               font=self._text_size["Text 10 bold"],
                                               fill=matplotlib.colors.rgb2hex(
                                                   cmap_sections(value/cc_state['max tau xy'])),
@@ -1783,7 +1795,7 @@ class Application():
 
             # printing the properties to the active line
             if self._line_is_active:
-                self._prop_canvas.create_text([170*self._global_shrink, 120*self._global_shrink],
+                self._prop_canvas.create_text([175*self._global_shrink, 120*self._global_shrink],
                                              text=self._line_to_struc[self._active_line][0],
                                              font = self._text_size["Text 9"])
 
@@ -1870,7 +1882,7 @@ class Application():
 
         if self._line_is_active:
             if self._active_line in self._line_to_struc:
-                x, y, dx, dy = 20, 15, 15, 14
+                x, y, dx, dy = 0, 15, 15, 14
                 m3_to_mm3 = float(math.pow(1000,3))
                 m2_to_mm2 = float(math.pow(1000, 2))
 
@@ -1945,13 +1957,13 @@ class Application():
 
                 #minimum thickness for plate
 
-                self._result_canvas.create_text([20*self._global_shrink, (y+6*dy)*self._global_shrink],
+                self._result_canvas.create_text([x*self._global_shrink, (y+6*dy)*self._global_shrink],
                                                text='Plate thickness: '
                                                     +str(obj_structure.get_plate_thk()*1000)+' [mm] ',
                                                font=self._text_size["Text 9 bold"],anchor='nw')
                 text = 'Minimum plate thickness: '+str(round(min_thk,1)) + ' [mm]' if not slm_text_pl_thk \
                     else 'Minimum plate thickness due to SLAMMING'+str(slm_min_pl_thk)+' [mm]'
-                self._result_canvas.create_text([20*self._global_shrink, (y+7*dy)*self._global_shrink],
+                self._result_canvas.create_text([x*self._global_shrink, (y+7*dy)*self._global_shrink],
                                                text=text,
                                                font=self._text_size["Text 9 bold"],anchor='nw', fill=color_thk)
 
@@ -3530,9 +3542,6 @@ class Application():
 
             for main_line in self._line_dict.keys():
                 for load_obj, load_line in self._load_dict.values():
-                    # print(load_line, self._line_to_struc.keys())
-                    # if load_line not in self._line_to_struc.keys():
-                    #     continue
                     if main_line in load_line and main_line in self._line_to_struc.keys():
                         self._line_to_struc[main_line][3].append(load_obj)
 
