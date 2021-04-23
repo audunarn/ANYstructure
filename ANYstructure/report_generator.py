@@ -297,8 +297,17 @@ class LetterMaker(object):
         self.draw_lines(draw_type='tau xy')
         self.c.showPage()
         self.draw_lines(draw_type='structure type')
+        self.c.showPage()
 
-    def draw_lines(self, draw_type = 'UF'):
+        idx, new = 0, False
+        for load_name in self.data._load_dict.keys():
+            self.draw_lines(draw_type=None, load_idx_name = [idx % 3, load_name])
+            if idx % 3 == 2:
+                self.c.showPage()
+            idx += 1
+
+
+    def draw_lines(self, draw_type = 'UF', load_idx_name = None):
         '''
         Draw the defined lines.
         :return:
@@ -312,10 +321,14 @@ class LetterMaker(object):
 
         if any([highest_x == 0, highest_y == 0]):
             scale = 10
+        elif load_idx_name is not None:
+            scale = 5
         else:
             scale = min(500/highest_y, 500/highest_x, 10)
         if draw_type == 'UF':
             origo = (50,350)
+        elif load_idx_name is not None:
+            origo = (50, 600 - 200*load_idx_name[0])
         else:
             origo = (50, 450)
         self.c.setLineWidth(2)
@@ -342,7 +355,6 @@ class LetterMaker(object):
                     self.c.drawText(textobject)
                     drawed_data.append(self.data._line_to_struc[line][1].get_beam_string())
                     idx += 1
-
             elif draw_type == 'plate':
                 self.c.setStrokeColor(all_line_data['color code']['lines'][line]['plate'])
             elif draw_type == 'pressure':
@@ -359,6 +371,12 @@ class LetterMaker(object):
                 self.c.setStrokeColor(all_line_data['color code']['lines'][line]['tau xy'])
             elif draw_type == 'structure type':
                 self.c.setStrokeColor(all_line_data['color code']['lines'][line]['structure type'])
+            elif load_idx_name is not None:
+
+                if line in self.data._load_dict[load_idx_name[1]][1]:
+                    self.c.setStrokeColor('orange')
+                else:
+                    self.c.setStrokeColor('black')
 
 
             x1, y1 = points['point'+str(pt[0])][0] * scale + origo[0], \
@@ -373,7 +391,6 @@ class LetterMaker(object):
             textobject.textLine(str(hlp.get_num(line)))
             self.c.drawText(textobject)
 
-
         if draw_type == 'UF':
             pass
         elif draw_type == 'section':
@@ -383,7 +400,6 @@ class LetterMaker(object):
             textobject.setFillColor('black')
             textobject.textLine('Model beam section properties')
             self.c.drawText(textobject)
-
         elif draw_type == 'plate':
             textobject = self.c.beginText()
             textobject.setTextOrigin(50, 800)
@@ -404,8 +420,6 @@ class LetterMaker(object):
                 textobject.setFont("Helvetica-Oblique", 10)
                 textobject.textLine(str(thk*1000) + ' mm')
                 self.c.drawText(textobject)
-
-
         elif draw_type == 'pressure':
             textobject = self.c.beginText()
             textobject.setTextOrigin(50, 800)
@@ -554,6 +568,15 @@ class LetterMaker(object):
                 textobject.textLine(str(value))
                 self.c.drawText(textobject)
                 drawed_data.append(value)
+        elif load_idx_name is not None:
+
+            for lidx, loadtext in enumerate(reversed(self.data._load_dict[load_idx_name[1]][0].get_report_string())):
+                textobject = self.c.beginText()
+                textobject.setTextOrigin(300 , origo[1]+50+ 12*lidx)
+                textobject.setFont("Helvetica-Oblique", 12)
+                textobject.setFillColor('black')
+                textobject.textLine(loadtext)
+                self.c.drawText(textobject)
 
     def coord(self, x, y, unit=1):
         """

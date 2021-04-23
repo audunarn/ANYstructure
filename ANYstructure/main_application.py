@@ -1867,7 +1867,6 @@ class Application():
         else:
             pass
 
-
     def draw_results(self, state = None):
         '''
         The properties canvas is created here.
