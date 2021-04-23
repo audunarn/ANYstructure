@@ -36,11 +36,11 @@ def section_property_to_js(section: plstf.Section = None):
     if section.stf_type == 'T':
         js_def =  'UnsymISection('+str(section.stf_web_height)+', '+str(section.stf_web_thk)+', 0, 0, 0, '+ \
                   str(section.stf_flange_width)+', '+str(section.stf_flange_width/2)+', '+\
-                  str(section.stf_flange_width)+');\n'
+                  str(section.stf_flange_thk)+');\n'
 
     elif section.stf_type == 'L':
         js_def =  'LSection('+str(section.stf_web_height)+', '+str(section.stf_web_thk)+', '+ \
-                  str(section.stf_flange_width)+', '+ str(section.stf_flange_width)+');\n'
+                  str(section.stf_flange_width)+', '+ str(section.stf_flange_thk)+');\n'
     else:
         js_def =  'BarSection('+str(section.stf_web_height)+', '+str(section.stf_web_thk)+');\n'
 

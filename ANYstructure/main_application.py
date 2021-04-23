@@ -2888,7 +2888,6 @@ class Application():
         self._point_dict = {}
         self._line_to_struc = {}
         self._line_point_to_point_string = []
-        self.update_frame()
         self._load_dict = {}
         self._new_load_comb_dict = {}
         self._line_is_active = False
@@ -2907,6 +2906,8 @@ class Application():
         self._active_point = '' # Name of the clicked point
         self.controls() # Function to activate mouse clicks
         self._line_point_to_point_string = [] # This one ensures that a line is not created on top of a line
+        self._accelerations_dict = {'static':9.81, 'dyn_loaded':0, 'dyn_ballast':0}
+        self.update_frame()
 
         # Initsializing the calculation grid used for tank definition
         self._main_grid  = grid.Grid(self._grid_dimensions[0], self._grid_dimensions[1])
@@ -3205,7 +3206,7 @@ class Application():
             counter+=1
 
         export_all = {}
-        export_all['project infomation'] = self._new_project_infomation.get()
+        export_all['project information'] = self._new_project_infomation.get()
         export_all['point_dict'] = self._point_dict
         export_all['line_dict'] = self._line_dict
         export_all['structure_properties'] = structure_properties
@@ -3234,8 +3235,12 @@ class Application():
         imported = json.load(imp_file)
 
         self.reset()
-        if 'project infomation' in imported.keys():
-            self._new_project_infomation.set(imported['project infomation'])
+        if 'project information' in imported.keys():
+            self._new_project_infomation.set(imported['project information'])
+
+        else:
+            self._new_project_infomation.set('No project information provided. Input here.')
+
         self._point_dict = imported['point_dict']
         self._line_dict = imported['line_dict']
         struc_prop = imported['structure_properties']
