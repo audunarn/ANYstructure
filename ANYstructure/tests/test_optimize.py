@@ -29,8 +29,8 @@ def test_optimization(opt_input):
 
     assert results.get_structure_prop() ==  {'mat_yield': [355000000.0, 'Pa'], 'span': [4, 'm'], 'spacing': [0.65, 'm'],
                                              'plate_thk': [0.015, 'm'], 'stf_web_height': [0.3, 'm'],
-                                             'stf_web_thk': [0.01, 'm'], 'stf_flange_width': [0.15000000000000002, 'm'],
-                                             'stf_flange_thk': [0.024999999999999998, 'm'],
+                                             'stf_web_thk': [0.01, 'm'], 'stf_flange_width': [0.15, 'm'],
+                                             'stf_flange_thk': [0.025, 'm'],
                                              'structure_type': ['BOTTOM', ''], 'stf_type': ['T', ''],
                                              'sigma_y1': [80.0, 'MPa'], 'sigma_y2': [80.0, 'MPa'],
                                              'sigma_x': [89.9820895522388, 'MPa'], 'tau_xy': [5.0, 'MPa'],
