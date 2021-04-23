@@ -45,11 +45,6 @@ class Application():
         self._parent = parent
         parent.protocol("WM_DELETE_WINDOW", self.close_main_window)
         parent.bind("<Configure>", self.resize)
-        # GLOBAL SHRINK NOT USED. Relative x/y used instead.
-        if parent.winfo_screenwidth() < 2000:
-            self._global_shrink = 1
-        else:
-            self._global_shrink = 1
 
         # Definng general colors
         self._general_color = 'azure2'  # Color for backgrounds.
@@ -121,8 +116,8 @@ class Application():
         #base_canvas_dim = [int(1000 * base_mult),int(720*base_mult)]  #do not modify this, sets the "orignal" canvas dimensions.
         base_canvas_dim = [1000,720]  #do not modify this, sets the "orignal" canvas dimensions.
 
-        self._canvas_dim = [int(base_canvas_dim[0] *self._global_shrink),
-                           int(base_canvas_dim[1] *self._global_shrink)]
+        self._canvas_dim = [int(base_canvas_dim[0] *1),
+                           int(base_canvas_dim[1] *1)]
         self._canvas_base_origo = [50, base_canvas_dim[1] - 50] # 50 bottom left location of the canvas, (0,0)
 
         self._canvas_draw_origo = [self._canvas_base_origo[0], self._canvas_base_origo[1]+60]
@@ -164,7 +159,7 @@ class Application():
         tk.Frame(self._main_fr, height=3, bg="black", colormap="new")\
             .place(relx=0, rely=0.73, relwidth=1)
         tk.Frame(self._main_fr, width=3, bg="black", colormap="new")\
-            .place(relx=0.258,rely=0 * self._global_shrink, relheight=1)
+            .place(relx=0.258,rely=0 * 1, relheight=1)
 
         # Point frame
         self._pt_frame = tk.Frame(self._main_canvas, width=100, height=100, bg="black", relief='raised')
@@ -242,34 +237,40 @@ class Application():
         self._new_point_fix = tk.StringVar()
         self._new_zstar_optimization = tk.BooleanVar()
         self._new_zstar_optimization.set(True)
-        point_x_start, point_start = 0.005208333, 0.046296296
+        self._new_project_infomation = tk.StringVar()
+        self._new_project_infomation.set('No information on project provided. Input here.')
+        point_x_start, point_start = 0.005208333, 0.06
         ent_width = 6  # width of entries
+
+        tk.Entry(self._main_fr, textvariable=self._new_project_infomation,
+                 bg = self._button_bg_color, fg = self._entry_text_color)\
+            .place(relx=0.005, rely=0.005, relwidth = 0.25)
 
         tk.Label(self._main_fr, text='Input point coordinates [mm]', font=self._text_size['Text 9 bold'],
                  bg = self._general_color)\
-            .place(relx=point_x_start, rely=point_start - 0.027777778)
+            .place(rely=point_start - 0.027777778, relx=-0.018, relwidth = 0.15, anchor = tk.NW)
         tk.Label(self._main_fr, text='Point x (horizontal) [mm]:',font="Text 9", bg = self._general_color)\
             .place(relx=point_x_start, rely=point_start)
         tk.Label(self._main_fr, text='Point y (vertical)   [mm]:',font="Text 9", bg = self._general_color)\
             .place(relx=point_x_start, rely=point_start + delta_y)
 
-        tk.Entry(self._main_fr, textvariable=self._new_point_x, width = int(ent_width * self._global_shrink),
+        tk.Entry(self._main_fr, textvariable=self._new_point_x, width = int(ent_width * 1),
                  bg = self._entry_color, fg = self._entry_text_color)\
             .place(relx=ent_x, rely=point_start)
-        tk.Entry(self._main_fr, textvariable=self._new_point_y, width = int(ent_width * self._global_shrink),
+        tk.Entry(self._main_fr, textvariable=self._new_point_y, width = int(ent_width * 1),
                  bg = self._entry_color, fg = self._entry_text_color)\
             .place(relx=ent_x, rely=point_start + delta_y)
         tk.Button(self._main_fr, text='Add point (coords)', command=self.new_point,
                   bg = self._button_bg_color, fg = self._button_fg_color,
-                  font = self._text_size['Text 9 bold']).place(relx=ent_x + 2 * delta_x, rely=point_start-1.6*delta_y,
+                  font = self._text_size['Text 9 bold']).place(relx=ent_x + 2 * delta_x, rely=point_start-1*delta_y,
                                                                relwidth = 0.08)
         tk.Button(self._main_fr, text='Copy point (relative)', command=self.copy_point,
                   bg = self._button_bg_color, fg = self._button_fg_color,
-                  font = self._text_size['Text 9 bold']).place(relx=ent_x + 2 * delta_x, rely=point_start-0.3*delta_y,
+                  font = self._text_size['Text 9 bold']).place(relx=ent_x + 2 * delta_x, rely=point_start+0.1*delta_y,
                                                                relwidth = 0.08)
         tk.Button(self._main_fr, text='Move point (relative)', command=self.move_point,
                   bg = self._button_bg_color, fg = self._button_fg_color,
-                  font = self._text_size['Text 9 bold']).place(relx=ent_x + 2 * delta_x, rely=point_start+1*delta_y,
+                  font = self._text_size['Text 9 bold']).place(relx=ent_x + 2 * delta_x, rely=point_start+1.2*delta_y,
                                                                relwidth = 0.08)
 
         # --- line input/output ---
@@ -303,10 +304,10 @@ class Application():
         self._new_colorcode_structure_type.set(False)
 
 
-        line_start, line_x = point_start+0.083333333, 0.005208333
+        line_start, line_x = point_start+0.09, 0.005208333
         tk.Label(self._main_fr, text='Input line from "point number" to "point number"',
                  font=self._text_size['Text 9 bold'], bg = self._general_color)\
-            .place(relx=line_x , rely=line_start - 0.027777778)
+            .place(rely=line_start - 0.027777778, relx=-0.034, relwidth = 0.25, anchor = tk.NW)
         tk.Label(self._main_fr, text='From point number:',font="Text 9", bg = self._general_color)\
             .place(relx=line_x, rely=line_start)
         tk.Label(self._main_fr, text='To point number:',font="Text 9", bg = self._general_color)\
@@ -329,10 +330,10 @@ class Application():
         tk.Label(self._main_fr, text='Color line pressure', font="Text 9").place(relx = 0.27, rely=0.02*3)
         tk.Label(self._main_fr, text='Color utilization', font="Text 9").place(relx = 0.27, rely=0.02*4)
 
-        tk.Entry(self._main_fr, textvariable=self._new_line_p1, width=int(ent_width * self._global_shrink),
+        tk.Entry(self._main_fr, textvariable=self._new_line_p1, width=int(ent_width * 1),
                  bg = self._entry_color, fg = self._entry_text_color)\
             .place(relx=ent_x, rely=line_start)
-        tk.Entry(self._main_fr, textvariable=self._new_line_p2, width=int(ent_width * self._global_shrink),
+        tk.Entry(self._main_fr, textvariable=self._new_line_p2, width=int(ent_width * 1),
                  bg = self._entry_color, fg = self._entry_text_color)\
             .place(relx=ent_x, rely=line_start + delta_y)
         tk.Button(self._main_fr, text='Add line', command=self.new_line,
@@ -342,17 +343,17 @@ class Application():
         # --- delete points and lines ---
         self._new_delete_line = tk.IntVar()
         self._new_delete_point = tk.IntVar()
-        del_start, del_x = line_start + 0.083333333,0.005208333
+        del_start, del_x = line_start + 0.09,0.005208333
         tk.Label(self._main_fr, text='Delete lines and points (or left/right click and use "Delete key")',
                  font=self._text_size['Text 9 bold'], bg = self._general_color)\
-            .place(relx=del_x, rely=del_start - 0.027777778*self._global_shrink)
+            .place(rely=del_start - 0.027777778*1,relx=-0.008, relwidth = 0.25, anchor = tk.NW)
         self._ent_delete_line = tk.Entry(self._main_fr, textvariable=self._new_delete_line,
-                                        width=int(ent_width * self._global_shrink),
+                                        width=int(ent_width * 1),
                                          bg = self._entry_color, fg = self._entry_text_color)
         self._ent_delete_line.place(relx=ent_x, rely=del_start)
 
         self._ent_delete_point = tk.Entry(self._main_fr, textvariable=self._new_delete_point,
-                                         width=int(ent_width * self._global_shrink),
+                                         width=int(ent_width * 1),
                                           bg = self._entry_color, fg = self._entry_text_color)
         self._ent_delete_point.place(relx=ent_x, rely=del_start + delta_y)
 
@@ -363,24 +364,25 @@ class Application():
 
         tk.Button(self._main_fr, text='Delete line',bg = self._button_bg_color, fg = self._button_fg_color,
                                          font=self._text_size['Text 9 bold'],command=self.delete_line,
-                                         ).place(relx=ent_x+delta_x*2, rely=del_start,
+                                         ).place(relx=ent_x+delta_x*2, rely=del_start-0.002,
                                                                                     relwidth = 0.05)
         tk.Button(self._main_fr, text='Delete prop.',bg = self._button_bg_color, fg = self._button_fg_color,
                                          font=self._text_size['Text 9 bold'],command=self.delete_properties_pressed,
-                                         ).place(relx=ent_x+delta_x*4, rely=del_start,
+                                         ).place(relx=ent_x+delta_x*4, rely=del_start-0.002,
                                                                                     relwidth = 0.05)
 
         tk.Button(self._main_fr, text='Delete point',bg = self._button_bg_color, fg = self._button_fg_color,
                                           font=self._text_size['Text 9 bold'],command=self.delete_point,
-                                          ).place(relx=ent_x+2*delta_x, rely=del_start + delta_y,
+                                          ).place(relx=ent_x+2*delta_x, rely=del_start + delta_y +0.004-0.002,
                                                                                      relwidth = 0.05)
 
         # --- structure type information ---
-        prop_vert_start = 0.296296296
+        prop_vert_start = 0.32
         types_start = 0.005208333
         tk.Label(self._main_fr, text='Structural and calculation properties input below:',
                  font=self._text_size['Text 9 bold'],
-                 bg = self._general_color ).place(relx=types_start, rely=prop_vert_start-1.2*delta_y)
+                 bg = self._general_color ).place(rely=prop_vert_start-1.2*delta_y,relx=-0.034, relwidth = 0.25,
+                                                  anchor = tk.NW)
         def show_message():
             messagebox.showinfo(title='Structure type',message='Types - sets default stresses (sigy1/sigy2/sigx/tauxy)'
                                                                '\n FOR DYNAMIC EQUATION THE FOLLOWING APPLIES'
@@ -473,86 +475,58 @@ class Application():
 
         # --- main entries and labels to define the structural properties ---
         ent_width = 12 #width of entries
-        tk.Label(self._main_fr, text='Material yield [MPa]:', font = self._text_size['Text 9'],
+        tk.Label(self._main_fr, text='Yield [MPa]:', font = self._text_size['Text 9'],
                  bg = self._general_color)\
             .place(relx=0.19, rely=prop_vert_start + 2.5 * delta_y)
 
-        self._ent_mat = tk.Entry(self._main_fr, textvariable=self._new_material,
-                                 width = int(ent_width*self._global_shrink), bg = self._entry_color,
+        self._ent_mat = tk.Entry(self._main_fr, textvariable=self._new_material, bg = self._entry_color,
                                  fg = self._entry_text_color)
-        self._ent_field_len = tk.Entry(self._main_fr, textvariable=self._new_field_len,
-                                      width = int(5*self._global_shrink), bg = self._entry_color,
+        self._ent_field_len = tk.Entry(self._main_fr, textvariable=self._new_field_len, bg = self._entry_color,
                                        fg = self._entry_text_color)
-        self._ent_stf_spacing = tk.Entry(self._main_fr, textvariable=self._new_stf_spacing,
-                                        width = int(5*self._global_shrink), bg = self._entry_color,
+        self._ent_stf_spacing = tk.Entry(self._main_fr, textvariable=self._new_stf_spacing, bg = self._entry_color,
                                          fg = self._entry_text_color)
-        self._ent_plate_thk = tk.Entry(self._main_fr, textvariable=self._new_plate_thk,
-                                      width = int(5*self._global_shrink), bg = self._entry_color,
+        self._ent_plate_thk = tk.Entry(self._main_fr, textvariable=self._new_plate_thk, bg = self._entry_color,
                                        fg = self._entry_text_color)
         self._ent_stf_web_h = tk.Entry(self._main_fr, textvariable=self._new_stf_web_h,
-                                      width = int(5*self._global_shrink), bg = self._entry_color,
+                                      width = int(5*1), bg = self._entry_color,
                                        fg = self._entry_text_color)
-        self._ent_stf_web_t = tk.Entry(self._main_fr, textvariable=self._new_sft_web_t,
-                                      width = int(5*self._global_shrink), bg = self._entry_color,
+        self._ent_stf_web_t = tk.Entry(self._main_fr, textvariable=self._new_sft_web_t, bg = self._entry_color,
                                        fg = self._entry_text_color)
-        self._ent_stf_fl_w = tk.Entry(self._main_fr, textvariable=self._new_stf_fl_w,
-                                     width = int(5*self._global_shrink), bg = self._entry_color,
+        self._ent_stf_fl_w = tk.Entry(self._main_fr, textvariable=self._new_stf_fl_w, bg = self._entry_color,
                                       fg = self._entry_text_color)
-        self._ent_str_fl_t = tk.Entry(self._main_fr, textvariable=self._new_stf_fl_t,
-                                     width = int(5*self._global_shrink), bg = self._entry_color,
+        self._ent_str_fl_t = tk.Entry(self._main_fr, textvariable=self._new_stf_fl_t, bg = self._entry_color,
                                       fg = self._entry_text_color)
 
-        tk.Label(self._main_fr,text='kpp', bg = self._general_color).place(relx=types_start+2*delta_x,
-                                                                           rely=prop_vert_start + 2.5 * delta_y)
-        tk.Label(self._main_fr, text='kps', bg = self._general_color).place(relx=types_start + 3 * delta_x,
-                                                                            rely=prop_vert_start + 2.5 * delta_y)
-        tk.Label(self._main_fr, text='km1', bg = self._general_color).place(relx=types_start + 4 * delta_x,
-                                                                            rely=prop_vert_start + 2.5 * delta_y)
-        tk.Label(self._main_fr, text='km2', bg = self._general_color).place(relx=types_start + 5 * delta_x,
-                                                                            rely=prop_vert_start + 2.5 * delta_y)
-        tk.Label(self._main_fr, text='k3', bg = self._general_color).place(relx=types_start + 6 * delta_x,
-                                                                           rely=prop_vert_start + 2.5 * delta_y)
 
         self._ent_plate_kpp = tk.Entry(self._main_fr, textvariable=self._new_plate_kpp,
-                                       width = int(5*self._global_shrink), bg = self._entry_color,
+                                       width = int(5*1), bg = self._entry_color,
                                        fg = self._entry_text_color)
         self._ent_plate_kps = tk.Entry(self._main_fr, textvariable=self._new_stf_kps,
-                                       width = int(5*self._global_shrink), bg = self._entry_color,
+                                       width = int(5*1), bg = self._entry_color,
                                        fg = self._entry_text_color)
         self._ent_stf_km1 = tk.Entry(self._main_fr, textvariable=self._new_stf_km1,
-                                     width = int(5*self._global_shrink), bg = self._entry_color,
+                                     width = int(5*1), bg = self._entry_color,
                                      fg = self._entry_text_color)
         self._ent_stf_km2 = tk.Entry(self._main_fr, textvariable=self._new_stf_km2,
-                                     width = int(5*self._global_shrink), bg = self._entry_color,
+                                     width = int(5*1), bg = self._entry_color,
                                      fg = self._entry_text_color)
         self._ent_stf_km3 = tk.Entry(self._main_fr, textvariable=self._new_stf_km3,
-                                     width = int(5*self._global_shrink), bg = self._entry_color,
+                                     width = int(5*1), bg = self._entry_color,
                                      fg = self._entry_text_color)
 
         self._ent_pressure_side = tk.OptionMenu(self._main_fr, self._new_pressure_side, *('p', 's'))
 
-        tk.Label(self._main_fr, text='sig_y1', bg = self._general_color).place(relx=types_start + 2 * delta_x,
-                                                                               rely=prop_vert_start + 4.5 * delta_y)
-        tk.Label(self._main_fr, text='sig_y2', bg = self._general_color).place(relx=types_start + 3 * delta_x,
-                                                                               rely=prop_vert_start + 4.5 * delta_y)
-        tk.Label(self._main_fr, text='sig_x', bg = self._general_color).place(relx=types_start + 4 * delta_x,
-                                                                              rely=prop_vert_start + 4.5 * delta_y)
-        tk.Label(self._main_fr, text='tau_y1', bg = self._general_color).place(relx=types_start + 5 * delta_x,
-                                                                               rely=prop_vert_start + 4.5 * delta_y)
-        tk.Label(self._main_fr, text='stf type', bg = self._general_color).place(relx=types_start + 6 * delta_x,
-                                                                                 rely=prop_vert_start + 4.5 * delta_y)
-        tk.Label(self._main_fr, text='Pressure side (p-plate, s-stf.):', bg = self._general_color)\
-            .place(relx=0.052083333, rely=prop_vert_start+ 8 * delta_y)
 
-        self._ent_sigma_y1= tk.Entry(self._main_fr, textvariable=self._new_sigma_y1, width = int(7*self._global_shrink),
+
+        self._ent_sigma_y1= tk.Entry(self._main_fr, textvariable=self._new_sigma_y1, width = int(7*1),
                                      bg = self._entry_color, fg = self._entry_text_color)
-        self._ent_sigma_y2 = tk.Entry(self._main_fr, textvariable=self._new_sigma_y2, width=int(7*self._global_shrink),
+        self._ent_sigma_y2 = tk.Entry(self._main_fr, textvariable=self._new_sigma_y2, width=int(7*1),
                                       bg = self._entry_color, fg = self._entry_text_color)
-        self._ent_sigma_x = tk.Entry(self._main_fr, textvariable=self._new_sigma_x, width=int(7*self._global_shrink),
+        self._ent_sigma_x = tk.Entry(self._main_fr, textvariable=self._new_sigma_x, width=int(7*1),
                                      bg = self._entry_color, fg = self._entry_text_color)
-        self._ent_tauxy = tk.Entry(self._main_fr, textvariable=self._new_tauxy, width=int(7*self._global_shrink),
+        self._ent_tauxy = tk.Entry(self._main_fr, textvariable=self._new_tauxy, width=int(7*1),
                                    bg = self._entry_color, fg = self._entry_text_color)
-        self._ent_stf_type = tk.Entry(self._main_fr, textvariable=self._new_stf_type, width=int(7*self._global_shrink),
+        self._ent_stf_type = tk.Entry(self._main_fr, textvariable=self._new_stf_type, width=int(7*1),
                                       bg = self._entry_color, fg = self._entry_text_color)
         self._ent_structure_type = tk.OptionMenu(self._main_fr, self._new_stucture_type,
                                                  command = self.option_meny_structure_type_trace, *self._options_type)
@@ -560,30 +534,58 @@ class Application():
 
         loc_y = -0.000185185
 
-        tk.Label(self._main_fr, text='span', bg = self._general_color).place(relx=types_start + 2 * delta_x,
+
+        ent_rely, ent_relx, drelx = prop_vert_start + 0.082, 0.059, 0.026
+        ent_geo_y, loc_y = ent_rely-0.06, 0.000740741
+        geo_ent_width, geo_dx = 0.026, 0.028
+
+
+        tk.Label(self._main_fr,text='kpp', bg = self._general_color).place(relx=ent_relx + 0*geo_dx,
+                                                                           rely=prop_vert_start + 2.5 * delta_y)
+        tk.Label(self._main_fr, text='kps', bg = self._general_color).place(relx=ent_relx + 1*geo_dx,
+                                                                            rely=prop_vert_start + 2.5 * delta_y)
+        tk.Label(self._main_fr, text='km1', bg = self._general_color).place(relx=ent_relx + 2*geo_dx,
+                                                                            rely=prop_vert_start + 2.5 * delta_y)
+        tk.Label(self._main_fr, text='km2', bg = self._general_color).place(relx=ent_relx + 3*geo_dx,
+                                                                            rely=prop_vert_start + 2.5 * delta_y)
+        tk.Label(self._main_fr, text='k3', bg = self._general_color).place(relx=ent_relx + 4*geo_dx,
+                                                                           rely=prop_vert_start + 2.5 * delta_y)
+        tk.Label(self._main_fr, text='sig_y1', bg=self._general_color).place(relx=ent_relx + 0*geo_dx,
+                                                                             rely=prop_vert_start + 4.5 * delta_y)
+        tk.Label(self._main_fr, text='sig_y2', bg=self._general_color).place(relx=ent_relx + 1*geo_dx,
+                                                                             rely=prop_vert_start + 4.5 * delta_y)
+        tk.Label(self._main_fr, text='sig_x', bg=self._general_color).place(relx=ent_relx + 2*geo_dx,
+                                                                            rely=prop_vert_start + 4.5 * delta_y)
+        tk.Label(self._main_fr, text='tau_y1', bg=self._general_color).place(relx=ent_relx + 3*geo_dx,
+                                                                             rely=prop_vert_start + 4.5 * delta_y)
+        tk.Label(self._main_fr, text='stf type', bg=self._general_color).place(relx=ent_relx + 4*geo_dx,
+                                                                               rely=prop_vert_start + 4.5 * delta_y)
+        tk.Label(self._main_fr, text='Pressure side (p-plate, s-stf.):', bg=self._general_color) \
+            .place(relx=0.052083333, rely=prop_vert_start + 8 * delta_y)
+
+        tk.Label(self._main_fr, text='span', bg = self._general_color).place(relx=ent_relx + 0*geo_dx,
                                                                              rely=prop_vert_start +loc_y * delta_y)
-        tk.Label(self._main_fr, text='s', bg = self._general_color).place(relx=types_start + 3*delta_x,
+        tk.Label(self._main_fr, text='s', bg = self._general_color).place(relx=ent_relx + 1*geo_dx,
                                                                           rely=prop_vert_start+loc_y * delta_y)
-        tk.Label(self._main_fr, text='pl_thk', bg = self._general_color).place(relx=types_start + 4*delta_x,
+        tk.Label(self._main_fr, text='pl_thk', bg = self._general_color).place(relx=ent_relx + 2*geo_dx,
                                                                                rely=prop_vert_start +loc_y  * delta_y)
-        tk.Label(self._main_fr, text='web_h', bg = self._general_color).place(relx=types_start + 5*delta_x,
+        tk.Label(self._main_fr, text='web_h', bg = self._general_color).place(relx=ent_relx + 3*geo_dx,
                                                                               rely=prop_vert_start +loc_y * delta_y)
-        tk.Label(self._main_fr, text='web_thk', bg = self._general_color).place(relx=types_start + 6*delta_x,
+        tk.Label(self._main_fr, text='web_thk', bg = self._general_color).place(relx=ent_relx + 4*geo_dx,
                                                                                 rely=prop_vert_start+loc_y * delta_y)
-        tk.Label(self._main_fr, text='fl_w', bg = self._general_color).place(relx=types_start + 7*delta_x,
+        tk.Label(self._main_fr, text='fl_w', bg = self._general_color).place(relx=ent_relx + 5*geo_dx,
                                                                              rely=prop_vert_start + loc_y  * delta_y)
-        tk.Label(self._main_fr, text='fl_thk', bg = self._general_color).place(relx=types_start + 8*delta_x,
+        tk.Label(self._main_fr, text='fl_thk', bg = self._general_color).place(relx=ent_relx + 6*geo_dx,
                                                                                rely=prop_vert_start + loc_y  * delta_y)
 
-        ent_geo_y, loc_y = 0.32, 0.000740741
-        self._ent_field_len.place(relx=types_start + 2*delta_x, rely=ent_geo_y)
-        self._ent_stf_spacing.place(relx=types_start + 3*delta_x, rely=ent_geo_y)
-        self._ent_plate_thk.place(relx=types_start + 4*delta_x, rely=ent_geo_y)
-        self._ent_stf_web_h.place(relx=types_start + 5*delta_x, rely=ent_geo_y)
-        self._ent_stf_web_t.place(relx=types_start + 6*delta_x, rely=ent_geo_y)
-        self._ent_stf_fl_w.place(relx=types_start + 7*delta_x, rely=ent_geo_y)
-        self._ent_str_fl_t.place(relx=types_start + 8*delta_x, rely=ent_geo_y)
-        loc_y = 0.001574074
+        self._ent_field_len.place(relx=ent_relx + 0*geo_dx, rely=ent_geo_y, relwidth = geo_ent_width)
+        self._ent_stf_spacing.place(relx=ent_relx + 1*geo_dx, rely=ent_geo_y, relwidth = geo_ent_width)
+        self._ent_plate_thk.place(relx=ent_relx + 2*geo_dx, rely=ent_geo_y, relwidth = geo_ent_width)
+        self._ent_stf_web_h.place(relx=ent_relx + 3*geo_dx, rely=ent_geo_y, relwidth = geo_ent_width)
+        self._ent_stf_web_t.place(relx=ent_relx + 4*geo_dx, rely=ent_geo_y, relwidth = geo_ent_width)
+        self._ent_stf_fl_w.place(relx=ent_relx + 5*geo_dx, rely=ent_geo_y, relwidth = geo_ent_width)
+        self._ent_str_fl_t.place(relx=ent_relx + 6*geo_dx, rely=ent_geo_y, relwidth = geo_ent_width)
+
         tk.Label(self._main_fr, text='[m]', bg = self._general_color).place(relx=types_start + 2 * delta_x,
                                                                             rely=prop_vert_start + delta_y*1.8)
         tk.Label(self._main_fr, text='[mm]', bg = self._general_color).place(relx=types_start + 3*delta_x,
@@ -598,40 +600,40 @@ class Application():
                                                                              rely=prop_vert_start + delta_y*1.8)
         tk.Label(self._main_fr, text='[mm]', bg = self._general_color).place(relx=types_start + 8*delta_x,
                                                                              rely=prop_vert_start + delta_y*1.8)
-        ent_rely, ent_relx, drelx = 0.38, 0.059, 0.026
-        self._ent_mat.place(relx=0.195, rely=ent_rely)
+
+        self._ent_mat.place(relx=0.195, rely=ent_rely, relwidth = 0.05)
         self._ent_plate_kpp.place(relx = ent_relx , rely=ent_rely)
-        self._ent_plate_kps.place(relx=ent_relx + drelx, rely=ent_rely)
-        self._ent_stf_km1.place(relx=ent_relx + 2*drelx, rely=ent_rely)
-        self._ent_stf_km2.place(relx=ent_relx + 3*drelx, rely=ent_rely)
-        self._ent_stf_km3.place(relx=ent_relx + 4*drelx, rely=ent_rely)
+        self._ent_plate_kps.place(relx=ent_relx + geo_dx, rely=ent_rely)
+        self._ent_stf_km1.place(relx=ent_relx + 2*geo_dx, rely=ent_rely)
+        self._ent_stf_km2.place(relx=ent_relx + 3*geo_dx, rely=ent_rely)
+        self._ent_stf_km3.place(relx=ent_relx + 4*geo_dx, rely=ent_rely)
         drely = 0.05
         self._ent_sigma_y1.place(relx = ent_relx, rely=ent_rely+drely)
-        self._ent_sigma_y2.place(relx=ent_relx + drelx, rely=ent_rely+drely)
-        self._ent_sigma_x.place(relx=ent_relx + 2*drelx, rely=ent_rely+drely)
-        self._ent_tauxy.place(relx=ent_relx + 3*drelx, rely=ent_rely+drely)
-        self._ent_stf_type.place(relx=ent_relx + 4*drelx, rely=ent_rely+drely)
+        self._ent_sigma_y2.place(relx=ent_relx + geo_dx, rely=ent_rely+drely)
+        self._ent_sigma_x.place(relx=ent_relx + 2*geo_dx, rely=ent_rely+drely)
+        self._ent_tauxy.place(relx=ent_relx + 3*geo_dx, rely=ent_rely+drely)
+        self._ent_stf_type.place(relx=ent_relx + 4*geo_dx, rely=ent_rely+drely)
 
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_sigmax, command = self.on_color_code_check)\
-            .place(relx=ent_relx, rely=ent_rely+1.5*drely)
+            .place(relx=ent_relx + 0*geo_dx, rely=ent_rely+1.5*drely)
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_sigmay1, command = self.on_color_code_check)\
-            .place(relx=ent_relx + drelx, rely=ent_rely+1.5*drely)
+            .place(relx=ent_relx + 1*geo_dx, rely=ent_rely+1.5*drely)
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_sigmay2, command = self.on_color_code_check)\
-            .place(relx=ent_relx + 2*drelx, rely=ent_rely+1.5*drely)
+            .place(relx=ent_relx + 2*geo_dx, rely=ent_rely+1.5*drely)
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_tauxy, command = self.on_color_code_check)\
-            .place(relx=ent_relx + 3*drelx, rely=ent_rely+1.5*drely)
+            .place(relx=ent_relx + 3*geo_dx, rely=ent_rely+1.5*drely)
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_structure_type, command = self.on_color_code_check)\
-            .place(relx=ent_relx + 4*drelx, rely=ent_rely+1.5*drely)
+            .place(relx=ent_relx + 4*geo_dx, rely=ent_rely+1.5*drely)
         tk.Label(text='<-- check to color-\ncode stresses', font=self._text_size['Text 9'],
-                 bg=self._general_color).place(relx=ent_relx + 4.5*drelx, rely=ent_rely+1.5*drely)
+                 bg=self._general_color).place(relx=ent_relx + 4.5*geo_dx, rely=ent_rely+1.5*drely, relwidth = 0.06)
 
-        self._ent_structure_type.place(relx=types_start, rely=ent_rely+3.5*drely, width = ent_width*6)
-        self._ent_structure_type.place_configure(width=int(210*self._global_shrink))
+        self._ent_structure_type.place(relx=types_start, rely=ent_rely+3.5*drely, relwidth = 0.11)
+
 
         self._structure_types_label = \
             tk.Label(textvariable = self._new_stucture_type_label, font = self._text_size['Text 9 bold'],
                      bg = self._general_color)\
-                .place(relx=ent_x+delta_x*1.6* self._global_shrink, rely=prop_vert_start +11*delta_y)
+                .place(relx=ent_x+delta_x, rely=prop_vert_start +11*delta_y, relwidth = 0.12)
 
         self._ent_pressure_side.place(relx=types_start+6*delta_x , rely=prop_vert_start + 8 * delta_y)
 
@@ -692,8 +694,8 @@ class Application():
                                        bg = self._general_color)
         self._selected_tank.place(relx=0.0625, rely=load_vert_start + 3.5*delta_y)
 
-        self._compartments_listbox = tk.Listbox(self._main_fr, height = int(10 * self._global_shrink),
-                                               width = int(5 * self._global_shrink),
+        self._compartments_listbox = tk.Listbox(self._main_fr, height = int(10 * 1),
+                                               width = int(5 * 1),
                                                font=self._text_size["Text 10 bold"]
                                                ,background=self._general_color, selectmode = 'extended' )
         self._compartments_listbox.place(relx=types_start, rely=load_vert_start + 4.2*delta_y)
@@ -715,21 +717,21 @@ class Application():
         ent_width = 10
         self._new_overpresure = tk.DoubleVar()
         self._ent_overpressure = tk.Entry(self._main_fr, textvariable = self._new_overpresure,
-                                         width = int(ent_width * self._global_shrink),
+                                         width = int(ent_width * 1),
                                           bg = self._entry_color, fg = self._entry_text_color)
         self._new_overpresure.set(25000)
         self._new_density = tk.DoubleVar()
         self._ent_density = tk.Entry(self._main_fr, textvariable = self._new_density,
-                                    width = int(ent_width * self._global_shrink),
+                                    width = int(ent_width * 1),
                                      bg = self._entry_color, fg = self._entry_text_color)
         self._new_density.set(0)
         self._new_max_el = tk.DoubleVar()
         self._ent_max_el = tk.Entry(self._main_fr, textvariable=self._new_max_el,
-                                   width=int(ent_width * self._global_shrink),
+                                   width=int(ent_width * 1),
                                     bg = self._entry_color, fg = self._entry_text_color)
         self._new_min_el = tk.DoubleVar()
         self._ent_min_el = tk.Entry(self._main_fr, textvariable=self._new_min_el,
-                                   width=int(ent_width * self._global_shrink),
+                                   width=int(ent_width * 1),
                                     bg = self._entry_color, fg = self._entry_text_color)
         tk.Label(self._main_fr, text = '', font = self._text_size["Text 12 bold"], bg = self._general_color)\
             .place(relx=0.052083333, rely=load_vert_start + 3.4*delta_y)
@@ -1514,8 +1516,8 @@ class Application():
                                      stipple= 'gray50')
         self._main_canvas.create_line(0, self._canvas_draw_origo[1], self._canvas_dim[0], self._canvas_draw_origo[1],
                                      stipple='gray50')
-        self._main_canvas.create_text(self._canvas_draw_origo[0] - 30*self._global_shrink,
-                                     self._canvas_draw_origo[1] + 12* self._global_shrink, text='(0,0)',
+        self._main_canvas.create_text(self._canvas_draw_origo[0] - 30*1,
+                                     self._canvas_draw_origo[1] + 12* 1, text='(0,0)',
                                      font = 'Text 10')
         chk_box_active = [self._new_colorcode_beams.get(), self._new_colorcode_plates.get(),
             self._new_colorcode_pressure.get(), self._new_colorcode_utilization.get(),
@@ -1795,7 +1797,7 @@ class Application():
 
             # printing the properties to the active line
             if self._line_is_active:
-                self._prop_canvas.create_text([175*self._global_shrink, 120*self._global_shrink],
+                self._prop_canvas.create_text([175*1, 120*1],
                                              text=self._line_to_struc[self._active_line][0],
                                              font = self._text_size["Text 9"])
 
@@ -1803,13 +1805,13 @@ class Application():
                 self.set_selected_variables(self._active_line)
 
                 # draw the plate and stiffener
-                mult = 200*self._global_shrink
-                thk_mult = 500*self._global_shrink
-                startx = 540*self._global_shrink
-                starty = 150*self._global_shrink
+                mult = 200*1
+                thk_mult = 500*1
+                startx = 540*1
+                starty = 150*1
                 structure_obj = self._line_to_struc[self._active_line][0]
 
-                self._prop_canvas.create_text([330*self._global_shrink, 15*self._global_shrink],
+                self._prop_canvas.create_text([330*1, 15*1],
                                              text ='SELECTED: '+str(self._active_line),
                                              font=self._text_size["Text 10 bold"], fill='red')
                 spacing = structure_obj.get_s()*mult
@@ -1832,9 +1834,9 @@ class Application():
                                              width=stf_flange_thk)
 
                 # load applied to this line
-                deltax = 160*self._global_shrink
-                stl_x = 500*self._global_shrink
-                stl_y = 170*self._global_shrink
+                deltax = 160*1
+                stl_x = 500*1
+                stl_y = 170*1
                 self._prop_canvas.create_text([stl_x,stl_y], text='Applied static/dynamic loads:',
                                              font=self._text_size["Text 7 bold"])
                 count = 0
@@ -1857,12 +1859,12 @@ class Application():
                                                      font=self._text_size["Text 7"])
                         count += 10
             else:
-                self._prop_canvas.create_text([200*self._global_shrink, 50*self._global_shrink],
+                self._prop_canvas.create_text([200*1, 50*1],
                                              text='No line is selected. Click on a line to show properies',
                                              font=self._text_size['Text 9 bold'])
         else:
             pass
-            # self._prop_canvas.create_text([160*self._global_shrink, 20*self._global_shrink],
+            # self._prop_canvas.create_text([160*1, 20*1],
             #                              text='Properties displayed here (select line):',
             #                              font=self._text_size['Text 9 bold'])
 
@@ -1931,7 +1933,7 @@ class Application():
                            'Wey1: '+ str('%.4E' % decimal.Decimal(sec_mod[1]*m3_to_mm3))+ ' [mm^3], '+\
                            ' Wey2: ' + str('%.4E' % decimal.Decimal(sec_mod[0]*m3_to_mm3)) + ' [mm^3] ' \
                         if not slm_text_min_zpl else 'Net effective plastic section modulus: ' +str(slm_zpl)+' [cm^3]'
-                self._result_canvas.create_text([x*self._global_shrink, y*self._global_shrink],
+                self._result_canvas.create_text([x*1, y*1],
                                                text=text,font=self._text_size['Text 9 bold'],anchor='nw')
                 #printing the minimum section modulus
                 if state['slamming'][current_line]['state'] and slm_text_min_zpl is False:
@@ -1939,41 +1941,41 @@ class Application():
                 else:
                     text =  'Minimum section modulus: '+str('%.4E' % decimal.Decimal(min_sec_mod * m3_to_mm3)) +\
                             ' [mm^3] ' if not slm_text_min_zpl else slm_text_min_zpl
-                self._result_canvas.create_text([x*self._global_shrink, (y+dy)*self._global_shrink], text= text,
+                self._result_canvas.create_text([x*1, (y+dy)*1], text= text,
                                                     font=self._text_size["Text 9 bold"],anchor='nw', fill=color_sec)
 
                 #minimum shear area
                 text = 'Shear area: '+str('%.4E' % decimal.Decimal(shear_area * m2_to_mm2 ))+' [mm^2]' \
                     if not slm_text_min_web_thk else 'Stiffener web thickness: '+str(obj_structure.get_web_thk()*1000)+' [mm]'
-                self._result_canvas.create_text([x*self._global_shrink, (y+3*dy)*self._global_shrink],
+                self._result_canvas.create_text([x*1, (y+3*dy)*1],
                                                text= text,
                                                font=self._text_size["Text 9 bold"],anchor='nw')
                 text = 'Minimum shear area: '+str('%.4E' % decimal.Decimal(min_shear * m2_to_mm2))+' [mm^2] ' \
                     if not slm_text_min_web_thk else 'Minimum stiffener web thickness due to SLAMMING: '+\
                                                      str(round(slm_min_web_thk,1))+' [mm]'
-                self._result_canvas.create_text([x*self._global_shrink, (y+4*dy)*self._global_shrink],
+                self._result_canvas.create_text([x*1, (y+4*dy)*1],
                                                text = text,
                                                font=self._text_size["Text 9 bold"],anchor='nw', fill=color_shear)
 
                 #minimum thickness for plate
 
-                self._result_canvas.create_text([x*self._global_shrink, (y+6*dy)*self._global_shrink],
+                self._result_canvas.create_text([x*1, (y+6*dy)*1],
                                                text='Plate thickness: '
                                                     +str(obj_structure.get_plate_thk()*1000)+' [mm] ',
                                                font=self._text_size["Text 9 bold"],anchor='nw')
                 text = 'Minimum plate thickness: '+str(round(min_thk,1)) + ' [mm]' if not slm_text_pl_thk \
                     else 'Minimum plate thickness due to SLAMMING'+str(slm_min_pl_thk)+' [mm]'
-                self._result_canvas.create_text([x*self._global_shrink, (y+7*dy)*self._global_shrink],
+                self._result_canvas.create_text([x*1, (y+7*dy)*1],
                                                text=text,
                                                font=self._text_size["Text 9 bold"],anchor='nw', fill=color_thk)
 
                 # buckling results
 
-                self._result_canvas.create_text([x * self._global_shrink, (y+9*dy) * self._global_shrink],
+                self._result_canvas.create_text([x * 1, (y+9*dy) * 1],
                                                text='Buckling results DNV-RP-C201:',
                                                font=self._text_size["Text 9 bold"], anchor='nw')
                 if sum(buckling)==0:
-                    self._result_canvas.create_text([x * self._global_shrink, (y+10*dy) * self._global_shrink],
+                    self._result_canvas.create_text([x * 1, (y+10*dy) * 1],
                                                    text='No buckling results', font=self._text_size["Text 9 bold"],
                                                    anchor='nw', fill=color_buckling)
                 else:
@@ -1988,13 +1990,13 @@ class Application():
                             res_text = '|eq 7.19: '+str(buckling[0])+' |eq 7.54: '+str(buckling[1])+' |eq 7.55: '+ \
                                          str(buckling[2])+' |7.56: '+str(buckling[3])+ '|eq 7.57: '+str(buckling[4])+ \
                                          ' |z*: '+str(buckling[5])
-                    self._result_canvas.create_text([x * self._global_shrink, (y+10*dy) * self._global_shrink],
+                    self._result_canvas.create_text([x * 1, (y+10*dy) * 1],
                                                text=res_text,font=self._text_size["Text 9 bold"],
                                                anchor='nw',fill=color_buckling)
 
                 # fatigue results
 
-                self._result_canvas.create_text([x * self._global_shrink, (y+12*dy) * self._global_shrink],
+                self._result_canvas.create_text([x * 1, (y+12*dy) * 1],
                                                 text='Fatigue results (DNVGL-RP-C203): ',
                                                 font=self._text_size["Text 9 bold"], anchor='nw')
 
@@ -2002,26 +2004,26 @@ class Application():
                     if state['fatigue'][current_line]['damage'] is not None:
                         damage = state['fatigue'][current_line]['damage']
                         dff = state['fatigue'][current_line]['dff']
-                        self._result_canvas.create_text([x * self._global_shrink, (y + 13 * dy) * self._global_shrink],
+                        self._result_canvas.create_text([x * 1, (y + 13 * dy) * 1],
                                                         text='Total damage (DFF not included): '+str(round(damage,3)) +
                                                              '  |  With DFF = '+str(dff)+' --> Damage: '+
                                                              str(round(damage*dff,3)),
                                                         font=self._text_size["Text 9 bold"], anchor='nw',
                                                         fill=color_fatigue)
                     else:
-                        self._result_canvas.create_text([x * self._global_shrink, (y + 13 * dy) * self._global_shrink],
+                        self._result_canvas.create_text([x * 1, (y + 13 * dy) * 1],
                                                         text='Total damage: NO RESULTS ',
                                                         font=self._text_size["Text 9 bold"],
                                                         anchor='nw')
                 else:
-                    self._result_canvas.create_text([x * self._global_shrink, (y + 13 * dy) * self._global_shrink],
+                    self._result_canvas.create_text([x * 1, (y + 13 * dy) * 1],
                                                     text='Total damage: NO RESULTS ',
                                                     font=self._text_size["Text 9 bold"],
                                                     anchor='nw')
             else:
                 pass
         else:
-            self._result_canvas.create_text([200*self._global_shrink, 20*self._global_shrink],
+            self._result_canvas.create_text([200*1, 20*1],
                                            text='The results are shown here (select line):',
                                            font=self._text_size["Text 10 bold"])
 
@@ -3203,6 +3205,7 @@ class Application():
             counter+=1
 
         export_all = {}
+        export_all['project infomation'] = self._new_project_infomation.get()
         export_all['point_dict'] = self._point_dict
         export_all['line_dict'] = self._line_dict
         export_all['structure_properties'] = structure_properties
@@ -3231,7 +3234,8 @@ class Application():
         imported = json.load(imp_file)
 
         self.reset()
-
+        if 'project infomation' in imported.keys():
+            self._new_project_infomation.set(imported['project infomation'])
         self._point_dict = imported['point_dict']
         self._line_dict = imported['line_dict']
         struc_prop = imported['structure_properties']
@@ -3793,7 +3797,6 @@ class Application():
 
         save_file.writelines(JS.output_lines)
         save_file.close()
-
 
 if __name__ == '__main__':
 
