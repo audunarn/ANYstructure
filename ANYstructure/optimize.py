@@ -158,14 +158,6 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
     :return:
     '''
 
-    # if predefiened_stiffener_iter is None:
-    #     structure_to_check = any_get_all_combs(min_var, max_var, deltas, init_weight=init_filter)
-    # else:
-    #     #structure_to_check = [obj.get_tuple() for obj in predefiened_stiffener_iter]
-    #     structure_to_check = any_get_all_combs(min_var, max_var, deltas, init_weight=init_filter,
-    #                                            predef_stiffeners=predefiened_stiffener_iter)
-    #     init_filter = get_initial_weight(initial_structure_obj, lateral_pressure, min_var, max_var, deltas, 10000,
-    #                                      fat_dict, fat_press, predefiened_stiffener_iter)
 
     if predefiened_stiffener_iter is None:
         structure_to_check = any_get_all_combs(min_var, max_var, deltas)
@@ -192,8 +184,8 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
     if ass_var == None:
         return None, None, None, False, main_fail
 
-    new_struc_obj = create_new_structure_obj(initial_structure_obj,[item for item in ass_var])
-    new_calc_obj = create_new_calc_obj(initial_structure_obj,[item for item in ass_var])[0]
+    new_struc_obj = create_new_structure_obj(initial_structure_obj,[round(item,10) for item in ass_var])
+    new_calc_obj = create_new_calc_obj(initial_structure_obj,[round(item,10) for item in ass_var])[0]
 
     return new_struc_obj, new_calc_obj, fat_dict, True, main_fail
 

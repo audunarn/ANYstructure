@@ -364,17 +364,17 @@ class CreateOptimizeWindow():
             self._new_fatigue_int_press.set(self._fatigue_pressure['p_int']), \
             self._new_fatigue_ext_press.set(self._fatigue_pressure['p_ext'])
 
-        self._new_spacing_upper.set(round(self._spacing*1000+100,5))
-        self._new_spacing_lower.set(round(max(self._spacing*1000-100,0),5))
+        self._new_spacing_upper.set(round(self._spacing*1000,5))
+        self._new_spacing_lower.set(round(max(self._spacing*1000,0),5))
         self._new_pl_thk_upper.set(round(self._pl_thk*1000+10,5))
         self._new_pl_thk_lower.set(round(max(self._pl_thk*1000-10,float(10)),5))
         self._new_web_h_upper.set(round(self._stf_web_h*1000+100,5))
-        self._new_web_h_lower.set(round(max(self._stf_web_h*1000-100,0),5))
+        self._new_web_h_lower.set(round(max(self._stf_web_h*1000-100,100),5))
         self._new_web_thk_upper.set(round(self._stf_web_thk*1000+10,5))
         self._new_web_thk_lower.set(round(max(self._stf_web_thk*1000-10,float(10)),5))
         if self._initial_structure_obj.get_stiffener_type() != 'FB':
             self._new_fl_w_upper.set(min(round(self._fl_w*1000+100,5), 200))
-            self._new_fl_w_lower.set(round(max(self._fl_w*1000-100,0),5))
+            self._new_fl_w_lower.set(round(max(self._fl_w*1000-100,100),5))
             self._new_fl_thk_upper.set(round(self._fl_thk*1000+10,15))
             self._new_fl_thk_lower.set(round(max(self._fl_thk*1000-10,10),15))
         else:
@@ -620,17 +620,16 @@ class CreateOptimizeWindow():
                                                use_weight_filter = self._new_use_weight_filter.get())
 
         if self._opt_results is not None:
-            failed_panels = self._opt_results[4]
             self._opt_actual_running_time.config(text='Actual running time: \n'
                                                      +str(time.time()-t_start)+' sec')
             self._opt_runned = True
             self._result_label.config(text='Optimization result | Spacing: '+
-                                           str(round(self._opt_results[0].get_s(),1)*1000)+
-                                          ' Plate thickness: '+str(round(self._opt_results[0].get_plate_thk()*1000,2))+
-                                          ' Stiffener - T'+str(round(self._opt_results[0].get_web_h()*1000,2))+'x'
-                                          +str(round(self._opt_results[0].get_web_thk()*1000,2))+
-                                          '+'+str(round(self._opt_results[0].get_fl_w()*1000,2))+'x'
-                                          +str(round(self._opt_results[0].get_fl_thk()*1000,2)))
+                                           str(round(self._opt_results[0].get_s(),10)*1000)+
+                                          ' Plate thickness: '+str(round(self._opt_results[0].get_plate_thk()*1000,10))+
+                                          ' Stiffener - T'+str(round(self._opt_results[0].get_web_h()*1000,10))+'x'
+                                          +str(round(self._opt_results[0].get_web_thk()*1000,10))+
+                                          '+'+str(round(self._opt_results[0].get_fl_w()*1000,10))+'x'
+                                          +str(round(self._opt_results[0].get_fl_thk()*1000,10)))
 
             self._new_opt_spacing.set(round(self._opt_results[0].get_s(),5))
             self._new_opt_pl_thk.set(round(self._opt_results[0].get_plate_thk(),5))
