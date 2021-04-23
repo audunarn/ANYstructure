@@ -55,7 +55,7 @@ class Structure():
         '''
         return \
             str(
-            '\n Plate field span:              ' + str(round(self.span,1)) + ' meters' +
+            '\n Plate field span:              ' + str(round(self.span,3)) + ' meters' +
             '\n Stiffener spacing:             ' + str(self.spacing*1000)+' mm'+
             '\n Plate thickness:               ' + str(self.plate_th*1000)+' mm'+
             '\n Stiffener web height:          ' + str(self.web_height*1000)+' mm'+
@@ -67,9 +67,9 @@ class Structure():
             '\n Dynamic load varible_          ' + str(self.dynamic_variable_orientation)+
             '\n Plate fixation paramter,kpp:   ' + str(self.plate_kpp) + ' ' +
             '\n Stf. fixation paramter,kps:    ' + str(self.stf_kps) + ' ' +
-            '\n Global stress, sig_y1/sig_y2:  ' + str(round(self.sigma_y1,1))+'/'+str(round(self.sigma_y2,1))+ ' MPa' +
-            '\n Global stress, sig_x:          ' + str(round(self.sigma_x,1)) + ' MPa' +
-            '\n Global shear, tau_xy:          ' + str(round(self.tauxy,1)) + ' MPa' +
+            '\n Global stress, sig_y1/sig_y2:  ' + str(round(self.sigma_y1,3))+'/'+str(round(self.sigma_y2,3))+ ' MPa' +
+            '\n Global stress, sig_x:          ' + str(round(self.sigma_x,3)) + ' MPa' +
+            '\n Global shear, tau_xy:          ' + str(round(self.tauxy,3)) + ' MPa' +
             '\n km1,km2,km3:                   ' + str(self.km1)+'/'+str(self.km2)+'/'+str(self.km3)+
             '\n Pressure side (p-plate/s-stf): ' + str(self.pressure_side) + ' ')
 

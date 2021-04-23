@@ -313,22 +313,22 @@ class Application():
         tk.Label(self._main_fr, text='To point number:',font="Text 9", bg = self._general_color)\
             .place(relx=line_x, rely=line_start + delta_y)
         tk.Checkbutton(self._main_fr, variable = self._new_shortcut_backdrop, command = self.update_frame)\
-            .place(relx = 0.26, rely=0)
+            .place(relx = 0.26, y=0)
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_beams, command = self.on_color_code_check)\
-            .place(relx = 0.26, rely=0.02)
+            .place(relx = 0.26, y=20)
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_plates, command = self.on_color_code_check)\
-            .place(relx = 0.26, rely=0.02*2)
+            .place(relx = 0.26, y=40)
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_pressure, command = self.on_color_code_check)\
-            .place(relx = 0.26, rely=0.02*3)
+            .place(relx = 0.26, y=60)
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_utilization, command = self.on_color_code_check)\
-            .place(relx = 0.26, rely=0.02*4)
+            .place(relx = 0.26, y=80)
 
 
-        tk.Label(self._main_fr, text='Check to see avaliable shortcuts', font="Text 9").place(relx = 0.27, rely=0)
-        tk.Label(self._main_fr, text='Color beam prop.', font="Text 9").place(relx = 0.27, rely=0.02)
-        tk.Label(self._main_fr, text='Color plate thk.', font="Text 9").place(relx = 0.27, rely=0.02*2)
-        tk.Label(self._main_fr, text='Color line pressure', font="Text 9").place(relx = 0.27, rely=0.02*3)
-        tk.Label(self._main_fr, text='Color utilization', font="Text 9").place(relx = 0.27, rely=0.02*4)
+        tk.Label(self._main_fr, text='Check to see avaliable shortcuts', font="Text 9").place(relx = 0.27, y=0)
+        tk.Label(self._main_fr, text='Color beam prop.', font="Text 9").place(relx = 0.27, y=20)
+        tk.Label(self._main_fr, text='Color plate thk.', font="Text 9").place(relx = 0.27, y=40)
+        tk.Label(self._main_fr, text='Color line pressure', font="Text 9").place(relx = 0.27, y=60)
+        tk.Label(self._main_fr, text='Color utilization', font="Text 9").place(relx = 0.27, y=80)
 
         tk.Entry(self._main_fr, textvariable=self._new_line_p1, width=int(ent_width * 1),
                  bg = self._entry_color, fg = self._entry_text_color)\
@@ -1792,12 +1792,13 @@ class Application():
 
         '''
         self._prop_canvas.delete('all')
-
+        canvas_width = self._prop_canvas.winfo_width()
+        canvas_height = self._prop_canvas.winfo_height()
         if self._active_line in self._line_to_struc:
 
             # printing the properties to the active line
             if self._line_is_active:
-                self._prop_canvas.create_text([175*1, 120*1],
+                self._prop_canvas.create_text([canvas_width*0.239726027, canvas_height*0.446096654],
                                              text=self._line_to_struc[self._active_line][0],
                                              font = self._text_size["Text 9"])
 
@@ -1811,7 +1812,7 @@ class Application():
                 starty = 150*1
                 structure_obj = self._line_to_struc[self._active_line][0]
 
-                self._prop_canvas.create_text([330*1, 15*1],
+                self._prop_canvas.create_text([canvas_width/2-canvas_width/20, canvas_height/20],
                                              text ='SELECTED: '+str(self._active_line),
                                              font=self._text_size["Text 10 bold"], fill='red')
                 spacing = structure_obj.get_s()*mult
@@ -1835,8 +1836,9 @@ class Application():
 
                 # load applied to this line
                 deltax = 160*1
-                stl_x = 500*1
-                stl_y = 170*1
+                stl_x = canvas_width*0.684931507
+                stl_y = canvas_height*0.63197026
+
                 self._prop_canvas.create_text([stl_x,stl_y], text='Applied static/dynamic loads:',
                                              font=self._text_size["Text 7 bold"])
                 count = 0
@@ -1859,14 +1861,12 @@ class Application():
                                                      font=self._text_size["Text 7"])
                         count += 10
             else:
-                self._prop_canvas.create_text([200*1, 50*1],
+                self._prop_canvas.create_text([canvas_width*0.4, height*0.185873606],
                                              text='No line is selected. Click on a line to show properies',
                                              font=self._text_size['Text 9 bold'])
         else:
             pass
-            # self._prop_canvas.create_text([160*1, 20*1],
-            #                              text='Properties displayed here (select line):',
-            #                              font=self._text_size['Text 9 bold'])
+
 
     def draw_results(self, state = None):
         '''
