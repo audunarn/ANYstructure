@@ -995,6 +995,7 @@ class Application():
         if var_to_set == '':
             tk.messagebox.showerror('Select variable', 'Select a variable to change\n'
                                                        'in the drop down menu.')
+            return
 
         obj_dict = {'mat_yield': self._new_material.get,
                     'span': self._new_field_len.get,
