@@ -209,7 +209,11 @@ class Application():
         self._logger = {'added': list(), 'deleted': list()}  # used to log operations for geometry operations, to be used for undo/redo
         self.__returned_load_data = None # Temporary data for returned loads from the load window.
         self.__copied_line_prop = None  # Used to copy line properties to another.
-
+        # Used to select parameter
+        self._stuctural_definition = ['mat_yield', 'span', 'spacing', 'plate_thk', 'stf_web_height', 'stf_web_thk',
+                                       'stf_flange_width', 'stf_flange_thk', 'structure_type', 'stf_type',
+                                       'sigma_y1', 'sigma_y2', 'sigma_x', 'tau_xy', 'plate_kpp', 'stf_kps','stf_km1',
+                                       'stf_km2', 'stf_km3', 'press_side', 'structure_types', 'zstar_optimization']
         self._p1_p2_select = False
         self._line_is_active = False # True when a line is clicked
         self._active_line = '' # Name of the clicked point
@@ -217,6 +221,7 @@ class Application():
         self._active_point = '' # Name of the clicked point
         self.controls() # Function to activate mouse clicks
         self._line_point_to_point_string = [] # This one ensures that a line is not created on top of a line
+        self._multiselect_lines = []  # A list used to select many lines. Used to set properties.
 
         # Initsializing the calculation grid used for tank definition
         self._grid_dimensions = [self._canvas_base_origo[1] + 1, base_canvas_dim[0] - self._canvas_base_origo[0] + 1]
@@ -302,6 +307,7 @@ class Application():
         self._new_colorcode_tauxy.set(False)
         self._new_colorcode_structure_type = tk.BooleanVar()
         self._new_colorcode_structure_type.set(False)
+        self._new_toggle_var = tk.StringVar()
 
 
         line_start, line_x = point_start+0.09, 0.005208333
@@ -429,11 +435,30 @@ class Application():
         tk.Label(self._main_fr, text='Select structure type:', font=self._text_size['Text 9 bold'],
                  bg = self._general_color)\
             .place(relx=types_start, rely=prop_vert_start + 9.5 * delta_y)
-        self.add_stucture = tk.Button(self._main_fr, text='Add structure to line', command=self.new_structure,
+
+        self.add_stucture = tk.Button(self._main_fr, text='Add structure to line \n'
+                                                          '-- new structural properties or\n'
+                                                          'replace existing --', command=self.new_structure,
                                       font = self._text_size['Text 10 bold'],
                                       bg = self._button_bg_color, fg = self._button_fg_color)
-        self.add_stucture.place(relx=types_start+ delta_x*5.7, rely=prop_vert_start+15*delta_y, relwidth = 0.1,
-                                relheight = 0.04)
+        self.add_stucture.place(relx=types_start+ delta_x*4.2, rely=prop_vert_start+14*delta_y, relwidth = 0.14,
+                                relheight = 0.06)
+
+        self._toggle_btn = tk.Button(self._main_fr, text="Toggle select\nmultiple", relief="raised",
+                                     command=self.toggle_select_multiple, bg = self._button_bg_color)
+        self._toggle_change_param = tk.Button(self._main_fr, text="Change multi.\nparam.", relief="raised",
+                                     command=self.toggle_set_variable, bg = self._button_bg_color)
+        self._toggle_param_to_change = None
+        self._toggle_btn.place(relx=types_start+ delta_x*4.2, rely=prop_vert_start+12.3*delta_y, relwidth = 0.045,
+                                relheight = 0.03)
+        self._toggle_change_param.place(relx=types_start+ delta_x*6, rely=prop_vert_start+12.3*delta_y, relwidth = 0.045,
+                                relheight = 0.03)
+
+        self._toggle_choose = tk.OptionMenu(self._main_fr, self._new_toggle_var, *self._stuctural_definition,
+                                            command = self.update_frame)
+        self._toggle_choose.place(relx=types_start+ delta_x*7.8, rely=prop_vert_start+12.3*delta_y, relwidth = 0.047,
+                                relheight = 0.03)
+
 
         # --- main variable to define the structural properties ---
         self._new_material = tk.DoubleVar()
@@ -946,6 +971,70 @@ class Application():
                            'Text 7': 'Verdana ' + str(int(7 * self.text_scale)),
                            'Text 10': 'Verdana ' + str(int(10 * self.text_scale)),
                            'Text 7 bold': 'Verdana ' + str(int(7 * self.text_scale)) + ' bold'}
+
+    def toggle_select_multiple(self, event = None):
+        if self._toggle_btn.config('relief')[-1] == 'sunken':
+            self._toggle_btn.config(relief="raised")
+            self._toggle_btn.config(bg=self._button_bg_color)
+            self._multiselect_lines = []
+        else:
+            self._toggle_btn.config(relief="sunken")
+            self._toggle_btn.config(bg='orange')
+            self._toggle_btn.config(text = 'select lines')
+        self.update_frame()
+
+    def toggle_set_variable(self):
+        if self._toggle_btn.config('relief')[-1] == "raised":
+            tk.messagebox.showerror('Toggle select not chosen.', 'Toggle select button not pressed.\n'
+                                                                 'To change a parameter select a variable, \n'
+                                                                 'set the value you want to change and \n'
+                                                                 'press Change multi. param.')
+            return
+
+        var_to_set = self._new_toggle_var.get()
+        if var_to_set == '':
+            tk.messagebox.showerror('Select variable', 'Select a variable to change\n'
+                                                       'in the drop down menu.')
+
+        obj_dict = {'mat_yield': self._new_material.get,
+                    'span': self._new_field_len.get,
+                    'spacing': self._new_stf_spacing.get,
+                    'plate_thk': self._new_plate_thk.get,
+                    'stf_web_height': self._new_stf_web_h,
+                    'stf_web_thk': self._new_sft_web_t.get,
+                    'stf_flange_width': self._new_stf_fl_w,
+                    'stf_flange_thk': self._new_stf_fl_t,
+                    'structure_type': self._new_stucture_type,
+                    'stf_type': self._new_stf_type.get,
+                    'sigma_y1': self._new_sigma_y1.get,
+                    'sigma_y2': self._new_sigma_y2.get,
+                    'sigma_x': self._new_sigma_x.get,
+                    'tau_xy': self._new_tauxy.get,
+                    'plate_kpp': self._new_plate_kpp,
+                    'stf_kps': self._new_stf_kps.get,
+                    'stf_km1': self._new_stf_km1.get,
+                    'stf_km2': self._new_stf_km2.get,
+                    'stf_km3': self._new_stf_km3.get,
+                    'press_side': self._new_pressure_side,
+                    'structure_types': self._structure_types,
+                    'zstar_optimization': self._new_zstar_optimization}
+
+
+        set_var = obj_dict[var_to_set]()
+        if var_to_set == 'mat_yield':
+            set_var = set_var* 1e6
+        elif var_to_set in ['span', 'spacing','plate_thk','stf_web_height','stf_web_thk',
+                            'stf_flange_width','stf_flange_thk']:
+            set_var = set_var/1000
+
+        for line in self._multiselect_lines:
+            self._active_line = line
+            self._line_is_active = True
+            if self._active_line in self._line_to_struc.keys():
+                dict = self._line_to_struc[self._active_line][1].get_structure_prop()
+                dict[var_to_set][0] = set_var
+
+                self.new_structure(toggle_multi=dict)
 
     def gui_load_combinations(self,event):
         '''
@@ -1595,6 +1684,11 @@ class Application():
                     if self._new_line_name.get():
                         self._main_canvas.create_text(coord1[0]-20 + vector[0] / 2 + 5, coord1[1] + vector[1] / 2+10,
                                                      text='l.' + str(get_num(line)), font="Text 8", fill = 'black')
+                if line in self._multiselect_lines:
+                    self._main_canvas.create_text(coord1[0] + vector[0] / 2 +5, coord1[1] + vector[1] / 2 -10,
+                                                  text=self._new_toggle_var.get(),
+                                                  font=self._text_size["Text 8 bold"],
+                                                  fill='orange')
 
         # drawing waterline
         if len(self._load_dict) != 0:
@@ -2207,7 +2301,7 @@ class Application():
         except TclError:
             messagebox.showinfo(title='Input error', message='Input must be a line number.')
 
-    def new_structure(self, event = None, pasted_structure = None, multi_return = None):
+    def new_structure(self, event = None, pasted_structure = None, multi_return = None, toggle_multi = None):
         '''
         This method maps the structure to the line when clicking "add structure to line" button.
         The result is put in a dictionary. Key is line name and value is the structure object.
@@ -2220,6 +2314,7 @@ class Application():
             [4] load combinations result (currently not used)
         :return:
         '''
+
         if all([pasted_structure == None, multi_return == None]):
             if any([self._new_stf_spacing.get()==0, self._new_plate_thk.get()==0, self._new_stf_web_h.get()==0,
                     self._new_sft_web_t.get()==0]):
@@ -2232,9 +2327,10 @@ class Application():
         if self._line_is_active or multi_return != None:
             # structure dictionary: name of line : [ 0.Structure class, 1.calc scantling class,
             # 2.calc fatigue class, 3.load object, 4.load combinations result ]
-            if multi_return != None:
+            if multi_return is not None:
                 obj_dict = multi_return[1].get_structure_prop()
-
+            elif toggle_multi is not None:
+                obj_dict = toggle_multi
             elif pasted_structure == None:
                 obj_dict = {'mat_yield': [self._new_material.get()*1e6, 'Pa'],
                             'span': [self._new_field_len.get(), 'm'],
@@ -2260,7 +2356,7 @@ class Application():
                             'zstar_optimization': [self._new_zstar_optimization.get(), '']}
             else:
                 obj_dict = pasted_structure.get_structure_prop()
-
+            print(obj_dict)
             if self._active_line not in self._line_to_struc.keys():
                 self._line_to_struc[self._active_line] = [None, None, None, [None], {}]
                 self._line_to_struc[self._active_line][0] = Structure(obj_dict)
@@ -2300,6 +2396,17 @@ class Application():
 
         # self.draw_results(state=state)
         # self.draw_canvas(state=state)
+
+    def toggle_multiple_change_param(self):
+
+        if self._multiselect_lines != []:
+            for line in self._multiselect_lines:
+                if line in self._line_to_struc:
+                    self._active_line = line
+                    self._line_is_active = True
+                    current_structure = self._line_to_struc[line][1]
+                    parameter_to_change = None
+
 
     def option_meny_structure_type_trace(self, event):
         ''' Updating of the values in the structure type option menu. '''
@@ -3060,6 +3167,12 @@ class Application():
             p2 = self._point_dict['point'+str(self._line_dict[self._active_line][1])]
             self._new_field_len.set(dist(p1,p2))
 
+        if self._toggle_btn.config('relief')[-1] == 'sunken':
+            if self._active_line not in self._multiselect_lines:
+                self._multiselect_lines.append(self._active_line)
+        else:
+            self._multiselect_lines = []
+
         try:
             state = self.get_color_and_calc_state()
         except AttributeError:
@@ -3131,6 +3244,9 @@ class Application():
                 else:
                     self._new_line_p2.set(get_num(point))
                     self._p1_p2_select = False
+        if self._toggle_btn.config('relief')[-1] == 'sunken':
+            if len(self._multiselect_lines) != 0:
+                self._multiselect_lines.pop(-1)
 
 
         self.update_frame()

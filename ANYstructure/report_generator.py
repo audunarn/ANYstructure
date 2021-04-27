@@ -372,7 +372,14 @@ class LetterMaker(object):
             elif draw_type == 'structure type':
                 self.c.setStrokeColor(all_line_data['color code']['lines'][line]['structure type'])
             elif load_idx_name is not None:
+                points = self.data._point_dict
+                highest_y = max([coord[1] for coord in points.values()])
+                highest_x = max([coord[0] for coord in points.values()])
 
+                if any([highest_x == 0, highest_y == 0]):
+                    scale = 10
+                else:
+                    scale = min(300 / highest_y, 300 / highest_x, 10)
                 if line in self.data._load_dict[load_idx_name[1]][1]:
                     self.c.setStrokeColor('orange')
                 else:
@@ -384,12 +391,12 @@ class LetterMaker(object):
             x2, y2 = points['point'+str(pt[1])][0] * scale + origo[0], \
                      points['point'+str(pt[1])][1] * scale + origo[1]
             self.c.line(x1,y1,x2,y2)
-
-            textobject = self.c.beginText()
-            textobject.setTextOrigin(x1+(x2-x1)*0.5-5, y1 + (y2-y1)*0.5+2 )
-            textobject.setFont("Helvetica-Oblique", 9)
-            textobject.textLine(str(hlp.get_num(line)))
-            self.c.drawText(textobject)
+            if load_idx_name is None:
+                textobject = self.c.beginText()
+                textobject.setTextOrigin(x1+(x2-x1)*0.5-5, y1 + (y2-y1)*0.5+2 )
+                textobject.setFont("Helvetica-Oblique", 9)
+                textobject.textLine(str(hlp.get_num(line)))
+                self.c.drawText(textobject)
 
         if draw_type == 'UF':
             pass
@@ -572,8 +579,8 @@ class LetterMaker(object):
 
             for lidx, loadtext in enumerate(reversed(self.data._load_dict[load_idx_name[1]][0].get_report_string())):
                 textobject = self.c.beginText()
-                textobject.setTextOrigin(300 , origo[1]+50+ 12*lidx)
-                textobject.setFont("Helvetica-Oblique", 12)
+                textobject.setTextOrigin(370 , origo[1]+50+ 11*lidx)
+                textobject.setFont("Helvetica-Oblique", 11)
                 textobject.setFillColor('black')
                 textobject.textLine(loadtext)
                 self.c.drawText(textobject)
