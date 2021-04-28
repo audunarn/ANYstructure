@@ -63,6 +63,7 @@ class CreateOptimizeMultipleWindow():
             self._fatigue_pressure = test.get_fatigue_pressures()
             self._fatigue_object = test.get_fatigue_object()
             image_dir = os.path.dirname(__file__)+'\\images\\'
+            self._active_lines = []
         else:
             self.app = app
             self._load_objects = app._load_dict
@@ -74,6 +75,7 @@ class CreateOptimizeMultipleWindow():
             self._line_to_struc = app._line_to_struc
             image_dir = app._root_dir + '\\images\\'
             self._root_dir = app._root_dir
+            self._active_lines = app._multiselect_lines
 
         self._frame = master
         self._frame.wm_title("Optimize structure")
@@ -386,7 +388,7 @@ class CreateOptimizeMultipleWindow():
                                         variable=self.progress_count)
         self.progress_bar.place(x=start_x+dx*10.5,y=start_y-dy*11.5)
 
-        self._active_lines = []
+
         self.controls()
         self.draw_select_canvas()
         self._harmonizer_data = {}
