@@ -861,10 +861,19 @@ class CalcScantlings(Structure):
         fEpy = 0.9*E*math.pow(t/s,2) # eq 7.43, checked, ok
         fEpt = 5.0*E*math.pow(t/s,2) # eq 7.44, checked, ok
         c = 2-(s/l) # eq 7.41, checked, ok
-
-        alphae = math.sqrt( (fy/sigjSD) * math.pow(math.pow(abs(sigxSd)/fEpx, c)+
-                                                   math.pow(abs(sigySd)/fEpy, c)+
-                                                   math.pow(abs(tauSd)/fEpt, c), 1/c)) # eq 7.40, checed, ok.
+        try:
+            alphae = math.sqrt( (fy/sigjSD) * math.pow(math.pow(abs(sigxSd)/fEpx, c)+
+                                                       math.pow(abs(sigySd)/fEpy, c)+
+                                                       math.pow(abs(tauSd)/fEpt, c), 1/c)) # eq 7.40, checed, ok.
+        except OverflowError:
+            import tkinter as tk
+            tk.messagebox.showerror('Error', 'There is an issue with your input. \n'
+                                             'Maybe a dimension is nor correct w.r.t.\n'
+                                             'm and mm. Check it!\n\n'
+                                             'A plate resistance error will be shown\n'
+                                             'for buckling. This is not correct but is\n'
+                                             'due to the input error.')
+            return [float('inf'),0,0,0,0,0]
         fep = fy / math.sqrt(1+math.pow(alphae,4)) # eq 7.39, checked, ok.
         eta = min(sigjSD/fep, 1) # eq. 7.37, chekced
 

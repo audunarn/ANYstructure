@@ -72,6 +72,8 @@ class Application():
                               'CTRL-M Move selected point)\n' \
                               'CTRL-Q New line (right click two points)\n' \
                               'CTRL-S Assign structure prop. to line\n' \
+                              'CTRL-A Select all lines (change param)\n' \
+                              'CTRL-T Select all structure types (selected)\n' \
                               'CTRL-DELETE Delete structure prop. from line\n' \
                               'DELETE Delete active line and/or point \n' \
                               'CTRL-E Copy line properties from active line\n' \
@@ -284,7 +286,7 @@ class Application():
 
         # Check boxes
         self._new_shortcut_backdrop = tk.BooleanVar()
-        self._new_shortcut_backdrop.set(True)
+        self._new_shortcut_backdrop.set(False)
         self._new_colorcode_beams = tk.BooleanVar()
         self._new_colorcode_beams.set(False)
         self._new_colorcode_plates = tk.BooleanVar()
@@ -484,6 +486,14 @@ class Application():
         self._new_pressure_side = tk.StringVar()
 
         # Setting default values to tkinter variables
+        self._new_material.set(355)
+        self._new_field_len.set(4)
+        self._new_stf_spacing.set(750)
+        self._new_plate_thk.set(18)
+        self._new_stf_web_h.set(400)
+        self._new_sft_web_t.set(12)
+        self._new_stf_fl_w.set(150)
+        self._new_stf_fl_t.set(20)
         self._new_sigma_y1.set(80)
         self._new_sigma_y2.set(80)
         self._new_sigma_x.set(50)
@@ -977,6 +987,8 @@ class Application():
             self._toggle_btn.config(relief="raised")
             self._toggle_btn.config(bg=self._button_bg_color)
             self._multiselect_lines = []
+            self._toggle_btn.config(text='Toggle select\n'
+                                         'multiple')
         else:
             self._toggle_btn.config(relief="sunken")
             self._toggle_btn.config(bg='orange')
@@ -996,7 +1008,8 @@ class Application():
             tk.messagebox.showerror('Select variable', 'Select a variable to change\n'
                                                        'in the drop down menu.')
             return
-
+        # if not self._line_is_active:
+        #     tk.messagebox.showerror('Select line', 'Click a line first.')
         obj_dict = {'mat_yield': self._new_material.get,
                     'span': self._new_field_len.get,
                     'spacing': self._new_stf_spacing.get,
@@ -1024,7 +1037,7 @@ class Application():
         set_var = obj_dict[var_to_set]()
         if var_to_set == 'mat_yield':
             set_var = set_var* 1e6
-        elif var_to_set in ['span', 'spacing','plate_thk','stf_web_height','stf_web_thk',
+        elif var_to_set in ['spacing','plate_thk','stf_web_height','stf_web_thk',
                             'stf_flange_width','stf_flange_thk']:
             set_var = set_var/1000
 
@@ -1619,7 +1632,7 @@ class Application():
 
         # Drawing shortcut information if selected.
         if self._new_shortcut_backdrop.get() == True:
-            self._main_canvas.create_text(860, 80, text = self._shortcut_text, font=self._text_size["Text 8"],
+            self._main_canvas.create_text(self._main_canvas.winfo_width()*0.85, 100, text = self._shortcut_text, font=self._text_size["Text 8"],
                                           fill = 'black')
 
         # drawing the point dictionary
@@ -2357,7 +2370,7 @@ class Application():
                             'zstar_optimization': [self._new_zstar_optimization.get(), '']}
             else:
                 obj_dict = pasted_structure.get_structure_prop()
-            print(obj_dict)
+
             if self._active_line not in self._line_to_struc.keys():
                 self._line_to_struc[self._active_line] = [None, None, None, [None], {}]
                 self._line_to_struc[self._active_line][0] = Structure(obj_dict)
@@ -2397,17 +2410,6 @@ class Application():
 
         # self.draw_results(state=state)
         # self.draw_canvas(state=state)
-
-    def toggle_multiple_change_param(self):
-
-        if self._multiselect_lines != []:
-            for line in self._multiselect_lines:
-                if line in self._line_to_struc:
-                    self._active_line = line
-                    self._line_is_active = True
-                    current_structure = self._line_to_struc[line][1]
-                    parameter_to_change = None
-
 
     def option_meny_structure_type_trace(self, event):
         ''' Updating of the values in the structure type option menu. '''
@@ -3014,6 +3016,7 @@ class Application():
         self.controls() # Function to activate mouse clicks
         self._line_point_to_point_string = [] # This one ensures that a line is not created on top of a line
         self._accelerations_dict = {'static':9.81, 'dyn_loaded':0, 'dyn_ballast':0}
+        self._multiselect_lines = []
         self.update_frame()
 
         # Initsializing the calculation grid used for tank definition
@@ -3036,6 +3039,8 @@ class Application():
         self._parent.bind('<Control-l>', self.delete_line)
         self._parent.bind('<Control-p>', self.copy_point)
         self._parent.bind('<Control-m>', self.move_point)
+        self._parent.bind('<Control-a>', self.select_all_lines)
+        self._parent.bind('<Control-t>', self.select_all_lines)
         self._parent.bind('<Control-q>', self.new_line)
         self._parent.bind('<Control-s>', self.new_structure)
         self._parent.bind('<Delete>', self.delete_key_pressed)
@@ -3098,6 +3103,22 @@ class Application():
                 self._active_point = list(self._point_dict.keys())[idx + 1]
             else:
                 self._active_point = list(self._point_dict.keys())[0]
+        self.update_frame()
+
+    def select_all_lines(self, event=None):
+
+        if self._toggle_btn.config('relief')[-1] == "sunken":
+            for line in self._line_to_struc.keys():
+                if line not in self._multiselect_lines:
+                    if event.keysym == 't':
+                        if self._line_to_struc[line][1].get_structure_type() == self._new_stucture_type.get():
+                            self._multiselect_lines.append(line)
+                    else:
+                        self._multiselect_lines.append(line)
+        else:
+            tk.messagebox.showinfo('CTRL-A and CTRL-T', 'CTRL-A and CTRL-T is used to select all lines \n' 
+                                                        'with the intension to change a single variable in all lines.\n'
+                                                        'Press the Toggle select multiple button.')
         self.update_frame()
 
     def mouse_scroll(self,event):
