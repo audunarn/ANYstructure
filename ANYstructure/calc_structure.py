@@ -2,6 +2,7 @@ import math
 from scipy.special import gammaln
 from scipy.stats import gamma as gammadist
 import numpy as np
+import ANYstructure.PULS.excel_inteface as pulsxl
 
 import ANYstructure.SN_curve_parameters as snc
 
@@ -464,6 +465,21 @@ class Structure():
         '''
         self.span = span
         self.main_dict['span'][0] = span
+
+    def get_puls_input(self):
+        return_dict = {'Identification': None, 'Length of panel': self.span*1000, 'Stiffener spacing': self.spacing*1000,
+                        'Plate thickness': self.plate_th*1000,
+                      'Number of primary stiffeners': 10,
+                       'Stiffener type (L,T,F)': 'F' if self.stiffener_type == 'FB' else self.stiffener_type,
+                        'Stiffener boundary': 'C',
+                      'Stiff. Height': self.web_height*1000, 'Web thick.': self.web_th*1000,'Flange width': self.flange_width*1000,
+                        'Flange thick.': self.flange_th*1000, 'Tilt angle': 0,
+                      'Number of sec. stiffeners': 0, 'Modulus of elasticity': 2.1e11/1e6, "Poisson's ratio": 0.3,
+                      'Yield stress plate': self.mat_yield/1e6, 'Yield stress stiffener': self.mat_yield/1e6,
+                        'Axial stress': self.sigma_x, 'Trans. stress 1': self.sigma_y1,
+                      'Trans. stress 2': self.sigma_y2, 'Shear stress': self.tauxy,
+                        'Pressure (fixed)': None, 'In-plane support': 'Int'}
+        return return_dict
 
 class CalcScantlings(Structure):
     '''
@@ -1196,6 +1212,67 @@ class CalcFatigue(Structure):
 
     def get_design_life(self):
         return self._design_life
+
+class PULSpanel():
+    '''
+    Takes care of puls runs
+    '''
+    def __init__(self, run_dict):
+        super(PULSpanel, self).__init__()
+        self._all_to_run = run_dict
+        self._run_results = {}
+
+    def run_all(self):
+        import os
+        my_puls = pulsxl.PulsExcel(os.path.dirname(os.path.abspath(__file__))+'\\PULS\\PulsExcel.xls', visible=True)
+        list_to_run = []
+        for line, data in self._all_to_run.items():
+            list_to_run.append(data)
+        my_puls.set_multiple_rows(20, list_to_run)
+        # my_puls.calculate_panels()
+        # all_results =my_puls.get_all_results().items()
+        # [print(key, value) for key, value in all_results]
+        # my_puls.close_book()
+        # for key, value in all_results:
+        #     self._run_results[value['Identification']] = value
+        # return all_results
+
+    def get_puls_line_results(self, line):
+        if line not in self._run_results.keys():
+            return None
+        else:
+            return self._run_results[line]
+
+    def get_string(self, line):
+        '''
+        83 {'Identification': 'line26', 'Length of panel': [3400.0, 'mm'], 'Stiffener spacing': [750.0, 'mm'],
+        'Plate thick.': [18.0, 'mm'], 'Number of stiffeners': [10.0, None], 'Stiffener type': ['T-bar', None],
+        'Stiffener boundary': ['SS', None], 'Stiff. Height': [0.0, 'mm'], 'Web thick.': [0.0, 'mm'],
+        'Flange width': [0.0, 'mm'], 'Flange thick.': [0.0, 'mm'], 'Flange ecc.': [0.0, 'mm'],
+        'Tilt angle': [0.0, 'degrees'], 'Number of sec. stiffeners': [0.0, None],
+        'Secondary stiffener type': ['Flatbar', None], 'Imp. level': ['Default', None], 'Plate': [3.75, 'mm'],
+        'Stiffener': [3.4, 'mm'], 'Stiffener tilt': [3.4, 'mm'], 'Modulus of elasticity': [210000.0, 'MPa'],
+        "Poisson's ratio": [0.3, None], 'Yield stress plate': [355.0, 'MPa'], 'Yield stress stiffener': [355.0, 'MPa'],
+        'HAZ pattern': ['-', None], 'HAZ red. factor': ['-', None], 'Axial stress': [57.0, 'MPa'],
+        'Trans. stress': [128.0, 'MPa'], 'Shear stress': [7.0, 'MPa'], 'Pressure (fixed)': [0.267214, 'MPa'],
+        'In-plane support': ['Integrated', None], 'Trans. Stress': [128.0, 'MPa'], 'Actual usage Factor': [0.7, None],
+         'Allowable usage factor': [1.0, None], 'Status': ['Ok', None], 'Plate buckling': [32.0, '%'],
+         'Global stiffener buckling': [4.0, '%'], 'Torsional stiffener buckling': [32.0, '%'],
+         'Web stiffener buckling': [32.0, '%'], 'Plate slenderness': ['Ok', None], 'Web slend': ['Ok', None],
+         'Web flange ratio': ['Ok', None], 'Flange slend ': ['Ok', None], 'Aspect ratio': ['Ok', None],
+         'Plating': ['Ok', None], 'Web': ['Ok', None], 'Web-flange': ['Ok', None], 'Flange': ['Ok', None],
+          'stiffness': ['Ok', None]}
+
+        :param line:
+        :return:
+        '''
+
+        results = self._run_results[line]
+
+
+
+
+
 
 if __name__ == '__main__':
     import ANYstructure.example_data as test

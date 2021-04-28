@@ -211,6 +211,7 @@ class Application():
         self._logger = {'added': list(), 'deleted': list()}  # used to log operations for geometry operations, to be used for undo/redo
         self.__returned_load_data = None # Temporary data for returned loads from the load window.
         self.__copied_line_prop = None  # Used to copy line properties to another.
+        self._puls_results = None # If a puls run is avaliable, it is stored here.
         # Used to select parameter
         self._stuctural_definition = ['mat_yield', 'span', 'spacing', 'plate_thk', 'stf_web_height', 'stf_web_thk',
                                        'stf_flange_width', 'stf_flange_thk', 'structure_type', 'stf_type',
@@ -310,6 +311,9 @@ class Application():
         self._new_colorcode_structure_type = tk.BooleanVar()
         self._new_colorcode_structure_type.set(False)
         self._new_toggle_var = tk.StringVar()
+        self._new_toggle_puls = tk.BooleanVar()
+        self._new_toggle_puls.set(False)
+
 
 
         line_start, line_x = point_start+0.09, 0.005208333
@@ -330,7 +334,6 @@ class Application():
             .place(relx = 0.26, y=60)
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_utilization, command = self.on_color_code_check)\
             .place(relx = 0.26, y=80)
-
 
         tk.Label(self._main_fr, text='Check to see avaliable shortcuts', font="Text 9").place(relx = 0.27, y=0)
         tk.Label(self._main_fr, text='Color beam prop.', font="Text 9").place(relx = 0.27, y=20)
@@ -445,7 +448,7 @@ class Application():
                                       bg = self._button_bg_color, fg = self._button_fg_color)
         self.add_stucture.place(relx=types_start+ delta_x*4.2, rely=prop_vert_start+14*delta_y, relwidth = 0.14,
                                 relheight = 0.06)
-
+        # Toggle buttons
         self._toggle_btn = tk.Button(self._main_fr, text="Toggle select\nmultiple", relief="raised",
                                      command=self.toggle_select_multiple, bg = self._button_bg_color)
         self._toggle_change_param = tk.Button(self._main_fr, text="Change multi.\nparam.", relief="raised",
@@ -461,6 +464,21 @@ class Application():
         self._toggle_choose.place(relx=types_start+ delta_x*7.8, rely=prop_vert_start+12.3*delta_y, relwidth = 0.047,
                                 relheight = 0.03)
 
+        # PULS interface
+        self._toggle_btn_puls = tk.Button(self._main_fr, text="Use PULS\n"
+                                                              "results", relief="raised",
+                                     command=self.toggle_puls_run, bg = self._button_bg_color)
+        self._puls_run_all = tk.Button(self._main_fr, text="PULS\nRun all lines", relief="raised",
+                                     command=self.puls_run_all_lines, bg = self._button_bg_color)
+        self._puls_run_one = tk.Button(self._main_fr, text="PULS\nRun one line", relief="raised",
+                                     command=None, bg = self._button_bg_color)
+
+        self._toggle_btn_puls.place(relx=types_start+ delta_x*4.2, rely=prop_vert_start+10*delta_y, relwidth = 0.045,
+                                relheight = 0.03)
+        self._puls_run_all.place(relx=types_start+ delta_x*6, rely=prop_vert_start+10*delta_y, relwidth = 0.045,
+                                relheight = 0.03)
+        self._puls_run_one.place(relx=types_start+ delta_x*7.8, rely=prop_vert_start+10*delta_y, relwidth = 0.047,
+                                relheight = 0.03)
 
         # --- main variable to define the structural properties ---
         self._new_material = tk.DoubleVar()
@@ -484,6 +502,7 @@ class Application():
         self._new_plate_kpp = tk.DoubleVar()
         self._new_stf_type = tk.StringVar()
         self._new_pressure_side = tk.StringVar()
+        self._new_puls_method = tk.IntVar()
 
         # Setting default values to tkinter variables
         self._new_material.set(355)
@@ -507,6 +526,8 @@ class Application():
         self.option_meny_structure_type_trace(event='GENERAL_INTERNAL_WT')
         self._new_stf_type.set('T')
         self._new_pressure_side.set('p')
+        self._new_puls_method.set(2)
+
 
         # --- main entries and labels to define the structural properties ---
         ent_width = 12 #width of entries
@@ -565,6 +586,7 @@ class Application():
                                       bg = self._entry_color, fg = self._entry_text_color)
         self._ent_structure_type = tk.OptionMenu(self._main_fr, self._new_stucture_type,
                                                  command = self.option_meny_structure_type_trace, *self._options_type)
+        self._ent_puls_method = tk.OptionMenu(self._main_fr, self._new_puls_method, *[1,2])
 
 
         loc_y = -0.000185185
@@ -595,8 +617,12 @@ class Application():
                                                                              rely=prop_vert_start + 4.5 * delta_y)
         tk.Label(self._main_fr, text='stf type', bg=self._general_color).place(relx=ent_relx + 4*geo_dx,
                                                                                rely=prop_vert_start + 4.5 * delta_y)
-        tk.Label(self._main_fr, text='Pressure side (p-plate, s-stf.):', bg=self._general_color) \
-            .place(relx=0.052083333, rely=prop_vert_start + 8 * delta_y)
+        tk.Label(self._main_fr, text='Pressure side\n(p-plate, s-stf.):', bg=self._general_color) \
+            .place(relx=ent_relx + 5 * geo_dx,
+                   rely=prop_vert_start + 4 * delta_y)
+        tk.Label(self._main_fr, text='PULS acceptance method 1 (buckling) or 2 (ultimate)', bg=self._general_color)\
+            .place(relx=ent_relx + 0*geo_dx,
+                                                                             rely=prop_vert_start + 8 * delta_y)
 
         tk.Label(self._main_fr, text='span', bg = self._general_color).place(relx=ent_relx + 0*geo_dx,
                                                                              rely=prop_vert_start +loc_y * delta_y)
@@ -648,6 +674,7 @@ class Application():
         self._ent_sigma_x.place(relx=ent_relx + 2*geo_dx, rely=ent_rely+drely)
         self._ent_tauxy.place(relx=ent_relx + 3*geo_dx, rely=ent_rely+drely)
         self._ent_stf_type.place(relx=ent_relx + 4*geo_dx, rely=ent_rely+drely)
+        self._ent_puls_method.place(relx=ent_relx + 5.5*geo_dx, rely=prop_vert_start + 8 * delta_y)
 
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_sigmax, command = self.on_color_code_check)\
             .place(relx=ent_relx + 0*geo_dx, rely=ent_rely+1.5*drely)
@@ -662,15 +689,15 @@ class Application():
         tk.Label(text='<-- check to color-\ncode stresses', font=self._text_size['Text 9'],
                  bg=self._general_color).place(relx=ent_relx + 4.5*geo_dx, rely=ent_rely+1.5*drely, relwidth = 0.06)
 
-        self._ent_structure_type.place(relx=types_start, rely=ent_rely+3.5*drely, relwidth = 0.11)
+        self._ent_structure_type.place(relx=types_start, rely=ent_rely+3.5*drely, relwidth = 0.10)
 
 
         self._structure_types_label = \
-            tk.Label(textvariable = self._new_stucture_type_label, font = self._text_size['Text 9 bold'],
+            tk.Label(textvariable = self._new_stucture_type_label, font = self._text_size['Text 8'],
                      bg = self._general_color)\
-                .place(relx=ent_x+delta_x, rely=prop_vert_start +11*delta_y, relwidth = 0.12)
+                .place(relx=types_start, rely=prop_vert_start +12*delta_y, relwidth = 0.11)
 
-        self._ent_pressure_side.place(relx=types_start+6*delta_x , rely=prop_vert_start + 8 * delta_y)
+        self._ent_pressure_side.place(relx=ent_relx + 5.5*geo_dx, rely=prop_vert_start + 5.4 * delta_y)
 
         try:
             img_file_name = 'img_stf_button.gif'
@@ -966,6 +993,29 @@ class Application():
            .place(relx=lc_x + delta_x * 4,rely=lc_y + delta_y*18, relwidth = 0.05)
 
         self.update_frame()
+
+    def toggle_puls_run(self):
+        if self._toggle_btn_puls.config('relief')[-1] == 'sunken':
+            self._toggle_btn_puls.config(relief="raised")
+            self._toggle_btn_puls.config(bg=self._button_bg_color)
+            self._toggle_btn_puls.config(text='Use PULS\n'
+                                         'results')
+        else:
+            self._toggle_btn_puls.config(relief="sunken")
+            self._toggle_btn_puls.config(bg='orange')
+            self._toggle_btn_puls.config(text = 'PULS result\n'
+                                           'override set')
+
+    def puls_run_all_lines(self):
+
+        dict_to_run = {}
+
+        for line, data in self._line_to_struc.items():
+            dict_to_run[line] = data[1].get_puls_input()
+            dict_to_run[line]['Identification'] = line
+            dict_to_run[line]['Pressure (fixed)'] = self.get_highest_pressure(line)['normal']/1e6
+
+        self._puls_results = PULSpanel(dict_to_run).run_all()
 
     def resize(self, event):
         self.text_scale = self._main_fr.winfo_width()/1920
@@ -1579,7 +1629,6 @@ class Application():
             line_color_coding = {}
             cmap_sections = plt.get_cmap('jet')
             thk_sort_unique = return_dict['color code']['all thicknesses']
-            uf_sort_unique = return_dict['color code']['all utilizations']
             structure_type_unique = return_dict['color code']['structure types map']
             for line, line_data in self._line_to_struc.items():
                 line_color_coding[line] = {'plate': matplotlib.colors.rgb2hex(cmap_sections(thk_sort_unique.index(round(line_data[1]
@@ -1985,6 +2034,13 @@ class Application():
         '''
 
         self._result_canvas.delete('all')
+
+        if self._puls_results != None and self._toggle_btn_puls.config('relief')[-1] == 'sunken':
+            line_results = self._puls_results.get_puls_line_results(self._active_line)
+            if line_results is not None:
+                pass
+
+
 
         if state is None or self._active_line not in state['struc_obj'].keys():
             return
