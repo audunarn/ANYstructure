@@ -1267,7 +1267,7 @@ class PULSpanel():
             newfile = os.path.dirname(os.path.abspath(__file__))+'\\PULS\\PulsExcel_new'+pname+'.xlsm'
             shutil.copyfile(file, newfile)
         else:
-            newfile = os.path.dirname(os.path.abspath(__file__)) + '\\PULS\\PulsExcel_new' + 'copy_run'+ '.xlsm'
+            newfile = os.path.dirname(os.path.abspath(__file__)) + '\\PULS\\PulsExcel_new' + 'copy_run_1'+ '.xlsm'
             shutil.copyfile(file, newfile)
         my_puls = pulsxl.PulsExcel(newfile, visible=False)
         list_to_run = []
