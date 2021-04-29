@@ -876,7 +876,6 @@ class CreateOptimizeWindow():
                                     'All algorithms calculates local scantling and buckling requirements')
 
     def toggle(self):
-
         if self._toggle_btn.config('relief')[-1] == 'sunken':
             self._toggle_btn.config(relief="raised")
             self._toggle_btn.config(bg = 'salmon')

@@ -184,8 +184,13 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
     if ass_var == None:
         return None, None, None, False, main_fail
 
-    new_struc_obj = create_new_structure_obj(initial_structure_obj,[round(item,10) for item in ass_var])
-    new_calc_obj = create_new_calc_obj(initial_structure_obj,[round(item,10) for item in ass_var])[0]
+    if len(ass_var) == 8:
+        ass_var = [round(item, 10) for item in ass_var[0:8]]
+    else:
+        ass_var = [round(item, 10) for item in ass_var[0:8]] + [ass_var[8]]
+
+    new_struc_obj = create_new_structure_obj(initial_structure_obj,ass_var)
+    new_calc_obj = create_new_calc_obj(initial_structure_obj,ass_var)[0]
 
     return new_struc_obj, new_calc_obj, fat_dict, True, main_fail
 

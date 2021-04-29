@@ -3,6 +3,9 @@ from scipy.special import gammaln
 from scipy.stats import gamma as gammadist
 import numpy as np
 import ANYstructure.PULS.excel_inteface as pulsxl
+from multiprocessing import  Pool, cpu_count
+import multiprocessing as mp
+import shutil, os
 
 import ANYstructure.SN_curve_parameters as snc
 
@@ -1222,20 +1225,65 @@ class PULSpanel():
         self._all_to_run = run_dict
         self._run_results = {}
 
-    def run_all(self):
-        import os
-        my_puls = pulsxl.PulsExcel(os.path.dirname(os.path.abspath(__file__))+'\\PULS\\PulsExcel.xls', visible=True)
+    def run_all_multi(self):
+        processes = max(cpu_count() - 1, 1)
+
+        with Pool(processes) as my_process:
+            res_pre = my_process.map(self.run_all, self._all_to_run.values())
+        [print(val) for val in res_pre]
+
+    def run_all(self, iterator = None):
+        '''
+        Returning following results.:
+
+        Identification:  name of line/run
+        Plate geometry:       dict_keys(['Length of panel', 'Stiffener spacing', 'Plate thick.'])
+        Primary stiffeners: dict_keys(['Number of stiffeners', 'Stiffener type', 'Stiffener boundary', 'Stiff. Height',
+                            'Web thick.', 'Flange width', 'Flange thick.', 'Flange ecc.', 'Tilt angle'])
+        Secondary stiffeners. dict_keys(['Number of sec. stiffeners', 'Secondary stiffener type', 'Stiffener boundary',
+                            'Stiff. Height', 'Web thick.', 'Flange width', 'Flange thick.'])
+        Model imperfections. dict_keys(['Imp. level', 'Plate', 'Stiffener', 'Stiffener tilt'])
+        Material: dict_keys(['Modulus of elasticity', "Poisson's ratio", 'Yield stress plate', 'Yield stress stiffener'])
+        Aluminium prop: dict_keys(['HAZ pattern', 'HAZ red. factor'])
+        Applied loads: dict_keys(['Axial stress', 'Trans. stress', 'Shear stress', 'Pressure (fixed)'])
+        Bound cond.: dict_keys(['In-plane support'])
+        Global elastic buckling: dict_keys(['Axial stress', 'Trans. Stress', 'Trans. stress', 'Shear stress'])
+        Local elastic buckling: dict_keys(['Axial stress', 'Trans. Stress', 'Trans. stress', 'Shear stress'])
+        Ultimate capacity: dict_keys(['Actual usage Factor', 'Allowable usage factor', 'Status'])
+        Failure modes: dict_keys(['Plate buckling', 'Global stiffener buckling', 'Torsional stiffener buckling',
+                            'Web stiffener buckling'])
+        Buckling strength: dict_keys(['Actual usage Factor', 'Allowable usage factor', 'Status'])
+        Local geom req (PULS validity limits): dict_keys(['Plate slenderness', 'Web slend', 'Web flange ratio',
+                            'Flange slend ', 'Aspect ratio'])
+        CSR-Tank requirements (primary stiffeners): dict_keys(['Plating', 'Web', 'Web-flange', 'Flange', 'stiffness'])
+
+        :return:
+        '''
+        if iterator != None:
+            pname = mp.current_process().name + mp.Process().name
+            pname = pname.replace(':','_')
+        file = os.path.dirname(os.path.abspath(__file__))+'\\PULS\\PulsExcel_new.xlsm'
+        if iterator != None:
+            newfile = os.path.dirname(os.path.abspath(__file__))+'\\PULS\\PulsExcel_new'+pname+'.xlsm'
+            shutil.copyfile(file, newfile)
+        else:
+            newfile = os.path.dirname(os.path.abspath(__file__)) + '\\PULS\\PulsExcel_new' + 'copy_run'+ '.xlsm'
+            shutil.copyfile(file, newfile)
+        my_puls = pulsxl.PulsExcel(newfile, visible=False)
         list_to_run = []
+        if self._all_to_run == {}:
+            return None
         for line, data in self._all_to_run.items():
             list_to_run.append(data)
         my_puls.set_multiple_rows(20, list_to_run)
-        # my_puls.calculate_panels()
-        # all_results =my_puls.get_all_results().items()
-        # [print(key, value) for key, value in all_results]
-        # my_puls.close_book()
-        # for key, value in all_results:
-        #     self._run_results[value['Identification']] = value
-        # return all_results
+        my_puls.calculate_panels()
+        all_results =my_puls.get_all_results().items()
+        my_puls.close_book(save=False)
+        for key, value in all_results:
+            self._run_results[value['Identification']] = value
+        os.remove(newfile)
+        return all_results
+
 
     def get_puls_line_results(self, line):
         if line not in self._run_results.keys():
@@ -1243,36 +1291,28 @@ class PULSpanel():
         else:
             return self._run_results[line]
 
-    def get_string(self, line):
+    def get_string(self, line, uf = 0.87):
         '''
-        83 {'Identification': 'line26', 'Length of panel': [3400.0, 'mm'], 'Stiffener spacing': [750.0, 'mm'],
-        'Plate thick.': [18.0, 'mm'], 'Number of stiffeners': [10.0, None], 'Stiffener type': ['T-bar', None],
-        'Stiffener boundary': ['SS', None], 'Stiff. Height': [0.0, 'mm'], 'Web thick.': [0.0, 'mm'],
-        'Flange width': [0.0, 'mm'], 'Flange thick.': [0.0, 'mm'], 'Flange ecc.': [0.0, 'mm'],
-        'Tilt angle': [0.0, 'degrees'], 'Number of sec. stiffeners': [0.0, None],
-        'Secondary stiffener type': ['Flatbar', None], 'Imp. level': ['Default', None], 'Plate': [3.75, 'mm'],
-        'Stiffener': [3.4, 'mm'], 'Stiffener tilt': [3.4, 'mm'], 'Modulus of elasticity': [210000.0, 'MPa'],
-        "Poisson's ratio": [0.3, None], 'Yield stress plate': [355.0, 'MPa'], 'Yield stress stiffener': [355.0, 'MPa'],
-        'HAZ pattern': ['-', None], 'HAZ red. factor': ['-', None], 'Axial stress': [57.0, 'MPa'],
-        'Trans. stress': [128.0, 'MPa'], 'Shear stress': [7.0, 'MPa'], 'Pressure (fixed)': [0.267214, 'MPa'],
-        'In-plane support': ['Integrated', None], 'Trans. Stress': [128.0, 'MPa'], 'Actual usage Factor': [0.7, None],
-         'Allowable usage factor': [1.0, None], 'Status': ['Ok', None], 'Plate buckling': [32.0, '%'],
-         'Global stiffener buckling': [4.0, '%'], 'Torsional stiffener buckling': [32.0, '%'],
-         'Web stiffener buckling': [32.0, '%'], 'Plate slenderness': ['Ok', None], 'Web slend': ['Ok', None],
-         'Web flange ratio': ['Ok', None], 'Flange slend ': ['Ok', None], 'Aspect ratio': ['Ok', None],
-         'Plating': ['Ok', None], 'Web': ['Ok', None], 'Web-flange': ['Ok', None], 'Flange': ['Ok', None],
-          'stiffness': ['Ok', None]}
-
         :param line:
         :return:
         '''
 
         results = self._run_results[line]
+        loc_geom = 'Ok' if all([val[0] == 'Ok' for val in results['Local geom req (PULS validity limits)']
+                              .values()]) else 'Not ok'
+        csr_geom = 'Ok' if all([val[0] == 'Ok' for val in results['CSR-Tank requirements (primary stiffeners)']
+                              .values()]) else 'Not ok'
 
+        ret_str = 'PULS results\n\n' +\
+                  'Ultimate capacity usage factor:  ' + str(results['Ultimate capacity']['Actual usage Factor'][0]/uf)+'\n'+\
+                  'Buckling strength usage factor:  ' + str(results['Buckling strength']['Actual usage Factor'][0]/uf)+'\n'+\
+                  'Local geom req (PULS validity limits):   ' + loc_geom + '\n'+\
+                  'CSR-Tank requirements (primary stiffeners):   ' + csr_geom
+        return ret_str
 
-
-
-
+    def result_changed(self, id):
+        if id in self._run_results.keys():
+            self._run_results.pop(id)
 
 if __name__ == '__main__':
     import ANYstructure.example_data as test

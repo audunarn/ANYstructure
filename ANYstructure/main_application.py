@@ -313,6 +313,8 @@ class Application():
         self._new_toggle_var = tk.StringVar()
         self._new_toggle_puls = tk.BooleanVar()
         self._new_toggle_puls.set(False)
+        self._new_puls_uf = tk.DoubleVar()
+        self._new_puls_uf.set(0.87)
 
 
 
@@ -471,14 +473,23 @@ class Application():
         self._puls_run_all = tk.Button(self._main_fr, text="PULS\nRun all lines", relief="raised",
                                      command=self.puls_run_all_lines, bg = self._button_bg_color)
         self._puls_run_one = tk.Button(self._main_fr, text="PULS\nRun one line", relief="raised",
-                                     command=None, bg = self._button_bg_color)
+                                     command=self.puls_run_one_line, bg = self._button_bg_color)
+        self._ent_puls_uf = tk.Entry(self._main_fr, textvariable=self._new_puls_uf,
+                                        width=int(ent_width * 1),
+                                         bg = self._entry_color, fg = self._entry_text_color)
 
-        self._toggle_btn_puls.place(relx=types_start+ delta_x*4.2, rely=prop_vert_start+10*delta_y, relwidth = 0.045,
+        self._toggle_btn_puls.place(relx=types_start+ delta_x*4.2, rely=prop_vert_start+9.5*delta_y, relwidth = 0.045,
                                 relheight = 0.03)
-        self._puls_run_all.place(relx=types_start+ delta_x*6, rely=prop_vert_start+10*delta_y, relwidth = 0.045,
+        self._puls_run_all.place(relx=types_start+ delta_x*6, rely=prop_vert_start+9.5*delta_y, relwidth = 0.045,
                                 relheight = 0.03)
-        self._puls_run_one.place(relx=types_start+ delta_x*7.8, rely=prop_vert_start+10*delta_y, relwidth = 0.047,
+        self._puls_run_one.place(relx=types_start+ delta_x*7.8, rely=prop_vert_start+9.5*delta_y, relwidth = 0.047,
                                 relheight = 0.03)
+        self._ent_puls_uf.place(relx=types_start+ delta_x*7.8, rely=prop_vert_start+11*delta_y, relwidth = 0.02,
+                                relheight = 0.03)
+
+        tk.Label(self._main_fr, text='Set PULS utilization factor:', font=self._text_size['Text 7'],
+                 bg = self._general_color).place(relx=types_start+ delta_x*4.2, rely=prop_vert_start+11*delta_y,
+                                                 relwidth = 0.08, relheight = 0.03)
 
         # --- main variable to define the structural properties ---
         self._new_material = tk.DoubleVar()
@@ -1005,17 +1016,36 @@ class Application():
             self._toggle_btn_puls.config(bg='orange')
             self._toggle_btn_puls.config(text = 'PULS result\n'
                                            'override set')
+        self.update_frame()
 
-    def puls_run_all_lines(self):
-
+    def puls_run_all_lines(self, line_given = None):
         dict_to_run = {}
+        if line_given == None:
+            current_button = self._puls_run_all
+            for line, data in self._line_to_struc.items():
+                dict_to_run[line] = data[1].get_puls_input()
+                dict_to_run[line]['Identification'] = line
+                dict_to_run[line]['Pressure (fixed)'] = self.get_highest_pressure(line)['normal']/1e6
+        else:
+            current_button = self._puls_run_one
+            dict_to_run[line_given] = self._line_to_struc[line_given][1].get_puls_input()
+            dict_to_run[line_given]['Identification'] = line_given
+            dict_to_run[line_given]['Pressure (fixed)'] = self.get_highest_pressure(line_given)['normal'] / 1e6
+        current_button.config(text='...PULS...\n'
+                                   '..RUNNING..')
 
-        for line, data in self._line_to_struc.items():
-            dict_to_run[line] = data[1].get_puls_input()
-            dict_to_run[line]['Identification'] = line
-            dict_to_run[line]['Pressure (fixed)'] = self.get_highest_pressure(line)['normal']/1e6
+        self._puls_results = PULSpanel(dict_to_run)
+        self._puls_results.run_all()
+        current_button.config(text='PULS run or\nupdate all lines' if line_given == None else 'PULS\nRun one line')
+        current_button.config(bg=self._button_bg_color)
+        for key, value in self._line_to_struc.items():
+            value[1].need_recalc = True
 
-        self._puls_results = PULSpanel(dict_to_run).run_all()
+        self.update_frame()
+
+    def puls_run_one_line(self):
+        self.puls_run_all_lines(self._active_line)
+        self.update_frame()
 
     def resize(self, event):
         self.text_scale = self._main_fr.winfo_width()/1920
@@ -1391,7 +1421,7 @@ class Application():
         return_dict = {'colors': {}, 'section_modulus': {}, 'thickness': {}, 'shear_area': {}, 'buckling': {},
                        'fatigue': {}, 'pressure_uls': {}, 'pressure_fls': {},
                        'struc_obj': {}, 'scant_calc_obj': {}, 'fatigue_obj': {}, 'utilization': {}, 'slamming': {},
-                       'color code': {}}
+                       'color code': {}, 'PULS colors': {}}
         line_iterator, slamming_pressure = [], None
         return_dict['slamming'][current_line] = {}
 
@@ -1489,6 +1519,41 @@ class Application():
                 return_dict['colors'][current_line] = {'buckling': color_buckling, 'fatigue': color_fatigue,
                                                        'section': color_sec, 'shear': color_shear,
                                                        'thickness': color_thk}
+                if self._puls_results != None:
+
+                    res = self._puls_results.get_puls_line_results(current_line)
+
+                    if res is not None:
+                        geo_problem = False
+                        if type(res['Ultimate capacity']['Actual usage Factor'][0]) != str:
+                            col_ult = 'green' if (res['Ultimate capacity'][
+                                                     'Actual usage Factor'][0] / self._new_puls_uf.get()) < 1 else 'red'
+                        else:
+                            geo_problem = True
+                            col_ult = 'red'
+                        if res['Buckling strength']['Actual usage Factor'][0] is not None:
+                            col_buc = 'green' if (res['Buckling strength'][
+                                                     'Actual usage Factor'][0] / self._new_puls_uf.get()) < 1 else 'red'
+                        else:
+                            col_buc = 'red'
+                        if geo_problem:
+                            loc_geom = 'red'
+                        else:
+                            loc_geom = 'green' if all([val[0] == 'Ok' for val in
+                                                       res['Local geom req (PULS validity limits)']
+                                               .values()]) else 'red'
+                        csr_geom = 'green' if all(
+                            [val[0] == 'Ok' for val in res['CSR-Tank requirements (primary stiffeners)']
+                            .values()]) else 'red'
+                        return_dict['PULS colors'][current_line] = {'ultimate': col_ult, 'buckling': col_buc,
+                                                                    'local geometry': loc_geom, 'csr': csr_geom}
+                    else:
+                        return_dict['PULS colors'][current_line] = {'ultimate': 'black', 'buckling': 'black',
+                                                                    'local geometry': 'black', 'csr': 'black'}
+                else:
+                    return_dict['PULS colors'][current_line] = {'ultimate': 'black', 'buckling': 'black',
+                                                                'local geometry': 'black', 'csr': 'black'}
+
                 return_dict['buckling'][current_line] = buckling
                 return_dict['pressure_uls'][current_line] = design_pressure
                 return_dict['pressure_fls'][current_line] = {'p_int': p_int, 'p_ext': p_ext}
@@ -1726,7 +1791,18 @@ class Application():
                 coord2 = self.get_point_canvas_coord('point' + str(value[1]))
                 if not chk_box_active and state != None:
                     try:
-                        color = 'red' if 'red' in state['colors'][line].values() else 'green'
+                        if self._toggle_btn_puls.config('relief')[-1] == 'sunken':
+                            if 'black' in state['PULS colors'][line].values():
+                                color = 'black'
+                            else:
+                                col1, col2 = state['PULS colors'][line]['ultimate'], \
+                                             state['PULS colors'][line]['buckling']
+                                if self._new_puls_method.get() == 1:
+                                    color = 'red' if any([col1 == 'red', col2 == 'red']) else 'green'
+                                else:
+                                    color = col1
+                        else:
+                            color = 'red' if 'red' in state['colors'][line].values() else 'green'
                     except (KeyError, TypeError):
                         color = 'black'
                 elif chk_box_active and state != None and self._line_to_struc != {}:
@@ -2035,19 +2111,14 @@ class Application():
 
         self._result_canvas.delete('all')
 
-        if self._puls_results != None and self._toggle_btn_puls.config('relief')[-1] == 'sunken':
-            line_results = self._puls_results.get_puls_line_results(self._active_line)
-            if line_results is not None:
-                pass
-
-
-
         if state is None or self._active_line not in state['struc_obj'].keys():
             return
 
         if self._line_is_active:
+            x, y, dx, dy = 0, 15, 15, 14
+
             if self._active_line in self._line_to_struc:
-                x, y, dx, dy = 0, 15, 15, 14
+
                 m3_to_mm3 = float(math.pow(1000,3))
                 m2_to_mm2 = float(math.pow(1000, 2))
 
@@ -2133,33 +2204,92 @@ class Application():
                                                font=self._text_size["Text 9 bold"],anchor='nw', fill=color_thk)
 
                 # buckling results
-
-                self._result_canvas.create_text([x * 1, (y+9*dy) * 1],
-                                               text='Buckling results DNV-RP-C201:',
-                                               font=self._text_size["Text 9 bold"], anchor='nw')
-                if sum(buckling)==0:
-                    self._result_canvas.create_text([x * 1, (y+10*dy) * 1],
-                                                   text='No buckling results', font=self._text_size["Text 9 bold"],
-                                                   anchor='nw', fill=color_buckling)
-                else:
-                    if buckling[0]==float('inf'):
-                        res_text = 'Plate resistance not ok (equation 6.12). '
+                if self._puls_results != None and self._toggle_btn_puls.config('relief')[-1] == 'sunken':
+                    line_results = state['PULS colors'][self._active_line]
+                    puls_res = self._puls_results.get_puls_line_results(self._active_line)
+                    if puls_res != None:
+                        geo_problem = False
+                        if type(puls_res['Ultimate capacity']['Actual usage Factor'][0]) != str:
+                            ult_text = 'Ultimate capacity usage factor:  ' + str(puls_res['Ultimate capacity']
+                                                                                 ['Actual usage Factor'][
+                                                                                     0] / self._new_puls_uf.get())
+                        else:
+                            geo_problem = True
+                            ult_text = puls_res['Ultimate capacity']['Actual usage Factor'][0]
+                        if puls_res['Buckling strength']['Actual usage Factor'][0] != None:
+                            buc_text = 'Buckling capacity usage factor:  ' + str(puls_res['Buckling strength']
+                                                                                 ['Actual usage Factor'][
+                                                                                     0] / self._new_puls_uf.get())
+                        else:
+                            buc_text = 'Buckling capacity usage factor:  None - geometric issue'
+                        if geo_problem:
+                            loc_geom = 'Not ok: '
+                            for key, value in puls_res['Local geom req (PULS validity limits)'].items():
+                                if value[0] == 'Not ok':
+                                    loc_geom += key + ' '
+                        else:
+                            loc_geom = 'Ok' if all(
+                                [val[0] == 'Ok' for val in puls_res['Local geom req (PULS validity limits)']
+                                .values()]) else 'Not ok'
+                        csr_geom = 'Ok' if all(
+                            [val[0] == 'Ok' for val in puls_res['CSR-Tank requirements (primary stiffeners)']
+                            .values()]) else 'Not ok'
+                        loc_geom = 'Local geom req (PULS validity limits):   ' + loc_geom
+                        csr_geom = 'CSR-Tank requirements (primary stiffeners):   ' + csr_geom
+                        self._result_canvas.create_text([x * 1, y + 8.5 * dy], text='PULS results',
+                                                        font=self._text_size['Text 9 bold'],
+                                                        anchor='nw',
+                                                        fill='black')
+                        self._result_canvas.create_text([x * 1, y + 9.5 * dy], text=ult_text,
+                                                        font=self._text_size['Text 9 bold'],
+                                                        anchor='nw',
+                                                        fill=line_results['ultimate'])
+                        self._result_canvas.create_text([x * 1, y + 10.5 * dy], text=buc_text,
+                                                        font=self._text_size['Text 9 bold'],
+                                                        anchor='nw',
+                                                        fill=line_results['buckling'])
+                        self._result_canvas.create_text([x * 1, y + 11.5 * dy], text=loc_geom,
+                                                        font=self._text_size['Text 9 bold'],
+                                                        anchor='nw',
+                                                        fill=line_results['local geometry'])
+                        self._result_canvas.create_text([x * 1, y + 12.5 * dy], text=csr_geom,
+                                                        font=self._text_size['Text 9 bold'],
+                                                        anchor='nw',
+                                                        fill=line_results['csr'])
                     else:
-                        if obj_structure.get_side() == 'p':
-                            res_text = '|eq 7.19: '+str(buckling[0])+' |eq 7.50: '+str(buckling[1])+ ' |eq 7.51: '+ \
-                                         str(buckling[2])+' |7.52: '+str(buckling[3])+ '|eq 7.53: '+str(buckling[4])+\
-                                         ' |z*: '+str(buckling[5])
-                        elif obj_structure.get_side() == 's':
-                            res_text = '|eq 7.19: '+str(buckling[0])+' |eq 7.54: '+str(buckling[1])+' |eq 7.55: '+ \
-                                         str(buckling[2])+' |7.56: '+str(buckling[3])+ '|eq 7.57: '+str(buckling[4])+ \
-                                         ' |z*: '+str(buckling[5])
-                    self._result_canvas.create_text([x * 1, (y+10*dy) * 1],
-                                               text=res_text,font=self._text_size["Text 9 bold"],
-                                               anchor='nw',fill=color_buckling)
+                        self._result_canvas.create_text([x * 1, y + 9 * dy],
+                                                        text='PULS results not avaliable for this line.\n'
+                                                             'Run or update lines.',
+                                                        font=self._text_size['Text 9 bold'],
+                                                        anchor='nw',
+                                                        fill='Orange')
+                else:
+                    self._result_canvas.create_text([x * 1, (y+9*dy) * 1],
+                                                   text='Buckling results DNV-RP-C201:',
+                                                   font=self._text_size["Text 9 bold"], anchor='nw')
+                    if sum(buckling)==0:
+                        self._result_canvas.create_text([x * 1, (y+10*dy) * 1],
+                                                       text='No buckling results', font=self._text_size["Text 9 bold"],
+                                                       anchor='nw', fill=color_buckling)
+                    else:
+                        if buckling[0]==float('inf'):
+                            res_text = 'Plate resistance not ok (equation 6.12). '
+                        else:
+                            if obj_structure.get_side() == 'p':
+                                res_text = '|eq 7.19: '+str(buckling[0])+' |eq 7.50: '+str(buckling[1])+ ' |eq 7.51: '+ \
+                                             str(buckling[2])+' |7.52: '+str(buckling[3])+ '|eq 7.53: '+str(buckling[4])+\
+                                             ' |z*: '+str(buckling[5])
+                            elif obj_structure.get_side() == 's':
+                                res_text = '|eq 7.19: '+str(buckling[0])+' |eq 7.54: '+str(buckling[1])+' |eq 7.55: '+ \
+                                             str(buckling[2])+' |7.56: '+str(buckling[3])+ '|eq 7.57: '+str(buckling[4])+ \
+                                             ' |z*: '+str(buckling[5])
+                        self._result_canvas.create_text([x * 1, (y+10*dy) * 1],
+                                                   text=res_text,font=self._text_size["Text 9 bold"],
+                                                   anchor='nw',fill=color_buckling)
 
                 # fatigue results
 
-                self._result_canvas.create_text([x * 1, (y+12*dy) * 1],
+                self._result_canvas.create_text([x * 1, (y+14*dy) * 1],
                                                 text='Fatigue results (DNVGL-RP-C203): ',
                                                 font=self._text_size["Text 9 bold"], anchor='nw')
 
@@ -2167,28 +2297,22 @@ class Application():
                     if state['fatigue'][current_line]['damage'] is not None:
                         damage = state['fatigue'][current_line]['damage']
                         dff = state['fatigue'][current_line]['dff']
-                        self._result_canvas.create_text([x * 1, (y + 13 * dy) * 1],
+                        self._result_canvas.create_text([x * 1, (y + 15 * dy) * 1],
                                                         text='Total damage (DFF not included): '+str(round(damage,3)) +
                                                              '  |  With DFF = '+str(dff)+' --> Damage: '+
                                                              str(round(damage*dff,3)),
                                                         font=self._text_size["Text 9 bold"], anchor='nw',
                                                         fill=color_fatigue)
                     else:
-                        self._result_canvas.create_text([x * 1, (y + 13 * dy) * 1],
+                        self._result_canvas.create_text([x * 1, (y + 15 * dy) * 1],
                                                         text='Total damage: NO RESULTS ',
                                                         font=self._text_size["Text 9 bold"],
                                                         anchor='nw')
                 else:
-                    self._result_canvas.create_text([x * 1, (y + 13 * dy) * 1],
+                    self._result_canvas.create_text([x * 1, (y + 15 * dy) * 1],
                                                     text='Total damage: NO RESULTS ',
                                                     font=self._text_size["Text 9 bold"],
                                                     anchor='nw')
-            else:
-                pass
-        else:
-            self._result_canvas.create_text([200*1, 20*1],
-                                           text='The results are shown here (select line):',
-                                           font=self._text_size["Text 10 bold"])
 
     def report_generate(self, autosave = False):
         '''
