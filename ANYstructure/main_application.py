@@ -594,8 +594,9 @@ class Application():
                                      bg = self._entry_color, fg = self._entry_text_color)
         self._ent_tauxy = tk.Entry(self._main_fr, textvariable=self._new_tauxy, width=int(7*1),
                                    bg = self._entry_color, fg = self._entry_text_color)
-        self._ent_stf_type = tk.Entry(self._main_fr, textvariable=self._new_stf_type, width=int(7*1),
-                                      bg = self._entry_color, fg = self._entry_text_color)
+        # self._ent_stf_type = tk.Entry(self._main_fr, textvariable=self._new_stf_type, width=int(7*1),
+        #                               bg = self._entry_color, fg = self._entry_text_color)
+        self._ent_stf_type = tk.OptionMenu(self._main_fr, self._new_stf_type, *['T', 'FB', 'L', 'L-bulb'])
         self._ent_structure_type = tk.OptionMenu(self._main_fr, self._new_stucture_type,
                                                  command = self.option_meny_structure_type_trace, *self._options_type)
         self._ent_puls_method = tk.OptionMenu(self._main_fr, self._new_puls_method, *[1,2])
@@ -685,7 +686,7 @@ class Application():
         self._ent_sigma_y2.place(relx=ent_relx + geo_dx, rely=ent_rely+drely)
         self._ent_sigma_x.place(relx=ent_relx + 2*geo_dx, rely=ent_rely+drely)
         self._ent_tauxy.place(relx=ent_relx + 3*geo_dx, rely=ent_rely+drely)
-        self._ent_stf_type.place(relx=ent_relx + 4*geo_dx, rely=ent_rely+drely)
+        self._ent_stf_type.place(relx=ent_relx + 4*geo_dx, rely=ent_rely+0.9*drely)
         self._ent_puls_method.place(relx=ent_relx + 5.5*geo_dx, rely=prop_vert_start + 8 * delta_y)
 
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_sigmax, command = self.on_color_code_check)\
@@ -2075,7 +2076,7 @@ class Application():
                 self._prop_canvas.create_line(startx,starty,startx+spacing,starty, width = plate_thk)
                 self._prop_canvas.create_line(startx+spacing*0.5,starty,startx+spacing*0.5,starty-stf_web_height,
                                              width=stf_web_thk )
-                if structure_obj.get_stiffener_type() != 'L':
+                if structure_obj.get_stiffener_type() not in ['L', 'L-bulb']:
                     self._prop_canvas.create_line(startx+spacing*0.5-stf_flange_width/2,starty-stf_web_height,
                                              startx + spacing * 0.5 + stf_flange_width / 2, starty - stf_web_height,
                                              width=stf_flange_thk)
@@ -3887,8 +3888,9 @@ class Application():
             pass
         self._load_window_couter = counter
         self._new_load_comb_dict = load_comb_dict
-
+        temp_load = copy.deepcopy(self._load_dict)
         if len(returned_loads) != 0:
+            need_to_recalc_puls = {}
             for load, data in returned_loads.items():
                 #creating the loads objects dictionary
                 self._load_dict[load] = data
@@ -3900,6 +3902,14 @@ class Application():
 
             for main_line in self._line_dict.keys():
                 for load_obj, load_line in self._load_dict.values():
+                    if main_line in self._line_to_struc.keys():
+                        if returned_loads:
+                            if load_obj.__str__() != temp_load[load_obj.get_name()][0].__str__() and main_line in \
+                                    load_line+temp_load[load_obj.get_name()][1]:
+                                # The load has changed for this line.
+                                # TODO double check this.
+                                if self._PULS_results is not None:
+                                    self._PULS_results.result_changed(main_line)
                     if main_line in load_line and main_line in self._line_to_struc.keys():
                         self._line_to_struc[main_line][3].append(load_obj)
 

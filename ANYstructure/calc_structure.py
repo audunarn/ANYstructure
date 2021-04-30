@@ -477,8 +477,8 @@ class Structure():
     def get_puls_input(self):
         if self.stiffener_type == 'FB':
             stf_type = 'F'
-        elif self.stiffener_type == 'L':
-            stf_type = 'L-bulb'
+        # elif self.stiffener_type == 'L': # TODO need to do something with this.
+        #     stf_type = 'L-bulb'
         else:
             stf_type = self.stiffener_type
         return_dict = {'Identification': None, 'Length of panel': self.span*1000, 'Stiffener spacing': self.spacing*1000,
@@ -597,7 +597,7 @@ class CalcScantlings(Structure):
         h_stf = (self.web_height+self.flange_th)*1000
         de_gr = 0
         tw_gr = self.web_th*1000
-        hf_ctr = h_stf-0.5*tf if self.get_stiffener_type() != 'L' else h_stf - de_gr - 0.5*tf
+        hf_ctr = h_stf-0.5*tf if self.get_stiffener_type() not in ['L','L-bulb'] else h_stf - de_gr - 0.5*tf
         bf_ctr = 0 if self.get_stiffener_type() == 'T' else 0.5*(tf - tw_gr)
         beta = 0.5
         gamma = (1 + math.sqrt(3+12*beta))/4
@@ -926,7 +926,7 @@ class CalcScantlings(Structure):
         #print('Aw ',Aw,'Af ', Af,'tf ', tf,'tw ', tw,'G ', G,'E ', E,'Iz ', Iz,'lt ', lT)
 
         def get_some_data(lT):
-            if stf_type in ['T', 'L']:
+            if stf_type in ['T', 'L', 'L-bulb']:
                 fET = beta*(((Aw + Af * math.pow(tf/tw,2)) / (Aw + 3*Af)) * G*math.pow(tw/hw,2))+\
                       (math.pow(math.pi, 2) * E * Iz) / ((Aw/3 + Af)*math.pow(lT,2)) \
                     if bf != 0 \
@@ -1077,7 +1077,7 @@ class CalcScantlings(Structure):
 
         epsilon = math.sqrt(235 / (self.mat_yield / 1e6))
 
-        if self.stiffener_type == 'L':
+        if self.stiffener_type in ['L', 'L-bulb']:
             c = self.flange_width - self.web_th/2
         elif self.stiffener_type == 'T':
             c = self.flange_width/2 - self.web_th/2

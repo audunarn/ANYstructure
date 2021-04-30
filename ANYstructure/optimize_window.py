@@ -627,7 +627,7 @@ class CreateOptimizeWindow():
                                                processes=self._new_processes.get(),
                                                use_weight_filter = self._new_use_weight_filter.get())
 
-        if self._opt_results is not None:
+        if self._opt_results is not None and self._opt_results[0] is not None:
             self._opt_actual_running_time.config(text='Actual running time: \n'
                                                      +str(time.time()-t_start)+' sec')
             self._opt_runned = True
@@ -774,7 +774,7 @@ class CreateOptimizeWindow():
         self._canvas_opt.create_rectangle(ctr_x - m * self._stf_web_thk / 2, ctr_y-m* self._pl_thk,
                                          ctr_x + m * self._stf_web_thk / 2, ctr_y - m *(self._stf_web_h+self._pl_thk)
                                          , fill=init_color, stipple=init_stipple )
-        if self._initial_structure_obj.get_stiffener_type() != 'L':
+        if self._initial_structure_obj.get_stiffener_type() not in ['L', 'L-bulb']:
             self._canvas_opt.create_rectangle(ctr_x-m*self._fl_w/2, ctr_y-m*(self._pl_thk+self._stf_web_h),
                                              ctr_x+m*self._fl_w/2, ctr_y-m*(self._pl_thk+self._stf_web_h+self._fl_thk),
                                              fill=init_color, stipple=init_stipple)
@@ -795,7 +795,7 @@ class CreateOptimizeWindow():
                                              ctr_x + m * self._opt_results[0].get_web_thk() / 2,
                                              ctr_y - m * (self._opt_results[0].get_web_h() + self._opt_results[0].get_pl_thk())
                                              , fill=opt_color, stipple=opt_stippe)
-            if self._initial_structure_obj.get_stiffener_type() != 'L':
+            if self._initial_structure_obj.get_stiffener_type() not in ['L', 'L-bulb']:
                 self._canvas_opt.create_rectangle(ctr_x - m * self._opt_results[0].get_fl_w() / 2, ctr_y
                                                  - m * (self._opt_results[0].get_pl_thk()+ self._opt_results[0].get_web_h()),
                                                  ctr_x + m * self._opt_results[0].get_fl_w() / 2,ctr_y -

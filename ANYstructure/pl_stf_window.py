@@ -34,7 +34,7 @@ class CreateStructureWindow():
         self._canvas_dim = (500, 450)
         self._canvas_struc = tk.Canvas(self._frame, width=self._canvas_dim[0], height=self._canvas_dim[1],
                                        background='azure', relief='groove', borderwidth=2)
-        self.structure_types = ['T','L','FB']
+        self.structure_types = ['T','L', 'L-bulb','FB']
         self._canvas_struc.place(x=10, y=300)
         tk.Label(self._frame, text='-- Define structure properties here --', font='Verdana 15 bold').place(x=10, y=10)
         
@@ -251,7 +251,7 @@ class CreateStructureWindow():
 
         self._canvas_struc.create_text(250, 55, text='Flange: '+ str(fl_w ) + 'x'+ str(fl_thk ),
                                   font='Verdana 10 bold',fill='red')
-        if self._new_stiffener_type.get()=='L':
+        if self._new_stiffener_type.get() in ['L', 'L-bulb']:
             self._canvas_struc.create_rectangle(ctr_x - m * web_thk / 2, ctr_y- m * (pl_thk + web_h),ctr_x + m * fl_w,
                                                ctr_y - m * (pl_thk + web_h + fl_thk),fill='red', stipple=init_stipple)
         else:

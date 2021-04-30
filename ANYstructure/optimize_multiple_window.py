@@ -852,7 +852,7 @@ class CreateOptimizeMultipleWindow():
             self._canvas_opt.create_rectangle(ctr_x - m * init_obj.get_web_thk() / 2, ctr_y - m * init_obj.get_pl_thk(),
                                              ctr_x + m * init_obj.get_web_thk() / 2, ctr_y - m * (init_obj.get_web_h() + init_obj.get_pl_thk())
                                              , fill=init_color, stipple=init_stipple)
-            if init_obj.get_stiffener_type() != 'L':
+            if init_obj.get_stiffener_type() not in ['L', 'L-bulb']:
                 self._canvas_opt.create_rectangle(ctr_x - m * init_obj.get_fl_w() / 2, ctr_y - m * (init_obj.get_pl_thk() + init_obj.get_web_h()),
                                                  ctr_x + m * init_obj.get_fl_w() / 2,
                                                  ctr_y - m * (init_obj.get_pl_thk() + init_obj.get_web_h() + init_obj.get_fl_thk()),
@@ -878,7 +878,7 @@ class CreateOptimizeMultipleWindow():
                                              ctr_y - m * (
                                              opt_obj.get_web_h() + opt_obj.get_pl_thk())
                                              , fill=opt_color, stipple=opt_stippe)
-            if init_obj.get_stiffener_type() != 'L':
+            if init_obj.get_stiffener_type() not in ['L', 'L-bulb']:
                 self._canvas_opt.create_rectangle(ctr_x - m * opt_obj.get_fl_w() / 2, ctr_y
                                                  - m * (
                                                  opt_obj.get_pl_thk() + opt_obj.get_web_h()),
