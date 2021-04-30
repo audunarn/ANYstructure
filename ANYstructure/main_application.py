@@ -211,12 +211,13 @@ class Application():
         self._logger = {'added': list(), 'deleted': list()}  # used to log operations for geometry operations, to be used for undo/redo
         self.__returned_load_data = None # Temporary data for returned loads from the load window.
         self.__copied_line_prop = None  # Used to copy line properties to another.
-        self._puls_results = None # If a puls run is avaliable, it is stored here.
+        self._PULS_results = None # If a puls run is avaliable, it is stored here.
         # Used to select parameter
         self._stuctural_definition = ['mat_yield', 'span', 'spacing', 'plate_thk', 'stf_web_height', 'stf_web_thk',
                                        'stf_flange_width', 'stf_flange_thk', 'structure_type', 'stf_type',
                                        'sigma_y1', 'sigma_y2', 'sigma_x', 'tau_xy', 'plate_kpp', 'stf_kps','stf_km1',
-                                       'stf_km2', 'stf_km3', 'press_side', 'structure_types', 'zstar_optimization']
+                                       'stf_km2', 'stf_km3', 'press_side', 'structure_types', 'zstar_optimization',
+                                      'puls buckling method']
         self._p1_p2_select = False
         self._line_is_active = False # True when a line is clicked
         self._active_line = '' # Name of the clicked point
@@ -1019,29 +1020,44 @@ class Application():
         self.update_frame()
 
     def puls_run_all_lines(self, line_given = None):
+
+        if self._PULS_results is None:
+            self._PULS_results = PULSpanel()
+
         dict_to_run = {}
+        result_lines = list(self._PULS_results.get_run_results().keys())
+
         if line_given == None:
             current_button = self._puls_run_all
             for line, data in self._line_to_struc.items():
-                dict_to_run[line] = data[1].get_puls_input()
-                dict_to_run[line]['Identification'] = line
-                dict_to_run[line]['Pressure (fixed)'] = self.get_highest_pressure(line)['normal']/1e6
+                if line not in result_lines:
+                    dict_to_run[line] = data[1].get_puls_input()
+                    dict_to_run[line]['Identification'] = line
+                    dict_to_run[line]['Pressure (fixed)'] = self.get_highest_pressure(line)['normal']/1e6
         else:
             current_button = self._puls_run_one
-            dict_to_run[line_given] = self._line_to_struc[line_given][1].get_puls_input()
-            dict_to_run[line_given]['Identification'] = line_given
-            dict_to_run[line_given]['Pressure (fixed)'] = self.get_highest_pressure(line_given)['normal'] / 1e6
+            if line_given == '':
+                return
+            if line_given not in result_lines:
+                dict_to_run[line_given] = self._line_to_struc[line_given][1].get_puls_input()
+                dict_to_run[line_given]['Identification'] = line_given
+                dict_to_run[line_given]['Pressure (fixed)'] = self.get_highest_pressure(line_given)['normal'] / 1e6
         current_button.config(text='...PULS...\n'
                                    '..RUNNING..')
 
-        self._puls_results = PULSpanel(dict_to_run)
-        self._puls_results.run_all()
+        self._PULS_results.set_all_to_run(dict_to_run)
+        self._PULS_results.run_all()
+
         current_button.config(text='PULS run or\nupdate all lines' if line_given == None else 'PULS\nRun one line')
         current_button.config(bg=self._button_bg_color)
         for key, value in self._line_to_struc.items():
             value[1].need_recalc = True
 
         self.update_frame()
+        
+    def trace_puls_uf(self):
+        if self._PULS_results is not None:
+            pass
 
     def puls_run_one_line(self):
         self.puls_run_all_lines(self._active_line)
@@ -1111,7 +1127,8 @@ class Application():
                     'stf_km3': self._new_stf_km3.get,
                     'press_side': self._new_pressure_side,
                     'structure_types': self._structure_types,
-                    'zstar_optimization': self._new_zstar_optimization}
+                    'zstar_optimization': self._new_zstar_optimization,
+                    'puls buckling method': self._new_puls_method}
 
 
         set_var = obj_dict[var_to_set]()
@@ -1519,9 +1536,9 @@ class Application():
                 return_dict['colors'][current_line] = {'buckling': color_buckling, 'fatigue': color_fatigue,
                                                        'section': color_sec, 'shear': color_shear,
                                                        'thickness': color_thk}
-                if self._puls_results != None:
+                if self._PULS_results != None:
 
-                    res = self._puls_results.get_puls_line_results(current_line)
+                    res = self._PULS_results.get_puls_line_results(current_line)
 
                     if res is not None:
                         geo_problem = False
@@ -2204,9 +2221,9 @@ class Application():
                                                font=self._text_size["Text 9 bold"],anchor='nw', fill=color_thk)
 
                 # buckling results
-                if self._puls_results != None and self._toggle_btn_puls.config('relief')[-1] == 'sunken':
+                if self._PULS_results != None and self._toggle_btn_puls.config('relief')[-1] == 'sunken':
                     line_results = state['PULS colors'][self._active_line]
-                    puls_res = self._puls_results.get_puls_line_results(self._active_line)
+                    puls_res = self._PULS_results.get_puls_line_results(self._active_line)
                     if puls_res != None:
                         geo_problem = False
                         if type(puls_res['Ultimate capacity']['Actual usage Factor'][0]) != str:
@@ -2547,7 +2564,8 @@ class Application():
                             'stf_km3': [self._new_stf_km3.get(), ''],
                             'press_side': [self._new_pressure_side.get(), ''],
                             'structure_types':[self._structure_types, ''],
-                            'zstar_optimization': [self._new_zstar_optimization.get(), '']}
+                            'zstar_optimization': [self._new_zstar_optimization.get(), ''],
+                            'puls buckling method': [self._new_puls_method.get(), '']}
             else:
                 obj_dict = pasted_structure.get_structure_prop()
 
@@ -2582,8 +2600,12 @@ class Application():
         else:
             pass
 
+        if self._PULS_results != None:
+            self._PULS_results.result_changed(self._active_line)
+
         for line, obj in self._line_to_struc.items():
             obj[1].need_recalc = True
+
 
         self.update_frame()
         #state = self.get_color_and_calc_state()
@@ -2789,8 +2811,9 @@ class Application():
                         for load in loads:
                             if line in self._load_dict[load][1]:
                                 self._load_dict[load][1].pop(self._load_dict[load][1].index(line))
-
-
+                    # Removing from puls results
+                    if self._PULS_results is not None:
+                        self._PULS_results.result_changed(line)
 
                 self.update_frame()
             else:
@@ -3522,6 +3545,8 @@ class Application():
             load_combiantions[counter] = [name,data[0].get(),data[1].get(),data[2].get()]
             counter+=1
 
+
+
         export_all = {}
         export_all['project information'] = self._new_project_infomation.get()
         export_all['point_dict'] = self._point_dict
@@ -3532,6 +3557,7 @@ class Application():
         export_all['load_combinations'] = load_combiantions
         export_all['tank_properties'] = tank_properties
         export_all['fatigue_properties'] = fatigue_properties
+        export_all['PULS results'] = self._PULS_results.get_run_results()
         json.dump(export_all, save_file)#, sort_keys=True, indent=4)
         save_file.close()
         self._parent.wm_title('| ANYstructure |     ' + save_file.name)
@@ -3573,6 +3599,8 @@ class Application():
                 lines_prop['structure_types'] = [self._structure_types, ' ']
             if 'zstar_optimization' not in lines_prop.keys():
                 lines_prop['zstar_optimization'] = [self._new_zstar_optimization.get(), '']
+            if 'puls buckling method' not in lines_prop.keys():
+                lines_prop['puls buckling method'] = [self._new_puls_method.get(), '']
             self._line_to_struc[line][0] = Structure(lines_prop)
             self._line_to_struc[line][1] = CalcScantlings(lines_prop)
             if imported['fatigue_properties'][line] is not None:
@@ -3652,6 +3680,10 @@ class Application():
                 point_coord_y = self._canvas_base_origo[1] - self._point_dict[point_no][1] * self._canvas_scale
 
                 self.grid_operations(line_name, [point_coord_x,point_coord_y])
+
+        if 'PULS results' in list(imported.keys()):
+            self._PULS_results = PULSpanel()
+            self._PULS_results.set_run_results(imported['PULS results'])
 
         # Setting the scale of the canvas
         points = self._point_dict

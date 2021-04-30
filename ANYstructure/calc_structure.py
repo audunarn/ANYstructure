@@ -3,9 +3,10 @@ from scipy.special import gammaln
 from scipy.stats import gamma as gammadist
 import numpy as np
 import ANYstructure.PULS.excel_inteface as pulsxl
-from multiprocessing import  Pool, cpu_count
-import multiprocessing as mp
-import shutil, os
+from multiprocessing import  Pool, cpu_count, Process
+import multiprocessing
+import shutil, os, time
+from itertools import islice
 
 import ANYstructure.SN_curve_parameters as snc
 
@@ -41,6 +42,7 @@ class Structure():
             self.dynamic_variable_orientation = 'z - vertical'
         elif self.structure_type in self.structure_types['horizontal']:
             self.dynamic_variable_orientation = 'x - horizontal'
+        self._puls_method = main_dict['puls buckling method'][0]
 
 
         self._zstar_optimization = main_dict['zstar_optimization'][0]
@@ -96,6 +98,9 @@ class Structure():
 
     def get_z_opt(self):
         return self._zstar_optimization
+
+    def get_puls_method(self):
+        return self._puls_method
 
     def get_one_line_string(self):
         ''' Returning a one line string. '''
@@ -470,10 +475,16 @@ class Structure():
         self.main_dict['span'][0] = span
 
     def get_puls_input(self):
+        if self.stiffener_type == 'FB':
+            stf_type = 'F'
+        elif self.stiffener_type == 'L':
+            stf_type = 'L-bulb'
+        else:
+            stf_type = self.stiffener_type
         return_dict = {'Identification': None, 'Length of panel': self.span*1000, 'Stiffener spacing': self.spacing*1000,
                         'Plate thickness': self.plate_th*1000,
                       'Number of primary stiffeners': 10,
-                       'Stiffener type (L,T,F)': 'F' if self.stiffener_type == 'FB' else self.stiffener_type,
+                       'Stiffener type (L,T,F)': stf_type,
                         'Stiffener boundary': 'C',
                       'Stiff. Height': self.web_height*1000, 'Web thick.': self.web_th*1000,'Flange width': self.flange_width*1000,
                         'Flange thick.': self.flange_th*1000, 'Tilt angle': 0,
@@ -1220,19 +1231,44 @@ class PULSpanel():
     '''
     Takes care of puls runs
     '''
-    def __init__(self, run_dict):
+    def __init__(self, run_dict: dict = {}, puls_acceptance: float = 0.87, puls_sheet_location: str = None):
         super(PULSpanel, self).__init__()
+
         self._all_to_run = run_dict
         self._run_results = {}
+        self._puls_acceptance = puls_acceptance
+        self._puls_sheet_location = puls_sheet_location
 
-    def run_all_multi(self):
-        processes = max(cpu_count() - 1, 1)
 
-        with Pool(processes) as my_process:
-            res_pre = my_process.map(self.run_all, self._all_to_run.values())
-        [print(val) for val in res_pre]
+    @property
+    def puls_acceptance(self):
+        return self._puls_acceptance
 
-    def run_all(self, iterator = None):
+    @puls_acceptance.setter
+    def puls_acceptance(self, val):
+        self._puls_acceptance = val
+
+    @property
+    def puls_sheet_location(self):
+        return self.puls_sheet_location
+
+    @puls_sheet_location.setter
+    def puls_sheet_location(self, val):
+        self._puls_sheet_location = val
+
+    def set_all_to_run(self, val):
+        self._all_to_run = val
+
+    def get_all_to_run(self):
+        return self._all_to_run
+
+    def get_run_results(self):
+        return self._run_results
+
+    def set_run_results(self, val):
+        self._run_results = val
+
+    def run_all(self):
         '''
         Returning following results.:
 
@@ -1259,31 +1295,93 @@ class PULSpanel():
 
         :return:
         '''
-        if iterator != None:
-            pname = mp.current_process().name + mp.Process().name
-            pname = pname.replace(':','_')
-        file = os.path.dirname(os.path.abspath(__file__))+'\\PULS\\PulsExcel_new.xlsm'
-        if iterator != None:
-            newfile = os.path.dirname(os.path.abspath(__file__))+'\\PULS\\PulsExcel_new'+pname+'.xlsm'
-            shutil.copyfile(file, newfile)
-        else:
-            newfile = os.path.dirname(os.path.abspath(__file__)) + '\\PULS\\PulsExcel_new' + 'copy_run_1'+ '.xlsm'
-            shutil.copyfile(file, newfile)
+        idx = 1
+        iterator = self._all_to_run
+        newfile = os.path.dirname(os.path.abspath(__file__))+'\\PULS\\PulsExcel_new - Copy ('+str(idx)+').xlsm'
         my_puls = pulsxl.PulsExcel(newfile, visible=False)
-        list_to_run = []
-        if self._all_to_run == {}:
-            return None
-        for line, data in self._all_to_run.items():
-            list_to_run.append(data)
-        my_puls.set_multiple_rows(20, list_to_run)
+        my_puls.set_multiple_rows(20, iterator)
         my_puls.calculate_panels()
-        all_results =my_puls.get_all_results().items()
+        all_results = my_puls.get_all_results()
         my_puls.close_book(save=False)
-        for key, value in all_results:
+
+        for key, value in all_results.items():
             self._run_results[value['Identification']] = value
-        os.remove(newfile)
+
         return all_results
 
+
+    # def run_all_multi(self):
+    #     import win32com
+    #     tasks = []
+    #
+    #     # if len(self._all_to_run) > 20:
+    #     #     processes = 10#max(cpu_count() - 1, 1)
+    #     #
+    #     #     def chunks(data, SIZE=10000):
+    #     #         it = iter(data)
+    #     #         for i in range(0, len(data), SIZE):
+    #     #             yield {k: data[k] for k in islice(it, SIZE)}
+    #     #
+    #     #     # Sample run:
+    #     #
+    #     #     for item in chunks({key: value for key, value in ex.run_dict.items()}, int(len(self._all_to_run)/processes)):
+    #     #         tasks.append(item)
+    #     #else:
+    #     tasks.append(self._all_to_run)
+    #     # [print(task) for task in tasks]
+    #     # print(self._all_to_run)
+    #     # quit()
+    #     queue = multiprocessing.SimpleQueue()
+    #     for idx, name in enumerate(tasks):
+    #         p = Process(target=self.run_all, args=(name, queue, idx+1))
+    #         p.start()
+    #     p.join()
+    #     for task in tasks:
+    #         print(queue.get())
+    #
+    #
+    #
+    # def run_all(self, iterator, queue = None, idx = 0):
+    #     '''
+    #     Returning following results.:
+    #
+    #     Identification:  name of line/run
+    #     Plate geometry:       dict_keys(['Length of panel', 'Stiffener spacing', 'Plate thick.'])
+    #     Primary stiffeners: dict_keys(['Number of stiffeners', 'Stiffener type', 'Stiffener boundary', 'Stiff. Height',
+    #                         'Web thick.', 'Flange width', 'Flange thick.', 'Flange ecc.', 'Tilt angle'])
+    #     Secondary stiffeners. dict_keys(['Number of sec. stiffeners', 'Secondary stiffener type', 'Stiffener boundary',
+    #                         'Stiff. Height', 'Web thick.', 'Flange width', 'Flange thick.'])
+    #     Model imperfections. dict_keys(['Imp. level', 'Plate', 'Stiffener', 'Stiffener tilt'])
+    #     Material: dict_keys(['Modulus of elasticity', "Poisson's ratio", 'Yield stress plate', 'Yield stress stiffener'])
+    #     Aluminium prop: dict_keys(['HAZ pattern', 'HAZ red. factor'])
+    #     Applied loads: dict_keys(['Axial stress', 'Trans. stress', 'Shear stress', 'Pressure (fixed)'])
+    #     Bound cond.: dict_keys(['In-plane support'])
+    #     Global elastic buckling: dict_keys(['Axial stress', 'Trans. Stress', 'Trans. stress', 'Shear stress'])
+    #     Local elastic buckling: dict_keys(['Axial stress', 'Trans. Stress', 'Trans. stress', 'Shear stress'])
+    #     Ultimate capacity: dict_keys(['Actual usage Factor', 'Allowable usage factor', 'Status'])
+    #     Failure modes: dict_keys(['Plate buckling', 'Global stiffener buckling', 'Torsional stiffener buckling',
+    #                         'Web stiffener buckling'])
+    #     Buckling strength: dict_keys(['Actual usage Factor', 'Allowable usage factor', 'Status'])
+    #     Local geom req (PULS validity limits): dict_keys(['Plate slenderness', 'Web slend', 'Web flange ratio',
+    #                         'Flange slend ', 'Aspect ratio'])
+    #     CSR-Tank requirements (primary stiffeners): dict_keys(['Plating', 'Web', 'Web-flange', 'Flange', 'stiffness'])
+    #
+    #     :return:
+    #     '''
+    #
+    #     newfile = os.path.dirname(os.path.abspath(__file__))+'\\PULS\\PulsExcel_new - Copy ('+str(idx)+').xlsm'
+    #     my_puls = pulsxl.PulsExcel(newfile, visible=False)
+    #     try:
+    #         #print(iterator)
+    #         my_puls.set_multiple_rows(20, iterator)
+    #         my_puls.calculate_panels()
+    #         all_results = my_puls.get_all_results()
+    #         my_puls.close_book(save=False)
+    #         queue.put(all_results)
+    #         #os.remove(newfile)
+    #     except (BaseException, AttributeError):
+    #         my_puls.close_book(save=False)
+    #         queue.put(None)
 
     def get_puls_line_results(self, line):
         if line not in self._run_results.keys():
@@ -1314,8 +1412,29 @@ class PULSpanel():
         if id in self._run_results.keys():
             self._run_results.pop(id)
 
+def f(name, queue):
+    import time
+    #print('hello', name)
+    time.sleep(2)
+    queue.put(name)
+
+
 if __name__ == '__main__':
-    import ANYstructure.example_data as test
+    import ANYstructure.example_data as ex
+    PULS = PULSpanel(ex.run_dict)
+    PULS.run_all_multi()
+    # import ANYstructure.example_data as test
+    # from multiprocessing import Process
+    #
+    # queue = multiprocessing.SimpleQueue()
+    # tasks = ['a', 'b', 'c']
+    # for name in tasks:
+    #     p = Process(target=f, args=(name,queue))
+    #     p.start()
+    #
+    # for task in tasks:
+    #     print(queue.get())
+
 
     # print('Fatigue test: ')
     # my_test = CalcFatigue(test.obj_dict, test.fat_obj_dict)
@@ -1331,16 +1450,16 @@ if __name__ == '__main__':
     # print(my_buc.get_net_effective_plastic_section_modulus())
 
     #my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0))
-    import ANYstructure.example_data as ex
-    for example in [CalcScantlings(ex.obj_dict), CalcScantlings(ex.obj_dict2), CalcScantlings(ex.obj_dict_L)]:
-        my_test = example
+    # import ANYstructure.example_data as ex
+    # for example in [CalcScantlings(ex.obj_dict), CalcScantlings(ex.obj_dict2), CalcScantlings(ex.obj_dict_L)]:
+    #     my_test = example
         # my_test = CalcScantlings(example)
         # my_test = CalcFatigue(example, test.fat_obj_dict2)
         # my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0))
         # print('Total damage: ', my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0)))
         # print(my_test.get_fatigue_properties())
-        pressure = 200
-        print(my_test.buckling_local_stiffener())
+        # pressure = 200
+        # print(my_test.buckling_local_stiffener())
         # print('SHEAR CENTER: ',my_test.get_shear_center())
         # print('SECTION MOD: ',my_test.get_section_modulus())
         # print('SECTION MOD FLANGE: ', my_test.get_section_modulus()[0])

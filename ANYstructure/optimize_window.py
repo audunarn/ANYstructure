@@ -440,7 +440,7 @@ class CreateOptimizeWindow():
         tk.Button(self._frame,text='algorith information',command=self.algorithm_info,bg='white')\
             .place(x=start_x+dx*11, y=start_y+dy*2)
         self.run_button = tk.Button(self._frame,text='RUN OPTIMIZATION!', command=self.run_optimizaion, bg='red',
-                                    font='Verdana 10',fg='Yellow')
+                                    font='Verdana 10 bold',fg='Yellow', relief="raised")
         self.run_button.place(x=start_x+dx*8, y=start_y+dy*0.5)
         self.run_results = tk.Button(self._frame,text='show calculated', command=self.plot_results, bg='white',
                                     font='Verdana 10',fg='black')
@@ -460,6 +460,7 @@ class CreateOptimizeWindow():
         self._new_check_min_pl_thk = tk.BooleanVar()
         self._new_check_shear_area = tk.BooleanVar()
         self._new_check_buckling = tk.BooleanVar()
+        self._new_check_buckling_puls = tk.BooleanVar()
         self._new_check_fatigue = tk.BooleanVar()
         self._new_check_slamming = tk.BooleanVar()
         self._new_check_local_buckling = tk.BooleanVar()
@@ -472,6 +473,7 @@ class CreateOptimizeWindow():
         self._new_check_slamming.set(False)
         self._new_check_local_buckling.set(True)
         self._new_use_weight_filter.set(True)
+        self._new_check_buckling_puls.set(False)
 
 
         start_y = 140
@@ -483,6 +485,7 @@ class CreateOptimizeWindow():
         tk.Label(self._frame, text='Check for bow slamming').place(x=start_x + dx * 9.7, y=start_y + 9 * dy)
         tk.Label(self._frame, text='Check for local stf. buckling').place(x=start_x + dx * 9.7, y=start_y + 10 * dy)
         tk.Label(self._frame, text='Use weight filter (for speed)').place(x=start_x + dx * 9.7, y=start_y + 11 * dy)
+        tk.Label(self._frame, text='Check for buckling (PULS)').place(x=start_x + dx * 9.7, y=start_y + 12 * dy)
 
         tk.Checkbutton(self._frame,variable=self._new_check_sec_mod).place(x=start_x+dx*12,y=start_y+4*dy)
         tk.Checkbutton(self._frame, variable=self._new_check_min_pl_thk).place(x=start_x+dx*12,y=start_y+5*dy)
@@ -494,6 +497,8 @@ class CreateOptimizeWindow():
                                                                                    y=start_y + 10 * dy)
         tk.Checkbutton(self._frame, variable=self._new_use_weight_filter).place(x=start_x + dx * 12,
                                                                                    y=start_y + 11 * dy)
+        tk.Checkbutton(self._frame, variable=self._new_check_buckling_puls).place(x=start_x + dx * 12,
+                                                                                   y=start_y + 12 * dy)
 
         # tk.Button(self._frame,text='Iterate predefiened stiffeners',command=self.open_multiple_files ,bg='yellow')\
         #     .place(x=start_x, y=start_y - dy * 2)
@@ -577,6 +582,9 @@ class CreateOptimizeWindow():
         :return:
         '''
         self.run_button.config(bg = 'white')
+        self.run_button.config(fg='red')
+        self.run_button.config(text='RUNNING OPTIMIZATION')
+        self.run_button.config(relief="sunken")
         t_start = time.time()
         self._opt_results, self._opt_runned = (), False
         self._opt_actual_running_time.config(text='')
@@ -586,7 +594,7 @@ class CreateOptimizeWindow():
         contraints = (self._new_check_sec_mod.get(),self._new_check_min_pl_thk.get(),
                       self._new_check_shear_area.get(), self._new_check_buckling.get(),
                       self._new_check_fatigue.get(), self._new_check_slamming.get(),
-                      self._new_check_local_buckling.get())
+                      self._new_check_local_buckling.get(), self._new_check_buckling_puls.get())
         self._initial_structure_obj.set_span(self._new_span.get())
 
         if self._fatigue_pressure is not None:
@@ -643,6 +651,9 @@ class CreateOptimizeWindow():
                                                                'There may be no alternative that is acceptable.\n')
 
         self.run_button.config(bg='green')
+        self.run_button.config(fg='yellow')
+        self.run_button.config(text='RUN OPTIMIZATION')
+        self.run_button.config(relief="raised")
 
     def get_running_time(self):
         '''
