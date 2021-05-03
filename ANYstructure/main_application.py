@@ -1013,11 +1013,14 @@ class Application():
             self._toggle_btn_puls.config(bg=self._button_bg_color)
             self._toggle_btn_puls.config(text='Use PULS\n'
                                          'results')
+            self._new_toggle_puls.set(False)
         else:
             self._toggle_btn_puls.config(relief="sunken")
             self._toggle_btn_puls.config(bg='orange')
             self._toggle_btn_puls.config(text = 'PULS result\n'
                                            'override set')
+            self._new_toggle_puls.set(True)
+
         self.update_frame()
 
     def puls_run_all_lines(self, line_given = None):
@@ -1132,7 +1135,7 @@ class Application():
                     'puls buckling method': self._new_puls_method}
 
 
-        set_var = obj_dict[var_to_set]()
+        set_var = obj_dict[var_to_set].get()
         if var_to_set == 'mat_yield':
             set_var = set_var* 1e6
         elif var_to_set in ['spacing','plate_thk','stf_web_height','stf_web_thk',
@@ -1538,7 +1541,7 @@ class Application():
                                                        'section': color_sec, 'shear': color_shear,
                                                        'thickness': color_thk}
                 if self._PULS_results != None:
-
+                    puls_uf_all = []
                     res = self._PULS_results.get_puls_line_results(current_line)
 
                     if res is not None:
@@ -1597,6 +1600,7 @@ class Application():
                 sec_util = 0 if min(sec_mod) == 0 else min_sec_mod / min(sec_mod)
                 buc_util = 1 if float('inf') in buckling else max(buckling[0:5])
                 return_dict['utilization'][current_line] = {'buckling': buc_util,
+                                                            'PULS buckling': buc_util,
                                                             'fatigue': fat_util,
                                                             'section': sec_util,
                                                             'shear': shear_util,
@@ -1665,6 +1669,19 @@ class Application():
                                      (max(all_utils) - min(all_utils)) / 10)
             else:
                 util_map = all_utils
+
+            if self._PULS_results is not None:
+                #puls_util_map = self._PULS_results.all_uf
+                puls_util_map = list()
+                for key, val in self._line_to_struc.items():
+                    puls_util_map.append(self._PULS_results.get_utilization(key, val[0].get_puls_method(),
+                                                                            uf = self._new_puls_uf.get()))
+                puls_util_map  = np.arange(min(puls_util_map), max(puls_util_map) + (max(puls_util_map) -
+                                                                                     min(puls_util_map)) / 10,
+                                     (max(puls_util_map) - min(puls_util_map)) / 10)
+            else:
+                puls_util_map = None
+
             sig_x = np.unique([self._line_to_struc[line][1].get_sigma_x() for line in self._line_to_struc.keys()]).tolist()
             if len(sig_x) > 1:
                 sig_x_map = np.arange(min(sig_x), max(sig_x) + (max(sig_x) - min(sig_x)) / 10,
@@ -1700,6 +1717,7 @@ class Application():
                                          'highest pressure': highest_pressure, 'lowest pressure': lowest_pressure,
                                          'pressure map': press_map, 'all pressures':all_pressures,
                                          'all utilizations': all_utils, 'utilization map': util_map,
+                                         'PULS utilization map': puls_util_map,
                                          'max sigma x': max(sig_x), 'min sigma x': min(sig_x), 'sigma x map': sig_x_map,
                                          'max sigma y1': max(sig_y1), 'min sigma y1': min(sig_y1),
                                          'sigma y1 map': sig_y1_map,
@@ -1714,6 +1732,7 @@ class Application():
             thk_sort_unique = return_dict['color code']['all thicknesses']
             structure_type_unique = return_dict['color code']['structure types map']
             for line, line_data in self._line_to_struc.items():
+
                 line_color_coding[line] = {'plate': matplotlib.colors.rgb2hex(cmap_sections(thk_sort_unique.index(round(line_data[1]
                                                                               .get_pl_thk(),10))/len(thk_sort_unique))),
                                            'section': matplotlib.colors.rgb2hex(cmap_sections(sec_in_model[line_data[1]
@@ -1726,6 +1745,15 @@ class Application():
                                                self.get_highest_pressure(line)['normal']/highest_pressure)),
                                            'utilization': matplotlib.colors.rgb2hex(cmap_sections(
                                                max(list(return_dict['utilization'][line].values()))/max(all_utils))),
+
+                                           'PULS utilization': 'black' if self._PULS_results is
+                                                                          None else matplotlib.colors.rgb2hex(
+                                               cmap_sections(self._PULS_results.get_utilization(
+                                                   line, self._line_to_struc[line][1].get_puls_method())/
+                                                             max(self._PULS_results.all_uf['ultimate' if
+                                                             self._line_to_struc[line][1].get_puls_method() == 1
+                                                             else 'buckling']))),
+
                                            'sigma x': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_x()/
                                                                                               max(sig_x))),
                                            'sigma y1': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_y1()/
@@ -1734,8 +1762,6 @@ class Application():
                                                                                                max(sig_y2))),
                                            'tau xy': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_tau_xy()/
                                                                                              max(tau_xy)))}
-
-
                 return_dict['color code']['lines'] = line_color_coding
         return return_dict
 
@@ -1815,7 +1841,7 @@ class Application():
                             else:
                                 col1, col2 = state['PULS colors'][line]['ultimate'], \
                                              state['PULS colors'][line]['buckling']
-                                if self._new_puls_method.get() == 1:
+                                if self._line_to_struc[line][1].get_puls_method() == 1:
                                     color = 'red' if any([col1 == 'red', col2 == 'red']) else 'green'
                                 else:
                                     color = col1
@@ -1925,8 +1951,21 @@ class Application():
                                               fill=matplotlib.colors.rgb2hex(cmap_sections(press/highest_pressure)),
                                               anchor="nw")
 
-        elif self._new_colorcode_utilization.get() == True and self._line_to_struc != {}:
+        elif all([self._new_colorcode_utilization.get() == True,
+                  self._line_to_struc != {}, self._new_toggle_puls.get() != True]):
             all_utils = cc_state['all utilizations']
+            for idx, uf in enumerate(cc_state['utilization map']):
+                self._main_canvas.create_text(11, 111 + 20 * idx, text=str('UF = ' +str(round(uf,1))),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill='black',
+                                              anchor="nw")
+                self._main_canvas.create_text(10, 110 + 20 * idx, text=str('UF = ' +str(round(uf,1))),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill=matplotlib.colors.rgb2hex(cmap_sections(uf/max(all_utils))),
+                                              anchor="nw")
+        elif all([self._new_colorcode_utilization.get() == True,
+                  self._line_to_struc != {}, self._new_toggle_puls.get() == True]):
+            all_utils = cc_state['PULS utilization map']
             for idx, uf in enumerate(cc_state['utilization map']):
                 self._main_canvas.create_text(11, 111 + 20 * idx, text=str('UF = ' +str(round(uf,1))),
                                               font=self._text_size["Text 10 bold"],
@@ -2011,9 +2050,11 @@ class Application():
             else:
                 color = state['color code']['lines'][line]['pressure']
 
-        elif self._new_colorcode_utilization.get() == True:
+        elif self._new_colorcode_utilization.get() == True and not self._new_toggle_puls.get():
             color = state['color code']['lines'][line]['utilization']
 
+        elif self._new_colorcode_utilization.get() == True and self._new_toggle_puls.get():
+            color = state['color code']['lines'][line]['PULS utilization']
         elif self._new_colorcode_sigmax.get() == True:
             color = state['color code']['lines'][line]['sigma x']
 
@@ -2948,6 +2989,8 @@ class Application():
                 self._new_pressure_side.set(properties['press_side'][0])
             except KeyError:
                 self._new_pressure_side.set('p')
+            self._new_zstar_optimization.set(properties['zstar_optimization'][0])
+            self._new_puls_method.set(properties['puls buckling method'][0])
 
     def get_highest_pressure(self, line, limit_state = 'ULS'):
         '''
@@ -3404,9 +3447,6 @@ class Application():
         except AttributeError:
             state = None
 
-        # self.draw_canvas(state = state)
-        # self.draw_prop()
-        # self.draw_results(state = state)
         self.update_frame()
         self._combination_slider.set(1)
         if self._line_is_active:

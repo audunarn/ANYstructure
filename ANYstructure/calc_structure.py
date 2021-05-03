@@ -44,7 +44,6 @@ class Structure():
             self.dynamic_variable_orientation = 'x - horizontal'
         self._puls_method = main_dict['puls buckling method'][0]
 
-
         self._zstar_optimization = main_dict['zstar_optimization'][0]
         try:
             self.girder_lg=main_dict['girder_lg'][0]
@@ -1239,6 +1238,12 @@ class PULSpanel():
         self._puls_acceptance = puls_acceptance
         self._puls_sheet_location = puls_sheet_location
 
+        self._all_uf = {'buckling': list(), 'ultimate': list()}
+
+
+    @property
+    def all_uf(self):
+        return self._all_uf
 
     @property
     def puls_acceptance(self):
@@ -1256,6 +1261,7 @@ class PULSpanel():
     def puls_sheet_location(self, val):
         self._puls_sheet_location = val
 
+
     def set_all_to_run(self, val):
         self._all_to_run = val
 
@@ -1267,6 +1273,13 @@ class PULSpanel():
 
     def set_run_results(self, val):
         self._run_results = val
+        for key in self._run_results.keys():
+            if all([type(self._run_results[key]['Buckling strength']['Actual usage Factor'][0]) == float,
+                    type(self._run_results[key]['Ultimate capacity']['Actual usage Factor'][0]) == float]):
+                self._all_uf['buckling'].append(self._run_results[key]['Buckling strength']['Actual usage Factor'][0])
+                self._all_uf['ultimate'].append(self._run_results[key]['Ultimate capacity']['Actual usage Factor'][0])
+        self._all_uf['buckling'] = np.unique(self._all_uf['buckling']).tolist()
+        self._all_uf['ultimate'] = np.unique(self._all_uf['ultimate']).tolist()
 
     def run_all(self):
         '''
@@ -1307,8 +1320,22 @@ class PULSpanel():
         for key, value in all_results.items():
             self._run_results[value['Identification']] = value
 
+        self._all_uf = {'buckling': list(), 'ultimate': list()}
+        for key in self._run_results.keys():
+            if all([type(self._run_results[key]['Buckling strength']['Actual usage Factor'][0]) == float,
+                    type(self._run_results[key]['Ultimate capacity']['Actual usage Factor'][0]) == float]):
+                self._all_uf['buckling'].append(self._run_results[key]['Buckling strength']['Actual usage Factor'][0])
+                self._all_uf['ultimate'].append(self._run_results[key]['Ultimate capacity']['Actual usage Factor'][0])
+
+        self._all_uf['buckling'] = np.unique(self._all_uf['buckling']).tolist()
+        self._all_uf['ultimate'] = np.unique(self._all_uf['ultimate']).tolist()
         return all_results
 
+    def get_utilization(self, line, method, uf = 0.87):
+        if method == 1:
+            return self._run_results[line]['Buckling strength']['Actual usage Factor'][0]/uf
+        else:
+            return self._run_results[line]['Ultimate capacity']['Actual usage Factor'][0]/uf
 
     # def run_all_multi(self):
     #     import win32com

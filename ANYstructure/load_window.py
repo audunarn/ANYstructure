@@ -374,9 +374,12 @@ class CreateLoadWindow():
 
         variables = ['poly_third','poly_second', 'poly_first', 'poly_const', 'load_condition',
                      'man_press', 'static_draft', 'name_of_load', 'limit_state', 'structure_types']
+        existing_load = None
         if not slamming_load:
             name_of_load = self._new_dynamic_load_name.get()
             if name_of_load in self._load_objects.keys():
+                # Existing load
+                existing_load = copy.deepcopy(self._load_objects[name_of_load])
                 self._load_objects.pop(name_of_load)
                 self._load_obj_box.delete(0,'end')
                 for load in self._load_objects.keys():
@@ -389,6 +392,7 @@ class CreateLoadWindow():
         else:
             name_of_load = self._new_slamming_pressure_name.get()
             if name_of_load in self._load_objects.keys():
+                existing_load = copy.deepcopy(self._load_objects[name_of_load])
                 self._load_objects.pop(name_of_load)
                 self._load_obj_box.delete(0, 'end')
                 for load in self._load_objects.keys():
@@ -404,7 +408,7 @@ class CreateLoadWindow():
             current_load_dict[item] = values[count_i]
             count_i += 1
 
-        self._load_objects[name_of_load] = [Loads(current_load_dict),[]]
+        self._load_objects[name_of_load] = [Loads(current_load_dict),[] if existing_load is None else existing_load[1]]
         self._load_options.append(name_of_load)
         self._ent_assosiate_load.destroy()
         self._ent_assosiate_load = tk.OptionMenu(self._frame, self._new_assisiate_load, *tuple(self._load_options))
@@ -432,8 +436,10 @@ class CreateLoadWindow():
                      'structure_type', 'man_press', 'static_draft','name_of_load']
 
         name_of_load = self._new_static_load_name.get()
+        existing_load = None
 
         if name_of_load in self._load_objects.keys():
+            existing_load = copy.deepcopy(self._load_objects[name_of_load])
             self._load_objects.pop(name_of_load)
             self._load_obj_box.delete(0,'end')
             for load in self._load_objects.keys():
@@ -449,7 +455,7 @@ class CreateLoadWindow():
             current_load_dict[item] = values[count_i]
             count_i += 1
 
-        self._load_objects[name_of_load] = [Loads(current_load_dict),[]]
+        self._load_objects[name_of_load] = [Loads(current_load_dict),[] if existing_load is None else existing_load[1]]
 
         self._load_options.append(name_of_load)
         self._ent_assosiate_load.destroy()

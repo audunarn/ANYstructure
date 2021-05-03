@@ -244,13 +244,31 @@ class LetterMaker(object):
                                          '   Min shear area: '+str(int(self.data.get_color_and_calc_state()['shear_area'][line]['min_shear_area']*1000**2))
                                          + ' [mm2] ' + ' -> ' + 'NOT OK')
                 textobject.setFillColor('black')
-                textobject.setFillColor('red') if self.data.get_color_and_calc_state()['colors'][line]['buckling'] == 'red' \
-                    else textobject.setFillColor('black')
-                textobject.textLine('Highest buckling utilization: '+
-                                    str(round(max(self.data.get_color_and_calc_state()['buckling'][line]),2))+
-                                    ' -> '+'OK' if max(self.data.get_color_and_calc_state()['buckling'][line]) < 1 else
-                                    'Highest buckling utilization: '+
-                                    str(round(max(self.data.get_color_and_calc_state()['buckling'][line]),2))+' -> '+'NOT OK')
+                if not self.data._new_toggle_puls.get():
+                    textobject.setFillColor('red') if self.data.get_color_and_calc_state()['colors'][line]['buckling'] == 'red' \
+                        else textobject.setFillColor('black')
+                    textobject.textLine('Highest buckling utilization DNV-RP-C203: '+
+                                        str(round(max(self.data.get_color_and_calc_state()['buckling'][line]),2))+
+                                        ' -> '+'OK' if max(self.data.get_color_and_calc_state()['buckling'][line]) < 1 else
+                                        'Highest buckling utilization DNV-RP-C203: '+
+                                        str(round(max(self.data.get_color_and_calc_state()['buckling'][line]),2))+' -> '+'NOT OK')
+                else:
+                    if self.data._PULS_results is not None:
+                        puls_method = self.data._line_to_struc[line][1].get_puls_method()
+                        textobject.textLine('PULS results using method '+str(puls_method) + ' with acceptance '+
+                                            str(self.data._PULS_results.puls_acceptance))
+                        if line in self.data._PULS_results.get_run_results().keys():
+                            puls_buckling = self.data._PULS_results.get_run_results()[line]['Buckling strength']['Actual usage Factor'][0]
+                            puls_ultimate = self.data._PULS_results.get_run_results()[line]['Ultimate capacity']['Actual usage Factor'][0]
+                            textobject.setFillColor('red') if puls_method == 1 and puls_buckling/\
+                                                              self.data._PULS_results.puls_acceptance > 1 else \
+                                textobject.setFillColor('black')
+                            textobject.textLine('PULS buckling utilization = ' + str(puls_buckling))
+                            textobject.setFillColor('red') if puls_method == 2 and puls_ultimate/\
+                                                              self.data._PULS_results.puls_acceptance > 1 else \
+                                textobject.setFillColor('black')
+                            textobject.textLine('PULS ultimate utilization = ' + str(puls_ultimate))
+
                 textobject.setFillColor('black')
                 textobject.setFillColor('red') if self.data.get_color_and_calc_state()['colors'][line]['fatigue'] == 'red' \
                     else textobject.setFillColor('black')
@@ -397,6 +415,7 @@ class LetterMaker(object):
                 textobject.setFont("Helvetica-Oblique", 9)
                 textobject.textLine(str(hlp.get_num(line)))
                 self.c.drawText(textobject)
+
 
         if draw_type == 'UF':
             pass
@@ -576,7 +595,6 @@ class LetterMaker(object):
                 self.c.drawText(textobject)
                 drawed_data.append(value)
         elif load_idx_name is not None:
-
             for lidx, loadtext in enumerate(reversed(self.data._load_dict[load_idx_name[1]][0].get_report_string())):
                 textobject = self.c.beginText()
                 textobject.setTextOrigin(370 , origo[1]+50+ 11*lidx)
