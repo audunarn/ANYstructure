@@ -62,7 +62,7 @@ class PulsExcel():
         for name, col_num in self.names.items():
             self.set_cell_value(row_number, col_num, data_dict[name])
 
-    def set_multiple_rows(self, start_row:int = 20, list_of_dicts: list = None):
+    def set_multiple_rows(self, start_row:int = 20, data_dict: dict = None):
         '''
 
         :param start_row: First row to input.
@@ -71,7 +71,7 @@ class PulsExcel():
         '''
 
         row_number = start_row
-        for id, data in list_of_dicts.items():
+        for id, data in data_dict.items():
             self.set_one_row(row_number, data)
             row_number += 1
 

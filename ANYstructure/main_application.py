@@ -57,7 +57,7 @@ class Application():
         # Main frame for the application
         self._main_fr = tk.Frame(parent,
                                  background=self._general_color)
-        self._main_fr.place(in_=parent, relwidth=1, relheight = 1)
+        self._main_fr.place(in_=parent, relwidth=1, relheight = 0.99)
         # Top open/save/new
         menu = tk.Menu(parent)
         parent.config(menu=menu)
@@ -122,7 +122,7 @@ class Application():
                            int(base_canvas_dim[1] *1)]
         self._canvas_base_origo = [50, base_canvas_dim[1] - 50] # 50 bottom left location of the canvas, (0,0)
 
-        self._canvas_draw_origo = [self._canvas_base_origo[0], self._canvas_base_origo[1]+60]
+        self._canvas_draw_origo = [self._canvas_base_origo[0], self._canvas_base_origo[1]+10]
         self._previous_drag_mouse = list(self._canvas_draw_origo)
 
         # Setting the fonts for all items in the application.
@@ -159,9 +159,9 @@ class Application():
         # These frames are just visual separations in the GUI.
         frame_horizontal, frame_vertical = 0.73, 0.258
         tk.Frame(self._main_fr, height=3, bg="black", colormap="new")\
-            .place(relx=0, rely=0.73, relwidth=1)
+            .place(relx=0, rely=frame_horizontal, relwidth=1)
         tk.Frame(self._main_fr, width=3, bg="black", colormap="new")\
-            .place(relx=0.258,rely=0 * 1, relheight=1)
+            .place(relx=frame_vertical,rely=0 * 1, relheight=1)
 
         # Point frame
         self._pt_frame = tk.Frame(self._main_canvas, width=100, height=100, bg="black", relief='raised')
@@ -514,7 +514,8 @@ class Application():
         self._new_plate_kpp = tk.DoubleVar()
         self._new_stf_type = tk.StringVar()
         self._new_pressure_side = tk.StringVar()
-        self._new_puls_method = tk.IntVar()
+        self._new_puls_method = tk.StringVar()
+        self._new_puls_panel_boundary = tk.StringVar()
 
         # Setting default values to tkinter variables
         self._new_material.set(355)
@@ -538,7 +539,8 @@ class Application():
         self.option_meny_structure_type_trace(event='GENERAL_INTERNAL_WT')
         self._new_stf_type.set('T')
         self._new_pressure_side.set('p')
-        self._new_puls_method.set(2)
+        self._new_puls_method.set('ultimate')
+        self._new_puls_panel_boundary.set('Int')
 
 
         # --- main entries and labels to define the structural properties ---
@@ -599,7 +601,9 @@ class Application():
         self._ent_stf_type = tk.OptionMenu(self._main_fr, self._new_stf_type, *['T', 'FB', 'L', 'L-bulb'])
         self._ent_structure_type = tk.OptionMenu(self._main_fr, self._new_stucture_type,
                                                  command = self.option_meny_structure_type_trace, *self._options_type)
-        self._ent_puls_method = tk.OptionMenu(self._main_fr, self._new_puls_method, *[1,2])
+        self._ent_puls_method = tk.OptionMenu(self._main_fr, self._new_puls_method, *['buckling', 'ultimate'])
+        self._ent_puls_panel_boundary = tk.OptionMenu(self._main_fr, self._new_puls_panel_boundary,
+                                                      *['Int', 'GL', 'GT'])
 
 
         loc_y = -0.000185185
@@ -633,9 +637,9 @@ class Application():
         tk.Label(self._main_fr, text='Pressure side\n(p-plate, s-stf.):', bg=self._general_color) \
             .place(relx=ent_relx + 5 * geo_dx,
                    rely=prop_vert_start + 4 * delta_y)
-        tk.Label(self._main_fr, text='PULS acceptance method 1 (buckling) or 2 (ultimate)', bg=self._general_color)\
-            .place(relx=ent_relx + 0*geo_dx,
-                                                                             rely=prop_vert_start + 8 * delta_y)
+
+        tk.Label(self._main_fr, text='PULS acceptance method:', bg=self._general_color)\
+            .place(relx=ent_relx + 2.7*geo_dx, rely=prop_vert_start + 8 * delta_y)
 
         tk.Label(self._main_fr, text='span', bg = self._general_color).place(relx=ent_relx + 0*geo_dx,
                                                                              rely=prop_vert_start +loc_y * delta_y)
@@ -687,7 +691,7 @@ class Application():
         self._ent_sigma_x.place(relx=ent_relx + 2*geo_dx, rely=ent_rely+drely)
         self._ent_tauxy.place(relx=ent_relx + 3*geo_dx, rely=ent_rely+drely)
         self._ent_stf_type.place(relx=ent_relx + 4*geo_dx, rely=ent_rely+0.9*drely)
-        self._ent_puls_method.place(relx=ent_relx + 5.5*geo_dx, rely=prop_vert_start + 8 * delta_y)
+        self._ent_puls_method.place(relx=ent_relx + 5.45*geo_dx, rely=prop_vert_start + 8 * delta_y, relwidth = 0.045)
 
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_sigmax, command = self.on_color_code_check)\
             .place(relx=ent_relx + 0*geo_dx, rely=ent_rely+1.5*drely)
@@ -700,15 +704,16 @@ class Application():
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_structure_type, command = self.on_color_code_check)\
             .place(relx=ent_relx + 4*geo_dx, rely=ent_rely+1.5*drely)
         tk.Label(text='<-- check to color-\ncode stresses', font=self._text_size['Text 9'],
-                 bg=self._general_color).place(relx=ent_relx + 4.5*geo_dx, rely=ent_rely+1.5*drely, relwidth = 0.06)
+                 bg=self._general_color).place(relx=ent_relx + 4.5*geo_dx, rely=ent_rely+1.3*drely, relwidth = 0.06,
+                                               relheight = 0.03)
 
-        self._ent_structure_type.place(relx=types_start, rely=ent_rely+3.5*drely, relwidth = 0.10)
+        self._ent_structure_type.place(relx=types_start, rely=ent_rely+3.3*drely, relwidth = 0.10)
 
 
         self._structure_types_label = \
             tk.Label(textvariable = self._new_stucture_type_label, font = self._text_size['Text 8'],
                      bg = self._general_color)\
-                .place(relx=types_start, rely=prop_vert_start +12*delta_y, relwidth = 0.11)
+                .place(relx=types_start, rely=prop_vert_start +11.3*delta_y, relwidth = 0.11, relheight = 0.02)
 
         self._ent_pressure_side.place(relx=ent_relx + 5.5*geo_dx, rely=prop_vert_start + 5.4 * delta_y)
 
@@ -1129,13 +1134,13 @@ class Application():
                     'stf_km1': self._new_stf_km1.get,
                     'stf_km2': self._new_stf_km2.get,
                     'stf_km3': self._new_stf_km3.get,
-                    'press_side': self._new_pressure_side,
-                    'structure_types': self._structure_types,
-                    'zstar_optimization': self._new_zstar_optimization,
-                    'puls buckling method': self._new_puls_method}
+                    'press_side': self._new_pressure_side.get,
+                    #'structure_types': self._structure_types,
+                    'zstar_optimization': self._new_zstar_optimization.get,
+                    'puls buckling method': self._new_puls_method.get}
 
 
-        set_var = obj_dict[var_to_set].get()
+        set_var = obj_dict[var_to_set]()
         if var_to_set == 'mat_yield':
             set_var = set_var* 1e6
         elif var_to_set in ['spacing','plate_thk','stf_web_height','stf_web_thk',
@@ -1665,8 +1670,10 @@ class Application():
                          for line in self._line_to_struc.keys()]
             all_utils = np.unique(all_utils).tolist()
             if len(all_utils) >1:
-                util_map = np.arange(min(all_utils), max(all_utils) + (max(all_utils) - min(all_utils)) / 10,
-                                     (max(all_utils) - min(all_utils)) / 10)
+                # util_map = np.arange(min(all_utils), max(all_utils) + (max(all_utils) - min(all_utils)) / 10,
+                #                      (max(all_utils) - min(all_utils)) / 10)
+                util_map =  np.arange(0, 1.1, 0.1)
+
             else:
                 util_map = all_utils
 
@@ -1675,10 +1682,11 @@ class Application():
                 puls_util_map = list()
                 for key, val in self._line_to_struc.items():
                     puls_util_map.append(self._PULS_results.get_utilization(key, val[0].get_puls_method(),
-                                                                            uf = self._new_puls_uf.get()))
-                puls_util_map  = np.arange(min(puls_util_map), max(puls_util_map) + (max(puls_util_map) -
-                                                                                     min(puls_util_map)) / 10,
-                                     (max(puls_util_map) - min(puls_util_map)) / 10)
+                                                                            acceptance = self._new_puls_uf.get()))
+                # puls_util_map  = np.arange(min(puls_util_map), max(puls_util_map) + (max(puls_util_map) -
+                #                                                                      min(puls_util_map)) / 10,
+                #                      (max(puls_util_map) - min(puls_util_map)) / 10)
+                puls_util_map  = np.arange(0, 1.1, 0.1)
             else:
                 puls_util_map = None
 
@@ -1744,15 +1752,12 @@ class Application():
                                            'pressure': 'black' if all_pressures in [[0],[0,1]] else matplotlib.colors.rgb2hex(cmap_sections(
                                                self.get_highest_pressure(line)['normal']/highest_pressure)),
                                            'utilization': matplotlib.colors.rgb2hex(cmap_sections(
-                                               max(list(return_dict['utilization'][line].values()))/max(all_utils))),
+                                               max(list(return_dict['utilization'][line].values())))),
 
                                            'PULS utilization': 'black' if self._PULS_results is
                                                                           None else matplotlib.colors.rgb2hex(
                                                cmap_sections(self._PULS_results.get_utilization(
-                                                   line, self._line_to_struc[line][1].get_puls_method())/
-                                                             max(self._PULS_results.all_uf['ultimate' if
-                                                             self._line_to_struc[line][1].get_puls_method() == 1
-                                                             else 'buckling']))),
+                                                   line, self._line_to_struc[line][1].get_puls_method()))),
 
                                            'sigma x': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_x()/
                                                                                               max(sig_x))),
@@ -1839,12 +1844,13 @@ class Application():
                             if 'black' in state['PULS colors'][line].values():
                                 color = 'black'
                             else:
-                                col1, col2 = state['PULS colors'][line]['ultimate'], \
-                                             state['PULS colors'][line]['buckling']
-                                if self._line_to_struc[line][1].get_puls_method() == 1:
+                                col1, col2 = state['PULS colors'][line]['buckling'], \
+                                             state['PULS colors'][line]['ultimate']
+
+                                if self._line_to_struc[line][1].get_puls_method() == 'buckling':
                                     color = 'red' if any([col1 == 'red', col2 == 'red']) else 'green'
                                 else:
-                                    color = col1
+                                    color = col2
                         else:
                             color = 'red' if 'red' in state['colors'][line].values() else 'green'
                     except (KeyError, TypeError):
@@ -1953,7 +1959,7 @@ class Application():
 
         elif all([self._new_colorcode_utilization.get() == True,
                   self._line_to_struc != {}, self._new_toggle_puls.get() != True]):
-            all_utils = cc_state['all utilizations']
+            all_utils = cc_state['utilization map']
             for idx, uf in enumerate(cc_state['utilization map']):
                 self._main_canvas.create_text(11, 111 + 20 * idx, text=str('UF = ' +str(round(uf,1))),
                                               font=self._text_size["Text 10 bold"],
@@ -2055,6 +2061,7 @@ class Application():
 
         elif self._new_colorcode_utilization.get() == True and self._new_toggle_puls.get():
             color = state['color code']['lines'][line]['PULS utilization']
+
         elif self._new_colorcode_sigmax.get() == True:
             color = state['color code']['lines'][line]['sigma x']
 
@@ -3264,6 +3271,7 @@ class Application():
         self._line_point_to_point_string = [] # This one ensures that a line is not created on top of a line
         self._accelerations_dict = {'static':9.81, 'dyn_loaded':0, 'dyn_ballast':0}
         self._multiselect_lines = []
+        self._PULS_results = None
         self.update_frame()
 
         # Initsializing the calculation grid used for tank definition
@@ -3800,6 +3808,7 @@ class Application():
         '''
         lf_tkinter = tk.Toplevel(self._parent, background=self._general_color)
         load_factors.CreateLoadFactorWindow(lf_tkinter, self)
+
 
     def on_show_loads(self):
         '''

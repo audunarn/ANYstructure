@@ -52,6 +52,8 @@ class CreateOptimizeWindow():
             image_dir = app._root_dir +'\\images\\'
             self._root_dir = app._root_dir
 
+        self._predefined_stiffener_iter = None
+
         self._frame = master
         self._frame.wm_title("Optimize structure")
         self._frame.geometry('1400x900')
@@ -60,7 +62,7 @@ class CreateOptimizeWindow():
         self._opt_runned = False
         self._opt_results = ()
         self._opt_actual_running_time = tk.Label(self._frame,text='')
-        self._predefined_structure = None
+
 
         self._draw_scale = 500
         self._canvas_dim = (500, 450)
@@ -214,13 +216,16 @@ class CreateOptimizeWindow():
         tk.Label(self._frame, text='Web thk. [mm]', font='Verdana 7 bold').place(x=start_x + 4.97 * dx, y=start_y-0.6*dy)
         tk.Label(self._frame, text='Flange width [mm]', font='Verdana 7 bold').place(x=start_x + 5.97 * dx, y=start_y-0.6*dy)
         tk.Label(self._frame, text='Flange thk. [mm]', font='Verdana 7 bold').place(x=start_x + 6.97 * dx, y=start_y-0.6*dy)
-        tk.Label(self._frame, text='Estimated running time for algorithm: ',
-                 font='Verdana 9 bold').place(x=start_x, y=start_y + 2.8 * dy)
-        self._runnig_time_label = tk.Label(self._frame, text='',font='Verdana 9 bold')
-        self._runnig_time_label.place(x=start_x+2.7*dx, y=start_y + 2.8 * dy)
-        tk.Label(self._frame, text='seconds ',font='Verdana 9 bold').place(x=start_x+3.3*dx, y=start_y + 2.8 * dy)
+        tk.Label(self._frame, text='--------- Number of combinations to run --------->\n'
+                                   'PULS buckling should not be more than about 1000\n'
+                                   'RP-C203 is much faster and can run many more combinations, 1M+. ',
+                 font='Verdana 9 bold').place(x=start_x+0.1*dx, y=start_y + 2.8 * dy, anchor = tk.NW)
+
+        self._runnig_time_label = tk.Label(self._frame, text='',font='Verdana 12 bold', fg = 'red')
+        self._runnig_time_label.place(x=start_x+4.3*dx, y=start_y + 2.8 * dy)
+        #tk.Label(self._frame, text='seconds ',font='Verdana 9 bold').place(x=start_x+6*dx, y=start_y + 2.8 * dy)
         self._result_label = tk.Label(self._frame, text = '',font = 'Verdana 9 bold' )
-        self._result_label.place(x=start_x, y=start_y + 3.4 * dy)
+        self._result_label.place(x=start_x, y=start_y + 4.2 * dy)
 
         self._ent_spacing_upper.place(x=start_x+dx*2,y=start_y)
         self._ent_delta_spacing.place(x=start_x+dx*2,y=start_y+dy)
@@ -417,7 +422,8 @@ class CreateOptimizeWindow():
         self._new_algorithm_random_trials.trace('w',self.update_running_time)
         self._new_algorithm.trace('w',self.update_running_time)
 
-        self.running_time_per_item = 4e-05*4
+
+        self.running_time_per_item = {'PULS':1.9, 'RP': 1.009943181818182e-5}
         self.initial_weight = op.calc_weight([self._spacing,self._pl_thk,self._stf_web_h,self._stf_web_thk,
                                               self._fl_w,self._fl_thk,self._new_span.get(),self._new_width_lg.get()])
 
@@ -431,7 +437,6 @@ class CreateOptimizeWindow():
         label.image = photo  # keep a reference!
         label.place(x=550, y=300)
 
-        self._runnig_time_label.config(text=str(self.get_running_time()[0]))
 
         tk.Label(self._frame,text='Select algorithm', font = 'Verdana 8 bold').place(x=start_x+dx*11, y=start_y+0.5*dy)
         self._ent_algorithm.place(x=start_x+dx*11, y=start_y+dy)
@@ -441,7 +446,7 @@ class CreateOptimizeWindow():
             .place(x=start_x+dx*11, y=start_y+dy*2)
         self.run_button = tk.Button(self._frame,text='RUN OPTIMIZATION!', command=self.run_optimizaion, bg='red',
                                     font='Verdana 10 bold',fg='Yellow', relief="raised")
-        self.run_button.place(x=start_x+dx*8, y=start_y+dy*0.5)
+        self.run_button.place(x=start_x+dx*8, y=start_y+dy*0.5, relwidth = 0.12)
         self.run_results = tk.Button(self._frame,text='show calculated', command=self.plot_results, bg='white',
                                     font='Verdana 10',fg='black')
         self.run_results.place(x=start_x+dx*8, y=start_y+dy*1.5)
@@ -474,7 +479,7 @@ class CreateOptimizeWindow():
         self._new_check_local_buckling.set(True)
         self._new_use_weight_filter.set(True)
         self._new_check_buckling_puls.set(False)
-
+        self._new_check_buckling_puls.trace('w', self.update_running_time)
 
         start_y = 140
         tk.Label(self._frame,text='Check for minimum section modulus').place(x=start_x+dx*9.7,y=start_y+4*dy)
@@ -507,6 +512,7 @@ class CreateOptimizeWindow():
         self._toggle_btn.place(x=start_x, y=start_y - dy * 2)
         self._toggle_object, self._filez = self._initial_structure_obj, None
         self.draw_properties()
+        self.update_running_time()
 
     def selected_algorithm(self,event):
         '''
@@ -606,12 +612,7 @@ class CreateOptimizeWindow():
         else:
             fat_press = None
 
-        if self._toggle_btn.config('relief')[-1] == 'sunken':
-            open_files = askopenfilenames(parent=self._frame, title='Choose files to open')
-            predefined_stiffener_iter = hlp.helper_read_section_file(files=list(open_files),
-                                                                     obj=self._initial_structure_obj)
-        else:
-            predefined_stiffener_iter = None
+
 
 
         self._opt_results= op.run_optmizataion(self._initial_structure_obj,self.get_lower_bounds(),
@@ -623,9 +624,10 @@ class CreateOptimizeWindow():
                                                fatigue_obj=self._fatigue_object,
                                                fat_press_ext_int=fat_press,
                                                slamming_press = self._new_slamming_pressure.get(),
-                                               predefined_stiffener_iter=predefined_stiffener_iter,
+                                               predefined_stiffener_iter=self._predefined_stiffener_iter,
                                                processes=self._new_processes.get(),
-                                               use_weight_filter = self._new_use_weight_filter.get())
+                                               use_weight_filter = False if self._new_check_buckling_puls.get()
+                                               else self._new_use_weight_filter.get())
 
         if self._opt_results is not None and self._opt_results[0] is not None:
             self._opt_actual_running_time.config(text='Actual running time: \n'
@@ -662,17 +664,27 @@ class CreateOptimizeWindow():
         '''
 
         if self._new_algorithm.get() in ['anysmart','anydetail']:
-            try:
-                number_of_combinations = \
-                max((self._new_spacing_upper.get()-self._new_spacing_lower.get())/self._new_delta_spacing.get(),1)* \
-                max((self._new_pl_thk_upper.get()-self._new_pl_thk_lower.get())/self._new_delta_pl_thk.get(),1)*\
-                max((self._new_web_h_upper.get()-self._new_web_h_lower.get())/self._new_delta_web_h.get(),1)*\
-                max((self._new_web_thk_upper.get()-self._new_web_thk_lower.get())/self._new_delta_web_thk.get(),1)*\
-                max((self._new_fl_w_upper.get()-self._new_fl_w_lower.get())/self._new_delta_fl_w.get(),1)*\
-                max((self._new_fl_thk_upper.get()-self._new_fl_thk_lower.get())/self._new_delta_fl_thk.get(),1)
-                return int(number_of_combinations*self.running_time_per_item),number_of_combinations
-            except TclError:
-                return 0,0
+            all_combs = op.any_get_all_combs(self.get_lower_bounds(), self.get_upper_bounds(), self.get_deltas(),
+                                             predef_stiffeners=None if self._predefined_stiffener_iter is None else
+                                             [item.get_tuple() for item in self._predefined_stiffener_iter])
+            number_of_combinations = len([val for val in all_combs])
+            return int(number_of_combinations * self.running_time_per_item['PULS' if self._new_check_buckling_puls.get()
+            else 'RP']), number_of_combinations
+
+            # try:
+            #     number_of_combinations = \
+            #     max((self._new_spacing_upper.get()-self._new_spacing_lower.get())/self._new_delta_spacing.get(),1)* \
+            #     max((self._new_pl_thk_upper.get()-self._new_pl_thk_lower.get())/self._new_delta_pl_thk.get(),1)*\
+            #     max((self._new_web_h_upper.get()-self._new_web_h_lower.get())/self._new_delta_web_h.get(),1)*\
+            #     max((self._new_web_thk_upper.get()-self._new_web_thk_lower.get())/self._new_delta_web_thk.get(),1)*\
+            #     max((self._new_fl_w_upper.get()-self._new_fl_w_lower.get())/self._new_delta_fl_w.get(),1)*\
+            #     max((self._new_fl_thk_upper.get()-self._new_fl_thk_lower.get())/self._new_delta_fl_thk.get(),1)
+            #
+            #     return int(number_of_combinations*self.running_time_per_item),number_of_combinations,  \
+            #            number_of_combinations*0.1 \
+            #         if not self._new_check_buckling_puls.get() else number_of_combinations*1
+            # except TclError:
+            #     return 0,0,0
         elif self._new_algorithm.get() in ['pso','random','random_no_delta']:
             try:
                 number_of_combinations = \
@@ -682,12 +694,14 @@ class CreateOptimizeWindow():
                 max((self._new_web_thk_upper.get()-self._new_web_thk_lower.get())/self._new_delta_web_thk.get(),1)*\
                 max((self._new_fl_w_upper.get()-self._new_fl_w_lower.get())/self._new_delta_fl_w.get(),1)*\
                 max((self._new_fl_thk_upper.get()-self._new_fl_thk_lower.get())/self._new_delta_fl_thk.get(),1)
-                return int(number_of_combinations*self.running_time_per_item/4),number_of_combinations
+                return int(number_of_combinations*self.running_time_per_item['PULS' if self._new_check_buckling_puls.get()
+            else 'RP']),number_of_combinations
             except TclError:
                 return 0,0
         else:
             try:
-                return int(self._new_algorithm_random_trials.get() * self.running_time_per_item),\
+                return int(self._new_algorithm_random_trials.get() * self.running_time_per_item['PULS' if self._new_check_buckling_puls.get()
+            else 'RP']),\
                        self._new_algorithm_random_trials.get()
             except TclError:
                 return 0,0
@@ -697,7 +711,7 @@ class CreateOptimizeWindow():
         Return a numpy array of the deltas.
         :return:
         '''
-        return np.array([float(self._ent_delta_spacing.get())/1000,float(self._new_delta_pl_thk.get())/1000,
+        return np.array([float(self._new_delta_spacing.get())/1000,float(self._new_delta_pl_thk.get())/1000,
                          float(self._new_delta_web_h.get())/1000,float(self._new_delta_web_thk.get())/1000,
                          float(self._new_delta_fl_w.get())/1000,float(self._new_delta_fl_thk.get())/1000])
 
@@ -708,9 +722,13 @@ class CreateOptimizeWindow():
         '''
 
         try:
-            self._runnig_time_label.config(text=str(self.get_running_time()[0]))
-        except ZeroDivisionError:
+            self._runnig_time_label.config(text=str(int(self.get_running_time()[1])) + ' (about '+
+                                                str(round(self.get_running_time()[1]*self.running_time_per_item['PULS'
+                                                if self._new_check_buckling_puls.get()
+            else 'RP']/60,2))+ ' min.)')
+        except (ZeroDivisionError, TclError):
             pass# _tkinter.TclError: pass
+
     
     def get_upper_bounds(self):
         '''
@@ -893,6 +911,7 @@ class CreateOptimizeWindow():
             self._ent_spacing_upper.config(bg = 'white')
             self._ent_spacing_lower.config(bg = 'white')
             self._ent_delta_spacing.config(bg = 'white')
+            predefined_stiffener_iter  = []
         else:
             self._toggle_btn.config(relief="sunken")
             self._toggle_btn.config(bg = 'salmon')
@@ -900,15 +919,29 @@ class CreateOptimizeWindow():
             self._ent_spacing_upper.config(bg = 'lightgreen')
             self._ent_spacing_lower.config(bg = 'lightgreen')
             self._ent_delta_spacing.config(bg = 'lightgreen')
+            self._ent_pl_thk_upper.config(bg = 'lightgreen')
+            self._ent_pl_thk_lower.config(bg = 'lightgreen')
+            self._ent_delta_pl_thk.config(bg = 'lightgreen')
 
-        if self._predefined_structure == []:
+            open_files = askopenfilenames(parent=self._frame, title='Choose files to open')
+            predefined_stiffener_iter = hlp.helper_read_section_file(files=list(open_files),
+                                                                     obj=self._initial_structure_obj)
+
+
+
+        if predefined_stiffener_iter == []:
             self._toggle_btn.config(relief="raised")
             self._toggle_btn.config(bg = 'salmon')
             self._ent_spacing_upper.config(bg = 'white')
             self._ent_spacing_lower.config(bg = 'white')
             self._ent_delta_spacing.config(bg = 'white')
-            self._predefined_structure = None
-
+            self._ent_pl_thk_upper.config(bg = 'white')
+            self._ent_pl_thk_lower.config(bg = 'white')
+            self._ent_delta_pl_thk.config(bg = 'white')
+            self._predefined_stiffener_iter  = None
+        else:
+            self._predefined_stiffener_iter = predefined_stiffener_iter
+        self.update_running_time()
     def open_example_file(self):
         import os
         if os.path.isfile('sections.csv'):

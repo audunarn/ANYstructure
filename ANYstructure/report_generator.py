@@ -161,7 +161,7 @@ class LetterMaker(object):
         ptext = '<font size="12" color = "blue"><strong>' + "Results for defined structure: " + '</strong></font>'
         self.createParagraph(ptext, 10, 0)
 
-        delta = 160
+        delta = 160 if not self.data._new_toggle_puls.get() else 180
         vpos = 950
 
         for line in sorted(self.data._line_dict.keys()):
@@ -255,19 +255,20 @@ class LetterMaker(object):
                 else:
                     if self.data._PULS_results is not None:
                         puls_method = self.data._line_to_struc[line][1].get_puls_method()
-                        textobject.textLine('PULS results using method '+str(puls_method) + ' with acceptance '+
+                        textobject.textLine('PULS results using '+str(puls_method) + 'utilization with acceptance '+
                                             str(self.data._PULS_results.puls_acceptance))
                         if line in self.data._PULS_results.get_run_results().keys():
                             puls_buckling = self.data._PULS_results.get_run_results()[line]['Buckling strength']['Actual usage Factor'][0]
                             puls_ultimate = self.data._PULS_results.get_run_results()[line]['Ultimate capacity']['Actual usage Factor'][0]
-                            textobject.setFillColor('red') if puls_method == 1 and puls_buckling/\
-                                                              self.data._PULS_results.puls_acceptance > 1 else \
-                                textobject.setFillColor('black')
+
+                            if puls_method == 'buckling' and puls_buckling/self.data._PULS_results.puls_acceptance > 1:
+                                textobject.setFillColor('red')
                             textobject.textLine('PULS buckling utilization = ' + str(puls_buckling))
-                            textobject.setFillColor('red') if puls_method == 2 and puls_ultimate/\
-                                                              self.data._PULS_results.puls_acceptance > 1 else \
-                                textobject.setFillColor('black')
+                            textobject.setFillColor('black')
+                            if puls_method == 'ultimate'  and puls_ultimate/self.data._PULS_results.puls_acceptance > 1:
+                                textobject.setFillColor('red')
                             textobject.textLine('PULS ultimate utilization = ' + str(puls_ultimate))
+                            textobject.setFillColor('black')
 
                 textobject.setFillColor('black')
                 textobject.setFillColor('red') if self.data.get_color_and_calc_state()['colors'][line]['fatigue'] == 'red' \
@@ -333,7 +334,10 @@ class LetterMaker(object):
 
         points = self.data._point_dict
         lines = self.data._line_dict
-        colors = self.data.get_color_and_calc_state()['colors']
+        if not self.data._new_toggle_puls.get():
+            colors = self.data.get_color_and_calc_state()['colors']
+        else:
+            colors = self.data.get_color_and_calc_state()['PULS colors']
         highest_y = max([coord[1] for coord in points.values()])
         highest_x = max([coord[0] for coord in points.values()])
 
@@ -355,10 +359,19 @@ class LetterMaker(object):
         all_line_data = self.data.get_color_and_calc_state()
         for line, pt in lines.items():
             if draw_type == 'UF':
-                try:
-                    self.c.setStrokeColor('red' if 'red' in colors[line].values() else 'green')
-                except KeyError:
-                    self.c.setStrokeColor('black')
+                if not self.data._new_toggle_puls.get():
+                    try:
+                        self.c.setStrokeColor('red' if 'red' in colors[line].values() else 'green')
+                    except KeyError:
+                        self.c.setStrokeColor('black')
+                else:
+                    try:
+                        method = self.data._line_to_struc[line][1].get_puls_method()
+                        if self.data._PULS_results is not None:
+                            util = self.data._PULS_results.get_utilization(line, method, self.data._new_puls_uf.get())
+                            self.c.setStrokeColor('red' if util > 1 else 'green')
+                    except KeyError:
+                        self.c.setStrokeColor('black')
             elif draw_type == 'section':
                 self.c.setStrokeColor(all_line_data['color code']['lines'][line]['section'])
                 if self.data._line_to_struc[line][1].get_beam_string() not in drawed_data:
@@ -378,7 +391,10 @@ class LetterMaker(object):
             elif draw_type == 'pressure':
                 self.c.setStrokeColor(all_line_data['color code']['lines'][line]['pressure'])
             elif draw_type == 'utilization':
-                self.c.setStrokeColor(all_line_data['color code']['lines'][line]['utilization'])
+                if self.data._new_puls_uf.get():
+                    self.c.setStrokeColor(all_line_data['color code']['lines'][line]['PULS utilization'])
+                else:
+                    self.c.setStrokeColor(all_line_data['color code']['lines'][line]['utilization'])
             elif draw_type == 'sigma x':
                 self.c.setStrokeColor(all_line_data['color code']['lines'][line]['utilization'])
             elif draw_type == 'sigma y1':
@@ -397,12 +413,11 @@ class LetterMaker(object):
                 if any([highest_x == 0, highest_y == 0]):
                     scale = 10
                 else:
-                    scale = min(300 / highest_y, 300 / highest_x, 10)
+                    scale = min(180 / highest_y, 300 / highest_x, 10)
                 if line in self.data._load_dict[load_idx_name[1]][1]:
                     self.c.setStrokeColor('orange')
                 else:
                     self.c.setStrokeColor('black')
-
 
             x1, y1 = points['point'+str(pt[0])][0] * scale + origo[0], \
                      points['point'+str(pt[0])][1] * scale + origo[1]
@@ -415,7 +430,6 @@ class LetterMaker(object):
                 textobject.setFont("Helvetica-Oblique", 9)
                 textobject.textLine(str(hlp.get_num(line)))
                 self.c.drawText(textobject)
-
 
         if draw_type == 'UF':
             pass
@@ -474,10 +488,17 @@ class LetterMaker(object):
             textobject = self.c.beginText()
             textobject.setTextOrigin(50, 800)
             textobject.setFillColor('black')
-            textobject.setFont("Helvetica-Oblique", 15)
-            textobject.textLine('Utilization factors (max of all checks)')
+            textobject.setFont("Helvetica-Oblique", 12)
+            textobject.textLine('Utilization factors (max of all checks) - '
+                                'DNV-RP-C201 Buckling Strength of Plated Structures'
+                                if not self.data._new_toggle_puls.get()
+                                else 'Utilization factors (max of all checks) - PULS (Panel Ultimate Limit State)')
             self.c.drawText(textobject)
-            all_utils = all_line_data['color code']['utilization map']
+
+            if self.data._new_toggle_puls.get():
+                all_utils = all_line_data['color code']['PULS utilization map']
+            else:
+                all_utils = all_line_data['color code']['utilization map']
 
             for idx, uf in enumerate(all_utils):
                 textobject = self.c.beginText()
