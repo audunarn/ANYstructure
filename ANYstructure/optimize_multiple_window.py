@@ -320,7 +320,7 @@ class CreateOptimizeMultipleWindow():
         self._new_algorithm.trace('w', self.update_running_time)
         self._keep_spacing.trace('w',self.trace_keep_spacing_check)
 
-        self.running_time_per_item = 4e-05*4
+        self.running_time_per_item = 1.009943181818182e-5
         self._runnig_time_label.config(text=str(self.get_running_time()))
         tk.Label(self._frame, text='Select algorithm type --->', font='Verdana 8 bold').place(x=start_x + dx * 8,
                                                                                    y=start_y + 1 * dy)
@@ -511,7 +511,7 @@ class CreateOptimizeMultipleWindow():
         contraints = (self._new_check_sec_mod.get(), self._new_check_min_pl_thk.get(),
                       self._new_check_shear_area.get(), self._new_check_buckling.get(),
                       self._new_check_fatigue.get(), self._new_check_slamming.get(),
-                      self._new_check_local_buckling.get())
+                      self._new_check_local_buckling.get(), False)
         
         self.pso_parameters = (self._new_swarm_size.get(),self._new_omega.get(),self._new_phip.get(),
                                self._new_phig.get(),self._new_maxiter.get(),self._new_minstep.get(),
@@ -530,6 +530,10 @@ class CreateOptimizeMultipleWindow():
                 fat_obj = test.get_fatigue_object()
                 fat_press = test.get_fatigue_pressures()
                 slamming_pressure = test.get_slamming_pressure()
+                fat_press = ((fat_press['p_ext']['loaded'], fat_press['p_ext']['ballast'],
+                              fat_press['p_ext']['part']),
+                             (fat_press['p_int']['loaded'], fat_press['p_int']['ballast'],
+                              fat_press['p_int']['part']))
 
             else:
                 input_pressures = self.get_pressure_input(line)
@@ -1143,7 +1147,6 @@ class CreateOptimizeMultipleWindow():
         self._canvas_select.delete('all')
         self.draw_select_canvas()
         self.update_running_time()
-
 
     def mid_click(self,event):
         '''
