@@ -57,7 +57,7 @@ class Application():
         # Main frame for the application
         self._main_fr = tk.Frame(parent,
                                  background=self._general_color)
-        self._main_fr.place(in_=parent, relwidth=1, relheight = 0.99)
+        self._main_fr.place(in_=parent, relwidth=1, relheight = 1)
         # Top open/save/new
         menu = tk.Menu(parent)
         parent.config(menu=menu)
