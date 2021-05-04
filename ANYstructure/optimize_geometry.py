@@ -221,11 +221,11 @@ class CreateOptGeoWindow():
                                                                                      y=start_y - 0.6 * dy)
         tk.Label(self._frame, text='Flange thk. [mm]', font='Verdana 7 bold').place(x=start_x + 6.97 * dx,
                                                                                     y=start_y - 0.6 * dy)
-        tk.Label(self._frame, text='Estimated running time for algorithm: ',
+        tk.Label(self._frame, text='Estimated running time for algorithm not calculated.',
                  font='Verdana 9 bold').place(x=start_x, y=start_y + 2.8 * dy)
-        self._runnig_time_label = tk.Label(self._frame, text='', font='Verdana 9 bold')
-        self._runnig_time_label.place(x=start_x + 2.7 * dx, y=start_y + 2.8 * dy)
-        tk.Label(self._frame, text='seconds ', font='Verdana 9 bold').place(x=start_x + 3.3 * dx, y=start_y + 2.8 * dy)
+        # self._runnig_time_label = tk.Label(self._frame, text='', font='Verdana 9 bold')
+        # self._runnig_time_label.place(x=start_x + 2.7 * dx, y=start_y + 2.8 * dy)
+        # tk.Label(self._frame, text='seconds ', font='Verdana 9 bold').place(x=start_x + 3.3 * dx, y=start_y + 2.8 * dy)
         self._result_label = tk.Label(self._frame, text='', font='Verdana 9 bold')
         self._result_label.place(x=start_x, y=start_y + 3.4 * dy)
 
@@ -312,7 +312,7 @@ class CreateOptGeoWindow():
         # self._new_algorithm.trace('w', self.update_running_time)
 
         self.running_time_per_item = 4e-05
-        self._runnig_time_label.config(text=str(self.get_running_time()))
+        #self._runnig_time_label.config(text=str(self.get_running_time()))
         self._ent_algorithm.place(x=start_x + dx * 10, y=start_y + dy)
         self.algorithm_random_label = tk.Label(self._frame, text='Number of trials')
         tk.Button(self._frame, text='algorith information', command=self.algorithm_info, bg='white') \
@@ -815,10 +815,11 @@ class CreateOptGeoWindow():
         Estimate the running time of the algorithm.
         :return:
         '''
-        try:
-            self._runnig_time_label.config(text=str(self.get_running_time()))
-        except ZeroDivisionError:
-            pass  # _tkinter.TclError: pass
+        pass
+        # try:
+        #     self._runnig_time_label.config(text=str(self.get_running_time()))
+        # except ZeroDivisionError:
+        #     pass  # _tkinter.TclError: pass
 
     def get_upper_bounds(self):
         '''
