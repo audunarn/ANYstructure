@@ -4,11 +4,10 @@ from _tkinter import TclError
 
 import ANYstructure.optimize as op
 import numpy as np
-import time, os
+import time, os, datetime
 from tkinter import messagebox
 import ANYstructure.example_data as test
 import ANYstructure.helper as hlp
-import random
 from tkinter.filedialog import askopenfilenames
 from multiprocessing import cpu_count
 
@@ -61,7 +60,7 @@ class CreateOptimizeWindow():
 
         self._opt_runned = False
         self._opt_results = ()
-        self._opt_actual_running_time = tk.Label(self._frame,text='')
+        self._opt_actual_running_time = tk.Label(self._frame,text='',font='Verdana 12 bold')
 
 
         self._draw_scale = 500
@@ -423,7 +422,7 @@ class CreateOptimizeWindow():
         self._new_algorithm.trace('w',self.update_running_time)
 
 
-        self.running_time_per_item = {'PULS':1.9, 'RP': 1.009943181818182e-5}
+        self.running_time_per_item = {'PULS':1.8, 'RP': 1.009943181818182e-5}
         self.initial_weight = op.calc_weight([self._spacing,self._pl_thk,self._stf_web_h,self._stf_web_thk,
                                               self._fl_w,self._fl_thk,self._new_span.get(),self._new_width_lg.get()])
 
@@ -446,7 +445,7 @@ class CreateOptimizeWindow():
             .place(x=start_x+dx*11, y=start_y+dy*2)
         self.run_button = tk.Button(self._frame,text='RUN OPTIMIZATION!', command=self.run_optimizaion, bg='red',
                                     font='Verdana 10 bold',fg='Yellow', relief="raised")
-        self.run_button.place(x=start_x+dx*8, y=start_y+dy*0.5, relwidth = 0.12)
+        self.run_button.place(x=start_x+dx*8, y=start_y+dy*0.5, relwidth = 0.15)
         self.run_results = tk.Button(self._frame,text='show calculated', command=self.plot_results, bg='white',
                                     font='Verdana 10',fg='black')
         self.run_results.place(x=start_x+dx*8, y=start_y+dy*1.5)
@@ -587,14 +586,18 @@ class CreateOptimizeWindow():
         function for button
         :return:
         '''
+
         self.run_button.config(bg = 'white')
         self.run_button.config(fg='red')
         self.run_button.config(text='RUNNING OPTIMIZATION')
         self.run_button.config(relief="sunken")
+        self._opt_actual_running_time.config(text='Run started ' + datetime.datetime.now().strftime("%H:%M:%S"))
+        self._opt_actual_running_time.update()
         t_start = time.time()
         self._opt_results, self._opt_runned = (), False
-        self._opt_actual_running_time.config(text='')
-        self.pso_parameters = (self._new_swarm_size.get(),self._new_omega.get(),self._new_phip.get(),self._new_phig.get(),
+
+        self.pso_parameters = (self._new_swarm_size.get(),self._new_omega.get(),self._new_phip.get(),
+                               self._new_phig.get(),
                                self._new_maxiter.get(),self._new_minstep.get(),self._new_minfunc.get())
 
         contraints = (self._new_check_sec_mod.get(),self._new_check_min_pl_thk.get(),
@@ -631,7 +634,8 @@ class CreateOptimizeWindow():
 
         if self._opt_results is not None and self._opt_results[0] is not None:
             self._opt_actual_running_time.config(text='Actual running time: \n'
-                                                     +str(time.time()-t_start)+' sec')
+                                                     +str(round((time.time()-t_start)/60,4))+' min')
+            self._opt_actual_running_time.update()
             self._opt_runned = True
             self._result_label.config(text='Optimization result | Spacing: '+
                                            str(round(self._opt_results[0].get_s(),10)*1000)+
@@ -723,11 +727,16 @@ class CreateOptimizeWindow():
 
         try:
             self._runnig_time_label.config(text=str(int(self.get_running_time()[1])) + ' (about '+
-                                                str(round(self.get_running_time()[1]*self.running_time_per_item['PULS'
+                                                str(max(round(self.get_running_time()[1]*self.running_time_per_item['PULS'
                                                 if self._new_check_buckling_puls.get()
-            else 'RP']/60,2))+ ' min.)')
+            else 'RP']/60,2), 0.1))+ ' min.)')
+
         except (ZeroDivisionError, TclError):
             pass# _tkinter.TclError: pass
+
+        if self._new_check_buckling_puls.get():
+            self._new_check_local_buckling.set(False)
+            self._new_check_buckling.set(False)
 
     
     def get_upper_bounds(self):
