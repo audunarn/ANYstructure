@@ -487,7 +487,7 @@ class Application():
         self._ent_puls_uf = tk.Entry(self._main_fr, textvariable=self._new_puls_uf,
                                         width=int(ent_width * 1),
                                          bg = self._entry_color, fg = self._entry_text_color)
-
+        self._new_puls_uf.trace('w', self.trace_acceptance_change)
         self._toggle_btn_puls.place(relx=types_start+ delta_x*4.2, rely=prop_vert_start+9.5*delta_y, relwidth = 0.045,
                                 relheight = 0.035)
         self._puls_run_all.place(relx=types_start+ delta_x*6, rely=prop_vert_start+9.5*delta_y, relwidth = 0.045,
@@ -1048,7 +1048,10 @@ class Application():
 
         if self._PULS_results is None:
             self._PULS_results = PULSpanel()
-
+        if self._PULS_results.puls_sheet_location is None:
+            self._PULS_results.puls_sheet_location= tk.filedialog.askopenfilename(parent=self._main_fr,
+                                                                                  title='Set location of '
+                                                                                        'PULS excel sheet')
         dict_to_run = {}
         result_lines = list(self._PULS_results.get_run_results().keys())
 
@@ -1451,11 +1454,21 @@ class Application():
         else:
             pass
 
-    def update_frame(self, event = None):
+    def trace_acceptance_change(self, *args):
+        try:
+            self.update_frame()
+            for key, val in self._line_to_struc.items():
+                val[1].need_recalc = True
+        except (TclError, ZeroDivisionError):
+            pass
+
+    def update_frame(self, event = None, *args):
+
         state = self.get_color_and_calc_state()
         self.draw_results(state=state)
         self.draw_canvas(state=state)
         self.draw_prop()
+
 
     def get_color_and_calc_state(self, current_line = None, active_line_only = False):
         ''' Return calculations and colors for line and results. '''
@@ -3629,8 +3642,6 @@ class Application():
             load_combiantions[counter] = [name,data[0].get(),data[1].get(),data[2].get()]
             counter+=1
 
-
-
         export_all = {}
         export_all['project information'] = self._new_project_infomation.get()
         export_all['point_dict'] = self._point_dict
@@ -3641,7 +3652,9 @@ class Application():
         export_all['load_combinations'] = load_combiantions
         export_all['tank_properties'] = tank_properties
         export_all['fatigue_properties'] = fatigue_properties
-        export_all['PULS results'] = self._PULS_results.get_run_results()
+        if self._PULS_results is not None:
+            export_all['PULS results'] = self._PULS_results.get_run_results()
+            export_all['PULS results']['sheet location'] = self._PULS_results.puls_sheet_location
         json.dump(export_all, save_file)#, sort_keys=True, indent=4)
         save_file.close()
         self._parent.wm_title('| ANYstructure |     ' + save_file.name)
@@ -3768,6 +3781,9 @@ class Application():
         if 'PULS results' in list(imported.keys()):
             self._PULS_results = PULSpanel()
             self._PULS_results.set_run_results(imported['PULS results'])
+            if 'sheet location' in imported['PULS results'].keys():
+                self._PULS_results.puls_sheet_location = imported['PULS results']['sheet location']
+            self.toggle_puls_run()
 
         # Setting the scale of the canvas
         points = self._point_dict
@@ -3778,6 +3794,7 @@ class Application():
         imp_file.close()
         self._parent.wm_title('| ANYstructure |     ' + imp_file.name)
         self.update_frame()
+
 
     def open_example(self, file_name = 'ship_section_example.txt'):
         ''' Open the example file. To be used in help menu. '''

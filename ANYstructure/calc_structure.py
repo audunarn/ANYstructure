@@ -1238,7 +1238,6 @@ class PULSpanel():
         self._run_results = {}
         self._puls_acceptance = puls_acceptance
         self._puls_sheet_location = puls_sheet_location
-
         self._all_uf = {'buckling': list(), 'ultimate': list()}
 
 
@@ -1256,12 +1255,11 @@ class PULSpanel():
 
     @property
     def puls_sheet_location(self):
-        return self.puls_sheet_location
+        return self._puls_sheet_location
 
     @puls_sheet_location.setter
     def puls_sheet_location(self, val):
         self._puls_sheet_location = val
-
 
     def set_all_to_run(self, val):
         self._all_to_run = val
@@ -1311,7 +1309,8 @@ class PULSpanel():
         '''
         idx = 1
         iterator = self._all_to_run
-        newfile = os.path.dirname(os.path.abspath(__file__))+'\\PULS\\PulsExcel_new - Copy ('+str(idx)+').xlsm'
+        #newfile = os.path.dirname(os.path.abspath(__file__))+'\\PULS\\PulsExcel_new - Copy ('+str(idx)+').xlsm'
+        newfile = self._puls_sheet_location
         my_puls = pulsxl.PulsExcel(newfile, visible=False)
         my_puls.set_multiple_rows(20, iterator)
         my_puls.calculate_panels()

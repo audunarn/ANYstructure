@@ -26,7 +26,7 @@ def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lat
                      fat_press_ext_int = None,
                      min_max_span = (2,6), tot_len = None, frame_height = 2.5, frame_distance = None,
                      slamming_press = 0, predefined_stiffener_iter = None, processes = None, use_weight_filter = True,
-                     load_pre = False, opt_girder_prop = None):
+                     load_pre = False, opt_girder_prop = None, puls_sheet = None, puls_acceptance = 0.87):
     '''
     The optimazation is initiated here. It is called from optimize_window.
     :param initial_structure_obj:
@@ -149,7 +149,8 @@ def any_optimize_loop(min_var,max_var,deltas,initial_structure_obj,lateral_press
 
 def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure, init_filter = float('inf'),
                    side='p',const_chk=(True,True,True,True,True,True,True), fat_dict = None, fat_press = None,
-                   slamming_press = 0, predefiened_stiffener_iter = None, processes = None):
+                   slamming_press = 0, predefiened_stiffener_iter = None, processes = None,
+                   puls_sheet = None, puls_acceptance = 0.87):
     '''
     Trying to be smart
     :param min_var:
@@ -167,7 +168,8 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
 
     main_result = get_filtered_results(structure_to_check, initial_structure_obj,lateral_pressure,
                                        init_filter_weight=init_filter, side=side,chk=const_chk, fat_dict=fat_dict,
-                                       fat_press=fat_press, slamming_press=slamming_press, processes=processes)
+                                       fat_press=fat_press, slamming_press=slamming_press, processes=processes,
+                                       puls_sheet = None, puls_acceptance = 0.87)
 
     main_iter = main_result[0]
     main_fail = main_result[1]
@@ -849,7 +851,7 @@ def x_to_string(x):
 
 def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight,side='p',
                          chk=(True,True,True,True,True,True,True, False),fat_dict = None, fat_press = None,
-                         slamming_press=None, processes = None):
+                         slamming_press=None, processes = None, puls_sheet = None, puls_acceptance = 0.87):
     '''
     Using multiprocessing to return list of applicable results.
 
@@ -882,7 +884,7 @@ def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight
             dict_to_run[x_id]['Identification'] = x_id
             dict_to_run[x_id]['Pressure (fixed)'] = lat_press/1e6
 
-        PULSrun = calc.PULSpanel(dict_to_run)
+        PULSrun = calc.PULSpanel(dict_to_run, puls_sheet_location=puls_sheet, puls_acceptance=puls_acceptance)
         PULSrun.run_all()
     else:
         PULSrun = None

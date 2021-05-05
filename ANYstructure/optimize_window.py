@@ -26,6 +26,8 @@ class CreateOptimizeWindow():
             self._fatigue_pressure = test.get_fatigue_pressures()
             self._slamming_pressure = test.get_slamming_pressure()
             image_dir = os.path.dirname(__file__)+'\\images\\'
+            self._PULS_object = None
+            self._puls_acceptance = 0.87
         else:
             self.app = app
             self._initial_structure_obj = app._line_to_struc[app._active_line][0]
@@ -50,6 +52,8 @@ class CreateOptimizeWindow():
                 self._slamming_pressure = 0
             image_dir = app._root_dir +'\\images\\'
             self._root_dir = app._root_dir
+            self._PULS_object = app._PULS_results
+            self._puls_acceptance = self.app._new_puls_uf.get()
 
         self._predefined_stiffener_iter = None
 
@@ -595,7 +599,12 @@ class CreateOptimizeWindow():
         self._opt_actual_running_time.update()
         t_start = time.time()
         self._opt_results, self._opt_runned = (), False
-
+        if self._PULS_object != None:
+            puls_sheet_location = self._PULS_object.puls_sheet_location
+            puls_acceptance = self._puls_acceptance
+        else:
+            puls_sheet_location = None
+            puls_acceptance =0.87
         self.pso_parameters = (self._new_swarm_size.get(),self._new_omega.get(),self._new_phip.get(),
                                self._new_phig.get(),
                                self._new_maxiter.get(),self._new_minstep.get(),self._new_minfunc.get())
@@ -630,7 +639,8 @@ class CreateOptimizeWindow():
                                                predefined_stiffener_iter=self._predefined_stiffener_iter,
                                                processes=self._new_processes.get(),
                                                use_weight_filter = False if self._new_check_buckling_puls.get()
-                                               else self._new_use_weight_filter.get())
+                                               else self._new_use_weight_filter.get(),
+                                               puls_sheet = puls_sheet_location, puls_acceptance = puls_acceptance)
 
         if self._opt_results is not None and self._opt_results[0] is not None:
             self._opt_actual_running_time.config(text='Actual running time: \n'
@@ -737,7 +747,10 @@ class CreateOptimizeWindow():
         if self._new_check_buckling_puls.get():
             self._new_check_local_buckling.set(False)
             self._new_check_buckling.set(False)
-
+            if self._PULS_object is None or self._PULS_object.puls_sheet_location is None:
+                tk.messagebox.showerror('Missing PULS sheet', 'Go back to main window and set a PULS sheet location\n'
+                                                    'by running one or more lines.')
+                self._new_check_buckling_puls.set(False)
     
     def get_upper_bounds(self):
         '''
@@ -951,6 +964,7 @@ class CreateOptimizeWindow():
         else:
             self._predefined_stiffener_iter = predefined_stiffener_iter
         self.update_running_time()
+
     def open_example_file(self):
         import os
         if os.path.isfile('sections.csv'):
