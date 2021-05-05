@@ -5,7 +5,7 @@ import numpy as np
 import ANYstructure.PULS.excel_inteface as pulsxl
 from multiprocessing import  Pool, cpu_count, Process
 import multiprocessing
-import shutil, os, time
+import shutil, os, time, datetime, json
 from itertools import islice
 import pythoncom
 
@@ -1282,7 +1282,7 @@ class PULSpanel():
         self._all_uf['buckling'] = np.unique(self._all_uf['buckling']).tolist()
         self._all_uf['ultimate'] = np.unique(self._all_uf['ultimate']).tolist()
 
-    def run_all(self):
+    def run_all(self, store_results = True):
         '''
         Returning following results.:
 
@@ -1330,14 +1330,24 @@ class PULSpanel():
 
         self._all_uf['buckling'] = np.unique(self._all_uf['buckling']).tolist()
         self._all_uf['ultimate'] = np.unique(self._all_uf['ultimate']).tolist()
+        if store_results:
+            store_path = os.path.dirname(os.path.abspath(__file__))+'\\PULS\\Result storage\\'
+            with open(store_path+datetime.datetime.now().strftime("%Y%m%d-%H%M%S")+'.json', 'w') as file:
+                file.write(json.dumps(all_results, ensure_ascii=False))
         return all_results
 
     def get_utilization(self, line, method, acceptance = 0.87):
         if line in self._run_results.keys():
             if method == 'buckling':
+                if type(self._run_results[line]['Buckling strength']['Actual usage Factor'][0]) == str:
+                    return None
                 return self._run_results[line]['Buckling strength']['Actual usage Factor'][0]/acceptance
             else:
+                if type(self._run_results[line]['Ultimate capacity']['Actual usage Factor'][0]) == str:
+                    return None
                 return self._run_results[line]['Ultimate capacity']['Actual usage Factor'][0]/acceptance
+        else:
+            return None
 
     def run_all_multi(self):
 

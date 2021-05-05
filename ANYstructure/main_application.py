@@ -12,6 +12,7 @@ import ANYstructure.make_grid_numpy as grid
 import ANYstructure.grid_window as grid_window
 from ANYstructure.helper import *
 import math, decimal
+import ANYstructure.optimize as op
 import ANYstructure.optimize_window as opw
 import ANYstructure.optimize_multiple_window as opwmult
 import ANYstructure.optimize_geometry as optgeo
@@ -57,7 +58,7 @@ class Application():
         # Main frame for the application
         self._main_fr = tk.Frame(parent,
                                  background=self._general_color)
-        self._main_fr.place(in_=parent, relwidth=1, relheight = 1)
+        self._main_fr.place(in_=parent, relwidth=1, relheight = 0.99)
         # Top open/save/new
         menu = tk.Menu(parent)
         parent.config(menu=menu)
@@ -233,6 +234,7 @@ class Application():
 
         self._main_grid  = grid.Grid(self._grid_dimensions[0], self._grid_dimensions[1])
         self._grid_calc = None
+        self.text_widget = None
 
         # These sets the location where entries are placed.
         ent_x = 0.09375
@@ -316,6 +318,8 @@ class Application():
         self._new_toggle_puls.set(False)
         self._new_puls_uf = tk.DoubleVar()
         self._new_puls_uf.set(0.87)
+        self._new_scale_stresses = tk.BooleanVar()
+        self._new_scale_stresses.set(False)
 
 
 
@@ -444,13 +448,18 @@ class Application():
                  bg = self._general_color)\
             .place(relx=types_start, rely=prop_vert_start + 9.5 * delta_y)
 
-        self.add_stucture = tk.Button(self._main_fr, text='Add structure to line \n'
-                                                          '-- new structural properties or\n'
-                                                          'replace existing --', command=self.new_structure,
+        self.add_stucture = tk.Button(self._main_fr, text='Add structure/properties to line \n'
+                                                          '-- new or replace existing --', command=self.new_structure,
                                       font = self._text_size['Text 10 bold'],
                                       bg = self._button_bg_color, fg = self._button_fg_color)
-        self.add_stucture.place(relx=types_start+ delta_x*4.2, rely=prop_vert_start+14*delta_y, relwidth = 0.14,
-                                relheight = 0.06)
+        self.add_stucture.place(relx=types_start+ delta_x*4.2, rely=prop_vert_start+15*delta_y, relwidth = 0.14,
+                                relheight = 0.04)
+
+        tk.Checkbutton(self._main_fr, variable = self._new_scale_stresses, command = self.on_color_code_check)\
+            .place(relx = types_start+ delta_x*4.2, rely=prop_vert_start+14*delta_y)
+        tk.Label(self._main_fr, text='Scale stresses when changing prop.', font=self._text_size['Text 9'],
+                 bg = self._general_color)\
+            .place(relx = types_start+ delta_x*4.7, rely=prop_vert_start+14*delta_y, relwidth = 0.12)
         # Toggle buttons
         self._toggle_btn = tk.Button(self._main_fr, text="Toggle select\nmultiple", relief="raised",
                                      command=self.toggle_select_multiple, bg = self._button_bg_color)
@@ -480,13 +489,13 @@ class Application():
                                          bg = self._entry_color, fg = self._entry_text_color)
 
         self._toggle_btn_puls.place(relx=types_start+ delta_x*4.2, rely=prop_vert_start+9.5*delta_y, relwidth = 0.045,
-                                relheight = 0.03)
+                                relheight = 0.035)
         self._puls_run_all.place(relx=types_start+ delta_x*6, rely=prop_vert_start+9.5*delta_y, relwidth = 0.045,
-                                relheight = 0.03)
+                                relheight = 0.035)
         self._puls_run_one.place(relx=types_start+ delta_x*7.8, rely=prop_vert_start+9.5*delta_y, relwidth = 0.047,
-                                relheight = 0.03)
+                                relheight = 0.035)
         self._ent_puls_uf.place(relx=types_start+ delta_x*7.8, rely=prop_vert_start+11*delta_y, relwidth = 0.02,
-                                relheight = 0.03)
+                                relheight = 0.035)
 
         tk.Label(self._main_fr, text='Set PULS utilization factor:', font=self._text_size['Text 7'],
                  bg = self._general_color).place(relx=types_start+ delta_x*4.2, rely=prop_vert_start+11*delta_y,
@@ -704,7 +713,7 @@ class Application():
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_structure_type, command = self.on_color_code_check)\
             .place(relx=ent_relx + 4*geo_dx, rely=ent_rely+1.5*drely)
         tk.Label(text='<-- check to color-\ncode stresses', font=self._text_size['Text 9'],
-                 bg=self._general_color).place(relx=ent_relx + 4.5*geo_dx, rely=ent_rely+1.3*drely, relwidth = 0.06,
+                 bg=self._general_color).place(relx=ent_relx + 4.5*geo_dx, rely=ent_rely+1.45*drely, relwidth = 0.06,
                                                relheight = 0.03)
 
         self._ent_structure_type.place(relx=types_start, rely=ent_rely+3.3*drely, relwidth = 0.10)
@@ -713,7 +722,7 @@ class Application():
         self._structure_types_label = \
             tk.Label(textvariable = self._new_stucture_type_label, font = self._text_size['Text 8'],
                      bg = self._general_color)\
-                .place(relx=types_start, rely=prop_vert_start +11.3*delta_y, relwidth = 0.11, relheight = 0.02)
+                .place(relx=types_start, rely=prop_vert_start +11.4*delta_y, relwidth = 0.11, relheight = 0.02)
 
         self._ent_pressure_side.place(relx=ent_relx + 5.5*geo_dx, rely=prop_vert_start + 5.4 * delta_y)
 
@@ -1009,6 +1018,13 @@ class Application():
                  font = self._text_size['Text 10 bold'], height = 1,
                   bg = self._button_bg_color, fg = self._button_fg_color)\
            .place(relx=lc_x + delta_x * 4,rely=lc_y + delta_y*18, relwidth = 0.05)
+
+        # PULS result information
+        self._puls_information_button = tk.Button(self._main_fr, text='PULS results for line',
+                                                  command=self.on_puls_results_for_line,
+                 font = self._text_size['Text 10 bold'], height = 1,
+                  bg = self._button_bg_color, fg = self._button_fg_color)
+        self._puls_information_button.place(relx=lc_x + delta_x * 0,rely=lc_y + delta_y*18, relwidth = 0.08)
 
         self.update_frame()
 
@@ -1740,6 +1756,17 @@ class Application():
             thk_sort_unique = return_dict['color code']['all thicknesses']
             structure_type_unique = return_dict['color code']['structure types map']
             for line, line_data in self._line_to_struc.items():
+                if self._PULS_results is None:
+                    puls_color = 'black'
+                elif self._PULS_results.get_utilization(line, self._line_to_struc[line][1].get_puls_method(),
+                                                        self._new_puls_uf.get()) == None:
+                    puls_color = 'black'
+                else:
+                    puls_color = matplotlib.colors.rgb2hex(
+                                               cmap_sections(self._PULS_results.get_utilization(
+                                                   line, self._line_to_struc[line][1].get_puls_method(),
+                                                   self._new_puls_uf.get())))
+
 
                 line_color_coding[line] = {'plate': matplotlib.colors.rgb2hex(cmap_sections(thk_sort_unique.index(round(line_data[1]
                                                                               .get_pl_thk(),10))/len(thk_sort_unique))),
@@ -1754,10 +1781,7 @@ class Application():
                                            'utilization': matplotlib.colors.rgb2hex(cmap_sections(
                                                max(list(return_dict['utilization'][line].values())))),
 
-                                           'PULS utilization': 'black' if self._PULS_results is
-                                                                          None else matplotlib.colors.rgb2hex(
-                                               cmap_sections(self._PULS_results.get_utilization(
-                                                   line, self._line_to_struc[line][1].get_puls_method()))),
+                                           'PULS utilization': puls_color,
 
                                            'sigma x': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_x()/
                                                                                               max(sig_x))),
@@ -2631,8 +2655,19 @@ class Application():
                     self._compartments_listbox.delete(0, 'end')
             else:
                 prev_type = self._line_to_struc[self._active_line][0].get_structure_type()
+                prev_str_obj, prev_calc_obj = copy.deepcopy(self._line_to_struc[self._active_line][0]),\
+                                              copy.deepcopy(self._line_to_struc[self._active_line][1])
+
                 self._line_to_struc[self._active_line][0].set_main_properties(obj_dict)
                 self._line_to_struc[self._active_line][1].set_main_properties(obj_dict)
+
+                if self._new_scale_stresses.get():
+                    self._line_to_struc[self._active_line][0] = \
+                        op.create_new_structure_obj(prev_str_obj,
+                                                    self._line_to_struc[self._active_line][0].get_tuple())
+                    self._line_to_struc[self._active_line][1] = \
+                        op.create_new_calc_obj(prev_calc_obj,
+                                                    self._line_to_struc[self._active_line][1].get_tuple())[0]
                 self._line_to_struc[self._active_line][1].need_recalc = True
                 if self._line_to_struc[self._active_line][2] is not None:
                     self._line_to_struc[self._active_line][2].set_main_properties(obj_dict)
@@ -3809,6 +3844,29 @@ class Application():
         lf_tkinter = tk.Toplevel(self._parent, background=self._general_color)
         load_factors.CreateLoadFactorWindow(lf_tkinter, self)
 
+    def on_puls_results_for_line(self):
+        if not self._line_is_active:
+            return
+        if self._PULS_results is None:
+            return
+        elif self._PULS_results.get_puls_line_results(self._active_line) is None:
+            return
+        if self._puls_information_button.config('relief')[-1] == 'sunken':
+            self.text_widget.forget()
+            self._puls_information_button.config(relief='raised')
+        this_result = self._PULS_results.get_puls_line_results(self._active_line)
+        this_string = ''
+        for key, value in this_result.items():
+            if type(value) == list:
+                this_string += key + ' : ' + str(value[0]) + ' ' + str(value[1]) + '\n'
+            elif type(value) == str:
+                this_string += key + ' : ' + value + '\n'
+            elif type(value) == dict:
+                this_string += key + '\n'
+                for subk, subv in value.items():
+                    this_string += '   ' + subk + ' : ' + str(subv[0]) + ' ' + str(subv[1] if subv[1] != None else '') + '\n'
+
+        tk.messagebox.showinfo('Results for '+self._active_line, this_string)
 
     def on_show_loads(self):
         '''

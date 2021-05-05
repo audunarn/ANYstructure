@@ -830,14 +830,14 @@ def stress_scaling_area(sigma_old,a_old,a_new):
 
     if a_new <= a_old: #decreasing the thickness
         sigma_new = sigma_old*(a_old/(a_old-abs((a_old-a_new))))
-        assert sigma_new >= sigma_old, 'ERROR no stress increase: \n' \
-                                      't_old '+str(a_old)+' sigma_old '+str(sigma_old)+ \
-                                      '\nt_new '+str(a_new)+' sigma_new '+str(sigma_new)
+        # assert sigma_new >= sigma_old, 'ERROR no stress increase: \n' \
+        #                               't_old '+str(a_old)+' sigma_old '+str(sigma_old)+ \
+        #                               '\nt_new '+str(a_new)+' sigma_new '+str(sigma_new)
     else: #increasing the thickness
         sigma_new = sigma_old*(a_old/(a_old+0.5*abs((a_old-a_new))))
-        assert sigma_new <= sigma_old, 'ERROR no stress reduction: \n' \
-                                      't_old '+str(a_old)+' sigma_old '+str(sigma_old)+ \
-                                      '\nt_new '+str(a_new)+' sigma_new '+str(sigma_new)
+        # assert sigma_new <= sigma_old, 'ERROR no stress reduction: \n' \
+        #                               't_old '+str(a_old)+' sigma_old '+str(sigma_old)+ \
+        #                               '\nt_new '+str(a_new)+' sigma_new '+str(sigma_new)
     #print('a_old', a_old, 'sigma_old', sigma_old, '|', 'a_new', a_new, 'sigma_new',sigma_new)
     return sigma_new
 
