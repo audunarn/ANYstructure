@@ -480,7 +480,7 @@ class Application():
         self._toggle_btn_puls = tk.Button(self._main_fr, text="Use PULS\n"
                                                               "results", relief="raised",
                                      command=self.toggle_puls_run, bg = self._button_bg_color)
-        self._puls_run_all = tk.Button(self._main_fr, text="PULS\nRun all lines", relief="raised",
+        self._puls_run_all = tk.Button(self._main_fr, text='PULS run or\nupdate all lines', relief="raised",
                                      command=self.puls_run_all_lines, bg = self._button_bg_color)
         self._puls_run_one = tk.Button(self._main_fr, text="PULS\nRun one line", relief="raised",
                                      command=self.puls_run_one_line, bg = self._button_bg_color)
@@ -1070,16 +1070,21 @@ class Application():
                 dict_to_run[line_given] = self._line_to_struc[line_given][1].get_puls_input()
                 dict_to_run[line_given]['Identification'] = line_given
                 dict_to_run[line_given]['Pressure (fixed)'] = self.get_highest_pressure(line_given)['normal'] / 1e6
-        current_button.config(text='...PULS...\n'
-                                   '..RUNNING..')
 
-        self._PULS_results.set_all_to_run(dict_to_run)
-        self._PULS_results.run_all()
 
-        current_button.config(text='PULS run or\nupdate all lines' if line_given == None else 'PULS\nRun one line')
-        current_button.config(bg=self._button_bg_color)
-        for key, value in self._line_to_struc.items():
-            value[1].need_recalc = True
+        if len(dict_to_run) > 0:
+
+            current_button.config(relief = 'sunken')
+            self._PULS_results.set_all_to_run(dict_to_run)
+            self._PULS_results.run_all()
+            current_button.config(relief='raised')
+            current_button.config(text='PULS run or\nupdate all lines' if line_given == None else 'PULS\nRun one line')
+            current_button.config(bg=self._button_bg_color)
+            for key, value in self._line_to_struc.items():
+                value[1].need_recalc = True
+        else:
+            tk.messagebox.showinfo('Results avaliable', 'PUL results is already avaliable for this line or no '
+                                                        'lines need update.')
 
         self.update_frame()
         
