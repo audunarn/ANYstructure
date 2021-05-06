@@ -522,7 +522,7 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
         if type(puls_uf) == str:
             return False, 'PULS', x, all_checks
         all_checks[8] = puls_uf/PULSrun.puls_acceptance
-        if puls_uf/PULSrun.puls_acceptance > 1:
+        if puls_uf/PULSrun.puls_acceptance >= 1:
             if print_result:
                 print('PULS', calc_object[0].get_one_line_string(), False)
             return False, 'PULS', x, all_checks

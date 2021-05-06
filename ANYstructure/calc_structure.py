@@ -1323,7 +1323,9 @@ class PULSpanel():
         my_puls.calculate_panels()
         #all_results = my_puls.get_all_results()
         all_results = my_puls.get_all_results_batch()
-        self._run_results = all_results
+        for id, data in all_results.items():
+            self._run_results[id] = data
+
         my_puls.close_book(save=False)
 
         self._all_uf = {'buckling': list(), 'ultimate': list()}
