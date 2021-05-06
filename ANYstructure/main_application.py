@@ -346,7 +346,7 @@ class Application():
         tk.Label(self._main_fr, text='Color beam prop.', font="Text 9").place(relx = 0.27, y=20)
         tk.Label(self._main_fr, text='Color plate thk.', font="Text 9").place(relx = 0.27, y=40)
         tk.Label(self._main_fr, text='Color line pressure', font="Text 9").place(relx = 0.27, y=60)
-        tk.Label(self._main_fr, text='Color utilization', font="Text 9").place(relx = 0.27, y=80)
+        tk.Label(self._main_fr, text='Color buckling utilization', font="Text 9").place(relx = 0.27, y=80)
 
         tk.Entry(self._main_fr, textvariable=self._new_line_p1, width=int(ent_width * 1),
                  bg = self._entry_color, fg = self._entry_text_color)\
@@ -1138,10 +1138,10 @@ class Application():
                     'span': self._new_field_len.get,
                     'spacing': self._new_stf_spacing.get,
                     'plate_thk': self._new_plate_thk.get,
-                    'stf_web_height': self._new_stf_web_h,
+                    'stf_web_height': self._new_stf_web_h.get,
                     'stf_web_thk': self._new_sft_web_t.get,
-                    'stf_flange_width': self._new_stf_fl_w,
-                    'stf_flange_thk': self._new_stf_fl_t,
+                    'stf_flange_width': self._new_stf_fl_w.get,
+                    'stf_flange_thk': self._new_stf_fl_t.get,
                     'structure_type': self._new_stucture_type,
                     'stf_type': self._new_stf_type.get,
                     'sigma_y1': self._new_sigma_y1.get,

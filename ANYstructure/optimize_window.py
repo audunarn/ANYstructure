@@ -220,7 +220,7 @@ class CreateOptimizeWindow():
         tk.Label(self._frame, text='Flange width [mm]', font='Verdana 7 bold').place(x=start_x + 5.97 * dx, y=start_y-0.6*dy)
         tk.Label(self._frame, text='Flange thk. [mm]', font='Verdana 7 bold').place(x=start_x + 6.97 * dx, y=start_y-0.6*dy)
         tk.Label(self._frame, text='--------- Number of combinations to run --------->\n'
-                                   'PULS buckling should not be more than about 1000\n'
+                                   'PULS buckling is time consuming, about 0.2 sec. per comb.\n'
                                    'RP-C203 is much faster and can run many more combinations, 1M+. ',
                  font='Verdana 9 bold').place(x=start_x+0.1*dx, y=start_y + 2.8 * dy, anchor = tk.NW)
 
@@ -834,7 +834,7 @@ class CreateOptimizeWindow():
                                              ctr_x + m * self._opt_results[0].get_web_thk() / 2,
                                              ctr_y - m * (self._opt_results[0].get_web_h() + self._opt_results[0].get_pl_thk())
                                              , fill=opt_color, stipple=opt_stippe)
-            if self._initial_structure_obj.get_stiffener_type() not in ['L', 'L-bulb']:
+            if self._opt_results[0].get_stiffener_type() not in ['L', 'L-bulb']:
                 self._canvas_opt.create_rectangle(ctr_x - m * self._opt_results[0].get_fl_w() / 2, ctr_y
                                                  - m * (self._opt_results[0].get_pl_thk()+ self._opt_results[0].get_web_h()),
                                                  ctr_x + m * self._opt_results[0].get_fl_w() / 2,ctr_y -

@@ -391,6 +391,7 @@ class Structure():
         except KeyError:
             self.pressure_side = 'p'
         self._zstar_optimization = main_dict['zstar_optimization'][0]
+        self._puls_method = main_dict['puls buckling method'][0]
 
     def set_stresses(self,sigy1,sigy2,sigx,tauxy):
         '''
@@ -1274,8 +1275,10 @@ class PULSpanel():
     def set_run_results(self, val):
         self._run_results = val
         for key in self._run_results.keys():
-            if key == 'sheet location':
+            if any([key == 'sheet location',type(self._run_results[key]['Buckling strength']) != dict,
+                    type(self._run_results[key]['Ultimate capacity']) != dict]): # TODO CHECK
                 continue
+
             if all([type(self._run_results[key]['Buckling strength']['Actual usage Factor'][0]) == float,
                     type(self._run_results[key]['Ultimate capacity']['Actual usage Factor'][0]) == float]):
                 self._all_uf['buckling'].append(self._run_results[key]['Buckling strength']['Actual usage Factor'][0])
