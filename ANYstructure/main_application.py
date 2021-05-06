@@ -1052,6 +1052,11 @@ class Application():
             self._PULS_results.puls_sheet_location= tk.filedialog.askopenfilename(parent=self._main_fr,
                                                                                   title='Set location of '
                                                                                         'PULS excel sheet')
+        if self._PULS_results.puls_sheet_location == '':
+            tk.messagebox.showerror('No valid PULS sheet', 'No excel sheet was provided. Cannot run PULS.\n'
+                                                           'Note that PULS excel may require 32 bit office.')
+            return
+
         dict_to_run = {}
         result_lines = list(self._PULS_results.get_run_results().keys())
 
@@ -1083,7 +1088,7 @@ class Application():
             for key, value in self._line_to_struc.items():
                 value[1].need_recalc = True
         else:
-            tk.messagebox.showinfo('Results avaliable', 'PUL results is already avaliable for this line or no '
+            tk.messagebox.showinfo('Results avaliable', 'PULS results is already avaliable for this line or no '
                                                         'lines need update.')
 
         self.update_frame()
