@@ -3780,9 +3780,10 @@ class Application():
 
         if 'PULS results' in list(imported.keys()):
             self._PULS_results = PULSpanel()
-            self._PULS_results.set_run_results(imported['PULS results'])
             if 'sheet location' in imported['PULS results'].keys():
                 self._PULS_results.puls_sheet_location = imported['PULS results']['sheet location']
+                imported['PULS results'].pop('sheet location')
+            self._PULS_results.set_run_results(imported['PULS results'])
             self.toggle_puls_run()
 
         # Setting the scale of the canvas

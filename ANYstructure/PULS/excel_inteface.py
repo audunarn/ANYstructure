@@ -6,6 +6,7 @@ This file open up excel PULS file
 '''
 
 import xlwings as xw
+import numpy as np
 
 class PulsExcel():
     ''' This class open a PulsExcel work.
@@ -75,6 +76,18 @@ class PulsExcel():
             self.set_one_row(row_number, data)
             row_number += 1
 
+    def set_multiple_rows_batch(self, start_row:int = 20, data_dict: dict = None):
+        '''
+
+        :param start_row: First row to input.
+        :param list_of_dicts: The data to be set.
+        :return:
+        '''
+
+        for name, col_num in self.names.items():
+            self.book.sheets[1].range((start_row, col_num)).options(expand='table', transpose=True).value = \
+                [val[name] for val in data_dict.values()]
+
     def calculate_panels(self):
         ''' Calculate the panels in the sheet. '''
         run_macro = self.app.macro('Sheet1.cmdCalculatePanels_Click')
@@ -106,6 +119,31 @@ class PulsExcel():
             return_dict[current_top_row][self.get_results_one_cell(12, column_number=idx)] = \
                 [self.get_results_one_cell(row_number, column_number=idx),
                  self.get_results_one_cell(14, column_number=idx)]
+        return return_dict
+
+    def get_all_results_batch(self):
+
+        all_ids  = self.book.sheets[2].range('A15').expand().value
+        if type(all_ids) != list:
+            all_ids = [all_ids]
+
+        all_data = np.array(self.book.sheets[2].range('C12').expand().value)
+        all_top_names = np.array(self.book.sheets[2].range('C11:BU11').value)
+        all_names = all_data[0]
+        all_data = all_data[3:]
+        all_units = np.array(self.book.sheets[2].range('C14:BU14').value)
+        return_dict = {}
+        current_top_row = ''
+
+        for data_idx, id in enumerate(all_ids):
+            return_dict[id] = {}
+            return_dict[id]['Identification'] = id
+            for top_name, name, data, unit in zip(all_top_names, all_names, all_data[data_idx], all_units):
+                if top_name != None:
+                    current_top_row = top_name
+                    return_dict[id][current_top_row] = {}
+                return_dict[id][current_top_row][name] = [data, unit]
+
         return return_dict
 
     def get_all_results(self):

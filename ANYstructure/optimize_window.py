@@ -426,7 +426,7 @@ class CreateOptimizeWindow():
         self._new_algorithm.trace('w',self.update_running_time)
 
 
-        self.running_time_per_item = {'PULS':1.8, 'RP': 1.009943181818182e-5}
+        self.running_time_per_item = {'PULS':0.2489626556016598, 'RP': 1.009943181818182e-5}
         self.initial_weight = op.calc_weight([self._spacing,self._pl_thk,self._stf_web_h,self._stf_web_thk,
                                               self._fl_w,self._fl_thk,self._new_span.get(),self._new_width_lg.get()])
 
@@ -599,12 +599,14 @@ class CreateOptimizeWindow():
         self._opt_actual_running_time.update()
         t_start = time.time()
         self._opt_results, self._opt_runned = (), False
-        if self._PULS_object != None:
+        if self._PULS_object is not None:
             puls_sheet_location = self._PULS_object.puls_sheet_location
             puls_acceptance = self._puls_acceptance
         else:
             puls_sheet_location = None
             puls_acceptance =0.87
+
+
         self.pso_parameters = (self._new_swarm_size.get(),self._new_omega.get(),self._new_phip.get(),
                                self._new_phig.get(),
                                self._new_maxiter.get(),self._new_minstep.get(),self._new_minfunc.get())
@@ -623,9 +625,6 @@ class CreateOptimizeWindow():
                           self._fatigue_pressure['p_int']['part']))
         else:
             fat_press = None
-
-
-
 
         self._opt_results= op.run_optmizataion(self._initial_structure_obj,self.get_lower_bounds(),
                                                self.get_upper_bounds(),self._new_design_pressure.get(),

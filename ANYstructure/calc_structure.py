@@ -1241,6 +1241,7 @@ class PULSpanel():
         self._all_uf = {'buckling': list(), 'ultimate': list()}
 
 
+
     @property
     def all_uf(self):
         return self._all_uf
@@ -1273,6 +1274,8 @@ class PULSpanel():
     def set_run_results(self, val):
         self._run_results = val
         for key in self._run_results.keys():
+            if key == 'sheet location':
+                continue
             if all([type(self._run_results[key]['Buckling strength']['Actual usage Factor'][0]) == float,
                     type(self._run_results[key]['Ultimate capacity']['Actual usage Factor'][0]) == float]):
                 self._all_uf['buckling'].append(self._run_results[key]['Buckling strength']['Actual usage Factor'][0])
@@ -1280,7 +1283,7 @@ class PULSpanel():
         self._all_uf['buckling'] = np.unique(self._all_uf['buckling']).tolist()
         self._all_uf['ultimate'] = np.unique(self._all_uf['ultimate']).tolist()
 
-    def run_all(self, store_results = True):
+    def run_all(self, store_results = True if os.getlogin() == 'CEFANY' else False):
         '''
         Returning following results.:
 
@@ -1307,18 +1310,21 @@ class PULSpanel():
 
         :return:
         '''
-        idx = 1
-        iterator = self._all_to_run
-        #newfile = os.path.dirname(os.path.abspath(__file__))+'\\PULS\\PulsExcel_new - Copy ('+str(idx)+').xlsm'
-        newfile = self._puls_sheet_location
-        my_puls = pulsxl.PulsExcel(newfile, visible=False)
-        my_puls.set_multiple_rows(20, iterator)
-        my_puls.calculate_panels()
-        all_results = my_puls.get_all_results()
-        my_puls.close_book(save=False)
 
-        for key, value in all_results.items():
-            self._run_results[value['Identification']] = value
+        iterator = self._all_to_run
+
+        newfile = self._puls_sheet_location
+
+        my_puls = pulsxl.PulsExcel(newfile, visible=False)
+        #my_puls.set_multiple_rows(20, iterator)
+        my_puls.set_multiple_rows_batch(20, iterator)
+
+
+        my_puls.calculate_panels()
+        #all_results = my_puls.get_all_results()
+        all_results = my_puls.get_all_results_batch()
+        self._run_results = all_results
+        my_puls.close_book(save=False)
 
         self._all_uf = {'buckling': list(), 'ultimate': list()}
         for key in self._run_results.keys():
@@ -1371,8 +1377,7 @@ class PULSpanel():
         # print(self._all_to_run)
         # quit()
         queue = multiprocessing.SimpleQueue()
-        [print(task) for task in tasks]
-        quit()
+
         for idx, name in enumerate(tasks):
             p = Process(target=self.run_all_multi_sub, args=(name, queue, idx+1))
             p.start()
@@ -1415,9 +1420,9 @@ class PULSpanel():
 
         my_puls = pulsxl.PulsExcel(new_file, visible=False)
         try:
-            my_puls.set_multiple_rows(20, iterator)
+            my_puls.set_multiple_rows_batch(20, iterator)
             my_puls.calculate_panels()
-            all_results = my_puls.get_all_results()
+            all_results = my_puls.get_all_results_batch()
             my_puls.close_book(save=True)
             queue.put(all_results)
             os.remove(new_file)
@@ -1463,7 +1468,7 @@ def f(name, queue):
 
 if __name__ == '__main__':
     import ANYstructure.example_data as ex
-    PULS = PULSpanel(ex.run_dict)
+    PULS = PULSpanel(ex.run_dict, puls_sheet_location=r'C:\Github\ANYstructure\ANYstructure\PULS\PulsExcel_new - Copy (1).xlsm')
     PULS.run_all_multi()
     # import ANYstructure.example_data as test
     # from multiprocessing import Process

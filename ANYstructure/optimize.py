@@ -68,7 +68,8 @@ def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lat
         to_return = any_smart_loop(min_var, max_var, deltas, initial_structure_obj, lateral_pressure,
                                    init_filter_weight, side=side, const_chk=const_chk, fat_dict=fat_dict,
                                    fat_press=fat_press_ext_int,slamming_press=slamming_press,
-                                   predefiened_stiffener_iter=predefined_stiffener_iter)
+                                   predefiened_stiffener_iter=predefined_stiffener_iter, puls_sheet = puls_sheet,
+                                   puls_acceptance = puls_acceptance)
         return to_return
     elif algorithm == 'anysmart' and is_geometric:
         return geometric_summary_search(min_var= min_var, max_var=max_var, deltas= deltas,
@@ -169,7 +170,7 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
     main_result = get_filtered_results(structure_to_check, initial_structure_obj,lateral_pressure,
                                        init_filter_weight=init_filter, side=side,chk=const_chk, fat_dict=fat_dict,
                                        fat_press=fat_press, slamming_press=slamming_press, processes=processes,
-                                       puls_sheet = None, puls_acceptance = 0.87)
+                                       puls_sheet = puls_sheet, puls_acceptance = puls_acceptance)
 
     main_iter = main_result[0]
     main_fail = main_result[1]
@@ -514,11 +515,12 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
     # PULS buckling check
     if chk[7] and PULSrun is not None:
         x_id = x_to_string(x)
-        puls_ulti = PULSrun.get_puls_line_results(x_id)["Ultimate capacity"]["Actual usage Factor"][0]
-        puls_bucling = PULSrun.get_puls_line_results(x_id)["Buckling strength"]["Actual usage Factor"][0]
-        if type(puls_ulti) == str or type(puls_bucling) == str:
+        if calc_object[0].get_puls_method() == 'buckling':
+            puls_uf = PULSrun.get_puls_line_results(x_id)["Buckling strength"]["Actual usage Factor"][0]
+        elif calc_object[0].get_puls_method() == 'ultimate':
+            puls_uf = PULSrun.get_puls_line_results(x_id)["Ultimate capacity"]["Actual usage Factor"][0]
+        if type(puls_uf) == str:
             return False, 'PULS', x, all_checks
-        puls_uf = puls_ulti if calc_object[0].get_puls_method() == 2 else max([puls_bucling, puls_ulti])
         all_checks[8] = puls_uf/PULSrun.puls_acceptance
         if puls_uf/PULSrun.puls_acceptance > 1:
             if print_result:
@@ -882,7 +884,7 @@ def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight
             calc_object = create_new_calc_obj(init_stuc_obj, x, fat_dict)
             dict_to_run[x_id] = calc_object[0].get_puls_input()
             dict_to_run[x_id]['Identification'] = x_id
-            dict_to_run[x_id]['Pressure (fixed)'] = lat_press/1e6
+            dict_to_run[x_id]['Pressure (fixed)'] = lat_press/1000 # PULS sheet to have pressure in MPa
 
         PULSrun = calc.PULSpanel(dict_to_run, puls_sheet_location=puls_sheet, puls_acceptance=puls_acceptance)
         PULSrun.run_all()
