@@ -1469,7 +1469,6 @@ class Application():
         self.draw_canvas(state=state)
         self.draw_prop()
 
-
     def get_color_and_calc_state(self, current_line = None, active_line_only = False):
         ''' Return calculations and colors for line and results. '''
 
@@ -1479,8 +1478,6 @@ class Application():
                        'color code': {}, 'PULS colors': {}}
         line_iterator, slamming_pressure = [], None
         return_dict['slamming'][current_line] = {}
-
-
 
         if current_line is None and active_line_only:
             line_iterator = [self._active_line, ]
@@ -1888,6 +1885,10 @@ class Application():
                                     color = 'red' if any([col1 == 'red', col2 == 'red']) else 'green'
                                 else:
                                     color = col2
+
+                                if color == 'green':
+                                    color = 'green' if all([state['colors'][line][key] == 'green' for key in
+                                                            ['fatigue', 'section', 'shear','thickness']]) else 'red'
                         else:
                             color = 'red' if 'red' in state['colors'][line].values() else 'green'
                     except (KeyError, TypeError):
