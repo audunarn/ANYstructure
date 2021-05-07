@@ -23,7 +23,7 @@ import ANYstructure.load_factor_window as load_factors
 from _tkinter import TclError
 import multiprocessing
 from ANYstructure.report_generator import LetterMaker
-import os.path
+import os.path, os
 import ctypes
 import ANYstructure.sesam_interface as sesam
 from matplotlib import pyplot as plt
@@ -1048,7 +1048,7 @@ class Application():
 
         if self._PULS_results is None:
             self._PULS_results = PULSpanel()
-        if self._PULS_results.puls_sheet_location is None:
+        if self._PULS_results.puls_sheet_location is None or not os.path.isfile(self._PULS_results.puls_sheet_location):
             self._PULS_results.puls_sheet_location= tk.filedialog.askopenfilename(parent=self._main_fr,
                                                                                   title='Set location of '
                                                                                         'PULS excel sheet')
@@ -3806,7 +3806,6 @@ class Application():
         imp_file.close()
         self._parent.wm_title('| ANYstructure |     ' + imp_file.name)
         self.update_frame()
-
 
     def open_example(self, file_name = 'ship_section_example.txt'):
         ''' Open the example file. To be used in help menu. '''

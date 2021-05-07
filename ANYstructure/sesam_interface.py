@@ -43,8 +43,9 @@ def section_property_to_js(section: plstf.Section = None):
                   str(section.stf_flange_width)+', '+ str(section.stf_flange_thk)+');\n'
     else:
         js_def =  'BarSection('+str(section.stf_web_height)+', '+str(section.stf_web_thk)+');\n'
-
-    return section.__str__() +  ' = ' + js_def
+    ret_str = section.__str__() +  ' = ' + js_def
+    ret_str.replace('-', '_')
+    return ret_str
 
 class JSfile:
     '''
