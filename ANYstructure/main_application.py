@@ -1049,9 +1049,15 @@ class Application():
         if self._PULS_results is None:
             self._PULS_results = PULSpanel()
         if self._PULS_results.puls_sheet_location is None or not os.path.isfile(self._PULS_results.puls_sheet_location):
-            self._PULS_results.puls_sheet_location= tk.filedialog.askopenfilename(parent=self._main_fr,
-                                                                                  title='Set location of '
-                                                                                        'PULS excel sheet')
+            tk.messagebox.showerror('No PULS excel sheet located', 'Set location of PULS excel sheet.\n'
+                                                                            'Note that PULS excel may require 32 bit '
+                                                                            'office.\n\n'
+                                                                         'A sheet may be provided but does not exist'
+                                                                            ' in :\n'
+                                                                         + self._PULS_results.puls_sheet_location +
+                                    '\n\n A file dialogue will pop up after this message.')
+            self._PULS_results.puls_sheet_location= \
+                tk.filedialog.askopenfilename(parent=self._main_fr,title='Set location of PULS excel sheet.')
         if self._PULS_results.puls_sheet_location == '':
             tk.messagebox.showerror('No valid PULS sheet', 'No excel sheet was provided. Cannot run PULS.\n'
                                                            'Note that PULS excel may require 32 bit office.')
