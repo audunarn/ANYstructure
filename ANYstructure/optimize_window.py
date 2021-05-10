@@ -602,6 +602,16 @@ class CreateOptimizeWindow():
         if self._PULS_object is not None:
             puls_sheet_location = self._PULS_object.puls_sheet_location
             puls_acceptance = self._puls_acceptance
+            if self._new_check_buckling_puls.get() == True:
+                if puls_sheet_location is None or not os.path.isfile(
+                        puls_sheet_location):
+                    tk.messagebox.showerror('No PULS excel sheet located', 'Set location of PULS excel sheet.\n'
+                                                                           'Note that PULS excel may require 32 bit '
+                                                                           'office.\n\n'
+                                                                           'A sheet may be provided but does not exist'
+                                                                           ' in :\n'
+                                            + self._PULS_results.puls_sheet_location +
+                                            '\n\n Return to main window an run one or more lines in PULS.')
         else:
             puls_sheet_location = None
             puls_acceptance =0.87

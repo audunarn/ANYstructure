@@ -1168,7 +1168,6 @@ class CalcFatigue(Structure):
 
         x, alpha = math.pow(slope_ch/stress_frac, weibull),1 + m1/weibull
         gamma_val = gammadist.cdf(x,alpha)
-
         return cycles / math.pow(10, log_a1-m1*thk_eff) * math.pow(stress_frac, m1)*gamma1*(1-gamma_val)\
                *self._fraction[idx]
 
@@ -1198,6 +1197,7 @@ class CalcFatigue(Structure):
             if self._fraction[idx] != 0 and self._period[idx] != 0:
                 damage += self.get_damage_slope1(idx,self._sn_curve, int_press[idx], ext_press[idx]) + \
                           self.get_damage_slope2(idx,self._sn_curve, int_press[idx], ext_press[idx])
+
         return damage
 
     def set_fatigue_properties(self, fatigue_dict: dict):
@@ -1333,11 +1333,16 @@ class PULSpanel():
 
         self._all_uf = {'buckling': list(), 'ultimate': list()}
         for key in self._run_results.keys():
-            if all([type(self._run_results[key]['Buckling strength']['Actual usage Factor'][0]) == float,
-                    type(self._run_results[key]['Ultimate capacity']['Actual usage Factor'][0]) == float]):
-                self._all_uf['buckling'].append(self._run_results[key]['Buckling strength']['Actual usage Factor'][0])
-                self._all_uf['ultimate'].append(self._run_results[key]['Ultimate capacity']['Actual usage Factor'][0])
-
+            try:
+                if all([type(self._run_results[key]['Buckling strength']['Actual usage Factor'][0]) == float,
+                        type(self._run_results[key]['Ultimate capacity']['Actual usage Factor'][0]) == float]):
+                    self._all_uf['buckling'].append(self._run_results[key]['Buckling strength']
+                                                    ['Actual usage Factor'][0])
+                    self._all_uf['ultimate'].append(self._run_results[key]['Ultimate capacity']
+                                                    ['Actual usage Factor'][0])
+            except TypeError:
+                print('Got a type error. Life will go on. Key for PULS run results was', key)
+                print(self._run_results[key])
         self._all_uf['buckling'] = np.unique(self._all_uf['buckling']).tolist()
         self._all_uf['ultimate'] = np.unique(self._all_uf['ultimate']).tolist()
         if store_results:

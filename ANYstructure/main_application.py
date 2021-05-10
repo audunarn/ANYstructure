@@ -3157,7 +3157,7 @@ class Application():
 
         return list(filter(lambda x: x > 1, self._main_grid.get_adjacent_values(mid_point)))
 
-    def get_compartments_for_line_duplicates(self, line):
+    def get_compartments_for_line_duplicates(self,  line):
         '''
         Finding the compartment connected to a specified line.
         :return:
