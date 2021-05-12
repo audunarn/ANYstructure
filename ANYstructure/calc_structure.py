@@ -498,14 +498,15 @@ class Structure():
                         'Plate thickness': self.plate_th*1000,
                       'Number of primary stiffeners': 10,
                        'Stiffener type (L,T,F)': stf_type,
-                        'Stiffener boundary': 'C',
-                      'Stiff. Height': self.web_height*1000, 'Web thick.': self.web_th*1000,'Flange width': self.flange_width*1000,
+                        'Stiffener boundary': self._puls_stf_end,
+                      'Stiff. Height': self.web_height*1000, 'Web thick.': self.web_th*1000,
+                       'Flange width': self.flange_width*1000,
                         'Flange thick.': self.flange_th*1000, 'Tilt angle': 0,
                       'Number of sec. stiffeners': 0, 'Modulus of elasticity': 2.1e11/1e6, "Poisson's ratio": 0.3,
                       'Yield stress plate': self.mat_yield/1e6, 'Yield stress stiffener': self.mat_yield/1e6,
                         'Axial stress': self.sigma_x, 'Trans. stress 1': self.sigma_y1,
                       'Trans. stress 2': self.sigma_y2, 'Shear stress': self.tauxy,
-                        'Pressure (fixed)': None, 'In-plane support': 'Int'}
+                        'Pressure (fixed)': None, 'In-plane support': self._puls_boundary}
         return return_dict
 
 class CalcScantlings(Structure):

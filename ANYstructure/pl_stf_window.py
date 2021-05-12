@@ -284,7 +284,7 @@ class CreateStructureWindow():
     def section_choose(self, event = None):
         ''' Choosing a section. '''
         chosen_section = self._new_section.get()
-        # TODO en feil her.AttributeError: 'NoneType' object has no attribute 'name'. Seksjoner vises ikke riktig i neddroppsmeny.
+
         for section in self._section_objects:
             if chosen_section == section.__str__():
                 self._new_web_h.set(section.stf_web_height*1000)
@@ -388,6 +388,16 @@ class Section:
     @stf_flange_thk.setter
     def stf_flange_thk(self, value):
         self._stf_flange_thk = value
+
+    def return_puls_input(self):
+        '''
+        Returns as input good for PULS
+        :return:
+        '''
+        return {'Stiffener type (L,T,F)': self.stf_type,  'Stiffener boundary': 'C',
+                'Stiff. Height': self.stf_web_height*1000,
+                   'Web thick.': self.stf_web_thk*1000, 'Flange width': self.stf_flange_width*1000,
+                          'Flange thick.': self.stf_flange_thk*1000}
 
 
 if __name__ == '__main__':

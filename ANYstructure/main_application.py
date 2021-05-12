@@ -218,7 +218,7 @@ class Application():
                                        'stf_flange_width', 'stf_flange_thk', 'structure_type', 'stf_type',
                                        'sigma_y1', 'sigma_y2', 'sigma_x', 'tau_xy', 'plate_kpp', 'stf_kps','stf_km1',
                                        'stf_km2', 'stf_km3', 'press_side', 'structure_types', 'zstar_optimization',
-                                      'puls buckling method']
+                                      'puls buckling method', 'puls boundary', 'puls stiffener end']
         self._p1_p2_select = False
         self._line_is_active = False # True when a line is clicked
         self._active_line = '' # Name of the clicked point
