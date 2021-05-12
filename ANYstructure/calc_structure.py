@@ -3,11 +3,13 @@ from scipy.special import gammaln
 from scipy.stats import gamma as gammadist
 import numpy as np
 import ANYstructure.PULS.excel_inteface as pulsxl
+import ANYstructure.helper as hlp
 from multiprocessing import  Pool, cpu_count, Process
 import multiprocessing
 import shutil, os, time, datetime, json
 from itertools import islice
 import pythoncom
+import random
 
 import ANYstructure.SN_curve_parameters as snc
 
@@ -44,6 +46,8 @@ class Structure():
         elif self.structure_type in self.structure_types['horizontal']:
             self.dynamic_variable_orientation = 'x - horizontal'
         self._puls_method = main_dict['puls buckling method'][0]
+        self._puls_boundary = main_dict['puls boundary'][0]
+        self._puls_stf_end = main_dict['puls stiffener end'][0]
 
         self._zstar_optimization = main_dict['zstar_optimization'][0]
         try:
@@ -101,6 +105,12 @@ class Structure():
 
     def get_puls_method(self):
         return self._puls_method
+
+    def get_puls_boundary(self):
+        return self._puls_boundary
+
+    def get_puls_stf_end(self):
+        return self._puls_stf_end
 
     def get_one_line_string(self):
         ''' Returning a one line string. '''
@@ -392,6 +402,8 @@ class Structure():
             self.pressure_side = 'p'
         self._zstar_optimization = main_dict['zstar_optimization'][0]
         self._puls_method = main_dict['puls buckling method'][0]
+        self._puls_boundary = main_dict['puls boundary'][0]
+        self._puls_stf_end  = main_dict['puls stiffener end'][0]
 
     def set_stresses(self,sigy1,sigy2,sigx,tauxy):
         '''
@@ -1200,6 +1212,21 @@ class CalcFatigue(Structure):
 
         return damage
 
+    def set_commmon_properties(self, fatigue_dict: dict):
+        ''' Setting the fatiuge properties. '''
+        #self._sn_curve, self.fatigue_dict['SN-curve'] = fatigue_dict['SN-curve'], fatigue_dict['SN-curve']
+        self._acc, self.fatigue_dict['Accelerations'] = fatigue_dict['Accelerations'], fatigue_dict['Accelerations']
+        #self._weibull, self.fatigue_dict['Weibull'] = fatigue_dict['Weibull'], fatigue_dict['Weibull']
+        #self._period, self.fatigue_dict['Period'] = fatigue_dict['Period'], fatigue_dict['Period']
+        #self._k_factor, self.fatigue_dict['SCF'] = fatigue_dict['SCF'], fatigue_dict['SCF']
+        #self._corr_loc, self.fatigue_dict['CorrLoc'] = fatigue_dict['CorrLoc'], fatigue_dict['CorrLoc']
+        self._no_of_cycles, self.fatigue_dict['n0'] = fatigue_dict['n0'], fatigue_dict['n0']
+        self._design_life, self.fatigue_dict['Design life'] = fatigue_dict['Design life'], fatigue_dict['Design life']
+        self._fraction, self.fatigue_dict['Fraction'] = fatigue_dict['Fraction'], fatigue_dict['Fraction']
+        #self._case_order, self.fatigue_dict['Order'] = fatigue_dict['Order'], fatigue_dict['Order']
+        self._dff, self.fatigue_dict['DFF'] = fatigue_dict['DFF'], fatigue_dict['DFF']
+
+
     def set_fatigue_properties(self, fatigue_dict: dict):
         ''' Setting the fatiuge properties. '''
         self._sn_curve, self.fatigue_dict['SN-curve'] = fatigue_dict['SN-curve'], fatigue_dict['SN-curve']
@@ -1240,8 +1267,6 @@ class PULSpanel():
         self._puls_acceptance = puls_acceptance
         self._puls_sheet_location = puls_sheet_location
         self._all_uf = {'buckling': list(), 'ultimate': list()}
-
-
 
     @property
     def all_uf(self):
@@ -1366,7 +1391,6 @@ class PULSpanel():
 
     def run_all_multi(self):
 
-
         tasks = []
 
         if len(self._all_to_run) > 20:
@@ -1469,6 +1493,70 @@ class PULSpanel():
         if id in self._run_results.keys():
             self._run_results.pop(id)
 
+    def generate_random_results(self, batch_size: int = 1000, ):
+        '''
+        Genrate random results based on user input.
+        :return:
+        '''
+
+        '''
+        Running iterator:
+        run_dict_one = {'line3': {'Identification': 'line3', 'Length of panel': 4000.0, 'Stiffener spacing': 700.0,
+                          'Plate thickness': 18.0, 'Number of primary stiffeners': 10, 'Stiffener type (L,T,F)': 'T',
+                          'Stiffener boundary': 'C', 'Stiff. Height': 400.0, 'Web thick.': 12.0, 'Flange width': 200.0,
+                          'Flange thick.': 20.0, 'Tilt angle': 0, 'Number of sec. stiffeners': 0,
+                          'Modulus of elasticity': 210000.0, "Poisson's ratio": 0.3, 'Yield stress plate': 355.0,
+                          'Yield stress stiffener': 355.0, 'Axial stress': 101.7, 'Trans. stress 1': 100.0,
+                          'Trans. stress 2': 100.0, 'Shear stress': 5.0, 'Pressure (fixed)': 0.41261,
+                          'In-plane support': 'Int'}}
+        '''
+        run_dict = {}
+
+        profiles = hlp.helper_read_section_file('bulb_anglebar_tbar_flatbar.csv')
+
+        lengths = np.arange(1000,6000,100)
+        spacings = np.arange(100,1000,50)
+        thks = np.arange(5,50,1)
+        axstress =transsress1 = transsress2 = shearstress =  np.arange(0,200,10)
+        pressures = np.arange(0,0.5,0.01)
+        now = time.time()
+        yields = np.array([235,265,315,355,390,420,460])
+        for idx in range(batch_size):
+            ''' Adding 'Stiffener type (L,T,F)': self.stf_type,  'Stiffener boundary': 'C',
+                'Stiff. Height': self.stf_web_height*1000, 'Web thick.': self.stf_web_thk*1000, 
+                'Flange width': self.stf_flange_width*1000, 'Flange thick.': self.stf_flange_thk*1000}'''
+
+            this_id = 'run_' + str(idx) + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+            this_stf = random.choice(profiles)
+            boundary = random.choice(['Int', 'GL', 'GT'])
+            yieldstress = np.random.choice(yields)
+            run_dict[this_id] = {'Identification': this_id, 'Length of panel': np.random.choice(lengths),
+                                 'Stiffener spacing': np.random.choice(spacings),
+                                 'Plate thickness': np.random.choice(thks), 'Number of primary stiffeners': 10,
+                                 'Stiffener type (L,T,F)': this_stf['stf_type'][0],
+                                 'Stiffener boundary': random.choice(['C', 'S']),
+                                 'Stiff. Height': this_stf['stf_web_height'][0]*1000,
+                                 'Web thick.': this_stf['stf_web_thk'][0]*1000,
+                                 'Flange width': 0 if  this_stf['stf_type'][0] == 'F'
+                                 else this_stf['stf_flange_width'][0]*1000,
+                                 'Flange thick.': 0 if  this_stf['stf_type'][0] == 'F'
+                                 else this_stf['stf_flange_thk'][0]*1000,
+                                 'Tilt angle': 0, 'Number of sec. stiffeners': 0,
+                                 'Modulus of elasticity': 210000.0, "Poisson's ratio": 0.3,
+                                 'Yield stress plate':yieldstress, 'Yield stress stiffener': yieldstress,
+                                 'Axial stress': 0 if boundary == 'GT' else np.random.choice(axstress),
+                                 'Trans. stress 1': 0 if boundary == 'GL' else np.random.choice(transsress1),
+                                 'Trans. stress 2': 0 if boundary == 'GL' else np.random.choice(transsress2),
+                                 'Shear stress': np.random.choice(shearstress),
+                                 'Pressure (fixed)': np.random.choice(pressures),
+                                 'In-plane support': 'Int'}
+
+        self._all_to_run = run_dict
+        self.run_all(store_results=True)
+        print('Time to run', batch_size, 'batches:', time.time() - now)
+
+
+
 def f(name, queue):
     import time
     #print('hello', name)
@@ -1478,8 +1566,11 @@ def f(name, queue):
 
 if __name__ == '__main__':
     import ANYstructure.example_data as ex
-    PULS = PULSpanel(ex.run_dict, puls_sheet_location=r'C:\Github\ANYstructure\ANYstructure\PULS\PulsExcel_new - Copy (1).xlsm')
-    PULS.run_all_multi()
+    # PULS = PULSpanel(ex.run_dict, puls_sheet_location=r'C:\Github\ANYstructure\ANYstructure\PULS\PulsExcel_new - Copy (1).xlsm')
+    # PULS.run_all_multi()
+    PULS = PULSpanel(puls_sheet_location=r'C:\Github\ANYstructure\ANYstructure\PULS\PulsExcel_new - Copy (1).xlsm')
+    for dummy in range(10):
+        PULS.generate_random_results(batch_size=10000)
     # import ANYstructure.example_data as test
     # from multiprocessing import Process
     #

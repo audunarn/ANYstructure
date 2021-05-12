@@ -709,7 +709,9 @@ def create_new_calc_obj(init_obj,x, fat_dict=None):
                  'stf_km2': [init_obj.get_km2(), ''],'stf_km3': [init_obj.get_km3(), ''],
                  'structure_types':[init_obj.get_structure_types(), ''],
                  'zstar_optimization': [init_obj.get_z_opt(), ''],
-                 'puls buckling method':[init_obj.get_puls_method(),'']}
+                 'puls buckling method':[init_obj.get_puls_method(),''],
+                 'puls boundary':[init_obj.get_puls_boundary(),''],
+                 'puls stiffener end':[init_obj.get_puls_stf_end(),''],}
     if fat_dict == None:
         return calc.CalcScantlings(main_dict), None
     else:

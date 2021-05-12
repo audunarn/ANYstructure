@@ -84,6 +84,7 @@ def helper_dnva_dnvb(line_name_obj, coord, defined_loads, load_condition,
                 #     if load_factors[0].get() != 0:
                 #         load_print.append('LOAD NAME: '+' '+ comb_name+ ' '+ line_name+' '+ load.get_name()+'\n')
                 # USE GET() (static,dyn, on/off)
+
                 if load_condition == load.get_load_condition():
                     static_pressure = (load_factors[2].get())*(load_factors[0].get())\
                                       *load.get_calculated_pressure(coord, acc[0],structure_type)
@@ -257,7 +258,7 @@ def helper_manual(line_name, comb_name,load_factors_all):
                           str(load_factors[2].get()) + ' = '+ str(man_press) +'\n')
     return [man_press, load_print]
 
-def helper_read_section_file(files, obj = None, to_json = False, to_csv = False):
+def helper_read_section_file(files, obj = None, to_json = False, to_csv = None):
     ''' Read a xml file. '''
     import json
     from xml.dom import minidom
@@ -319,8 +320,6 @@ def helper_read_section_file(files, obj = None, to_json = False, to_csv = False)
             with open(file, 'r') as csv_file:
                 csv_reader = csv.reader(csv_file, delimiter=',')
                 for idx, section in enumerate(csv_reader):
-
-
                     to_return[str(idx)] = {'stf_web_height': [float(section[0]), 'm'],
                                            'stf_web_thk': [float(section[1]),'m'],
                                            'stf_flange_width': [float(section[2]),'m'],
@@ -331,8 +330,8 @@ def helper_read_section_file(files, obj = None, to_json = False, to_csv = False)
         with open('sections.json', 'w') as file:
             json.dump(to_return, file)
 
-    if to_csv:
-        with open('sections.csv', 'w', newline = '') as file:
+    if to_csv is not None:
+        with open(to_csv, 'w', newline = '') as file:
             section_writer = csv.writer(file)
             for line in return_csv:
                 section_writer.writerow(line)
@@ -393,8 +392,9 @@ def add_new_section(section_list, new_section):
 if __name__ == '__main__':
     import ANYstructure.example_data as ex
     from pathlib import Path
-    file = Path('C:/Users/nmm000756/Documents/GitHub/ANYstructure/ANYstructure/sections.json')
-    all_returned = helper_read_section_file(file.name)
+    #file = Path('C:\\Program Files\\DNVGL\\GeniE V8.0-21\\Libraries\\tbar.xml')
+    all_returned = helper_read_section_file('C:\\Program Files\\DNVGL\\GeniE V8.0-21\\Libraries\\tbar.xml', to_csv='tbar.csv')
 
     import random
-    print(random.choice(all_returned))
+
+    print(all_returned)

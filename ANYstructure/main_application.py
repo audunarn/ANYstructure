@@ -525,6 +525,8 @@ class Application():
         self._new_pressure_side = tk.StringVar()
         self._new_puls_method = tk.StringVar()
         self._new_puls_panel_boundary = tk.StringVar()
+        self._new_puls_stf_end_type = tk.StringVar()
+
 
         # Setting default values to tkinter variables
         self._new_material.set(355)
@@ -550,6 +552,7 @@ class Application():
         self._new_pressure_side.set('p')
         self._new_puls_method.set('ultimate')
         self._new_puls_panel_boundary.set('Int')
+        self._new_puls_stf_end_type.set('C')
 
 
         # --- main entries and labels to define the structural properties ---
@@ -613,6 +616,9 @@ class Application():
         self._ent_puls_method = tk.OptionMenu(self._main_fr, self._new_puls_method, *['buckling', 'ultimate'])
         self._ent_puls_panel_boundary = tk.OptionMenu(self._main_fr, self._new_puls_panel_boundary,
                                                       *['Int', 'GL', 'GT'])
+        self._ent_puls_stf_end_type = tk.OptionMenu(self._main_fr, self._new_puls_stf_end_type,
+                                                      *['C', 'S'])
+
 
 
         loc_y = -0.000185185
@@ -647,8 +653,16 @@ class Application():
             .place(relx=ent_relx + 5 * geo_dx,
                    rely=prop_vert_start + 4 * delta_y)
 
-        tk.Label(self._main_fr, text='PULS acceptance method:', bg=self._general_color)\
-            .place(relx=ent_relx + 2.7*geo_dx, rely=prop_vert_start + 8 * delta_y)
+        tk.Label(self._main_fr, text='PULS\nacceptance', bg=self._general_color, font = self._text_size['Text 7'])\
+            .place(relx=ent_relx + 4.3*geo_dx, rely=prop_vert_start + 8 * delta_y, relwidth = 0.032)
+        tk.Label(self._main_fr, text='PULS\nInt-integrated\nGL-free left/right\nGT-free top/bottom',
+                 bg=self._general_color, font = self._text_size['Text 7'])\
+            .place(relx=ent_relx - 0.3*geo_dx, rely=prop_vert_start + 7.5 * delta_y, relwidth = 0.05)
+
+        tk.Label(self._main_fr, text='PULS\nContinous\nSniped', bg=self._general_color,
+                 font = self._text_size['Text 7'])\
+            .place(relx=ent_relx + 2.3*geo_dx, rely=prop_vert_start + 7.5 * delta_y, relwidth = 0.037)
+
 
         tk.Label(self._main_fr, text='span', bg = self._general_color).place(relx=ent_relx + 0*geo_dx,
                                                                              rely=prop_vert_start +loc_y * delta_y)
@@ -701,6 +715,8 @@ class Application():
         self._ent_tauxy.place(relx=ent_relx + 3*geo_dx, rely=ent_rely+drely)
         self._ent_stf_type.place(relx=ent_relx + 4*geo_dx, rely=ent_rely+0.9*drely)
         self._ent_puls_method.place(relx=ent_relx + 5.45*geo_dx, rely=prop_vert_start + 8 * delta_y, relwidth = 0.045)
+        self._ent_puls_panel_boundary.place(relx=ent_relx + 1.5*geo_dx, rely=prop_vert_start + 8 * delta_y, relwidth = 0.025)
+        self._ent_puls_stf_end_type.place(relx=ent_relx + 3.5*geo_dx, rely=prop_vert_start + 8 * delta_y, relwidth = 0.025)
 
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_sigmax, command = self.on_color_code_check)\
             .place(relx=ent_relx + 0*geo_dx, rely=ent_rely+1.5*drely)
@@ -1121,6 +1137,7 @@ class Application():
                            'Text 7': 'Verdana ' + str(int(7 * self.text_scale)),
                            'Text 10': 'Verdana ' + str(int(10 * self.text_scale)),
                            'Text 7 bold': 'Verdana ' + str(int(7 * self.text_scale)) + ' bold'}
+        self.update_frame()
 
     def toggle_select_multiple(self, event = None):
         if self._toggle_btn.config('relief')[-1] == 'sunken':
@@ -1172,7 +1189,9 @@ class Application():
                     'press_side': self._new_pressure_side.get,
                     #'structure_types': self._structure_types,
                     'zstar_optimization': self._new_zstar_optimization.get,
-                    'puls buckling method': self._new_puls_method.get}
+                    'puls buckling method': self._new_puls_method.get,
+                    'puls boundary': self._new_puls_panel_boundary.get,
+                    'puls stiffener end': self._new_puls_stf_end_type.get}
 
 
         set_var = obj_dict[var_to_set]()
@@ -1828,9 +1847,9 @@ class Application():
         self._main_canvas.delete('all')
         color = 'black' #by default
 
-        self._main_canvas.create_line(self._canvas_draw_origo[0], 0, self._canvas_draw_origo[0], self._canvas_dim[1]+50,
+        self._main_canvas.create_line(self._canvas_draw_origo[0], 0, self._canvas_draw_origo[0], self._canvas_dim[1]+500,
                                      stipple= 'gray50')
-        self._main_canvas.create_line(0, self._canvas_draw_origo[1], self._canvas_dim[0], self._canvas_draw_origo[1],
+        self._main_canvas.create_line(0, self._canvas_draw_origo[1], self._canvas_dim[0] +500, self._canvas_draw_origo[1],
                                      stipple='gray50')
         self._main_canvas.create_text(self._canvas_draw_origo[0] - 30*1,
                                      self._canvas_draw_origo[1] + 12* 1, text='(0,0)',
@@ -1845,7 +1864,9 @@ class Application():
 
         # Drawing shortcut information if selected.
         if self._new_shortcut_backdrop.get() == True:
-            self._main_canvas.create_text(self._main_canvas.winfo_width()*0.85, 100, text = self._shortcut_text, font=self._text_size["Text 8"],
+            self._main_canvas.create_text(self._main_canvas.winfo_width()*0.87, self._main_canvas.winfo_height()*0.12,
+                                          text = self._shortcut_text,
+                                          font=self._text_size["Text 8"],
                                           fill = 'black')
 
         # drawing the point dictionary
@@ -1939,7 +1960,7 @@ class Application():
 
                 if data[0].is_static():
                     draft = self.get_canvas_coords_from_point_coords((0,data[0].get_static_draft()))[1]
-                    self._main_canvas.create_line(0,draft,self._canvas_dim[0],draft, fill="blue", dash=(4, 4))
+                    self._main_canvas.create_line(0,draft,self._canvas_dim[0]+500,draft, fill="blue", dash=(4, 4))
                     self._main_canvas.create_text(900,draft-10,text=str(get_num(data[0].get_name()))+' [m]',fill ='blue')
                 else:
                     pass
@@ -2668,7 +2689,9 @@ class Application():
                             'press_side': [self._new_pressure_side.get(), ''],
                             'structure_types':[self._structure_types, ''],
                             'zstar_optimization': [self._new_zstar_optimization.get(), ''],
-                            'puls buckling method': [self._new_puls_method.get(), '']}
+                            'puls buckling method': [self._new_puls_method.get(), ''],
+                            'puls boundary': [self._new_puls_panel_boundary.get(), ''],
+                            'puls stiffener end': [self._new_puls_stf_end_type.get(), '']}
             else:
                 obj_dict = pasted_structure.get_structure_prop()
 
@@ -3063,6 +3086,8 @@ class Application():
                 self._new_pressure_side.set('p')
             self._new_zstar_optimization.set(properties['zstar_optimization'][0])
             self._new_puls_method.set(properties['puls buckling method'][0])
+            self._new_puls_panel_boundary.set(properties['puls boundary'][0])
+            self._new_puls_stf_end_type.set(properties['puls stiffener end'][0])
 
     def get_highest_pressure(self, line, limit_state = 'ULS'):
         '''
@@ -3715,6 +3740,10 @@ class Application():
                 lines_prop['zstar_optimization'] = [self._new_zstar_optimization.get(), '']
             if 'puls buckling method' not in lines_prop.keys():
                 lines_prop['puls buckling method'] = [self._new_puls_method.get(), '']
+            if 'puls boundary' not in lines_prop.keys():
+                lines_prop['puls boundary'] = [self._new_puls_panel_boundary.get(), '']
+            if 'puls stiffener end' not in lines_prop.keys():
+                lines_prop['puls stiffener end'] = [self._new_puls_stf_end_type.get(), '']
             self._line_to_struc[line][0] = Structure(lines_prop)
             self._line_to_struc[line][1] = CalcScantlings(lines_prop)
             if imported['fatigue_properties'][line] is not None:
@@ -4151,6 +4180,8 @@ class Application():
 
         # adding values to the line dictionary. resetting first.
         for key, value in self._line_to_struc.items():
+            if self._line_to_struc[key][2] is not None:
+                self._line_to_struc[key][2].set_commmon_properties(returned_fatigue_prop)
             self._line_to_struc[key][1].need_recalc = True  # All lines need recalculations.
 
         self.update_frame()
