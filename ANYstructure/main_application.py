@@ -651,7 +651,7 @@ class Application():
                                                                                rely=prop_vert_start + 4.5 * delta_y)
         tk.Label(self._main_fr, text='Pressure side\n(p-plate, s-stf.):', bg=self._general_color) \
             .place(relx=ent_relx + 5 * geo_dx,
-                   rely=prop_vert_start + 4 * delta_y)
+                   rely=prop_vert_start + 4.3 * delta_y, relheight = 0.025)
 
         tk.Label(self._main_fr, text='PULS\nacceptance', bg=self._general_color, font = self._text_size['Text 7'])\
             .place(relx=ent_relx + 4.3*geo_dx, rely=prop_vert_start + 8 * delta_y, relwidth = 0.032)
