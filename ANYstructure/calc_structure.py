@@ -1518,10 +1518,10 @@ class PULSpanel():
         lengths = np.arange(1000,6000,100)
         spacings = np.arange(100,1000,50)
         thks = np.arange(5,50,1)
-        axstress =transsress1 = transsress2 = shearstress =  np.arange(0,200,10)
+        axstress =transsress1 = transsress2 = shearstress =  np.arange(-200,220,10)
         pressures = np.arange(0,0.5,0.01)
         now = time.time()
-        yields = np.array([235,265,315,355,390,420,460])
+        yields = np.array([235,265,315,355,355,355,390,420,460])
         for idx in range(batch_size):
             ''' Adding 'Stiffener type (L,T,F)': self.stf_type,  'Stiffener boundary': 'C',
                 'Stiff. Height': self.stf_web_height*1000, 'Web thick.': self.stf_web_thk*1000, 
@@ -1529,13 +1529,28 @@ class PULSpanel():
 
             this_id = 'run_' + str(idx) + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
             this_stf = random.choice(profiles)
-            boundary = random.choice(['Int', 'GL', 'GT'])
+            if random.choice([True, False]):
+                boundary = 'Int'
+            else:
+                boundary = random.choice(['GL', 'GT'])
+
+            if random.choice([True, True, False]):
+                stf_boundary = 'C'
+            else:
+                stf_boundary = 'S'
             yieldstress = np.random.choice(yields)
+            if random.choice([True, True, False]):
+                transstress1 = np.random.choice(transsress1)  # Using same value for trans1 and trans 2
+                transstress2 = transstress1
+            else:
+                transstress1 = np.random.choice(transsress1)
+                transstress2 = np.random.choice(transsress2)
+
             run_dict[this_id] = {'Identification': this_id, 'Length of panel': np.random.choice(lengths),
                                  'Stiffener spacing': np.random.choice(spacings),
                                  'Plate thickness': np.random.choice(thks), 'Number of primary stiffeners': 10,
                                  'Stiffener type (L,T,F)': this_stf['stf_type'][0],
-                                 'Stiffener boundary': random.choice(['C', 'S']),
+                                 'Stiffener boundary': stf_boundary,
                                  'Stiff. Height': this_stf['stf_web_height'][0]*1000,
                                  'Web thick.': this_stf['stf_web_thk'][0]*1000,
                                  'Flange width': 0 if  this_stf['stf_type'][0] == 'F'
@@ -1546,11 +1561,11 @@ class PULSpanel():
                                  'Modulus of elasticity': 210000.0, "Poisson's ratio": 0.3,
                                  'Yield stress plate':yieldstress, 'Yield stress stiffener': yieldstress,
                                  'Axial stress': 0 if boundary == 'GT' else np.random.choice(axstress),
-                                 'Trans. stress 1': 0 if boundary == 'GL' else np.random.choice(transsress1),
-                                 'Trans. stress 2': 0 if boundary == 'GL' else np.random.choice(transsress2),
+                                 'Trans. stress 1': 0 if boundary == 'GL' else transstress1,
+                                 'Trans. stress 2': 0 if boundary == 'GL' else transstress2,
                                  'Shear stress': np.random.choice(shearstress),
-                                 'Pressure (fixed)': np.random.choice(pressures),
-                                 'In-plane support': 'Int'}
+                                 'Pressure (fixed)': 0 if stf_boundary == 'S' else np.random.choice(pressures),
+                                 'In-plane support': boundary}
 
         self._all_to_run = run_dict
         self.run_all(store_results=True)
@@ -1569,7 +1584,7 @@ if __name__ == '__main__':
     import ANYstructure.example_data as ex
     # PULS = PULSpanel(ex.run_dict, puls_sheet_location=r'C:\Github\ANYstructure\ANYstructure\PULS\PulsExcel_new - Copy (1).xlsm')
     # PULS.run_all_multi()
-    PULS = PULSpanel(puls_sheet_location=r'C:\Github\ANYstructure\ANYstructure\PULS\PulsExcel_new - Copy (1).xlsm')
+    PULS = PULSpanel(puls_sheet_location=r'C:\Github\ANYstructure\ANYstructure\PULS\PulsExcel_new - generator.xlsm')
     for dummy in range(10):
         PULS.generate_random_results(batch_size=10000)
     # import ANYstructure.example_data as test

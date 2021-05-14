@@ -1137,7 +1137,7 @@ class Application():
                            'Text 7': 'Verdana ' + str(int(7 * self.text_scale)),
                            'Text 10': 'Verdana ' + str(int(10 * self.text_scale)),
                            'Text 7 bold': 'Verdana ' + str(int(7 * self.text_scale)) + ' bold'}
-        self.update_frame()
+        #self.update_frame()
 
     def toggle_select_multiple(self, event = None):
         if self._toggle_btn.config('relief')[-1] == 'sunken':
@@ -4126,7 +4126,6 @@ class Application():
         :param returned_structure:
         :return:
         '''
-
         self._new_stf_spacing.set(returned_structure[0])
         self._new_plate_thk.set(returned_structure[1])
         self._new_stf_web_h.set(returned_structure[2])

@@ -142,7 +142,10 @@ class PulsExcel():
                 if top_name != None:
                     current_top_row = top_name
                     return_dict[id][current_top_row] = {}
+                if name in return_dict[id][current_top_row].keys():
+                    name = name + ' 2'
                 return_dict[id][current_top_row][name] = [data, unit]
+
 
         return return_dict
 
