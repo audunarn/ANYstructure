@@ -221,11 +221,11 @@ class CreateOptGeoWindow():
                                                                                      y=start_y - 0.6 * dy)
         tk.Label(self._frame, text='Flange thk. [mm]', font='Verdana 7 bold').place(x=start_x + 6.97 * dx,
                                                                                     y=start_y - 0.6 * dy)
-        tk.Label(self._frame, text='Estimated running time for algorithm: ',
+        tk.Label(self._frame, text='Estimated running time for algorithm not calculated.',
                  font='Verdana 9 bold').place(x=start_x, y=start_y + 2.8 * dy)
-        self._runnig_time_label = tk.Label(self._frame, text='', font='Verdana 9 bold')
-        self._runnig_time_label.place(x=start_x + 2.7 * dx, y=start_y + 2.8 * dy)
-        tk.Label(self._frame, text='seconds ', font='Verdana 9 bold').place(x=start_x + 3.3 * dx, y=start_y + 2.8 * dy)
+        # self._runnig_time_label = tk.Label(self._frame, text='', font='Verdana 9 bold')
+        # self._runnig_time_label.place(x=start_x + 2.7 * dx, y=start_y + 2.8 * dy)
+        # tk.Label(self._frame, text='seconds ', font='Verdana 9 bold').place(x=start_x + 3.3 * dx, y=start_y + 2.8 * dy)
         self._result_label = tk.Label(self._frame, text='', font='Verdana 9 bold')
         self._result_label.place(x=start_x, y=start_y + 3.4 * dy)
 
@@ -312,7 +312,7 @@ class CreateOptGeoWindow():
         # self._new_algorithm.trace('w', self.update_running_time)
 
         self.running_time_per_item = 4e-05
-        self._runnig_time_label.config(text=str(self.get_running_time()))
+        #self._runnig_time_label.config(text=str(self.get_running_time()))
         self._ent_algorithm.place(x=start_x + dx * 10, y=start_y + dy)
         self.algorithm_random_label = tk.Label(self._frame, text='Number of trials')
         tk.Button(self._frame, text='algorith information', command=self.algorithm_info, bg='white') \
@@ -507,7 +507,7 @@ class CreateOptGeoWindow():
         contraints = (self._new_check_sec_mod.get(), self._new_check_min_pl_thk.get(),
                       self._new_check_shear_area.get(), self._new_check_buckling.get(),
                       self._new_check_fatigue.get(), self._new_check_slamming.get(),
-                      self._new_check_local_buckling.get())
+                      self._new_check_local_buckling.get(), False)
 
         self.pso_parameters = (self._new_swarm_size.get(), self._new_omega.get(), self._new_phip.get(),
                                self._new_phig.get(),self._new_maxiter.get(), self._new_minstep.get(),
@@ -815,10 +815,11 @@ class CreateOptGeoWindow():
         Estimate the running time of the algorithm.
         :return:
         '''
-        try:
-            self._runnig_time_label.config(text=str(self.get_running_time()))
-        except ZeroDivisionError:
-            pass  # _tkinter.TclError: pass
+        pass
+        # try:
+        #     self._runnig_time_label.config(text=str(self.get_running_time()))
+        # except ZeroDivisionError:
+        #     pass  # _tkinter.TclError: pass
 
     def get_upper_bounds(self):
         '''
@@ -895,7 +896,7 @@ class CreateOptGeoWindow():
                                               ctr_x + m * init_obj.get_web_thk() / 2,
                                               ctr_y - m * (init_obj.get_web_h() + init_obj.get_pl_thk())
                                               , fill=init_color, stipple=init_stipple)
-            if init_obj.get_stiffener_type() != 'L':
+            if init_obj.get_stiffener_type() not in ['L', 'L-bulb']:
                 self._canvas_opt.create_rectangle(ctr_x - m * init_obj.get_fl_w() / 2,
                                                   ctr_y - m * (init_obj.get_pl_thk() + init_obj.get_web_h()),
                                                   ctr_x + m * init_obj.get_fl_w() / 2,
@@ -922,7 +923,7 @@ class CreateOptGeoWindow():
                                               ctr_y - m * (
                                                   opt_obj.get_web_h() + opt_obj.get_pl_thk())
                                               , fill=opt_color, stipple=opt_stippe)
-            if init_obj.get_stiffener_type() != 'L':
+            if init_obj.get_stiffener_type() not in ['L', 'L-bulb']:
                 self._canvas_opt.create_rectangle(ctr_x - m * opt_obj.get_fl_w() / 2, ctr_y
                                                   - m * (
                                                       opt_obj.get_pl_thk() + opt_obj.get_web_h()),

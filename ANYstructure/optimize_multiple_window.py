@@ -29,7 +29,10 @@ def helper_harmonizer_multi(iterator):
         slamming_pressure = iterator['info'][slave_line]['slamming pressure']
         chk_calc_obj = iterator['info'][slave_line]['chk_calc_obj']
         master_x = list(iterator['x'])
-        x = master_x + [chk_calc_obj.get_span(), chk_calc_obj.get_lg()]
+        if iterator['info']['keep spacing']:
+            x = [chk_calc_obj.get_s()] + master_x[1:] + [chk_calc_obj.get_span(), chk_calc_obj.get_lg()]
+        else:
+            x = master_x + [chk_calc_obj.get_span(), chk_calc_obj.get_lg()]
 
         chk_any = op.any_constraints_all(x=x, obj=chk_calc_obj, lat_press=lateral_press,
                                          init_weight=float('inf'), side='p', chk=iterator['info']['checks'],
@@ -60,6 +63,7 @@ class CreateOptimizeMultipleWindow():
             self._fatigue_pressure = test.get_fatigue_pressures()
             self._fatigue_object = test.get_fatigue_object()
             image_dir = os.path.dirname(__file__)+'\\images\\'
+            self._active_lines = []
         else:
             self.app = app
             self._load_objects = app._load_dict
@@ -71,6 +75,7 @@ class CreateOptimizeMultipleWindow():
             self._line_to_struc = app._line_to_struc
             image_dir = app._root_dir + '\\images\\'
             self._root_dir = app._root_dir
+            self._active_lines = app._multiselect_lines
 
         self._frame = master
         self._frame.wm_title("Optimize structure")
@@ -265,6 +270,25 @@ class CreateOptimizeMultipleWindow():
         self._new_fl_thk_lower.set(round(15, 5))
         self._new_algorithm.set('anysmart')
         self._new_algorithm_random_trials.set(10000)
+        # Selection of constraints
+        self._new_check_sec_mod = tk.BooleanVar()
+        self._new_check_min_pl_thk = tk.BooleanVar()
+        self._new_check_shear_area = tk.BooleanVar()
+        self._new_check_buckling = tk.BooleanVar()
+        self._new_check_fatigue = tk.BooleanVar()
+        self._new_check_slamming = tk.BooleanVar()
+        self._new_check_local_buckling = tk.BooleanVar()
+        self._new_harmonizer = tk.BooleanVar()
+        self._keep_spacing = tk.BooleanVar()
+        self._new_check_sec_mod.set(True)
+        self._new_check_min_pl_thk.set(True)
+        self._new_check_shear_area.set(True)
+        self._new_check_buckling.set(True)
+        self._new_check_fatigue.set(True)
+        self._new_check_slamming.set(False)
+        self._new_check_local_buckling.set(True)
+        self._new_harmonizer.set(False)
+        self._keep_spacing.set(False)
 
         self._new_swarm_size.set(100)
         self._new_omega.set(0.5)
@@ -294,8 +318,9 @@ class CreateOptimizeMultipleWindow():
         self._new_fl_thk_lower.trace('w', self.update_running_time)
         self._new_algorithm_random_trials.trace('w', self.update_running_time)
         self._new_algorithm.trace('w', self.update_running_time)
+        self._keep_spacing.trace('w',self.trace_keep_spacing_check)
 
-        self.running_time_per_item = 4e-05*4
+        self.running_time_per_item = 1.009943181818182e-5
         self._runnig_time_label.config(text=str(self.get_running_time()))
         tk.Label(self._frame, text='Select algorithm type --->', font='Verdana 8 bold').place(x=start_x + dx * 8,
                                                                                    y=start_y + 1 * dy)
@@ -318,23 +343,8 @@ class CreateOptimizeMultipleWindow():
                   command=self.open_example_file, bg='white', font='Verdana 10')\
             .place(x=start_x+dx*15,y=10)
 
-        # Selection of constraints
-        self._new_check_sec_mod = tk.BooleanVar()
-        self._new_check_min_pl_thk = tk.BooleanVar()
-        self._new_check_shear_area = tk.BooleanVar()
-        self._new_check_buckling = tk.BooleanVar()
-        self._new_check_fatigue = tk.BooleanVar()
-        self._new_check_slamming = tk.BooleanVar()
-        self._new_check_local_buckling = tk.BooleanVar()
-        self._new_harmonizer = tk.BooleanVar()
-        self._new_check_sec_mod.set(True)
-        self._new_check_min_pl_thk.set(True)
-        self._new_check_shear_area.set(True)
-        self._new_check_buckling.set(True)
-        self._new_check_fatigue.set(True)
-        self._new_check_slamming.set(False)
-        self._new_check_local_buckling.set(True)
-        self._new_harmonizer.set(False)
+
+
 
 
         start_y, start_x, dy = 530, 200, 35
@@ -345,9 +355,12 @@ class CreateOptimizeMultipleWindow():
         tk.Label(self._frame, text='Check for fatigue (RP-C203)').place(x=start_x + dx * 9.7, y=start_y + 8 * dy)
         tk.Label(self._frame, text='Check for bow slamming').place(x=start_x + dx * 9.7, y=start_y + 9 * dy)
         tk.Label(self._frame, text='Check for local stf. buckling').place(x=start_x + dx * 9.7, y=start_y + 10 * dy)
-        tk.Label(self._frame, text='Check to harmonize results. Same stiffener and plate dimensions. \n'
+        tk.Label(self._frame, text='Check to harmonize results. Same stiffener and plate dimensions '
                                    '(defined by largest in opt).', font='Verdana 10 bold')\
-            .place(x=start_x + dx * +9.3, y=start_y - 10.5 * dy)
+            .place(x=start_x + dx * +8.5, y=start_y - 10.7 * dy)
+        tk.Label(self._frame, text='Check to skip iterating over spacing (respective line spacing used).',
+                 font='Verdana 10 bold')\
+            .place(x=start_x + dx * +8.5, y=start_y - 10 * dy)
 
         tk.Checkbutton(self._frame,variable=self._new_check_sec_mod).place(x=start_x+dx*12,y=start_y+4*dy)
         tk.Checkbutton(self._frame, variable=self._new_check_min_pl_thk).place(x=start_x+dx*12,y=start_y+5*dy)
@@ -357,15 +370,14 @@ class CreateOptimizeMultipleWindow():
         tk.Checkbutton(self._frame, variable=self._new_check_slamming).place(x=start_x + dx * 12, y=start_y + 9 * dy)
         tk.Checkbutton(self._frame, variable=self._new_check_local_buckling).place(x=start_x + dx * 12,
                                                                                    y=start_y + 10 * dy)
-        tk.Checkbutton(self._frame, variable=self._new_harmonizer).place(x=start_x + dx * 9, y=start_y - 10.5 * dy)
+        tk.Checkbutton(self._frame, variable=self._new_harmonizer).place(x=start_x + dx * 8, y=start_y - 10.7 * dy)
+        tk.Checkbutton(self._frame, variable=self._keep_spacing).place(x=start_x + dx * +8, y=start_y - 10 * dy)
 
         self._toggle_btn = tk.Button(self._frame, text="Iterate predefiened stiffeners", relief="raised",
                                      command=self.toggle, bg = 'salmon')
 
         self._toggle_btn.place(x=start_x+dx*8.2, y=start_y - dy * 13)
         self._toggle_object, self._filez = None, None
-
-
 
         self.draw_properties()
 
@@ -376,10 +388,17 @@ class CreateOptimizeMultipleWindow():
                                         variable=self.progress_count)
         self.progress_bar.place(x=start_x+dx*10.5,y=start_y-dy*11.5)
 
-        self._active_lines = []
+
         self.controls()
         self.draw_select_canvas()
         self._harmonizer_data = {}
+
+    def trace_keep_spacing_check(self, *args):
+        if self._keep_spacing.get():
+            self._ent_spacing_lower.configure({"background": "red"})
+            self._ent_delta_spacing.configure({"background": "red"})
+            self._ent_spacing_upper.configure({"background": "red"})
+
 
     def selected_algorithm(self, event):
         '''
@@ -492,7 +511,7 @@ class CreateOptimizeMultipleWindow():
         contraints = (self._new_check_sec_mod.get(), self._new_check_min_pl_thk.get(),
                       self._new_check_shear_area.get(), self._new_check_buckling.get(),
                       self._new_check_fatigue.get(), self._new_check_slamming.get(),
-                      self._new_check_local_buckling.get())
+                      self._new_check_local_buckling.get(), False)
         
         self.pso_parameters = (self._new_swarm_size.get(),self._new_omega.get(),self._new_phip.get(),
                                self._new_phig.get(),self._new_maxiter.get(),self._new_minstep.get(),
@@ -511,6 +530,10 @@ class CreateOptimizeMultipleWindow():
                 fat_obj = test.get_fatigue_object()
                 fat_press = test.get_fatigue_pressures()
                 slamming_pressure = test.get_slamming_pressure()
+                fat_press = ((fat_press['p_ext']['loaded'], fat_press['p_ext']['ballast'],
+                              fat_press['p_ext']['part']),
+                             (fat_press['p_int']['loaded'], fat_press['p_int']['ballast'],
+                              fat_press['p_int']['part']))
 
             else:
                 input_pressures = self.get_pressure_input(line)
@@ -592,6 +615,7 @@ class CreateOptimizeMultipleWindow():
                                          'chk_calc_obj': self._opt_results[slave_line][1]}
         iter_run_info['lines'] = list(self._opt_results.keys())
         iter_run_info['checks'] = to_check
+        iter_run_info['keep spacing'] = self._keep_spacing.get()
         for x_check in all_ok_checks:
             iterator.append({'x': x_check, 'info': iter_run_info})
 
@@ -612,8 +636,12 @@ class CreateOptimizeMultipleWindow():
 
         if lowest_area != float('inf'):
             for line in self._opt_results.keys():
-                this_x = list(lowest_x) + [self._line_to_struc[line][0].get_span(),
-                                           self._line_to_struc[line][0].get_lg()]
+                if self._keep_spacing:
+                    this_x = [self._line_to_struc[line][0].get_s()] + list(lowest_x)[1:] + \
+                             [self._line_to_struc[line][0].get_span(), self._line_to_struc[line][0].get_lg()]
+                else:
+                    this_x = list(lowest_x) + [self._line_to_struc[line][0].get_span(),
+                                               self._line_to_struc[line][0].get_lg()]
 
                 self._opt_results[line][0] = opt.create_new_structure_obj(self._line_to_struc[line][0], this_x)
                 self._opt_results[line][1] = opt.create_new_calc_obj(self._line_to_struc[line][1], this_x)[0]
@@ -752,7 +780,11 @@ class CreateOptimizeMultipleWindow():
         Return an numpy array of upper bounds.
         :return: 
         '''
-        return np.array([self._new_spacing_upper.get() / 1000, self._new_pl_thk_upper.get() / 1000,
+        if self._keep_spacing:
+            spacing = obj.get_s()
+        else:
+            spacing = self._new_spacing_lower.get() / 1000
+        return np.array([spacing, self._new_pl_thk_upper.get() / 1000,
                          self._new_web_h_upper.get() / 1000, self._new_web_thk_upper.get() / 1000,
                          self._new_fl_w_upper.get() / 1000, self._new_fl_thk_upper.get() / 1000,
                          obj.get_span(), obj.get_lg()])
@@ -762,7 +794,11 @@ class CreateOptimizeMultipleWindow():
         Return an numpy array of lower bounds.
         :return: 
         '''
-        return np.array([self._new_spacing_lower.get() / 1000, self._new_pl_thk_lower.get() / 1000,
+        if self._keep_spacing:
+            spacing = obj.get_s()
+        else:
+            spacing = self._new_spacing_lower.get() / 1000
+        return np.array([spacing, self._new_pl_thk_lower.get() / 1000,
                          self._new_web_h_lower.get() / 1000, self._new_web_thk_lower.get() / 1000,
                          self._new_fl_w_lower.get() / 1000, self._new_fl_thk_lower.get() / 1000,
                          obj.get_span(), obj.get_lg()])
@@ -820,7 +856,7 @@ class CreateOptimizeMultipleWindow():
             self._canvas_opt.create_rectangle(ctr_x - m * init_obj.get_web_thk() / 2, ctr_y - m * init_obj.get_pl_thk(),
                                              ctr_x + m * init_obj.get_web_thk() / 2, ctr_y - m * (init_obj.get_web_h() + init_obj.get_pl_thk())
                                              , fill=init_color, stipple=init_stipple)
-            if init_obj.get_stiffener_type() != 'L':
+            if init_obj.get_stiffener_type() not in ['L', 'L-bulb']:
                 self._canvas_opt.create_rectangle(ctr_x - m * init_obj.get_fl_w() / 2, ctr_y - m * (init_obj.get_pl_thk() + init_obj.get_web_h()),
                                                  ctr_x + m * init_obj.get_fl_w() / 2,
                                                  ctr_y - m * (init_obj.get_pl_thk() + init_obj.get_web_h() + init_obj.get_fl_thk()),
@@ -846,7 +882,7 @@ class CreateOptimizeMultipleWindow():
                                              ctr_y - m * (
                                              opt_obj.get_web_h() + opt_obj.get_pl_thk())
                                              , fill=opt_color, stipple=opt_stippe)
-            if init_obj.get_stiffener_type() != 'L':
+            if init_obj.get_stiffener_type() not in ['L', 'L-bulb']:
                 self._canvas_opt.create_rectangle(ctr_x - m * opt_obj.get_fl_w() / 2, ctr_y
                                                  - m * (
                                                  opt_obj.get_pl_thk() + opt_obj.get_web_h()),
@@ -1112,7 +1148,6 @@ class CreateOptimizeMultipleWindow():
         self.draw_select_canvas()
         self.update_running_time()
 
-
     def mid_click(self,event):
         '''
         Event when right click.
@@ -1184,9 +1219,7 @@ class CreateOptimizeMultipleWindow():
             self.app.on_close_opt_multiple_window(to_return)
             messagebox.showinfo(title='Return info', message='Returning: '+str(list(to_return.keys())) +
                                                              '\nLines withot results are not returned.')
-        # except IndexError:
-        #     messagebox.showinfo(title='Nothing to return', message='No results to return.')
-        #     return
+
         self._frame.destroy()
 
     def toggle(self, found_files = None, obj = None, iterating = False):

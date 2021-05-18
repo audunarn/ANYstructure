@@ -34,7 +34,7 @@ class CreateStructureWindow():
         self._canvas_dim = (500, 450)
         self._canvas_struc = tk.Canvas(self._frame, width=self._canvas_dim[0], height=self._canvas_dim[1],
                                        background='azure', relief='groove', borderwidth=2)
-        self.structure_types = ['T','L','FB']
+        self.structure_types = ['T','L', 'L-bulb','FB']
         self._canvas_struc.place(x=10, y=300)
         tk.Label(self._frame, text='-- Define structure properties here --', font='Verdana 15 bold').place(x=10, y=10)
         
@@ -251,7 +251,7 @@ class CreateStructureWindow():
 
         self._canvas_struc.create_text(250, 55, text='Flange: '+ str(fl_w ) + 'x'+ str(fl_thk ),
                                   font='Verdana 10 bold',fill='red')
-        if self._new_stiffener_type.get()=='L':
+        if self._new_stiffener_type.get() in ['L', 'L-bulb']:
             self._canvas_struc.create_rectangle(ctr_x - m * web_thk / 2, ctr_y- m * (pl_thk + web_h),ctr_x + m * fl_w,
                                                ctr_y - m * (pl_thk + web_h + fl_thk),fill='red', stipple=init_stipple)
         else:
@@ -284,7 +284,7 @@ class CreateStructureWindow():
     def section_choose(self, event = None):
         ''' Choosing a section. '''
         chosen_section = self._new_section.get()
-        # TODO en feil her.AttributeError: 'NoneType' object has no attribute 'name'. Seksjoner vises ikke riktig i neddroppsmeny.
+
         for section in self._section_objects:
             if chosen_section == section.__str__():
                 self._new_web_h.set(section.stf_web_height*1000)
@@ -388,6 +388,16 @@ class Section:
     @stf_flange_thk.setter
     def stf_flange_thk(self, value):
         self._stf_flange_thk = value
+
+    def return_puls_input(self):
+        '''
+        Returns as input good for PULS
+        :return:
+        '''
+        return {'Stiffener type (L,T,F)': self.stf_type,  'Stiffener boundary': 'C',
+                'Stiff. Height': self.stf_web_height*1000,
+                   'Web thick.': self.stf_web_thk*1000, 'Flange width': self.stf_flange_width*1000,
+                          'Flange thick.': self.stf_flange_thk*1000}
 
 
 if __name__ == '__main__':

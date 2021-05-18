@@ -12,6 +12,7 @@ import ANYstructure.make_grid_numpy as grid
 import ANYstructure.grid_window as grid_window
 from ANYstructure.helper import *
 import math, decimal
+import ANYstructure.optimize as op
 import ANYstructure.optimize_window as opw
 import ANYstructure.optimize_multiple_window as opwmult
 import ANYstructure.optimize_geometry as optgeo
@@ -22,7 +23,7 @@ import ANYstructure.load_factor_window as load_factors
 from _tkinter import TclError
 import multiprocessing
 from ANYstructure.report_generator import LetterMaker
-import os.path
+import os.path, os
 import ctypes
 import ANYstructure.sesam_interface as sesam
 from matplotlib import pyplot as plt
@@ -57,7 +58,7 @@ class Application():
         # Main frame for the application
         self._main_fr = tk.Frame(parent,
                                  background=self._general_color)
-        self._main_fr.place(in_=parent, relwidth=1, relheight = 1)
+        self._main_fr.place(in_=parent, relwidth=1, relheight = 0.99)
         # Top open/save/new
         menu = tk.Menu(parent)
         parent.config(menu=menu)
@@ -72,6 +73,8 @@ class Application():
                               'CTRL-M Move selected point)\n' \
                               'CTRL-Q New line (right click two points)\n' \
                               'CTRL-S Assign structure prop. to line\n' \
+                              'CTRL-A Select all lines (change param)\n' \
+                              'CTRL-T Select all structure types (selected)\n' \
                               'CTRL-DELETE Delete structure prop. from line\n' \
                               'DELETE Delete active line and/or point \n' \
                               'CTRL-E Copy line properties from active line\n' \
@@ -120,7 +123,7 @@ class Application():
                            int(base_canvas_dim[1] *1)]
         self._canvas_base_origo = [50, base_canvas_dim[1] - 50] # 50 bottom left location of the canvas, (0,0)
 
-        self._canvas_draw_origo = [self._canvas_base_origo[0], self._canvas_base_origo[1]+60]
+        self._canvas_draw_origo = [self._canvas_base_origo[0], self._canvas_base_origo[1]+10]
         self._previous_drag_mouse = list(self._canvas_draw_origo)
 
         # Setting the fonts for all items in the application.
@@ -157,9 +160,9 @@ class Application():
         # These frames are just visual separations in the GUI.
         frame_horizontal, frame_vertical = 0.73, 0.258
         tk.Frame(self._main_fr, height=3, bg="black", colormap="new")\
-            .place(relx=0, rely=0.73, relwidth=1)
+            .place(relx=0, rely=frame_horizontal, relwidth=1)
         tk.Frame(self._main_fr, width=3, bg="black", colormap="new")\
-            .place(relx=0.258,rely=0 * 1, relheight=1)
+            .place(relx=frame_vertical,rely=0 * 1, relheight=1)
 
         # Point frame
         self._pt_frame = tk.Frame(self._main_canvas, width=100, height=100, bg="black", relief='raised')
@@ -209,7 +212,13 @@ class Application():
         self._logger = {'added': list(), 'deleted': list()}  # used to log operations for geometry operations, to be used for undo/redo
         self.__returned_load_data = None # Temporary data for returned loads from the load window.
         self.__copied_line_prop = None  # Used to copy line properties to another.
-
+        self._PULS_results = None # If a puls run is avaliable, it is stored here.
+        # Used to select parameter
+        self._stuctural_definition = ['mat_yield', 'span', 'spacing', 'plate_thk', 'stf_web_height', 'stf_web_thk',
+                                       'stf_flange_width', 'stf_flange_thk', 'structure_type', 'stf_type',
+                                       'sigma_y1', 'sigma_y2', 'sigma_x', 'tau_xy', 'plate_kpp', 'stf_kps','stf_km1',
+                                       'stf_km2', 'stf_km3', 'press_side', 'structure_types', 'zstar_optimization',
+                                      'puls buckling method', 'puls boundary', 'puls stiffener end']
         self._p1_p2_select = False
         self._line_is_active = False # True when a line is clicked
         self._active_line = '' # Name of the clicked point
@@ -217,6 +226,7 @@ class Application():
         self._active_point = '' # Name of the clicked point
         self.controls() # Function to activate mouse clicks
         self._line_point_to_point_string = [] # This one ensures that a line is not created on top of a line
+        self._multiselect_lines = []  # A list used to select many lines. Used to set properties.
 
         # Initsializing the calculation grid used for tank definition
         self._grid_dimensions = [self._canvas_base_origo[1] + 1, base_canvas_dim[0] - self._canvas_base_origo[0] + 1]
@@ -224,6 +234,7 @@ class Application():
 
         self._main_grid  = grid.Grid(self._grid_dimensions[0], self._grid_dimensions[1])
         self._grid_calc = None
+        self.text_widget = None
 
         # These sets the location where entries are placed.
         ent_x = 0.09375
@@ -279,7 +290,7 @@ class Application():
 
         # Check boxes
         self._new_shortcut_backdrop = tk.BooleanVar()
-        self._new_shortcut_backdrop.set(True)
+        self._new_shortcut_backdrop.set(False)
         self._new_colorcode_beams = tk.BooleanVar()
         self._new_colorcode_beams.set(False)
         self._new_colorcode_plates = tk.BooleanVar()
@@ -302,6 +313,14 @@ class Application():
         self._new_colorcode_tauxy.set(False)
         self._new_colorcode_structure_type = tk.BooleanVar()
         self._new_colorcode_structure_type.set(False)
+        self._new_toggle_var = tk.StringVar()
+        self._new_toggle_puls = tk.BooleanVar()
+        self._new_toggle_puls.set(False)
+        self._new_puls_uf = tk.DoubleVar()
+        self._new_puls_uf.set(0.87)
+        self._new_scale_stresses = tk.BooleanVar()
+        self._new_scale_stresses.set(False)
+
 
 
         line_start, line_x = point_start+0.09, 0.005208333
@@ -313,22 +332,21 @@ class Application():
         tk.Label(self._main_fr, text='To point number:',font="Text 9", bg = self._general_color)\
             .place(relx=line_x, rely=line_start + delta_y)
         tk.Checkbutton(self._main_fr, variable = self._new_shortcut_backdrop, command = self.update_frame)\
-            .place(relx = 0.26, rely=0)
+            .place(relx = 0.26, y=0)
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_beams, command = self.on_color_code_check)\
-            .place(relx = 0.26, rely=0.02)
+            .place(relx = 0.26, y=20)
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_plates, command = self.on_color_code_check)\
-            .place(relx = 0.26, rely=0.02*2)
+            .place(relx = 0.26, y=40)
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_pressure, command = self.on_color_code_check)\
-            .place(relx = 0.26, rely=0.02*3)
+            .place(relx = 0.26, y=60)
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_utilization, command = self.on_color_code_check)\
-            .place(relx = 0.26, rely=0.02*4)
+            .place(relx = 0.26, y=80)
 
-
-        tk.Label(self._main_fr, text='Check to see avaliable shortcuts', font="Text 9").place(relx = 0.27, rely=0)
-        tk.Label(self._main_fr, text='Color beam prop.', font="Text 9").place(relx = 0.27, rely=0.02)
-        tk.Label(self._main_fr, text='Color plate thk.', font="Text 9").place(relx = 0.27, rely=0.02*2)
-        tk.Label(self._main_fr, text='Color line pressure', font="Text 9").place(relx = 0.27, rely=0.02*3)
-        tk.Label(self._main_fr, text='Color utilization', font="Text 9").place(relx = 0.27, rely=0.02*4)
+        tk.Label(self._main_fr, text='Check to see avaliable shortcuts', font="Text 9").place(relx = 0.27, y=0)
+        tk.Label(self._main_fr, text='Color beam prop.', font="Text 9").place(relx = 0.27, y=20)
+        tk.Label(self._main_fr, text='Color plate thk.', font="Text 9").place(relx = 0.27, y=40)
+        tk.Label(self._main_fr, text='Color line pressure', font="Text 9").place(relx = 0.27, y=60)
+        tk.Label(self._main_fr, text='Color buckling utilization', font="Text 9").place(relx = 0.27, y=80)
 
         tk.Entry(self._main_fr, textvariable=self._new_line_p1, width=int(ent_width * 1),
                  bg = self._entry_color, fg = self._entry_text_color)\
@@ -429,11 +447,59 @@ class Application():
         tk.Label(self._main_fr, text='Select structure type:', font=self._text_size['Text 9 bold'],
                  bg = self._general_color)\
             .place(relx=types_start, rely=prop_vert_start + 9.5 * delta_y)
-        self.add_stucture = tk.Button(self._main_fr, text='Add structure to line', command=self.new_structure,
+
+        self.add_stucture = tk.Button(self._main_fr, text='Add structure/properties to line \n'
+                                                          '-- new or replace existing --', command=self.new_structure,
                                       font = self._text_size['Text 10 bold'],
                                       bg = self._button_bg_color, fg = self._button_fg_color)
-        self.add_stucture.place(relx=types_start+ delta_x*5.7, rely=prop_vert_start+15*delta_y, relwidth = 0.1,
+        self.add_stucture.place(relx=types_start+ delta_x*4.2, rely=prop_vert_start+15*delta_y, relwidth = 0.14,
                                 relheight = 0.04)
+
+        tk.Checkbutton(self._main_fr, variable = self._new_scale_stresses, command = self.on_color_code_check)\
+            .place(relx = types_start+ delta_x*4.2, rely=prop_vert_start+14*delta_y)
+        tk.Label(self._main_fr, text='Scale stresses when changing prop.', font=self._text_size['Text 9'],
+                 bg = self._general_color)\
+            .place(relx = types_start+ delta_x*4.7, rely=prop_vert_start+14*delta_y, relwidth = 0.12)
+        # Toggle buttons
+        self._toggle_btn = tk.Button(self._main_fr, text="Toggle select\nmultiple", relief="raised",
+                                     command=self.toggle_select_multiple, bg = self._button_bg_color)
+        self._toggle_change_param = tk.Button(self._main_fr, text="Change multi.\nparam.", relief="raised",
+                                     command=self.toggle_set_variable, bg = self._button_bg_color)
+        self._toggle_param_to_change = None
+        self._toggle_btn.place(relx=types_start+ delta_x*4.2, rely=prop_vert_start+12.3*delta_y, relwidth = 0.045,
+                                relheight = 0.03)
+        self._toggle_change_param.place(relx=types_start+ delta_x*6, rely=prop_vert_start+12.3*delta_y, relwidth = 0.045,
+                                relheight = 0.03)
+
+        self._toggle_choose = tk.OptionMenu(self._main_fr, self._new_toggle_var, *self._stuctural_definition,
+                                            command = self.update_frame)
+        self._toggle_choose.place(relx=types_start+ delta_x*7.8, rely=prop_vert_start+12.3*delta_y, relwidth = 0.047,
+                                relheight = 0.03)
+
+        # PULS interface
+        self._toggle_btn_puls = tk.Button(self._main_fr, text="Use PULS\n"
+                                                              "results", relief="raised",
+                                     command=self.toggle_puls_run, bg = self._button_bg_color)
+        self._puls_run_all = tk.Button(self._main_fr, text='PULS run or\nupdate all lines', relief="raised",
+                                     command=self.puls_run_all_lines, bg = self._button_bg_color)
+        self._puls_run_one = tk.Button(self._main_fr, text="PULS\nRun one line", relief="raised",
+                                     command=self.puls_run_one_line, bg = self._button_bg_color)
+        self._ent_puls_uf = tk.Entry(self._main_fr, textvariable=self._new_puls_uf,
+                                        width=int(ent_width * 1),
+                                         bg = self._entry_color, fg = self._entry_text_color)
+        self._new_puls_uf.trace('w', self.trace_acceptance_change)
+        self._toggle_btn_puls.place(relx=types_start+ delta_x*4.2, rely=prop_vert_start+9.5*delta_y, relwidth = 0.045,
+                                relheight = 0.035)
+        self._puls_run_all.place(relx=types_start+ delta_x*6, rely=prop_vert_start+9.5*delta_y, relwidth = 0.045,
+                                relheight = 0.035)
+        self._puls_run_one.place(relx=types_start+ delta_x*7.8, rely=prop_vert_start+9.5*delta_y, relwidth = 0.047,
+                                relheight = 0.035)
+        self._ent_puls_uf.place(relx=types_start+ delta_x*7.8, rely=prop_vert_start+11*delta_y, relwidth = 0.02,
+                                relheight = 0.035)
+
+        tk.Label(self._main_fr, text='Set PULS utilization factor:', font=self._text_size['Text 7'],
+                 bg = self._general_color).place(relx=types_start+ delta_x*4.2, rely=prop_vert_start+11*delta_y,
+                                                 relwidth = 0.08, relheight = 0.03)
 
         # --- main variable to define the structural properties ---
         self._new_material = tk.DoubleVar()
@@ -457,8 +523,20 @@ class Application():
         self._new_plate_kpp = tk.DoubleVar()
         self._new_stf_type = tk.StringVar()
         self._new_pressure_side = tk.StringVar()
+        self._new_puls_method = tk.StringVar()
+        self._new_puls_panel_boundary = tk.StringVar()
+        self._new_puls_stf_end_type = tk.StringVar()
+
 
         # Setting default values to tkinter variables
+        self._new_material.set(355)
+        self._new_field_len.set(4)
+        self._new_stf_spacing.set(750)
+        self._new_plate_thk.set(18)
+        self._new_stf_web_h.set(400)
+        self._new_sft_web_t.set(12)
+        self._new_stf_fl_w.set(150)
+        self._new_stf_fl_t.set(20)
         self._new_sigma_y1.set(80)
         self._new_sigma_y2.set(80)
         self._new_sigma_x.set(50)
@@ -472,6 +550,10 @@ class Application():
         self.option_meny_structure_type_trace(event='GENERAL_INTERNAL_WT')
         self._new_stf_type.set('T')
         self._new_pressure_side.set('p')
+        self._new_puls_method.set('ultimate')
+        self._new_puls_panel_boundary.set('Int')
+        self._new_puls_stf_end_type.set('C')
+
 
         # --- main entries and labels to define the structural properties ---
         ent_width = 12 #width of entries
@@ -526,10 +608,17 @@ class Application():
                                      bg = self._entry_color, fg = self._entry_text_color)
         self._ent_tauxy = tk.Entry(self._main_fr, textvariable=self._new_tauxy, width=int(7*1),
                                    bg = self._entry_color, fg = self._entry_text_color)
-        self._ent_stf_type = tk.Entry(self._main_fr, textvariable=self._new_stf_type, width=int(7*1),
-                                      bg = self._entry_color, fg = self._entry_text_color)
+        # self._ent_stf_type = tk.Entry(self._main_fr, textvariable=self._new_stf_type, width=int(7*1),
+        #                               bg = self._entry_color, fg = self._entry_text_color)
+        self._ent_stf_type = tk.OptionMenu(self._main_fr, self._new_stf_type, *['T', 'FB', 'L', 'L-bulb'])
         self._ent_structure_type = tk.OptionMenu(self._main_fr, self._new_stucture_type,
                                                  command = self.option_meny_structure_type_trace, *self._options_type)
+        self._ent_puls_method = tk.OptionMenu(self._main_fr, self._new_puls_method, *['buckling', 'ultimate'])
+        self._ent_puls_panel_boundary = tk.OptionMenu(self._main_fr, self._new_puls_panel_boundary,
+                                                      *['Int', 'GL', 'GT'])
+        self._ent_puls_stf_end_type = tk.OptionMenu(self._main_fr, self._new_puls_stf_end_type,
+                                                      *['C', 'S'])
+
 
 
         loc_y = -0.000185185
@@ -560,8 +649,20 @@ class Application():
                                                                              rely=prop_vert_start + 4.5 * delta_y)
         tk.Label(self._main_fr, text='stf type', bg=self._general_color).place(relx=ent_relx + 4*geo_dx,
                                                                                rely=prop_vert_start + 4.5 * delta_y)
-        tk.Label(self._main_fr, text='Pressure side (p-plate, s-stf.):', bg=self._general_color) \
-            .place(relx=0.052083333, rely=prop_vert_start + 8 * delta_y)
+        tk.Label(self._main_fr, text='Pressure side\n(p-plate, s-stf.):', bg=self._general_color) \
+            .place(relx=ent_relx + 5 * geo_dx,
+                   rely=prop_vert_start + 4.3 * delta_y, relheight = 0.025)
+
+        tk.Label(self._main_fr, text='PULS\nacceptance', bg=self._general_color, font = self._text_size['Text 7'])\
+            .place(relx=ent_relx + 4.3*geo_dx, rely=prop_vert_start + 8 * delta_y, relwidth = 0.032)
+        tk.Label(self._main_fr, text='PULS\nInt-integrated\nGL-free left/right\nGT-free top/bottom',
+                 bg=self._general_color, font = self._text_size['Text 7'])\
+            .place(relx=ent_relx - 0.3*geo_dx, rely=prop_vert_start + 7.5 * delta_y, relwidth = 0.05)
+
+        tk.Label(self._main_fr, text='PULS\nContinous\nSniped', bg=self._general_color,
+                 font = self._text_size['Text 7'])\
+            .place(relx=ent_relx + 2.3*geo_dx, rely=prop_vert_start + 7.5 * delta_y, relwidth = 0.037)
+
 
         tk.Label(self._main_fr, text='span', bg = self._general_color).place(relx=ent_relx + 0*geo_dx,
                                                                              rely=prop_vert_start +loc_y * delta_y)
@@ -612,7 +713,10 @@ class Application():
         self._ent_sigma_y2.place(relx=ent_relx + geo_dx, rely=ent_rely+drely)
         self._ent_sigma_x.place(relx=ent_relx + 2*geo_dx, rely=ent_rely+drely)
         self._ent_tauxy.place(relx=ent_relx + 3*geo_dx, rely=ent_rely+drely)
-        self._ent_stf_type.place(relx=ent_relx + 4*geo_dx, rely=ent_rely+drely)
+        self._ent_stf_type.place(relx=ent_relx + 4*geo_dx, rely=ent_rely+0.9*drely)
+        self._ent_puls_method.place(relx=ent_relx + 5.45*geo_dx, rely=prop_vert_start + 8 * delta_y, relwidth = 0.045)
+        self._ent_puls_panel_boundary.place(relx=ent_relx + 1.5*geo_dx, rely=prop_vert_start + 8 * delta_y, relwidth = 0.025)
+        self._ent_puls_stf_end_type.place(relx=ent_relx + 3.5*geo_dx, rely=prop_vert_start + 8 * delta_y, relwidth = 0.025)
 
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_sigmax, command = self.on_color_code_check)\
             .place(relx=ent_relx + 0*geo_dx, rely=ent_rely+1.5*drely)
@@ -625,17 +729,18 @@ class Application():
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_structure_type, command = self.on_color_code_check)\
             .place(relx=ent_relx + 4*geo_dx, rely=ent_rely+1.5*drely)
         tk.Label(text='<-- check to color-\ncode stresses', font=self._text_size['Text 9'],
-                 bg=self._general_color).place(relx=ent_relx + 4.5*geo_dx, rely=ent_rely+1.5*drely, relwidth = 0.06)
+                 bg=self._general_color).place(relx=ent_relx + 4.5*geo_dx, rely=ent_rely+1.45*drely, relwidth = 0.06,
+                                               relheight = 0.03)
 
-        self._ent_structure_type.place(relx=types_start, rely=ent_rely+3.5*drely, relwidth = 0.11)
+        self._ent_structure_type.place(relx=types_start, rely=ent_rely+3.3*drely, relwidth = 0.10)
 
 
         self._structure_types_label = \
-            tk.Label(textvariable = self._new_stucture_type_label, font = self._text_size['Text 9 bold'],
+            tk.Label(textvariable = self._new_stucture_type_label, font = self._text_size['Text 8'],
                      bg = self._general_color)\
-                .place(relx=ent_x+delta_x, rely=prop_vert_start +11*delta_y, relwidth = 0.12)
+                .place(relx=types_start, rely=prop_vert_start +11.4*delta_y, relwidth = 0.11, relheight = 0.02)
 
-        self._ent_pressure_side.place(relx=types_start+6*delta_x , rely=prop_vert_start + 8 * delta_y)
+        self._ent_pressure_side.place(relx=ent_relx + 5.5*geo_dx, rely=prop_vert_start + 5.4 * delta_y)
 
         try:
             img_file_name = 'img_stf_button.gif'
@@ -930,6 +1035,92 @@ class Application():
                   bg = self._button_bg_color, fg = self._button_fg_color)\
            .place(relx=lc_x + delta_x * 4,rely=lc_y + delta_y*18, relwidth = 0.05)
 
+        # PULS result information
+        self._puls_information_button = tk.Button(self._main_fr, text='PULS results for line',
+                                                  command=self.on_puls_results_for_line,
+                 font = self._text_size['Text 10 bold'], height = 1,
+                  bg = self._button_bg_color, fg = self._button_fg_color)
+        self._puls_information_button.place(relx=lc_x + delta_x * 0,rely=lc_y + delta_y*18, relwidth = 0.08)
+
+        self.update_frame()
+
+    def toggle_puls_run(self):
+        if self._toggle_btn_puls.config('relief')[-1] == 'sunken':
+            self._toggle_btn_puls.config(relief="raised")
+            self._toggle_btn_puls.config(bg=self._button_bg_color)
+            self._toggle_btn_puls.config(text='Use PULS\n'
+                                         'results')
+            self._new_toggle_puls.set(False)
+        else:
+            self._toggle_btn_puls.config(relief="sunken")
+            self._toggle_btn_puls.config(bg='orange')
+            self._toggle_btn_puls.config(text = 'PULS result\n'
+                                           'override set')
+            self._new_toggle_puls.set(True)
+
+        self.update_frame()
+
+    def puls_run_all_lines(self, line_given = None):
+
+        if self._PULS_results is None:
+            self._PULS_results = PULSpanel()
+        if self._PULS_results.puls_sheet_location is None or not os.path.isfile(self._PULS_results.puls_sheet_location):
+            tk.messagebox.showerror('No PULS excel sheet located', 'Set location of PULS excel sheet.\n'
+                                                                            'Note that PULS excel may require 32 bit '
+                                                                            'office.\n\n'
+                                                                         'A sheet may be provided but does not exist'
+                                                                            ' in :\n'
+                                                                         + self._PULS_results.puls_sheet_location +
+                                    '\n\n A file dialogue will pop up after this message.')
+            self._PULS_results.puls_sheet_location= \
+                tk.filedialog.askopenfilename(parent=self._main_fr,title='Set location of PULS excel sheet.')
+        if self._PULS_results.puls_sheet_location == '':
+            tk.messagebox.showerror('No valid PULS sheet', 'No excel sheet was provided. Cannot run PULS.\n'
+                                                           'Note that PULS excel may require 32 bit office.')
+            return
+
+        dict_to_run = {}
+        result_lines = list(self._PULS_results.get_run_results().keys())
+
+        if line_given == None:
+            current_button = self._puls_run_all
+            for line, data in self._line_to_struc.items():
+                if line not in result_lines:
+                    dict_to_run[line] = data[1].get_puls_input()
+                    dict_to_run[line]['Identification'] = line
+                    dict_to_run[line]['Pressure (fixed)'] = self.get_highest_pressure(line)['normal']/1e6
+        else:
+            current_button = self._puls_run_one
+            if line_given == '':
+                return
+            if line_given not in result_lines:
+                dict_to_run[line_given] = self._line_to_struc[line_given][1].get_puls_input()
+                dict_to_run[line_given]['Identification'] = line_given
+                dict_to_run[line_given]['Pressure (fixed)'] = self.get_highest_pressure(line_given)['normal'] / 1e6
+
+
+        if len(dict_to_run) > 0:
+
+            current_button.config(relief = 'sunken')
+            self._PULS_results.set_all_to_run(dict_to_run)
+            self._PULS_results.run_all()
+            current_button.config(relief='raised')
+            current_button.config(text='PULS run or\nupdate all lines' if line_given == None else 'PULS\nRun one line')
+            current_button.config(bg=self._button_bg_color)
+            for key, value in self._line_to_struc.items():
+                value[1].need_recalc = True
+        else:
+            tk.messagebox.showinfo('Results avaliable', 'PULS results is already avaliable for this line or no '
+                                                        'lines need update.')
+
+        self.update_frame()
+        
+    def trace_puls_uf(self):
+        if self._PULS_results is not None:
+            pass
+
+    def puls_run_one_line(self):
+        self.puls_run_all_lines(self._active_line)
         self.update_frame()
 
     def resize(self, event):
@@ -946,6 +1137,78 @@ class Application():
                            'Text 7': 'Verdana ' + str(int(7 * self.text_scale)),
                            'Text 10': 'Verdana ' + str(int(10 * self.text_scale)),
                            'Text 7 bold': 'Verdana ' + str(int(7 * self.text_scale)) + ' bold'}
+        #self.update_frame()
+
+    def toggle_select_multiple(self, event = None):
+        if self._toggle_btn.config('relief')[-1] == 'sunken':
+            self._toggle_btn.config(relief="raised")
+            self._toggle_btn.config(bg=self._button_bg_color)
+            self._multiselect_lines = []
+            self._toggle_btn.config(text='Toggle select\n'
+                                         'multiple')
+        else:
+            self._toggle_btn.config(relief="sunken")
+            self._toggle_btn.config(bg='orange')
+            self._toggle_btn.config(text = 'select lines')
+        self.update_frame()
+
+    def toggle_set_variable(self):
+        if self._toggle_btn.config('relief')[-1] == "raised":
+            tk.messagebox.showerror('Toggle select not chosen.', 'Toggle select button not pressed.\n'
+                                                                 'To change a parameter select a variable, \n'
+                                                                 'set the value you want to change and \n'
+                                                                 'press Change multi. param.')
+            return
+
+        var_to_set = self._new_toggle_var.get()
+        if var_to_set == '':
+            tk.messagebox.showerror('Select variable', 'Select a variable to change\n'
+                                                       'in the drop down menu.')
+            return
+        # if not self._line_is_active:
+        #     tk.messagebox.showerror('Select line', 'Click a line first.')
+        obj_dict = {'mat_yield': self._new_material.get,
+                    'span': self._new_field_len.get,
+                    'spacing': self._new_stf_spacing.get,
+                    'plate_thk': self._new_plate_thk.get,
+                    'stf_web_height': self._new_stf_web_h.get,
+                    'stf_web_thk': self._new_sft_web_t.get,
+                    'stf_flange_width': self._new_stf_fl_w.get,
+                    'stf_flange_thk': self._new_stf_fl_t.get,
+                    'structure_type': self._new_stucture_type,
+                    'stf_type': self._new_stf_type.get,
+                    'sigma_y1': self._new_sigma_y1.get,
+                    'sigma_y2': self._new_sigma_y2.get,
+                    'sigma_x': self._new_sigma_x.get,
+                    'tau_xy': self._new_tauxy.get,
+                    'plate_kpp': self._new_plate_kpp,
+                    'stf_kps': self._new_stf_kps.get,
+                    'stf_km1': self._new_stf_km1.get,
+                    'stf_km2': self._new_stf_km2.get,
+                    'stf_km3': self._new_stf_km3.get,
+                    'press_side': self._new_pressure_side.get,
+                    #'structure_types': self._structure_types,
+                    'zstar_optimization': self._new_zstar_optimization.get,
+                    'puls buckling method': self._new_puls_method.get,
+                    'puls boundary': self._new_puls_panel_boundary.get,
+                    'puls stiffener end': self._new_puls_stf_end_type.get}
+
+
+        set_var = obj_dict[var_to_set]()
+        if var_to_set == 'mat_yield':
+            set_var = set_var* 1e6
+        elif var_to_set in ['spacing','plate_thk','stf_web_height','stf_web_thk',
+                            'stf_flange_width','stf_flange_thk']:
+            set_var = set_var/1000
+
+        for line in self._multiselect_lines:
+            self._active_line = line
+            self._line_is_active = True
+            if self._active_line in self._line_to_struc.keys():
+                dict = self._line_to_struc[self._active_line][1].get_structure_prop()
+                dict[var_to_set][0] = set_var
+
+                self.new_structure(toggle_multi=dict)
 
     def gui_load_combinations(self,event):
         '''
@@ -1226,7 +1489,16 @@ class Application():
         else:
             pass
 
-    def update_frame(self, event = None):
+    def trace_acceptance_change(self, *args):
+        try:
+            self.update_frame()
+            for key, val in self._line_to_struc.items():
+                val[1].need_recalc = True
+        except (TclError, ZeroDivisionError):
+            pass
+
+    def update_frame(self, event = None, *args):
+
         state = self.get_color_and_calc_state()
         self.draw_results(state=state)
         self.draw_canvas(state=state)
@@ -1238,11 +1510,9 @@ class Application():
         return_dict = {'colors': {}, 'section_modulus': {}, 'thickness': {}, 'shear_area': {}, 'buckling': {},
                        'fatigue': {}, 'pressure_uls': {}, 'pressure_fls': {},
                        'struc_obj': {}, 'scant_calc_obj': {}, 'fatigue_obj': {}, 'utilization': {}, 'slamming': {},
-                       'color code': {}}
+                       'color code': {}, 'PULS colors': {}}
         line_iterator, slamming_pressure = [], None
         return_dict['slamming'][current_line] = {}
-
-
 
         if current_line is None and active_line_only:
             line_iterator = [self._active_line, ]
@@ -1336,6 +1606,41 @@ class Application():
                 return_dict['colors'][current_line] = {'buckling': color_buckling, 'fatigue': color_fatigue,
                                                        'section': color_sec, 'shear': color_shear,
                                                        'thickness': color_thk}
+                if self._PULS_results != None:
+                    puls_uf_all = []
+                    res = self._PULS_results.get_puls_line_results(current_line)
+
+                    if res is not None:
+                        geo_problem = False
+                        if type(res['Ultimate capacity']['Actual usage Factor'][0]) != str:
+                            col_ult = 'green' if (res['Ultimate capacity'][
+                                                     'Actual usage Factor'][0] / self._new_puls_uf.get()) < 1 else 'red'
+                        else:
+                            geo_problem = True
+                            col_ult = 'red'
+                        if res['Buckling strength']['Actual usage Factor'][0] is not None:
+                            col_buc = 'green' if (res['Buckling strength'][
+                                                     'Actual usage Factor'][0] / self._new_puls_uf.get()) < 1 else 'red'
+                        else:
+                            col_buc = 'red'
+                        if geo_problem:
+                            loc_geom = 'red'
+                        else:
+                            loc_geom = 'green' if all([val[0] == 'Ok' for val in
+                                                       res['Local geom req (PULS validity limits)']
+                                               .values()]) else 'red'
+                        csr_geom = 'green' if all(
+                            [val[0] == 'Ok' for val in res['CSR-Tank requirements (primary stiffeners)']
+                            .values()]) else 'red'
+                        return_dict['PULS colors'][current_line] = {'ultimate': col_ult, 'buckling': col_buc,
+                                                                    'local geometry': loc_geom, 'csr': csr_geom}
+                    else:
+                        return_dict['PULS colors'][current_line] = {'ultimate': 'black', 'buckling': 'black',
+                                                                    'local geometry': 'black', 'csr': 'black'}
+                else:
+                    return_dict['PULS colors'][current_line] = {'ultimate': 'black', 'buckling': 'black',
+                                                                'local geometry': 'black', 'csr': 'black'}
+
                 return_dict['buckling'][current_line] = buckling
                 return_dict['pressure_uls'][current_line] = design_pressure
                 return_dict['pressure_fls'][current_line] = {'p_int': p_int, 'p_ext': p_ext}
@@ -1361,6 +1666,7 @@ class Application():
                 sec_util = 0 if min(sec_mod) == 0 else min_sec_mod / min(sec_mod)
                 buc_util = 1 if float('inf') in buckling else max(buckling[0:5])
                 return_dict['utilization'][current_line] = {'buckling': buc_util,
+                                                            'PULS buckling': buc_util,
                                                             'fatigue': fat_util,
                                                             'section': sec_util,
                                                             'shear': shear_util,
@@ -1425,10 +1731,26 @@ class Application():
                          for line in self._line_to_struc.keys()]
             all_utils = np.unique(all_utils).tolist()
             if len(all_utils) >1:
-                util_map = np.arange(min(all_utils), max(all_utils) + (max(all_utils) - min(all_utils)) / 10,
-                                     (max(all_utils) - min(all_utils)) / 10)
+                # util_map = np.arange(min(all_utils), max(all_utils) + (max(all_utils) - min(all_utils)) / 10,
+                #                      (max(all_utils) - min(all_utils)) / 10)
+                util_map =  np.arange(0, 1.1, 0.1)
+
             else:
                 util_map = all_utils
+
+            if self._PULS_results is not None:
+                #puls_util_map = self._PULS_results.all_uf
+                puls_util_map = list()
+                for key, val in self._line_to_struc.items():
+                    puls_util_map.append(self._PULS_results.get_utilization(key, val[0].get_puls_method(),
+                                                                            acceptance = self._new_puls_uf.get()))
+                # puls_util_map  = np.arange(min(puls_util_map), max(puls_util_map) + (max(puls_util_map) -
+                #                                                                      min(puls_util_map)) / 10,
+                #                      (max(puls_util_map) - min(puls_util_map)) / 10)
+                puls_util_map  = np.arange(0, 1.1, 0.1)
+            else:
+                puls_util_map = None
+
             sig_x = np.unique([self._line_to_struc[line][1].get_sigma_x() for line in self._line_to_struc.keys()]).tolist()
             if len(sig_x) > 1:
                 sig_x_map = np.arange(min(sig_x), max(sig_x) + (max(sig_x) - min(sig_x)) / 10,
@@ -1464,6 +1786,7 @@ class Application():
                                          'highest pressure': highest_pressure, 'lowest pressure': lowest_pressure,
                                          'pressure map': press_map, 'all pressures':all_pressures,
                                          'all utilizations': all_utils, 'utilization map': util_map,
+                                         'PULS utilization map': puls_util_map,
                                          'max sigma x': max(sig_x), 'min sigma x': min(sig_x), 'sigma x map': sig_x_map,
                                          'max sigma y1': max(sig_y1), 'min sigma y1': min(sig_y1),
                                          'sigma y1 map': sig_y1_map,
@@ -1476,9 +1799,20 @@ class Application():
             line_color_coding = {}
             cmap_sections = plt.get_cmap('jet')
             thk_sort_unique = return_dict['color code']['all thicknesses']
-            uf_sort_unique = return_dict['color code']['all utilizations']
             structure_type_unique = return_dict['color code']['structure types map']
             for line, line_data in self._line_to_struc.items():
+                if self._PULS_results is None:
+                    puls_color = 'black'
+                elif self._PULS_results.get_utilization(line, self._line_to_struc[line][1].get_puls_method(),
+                                                        self._new_puls_uf.get()) == None:
+                    puls_color = 'black'
+                else:
+                    puls_color = matplotlib.colors.rgb2hex(
+                                               cmap_sections(self._PULS_results.get_utilization(
+                                                   line, self._line_to_struc[line][1].get_puls_method(),
+                                                   self._new_puls_uf.get())))
+
+
                 line_color_coding[line] = {'plate': matplotlib.colors.rgb2hex(cmap_sections(thk_sort_unique.index(round(line_data[1]
                                                                               .get_pl_thk(),10))/len(thk_sort_unique))),
                                            'section': matplotlib.colors.rgb2hex(cmap_sections(sec_in_model[line_data[1]
@@ -1490,7 +1824,10 @@ class Application():
                                            'pressure': 'black' if all_pressures in [[0],[0,1]] else matplotlib.colors.rgb2hex(cmap_sections(
                                                self.get_highest_pressure(line)['normal']/highest_pressure)),
                                            'utilization': matplotlib.colors.rgb2hex(cmap_sections(
-                                               max(list(return_dict['utilization'][line].values()))/max(all_utils))),
+                                               max(list(return_dict['utilization'][line].values())))),
+
+                                           'PULS utilization': puls_color,
+
                                            'sigma x': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_x()/
                                                                                               max(sig_x))),
                                            'sigma y1': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_y1()/
@@ -1499,8 +1836,6 @@ class Application():
                                                                                                max(sig_y2))),
                                            'tau xy': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_tau_xy()/
                                                                                              max(tau_xy)))}
-
-
                 return_dict['color code']['lines'] = line_color_coding
         return return_dict
 
@@ -1512,9 +1847,9 @@ class Application():
         self._main_canvas.delete('all')
         color = 'black' #by default
 
-        self._main_canvas.create_line(self._canvas_draw_origo[0], 0, self._canvas_draw_origo[0], self._canvas_dim[1]+50,
+        self._main_canvas.create_line(self._canvas_draw_origo[0], 0, self._canvas_draw_origo[0], self._canvas_dim[1]+500,
                                      stipple= 'gray50')
-        self._main_canvas.create_line(0, self._canvas_draw_origo[1], self._canvas_dim[0], self._canvas_draw_origo[1],
+        self._main_canvas.create_line(0, self._canvas_draw_origo[1], self._canvas_dim[0] +500, self._canvas_draw_origo[1],
                                      stipple='gray50')
         self._main_canvas.create_text(self._canvas_draw_origo[0] - 30*1,
                                      self._canvas_draw_origo[1] + 12* 1, text='(0,0)',
@@ -1529,7 +1864,9 @@ class Application():
 
         # Drawing shortcut information if selected.
         if self._new_shortcut_backdrop.get() == True:
-            self._main_canvas.create_text(860, 80, text = self._shortcut_text, font=self._text_size["Text 8"],
+            self._main_canvas.create_text(self._main_canvas.winfo_width()*0.87, self._main_canvas.winfo_height()*0.12,
+                                          text = self._shortcut_text,
+                                          font=self._text_size["Text 8"],
                                           fill = 'black')
 
         # drawing the point dictionary
@@ -1574,7 +1911,23 @@ class Application():
                 coord2 = self.get_point_canvas_coord('point' + str(value[1]))
                 if not chk_box_active and state != None:
                     try:
-                        color = 'red' if 'red' in state['colors'][line].values() else 'green'
+                        if self._toggle_btn_puls.config('relief')[-1] == 'sunken':
+                            if 'black' in state['PULS colors'][line].values():
+                                color = 'black'
+                            else:
+                                col1, col2 = state['PULS colors'][line]['buckling'], \
+                                             state['PULS colors'][line]['ultimate']
+
+                                if self._line_to_struc[line][1].get_puls_method() == 'buckling':
+                                    color = 'red' if any([col1 == 'red', col2 == 'red']) else 'green'
+                                else:
+                                    color = col2
+
+                                if color == 'green':
+                                    color = 'green' if all([state['colors'][line][key] == 'green' for key in
+                                                            ['fatigue', 'section', 'shear','thickness']]) else 'red'
+                        else:
+                            color = 'red' if 'red' in state['colors'][line].values() else 'green'
                     except (KeyError, TypeError):
                         color = 'black'
                 elif chk_box_active and state != None and self._line_to_struc != {}:
@@ -1595,6 +1948,11 @@ class Application():
                     if self._new_line_name.get():
                         self._main_canvas.create_text(coord1[0]-20 + vector[0] / 2 + 5, coord1[1] + vector[1] / 2+10,
                                                      text='l.' + str(get_num(line)), font="Text 8", fill = 'black')
+                if line in self._multiselect_lines:
+                    self._main_canvas.create_text(coord1[0] + vector[0] / 2 +5, coord1[1] + vector[1] / 2 -10,
+                                                  text=self._new_toggle_var.get(),
+                                                  font=self._text_size["Text 8 bold"],
+                                                  fill='orange')
 
         # drawing waterline
         if len(self._load_dict) != 0:
@@ -1602,7 +1960,7 @@ class Application():
 
                 if data[0].is_static():
                     draft = self.get_canvas_coords_from_point_coords((0,data[0].get_static_draft()))[1]
-                    self._main_canvas.create_line(0,draft,self._canvas_dim[0],draft, fill="blue", dash=(4, 4))
+                    self._main_canvas.create_line(0,draft,self._canvas_dim[0]+500,draft, fill="blue", dash=(4, 4))
                     self._main_canvas.create_text(900,draft-10,text=str(get_num(data[0].get_name()))+' [m]',fill ='blue')
                 else:
                     pass
@@ -1674,8 +2032,21 @@ class Application():
                                               fill=matplotlib.colors.rgb2hex(cmap_sections(press/highest_pressure)),
                                               anchor="nw")
 
-        elif self._new_colorcode_utilization.get() == True and self._line_to_struc != {}:
-            all_utils = cc_state['all utilizations']
+        elif all([self._new_colorcode_utilization.get() == True,
+                  self._line_to_struc != {}, self._new_toggle_puls.get() != True]):
+            all_utils = cc_state['utilization map']
+            for idx, uf in enumerate(cc_state['utilization map']):
+                self._main_canvas.create_text(11, 111 + 20 * idx, text=str('UF = ' +str(round(uf,1))),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill='black',
+                                              anchor="nw")
+                self._main_canvas.create_text(10, 110 + 20 * idx, text=str('UF = ' +str(round(uf,1))),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill=matplotlib.colors.rgb2hex(cmap_sections(uf/max(all_utils))),
+                                              anchor="nw")
+        elif all([self._new_colorcode_utilization.get() == True,
+                  self._line_to_struc != {}, self._new_toggle_puls.get() == True]):
+            all_utils = cc_state['PULS utilization map']
             for idx, uf in enumerate(cc_state['utilization map']):
                 self._main_canvas.create_text(11, 111 + 20 * idx, text=str('UF = ' +str(round(uf,1))),
                                               font=self._text_size["Text 10 bold"],
@@ -1760,8 +2131,11 @@ class Application():
             else:
                 color = state['color code']['lines'][line]['pressure']
 
-        elif self._new_colorcode_utilization.get() == True:
+        elif self._new_colorcode_utilization.get() == True and not self._new_toggle_puls.get():
             color = state['color code']['lines'][line]['utilization']
+
+        elif self._new_colorcode_utilization.get() == True and self._new_toggle_puls.get():
+            color = state['color code']['lines'][line]['PULS utilization']
 
         elif self._new_colorcode_sigmax.get() == True:
             color = state['color code']['lines'][line]['sigma x']
@@ -1792,12 +2166,13 @@ class Application():
 
         '''
         self._prop_canvas.delete('all')
-
+        canvas_width = self._prop_canvas.winfo_width()
+        canvas_height = self._prop_canvas.winfo_height()
         if self._active_line in self._line_to_struc:
 
             # printing the properties to the active line
             if self._line_is_active:
-                self._prop_canvas.create_text([175*1, 120*1],
+                self._prop_canvas.create_text([canvas_width*0.239726027, canvas_height*0.446096654],
                                              text=self._line_to_struc[self._active_line][0],
                                              font = self._text_size["Text 9"])
 
@@ -1811,7 +2186,7 @@ class Application():
                 starty = 150*1
                 structure_obj = self._line_to_struc[self._active_line][0]
 
-                self._prop_canvas.create_text([330*1, 15*1],
+                self._prop_canvas.create_text([canvas_width/2-canvas_width/20, canvas_height/20],
                                              text ='SELECTED: '+str(self._active_line),
                                              font=self._text_size["Text 10 bold"], fill='red')
                 spacing = structure_obj.get_s()*mult
@@ -1824,7 +2199,7 @@ class Application():
                 self._prop_canvas.create_line(startx,starty,startx+spacing,starty, width = plate_thk)
                 self._prop_canvas.create_line(startx+spacing*0.5,starty,startx+spacing*0.5,starty-stf_web_height,
                                              width=stf_web_thk )
-                if structure_obj.get_stiffener_type() != 'L':
+                if structure_obj.get_stiffener_type() not in ['L', 'L-bulb']:
                     self._prop_canvas.create_line(startx+spacing*0.5-stf_flange_width/2,starty-stf_web_height,
                                              startx + spacing * 0.5 + stf_flange_width / 2, starty - stf_web_height,
                                              width=stf_flange_thk)
@@ -1835,8 +2210,9 @@ class Application():
 
                 # load applied to this line
                 deltax = 160*1
-                stl_x = 500*1
-                stl_y = 170*1
+                stl_x = canvas_width*0.684931507
+                stl_y = canvas_height*0.63197026
+
                 self._prop_canvas.create_text([stl_x,stl_y], text='Applied static/dynamic loads:',
                                              font=self._text_size["Text 7 bold"])
                 count = 0
@@ -1859,14 +2235,11 @@ class Application():
                                                      font=self._text_size["Text 7"])
                         count += 10
             else:
-                self._prop_canvas.create_text([200*1, 50*1],
+                self._prop_canvas.create_text([canvas_width*0.4, height*0.185873606],
                                              text='No line is selected. Click on a line to show properies',
                                              font=self._text_size['Text 9 bold'])
         else:
             pass
-            # self._prop_canvas.create_text([160*1, 20*1],
-            #                              text='Properties displayed here (select line):',
-            #                              font=self._text_size['Text 9 bold'])
 
     def draw_results(self, state = None):
         '''
@@ -1883,8 +2256,10 @@ class Application():
             return
 
         if self._line_is_active:
+            x, y, dx, dy = 0, 15, 15, 14
+
             if self._active_line in self._line_to_struc:
-                x, y, dx, dy = 0, 15, 15, 14
+
                 m3_to_mm3 = float(math.pow(1000,3))
                 m2_to_mm2 = float(math.pow(1000, 2))
 
@@ -1970,33 +2345,92 @@ class Application():
                                                font=self._text_size["Text 9 bold"],anchor='nw', fill=color_thk)
 
                 # buckling results
-
-                self._result_canvas.create_text([x * 1, (y+9*dy) * 1],
-                                               text='Buckling results DNV-RP-C201:',
-                                               font=self._text_size["Text 9 bold"], anchor='nw')
-                if sum(buckling)==0:
-                    self._result_canvas.create_text([x * 1, (y+10*dy) * 1],
-                                                   text='No buckling results', font=self._text_size["Text 9 bold"],
-                                                   anchor='nw', fill=color_buckling)
-                else:
-                    if buckling[0]==float('inf'):
-                        res_text = 'Plate resistance not ok (equation 6.12). '
+                if self._PULS_results != None and self._toggle_btn_puls.config('relief')[-1] == 'sunken':
+                    line_results = state['PULS colors'][self._active_line]
+                    puls_res = self._PULS_results.get_puls_line_results(self._active_line)
+                    if puls_res != None:
+                        geo_problem = False
+                        if type(puls_res['Ultimate capacity']['Actual usage Factor'][0]) != str:
+                            ult_text = 'Ultimate capacity usage factor:  ' + str(puls_res['Ultimate capacity']
+                                                                                 ['Actual usage Factor'][
+                                                                                     0] / self._new_puls_uf.get())
+                        else:
+                            geo_problem = True
+                            ult_text = puls_res['Ultimate capacity']['Actual usage Factor'][0]
+                        if puls_res['Buckling strength']['Actual usage Factor'][0] != None:
+                            buc_text = 'Buckling capacity usage factor:  ' + str(puls_res['Buckling strength']
+                                                                                 ['Actual usage Factor'][
+                                                                                     0] / self._new_puls_uf.get())
+                        else:
+                            buc_text = 'Buckling capacity usage factor:  None - geometric issue'
+                        if geo_problem:
+                            loc_geom = 'Not ok: '
+                            for key, value in puls_res['Local geom req (PULS validity limits)'].items():
+                                if value[0] == 'Not ok':
+                                    loc_geom += key + ' '
+                        else:
+                            loc_geom = 'Ok' if all(
+                                [val[0] == 'Ok' for val in puls_res['Local geom req (PULS validity limits)']
+                                .values()]) else 'Not ok'
+                        csr_geom = 'Ok' if all(
+                            [val[0] == 'Ok' for val in puls_res['CSR-Tank requirements (primary stiffeners)']
+                            .values()]) else 'Not ok'
+                        loc_geom = 'Local geom req (PULS validity limits):   ' + loc_geom
+                        csr_geom = 'CSR-Tank requirements (primary stiffeners):   ' + csr_geom
+                        self._result_canvas.create_text([x * 1, y + 8.5 * dy], text='PULS results',
+                                                        font=self._text_size['Text 9 bold'],
+                                                        anchor='nw',
+                                                        fill='black')
+                        self._result_canvas.create_text([x * 1, y + 9.5 * dy], text=ult_text,
+                                                        font=self._text_size['Text 9 bold'],
+                                                        anchor='nw',
+                                                        fill=line_results['ultimate'])
+                        self._result_canvas.create_text([x * 1, y + 10.5 * dy], text=buc_text,
+                                                        font=self._text_size['Text 9 bold'],
+                                                        anchor='nw',
+                                                        fill=line_results['buckling'])
+                        self._result_canvas.create_text([x * 1, y + 11.5 * dy], text=loc_geom,
+                                                        font=self._text_size['Text 9 bold'],
+                                                        anchor='nw',
+                                                        fill=line_results['local geometry'])
+                        self._result_canvas.create_text([x * 1, y + 12.5 * dy], text=csr_geom,
+                                                        font=self._text_size['Text 9 bold'],
+                                                        anchor='nw',
+                                                        fill=line_results['csr'])
                     else:
-                        if obj_structure.get_side() == 'p':
-                            res_text = '|eq 7.19: '+str(buckling[0])+' |eq 7.50: '+str(buckling[1])+ ' |eq 7.51: '+ \
-                                         str(buckling[2])+' |7.52: '+str(buckling[3])+ '|eq 7.53: '+str(buckling[4])+\
-                                         ' |z*: '+str(buckling[5])
-                        elif obj_structure.get_side() == 's':
-                            res_text = '|eq 7.19: '+str(buckling[0])+' |eq 7.54: '+str(buckling[1])+' |eq 7.55: '+ \
-                                         str(buckling[2])+' |7.56: '+str(buckling[3])+ '|eq 7.57: '+str(buckling[4])+ \
-                                         ' |z*: '+str(buckling[5])
-                    self._result_canvas.create_text([x * 1, (y+10*dy) * 1],
-                                               text=res_text,font=self._text_size["Text 9 bold"],
-                                               anchor='nw',fill=color_buckling)
+                        self._result_canvas.create_text([x * 1, y + 9 * dy],
+                                                        text='PULS results not avaliable for this line.\n'
+                                                             'Run or update lines.',
+                                                        font=self._text_size['Text 9 bold'],
+                                                        anchor='nw',
+                                                        fill='Orange')
+                else:
+                    self._result_canvas.create_text([x * 1, (y+9*dy) * 1],
+                                                   text='Buckling results DNV-RP-C201:',
+                                                   font=self._text_size["Text 9 bold"], anchor='nw')
+                    if sum(buckling)==0:
+                        self._result_canvas.create_text([x * 1, (y+10*dy) * 1],
+                                                       text='No buckling results', font=self._text_size["Text 9 bold"],
+                                                       anchor='nw', fill=color_buckling)
+                    else:
+                        if buckling[0]==float('inf'):
+                            res_text = 'Plate resistance not ok (equation 6.12). '
+                        else:
+                            if obj_structure.get_side() == 'p':
+                                res_text = '|eq 7.19: '+str(buckling[0])+' |eq 7.50: '+str(buckling[1])+ ' |eq 7.51: '+ \
+                                             str(buckling[2])+' |7.52: '+str(buckling[3])+ '|eq 7.53: '+str(buckling[4])+\
+                                             ' |z*: '+str(buckling[5])
+                            elif obj_structure.get_side() == 's':
+                                res_text = '|eq 7.19: '+str(buckling[0])+' |eq 7.54: '+str(buckling[1])+' |eq 7.55: '+ \
+                                             str(buckling[2])+' |7.56: '+str(buckling[3])+ '|eq 7.57: '+str(buckling[4])+ \
+                                             ' |z*: '+str(buckling[5])
+                        self._result_canvas.create_text([x * 1, (y+10*dy) * 1],
+                                                   text=res_text,font=self._text_size["Text 9 bold"],
+                                                   anchor='nw',fill=color_buckling)
 
                 # fatigue results
 
-                self._result_canvas.create_text([x * 1, (y+12*dy) * 1],
+                self._result_canvas.create_text([x * 1, (y+14*dy) * 1],
                                                 text='Fatigue results (DNVGL-RP-C203): ',
                                                 font=self._text_size["Text 9 bold"], anchor='nw')
 
@@ -2004,28 +2438,22 @@ class Application():
                     if state['fatigue'][current_line]['damage'] is not None:
                         damage = state['fatigue'][current_line]['damage']
                         dff = state['fatigue'][current_line]['dff']
-                        self._result_canvas.create_text([x * 1, (y + 13 * dy) * 1],
+                        self._result_canvas.create_text([x * 1, (y + 15 * dy) * 1],
                                                         text='Total damage (DFF not included): '+str(round(damage,3)) +
                                                              '  |  With DFF = '+str(dff)+' --> Damage: '+
                                                              str(round(damage*dff,3)),
                                                         font=self._text_size["Text 9 bold"], anchor='nw',
                                                         fill=color_fatigue)
                     else:
-                        self._result_canvas.create_text([x * 1, (y + 13 * dy) * 1],
+                        self._result_canvas.create_text([x * 1, (y + 15 * dy) * 1],
                                                         text='Total damage: NO RESULTS ',
                                                         font=self._text_size["Text 9 bold"],
                                                         anchor='nw')
                 else:
-                    self._result_canvas.create_text([x * 1, (y + 13 * dy) * 1],
+                    self._result_canvas.create_text([x * 1, (y + 15 * dy) * 1],
                                                     text='Total damage: NO RESULTS ',
                                                     font=self._text_size["Text 9 bold"],
                                                     anchor='nw')
-            else:
-                pass
-        else:
-            self._result_canvas.create_text([200*1, 20*1],
-                                           text='The results are shown here (select line):',
-                                           font=self._text_size["Text 10 bold"])
 
     def report_generate(self, autosave = False):
         '''
@@ -2208,7 +2636,7 @@ class Application():
         except TclError:
             messagebox.showinfo(title='Input error', message='Input must be a line number.')
 
-    def new_structure(self, event = None, pasted_structure = None, multi_return = None):
+    def new_structure(self, event = None, pasted_structure = None, multi_return = None, toggle_multi = None):
         '''
         This method maps the structure to the line when clicking "add structure to line" button.
         The result is put in a dictionary. Key is line name and value is the structure object.
@@ -2221,6 +2649,7 @@ class Application():
             [4] load combinations result (currently not used)
         :return:
         '''
+
         if all([pasted_structure == None, multi_return == None]):
             if any([self._new_stf_spacing.get()==0, self._new_plate_thk.get()==0, self._new_stf_web_h.get()==0,
                     self._new_sft_web_t.get()==0]):
@@ -2233,9 +2662,10 @@ class Application():
         if self._line_is_active or multi_return != None:
             # structure dictionary: name of line : [ 0.Structure class, 1.calc scantling class,
             # 2.calc fatigue class, 3.load object, 4.load combinations result ]
-            if multi_return != None:
+            if multi_return is not None:
                 obj_dict = multi_return[1].get_structure_prop()
-
+            elif toggle_multi is not None:
+                obj_dict = toggle_multi
             elif pasted_structure == None:
                 obj_dict = {'mat_yield': [self._new_material.get()*1e6, 'Pa'],
                             'span': [self._new_field_len.get(), 'm'],
@@ -2258,7 +2688,10 @@ class Application():
                             'stf_km3': [self._new_stf_km3.get(), ''],
                             'press_side': [self._new_pressure_side.get(), ''],
                             'structure_types':[self._structure_types, ''],
-                            'zstar_optimization': [self._new_zstar_optimization.get(), '']}
+                            'zstar_optimization': [self._new_zstar_optimization.get(), ''],
+                            'puls buckling method': [self._new_puls_method.get(), ''],
+                            'puls boundary': [self._new_puls_panel_boundary.get(), ''],
+                            'puls stiffener end': [self._new_puls_stf_end_type.get(), '']}
             else:
                 obj_dict = pasted_structure.get_structure_prop()
 
@@ -2275,8 +2708,19 @@ class Application():
                     self._compartments_listbox.delete(0, 'end')
             else:
                 prev_type = self._line_to_struc[self._active_line][0].get_structure_type()
+                prev_str_obj, prev_calc_obj = copy.deepcopy(self._line_to_struc[self._active_line][0]),\
+                                              copy.deepcopy(self._line_to_struc[self._active_line][1])
+
                 self._line_to_struc[self._active_line][0].set_main_properties(obj_dict)
                 self._line_to_struc[self._active_line][1].set_main_properties(obj_dict)
+
+                if self._new_scale_stresses.get():
+                    self._line_to_struc[self._active_line][0] = \
+                        op.create_new_structure_obj(prev_str_obj,
+                                                    self._line_to_struc[self._active_line][0].get_tuple())
+                    self._line_to_struc[self._active_line][1] = \
+                        op.create_new_calc_obj(prev_calc_obj,
+                                                    self._line_to_struc[self._active_line][1].get_tuple())[0]
                 self._line_to_struc[self._active_line][1].need_recalc = True
                 if self._line_to_struc[self._active_line][2] is not None:
                     self._line_to_struc[self._active_line][2].set_main_properties(obj_dict)
@@ -2293,8 +2737,12 @@ class Application():
         else:
             pass
 
+        if self._PULS_results != None:
+            self._PULS_results.result_changed(self._active_line)
+
         for line, obj in self._line_to_struc.items():
             obj[1].need_recalc = True
+
 
         self.update_frame()
         #state = self.get_color_and_calc_state()
@@ -2500,8 +2948,9 @@ class Application():
                         for load in loads:
                             if line in self._load_dict[load][1]:
                                 self._load_dict[load][1].pop(self._load_dict[load][1].index(line))
-
-
+                    # Removing from puls results
+                    if self._PULS_results is not None:
+                        self._PULS_results.result_changed(line)
 
                 self.update_frame()
             else:
@@ -2635,6 +3084,10 @@ class Application():
                 self._new_pressure_side.set(properties['press_side'][0])
             except KeyError:
                 self._new_pressure_side.set('p')
+            self._new_zstar_optimization.set(properties['zstar_optimization'][0])
+            self._new_puls_method.set(properties['puls buckling method'][0])
+            self._new_puls_panel_boundary.set(properties['puls boundary'][0])
+            self._new_puls_stf_end_type.set(properties['puls stiffener end'][0])
 
     def get_highest_pressure(self, line, limit_state = 'ULS'):
         '''
@@ -2729,7 +3182,7 @@ class Application():
 
         return list(filter(lambda x: x > 1, self._main_grid.get_adjacent_values(mid_point)))
 
-    def get_compartments_for_line_duplicates(self, line):
+    def get_compartments_for_line_duplicates(self,  line):
         '''
         Finding the compartment connected to a specified line.
         :return:
@@ -2888,7 +3341,6 @@ class Application():
         self._point_dict = {}
         self._line_to_struc = {}
         self._line_point_to_point_string = []
-        self.update_frame()
         self._load_dict = {}
         self._new_load_comb_dict = {}
         self._line_is_active = False
@@ -2907,6 +3359,10 @@ class Application():
         self._active_point = '' # Name of the clicked point
         self.controls() # Function to activate mouse clicks
         self._line_point_to_point_string = [] # This one ensures that a line is not created on top of a line
+        self._accelerations_dict = {'static':9.81, 'dyn_loaded':0, 'dyn_ballast':0}
+        self._multiselect_lines = []
+        self._PULS_results = None
+        self.update_frame()
 
         # Initsializing the calculation grid used for tank definition
         self._main_grid  = grid.Grid(self._grid_dimensions[0], self._grid_dimensions[1])
@@ -2928,6 +3384,8 @@ class Application():
         self._parent.bind('<Control-l>', self.delete_line)
         self._parent.bind('<Control-p>', self.copy_point)
         self._parent.bind('<Control-m>', self.move_point)
+        self._parent.bind('<Control-a>', self.select_all_lines)
+        self._parent.bind('<Control-t>', self.select_all_lines)
         self._parent.bind('<Control-q>', self.new_line)
         self._parent.bind('<Control-s>', self.new_structure)
         self._parent.bind('<Delete>', self.delete_key_pressed)
@@ -2990,6 +3448,22 @@ class Application():
                 self._active_point = list(self._point_dict.keys())[idx + 1]
             else:
                 self._active_point = list(self._point_dict.keys())[0]
+        self.update_frame()
+
+    def select_all_lines(self, event=None):
+
+        if self._toggle_btn.config('relief')[-1] == "sunken":
+            for line in self._line_to_struc.keys():
+                if line not in self._multiselect_lines:
+                    if event.keysym == 't':
+                        if self._line_to_struc[line][1].get_structure_type() == self._new_stucture_type.get():
+                            self._multiselect_lines.append(line)
+                    else:
+                        self._multiselect_lines.append(line)
+        else:
+            tk.messagebox.showinfo('CTRL-A and CTRL-T', 'CTRL-A and CTRL-T is used to select all lines \n' 
+                                                        'with the intension to change a single variable in all lines.\n'
+                                                        'Press the Toggle select multiple button.')
         self.update_frame()
 
     def mouse_scroll(self,event):
@@ -3060,14 +3534,17 @@ class Application():
             p2 = self._point_dict['point'+str(self._line_dict[self._active_line][1])]
             self._new_field_len.set(dist(p1,p2))
 
+        if self._toggle_btn.config('relief')[-1] == 'sunken':
+            if self._active_line not in self._multiselect_lines:
+                self._multiselect_lines.append(self._active_line)
+        else:
+            self._multiselect_lines = []
+
         try:
             state = self.get_color_and_calc_state()
         except AttributeError:
             state = None
 
-        # self.draw_canvas(state = state)
-        # self.draw_prop()
-        # self.draw_results(state = state)
         self.update_frame()
         self._combination_slider.set(1)
         if self._line_is_active:
@@ -3131,17 +3608,12 @@ class Application():
                 else:
                     self._new_line_p2.set(get_num(point))
                     self._p1_p2_select = False
+        if self._toggle_btn.config('relief')[-1] == 'sunken':
+            if len(self._multiselect_lines) != 0:
+                self._multiselect_lines.pop(-1)
 
 
         self.update_frame()
-
-    def button_load_info_click(self, event = None):
-        ''' Get the load information for one line.'''
-        if self._active_line != '' and self._active_line in self._line_to_struc.keys():
-            load_text = self.calculate_all_load_combinations_for_line(self._active_line, get_load_info=True)
-            tk.messagebox.showinfo('Load info for '+self._active_line, ''.join(load_text))
-        else:
-            tk.messagebox.showerror('No data', 'No load data for this line')
 
     def draw_point_frame(self):
         ''' Frame to define brackets on selected point. '''
@@ -3205,7 +3677,7 @@ class Application():
             counter+=1
 
         export_all = {}
-        export_all['project infomation'] = self._new_project_infomation.get()
+        export_all['project information'] = self._new_project_infomation.get()
         export_all['point_dict'] = self._point_dict
         export_all['line_dict'] = self._line_dict
         export_all['structure_properties'] = structure_properties
@@ -3214,6 +3686,9 @@ class Application():
         export_all['load_combinations'] = load_combiantions
         export_all['tank_properties'] = tank_properties
         export_all['fatigue_properties'] = fatigue_properties
+        if self._PULS_results is not None:
+            export_all['PULS results'] = self._PULS_results.get_run_results()
+            export_all['PULS results']['sheet location'] = self._PULS_results.puls_sheet_location
         json.dump(export_all, save_file)#, sort_keys=True, indent=4)
         save_file.close()
         self._parent.wm_title('| ANYstructure |     ' + save_file.name)
@@ -3234,8 +3709,12 @@ class Application():
         imported = json.load(imp_file)
 
         self.reset()
-        if 'project infomation' in imported.keys():
-            self._new_project_infomation.set(imported['project infomation'])
+        if 'project information' in imported.keys():
+            self._new_project_infomation.set(imported['project information'])
+
+        else:
+            self._new_project_infomation.set('No project information provided. Input here.')
+
         self._point_dict = imported['point_dict']
         self._line_dict = imported['line_dict']
         struc_prop = imported['structure_properties']
@@ -3251,6 +3730,12 @@ class Application():
                 lines_prop['structure_types'] = [self._structure_types, ' ']
             if 'zstar_optimization' not in lines_prop.keys():
                 lines_prop['zstar_optimization'] = [self._new_zstar_optimization.get(), '']
+            if 'puls buckling method' not in lines_prop.keys():
+                lines_prop['puls buckling method'] = [self._new_puls_method.get(), '']
+            if 'puls boundary' not in lines_prop.keys():
+                lines_prop['puls boundary'] = [self._new_puls_panel_boundary.get(), '']
+            if 'puls stiffener end' not in lines_prop.keys():
+                lines_prop['puls stiffener end'] = [self._new_puls_stf_end_type.get(), '']
             self._line_to_struc[line][0] = Structure(lines_prop)
             self._line_to_struc[line][1] = CalcScantlings(lines_prop)
             if imported['fatigue_properties'][line] is not None:
@@ -3331,6 +3816,14 @@ class Application():
 
                 self.grid_operations(line_name, [point_coord_x,point_coord_y])
 
+        if 'PULS results' in list(imported.keys()):
+            self._PULS_results = PULSpanel()
+            if 'sheet location' in imported['PULS results'].keys():
+                self._PULS_results.puls_sheet_location = imported['PULS results']['sheet location']
+                imported['PULS results'].pop('sheet location')
+            self._PULS_results.set_run_results(imported['PULS results'])
+            self.toggle_puls_run()
+
         # Setting the scale of the canvas
         points = self._point_dict
         highest_y = max([coord[1] for coord in points.values()])
@@ -3347,6 +3840,31 @@ class Application():
             self.openfile(defined = file_name)
         else:
             self.openfile(defined= self._root_dir + '/' + file_name)
+
+    def button_load_info_click(self, event = None):
+        ''' Get the load information for one line.'''
+        if self._active_line != '' and self._active_line in self._line_to_struc.keys():
+            load_text = self.calculate_all_load_combinations_for_line(self._active_line, get_load_info=True)
+            text_to_frame = 'Load results for ' + self._active_line + '\n' + '\n'
+            for item in load_text:
+                text_to_frame += item
+
+            text_m = tk.Toplevel(self._parent, background=self._general_color)
+            # Create the text widget
+            text_widget = tk.Text(text_m, height=60, width=80)
+            # Create a scrollbar
+            scroll_bar = tk.Scrollbar(text_m)
+            # Pack the scroll bar
+            # Place it to the right side, using tk.RIGHT
+            scroll_bar.pack(side=tk.RIGHT)
+            # Pack it into our tkinter application
+            # Place the text widget to the left side
+            text_widget.pack(side=tk.LEFT)
+            # Insert text into the text widget
+            text_widget.insert(tk.END, text_to_frame)
+            #tk.messagebox.showinfo('Load info for '+self._active_line, ''.join(load_text))
+        else:
+            tk.messagebox.showerror('No data', 'No load data for this line')
 
     def on_open_structure_window(self):
         '''
@@ -3405,6 +3923,43 @@ class Application():
         '''
         lf_tkinter = tk.Toplevel(self._parent, background=self._general_color)
         load_factors.CreateLoadFactorWindow(lf_tkinter, self)
+
+    def on_puls_results_for_line(self):
+        if not self._line_is_active:
+            return
+        if self._PULS_results is None:
+            return
+        elif self._PULS_results.get_puls_line_results(self._active_line) is None:
+            return
+        if self._puls_information_button.config('relief')[-1] == 'sunken':
+            self.text_widget.forget()
+            self._puls_information_button.config(relief='raised')
+        this_result = self._PULS_results.get_puls_line_results(self._active_line)
+        this_string = ''
+        for key, value in this_result.items():
+            if type(value) == list:
+                this_string += key + ' : ' + str(value[0]) + ' ' + str(value[1]) + '\n'
+            elif type(value) == str:
+                this_string += key + ' : ' + value + '\n'
+            elif type(value) == dict:
+                this_string += key + '\n'
+                for subk, subv in value.items():
+                    this_string += '   ' + subk + ' : ' + str(subv[0]) + ' ' + str(subv[1] if subv[1] != None else '') + '\n'
+
+        text_m = tk.Toplevel(self._parent, background=self._general_color)
+        # Create the text widget
+        text_widget = tk.Text(text_m , height=60, width=80)
+        # Create a scrollbar
+        scroll_bar = tk.Scrollbar(text_m)
+        # Pack the scroll bar
+        # Place it to the right side, using tk.RIGHT
+        scroll_bar.pack(side=tk.RIGHT)
+        # Pack it into our tkinter application
+        # Place the text widget to the left side
+        text_widget.pack(side=tk.LEFT)
+        long_text = this_string
+        # Insert text into the text widget
+        text_widget.insert(tk.END, long_text)
 
     def on_show_loads(self):
         '''
@@ -3533,8 +4088,9 @@ class Application():
             pass
         self._load_window_couter = counter
         self._new_load_comb_dict = load_comb_dict
-
+        temp_load = copy.deepcopy(self._load_dict)
         if len(returned_loads) != 0:
+            need_to_recalc_puls = {}
             for load, data in returned_loads.items():
                 #creating the loads objects dictionary
                 self._load_dict[load] = data
@@ -3546,6 +4102,14 @@ class Application():
 
             for main_line in self._line_dict.keys():
                 for load_obj, load_line in self._load_dict.values():
+                    if main_line in self._line_to_struc.keys():
+                        if returned_loads:
+                            if load_obj.__str__() != temp_load[load_obj.get_name()][0].__str__() and main_line in \
+                                    load_line+temp_load[load_obj.get_name()][1]:
+                                # The load has changed for this line.
+                                # TODO double check this.
+                                if self._PULS_results is not None:
+                                    self._PULS_results.result_changed(main_line)
                     if main_line in load_line and main_line in self._line_to_struc.keys():
                         self._line_to_struc[main_line][3].append(load_obj)
 
@@ -3592,7 +4156,6 @@ class Application():
         :param returned_structure:
         :return:
         '''
-
         self._new_stf_spacing.set(returned_structure[0])
         self._new_plate_thk.set(returned_structure[1])
         self._new_stf_web_h.set(returned_structure[2])
@@ -3646,6 +4209,8 @@ class Application():
 
         # adding values to the line dictionary. resetting first.
         for key, value in self._line_to_struc.items():
+            if self._line_to_struc[key][2] is not None:
+                self._line_to_struc[key][2].set_commmon_properties(returned_fatigue_prop)
             self._line_to_struc[key][1].need_recalc = True  # All lines need recalculations.
 
         self.update_frame()

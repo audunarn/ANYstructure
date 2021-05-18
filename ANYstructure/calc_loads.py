@@ -68,6 +68,16 @@ class Loads():
             return max(press, psl)
         else:
             return press
+    def get_report_string(self):
+        return [     'Name of load: ' + self.name_of_load,
+                     'Polynominal (x^3): '+  str(self.poly_third) ,
+                     'Polynominal (x^2): '+  str(self.poly_second) ,
+                     'Polynominal (x):   '+  str(self.poly_first) ,
+                     'Constant (C):      '+  str(self.poly_const) ,
+                     'Load condition:    '+  str(self.load_condition) ,
+                     'Limit state        ' +  str(self.limit_state) ,
+                     'Is external?       '+  str(self.is_external) ,
+                     'Static draft:      '+  str(self.static_draft)]
 
     def __calculate_poly_value(self, variable):
         '''

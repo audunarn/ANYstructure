@@ -104,7 +104,8 @@ class LetterMaker(object):
         # create return address
         address = """<font size="12"><strong> ANYstructure report generator<br/></strong></font>""" + '<br/>' + \
                   """<font size="12"> User: </font>""" + '<font size="12">' + user + '</font>' + '<br/>' + '<br/>' + \
-                  """<font size="12"> Time : </font>""" + '<font size="12">' + time_now + '</font>' + '<br/>'
+                  """<font size="12"> Time : </font>""" + '<font size="12">' + time_now + '</font>' + '<br/>'+ \
+                  '<br/>'+'<font size="12">' + self.data._new_project_infomation.get() + '</font>'
         p = Paragraph(address, self.styles["Normal"])
         # add a logo and size it
         img_file_name = 'ANYstructure_logo.jpg'
@@ -160,7 +161,7 @@ class LetterMaker(object):
         ptext = '<font size="12" color = "blue"><strong>' + "Results for defined structure: " + '</strong></font>'
         self.createParagraph(ptext, 10, 0)
 
-        delta = 160
+        delta = 140 if not self.data._new_toggle_puls.get() else 180
         vpos = 950
 
         for line in sorted(self.data._line_dict.keys()):
@@ -243,13 +244,32 @@ class LetterMaker(object):
                                          '   Min shear area: '+str(int(self.data.get_color_and_calc_state()['shear_area'][line]['min_shear_area']*1000**2))
                                          + ' [mm2] ' + ' -> ' + 'NOT OK')
                 textobject.setFillColor('black')
-                textobject.setFillColor('red') if self.data.get_color_and_calc_state()['colors'][line]['buckling'] == 'red' \
-                    else textobject.setFillColor('black')
-                textobject.textLine('Highest buckling utilization: '+
-                                    str(round(max(self.data.get_color_and_calc_state()['buckling'][line]),2))+
-                                    ' -> '+'OK' if max(self.data.get_color_and_calc_state()['buckling'][line]) < 1 else
-                                    'Highest buckling utilization: '+
-                                    str(round(max(self.data.get_color_and_calc_state()['buckling'][line]),2))+' -> '+'NOT OK')
+                if not self.data._new_toggle_puls.get():
+                    textobject.setFillColor('red') if self.data.get_color_and_calc_state()['colors'][line]['buckling'] == 'red' \
+                        else textobject.setFillColor('black')
+                    textobject.textLine('Highest buckling utilization DNV-RP-C203: '+
+                                        str(round(max(self.data.get_color_and_calc_state()['buckling'][line]),2))+
+                                        ' -> '+'OK' if max(self.data.get_color_and_calc_state()['buckling'][line]) < 1 else
+                                        'Highest buckling utilization DNV-RP-C203: '+
+                                        str(round(max(self.data.get_color_and_calc_state()['buckling'][line]),2))+' -> '+'NOT OK')
+                else:
+                    if self.data._PULS_results is not None:
+                        puls_method = self.data._line_to_struc[line][1].get_puls_method()
+                        textobject.textLine('PULS results using '+str(puls_method) + 'utilization with acceptance '+
+                                            str(self.data._PULS_results.puls_acceptance))
+                        if line in self.data._PULS_results.get_run_results().keys():
+                            puls_buckling = self.data._PULS_results.get_run_results()[line]['Buckling strength']['Actual usage Factor'][0]
+                            puls_ultimate = self.data._PULS_results.get_run_results()[line]['Ultimate capacity']['Actual usage Factor'][0]
+
+                            if puls_method == 'buckling' and puls_buckling/self.data._PULS_results.puls_acceptance > 1:
+                                textobject.setFillColor('red')
+                            textobject.textLine('PULS buckling utilization = ' + str(puls_buckling))
+                            textobject.setFillColor('black')
+                            if puls_method == 'ultimate'  and puls_ultimate/self.data._PULS_results.puls_acceptance > 1:
+                                textobject.setFillColor('red')
+                            textobject.textLine('PULS ultimate utilization = ' + str(puls_ultimate))
+                            textobject.setFillColor('black')
+
                 textobject.setFillColor('black')
                 textobject.setFillColor('red') if self.data.get_color_and_calc_state()['colors'][line]['fatigue'] == 'red' \
                     else textobject.setFillColor('black')
@@ -264,8 +284,8 @@ class LetterMaker(object):
                 else:
                     textobject.textLine('No fatigue results')
 
-                textobject.textLine('Utilization percentage (highest calculated): '+
-                                    str(int(max(self.data.get_color_and_calc_state()['utilization'][line].values())*100))+ '%')
+                # textobject.textLine('Utilization percentage (highest calculated): '+
+                #                     str(int(max(self.data.get_color_and_calc_state()['utilization'][line].values())*100))+ '%')
 
                 textobject.setFillColor('black')
                 self.c.drawText(textobject)
@@ -296,8 +316,17 @@ class LetterMaker(object):
         self.draw_lines(draw_type='tau xy')
         self.c.showPage()
         self.draw_lines(draw_type='structure type')
+        self.c.showPage()
 
-    def draw_lines(self, draw_type = 'UF'):
+        idx, new = 0, False
+        for load_name in self.data._load_dict.keys():
+            self.draw_lines(draw_type=None, load_idx_name = [idx % 3, load_name])
+            if idx % 3 == 2:
+                self.c.showPage()
+            idx += 1
+
+
+    def draw_lines(self, draw_type = 'UF', load_idx_name = None):
         '''
         Draw the defined lines.
         :return:
@@ -305,16 +334,23 @@ class LetterMaker(object):
 
         points = self.data._point_dict
         lines = self.data._line_dict
-        colors = self.data.get_color_and_calc_state()['colors']
+        if not self.data._new_toggle_puls.get():
+            colors = self.data.get_color_and_calc_state()['colors']
+        else:
+            colors = self.data.get_color_and_calc_state()['PULS colors']
         highest_y = max([coord[1] for coord in points.values()])
         highest_x = max([coord[0] for coord in points.values()])
 
         if any([highest_x == 0, highest_y == 0]):
             scale = 10
+        elif load_idx_name is not None:
+            scale = 5
         else:
             scale = min(500/highest_y, 500/highest_x, 10)
         if draw_type == 'UF':
             origo = (50,350)
+        elif load_idx_name is not None:
+            origo = (50, 600 - 200*load_idx_name[0])
         else:
             origo = (50, 450)
         self.c.setLineWidth(2)
@@ -323,10 +359,20 @@ class LetterMaker(object):
         all_line_data = self.data.get_color_and_calc_state()
         for line, pt in lines.items():
             if draw_type == 'UF':
-                try:
-                    self.c.setStrokeColor('red' if 'red' in colors[line].values() else 'green')
-                except KeyError:
-                    self.c.setStrokeColor('black')
+                if not self.data._new_toggle_puls.get():
+                    try:
+                        self.c.setStrokeColor('red' if 'red' in colors[line].values() else 'green')
+                    except KeyError:
+                        self.c.setStrokeColor('black')
+                else:
+                    try:
+                        method = self.data._line_to_struc[line][1].get_puls_method()
+                        if self.data._PULS_results is not None:
+                            util = self.data._PULS_results.get_utilization(line, method, self.data._new_puls_uf.get())
+                            if util is not None:
+                                self.c.setStrokeColor('red' if util > 1 else 'green')
+                    except KeyError:
+                        self.c.setStrokeColor('black')
             elif draw_type == 'section':
                 self.c.setStrokeColor(all_line_data['color code']['lines'][line]['section'])
                 if self.data._line_to_struc[line][1].get_beam_string() not in drawed_data:
@@ -341,13 +387,15 @@ class LetterMaker(object):
                     self.c.drawText(textobject)
                     drawed_data.append(self.data._line_to_struc[line][1].get_beam_string())
                     idx += 1
-
             elif draw_type == 'plate':
                 self.c.setStrokeColor(all_line_data['color code']['lines'][line]['plate'])
             elif draw_type == 'pressure':
                 self.c.setStrokeColor(all_line_data['color code']['lines'][line]['pressure'])
             elif draw_type == 'utilization':
-                self.c.setStrokeColor(all_line_data['color code']['lines'][line]['utilization'])
+                if self.data._new_puls_uf.get():
+                    self.c.setStrokeColor(all_line_data['color code']['lines'][line]['PULS utilization'])
+                else:
+                    self.c.setStrokeColor(all_line_data['color code']['lines'][line]['utilization'])
             elif draw_type == 'sigma x':
                 self.c.setStrokeColor(all_line_data['color code']['lines'][line]['utilization'])
             elif draw_type == 'sigma y1':
@@ -358,20 +406,31 @@ class LetterMaker(object):
                 self.c.setStrokeColor(all_line_data['color code']['lines'][line]['tau xy'])
             elif draw_type == 'structure type':
                 self.c.setStrokeColor(all_line_data['color code']['lines'][line]['structure type'])
+            elif load_idx_name is not None:
+                points = self.data._point_dict
+                highest_y = max([coord[1] for coord in points.values()])
+                highest_x = max([coord[0] for coord in points.values()])
 
+                if any([highest_x == 0, highest_y == 0]):
+                    scale = 10
+                else:
+                    scale = min(180 / highest_y, 300 / highest_x, 10)
+                if line in self.data._load_dict[load_idx_name[1]][1]:
+                    self.c.setStrokeColor('orange')
+                else:
+                    self.c.setStrokeColor('black')
 
             x1, y1 = points['point'+str(pt[0])][0] * scale + origo[0], \
                      points['point'+str(pt[0])][1] * scale + origo[1]
             x2, y2 = points['point'+str(pt[1])][0] * scale + origo[0], \
                      points['point'+str(pt[1])][1] * scale + origo[1]
             self.c.line(x1,y1,x2,y2)
-
-            textobject = self.c.beginText()
-            textobject.setTextOrigin(x1+(x2-x1)*0.5-5, y1 + (y2-y1)*0.5+2 )
-            textobject.setFont("Helvetica-Oblique", 9)
-            textobject.textLine(str(hlp.get_num(line)))
-            self.c.drawText(textobject)
-
+            if load_idx_name is None:
+                textobject = self.c.beginText()
+                textobject.setTextOrigin(x1+(x2-x1)*0.5-5, y1 + (y2-y1)*0.5+2 )
+                textobject.setFont("Helvetica-Oblique", 9)
+                textobject.textLine(str(hlp.get_num(line)))
+                self.c.drawText(textobject)
 
         if draw_type == 'UF':
             pass
@@ -382,7 +441,6 @@ class LetterMaker(object):
             textobject.setFillColor('black')
             textobject.textLine('Model beam section properties')
             self.c.drawText(textobject)
-
         elif draw_type == 'plate':
             textobject = self.c.beginText()
             textobject.setTextOrigin(50, 800)
@@ -403,8 +461,6 @@ class LetterMaker(object):
                 textobject.setFont("Helvetica-Oblique", 10)
                 textobject.textLine(str(thk*1000) + ' mm')
                 self.c.drawText(textobject)
-
-
         elif draw_type == 'pressure':
             textobject = self.c.beginText()
             textobject.setTextOrigin(50, 800)
@@ -433,10 +489,17 @@ class LetterMaker(object):
             textobject = self.c.beginText()
             textobject.setTextOrigin(50, 800)
             textobject.setFillColor('black')
-            textobject.setFont("Helvetica-Oblique", 15)
-            textobject.textLine('Utilization factors (max of all checks)')
+            textobject.setFont("Helvetica-Oblique", 12)
+            textobject.textLine('Utilization factors (max of all checks) - '
+                                'DNV-RP-C201 Buckling Strength of Plated Structures'
+                                if not self.data._new_toggle_puls.get()
+                                else 'Utilization factors (max of all checks) - PULS (Panel Ultimate Limit State)')
             self.c.drawText(textobject)
-            all_utils = all_line_data['color code']['utilization map']
+
+            if self.data._new_toggle_puls.get():
+                all_utils = all_line_data['color code']['PULS utilization map']
+            else:
+                all_utils = all_line_data['color code']['utilization map']
 
             for idx, uf in enumerate(all_utils):
                 textobject = self.c.beginText()
@@ -553,6 +616,14 @@ class LetterMaker(object):
                 textobject.textLine(str(value))
                 self.c.drawText(textobject)
                 drawed_data.append(value)
+        elif load_idx_name is not None:
+            for lidx, loadtext in enumerate(reversed(self.data._load_dict[load_idx_name[1]][0].get_report_string())):
+                textobject = self.c.beginText()
+                textobject.setTextOrigin(370 , origo[1]+50+ 11*lidx)
+                textobject.setFont("Helvetica-Oblique", 11)
+                textobject.setFillColor('black')
+                textobject.textLine(loadtext)
+                self.c.drawText(textobject)
 
     def coord(self, x, y, unit=1):
         """

@@ -2,6 +2,14 @@ import math
 from scipy.special import gammaln
 from scipy.stats import gamma as gammadist
 import numpy as np
+import ANYstructure.PULS.excel_inteface as pulsxl
+import ANYstructure.helper as hlp
+from multiprocessing import  Pool, cpu_count, Process
+import multiprocessing
+import shutil, os, time, datetime, json
+from itertools import islice
+import pythoncom
+import random
 
 import ANYstructure.SN_curve_parameters as snc
 
@@ -37,7 +45,9 @@ class Structure():
             self.dynamic_variable_orientation = 'z - vertical'
         elif self.structure_type in self.structure_types['horizontal']:
             self.dynamic_variable_orientation = 'x - horizontal'
-
+        self._puls_method = main_dict['puls buckling method'][0]
+        self._puls_boundary = main_dict['puls boundary'][0]
+        self._puls_stf_end = main_dict['puls stiffener end'][0]
 
         self._zstar_optimization = main_dict['zstar_optimization'][0]
         try:
@@ -55,7 +65,7 @@ class Structure():
         '''
         return \
             str(
-            '\n Plate field span:              ' + str(round(self.span,1)) + ' meters' +
+            '\n Plate field span:              ' + str(round(self.span,3)) + ' meters' +
             '\n Stiffener spacing:             ' + str(self.spacing*1000)+' mm'+
             '\n Plate thickness:               ' + str(self.plate_th*1000)+' mm'+
             '\n Stiffener web height:          ' + str(self.web_height*1000)+' mm'+
@@ -67,9 +77,9 @@ class Structure():
             '\n Dynamic load varible_          ' + str(self.dynamic_variable_orientation)+
             '\n Plate fixation paramter,kpp:   ' + str(self.plate_kpp) + ' ' +
             '\n Stf. fixation paramter,kps:    ' + str(self.stf_kps) + ' ' +
-            '\n Global stress, sig_y1/sig_y2:  ' + str(round(self.sigma_y1,1))+'/'+str(round(self.sigma_y2,1))+ ' MPa' +
-            '\n Global stress, sig_x:          ' + str(round(self.sigma_x,1)) + ' MPa' +
-            '\n Global shear, tau_xy:          ' + str(round(self.tauxy,1)) + ' MPa' +
+            '\n Global stress, sig_y1/sig_y2:  ' + str(round(self.sigma_y1,3))+'/'+str(round(self.sigma_y2,3))+ ' MPa' +
+            '\n Global stress, sig_x:          ' + str(round(self.sigma_x,3)) + ' MPa' +
+            '\n Global shear, tau_xy:          ' + str(round(self.tauxy,3)) + ' MPa' +
             '\n km1,km2,km3:                   ' + str(self.km1)+'/'+str(self.km2)+'/'+str(self.km3)+
             '\n Pressure side (p-plate/s-stf): ' + str(self.pressure_side) + ' ')
 
@@ -92,6 +102,15 @@ class Structure():
 
     def get_z_opt(self):
         return self._zstar_optimization
+
+    def get_puls_method(self):
+        return self._puls_method
+
+    def get_puls_boundary(self):
+        return self._puls_boundary
+
+    def get_puls_stf_end(self):
+        return self._puls_stf_end
 
     def get_one_line_string(self):
         ''' Returning a one line string. '''
@@ -382,6 +401,9 @@ class Structure():
         except KeyError:
             self.pressure_side = 'p'
         self._zstar_optimization = main_dict['zstar_optimization'][0]
+        self._puls_method = main_dict['puls buckling method'][0]
+        self._puls_boundary = main_dict['puls boundary'][0]
+        self._puls_stf_end  = main_dict['puls stiffener end'][0]
 
     def set_stresses(self,sigy1,sigy2,sigx,tauxy):
         '''
@@ -464,6 +486,28 @@ class Structure():
         '''
         self.span = span
         self.main_dict['span'][0] = span
+
+    def get_puls_input(self):
+        if self.stiffener_type == 'FB':
+            stf_type = 'F'
+        # elif self.stiffener_type == 'L': # TODO need to do something with this.
+        #     stf_type = 'L-bulb'
+        else:
+            stf_type = self.stiffener_type
+        return_dict = {'Identification': None, 'Length of panel': self.span*1000, 'Stiffener spacing': self.spacing*1000,
+                        'Plate thickness': self.plate_th*1000,
+                      'Number of primary stiffeners': 10,
+                       'Stiffener type (L,T,F)': stf_type,
+                        'Stiffener boundary': self._puls_stf_end,
+                      'Stiff. Height': self.web_height*1000, 'Web thick.': self.web_th*1000,
+                       'Flange width': self.flange_width*1000,
+                        'Flange thick.': self.flange_th*1000, 'Tilt angle': 0,
+                      'Number of sec. stiffeners': 0, 'Modulus of elasticity': 2.1e11/1e6, "Poisson's ratio": 0.3,
+                      'Yield stress plate': self.mat_yield/1e6, 'Yield stress stiffener': self.mat_yield/1e6,
+                        'Axial stress': self.sigma_x, 'Trans. stress 1': self.sigma_y1,
+                      'Trans. stress 2': self.sigma_y2, 'Shear stress': self.tauxy,
+                        'Pressure (fixed)': None, 'In-plane support': self._puls_boundary}
+        return return_dict
 
 class CalcScantlings(Structure):
     '''
@@ -567,7 +611,7 @@ class CalcScantlings(Structure):
         h_stf = (self.web_height+self.flange_th)*1000
         de_gr = 0
         tw_gr = self.web_th*1000
-        hf_ctr = h_stf-0.5*tf if self.get_stiffener_type() != 'L' else h_stf - de_gr - 0.5*tf
+        hf_ctr = h_stf-0.5*tf if self.get_stiffener_type() not in ['L','L-bulb'] else h_stf - de_gr - 0.5*tf
         bf_ctr = 0 if self.get_stiffener_type() == 'T' else 0.5*(tf - tw_gr)
         beta = 0.5
         gamma = (1 + math.sqrt(3+12*beta))/4
@@ -861,10 +905,19 @@ class CalcScantlings(Structure):
         fEpy = 0.9*E*math.pow(t/s,2) # eq 7.43, checked, ok
         fEpt = 5.0*E*math.pow(t/s,2) # eq 7.44, checked, ok
         c = 2-(s/l) # eq 7.41, checked, ok
-
-        alphae = math.sqrt( (fy/sigjSD) * math.pow(math.pow(abs(sigxSd)/fEpx, c)+
-                                                   math.pow(abs(sigySd)/fEpy, c)+
-                                                   math.pow(abs(tauSd)/fEpt, c), 1/c)) # eq 7.40, checed, ok.
+        try:
+            alphae = math.sqrt( (fy/sigjSD) * math.pow(math.pow(abs(sigxSd)/fEpx, c)+
+                                                       math.pow(abs(sigySd)/fEpy, c)+
+                                                       math.pow(abs(tauSd)/fEpt, c), 1/c)) # eq 7.40, checed, ok.
+        except OverflowError:
+            import tkinter as tk
+            tk.messagebox.showerror('Error', 'There is an issue with your input. \n'
+                                             'Maybe a dimension is nor correct w.r.t.\n'
+                                             'm and mm. Check it!\n\n'
+                                             'A plate resistance error will be shown\n'
+                                             'for buckling. This is not correct but is\n'
+                                             'due to the input error.')
+            return [float('inf'),0,0,0,0,0]
         fep = fy / math.sqrt(1+math.pow(alphae,4)) # eq 7.39, checked, ok.
         eta = min(sigjSD/fep, 1) # eq. 7.37, chekced
 
@@ -887,7 +940,7 @@ class CalcScantlings(Structure):
         #print('Aw ',Aw,'Af ', Af,'tf ', tf,'tw ', tw,'G ', G,'E ', E,'Iz ', Iz,'lt ', lT)
 
         def get_some_data(lT):
-            if stf_type in ['T', 'L']:
+            if stf_type in ['T', 'L', 'L-bulb']:
                 fET = beta*(((Aw + Af * math.pow(tf/tw,2)) / (Aw + 3*Af)) * G*math.pow(tw/hw,2))+\
                       (math.pow(math.pi, 2) * E * Iz) / ((Aw/3 + Af)*math.pow(lT,2)) \
                     if bf != 0 \
@@ -1038,7 +1091,7 @@ class CalcScantlings(Structure):
 
         epsilon = math.sqrt(235 / (self.mat_yield / 1e6))
 
-        if self.stiffener_type == 'L':
+        if self.stiffener_type in ['L', 'L-bulb']:
             c = self.flange_width - self.web_th/2
         elif self.stiffener_type == 'T':
             c = self.flange_width/2 - self.web_th/2
@@ -1128,7 +1181,6 @@ class CalcFatigue(Structure):
 
         x, alpha = math.pow(slope_ch/stress_frac, weibull),1 + m1/weibull
         gamma_val = gammadist.cdf(x,alpha)
-
         return cycles / math.pow(10, log_a1-m1*thk_eff) * math.pow(stress_frac, m1)*gamma1*(1-gamma_val)\
                *self._fraction[idx]
 
@@ -1158,7 +1210,23 @@ class CalcFatigue(Structure):
             if self._fraction[idx] != 0 and self._period[idx] != 0:
                 damage += self.get_damage_slope1(idx,self._sn_curve, int_press[idx], ext_press[idx]) + \
                           self.get_damage_slope2(idx,self._sn_curve, int_press[idx], ext_press[idx])
+
         return damage
+
+    def set_commmon_properties(self, fatigue_dict: dict):
+        ''' Setting the fatiuge properties. '''
+        #self._sn_curve, self.fatigue_dict['SN-curve'] = fatigue_dict['SN-curve'], fatigue_dict['SN-curve']
+        self._acc, self.fatigue_dict['Accelerations'] = fatigue_dict['Accelerations'], fatigue_dict['Accelerations']
+        #self._weibull, self.fatigue_dict['Weibull'] = fatigue_dict['Weibull'], fatigue_dict['Weibull']
+        #self._period, self.fatigue_dict['Period'] = fatigue_dict['Period'], fatigue_dict['Period']
+        #self._k_factor, self.fatigue_dict['SCF'] = fatigue_dict['SCF'], fatigue_dict['SCF']
+        #self._corr_loc, self.fatigue_dict['CorrLoc'] = fatigue_dict['CorrLoc'], fatigue_dict['CorrLoc']
+        self._no_of_cycles, self.fatigue_dict['n0'] = fatigue_dict['n0'], fatigue_dict['n0']
+        self._design_life, self.fatigue_dict['Design life'] = fatigue_dict['Design life'], fatigue_dict['Design life']
+        self._fraction, self.fatigue_dict['Fraction'] = fatigue_dict['Fraction'], fatigue_dict['Fraction']
+        #self._case_order, self.fatigue_dict['Order'] = fatigue_dict['Order'], fatigue_dict['Order']
+        self._dff, self.fatigue_dict['DFF'] = fatigue_dict['DFF'], fatigue_dict['DFF']
+
 
     def set_fatigue_properties(self, fatigue_dict: dict):
         ''' Setting the fatiuge properties. '''
@@ -1188,8 +1256,354 @@ class CalcFatigue(Structure):
     def get_design_life(self):
         return self._design_life
 
+class PULSpanel():
+    '''
+    Takes care of puls runs
+    '''
+    def __init__(self, run_dict: dict = {}, puls_acceptance: float = 0.87, puls_sheet_location: str = None):
+        super(PULSpanel, self).__init__()
+
+        self._all_to_run = run_dict
+        self._run_results = {}
+        self._puls_acceptance = puls_acceptance
+        self._puls_sheet_location = puls_sheet_location
+        self._all_uf = {'buckling': list(), 'ultimate': list()}
+
+    @property
+    def all_uf(self):
+        return self._all_uf
+
+    @property
+    def puls_acceptance(self):
+        return self._puls_acceptance
+
+    @puls_acceptance.setter
+    def puls_acceptance(self, val):
+        self._puls_acceptance = val
+
+    @property
+    def puls_sheet_location(self):
+        return self._puls_sheet_location
+
+    @puls_sheet_location.setter
+    def puls_sheet_location(self, val):
+        self._puls_sheet_location = val
+
+    def set_all_to_run(self, val):
+        self._all_to_run = val
+
+    def get_all_to_run(self):
+        return self._all_to_run
+
+    def get_run_results(self):
+        return self._run_results
+
+    def set_run_results(self, val):
+        self._run_results = val
+        for key in self._run_results.keys():
+            if any([key == 'sheet location',type(self._run_results[key]['Buckling strength']) != dict,
+                    type(self._run_results[key]['Ultimate capacity']) != dict]): # TODO CHECK
+                continue
+
+            if all([type(self._run_results[key]['Buckling strength']['Actual usage Factor'][0]) == float,
+                    type(self._run_results[key]['Ultimate capacity']['Actual usage Factor'][0]) == float]):
+                self._all_uf['buckling'].append(self._run_results[key]['Buckling strength']['Actual usage Factor'][0])
+                self._all_uf['ultimate'].append(self._run_results[key]['Ultimate capacity']['Actual usage Factor'][0])
+        self._all_uf['buckling'] = np.unique(self._all_uf['buckling']).tolist()
+        self._all_uf['ultimate'] = np.unique(self._all_uf['ultimate']).tolist()
+
+    def run_all(self, store_results = True if os.getlogin() == 'CEFANY' else False):
+        '''
+        Returning following results.:
+
+        Identification:  name of line/run
+        Plate geometry:       dict_keys(['Length of panel', 'Stiffener spacing', 'Plate thick.'])
+        Primary stiffeners: dict_keys(['Number of stiffeners', 'Stiffener type', 'Stiffener boundary', 'Stiff. Height',
+                            'Web thick.', 'Flange width', 'Flange thick.', 'Flange ecc.', 'Tilt angle'])
+        Secondary stiffeners. dict_keys(['Number of sec. stiffeners', 'Secondary stiffener type', 'Stiffener boundary',
+                            'Stiff. Height', 'Web thick.', 'Flange width', 'Flange thick.'])
+        Model imperfections. dict_keys(['Imp. level', 'Plate', 'Stiffener', 'Stiffener tilt'])
+        Material: dict_keys(['Modulus of elasticity', "Poisson's ratio", 'Yield stress plate', 'Yield stress stiffener'])
+        Aluminium prop: dict_keys(['HAZ pattern', 'HAZ red. factor'])
+        Applied loads: dict_keys(['Axial stress', 'Trans. stress', 'Shear stress', 'Pressure (fixed)'])
+        Bound cond.: dict_keys(['In-plane support'])
+        Global elastic buckling: dict_keys(['Axial stress', 'Trans. Stress', 'Trans. stress', 'Shear stress'])
+        Local elastic buckling: dict_keys(['Axial stress', 'Trans. Stress', 'Trans. stress', 'Shear stress'])
+        Ultimate capacity: dict_keys(['Actual usage Factor', 'Allowable usage factor', 'Status'])
+        Failure modes: dict_keys(['Plate buckling', 'Global stiffener buckling', 'Torsional stiffener buckling',
+                            'Web stiffener buckling'])
+        Buckling strength: dict_keys(['Actual usage Factor', 'Allowable usage factor', 'Status'])
+        Local geom req (PULS validity limits): dict_keys(['Plate slenderness', 'Web slend', 'Web flange ratio',
+                            'Flange slend ', 'Aspect ratio'])
+        CSR-Tank requirements (primary stiffeners): dict_keys(['Plating', 'Web', 'Web-flange', 'Flange', 'stiffness'])
+
+        :return:
+        '''
+
+        iterator = self._all_to_run
+
+        newfile = self._puls_sheet_location
+
+        my_puls = pulsxl.PulsExcel(newfile, visible=False)
+        #my_puls.set_multiple_rows(20, iterator)
+        my_puls.set_multiple_rows_batch(20, iterator)
+
+
+        my_puls.calculate_panels()
+        #all_results = my_puls.get_all_results()
+        all_results = my_puls.get_all_results_batch()
+        for id, data in all_results.items():
+            self._run_results[id] = data
+
+        my_puls.close_book(save=False)
+
+        self._all_uf = {'buckling': list(), 'ultimate': list()}
+        for key in self._run_results.keys():
+            try:
+                if all([type(self._run_results[key]['Buckling strength']['Actual usage Factor'][0]) == float,
+                        type(self._run_results[key]['Ultimate capacity']['Actual usage Factor'][0]) == float]):
+                    self._all_uf['buckling'].append(self._run_results[key]['Buckling strength']
+                                                    ['Actual usage Factor'][0])
+                    self._all_uf['ultimate'].append(self._run_results[key]['Ultimate capacity']
+                                                    ['Actual usage Factor'][0])
+            except TypeError:
+                print('Got a type error. Life will go on. Key for PULS run results was', key)
+                print(self._run_results[key])
+        self._all_uf['buckling'] = np.unique(self._all_uf['buckling']).tolist()
+        self._all_uf['ultimate'] = np.unique(self._all_uf['ultimate']).tolist()
+        if store_results:
+            store_path = os.path.dirname(os.path.abspath(__file__))+'\\PULS\\Result storage\\'
+            with open(store_path+datetime.datetime.now().strftime("%Y%m%d-%H%M%S")+'.json', 'w') as file:
+                file.write(json.dumps(all_results, ensure_ascii=False))
+        return all_results
+
+    def get_utilization(self, line, method, acceptance = 0.87):
+        if line in self._run_results.keys():
+            if method == 'buckling':
+                if type(self._run_results[line]['Buckling strength']['Actual usage Factor'][0]) == str:
+                    return None
+                return self._run_results[line]['Buckling strength']['Actual usage Factor'][0]/acceptance
+            else:
+                if type(self._run_results[line]['Ultimate capacity']['Actual usage Factor'][0]) == str:
+                    return None
+                return self._run_results[line]['Ultimate capacity']['Actual usage Factor'][0]/acceptance
+        else:
+            return None
+
+    def run_all_multi(self):
+
+        tasks = []
+
+        if len(self._all_to_run) > 20:
+            processes = 10#max(cpu_count() - 1, 1)
+
+            def chunks(data, SIZE=10000):
+                it = iter(data)
+                for i in range(0, len(data), SIZE):
+                    yield {k: data[k] for k in islice(it, SIZE)}
+
+            # Sample run:
+
+            for item in chunks({key: value for key, value in ex.run_dict.items()}, int(len(self._all_to_run)/processes)):
+                tasks.append(item)
+        else:
+            tasks.append(self._all_to_run)
+        # [print(task) for task in tasks]
+        # print(self._all_to_run)
+        # quit()
+        queue = multiprocessing.SimpleQueue()
+
+        for idx, name in enumerate(tasks):
+            p = Process(target=self.run_all_multi_sub, args=(name, queue, idx+1))
+            p.start()
+        p.join()
+        for task in tasks:
+            print(queue.get())
+
+    def run_all_multi_sub(self, iterator, queue = None, idx = 0):
+        '''
+        Returning following results.:
+
+        Identification:  name of line/run
+        Plate geometry:       dict_keys(['Length of panel', 'Stiffener spacing', 'Plate thick.'])
+        Primary stiffeners: dict_keys(['Number of stiffeners', 'Stiffener type', 'Stiffener boundary', 'Stiff. Height',
+                            'Web thick.', 'Flange width', 'Flange thick.', 'Flange ecc.', 'Tilt angle'])
+        Secondary stiffeners. dict_keys(['Number of sec. stiffeners', 'Secondary stiffener type', 'Stiffener boundary',
+                            'Stiff. Height', 'Web thick.', 'Flange width', 'Flange thick.'])
+        Model imperfections. dict_keys(['Imp. level', 'Plate', 'Stiffener', 'Stiffener tilt'])
+        Material: dict_keys(['Modulus of elasticity', "Poisson's ratio", 'Yield stress plate', 'Yield stress stiffener'])
+        Aluminium prop: dict_keys(['HAZ pattern', 'HAZ red. factor'])
+        Applied loads: dict_keys(['Axial stress', 'Trans. stress', 'Shear stress', 'Pressure (fixed)'])
+        Bound cond.: dict_keys(['In-plane support'])
+        Global elastic buckling: dict_keys(['Axial stress', 'Trans. Stress', 'Trans. stress', 'Shear stress'])
+        Local elastic buckling: dict_keys(['Axial stress', 'Trans. Stress', 'Trans. stress', 'Shear stress'])
+        Ultimate capacity: dict_keys(['Actual usage Factor', 'Allowable usage factor', 'Status'])
+        Failure modes: dict_keys(['Plate buckling', 'Global stiffener buckling', 'Torsional stiffener buckling',
+                            'Web stiffener buckling'])
+        Buckling strength: dict_keys(['Actual usage Factor', 'Allowable usage factor', 'Status'])
+        Local geom req (PULS validity limits): dict_keys(['Plate slenderness', 'Web slend', 'Web flange ratio',
+                            'Flange slend ', 'Aspect ratio'])
+        CSR-Tank requirements (primary stiffeners): dict_keys(['Plating', 'Web', 'Web-flange', 'Flange', 'stiffness'])
+
+        :return:
+        '''
+        old_file = os.path.dirname(os.path.abspath(__file__))+'\\PULS\\PulsExcel_new - Copy (1).xlsm'
+        new_file = os.path.dirname(os.path.abspath(__file__))+'\\PULS\\PulsExcel_new - Copy multi ('+str(idx)+').xlsm'
+        shutil.copy(old_file, new_file)
+        #time.sleep(idx*5)
+        pythoncom.CoInitialize()
+
+        my_puls = pulsxl.PulsExcel(new_file, visible=False)
+        try:
+            my_puls.set_multiple_rows_batch(20, iterator)
+            my_puls.calculate_panels()
+            all_results = my_puls.get_all_results_batch()
+            my_puls.close_book(save=True)
+            queue.put(all_results)
+            os.remove(new_file)
+        except (BaseException, AttributeError):
+            my_puls.close_book(save=False)
+            queue.put(None)
+
+    def get_puls_line_results(self, line):
+        if line not in self._run_results.keys():
+            return None
+        else:
+            return self._run_results[line]
+
+    def get_string(self, line, uf = 0.87):
+        '''
+        :param line:
+        :return:
+        '''
+
+        results = self._run_results[line]
+        loc_geom = 'Ok' if all([val[0] == 'Ok' for val in results['Local geom req (PULS validity limits)']
+                              .values()]) else 'Not ok'
+        csr_geom = 'Ok' if all([val[0] == 'Ok' for val in results['CSR-Tank requirements (primary stiffeners)']
+                              .values()]) else 'Not ok'
+
+        ret_str = 'PULS results\n\n' +\
+                  'Ultimate capacity usage factor:  ' + str(results['Ultimate capacity']['Actual usage Factor'][0]/uf)+'\n'+\
+                  'Buckling strength usage factor:  ' + str(results['Buckling strength']['Actual usage Factor'][0]/uf)+'\n'+\
+                  'Local geom req (PULS validity limits):   ' + loc_geom + '\n'+\
+                  'CSR-Tank requirements (primary stiffeners):   ' + csr_geom
+        return ret_str
+
+    def result_changed(self, id):
+        if id in self._run_results.keys():
+            self._run_results.pop(id)
+
+    def generate_random_results(self, batch_size: int = 1000, stf_type: str = None):
+        '''
+        Genrate random results based on user input.
+        :return:
+        '''
+
+        '''
+        Running iterator:
+        run_dict_one = {'line3': {'Identification': 'line3', 'Length of panel': 4000.0, 'Stiffener spacing': 700.0,
+                          'Plate thickness': 18.0, 'Number of primary stiffeners': 10, 'Stiffener type (L,T,F)': 'T',
+                          'Stiffener boundary': 'C', 'Stiff. Height': 400.0, 'Web thick.': 12.0, 'Flange width': 200.0,
+                          'Flange thick.': 20.0, 'Tilt angle': 0, 'Number of sec. stiffeners': 0,
+                          'Modulus of elasticity': 210000.0, "Poisson's ratio": 0.3, 'Yield stress plate': 355.0,
+                          'Yield stress stiffener': 355.0, 'Axial stress': 101.7, 'Trans. stress 1': 100.0,
+                          'Trans. stress 2': 100.0, 'Shear stress': 5.0, 'Pressure (fixed)': 0.41261,
+                          'In-plane support': 'Int'}}
+        '''
+        run_dict = {}
+
+        profiles = hlp.helper_read_section_file('bulb_anglebar_tbar_flatbar.csv')
+        if stf_type is not None:
+            new_profiles = list()
+            for stf in profiles:
+                if stf['stf_type'][0] == stf_type:
+                    new_profiles.append(stf)
+            profiles = new_profiles
+        lengths = np.arange(1000,6000,100)
+        spacings = np.arange(100,1000,50)
+        thks = np.arange(5,50,1)
+        axstress =transsress1 = transsress2 = shearstress =   np.arange(-200,210,10)# np.concatenate((np.arange(-400,-200,10), np.arange(210,410,10)))
+        pressures = np.arange(0,0.5,0.01)
+        now = time.time()
+        yields = np.array([235,265,315,355,355,355,390,420,460])
+        for idx in range(batch_size):
+            ''' Adding 'Stiffener type (L,T,F)': self.stf_type,  'Stiffener boundary': 'C',
+                'Stiff. Height': self.stf_web_height*1000, 'Web thick.': self.stf_web_thk*1000, 
+                'Flange width': self.stf_flange_width*1000, 'Flange thick.': self.stf_flange_thk*1000}'''
+
+            this_id = 'run_' + str(idx) + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+            this_stf = random.choice(profiles)
+            if random.choice([True, False]):
+                boundary = 'Int'
+            else:
+                boundary = random.choice(['GL', 'GT'])
+
+            if random.choice([True, True, False]):
+                stf_boundary = 'C'
+            else:
+                stf_boundary = 'S'
+            yieldstress = np.random.choice(yields)
+            if random.choice([True, True, False]):
+                transstress1 = np.random.choice(transsress1)  # Using same value for trans1 and trans 2
+                transstress2 = transstress1
+            else:
+                transstress1 = np.random.choice(transsress1)
+                transstress2 = np.random.choice(transsress2)
+
+            run_dict[this_id] = {'Identification': this_id, 'Length of panel': np.random.choice(lengths),
+                                 'Stiffener spacing': np.random.choice(spacings),
+                                 'Plate thickness': np.random.choice(thks), 'Number of primary stiffeners': 10,
+                                 'Stiffener type (L,T,F)': 'F' if this_stf['stf_type'][0] == 'FB' else this_stf['stf_type'][0],
+                                 'Stiffener boundary': stf_boundary,
+                                 'Stiff. Height': this_stf['stf_web_height'][0]*1000,
+                                 'Web thick.': this_stf['stf_web_thk'][0]*1000,
+                                 'Flange width': 0 if this_stf['stf_type'][0] == 'F'
+                                 else this_stf['stf_flange_width'][0]*1000,
+                                 'Flange thick.': 0 if  this_stf['stf_type'][0] == 'F'
+                                 else this_stf['stf_flange_thk'][0]*1000,
+                                 'Tilt angle': 0, 'Number of sec. stiffeners': 0,
+                                 'Modulus of elasticity': 210000, "Poisson's ratio": 0.3,
+                                 'Yield stress plate':yieldstress, 'Yield stress stiffener': yieldstress,
+                                 'Axial stress': 0 if boundary == 'GT' else np.random.choice(axstress),
+                                 'Trans. stress 1': 0 if boundary == 'GL' else transstress1,
+                                 'Trans. stress 2': 0 if boundary == 'GL' else transstress2,
+                                 'Shear stress': np.random.choice(shearstress),
+                                 'Pressure (fixed)': 0 if stf_boundary == 'S' else np.random.choice(pressures),
+                                 'In-plane support': boundary}
+
+        self._all_to_run = run_dict
+        self.run_all(store_results=True)
+        print('Time to run', batch_size, 'batches:', time.time() - now)
+
+
+
+def f(name, queue):
+    import time
+    #print('hello', name)
+    time.sleep(2)
+    queue.put(name)
+
+
 if __name__ == '__main__':
-    import ANYstructure.example_data as test
+    import ANYstructure.example_data as ex
+    # PULS = PULSpanel(ex.run_dict, puls_sheet_location=r'C:\Github\ANYstructure\ANYstructure\PULS\PulsExcel_new - Copy (1).xlsm')
+    # PULS.run_all_multi()
+    PULS = PULSpanel(puls_sheet_location=r'C:\Github\ANYstructure\ANYstructure\PULS\PulsExcel_new - generator.xlsm')
+    for dummy in range(100):
+        PULS.generate_random_results(batch_size=10000, stf_type='FB')
+    # import ANYstructure.example_data as test
+    # from multiprocessing import Process
+    #
+    # queue = multiprocessing.SimpleQueue()
+    # tasks = ['a', 'b', 'c']
+    # for name in tasks:
+    #     p = Process(target=f, args=(name,queue))
+    #     p.start()
+    #
+    # for task in tasks:
+    #     print(queue.get())
+
 
     # print('Fatigue test: ')
     # my_test = CalcFatigue(test.obj_dict, test.fat_obj_dict)
@@ -1205,16 +1619,16 @@ if __name__ == '__main__':
     # print(my_buc.get_net_effective_plastic_section_modulus())
 
     #my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0))
-    import ANYstructure.example_data as ex
-    for example in [CalcScantlings(ex.obj_dict), CalcScantlings(ex.obj_dict2), CalcScantlings(ex.obj_dict_L)]:
-        my_test = example
+    # import ANYstructure.example_data as ex
+    # for example in [CalcScantlings(ex.obj_dict), CalcScantlings(ex.obj_dict2), CalcScantlings(ex.obj_dict_L)]:
+    #     my_test = example
         # my_test = CalcScantlings(example)
         # my_test = CalcFatigue(example, test.fat_obj_dict2)
         # my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0))
         # print('Total damage: ', my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0)))
         # print(my_test.get_fatigue_properties())
-        pressure = 200
-        print(my_test.buckling_local_stiffener())
+        # pressure = 200
+        # print(my_test.buckling_local_stiffener())
         # print('SHEAR CENTER: ',my_test.get_shear_center())
         # print('SECTION MOD: ',my_test.get_section_modulus())
         # print('SECTION MOD FLANGE: ', my_test.get_section_modulus()[0])

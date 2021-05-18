@@ -21,12 +21,12 @@ import csv
 
 def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lateral_pressure=None,
                      deltas=None, algorithm='anysmart', trials=30000, side='p',
-                     const_chk = (True,True,True,True,True,True, True),
+                     const_chk = (True,True,True,True,True,True, True, False),
                      pso_options = (100,0.5,0.5,0.5,100,1e-8,1e-8), is_geometric=False, fatigue_obj = None ,
                      fat_press_ext_int = None,
                      min_max_span = (2,6), tot_len = None, frame_height = 2.5, frame_distance = None,
                      slamming_press = 0, predefined_stiffener_iter = None, processes = None, use_weight_filter = True,
-                     load_pre = False, opt_girder_prop = None):
+                     load_pre = False, opt_girder_prop = None, puls_sheet = None, puls_acceptance = 0.87):
     '''
     The optimazation is initiated here. It is called from optimize_window.
     :param initial_structure_obj:
@@ -68,7 +68,8 @@ def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lat
         to_return = any_smart_loop(min_var, max_var, deltas, initial_structure_obj, lateral_pressure,
                                    init_filter_weight, side=side, const_chk=const_chk, fat_dict=fat_dict,
                                    fat_press=fat_press_ext_int,slamming_press=slamming_press,
-                                   predefiened_stiffener_iter=predefined_stiffener_iter)
+                                   predefiened_stiffener_iter=predefined_stiffener_iter, puls_sheet = puls_sheet,
+                                   puls_acceptance = puls_acceptance)
         return to_return
     elif algorithm == 'anysmart' and is_geometric:
         return geometric_summary_search(min_var= min_var, max_var=max_var, deltas= deltas,
@@ -100,7 +101,7 @@ def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lat
         return None
 
 def any_optimize_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure, init_filter = float('inf'),
-                      side='p',const_chk=(True,True,True,True,True), fat_dict = None, fat_press = None,
+                      side='p',const_chk=(True,True,True,True,True,False), fat_dict = None, fat_press = None,
                       slamming_press = 0):
     '''
     Calulating initial values.
@@ -149,7 +150,8 @@ def any_optimize_loop(min_var,max_var,deltas,initial_structure_obj,lateral_press
 
 def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure, init_filter = float('inf'),
                    side='p',const_chk=(True,True,True,True,True,True,True), fat_dict = None, fat_press = None,
-                   slamming_press = 0, predefiened_stiffener_iter = None, processes = None):
+                   slamming_press = 0, predefiened_stiffener_iter = None, processes = None,
+                   puls_sheet = None, puls_acceptance = 0.87):
     '''
     Trying to be smart
     :param min_var:
@@ -167,7 +169,8 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
 
     main_result = get_filtered_results(structure_to_check, initial_structure_obj,lateral_pressure,
                                        init_filter_weight=init_filter, side=side,chk=const_chk, fat_dict=fat_dict,
-                                       fat_press=fat_press, slamming_press=slamming_press, processes=processes)
+                                       fat_press=fat_press, slamming_press=slamming_press, processes=processes,
+                                       puls_sheet = puls_sheet, puls_acceptance = puls_acceptance)
 
     main_iter = main_result[0]
     main_fail = main_result[1]
@@ -184,8 +187,13 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
     if ass_var == None:
         return None, None, None, False, main_fail
 
-    new_struc_obj = create_new_structure_obj(initial_structure_obj,[round(item,10) for item in ass_var])
-    new_calc_obj = create_new_calc_obj(initial_structure_obj,[round(item,10) for item in ass_var])[0]
+    if len(ass_var) == 8:
+        ass_var = [round(item, 10) for item in ass_var[0:8]]
+    else:
+        ass_var = [round(item, 10) for item in ass_var[0:8]] + [ass_var[8]]
+
+    new_struc_obj = create_new_structure_obj(initial_structure_obj,ass_var)
+    new_calc_obj = create_new_calc_obj(initial_structure_obj,ass_var)[0]
 
     return new_struc_obj, new_calc_obj, fat_dict, True, main_fail
 
@@ -489,14 +497,36 @@ def any_find_min_weight_var(var):
     return min(map(calc_weight))
 
 
-def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True,True, True, True, True),
-                        fat_dict = None, fat_press = None, slamming_press = 0, print_result = False):
+def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True,True, True, True, True, False),
+                        fat_dict = None, fat_press = None, slamming_press = 0, PULSrun: calc.PULSpanel = None,
+                        print_result = False):
     '''
     Checking all constraints defined.
+
+        iter_var = ((item,init_stuc_obj,lat_press,init_filter_weight,side,chk,fat_dict,fat_press,slamming_press, PULSrun)
+                for item in iterable_all)
     :param x:
     :return:
     '''
-    all_checks = [0,0,0,0,0,0,0,0]
+    all_checks = [0,0,0,0,0,0,0,0,0]
+
+    calc_object = create_new_calc_obj(obj, x, fat_dict)
+
+    # PULS buckling check
+    if chk[7] and PULSrun is not None:
+        x_id = x_to_string(x)
+        if calc_object[0].get_puls_method() == 'buckling':
+            puls_uf = PULSrun.get_puls_line_results(x_id)["Buckling strength"]["Actual usage Factor"][0]
+        elif calc_object[0].get_puls_method() == 'ultimate':
+            puls_uf = PULSrun.get_puls_line_results(x_id)["Ultimate capacity"]["Actual usage Factor"][0]
+        if type(puls_uf) == str:
+            return False, 'PULS', x, all_checks
+        all_checks[8] = puls_uf/PULSrun.puls_acceptance
+        if puls_uf/PULSrun.puls_acceptance >= 1:
+            if print_result:
+                print('PULS', calc_object[0].get_one_line_string(), False)
+            return False, 'PULS', x, all_checks
+
     this_weight = calc_weight(x)
 
     if this_weight > init_weight:
@@ -508,8 +538,6 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
         all_checks[0] = weigt_frac
         return False, 'Weight filter', x, all_checks
 
-    calc_object = create_new_calc_obj(obj, x, fat_dict)
-
     # Section modulus
     if chk[0]:
         section_modulus = min(calc_object[0].get_section_modulus())
@@ -520,6 +548,7 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
             if print_result:
                 print('Section modulus',calc_object[0].get_one_line_string(), False)
             return False, 'Section modulus', x, all_checks
+
 
     # Local stiffener buckling
     if chk[6]:
@@ -679,7 +708,10 @@ def create_new_calc_obj(init_obj,x, fat_dict=None):
                  'stf_kps': [init_obj.get_kps(), ''],'stf_km1': [init_obj.get_km1(), ''],
                  'stf_km2': [init_obj.get_km2(), ''],'stf_km3': [init_obj.get_km3(), ''],
                  'structure_types':[init_obj.get_structure_types(), ''],
-                 'zstar_optimization': [init_obj.get_z_opt(), '']}
+                 'zstar_optimization': [init_obj.get_z_opt(), ''],
+                 'puls buckling method':[init_obj.get_puls_method(),''],
+                 'puls boundary':[init_obj.get_puls_boundary(),''],
+                 'puls stiffener end':[init_obj.get_puls_stf_end(),''],}
     if fat_dict == None:
         return calc.CalcScantlings(main_dict), None
     else:
@@ -714,7 +746,8 @@ def create_new_structure_obj(init_obj, x, fat_dict=None):
                    'stf_kps': [init_obj.get_kps(), ''], 'stf_km1': [init_obj.get_km1(), ''],
                    'stf_km2': [init_obj.get_km2(), ''], 'stf_km3': [init_obj.get_km3(), ''],
                  'structure_types': [init_obj.get_structure_types(), ''],
-                 'zstar_optimization': [init_obj.get_z_opt(), '']}
+                 'zstar_optimization': [init_obj.get_z_opt(), ''],
+                 'puls buckling method': [init_obj.get_puls_method(), ''],}
 
     if fat_dict == None:
         return calc.Structure(main_dict)
@@ -803,20 +836,26 @@ def stress_scaling_area(sigma_old,a_old,a_new):
 
     if a_new <= a_old: #decreasing the thickness
         sigma_new = sigma_old*(a_old/(a_old-abs((a_old-a_new))))
-        assert sigma_new >= sigma_old, 'ERROR no stress increase: \n' \
-                                      't_old '+str(a_old)+' sigma_old '+str(sigma_old)+ \
-                                      '\nt_new '+str(a_new)+' sigma_new '+str(sigma_new)
+        # assert sigma_new >= sigma_old, 'ERROR no stress increase: \n' \
+        #                               't_old '+str(a_old)+' sigma_old '+str(sigma_old)+ \
+        #                               '\nt_new '+str(a_new)+' sigma_new '+str(sigma_new)
     else: #increasing the thickness
         sigma_new = sigma_old*(a_old/(a_old+0.5*abs((a_old-a_new))))
-        assert sigma_new <= sigma_old, 'ERROR no stress reduction: \n' \
-                                      't_old '+str(a_old)+' sigma_old '+str(sigma_old)+ \
-                                      '\nt_new '+str(a_new)+' sigma_new '+str(sigma_new)
+        # assert sigma_new <= sigma_old, 'ERROR no stress reduction: \n' \
+        #                               't_old '+str(a_old)+' sigma_old '+str(sigma_old)+ \
+        #                               '\nt_new '+str(a_new)+' sigma_new '+str(sigma_new)
     #print('a_old', a_old, 'sigma_old', sigma_old, '|', 'a_new', a_new, 'sigma_new',sigma_new)
     return sigma_new
 
+def x_to_string(x):
+    ret = ''
+    for val in x:
+        ret += str(val) + '_'
+    return ret
+
 def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight,side='p',
-                         chk=(True,True,True,True,True,True,True),fat_dict = None, fat_press = None,
-                         slamming_press=None, processes = None):
+                         chk=(True,True,True,True,True,True,True, False),fat_dict = None, fat_press = None,
+                         slamming_press=None, processes = None, puls_sheet = None, puls_acceptance = 0.87):
     '''
     Using multiprocessing to return list of applicable results.
 
@@ -829,8 +868,32 @@ def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight
     :return:
     '''
     #print('Init filter weight', init_filter_weight)
+    '''
+    x,obj,lat_press,init_weight,side='p',chk=(True,True,True,True, True, True, True, False),
+                        fat_dict = None, fat_press = None, slamming_press = 0, , puls_results = None, print_result = False
+    '''
+    if chk[7]:
+        # PULS to be used.
+        #calc.PULSpanel
+        '''
+        dict_to_run[line_given] = self._line_to_struc[line_given][1].get_puls_input()
+        dict_to_run[line_given]['Identification'] = line_given
+        dict_to_run[line_given]['Pressure (fixed)'] = self.get_highest_pressure(line_given)['normal'] / 1e6
+        '''
+        dict_to_run = {}
+        for x in iterable_all:
+            x_id = x_to_string(x)
+            calc_object = create_new_calc_obj(init_stuc_obj, x, fat_dict)
+            dict_to_run[x_id] = calc_object[0].get_puls_input()
+            dict_to_run[x_id]['Identification'] = x_id
+            dict_to_run[x_id]['Pressure (fixed)'] = lat_press/1000 # PULS sheet to have pressure in MPa
 
-    iter_var = ((item,init_stuc_obj,lat_press,init_filter_weight,side,chk,fat_dict,fat_press,slamming_press)
+        PULSrun = calc.PULSpanel(dict_to_run, puls_sheet_location=puls_sheet, puls_acceptance=puls_acceptance)
+        PULSrun.run_all()
+    else:
+        PULSrun = None
+
+    iter_var = ((item,init_stuc_obj,lat_press,init_filter_weight,side,chk,fat_dict,fat_press,slamming_press, PULSrun)
                 for item in iterable_all)
     #res_pre = it.starmap(any_constraints_all, iter_var)
     if processes is None:
