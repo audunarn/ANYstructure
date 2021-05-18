@@ -161,7 +161,7 @@ class LetterMaker(object):
         ptext = '<font size="12" color = "blue"><strong>' + "Results for defined structure: " + '</strong></font>'
         self.createParagraph(ptext, 10, 0)
 
-        delta = 160 if not self.data._new_toggle_puls.get() else 180
+        delta = 140 if not self.data._new_toggle_puls.get() else 180
         vpos = 950
 
         for line in sorted(self.data._line_dict.keys()):
@@ -284,8 +284,8 @@ class LetterMaker(object):
                 else:
                     textobject.textLine('No fatigue results')
 
-                textobject.textLine('Utilization percentage (highest calculated): '+
-                                    str(int(max(self.data.get_color_and_calc_state()['utilization'][line].values())*100))+ '%')
+                # textobject.textLine('Utilization percentage (highest calculated): '+
+                #                     str(int(max(self.data.get_color_and_calc_state()['utilization'][line].values())*100))+ '%')
 
                 textobject.setFillColor('black')
                 self.c.drawText(textobject)
@@ -369,7 +369,8 @@ class LetterMaker(object):
                         method = self.data._line_to_struc[line][1].get_puls_method()
                         if self.data._PULS_results is not None:
                             util = self.data._PULS_results.get_utilization(line, method, self.data._new_puls_uf.get())
-                            self.c.setStrokeColor('red' if util > 1 else 'green')
+                            if util is not None:
+                                self.c.setStrokeColor('red' if util > 1 else 'green')
                     except KeyError:
                         self.c.setStrokeColor('black')
             elif draw_type == 'section':

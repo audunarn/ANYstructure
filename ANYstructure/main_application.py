@@ -3615,14 +3615,6 @@ class Application():
 
         self.update_frame()
 
-    def button_load_info_click(self, event = None):
-        ''' Get the load information for one line.'''
-        if self._active_line != '' and self._active_line in self._line_to_struc.keys():
-            load_text = self.calculate_all_load_combinations_for_line(self._active_line, get_load_info=True)
-            tk.messagebox.showinfo('Load info for '+self._active_line, ''.join(load_text))
-        else:
-            tk.messagebox.showerror('No data', 'No load data for this line')
-
     def draw_point_frame(self):
         ''' Frame to define brackets on selected point. '''
         pt_canvas = tk.Canvas(self._pt_frame,height=100,width=100,background='gray60')
@@ -3849,6 +3841,31 @@ class Application():
         else:
             self.openfile(defined= self._root_dir + '/' + file_name)
 
+    def button_load_info_click(self, event = None):
+        ''' Get the load information for one line.'''
+        if self._active_line != '' and self._active_line in self._line_to_struc.keys():
+            load_text = self.calculate_all_load_combinations_for_line(self._active_line, get_load_info=True)
+            text_to_frame = 'Load results for ' + self._active_line + '\n' + '\n'
+            for item in load_text:
+                text_to_frame += item
+
+            text_m = tk.Toplevel(self._parent, background=self._general_color)
+            # Create the text widget
+            text_widget = tk.Text(text_m, height=60, width=80)
+            # Create a scrollbar
+            scroll_bar = tk.Scrollbar(text_m)
+            # Pack the scroll bar
+            # Place it to the right side, using tk.RIGHT
+            scroll_bar.pack(side=tk.RIGHT)
+            # Pack it into our tkinter application
+            # Place the text widget to the left side
+            text_widget.pack(side=tk.LEFT)
+            # Insert text into the text widget
+            text_widget.insert(tk.END, text_to_frame)
+            #tk.messagebox.showinfo('Load info for '+self._active_line, ''.join(load_text))
+        else:
+            tk.messagebox.showerror('No data', 'No load data for this line')
+
     def on_open_structure_window(self):
         '''
         Opens the window to create structure.
@@ -3929,7 +3946,20 @@ class Application():
                 for subk, subv in value.items():
                     this_string += '   ' + subk + ' : ' + str(subv[0]) + ' ' + str(subv[1] if subv[1] != None else '') + '\n'
 
-        tk.messagebox.showinfo('Results for '+self._active_line, this_string)
+        text_m = tk.Toplevel(self._parent, background=self._general_color)
+        # Create the text widget
+        text_widget = tk.Text(text_m , height=60, width=80)
+        # Create a scrollbar
+        scroll_bar = tk.Scrollbar(text_m)
+        # Pack the scroll bar
+        # Place it to the right side, using tk.RIGHT
+        scroll_bar.pack(side=tk.RIGHT)
+        # Pack it into our tkinter application
+        # Place the text widget to the left side
+        text_widget.pack(side=tk.LEFT)
+        long_text = this_string
+        # Insert text into the text widget
+        text_widget.insert(tk.END, long_text)
 
     def on_show_loads(self):
         '''

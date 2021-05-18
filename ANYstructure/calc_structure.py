@@ -1494,7 +1494,7 @@ class PULSpanel():
         if id in self._run_results.keys():
             self._run_results.pop(id)
 
-    def generate_random_results(self, batch_size: int = 1000, ):
+    def generate_random_results(self, batch_size: int = 1000, stf_type: str = None):
         '''
         Genrate random results based on user input.
         :return:
@@ -1514,11 +1514,16 @@ class PULSpanel():
         run_dict = {}
 
         profiles = hlp.helper_read_section_file('bulb_anglebar_tbar_flatbar.csv')
-
+        if stf_type is not None:
+            new_profiles = list()
+            for stf in profiles:
+                if stf['stf_type'][0] == stf_type:
+                    new_profiles.append(stf)
+            profiles = new_profiles
         lengths = np.arange(1000,6000,100)
         spacings = np.arange(100,1000,50)
         thks = np.arange(5,50,1)
-        axstress =transsress1 = transsress2 = shearstress =  np.arange(-200,220,10)
+        axstress =transsress1 = transsress2 = shearstress =   np.arange(-200,210,10)# np.concatenate((np.arange(-400,-200,10), np.arange(210,410,10)))
         pressures = np.arange(0,0.5,0.01)
         now = time.time()
         yields = np.array([235,265,315,355,355,355,390,420,460])
@@ -1549,16 +1554,16 @@ class PULSpanel():
             run_dict[this_id] = {'Identification': this_id, 'Length of panel': np.random.choice(lengths),
                                  'Stiffener spacing': np.random.choice(spacings),
                                  'Plate thickness': np.random.choice(thks), 'Number of primary stiffeners': 10,
-                                 'Stiffener type (L,T,F)': this_stf['stf_type'][0],
+                                 'Stiffener type (L,T,F)': 'F' if this_stf['stf_type'][0] == 'FB' else this_stf['stf_type'][0],
                                  'Stiffener boundary': stf_boundary,
                                  'Stiff. Height': this_stf['stf_web_height'][0]*1000,
                                  'Web thick.': this_stf['stf_web_thk'][0]*1000,
-                                 'Flange width': 0 if  this_stf['stf_type'][0] == 'F'
+                                 'Flange width': 0 if this_stf['stf_type'][0] == 'F'
                                  else this_stf['stf_flange_width'][0]*1000,
                                  'Flange thick.': 0 if  this_stf['stf_type'][0] == 'F'
                                  else this_stf['stf_flange_thk'][0]*1000,
                                  'Tilt angle': 0, 'Number of sec. stiffeners': 0,
-                                 'Modulus of elasticity': 210000.0, "Poisson's ratio": 0.3,
+                                 'Modulus of elasticity': 210000, "Poisson's ratio": 0.3,
                                  'Yield stress plate':yieldstress, 'Yield stress stiffener': yieldstress,
                                  'Axial stress': 0 if boundary == 'GT' else np.random.choice(axstress),
                                  'Trans. stress 1': 0 if boundary == 'GL' else transstress1,
@@ -1585,8 +1590,8 @@ if __name__ == '__main__':
     # PULS = PULSpanel(ex.run_dict, puls_sheet_location=r'C:\Github\ANYstructure\ANYstructure\PULS\PulsExcel_new - Copy (1).xlsm')
     # PULS.run_all_multi()
     PULS = PULSpanel(puls_sheet_location=r'C:\Github\ANYstructure\ANYstructure\PULS\PulsExcel_new - generator.xlsm')
-    for dummy in range(10):
-        PULS.generate_random_results(batch_size=10000)
+    for dummy in range(100):
+        PULS.generate_random_results(batch_size=10000, stf_type='FB')
     # import ANYstructure.example_data as test
     # from multiprocessing import Process
     #
