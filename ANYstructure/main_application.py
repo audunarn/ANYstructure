@@ -495,7 +495,7 @@ class Application():
         self._puls_run_one.place(relx=types_start+ delta_x*7.8, rely=prop_vert_start+9.5*delta_y, relwidth = 0.047,
                                 relheight = 0.035)
         self._ent_puls_uf.place(relx=types_start+ delta_x*7.8, rely=prop_vert_start+11*delta_y, relwidth = 0.02,
-                                relheight = 0.035)
+                                relheight = 0.03)
 
         tk.Label(self._main_fr, text='Set PULS utilization factor:', font=self._text_size['Text 7'],
                  bg = self._general_color).place(relx=types_start+ delta_x*4.2, rely=prop_vert_start+11*delta_y,
