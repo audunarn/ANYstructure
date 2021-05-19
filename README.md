@@ -25,7 +25,7 @@ GUI based steel structure calculation tool.
   - Minimum plate thickness (DNVGL-OS-C101)
   - Minimum section modulus of stiffener/plate (DNVGL-OS-C101)
   - Minimum shear area (DNVGL-OS-C101)
-  - Buckling (DNVGL-RP-C201)
+  - Buckling (DNVGL-RP-C201) or PULS (licenced DNV software)
   - Fatigue for plate/stiffener connection (DNVGL-RP-C203)
 
 Compartments (tank pressures) are created automatically.
@@ -45,4 +45,4 @@ Please like, share or comment on LinkedIn: https://www.linkedin.com/in/audun-arn
 
 Screenshot (this example can be loaded from file "ship_section_example.txt"):
 
-![picture](https://docs.google.com/uc?id=1AWu0Twqd3tQKjUKPWXBFVwosUZTvlq4t)
+![picture](https://docs.google.com/uc?id=1HJeT50bNJTLJbcHTfRke4iySV8zNOAl_)
