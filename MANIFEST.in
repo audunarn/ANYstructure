@@ -23,3 +23,4 @@ include ANYstructure\images\current_comps_NONE.png
 include ANYstructure\ship_section_example.txt
 include ANYstructure\ANYstructure_documentation.pdf
 include ANYstructure\sections.csv
+include ANYstructure\bulb_anglebar_tbar_flatbar.csv
