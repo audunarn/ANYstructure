@@ -463,18 +463,18 @@ class Application():
         # Toggle buttons
         self._toggle_btn = tk.Button(self._main_fr, text="Toggle select\nmultiple", relief="raised",
                                      command=self.toggle_select_multiple, bg = self._button_bg_color)
-        self._toggle_change_param = tk.Button(self._main_fr, text="Change multi.\nparam.", relief="raised",
+        self._toggle_change_param = tk.Button(self._main_fr, text="Change multi.\nparameter", relief="raised",
                                      command=self.toggle_set_variable, bg = self._button_bg_color)
         self._toggle_param_to_change = None
         self._toggle_btn.place(relx=types_start+ delta_x*4.2, rely=prop_vert_start+12.3*delta_y, relwidth = 0.045,
-                                relheight = 0.03)
+                                relheight = 0.035)
         self._toggle_change_param.place(relx=types_start+ delta_x*6, rely=prop_vert_start+12.3*delta_y, relwidth = 0.045,
-                                relheight = 0.03)
+                                relheight = 0.035)
 
         self._toggle_choose = tk.OptionMenu(self._main_fr, self._new_toggle_var, *self._stuctural_definition,
                                             command = self.update_frame)
         self._toggle_choose.place(relx=types_start+ delta_x*7.8, rely=prop_vert_start+12.3*delta_y, relwidth = 0.047,
-                                relheight = 0.03)
+                                relheight = 0.035)
 
         # PULS interface
         self._toggle_btn_puls = tk.Button(self._main_fr, text="Use PULS\n"
@@ -1070,7 +1070,7 @@ class Application():
                                                                             'office.\n\n'
                                                                          'A sheet may be provided but does not exist'
                                                                             ' in :\n'
-                                                                         + self._PULS_results.puls_sheet_location +
+                                                                         + str(self._PULS_results.puls_sheet_location) +
                                     '\n\n A file dialogue will pop up after this message.')
             self._PULS_results.puls_sheet_location= \
                 tk.filedialog.askopenfilename(parent=self._main_fr,title='Set location of PULS excel sheet.')
