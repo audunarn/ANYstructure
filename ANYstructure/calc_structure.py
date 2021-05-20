@@ -504,8 +504,10 @@ class Structure():
                         'Flange thick.': self.flange_th*1000, 'Tilt angle': 0,
                       'Number of sec. stiffeners': 0, 'Modulus of elasticity': 2.1e11/1e6, "Poisson's ratio": 0.3,
                       'Yield stress plate': self.mat_yield/1e6, 'Yield stress stiffener': self.mat_yield/1e6,
-                        'Axial stress': self.sigma_x, 'Trans. stress 1': self.sigma_y1,
-                      'Trans. stress 2': self.sigma_y2, 'Shear stress': self.tauxy,
+                        'Axial stress': 0 if self._puls_boundary == 'GT' else self.sigma_x,
+                       'Trans. stress 1': 0 if self._puls_boundary == 'GL' else self.sigma_y1,
+                      'Trans. stress 2': 0 if self._puls_boundary == 'GL' else self.sigma_y2,
+                       'Shear stress': self.tauxy,
                         'Pressure (fixed)': None, 'In-plane support': self._puls_boundary}
         return return_dict
 
@@ -1380,11 +1382,13 @@ class PULSpanel():
     def get_utilization(self, line, method, acceptance = 0.87):
         if line in self._run_results.keys():
             if method == 'buckling':
-                if type(self._run_results[line]['Buckling strength']['Actual usage Factor'][0]) == str:
+                if type(self._run_results[line]['Buckling strength']['Actual usage Factor'][0]) == str or \
+                        self._run_results[line]['Buckling strength']['Actual usage Factor'][0] is None:
                     return None
                 return self._run_results[line]['Buckling strength']['Actual usage Factor'][0]/acceptance
             else:
-                if type(self._run_results[line]['Ultimate capacity']['Actual usage Factor'][0]) == str:
+                if type(self._run_results[line]['Ultimate capacity']['Actual usage Factor'][0]) == str or \
+                        self._run_results[line]['Buckling strength']['Actual usage Factor'][0] is None:
                     return None
                 return self._run_results[line]['Ultimate capacity']['Actual usage Factor'][0]/acceptance
         else:
@@ -1523,7 +1527,7 @@ class PULSpanel():
         lengths = np.arange(1000,6000,100)
         spacings = np.arange(100,1000,50)
         thks = np.arange(5,50,1)
-        axstress =transsress1 = transsress2 = shearstress =   np.arange(-200,210,10)# np.concatenate((np.arange(-400,-200,10), np.arange(210,410,10)))
+        axstress =transsress1 = transsress2 = shearstress = np.concatenate((np.arange(-400,-200,10), np.arange(210,410,10)))#np.arange(-200,210,10)
         pressures = np.arange(0,0.5,0.01)
         now = time.time()
         yields = np.array([235,265,315,355,355,355,390,420,460])
@@ -1591,7 +1595,7 @@ if __name__ == '__main__':
     # PULS.run_all_multi()
     PULS = PULSpanel(puls_sheet_location=r'C:\Github\ANYstructure\ANYstructure\PULS\PulsExcel_new - generator.xlsm')
     for dummy in range(100):
-        PULS.generate_random_results(batch_size=10000, stf_type='FB')
+        PULS.generate_random_results(batch_size=10000)
     # import ANYstructure.example_data as test
     # from multiprocessing import Process
     #

@@ -238,7 +238,7 @@ class Application():
 
         # These sets the location where entries are placed.
         ent_x = 0.09375
-        delta_y = 0.024
+        delta_y = 0.022
         delta_x = 0.026041667
 
         # ----------------------INITIATION OF THE SMALLER PARTS OF THE GUI STARTS HERE--------------------------
@@ -250,7 +250,7 @@ class Application():
         self._new_zstar_optimization.set(True)
         self._new_project_infomation = tk.StringVar()
         self._new_project_infomation.set('No information on project provided. Input here.')
-        point_x_start, point_start = 0.005208333, 0.06
+        point_x_start, point_start = 0.005208333, 0.055
         ent_width = 6  # width of entries
 
         tk.Entry(self._main_fr, textvariable=self._new_project_infomation,
@@ -323,10 +323,10 @@ class Application():
 
 
 
-        line_start, line_x = point_start+0.09, 0.005208333
+        line_start, line_x = point_start+0.08, 0.005208333
         tk.Label(self._main_fr, text='Input line from "point number" to "point number"',
                  font=self._text_size['Text 9 bold'], bg = self._general_color)\
-            .place(rely=line_start - 0.027777778, relx=-0.034, relwidth = 0.25, anchor = tk.NW)
+            .place(rely=line_start - 0.025, relx=-0.034, relwidth = 0.25, anchor = tk.NW)
         tk.Label(self._main_fr, text='From point number:',font="Text 9", bg = self._general_color)\
             .place(relx=line_x, rely=line_start)
         tk.Label(self._main_fr, text='To point number:',font="Text 9", bg = self._general_color)\
@@ -361,7 +361,7 @@ class Application():
         # --- delete points and lines ---
         self._new_delete_line = tk.IntVar()
         self._new_delete_point = tk.IntVar()
-        del_start, del_x = line_start + 0.09,0.005208333
+        del_start, del_x = line_start + 0.075,0.005208333
         tk.Label(self._main_fr, text='Delete lines and points (or left/right click and use "Delete key")',
                  font=self._text_size['Text 9 bold'], bg = self._general_color)\
             .place(rely=del_start - 0.027777778*1,relx=-0.008, relwidth = 0.25, anchor = tk.NW)
@@ -395,11 +395,11 @@ class Application():
                                                                                      relwidth = 0.05)
 
         # --- structure type information ---
-        prop_vert_start = 0.32
+        prop_vert_start = 0.29
         types_start = 0.005208333
         tk.Label(self._main_fr, text='Structural and calculation properties input below:',
                  font=self._text_size['Text 9 bold'],
-                 bg = self._general_color ).place(rely=prop_vert_start-1.2*delta_y,relx=-0.034, relwidth = 0.25,
+                 bg = self._general_color ).place(rely=prop_vert_start-delta_y,relx=-0.034, relwidth = 0.25,
                                                   anchor = tk.NW)
         def show_message():
             messagebox.showinfo(title='Structure type',message='Types - sets default stresses (sigy1/sigy2/sigx/tauxy)'
@@ -426,80 +426,72 @@ class Application():
                                                                '\n Internal low stress wt (40/40/20/5): '
                                                                'INTERNAL_LOW_STRESS_WT ')
 
-        tk.Button(self._main_fr,text='Show structure types',command=show_message,
-                  bg = self._button_bg_color, fg = self._button_fg_color, font=self._text_size['Text 8'])\
-            .place(relx=types_start,rely=prop_vert_start+13*delta_y,relwidth = 0.1)
 
         self._zstar_chk = tk.Checkbutton(self._main_fr, variable=self._new_zstar_optimization)\
-            .place(relx=types_start,rely=prop_vert_start+14.*delta_y)
-        tk.Label(self._main_fr, text='z* optimization', font=self._text_size['Text 9 bold'],
+            .place(relx=types_start,rely=prop_vert_start+11.5*delta_y)
+        tk.Label(self._main_fr, text='z* optimization (RP-C201)', font=self._text_size['Text 9 bold'],
                  bg = self._general_color)\
-            .place(relx=types_start + 0.8*delta_x,rely=prop_vert_start+14*delta_y)
+            .place(relx=types_start + 0.8*delta_x,rely=prop_vert_start+11.5*delta_y)
         tk.Label(self._main_fr, text='Show line names in GUI', font="Text 9")\
-            .place(relx=types_start + 0.8*delta_x, rely=prop_vert_start+15*delta_y)
+            .place(relx=0.4, rely=0)
         tk.Label(self._main_fr, text='Show point names in GUI', font="Text 9")\
-            .place(relx=types_start + 0.8*delta_x, rely=prop_vert_start+16*delta_y)
+            .place(relx=0.5, rely=0)
         tk.Checkbutton(self._main_fr, variable = self._new_line_name, command = self.on_color_code_check)\
-            .place(relx=types_start, rely=prop_vert_start+15*delta_y)
+            .place(relx=0.386, rely=0)
         tk.Checkbutton(self._main_fr, variable = self._new_draw_point_name, command = self.on_color_code_check)\
-            .place(relx=types_start, rely=prop_vert_start+16*delta_y)
+            .place(relx=0.486, rely=0)
 
-        tk.Label(self._main_fr, text='Select structure type:', font=self._text_size['Text 9 bold'],
-                 bg = self._general_color)\
-            .place(relx=types_start, rely=prop_vert_start + 9.5 * delta_y)
+
 
         self.add_stucture = tk.Button(self._main_fr, text='Add structure/properties to line \n'
                                                           '-- new or replace existing --', command=self.new_structure,
                                       font = self._text_size['Text 10 bold'],
                                       bg = self._button_bg_color, fg = self._button_fg_color)
-        self.add_stucture.place(relx=types_start+ delta_x*4.2, rely=prop_vert_start+15*delta_y, relwidth = 0.14,
+        self.add_stucture.place(relx=types_start+ delta_x*4.2, rely=prop_vert_start+18*delta_y, relwidth = 0.14,
                                 relheight = 0.04)
 
+
         tk.Checkbutton(self._main_fr, variable = self._new_scale_stresses, command = self.on_color_code_check)\
-            .place(relx = types_start+ delta_x*4.2, rely=prop_vert_start+14*delta_y)
+            .place(relx = types_start+ delta_x*4.7, rely=prop_vert_start+16.9*delta_y)
         tk.Label(self._main_fr, text='Scale stresses when changing prop.', font=self._text_size['Text 9'],
                  bg = self._general_color)\
-            .place(relx = types_start+ delta_x*4.7, rely=prop_vert_start+14*delta_y, relwidth = 0.12)
+            .place(relx = types_start+ delta_x*5, rely=prop_vert_start+17*delta_y, relwidth = 0.12)
         # Toggle buttons
         self._toggle_btn = tk.Button(self._main_fr, text="Toggle select\nmultiple", relief="raised",
                                      command=self.toggle_select_multiple, bg = self._button_bg_color)
         self._toggle_change_param = tk.Button(self._main_fr, text="Change multi.\nparameter", relief="raised",
                                      command=self.toggle_set_variable, bg = self._button_bg_color)
         self._toggle_param_to_change = None
-        self._toggle_btn.place(relx=types_start+ delta_x*4.2, rely=prop_vert_start+12.3*delta_y, relwidth = 0.045,
+        self._toggle_btn.place(relx=types_start+ delta_x*4.2, rely=prop_vert_start+15*delta_y, relwidth = 0.045,
                                 relheight = 0.035)
-        self._toggle_change_param.place(relx=types_start+ delta_x*6, rely=prop_vert_start+12.3*delta_y, relwidth = 0.045,
+        self._toggle_change_param.place(relx=types_start+ delta_x*6, rely=prop_vert_start+15*delta_y, relwidth = 0.045,
                                 relheight = 0.035)
 
         self._toggle_choose = tk.OptionMenu(self._main_fr, self._new_toggle_var, *self._stuctural_definition,
                                             command = self.update_frame)
-        self._toggle_choose.place(relx=types_start+ delta_x*7.8, rely=prop_vert_start+12.3*delta_y, relwidth = 0.047,
+        self._toggle_choose.place(relx=types_start+ delta_x*7.8, rely=prop_vert_start+15*delta_y, relwidth = 0.047,
                                 relheight = 0.035)
 
         # PULS interface
         self._toggle_btn_puls = tk.Button(self._main_fr, text="Use PULS\n"
                                                               "results", relief="raised",
                                      command=self.toggle_puls_run, bg = self._button_bg_color)
-        self._puls_run_all = tk.Button(self._main_fr, text='PULS run or\nupdate all lines', relief="raised",
+        self._puls_run_all = tk.Button(self._main_fr, text='Run PULS\nget missing results', relief="raised",
                                      command=self.puls_run_all_lines, bg = self._button_bg_color)
-        self._puls_run_one = tk.Button(self._main_fr, text="PULS\nRun one line", relief="raised",
-                                     command=self.puls_run_one_line, bg = self._button_bg_color)
+        # self._puls_run_one = tk.Button(self._main_fr, text="PULS\nRun one line", relief="raised",
+        #                              command=self.puls_run_one_line, bg = self._button_bg_color)
         self._ent_puls_uf = tk.Entry(self._main_fr, textvariable=self._new_puls_uf,
                                         width=int(ent_width * 1),
                                          bg = self._entry_color, fg = self._entry_text_color)
         self._new_puls_uf.trace('w', self.trace_acceptance_change)
-        self._toggle_btn_puls.place(relx=types_start+ delta_x*4.2, rely=prop_vert_start+9.5*delta_y, relwidth = 0.045,
+        self._toggle_btn_puls.place(relx=types_start, rely=prop_vert_start+18*delta_y, relwidth = 0.043,
                                 relheight = 0.035)
-        self._puls_run_all.place(relx=types_start+ delta_x*6, rely=prop_vert_start+9.5*delta_y, relwidth = 0.045,
+        self._puls_run_all.place(relx=types_start +0.046, rely=prop_vert_start+18*delta_y, relwidth = 0.06,
                                 relheight = 0.035)
-        self._puls_run_one.place(relx=types_start+ delta_x*7.8, rely=prop_vert_start+9.5*delta_y, relwidth = 0.047,
-                                relheight = 0.035)
-        self._ent_puls_uf.place(relx=types_start+ delta_x*7.8, rely=prop_vert_start+11*delta_y, relwidth = 0.02,
-                                relheight = 0.03)
+        # self._puls_run_one.place(relx=types_start+  +0.046, rely=prop_vert_start+18*delta_y, relwidth = 0.047,
+        #                         relheight = 0.035)
 
-        tk.Label(self._main_fr, text='Set PULS utilization factor:', font=self._text_size['Text 7'],
-                 bg = self._general_color).place(relx=types_start+ delta_x*4.2, rely=prop_vert_start+11*delta_y,
-                                                 relwidth = 0.08, relheight = 0.03)
+
 
         # --- main variable to define the structural properties ---
         self._new_material = tk.DoubleVar()
@@ -619,65 +611,76 @@ class Application():
         self._ent_puls_stf_end_type = tk.OptionMenu(self._main_fr, self._new_puls_stf_end_type,
                                                       *['C', 'S'])
 
-
-
         loc_y = -0.000185185
 
 
         ent_rely, ent_relx, drelx = prop_vert_start + 0.082, 0.059, 0.026
         ent_geo_y, loc_y = ent_rely-0.06, 0.000740741
         geo_ent_width, geo_dx = 0.026, 0.028
+        drely = 0.05
 
+        self._ent_structure_type.place(relx=types_start + 3 * delta_x, rely=ent_rely + 2.3 * drely, relwidth=0.10)
+        tk.Label(self._main_fr, text='Select structure type:', font=self._text_size['Text 9 bold'],
+                 bg = self._general_color)\
+            .place(relx=types_start, rely=ent_rely + 2.5 * drely)
+        tk.Button(self._main_fr,text='Show structure types',command=show_message,
+                  bg = self._button_bg_color, fg = self._button_fg_color, font=self._text_size['Text 8'])\
+            .place(relx=types_start + 3 * delta_x+0.1, rely=ent_rely + 2.3 * drely,relwidth = 0.07)
+        self._structure_types_label = \
+            tk.Label(textvariable = self._new_stucture_type_label, font = self._text_size['Text 8'],
+                     bg = self._general_color)\
+                .place(relx=types_start + 2.8 * delta_x, rely=ent_rely + 2.8 * drely, relwidth = 0.11, relheight = 0.02)
 
         tk.Label(self._main_fr,text='kpp', bg = self._general_color).place(relx=ent_relx + 0*geo_dx,
-                                                                           rely=prop_vert_start + 2.5 * delta_y)
+                                                                           rely=ent_rely-delta_y)
         tk.Label(self._main_fr, text='kps', bg = self._general_color).place(relx=ent_relx + 1*geo_dx,
-                                                                            rely=prop_vert_start + 2.5 * delta_y)
+                                                                            rely=ent_rely-delta_y)
         tk.Label(self._main_fr, text='km1', bg = self._general_color).place(relx=ent_relx + 2*geo_dx,
-                                                                            rely=prop_vert_start + 2.5 * delta_y)
+                                                                            rely=ent_rely-delta_y)
         tk.Label(self._main_fr, text='km2', bg = self._general_color).place(relx=ent_relx + 3*geo_dx,
-                                                                            rely=prop_vert_start + 2.5 * delta_y)
+                                                                            rely=ent_rely-delta_y)
         tk.Label(self._main_fr, text='k3', bg = self._general_color).place(relx=ent_relx + 4*geo_dx,
-                                                                           rely=prop_vert_start + 2.5 * delta_y)
+                                                                           rely=ent_rely-delta_y)
         tk.Label(self._main_fr, text='sig_y1', bg=self._general_color).place(relx=ent_relx + 0*geo_dx,
-                                                                             rely=prop_vert_start + 4.5 * delta_y)
+                                                                             rely=ent_rely+delta_y)
         tk.Label(self._main_fr, text='sig_y2', bg=self._general_color).place(relx=ent_relx + 1*geo_dx,
-                                                                             rely=prop_vert_start + 4.5 * delta_y)
+                                                                             rely=ent_rely+delta_y)
         tk.Label(self._main_fr, text='sig_x', bg=self._general_color).place(relx=ent_relx + 2*geo_dx,
-                                                                            rely=prop_vert_start + 4.5 * delta_y)
+                                                                            rely=ent_rely+delta_y)
         tk.Label(self._main_fr, text='tau_y1', bg=self._general_color).place(relx=ent_relx + 3*geo_dx,
-                                                                             rely=prop_vert_start + 4.5 * delta_y)
+                                                                             rely=ent_rely+delta_y)
         tk.Label(self._main_fr, text='stf type', bg=self._general_color).place(relx=ent_relx + 4*geo_dx,
-                                                                               rely=prop_vert_start + 4.5 * delta_y)
+                                                                               rely=ent_rely+delta_y)
         tk.Label(self._main_fr, text='Pressure side\n(p-plate, s-stf.):', bg=self._general_color) \
             .place(relx=ent_relx + 5 * geo_dx,
-                   rely=prop_vert_start + 4.3 * delta_y, relheight = 0.025)
+                   rely=prop_vert_start + 4.6 * delta_y, relheight = 0.025)
 
-        tk.Label(self._main_fr, text='PULS\nacceptance', bg=self._general_color, font = self._text_size['Text 7'])\
-            .place(relx=ent_relx + 4.3*geo_dx, rely=prop_vert_start + 8 * delta_y, relwidth = 0.032)
-        tk.Label(self._main_fr, text='PULS\nInt-integrated\nGL-free left/right\nGT-free top/bottom',
+        tk.Label(self._main_fr, text='PULS acceptance', bg=self._general_color, font = self._text_size['Text 7'])\
+            .place(relx=types_start, rely=prop_vert_start + 13 * delta_y)
+        tk.Label(self._main_fr, text='PULS utilization factor:', font=self._text_size['Text 7'],
+                 bg = self._general_color).place(relx=types_start, rely=prop_vert_start + 14 * delta_y)
+        tk.Label(self._main_fr, text='Int-integrated GL-free left\n/right GT-free top/bottom',
                  bg=self._general_color, font = self._text_size['Text 7'])\
-            .place(relx=ent_relx - 0.3*geo_dx, rely=prop_vert_start + 7.5 * delta_y, relwidth = 0.05)
-
-        tk.Label(self._main_fr, text='PULS\nContinous\nSniped', bg=self._general_color,
+            .place(relx=types_start, rely=prop_vert_start + 15 * delta_y)
+        tk.Label(self._main_fr, text='Continous or Sniped', bg=self._general_color,
                  font = self._text_size['Text 7'])\
-            .place(relx=ent_relx + 2.3*geo_dx, rely=prop_vert_start + 7.5 * delta_y, relwidth = 0.037)
+            .place(relx=types_start, rely=prop_vert_start + 16.5 * delta_y)
 
 
         tk.Label(self._main_fr, text='span', bg = self._general_color).place(relx=ent_relx + 0*geo_dx,
-                                                                             rely=prop_vert_start +loc_y * delta_y)
+                                                                             rely=ent_geo_y-delta_y)
         tk.Label(self._main_fr, text='s', bg = self._general_color).place(relx=ent_relx + 1*geo_dx,
-                                                                          rely=prop_vert_start+loc_y * delta_y)
+                                                                          rely=ent_geo_y-delta_y)
         tk.Label(self._main_fr, text='pl_thk', bg = self._general_color).place(relx=ent_relx + 2*geo_dx,
-                                                                               rely=prop_vert_start +loc_y  * delta_y)
+                                                                               rely=ent_geo_y-delta_y)
         tk.Label(self._main_fr, text='web_h', bg = self._general_color).place(relx=ent_relx + 3*geo_dx,
-                                                                              rely=prop_vert_start +loc_y * delta_y)
+                                                                              rely=ent_geo_y-delta_y)
         tk.Label(self._main_fr, text='web_thk', bg = self._general_color).place(relx=ent_relx + 4*geo_dx,
-                                                                                rely=prop_vert_start+loc_y * delta_y)
+                                                                                rely=ent_geo_y-delta_y)
         tk.Label(self._main_fr, text='fl_w', bg = self._general_color).place(relx=ent_relx + 5*geo_dx,
-                                                                             rely=prop_vert_start + loc_y  * delta_y)
+                                                                             rely=ent_geo_y-delta_y)
         tk.Label(self._main_fr, text='fl_thk', bg = self._general_color).place(relx=ent_relx + 6*geo_dx,
-                                                                               rely=prop_vert_start + loc_y  * delta_y)
+                                                                               rely=ent_geo_y-delta_y)
 
         self._ent_field_len.place(relx=ent_relx + 0*geo_dx, rely=ent_geo_y, relwidth = geo_ent_width)
         self._ent_stf_spacing.place(relx=ent_relx + 1*geo_dx, rely=ent_geo_y, relwidth = geo_ent_width)
@@ -687,20 +690,21 @@ class Application():
         self._ent_stf_fl_w.place(relx=ent_relx + 5*geo_dx, rely=ent_geo_y, relwidth = geo_ent_width)
         self._ent_str_fl_t.place(relx=ent_relx + 6*geo_dx, rely=ent_geo_y, relwidth = geo_ent_width)
 
+        y_red = 0.8
         tk.Label(self._main_fr, text='[m]', bg = self._general_color).place(relx=types_start + 2 * delta_x,
-                                                                            rely=prop_vert_start + delta_y*1.8)
+                                                                            rely=ent_geo_y+delta_y*y_red)
         tk.Label(self._main_fr, text='[mm]', bg = self._general_color).place(relx=types_start + 3*delta_x,
-                                                                             rely=prop_vert_start + delta_y*1.8)
+                                                                             rely=ent_geo_y+delta_y*y_red)
         tk.Label(self._main_fr, text='[mm]', bg = self._general_color).place(relx=types_start + 4*delta_x,
-                                                                             rely=prop_vert_start + delta_y*1.8)
+                                                                             rely=ent_geo_y+delta_y*y_red)
         tk.Label(self._main_fr, text='[mm]', bg = self._general_color).place(relx=types_start + 5*delta_x,
-                                                                             rely=prop_vert_start + delta_y*1.8)
+                                                                             rely=ent_geo_y+delta_y*y_red)
         tk.Label(self._main_fr, text='[mm]', bg = self._general_color).place(relx=types_start + 6*delta_x,
-                                                                             rely=prop_vert_start + delta_y*1.8)
+                                                                             rely=ent_geo_y+delta_y*y_red)
         tk.Label(self._main_fr, text='[mm]', bg = self._general_color).place(relx=types_start + 7*delta_x,
-                                                                             rely=prop_vert_start + delta_y*1.8)
+                                                                             rely=ent_geo_y+delta_y*y_red)
         tk.Label(self._main_fr, text='[mm]', bg = self._general_color).place(relx=types_start + 8*delta_x,
-                                                                             rely=prop_vert_start + delta_y*1.8)
+                                                                             rely=ent_geo_y+delta_y*y_red)
 
         self._ent_mat.place(relx=0.195, rely=ent_rely, relwidth = 0.05)
         self._ent_plate_kpp.place(relx = ent_relx , rely=ent_rely)
@@ -708,39 +712,37 @@ class Application():
         self._ent_stf_km1.place(relx=ent_relx + 2*geo_dx, rely=ent_rely)
         self._ent_stf_km2.place(relx=ent_relx + 3*geo_dx, rely=ent_rely)
         self._ent_stf_km3.place(relx=ent_relx + 4*geo_dx, rely=ent_rely)
-        drely = 0.05
+        
         self._ent_sigma_y1.place(relx = ent_relx, rely=ent_rely+drely)
         self._ent_sigma_y2.place(relx=ent_relx + geo_dx, rely=ent_rely+drely)
         self._ent_sigma_x.place(relx=ent_relx + 2*geo_dx, rely=ent_rely+drely)
         self._ent_tauxy.place(relx=ent_relx + 3*geo_dx, rely=ent_rely+drely)
-        self._ent_stf_type.place(relx=ent_relx + 4*geo_dx, rely=ent_rely+0.9*drely)
-        self._ent_puls_method.place(relx=ent_relx + 5.45*geo_dx, rely=prop_vert_start + 8 * delta_y, relwidth = 0.045)
-        self._ent_puls_panel_boundary.place(relx=ent_relx + 1.5*geo_dx, rely=prop_vert_start + 8 * delta_y, relwidth = 0.025)
-        self._ent_puls_stf_end_type.place(relx=ent_relx + 3.5*geo_dx, rely=prop_vert_start + 8 * delta_y, relwidth = 0.025)
+        self._ent_stf_type.place(relx=ent_relx + 4*geo_dx, rely=ent_rely+drely)
+
+        # Entries below goemetry and stress input.
+
+        self._ent_puls_method.place(relx=types_start+ 3*delta_x, rely=prop_vert_start + 12.5 * delta_y, relwidth = 0.045)
+        self._ent_puls_uf.place(relx=types_start+ 3*delta_x, rely=prop_vert_start + 13.9 * delta_y, relwidth = 0.02,
+                                relheight = 0.025)
+        self._ent_puls_panel_boundary.place(relx=types_start+ 3*delta_x, rely=prop_vert_start + 15.2 * delta_y, relwidth = 0.025)
+        self._ent_puls_stf_end_type.place(relx=types_start+ 3*delta_x, rely=prop_vert_start + 16.5 * delta_y, relwidth = 0.025)
+
 
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_sigmax, command = self.on_color_code_check)\
-            .place(relx=ent_relx + 0*geo_dx, rely=ent_rely+1.5*drely)
+            .place(relx=ent_relx + 0*geo_dx, rely=ent_rely+1.7*drely)
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_sigmay1, command = self.on_color_code_check)\
-            .place(relx=ent_relx + 1*geo_dx, rely=ent_rely+1.5*drely)
+            .place(relx=ent_relx + 1*geo_dx, rely=ent_rely+1.7*drely)
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_sigmay2, command = self.on_color_code_check)\
-            .place(relx=ent_relx + 2*geo_dx, rely=ent_rely+1.5*drely)
+            .place(relx=ent_relx + 2*geo_dx, rely=ent_rely+1.7*drely)
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_tauxy, command = self.on_color_code_check)\
-            .place(relx=ent_relx + 3*geo_dx, rely=ent_rely+1.5*drely)
+            .place(relx=ent_relx + 3*geo_dx, rely=ent_rely+1.7*drely)
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_structure_type, command = self.on_color_code_check)\
-            .place(relx=ent_relx + 4*geo_dx, rely=ent_rely+1.5*drely)
+            .place(relx=ent_relx + 4*geo_dx, rely=ent_rely+1.7*drely)
         tk.Label(text='<-- check to color-\ncode stresses', font=self._text_size['Text 9'],
                  bg=self._general_color).place(relx=ent_relx + 4.5*geo_dx, rely=ent_rely+1.45*drely, relwidth = 0.06,
                                                relheight = 0.03)
 
-        self._ent_structure_type.place(relx=types_start, rely=ent_rely+3.3*drely, relwidth = 0.10)
-
-
-        self._structure_types_label = \
-            tk.Label(textvariable = self._new_stucture_type_label, font = self._text_size['Text 8'],
-                     bg = self._general_color)\
-                .place(relx=types_start, rely=prop_vert_start +11.4*delta_y, relwidth = 0.11, relheight = 0.02)
-
-        self._ent_pressure_side.place(relx=ent_relx + 5.5*geo_dx, rely=prop_vert_start + 5.4 * delta_y)
+        self._ent_pressure_side.place(relx=ent_relx + 5.5*geo_dx, rely=prop_vert_start + 6 * delta_y)
 
         try:
             img_file_name = 'img_stf_button.gif'
@@ -1027,20 +1029,20 @@ class Application():
         tk.Button(self._main_fr, text='Load info', command=self.button_load_info_click,
                  font = self._text_size['Text 10 bold'], height = 1,
                   bg = self._button_bg_color, fg = self._button_fg_color)\
-           .place(relx=lc_x + delta_x * 6,rely=lc_y + delta_y*18, relwidth = 0.05)
+           .place(relx=lc_x + delta_x * 6,rely=lc_y + delta_y*19.5, relwidth = 0.05)
 
         # Load information button
         tk.Button(self._main_fr, text='Load factors', command=self.on_open_load_factor_window,
                  font = self._text_size['Text 10 bold'], height = 1,
                   bg = self._button_bg_color, fg = self._button_fg_color)\
-           .place(relx=lc_x + delta_x * 4,rely=lc_y + delta_y*18, relwidth = 0.05)
+           .place(relx=lc_x + delta_x * 4,rely=lc_y + delta_y*19.5, relwidth = 0.05)
 
         # PULS result information
         self._puls_information_button = tk.Button(self._main_fr, text='PULS results for line',
                                                   command=self.on_puls_results_for_line,
                  font = self._text_size['Text 10 bold'], height = 1,
                   bg = self._button_bg_color, fg = self._button_fg_color)
-        self._puls_information_button.place(relx=lc_x + delta_x * 0,rely=lc_y + delta_y*18, relwidth = 0.08)
+        self._puls_information_button.place(relx=lc_x + delta_x * 0,rely=lc_y + delta_y*19.5, relwidth = 0.08)
 
         self.update_frame()
 
