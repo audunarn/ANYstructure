@@ -1,4 +1,6 @@
 # ANYstructure #
+### What's new in 2.8 ###
+* Corrected optimization error w.r.t. PULS.
 ### What's new in 2.7 ###
 * Added support for UP in PULS (unstiffened)
 ### What's new in 2.6 ###
