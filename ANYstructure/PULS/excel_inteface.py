@@ -181,6 +181,11 @@ class PulsExcel():
                         return_dict[id]['Buckling strength']['Usage factor']
                     return_dict[id]['Buckling strength']['Allowable usage factor'] = \
                         return_dict[id]['Buckling strength']['Alowable usage']
+
+                    return_dict[id]['Ultimate capacity'].pop('Usage factor')
+                    return_dict[id]['Ultimate capacity'].pop('Alowable usage')
+                    return_dict[id]['Buckling strength'].pop('Usage factor')
+                    return_dict[id]['Buckling strength'].pop('Alowable usage')
         return return_dict
 
     def get_all_results(self):

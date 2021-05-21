@@ -1,4 +1,6 @@
 # ANYstructure #
+### What's new in 2.7 ###
+* Added support for UP in PULS (unstiffened)
 ### What's new in 2.6 ###
 * PULS (Panel Ultimate Limit State) is now integrated as an option for buckling calculations. PULS is a licenced DNV software.
 * GUI improvements.
