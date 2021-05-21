@@ -218,7 +218,8 @@ class Application():
                                        'stf_flange_width', 'stf_flange_thk', 'structure_type', 'stf_type',
                                        'sigma_y1', 'sigma_y2', 'sigma_x', 'tau_xy', 'plate_kpp', 'stf_kps','stf_km1',
                                        'stf_km2', 'stf_km3', 'press_side', 'structure_types', 'zstar_optimization',
-                                      'puls buckling method', 'puls boundary', 'puls stiffener end']
+                                      'puls buckling method', 'puls boundary', 'puls stiffener end', 'puls sp or up',
+                                      'puls up boundary']
         self._p1_p2_select = False
         self._line_is_active = False # True when a line is clicked
         self._active_line = '' # Name of the clicked point
@@ -427,11 +428,7 @@ class Application():
                                                                'INTERNAL_LOW_STRESS_WT ')
 
 
-        self._zstar_chk = tk.Checkbutton(self._main_fr, variable=self._new_zstar_optimization)\
-            .place(relx=types_start,rely=prop_vert_start+11.5*delta_y)
-        tk.Label(self._main_fr, text='z* optimization (RP-C201)', font=self._text_size['Text 9 bold'],
-                 bg = self._general_color)\
-            .place(relx=types_start + 0.8*delta_x,rely=prop_vert_start+11.5*delta_y)
+
         tk.Label(self._main_fr, text='Show line names in GUI', font="Text 9")\
             .place(relx=0.4, rely=0)
         tk.Label(self._main_fr, text='Show point names in GUI', font="Text 9")\
@@ -518,6 +515,8 @@ class Application():
         self._new_puls_method = tk.StringVar()
         self._new_puls_panel_boundary = tk.StringVar()
         self._new_puls_stf_end_type = tk.StringVar()
+        self._new_puls_sp_or_up = tk.StringVar()
+        self._new_puls_up_boundary = tk.StringVar()
 
 
         # Setting default values to tkinter variables
@@ -545,13 +544,15 @@ class Application():
         self._new_puls_method.set('ultimate')
         self._new_puls_panel_boundary.set('Int')
         self._new_puls_stf_end_type.set('C')
+        self._new_puls_sp_or_up.set('SP')
+        self._new_puls_up_boundary.set('SSSS')
 
 
         # --- main entries and labels to define the structural properties ---
         ent_width = 12 #width of entries
         tk.Label(self._main_fr, text='Yield [MPa]:', font = self._text_size['Text 9'],
                  bg = self._general_color)\
-            .place(relx=0.19, rely=prop_vert_start + 2.5 * delta_y)
+            .place(relx=0.2, rely=prop_vert_start + 2.6 * delta_y)
 
         self._ent_mat = tk.Entry(self._main_fr, textvariable=self._new_material, bg = self._entry_color,
                                  fg = self._entry_text_color)
@@ -610,6 +611,10 @@ class Application():
                                                       *['Int', 'GL', 'GT'])
         self._ent_puls_stf_end_type = tk.OptionMenu(self._main_fr, self._new_puls_stf_end_type,
                                                       *['C', 'S'])
+        self._ent_puls_sp_or_up= tk.OptionMenu(self._main_fr, self._new_puls_sp_or_up,
+                                               command = self.trace_puls_up_or_sp, *['SP', 'UP'])
+        self._ent_puls_up_boundary = tk.Entry(self._main_fr, textvariable=self._new_puls_up_boundary, width=int(7*1),
+                                   bg = self._entry_color, fg = self._entry_text_color)
 
         loc_y = -0.000185185
 
@@ -649,12 +654,26 @@ class Application():
                                                                             rely=ent_rely+delta_y)
         tk.Label(self._main_fr, text='tau_y1', bg=self._general_color).place(relx=ent_relx + 3*geo_dx,
                                                                              rely=ent_rely+delta_y)
-        tk.Label(self._main_fr, text='stf type', bg=self._general_color).place(relx=ent_relx + 4*geo_dx,
+        tk.Label(self._main_fr, text='stiffener type', bg=self._general_color).place(relx=ent_relx + 4*geo_dx,
                                                                                rely=ent_rely+delta_y)
-        tk.Label(self._main_fr, text='Pressure side\n(p-plate, s-stf.):', bg=self._general_color) \
-            .place(relx=ent_relx + 5 * geo_dx,
-                   rely=prop_vert_start + 4.6 * delta_y, relheight = 0.025)
 
+
+        self._zstar_chk = tk.Checkbutton(self._main_fr, variable=self._new_zstar_optimization)\
+            .place(relx=types_start+delta_x*8.5,rely=prop_vert_start+11.5*delta_y)
+        tk.Label(self._main_fr, text='z* optimization (RP-C201)\n'
+                                     'for prescriptive buckling \ncalculations', font=self._text_size['Text 8'],
+                 bg = self._general_color)\
+            .place(relx=types_start + 5*delta_x,rely=prop_vert_start+11.3*delta_y)
+        tk.Label(self._main_fr, text='Pressure side (p-plate, s-stf.):', bg=self._general_color) \
+            .place(relx=types_start + 5*delta_x,rely=prop_vert_start+13.2*delta_y, relheight = 0.025)
+        self._ent_pressure_side.place(relx=types_start+delta_x*8.5,rely=prop_vert_start+13.2*delta_y)
+
+        tk.Label(self._main_fr, text='PULS input', bg=self._general_color, font=self._text_size['Text 8']) \
+            .place(relx=types_start, rely=prop_vert_start + 10.4 * delta_y)
+        tk.Label(self._main_fr, text='Siffened: SP Unstf. pl.: UP', bg=self._general_color, font=self._text_size['Text 7']) \
+            .place(relx=types_start, rely=prop_vert_start + 11.2 * delta_y)
+        tk.Label(self._main_fr, text='UP sup.left,right,upper,lower', bg=self._general_color, font=self._text_size['Text 7']) \
+            .place(relx=types_start, rely=prop_vert_start + 12 * delta_y)
         tk.Label(self._main_fr, text='PULS acceptance', bg=self._general_color, font = self._text_size['Text 7'])\
             .place(relx=types_start, rely=prop_vert_start + 13 * delta_y)
         tk.Label(self._main_fr, text='PULS utilization factor:', font=self._text_size['Text 7'],
@@ -717,11 +736,12 @@ class Application():
         self._ent_sigma_y2.place(relx=ent_relx + geo_dx, rely=ent_rely+drely)
         self._ent_sigma_x.place(relx=ent_relx + 2*geo_dx, rely=ent_rely+drely)
         self._ent_tauxy.place(relx=ent_relx + 3*geo_dx, rely=ent_rely+drely)
-        self._ent_stf_type.place(relx=ent_relx + 4*geo_dx, rely=ent_rely+drely)
+        self._ent_stf_type.place(relx=ent_relx + 4*geo_dx, rely=ent_rely+drely*0.8)
 
         # Entries below goemetry and stress input.
-
-        self._ent_puls_method.place(relx=types_start+ 3*delta_x, rely=prop_vert_start + 12.5 * delta_y, relwidth = 0.045)
+        self._ent_puls_sp_or_up.place(relx=types_start + 3 * delta_x, rely=prop_vert_start + 11.2 * delta_y,
+                                    relwidth=0.041)
+        self._ent_puls_method.place(relx=types_start+ 3*delta_x, rely=prop_vert_start + 12.5 * delta_y, relwidth = 0.041)
         self._ent_puls_uf.place(relx=types_start+ 3*delta_x, rely=prop_vert_start + 13.9 * delta_y, relwidth = 0.02,
                                 relheight = 0.025)
         self._ent_puls_panel_boundary.place(relx=types_start+ 3*delta_x, rely=prop_vert_start + 15.2 * delta_y, relwidth = 0.025)
@@ -742,7 +762,7 @@ class Application():
                  bg=self._general_color).place(relx=ent_relx + 4.5*geo_dx, rely=ent_rely+1.45*drely, relwidth = 0.06,
                                                relheight = 0.03)
 
-        self._ent_pressure_side.place(relx=ent_relx + 5.5*geo_dx, rely=prop_vert_start + 6 * delta_y)
+
 
         try:
             img_file_name = 'img_stf_button.gif'
@@ -1121,6 +1141,17 @@ class Application():
         if self._PULS_results is not None:
             pass
 
+    def trace_puls_up_or_sp(self, event = None):
+        if self._new_puls_sp_or_up.get() == 'UP':
+            delta_y = 0.022
+            delta_x = 0.026041667
+            prop_vert_start = 0.29
+            types_start = 0.005208333
+            self._ent_puls_up_boundary.place(relx=types_start + 4.6 * delta_x, rely=prop_vert_start + 11.4 * delta_y,
+                                         relwidth=0.02)
+        else:
+            self._ent_puls_up_boundary.place_forget()
+
     def puls_run_one_line(self):
         self.puls_run_all_lines(self._active_line)
         self.update_frame()
@@ -1193,7 +1224,9 @@ class Application():
                     'zstar_optimization': self._new_zstar_optimization.get,
                     'puls buckling method': self._new_puls_method.get,
                     'puls boundary': self._new_puls_panel_boundary.get,
-                    'puls stiffener end': self._new_puls_stf_end_type.get}
+                    'puls stiffener end': self._new_puls_stf_end_type.get,
+                    'puls sp or up': self._new_puls_sp_or_up.get,
+                    'puls up boundary': self._new_puls_up_boundary.get}
 
 
         set_var = obj_dict[var_to_set]()
@@ -1505,6 +1538,7 @@ class Application():
         self.draw_results(state=state)
         self.draw_canvas(state=state)
         self.draw_prop()
+        self.trace_puls_up_or_sp()
 
     def get_color_and_calc_state(self, current_line = None, active_line_only = False):
         ''' Return calculations and colors for line and results. '''
@@ -1628,12 +1662,12 @@ class Application():
                         if geo_problem:
                             loc_geom = 'red'
                         else:
-                            loc_geom = 'green' if all([val[0] == 'Ok' for val in
-                                                       res['Local geom req (PULS validity limits)']
-                                               .values()]) else 'red'
-                        csr_geom = 'green' if all(
-                            [val[0] == 'Ok' for val in res['CSR-Tank requirements (primary stiffeners)']
-                            .values()]) else 'red'
+                            loc_label = 'Local geom req (PULS validity limits)' if \
+                                obj_scnt_calc.get_puls_sp_or_up() == 'SP' else 'Geom. Req (PULS validity limits)'
+                            loc_geom = 'green' if all([val[0] == 'Ok' for val in res[loc_label].values()]) else 'red'
+                        csr_label = 'CSR-Tank requirements (primary stiffeners)' if \
+                            obj_scnt_calc.get_puls_sp_or_up() == 'SP' else'CSR-Tank req'
+                        csr_geom = 'green' if all([val[0] == 'Ok' for val in res[csr_label].values()]) else 'red'
                         return_dict['PULS colors'][current_line] = {'ultimate': col_ult, 'buckling': col_buc,
                                                                     'local geometry': loc_geom, 'csr': csr_geom}
                     else:
@@ -2365,20 +2399,25 @@ class Application():
                                                                                      0] / self._new_puls_uf.get())
                         else:
                             buc_text = 'Buckling capacity usage factor:  None - geometric issue'
+
+                        loc_label = 'Local geom req (PULS validity limits)' if \
+                            obj_structure.get_puls_sp_or_up() == 'SP' else 'Geom. Req (PULS validity limits)'
+                        csr_label = 'CSR-Tank requirements (primary stiffeners)' if \
+                            obj_structure.get_puls_sp_or_up() == 'SP' else 'CSR-Tank req'
                         if geo_problem:
                             loc_geom = 'Not ok: '
-                            for key, value in puls_res['Local geom req (PULS validity limits)'].items():
+                            for key, value in puls_res[loc_label].items():
                                 if value[0] == 'Not ok':
                                     loc_geom += key + ' '
                         else:
                             loc_geom = 'Ok' if all(
-                                [val[0] == 'Ok' for val in puls_res['Local geom req (PULS validity limits)']
+                                [val[0] == 'Ok' for val in puls_res[loc_label]
                                 .values()]) else 'Not ok'
                         csr_geom = 'Ok' if all(
-                            [val[0] == 'Ok' for val in puls_res['CSR-Tank requirements (primary stiffeners)']
+                            [val[0] == 'Ok' for val in puls_res[csr_label]
                             .values()]) else 'Not ok'
-                        loc_geom = 'Local geom req (PULS validity limits):   ' + loc_geom
-                        csr_geom = 'CSR-Tank requirements (primary stiffeners):   ' + csr_geom
+                        loc_geom = loc_label + ':   ' + loc_geom
+                        csr_geom = csr_label+':   ' + csr_geom
                         self._result_canvas.create_text([x * 1, y + 8.5 * dy], text='PULS results',
                                                         font=self._text_size['Text 9 bold'],
                                                         anchor='nw',
@@ -2693,7 +2732,9 @@ class Application():
                             'zstar_optimization': [self._new_zstar_optimization.get(), ''],
                             'puls buckling method': [self._new_puls_method.get(), ''],
                             'puls boundary': [self._new_puls_panel_boundary.get(), ''],
-                            'puls stiffener end': [self._new_puls_stf_end_type.get(), '']}
+                            'puls stiffener end': [self._new_puls_stf_end_type.get(), ''],
+                            'puls sp or up':  [self._new_puls_sp_or_up.get(), ''],
+                            'puls up boundary': [self._new_puls_up_boundary.get(), ''],}
             else:
                 obj_dict = pasted_structure.get_structure_prop()
 
@@ -3090,6 +3131,8 @@ class Application():
             self._new_puls_method.set(properties['puls buckling method'][0])
             self._new_puls_panel_boundary.set(properties['puls boundary'][0])
             self._new_puls_stf_end_type.set(properties['puls stiffener end'][0])
+            self._new_puls_sp_or_up.set(properties['puls sp or up'][0])
+            self._new_puls_up_boundary.set(properties['puls up boundary'][0])
 
     def get_highest_pressure(self, line, limit_state = 'ULS'):
         '''
@@ -3738,6 +3781,11 @@ class Application():
                 lines_prop['puls boundary'] = [self._new_puls_panel_boundary.get(), '']
             if 'puls stiffener end' not in lines_prop.keys():
                 lines_prop['puls stiffener end'] = [self._new_puls_stf_end_type.get(), '']
+            if 'puls sp or up' not in lines_prop.keys():
+                lines_prop['puls sp or up'] = [self._new_puls_sp_or_up.get(), '']
+            if 'puls up boundary' not in lines_prop.keys():
+                lines_prop['puls up boundary'] = [self._new_puls_up_boundary.get(), '']
+
             self._line_to_struc[line][0] = Structure(lines_prop)
             self._line_to_struc[line][1] = CalcScantlings(lines_prop)
             if imported['fatigue_properties'][line] is not None:
@@ -3950,7 +3998,7 @@ class Application():
 
         text_m = tk.Toplevel(self._parent, background=self._general_color)
         # Create the text widget
-        text_widget = tk.Text(text_m , height=60, width=80)
+        text_widget = tk.Text(text_m , height=60, width=100)
         # Create a scrollbar
         scroll_bar = tk.Scrollbar(text_m)
         # Pack the scroll bar
