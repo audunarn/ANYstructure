@@ -663,9 +663,9 @@ class Application():
         tk.Label(self._main_fr, text='z* optimization (RP-C201)\n'
                                      'for prescriptive buckling \ncalculations', font=self._text_size['Text 8'],
                  bg = self._general_color)\
-            .place(relx=types_start + 5*delta_x,rely=prop_vert_start+11.3*delta_y)
+            .place(relx=types_start + 5.4*delta_x,rely=prop_vert_start+11.3*delta_y)
         tk.Label(self._main_fr, text='Pressure side (p-plate, s-stf.):', bg=self._general_color) \
-            .place(relx=types_start + 5*delta_x,rely=prop_vert_start+13.2*delta_y, relheight = 0.025)
+            .place(relx=types_start + 5.4*delta_x,rely=prop_vert_start+13.2*delta_y, relheight = 0.025)
         self._ent_pressure_side.place(relx=types_start+delta_x*8.5,rely=prop_vert_start+13.2*delta_y)
 
         tk.Label(self._main_fr, text='PULS input', bg=self._general_color, font=self._text_size['Text 8']) \
