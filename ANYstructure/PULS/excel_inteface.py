@@ -5,8 +5,8 @@ This file open up excel PULS file
 3. get the results.
 '''
 
-import xlwings as xw
 import numpy as np
+from xlwings import App, Book
 
 class PulsExcel():
     ''' This class open a PulsExcel work.
@@ -19,8 +19,8 @@ class PulsExcel():
         :param visible: If excel shall open in windows or run in the background.
         '''
         super(PulsExcel, self).__init__()
-        self.app = xw.App(visible=visible)
-        self.book = xw.Book(path_and_file_to_book)
+        self.app = App(visible=visible)
+        self.book = Book(path_and_file_to_book)
 
         self.names_sp = {'Identification': 1, 'Length of panel': 3, 'Stiffener spacing': 4, 'Plate thickness': 5,
                       'Number of primary stiffeners': 6, 'Stiffener type (L,T,F)': 7, 'Stiffener boundary': 8,
