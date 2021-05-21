@@ -117,6 +117,9 @@ class Structure():
     def get_puls_sp_or_up(self):
         return self._puls_sp_or_up
 
+    def get_puls_up_boundary(self):
+        return self._puls_up_boundary
+
     def get_one_line_string(self):
         ''' Returning a one line string. '''
         return 'pl_'+str(round(self.spacing*1000, 1))+'x'+str(round(self.plate_th*1000,1))+' stf_'+self.stiffener_type+\
