@@ -48,6 +48,7 @@ class Structure():
         self._puls_method = main_dict['puls buckling method'][0]
         self._puls_boundary = main_dict['puls boundary'][0]
         self._puls_stf_end = main_dict['puls stiffener end'][0]
+        self._puls_sp_or_up = main_dict['puls sp or up'][0]
 
         self._zstar_optimization = main_dict['zstar_optimization'][0]
         try:
@@ -111,6 +112,9 @@ class Structure():
 
     def get_puls_stf_end(self):
         return self._puls_stf_end
+
+    def get_puls_sp_or_up(self):
+        return self._puls_sp_or_up
 
     def get_one_line_string(self):
         ''' Returning a one line string. '''
@@ -404,6 +408,7 @@ class Structure():
         self._puls_method = main_dict['puls buckling method'][0]
         self._puls_boundary = main_dict['puls boundary'][0]
         self._puls_stf_end  = main_dict['puls stiffener end'][0]
+        self._puls_sp_or_up = main_dict['puls sp or up'][0]
 
     def set_stresses(self,sigy1,sigy2,sigx,tauxy):
         '''
@@ -487,28 +492,42 @@ class Structure():
         self.span = span
         self.main_dict['span'][0] = span
 
-    def get_puls_input(self):
+    def get_puls_input(self, run_type: str = 'SP'):
         if self.stiffener_type == 'FB':
             stf_type = 'F'
         # elif self.stiffener_type == 'L': # TODO need to do something with this.
         #     stf_type = 'L-bulb'
         else:
             stf_type = self.stiffener_type
-        return_dict = {'Identification': None, 'Length of panel': self.span*1000, 'Stiffener spacing': self.spacing*1000,
-                        'Plate thickness': self.plate_th*1000,
-                      'Number of primary stiffeners': 10,
-                       'Stiffener type (L,T,F)': stf_type,
-                        'Stiffener boundary': self._puls_stf_end,
-                      'Stiff. Height': self.web_height*1000, 'Web thick.': self.web_th*1000,
-                       'Flange width': self.flange_width*1000,
-                        'Flange thick.': self.flange_th*1000, 'Tilt angle': 0,
-                      'Number of sec. stiffeners': 0, 'Modulus of elasticity': 2.1e11/1e6, "Poisson's ratio": 0.3,
-                      'Yield stress plate': self.mat_yield/1e6, 'Yield stress stiffener': self.mat_yield/1e6,
-                        'Axial stress': 0 if self._puls_boundary == 'GT' else self.sigma_x,
-                       'Trans. stress 1': 0 if self._puls_boundary == 'GL' else self.sigma_y1,
-                      'Trans. stress 2': 0 if self._puls_boundary == 'GL' else self.sigma_y2,
-                       'Shear stress': self.tauxy,
-                        'Pressure (fixed)': None, 'In-plane support': self._puls_boundary}
+        if self._puls_sp_or_up == 'SP':
+            return_dict = {'Identification': None, 'Length of panel': self.span*1000, 'Stiffener spacing': self.spacing*1000,
+                            'Plate thickness': self.plate_th*1000,
+                          'Number of primary stiffeners': 10,
+                           'Stiffener type (L,T,F)': stf_type,
+                            'Stiffener boundary': self._puls_stf_end,
+                          'Stiff. Height': self.web_height*1000, 'Web thick.': self.web_th*1000,
+                           'Flange width': self.flange_width*1000,
+                            'Flange thick.': self.flange_th*1000, 'Tilt angle': 0,
+                          'Number of sec. stiffeners': 0, 'Modulus of elasticity': 2.1e11/1e6, "Poisson's ratio": 0.3,
+                          'Yield stress plate': self.mat_yield/1e6, 'Yield stress stiffener': self.mat_yield/1e6,
+                            'Axial stress': 0 if self._puls_boundary == 'GT' else self.sigma_x,
+                           'Trans. stress 1': 0 if self._puls_boundary == 'GL' else self.sigma_y1,
+                          'Trans. stress 2': 0 if self._puls_boundary == 'GL' else self.sigma_y2,
+                           'Shear stress': self.tauxy,
+                            'Pressure (fixed)': None, 'In-plane support': self._puls_boundary,
+                           'sp or up': self._puls_sp_or_up}
+        else:
+            return_dict = {'Identification': None, 'Length of plate': self.span*1000, 'Width of c': self.spacing*1000,
+                           'Plate thickness': self.plate_th*1000,
+                         'Modulus of elasticity': 2.1e11/1e6, "Poisson's ratio": 0.3,
+                          'Yield stress plate': self.mat_yield/1e6,
+                         'Axial stress 1': 0 if self._puls_boundary == 'GT' else self.sigma_x,
+                           'Axial stress 2': 0 if self._puls_boundary == 'GT' else self.sigma_x,
+                           'Trans. stress 1': 0 if self._puls_boundary == 'GL' else self.sigma_y1,
+                         'Trans. stress 2': 0 if self._puls_boundary == 'GL' else self.sigma_y2,
+                           'Shear stress': self.tauxy, 'Pressure (fixed)': None, 'In-plane support': self._puls_boundary,
+                         'Rot left': 'SS', 'Rot right': 'SS', 'Rot upper': 'SS', 'Rot lower': 'SS',
+                           'sp or up': self._puls_sp_or_up}
         return return_dict
 
 class CalcScantlings(Structure):
@@ -1348,12 +1367,11 @@ class PULSpanel():
 
         my_puls = pulsxl.PulsExcel(newfile, visible=False)
         #my_puls.set_multiple_rows(20, iterator)
-        my_puls.set_multiple_rows_batch(20, iterator)
-
-
-        my_puls.calculate_panels()
+        run_sp, run_up = my_puls.set_multiple_rows_batch(iterator)
+        my_puls.calculate_panels(sp=run_sp, up=run_up)
         #all_results = my_puls.get_all_results()
-        all_results = my_puls.get_all_results_batch()
+        all_results = my_puls.get_all_results_batch(sp = run_sp, up=run_up)
+
         for id, data in all_results.items():
             self._run_results[id] = data
 
