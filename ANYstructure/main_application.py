@@ -218,7 +218,8 @@ class Application():
                                        'stf_flange_width', 'stf_flange_thk', 'structure_type', 'stf_type',
                                        'sigma_y1', 'sigma_y2', 'sigma_x', 'tau_xy', 'plate_kpp', 'stf_kps','stf_km1',
                                        'stf_km2', 'stf_km3', 'press_side', 'structure_types', 'zstar_optimization',
-                                      'puls buckling method', 'puls boundary', 'puls stiffener end', 'puls sp or up']
+                                      'puls buckling method', 'puls boundary', 'puls stiffener end', 'puls sp or up',
+                                      'puls up boundary']
         self._p1_p2_select = False
         self._line_is_active = False # True when a line is clicked
         self._active_line = '' # Name of the clicked point
@@ -515,6 +516,7 @@ class Application():
         self._new_puls_panel_boundary = tk.StringVar()
         self._new_puls_stf_end_type = tk.StringVar()
         self._new_puls_sp_or_up = tk.StringVar()
+        self._new_puls_up_boundary = tk.StringVar()
 
 
         # Setting default values to tkinter variables
@@ -543,6 +545,7 @@ class Application():
         self._new_puls_panel_boundary.set('Int')
         self._new_puls_stf_end_type.set('C')
         self._new_puls_sp_or_up.set('SP')
+        self._new_puls_up_boundary.set('SSSS')
 
 
         # --- main entries and labels to define the structural properties ---
@@ -609,7 +612,9 @@ class Application():
         self._ent_puls_stf_end_type = tk.OptionMenu(self._main_fr, self._new_puls_stf_end_type,
                                                       *['C', 'S'])
         self._ent_puls_sp_or_up= tk.OptionMenu(self._main_fr, self._new_puls_sp_or_up,
-                                                      *['SP', 'UP'])
+                                               command = self.trace_puls_up_or_sp, *['SP', 'UP'])
+        self._ent_puls_up_boundary = tk.Entry(self._main_fr, textvariable=self._new_puls_up_boundary, width=int(7*1),
+                                   bg = self._entry_color, fg = self._entry_text_color)
 
         loc_y = -0.000185185
 
@@ -654,19 +659,21 @@ class Application():
 
 
         self._zstar_chk = tk.Checkbutton(self._main_fr, variable=self._new_zstar_optimization)\
-            .place(relx=types_start+delta_x*5.5,rely=prop_vert_start+11.5*delta_y)
+            .place(relx=types_start+delta_x*9.13,rely=prop_vert_start+11.5*delta_y)
         tk.Label(self._main_fr, text='z* optimization (RP-C201)\n'
-                                     'for prescriptive buckling \ncalculations', font=self._text_size['Text 9'],
+                                     'for prescriptive buckling \ncalculations', font=self._text_size['Text 7'],
                  bg = self._general_color)\
             .place(relx=types_start + 6.1*delta_x,rely=prop_vert_start+11.3*delta_y)
         tk.Label(self._main_fr, text='Pressure side (p-plate, s-stf.):', bg=self._general_color) \
             .place(relx=types_start + 6.1*delta_x,rely=prop_vert_start+13.2*delta_y, relheight = 0.025)
         self._ent_pressure_side.place(relx=types_start + 4.9*delta_x,rely=prop_vert_start+13.2*delta_y)
 
-        tk.Label(self._main_fr, text='PULS input', bg=self._general_color, font=self._text_size['Text 7']) \
-            .place(relx=types_start, rely=prop_vert_start + 11 * delta_y)
-        tk.Label(self._main_fr, text='Siffened: SP unstf.: UP', bg=self._general_color, font=self._text_size['Text 7']) \
-            .place(relx=types_start, rely=prop_vert_start + 11.8 * delta_y)
+        tk.Label(self._main_fr, text='PULS input', bg=self._general_color, font=self._text_size['Text 8']) \
+            .place(relx=types_start, rely=prop_vert_start + 10.4 * delta_y)
+        tk.Label(self._main_fr, text='Siffened: SP Unstf. pl.: UP', bg=self._general_color, font=self._text_size['Text 7']) \
+            .place(relx=types_start, rely=prop_vert_start + 11.2 * delta_y)
+        tk.Label(self._main_fr, text='UP sup.left,right,upper,lower', bg=self._general_color, font=self._text_size['Text 7']) \
+            .place(relx=types_start, rely=prop_vert_start + 12 * delta_y)
         tk.Label(self._main_fr, text='PULS acceptance', bg=self._general_color, font = self._text_size['Text 7'])\
             .place(relx=types_start, rely=prop_vert_start + 13 * delta_y)
         tk.Label(self._main_fr, text='PULS utilization factor:', font=self._text_size['Text 7'],
@@ -733,8 +740,8 @@ class Application():
 
         # Entries below goemetry and stress input.
         self._ent_puls_sp_or_up.place(relx=types_start + 3 * delta_x, rely=prop_vert_start + 11.2 * delta_y,
-                                    relwidth=0.045)
-        self._ent_puls_method.place(relx=types_start+ 3*delta_x, rely=prop_vert_start + 12.5 * delta_y, relwidth = 0.045)
+                                    relwidth=0.041)
+        self._ent_puls_method.place(relx=types_start+ 3*delta_x, rely=prop_vert_start + 12.5 * delta_y, relwidth = 0.041)
         self._ent_puls_uf.place(relx=types_start+ 3*delta_x, rely=prop_vert_start + 13.9 * delta_y, relwidth = 0.02,
                                 relheight = 0.025)
         self._ent_puls_panel_boundary.place(relx=types_start+ 3*delta_x, rely=prop_vert_start + 15.2 * delta_y, relwidth = 0.025)
@@ -1134,6 +1141,17 @@ class Application():
         if self._PULS_results is not None:
             pass
 
+    def trace_puls_up_or_sp(self, event = None):
+        if self._new_puls_sp_or_up.get() == 'UP':
+            delta_y = 0.022
+            delta_x = 0.026041667
+            prop_vert_start = 0.29
+            types_start = 0.005208333
+            self._ent_puls_up_boundary.place(relx=types_start + 4.6 * delta_x, rely=prop_vert_start + 11.4 * delta_y,
+                                         relwidth=0.02)
+        else:
+            self._ent_puls_up_boundary.place_forget()
+
     def puls_run_one_line(self):
         self.puls_run_all_lines(self._active_line)
         self.update_frame()
@@ -1207,7 +1225,8 @@ class Application():
                     'puls buckling method': self._new_puls_method.get,
                     'puls boundary': self._new_puls_panel_boundary.get,
                     'puls stiffener end': self._new_puls_stf_end_type.get,
-                    'puls sp or up': self._new_puls_sp_or_up.get}
+                    'puls sp or up': self._new_puls_sp_or_up.get,
+                    'puls up boundary': self._new_puls_up_boundary.get}
 
 
         set_var = obj_dict[var_to_set]()
@@ -1519,6 +1538,7 @@ class Application():
         self.draw_results(state=state)
         self.draw_canvas(state=state)
         self.draw_prop()
+        self.trace_puls_up_or_sp()
 
     def get_color_and_calc_state(self, current_line = None, active_line_only = False):
         ''' Return calculations and colors for line and results. '''
@@ -1644,10 +1664,7 @@ class Application():
                         else:
                             loc_label = 'Local geom req (PULS validity limits)' if \
                                 obj_scnt_calc.get_puls_sp_or_up() == 'SP' else 'Geom. Req (PULS validity limits)'
-
-                            loc_geom = 'green' if all([val[0] == 'Ok' for val in
-                                                       res[loc_label]
-                                               .values()]) else 'red'
+                            loc_geom = 'green' if all([val[0] == 'Ok' for val in res[loc_label].values()]) else 'red'
                         csr_label = 'CSR-Tank requirements (primary stiffeners)' if \
                             obj_scnt_calc.get_puls_sp_or_up() == 'SP' else'CSR-Tank req'
                         csr_geom = 'green' if all([val[0] == 'Ok' for val in res[csr_label].values()]) else 'red'
@@ -2716,7 +2733,8 @@ class Application():
                             'puls buckling method': [self._new_puls_method.get(), ''],
                             'puls boundary': [self._new_puls_panel_boundary.get(), ''],
                             'puls stiffener end': [self._new_puls_stf_end_type.get(), ''],
-                            'puls sp or up':  [self._new_puls_sp_or_up.get(), '']}
+                            'puls sp or up':  [self._new_puls_sp_or_up.get(), ''],
+                            'puls up boundary': [self._new_puls_up_boundary.get(), ''],}
             else:
                 obj_dict = pasted_structure.get_structure_prop()
 
@@ -3114,6 +3132,7 @@ class Application():
             self._new_puls_panel_boundary.set(properties['puls boundary'][0])
             self._new_puls_stf_end_type.set(properties['puls stiffener end'][0])
             self._new_puls_sp_or_up.set(properties['puls sp or up'][0])
+            self._new_puls_up_boundary.set(properties['puls up boundary'][0])
 
     def get_highest_pressure(self, line, limit_state = 'ULS'):
         '''
@@ -3764,6 +3783,9 @@ class Application():
                 lines_prop['puls stiffener end'] = [self._new_puls_stf_end_type.get(), '']
             if 'puls sp or up' not in lines_prop.keys():
                 lines_prop['puls sp or up'] = [self._new_puls_sp_or_up.get(), '']
+            if 'puls up boundary' not in lines_prop.keys():
+                lines_prop['puls up boundary'] = [self._new_puls_up_boundary.get(), '']
+
             self._line_to_struc[line][0] = Structure(lines_prop)
             self._line_to_struc[line][1] = CalcScantlings(lines_prop)
             if imported['fatigue_properties'][line] is not None:

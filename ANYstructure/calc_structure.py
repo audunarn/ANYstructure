@@ -49,6 +49,7 @@ class Structure():
         self._puls_boundary = main_dict['puls boundary'][0]
         self._puls_stf_end = main_dict['puls stiffener end'][0]
         self._puls_sp_or_up = main_dict['puls sp or up'][0]
+        self._puls_up_boundary = main_dict['puls up boundary'][0]
 
         self._zstar_optimization = main_dict['zstar_optimization'][0]
         try:
@@ -409,6 +410,7 @@ class Structure():
         self._puls_boundary = main_dict['puls boundary'][0]
         self._puls_stf_end  = main_dict['puls stiffener end'][0]
         self._puls_sp_or_up = main_dict['puls sp or up'][0]
+        self._puls_up_boundary = main_dict['puls up boundary'][0]
 
     def set_stresses(self,sigy1,sigy2,sigx,tauxy):
         '''
@@ -495,8 +497,6 @@ class Structure():
     def get_puls_input(self, run_type: str = 'SP'):
         if self.stiffener_type == 'FB':
             stf_type = 'F'
-        # elif self.stiffener_type == 'L': # TODO need to do something with this.
-        #     stf_type = 'L-bulb'
         else:
             stf_type = self.stiffener_type
         if self._puls_sp_or_up == 'SP':
@@ -517,6 +517,19 @@ class Structure():
                             'Pressure (fixed)': None, 'In-plane support': self._puls_boundary,
                            'sp or up': self._puls_sp_or_up}
         else:
+            boundary = self._puls_up_boundary
+            blist = list()
+            if len(boundary) != 4:
+                blist = ['SS', 'SS', 'SS', 'SS']
+            else:
+                for letter in boundary:
+                    if letter.upper() == 'S':
+                        blist.append('SS')
+                    elif letter.upper() == 'C':
+                        blist.append('CL')
+                    else:
+                        blist.append('SS')
+
             return_dict = {'Identification': None, 'Length of plate': self.span*1000, 'Width of c': self.spacing*1000,
                            'Plate thickness': self.plate_th*1000,
                          'Modulus of elasticity': 2.1e11/1e6, "Poisson's ratio": 0.3,
@@ -526,7 +539,7 @@ class Structure():
                            'Trans. stress 1': 0 if self._puls_boundary == 'GL' else self.sigma_y1,
                          'Trans. stress 2': 0 if self._puls_boundary == 'GL' else self.sigma_y2,
                            'Shear stress': self.tauxy, 'Pressure (fixed)': None, 'In-plane support': self._puls_boundary,
-                         'Rot left': 'SS', 'Rot right': 'SS', 'Rot upper': 'SS', 'Rot lower': 'SS',
+                         'Rot left': blist[0], 'Rot right': blist[1], 'Rot upper': blist[2], 'Rot lower': blist[3],
                            'sp or up': self._puls_sp_or_up}
         return return_dict
 
