@@ -9,7 +9,7 @@ import multiprocessing
 import shutil, os, time, datetime, json
 from itertools import islice
 import pythoncom
-import random
+import random, itertools
 
 import ANYstructure.SN_curve_parameters as snc
 
@@ -1558,10 +1558,10 @@ class PULSpanel():
                 if stf['stf_type'][0] == stf_type:
                     new_profiles.append(stf)
             profiles = new_profiles
-        lengths = np.arange(1000,6000,100)
-        spacings = np.arange(100,1000,50)
+        lengths = np.arange(100,5000,100)
+        spacings = np.arange(1000,5000,100)
         thks = np.arange(5,50,1)
-        axstress =transsress1 = transsress2 = shearstress = np.concatenate((np.arange(-400,-200,10), np.arange(210,410,10)))#np.arange(-200,210,10)
+        axstress =transsress1 = transsress2 = shearstress = np.arange(-300,310,10) #np.concatenate((np.arange(-400,-200,10), np.arange(210,410,10)))
         pressures = np.arange(0,0.5,0.01)
         now = time.time()
         yields = np.array([235,265,315,355,355,355,390,420,460])
@@ -1589,26 +1589,54 @@ class PULSpanel():
                 transstress1 = np.random.choice(transsress1)
                 transstress2 = np.random.choice(transsress2)
 
-            run_dict[this_id] = {'Identification': this_id, 'Length of panel': np.random.choice(lengths),
-                                 'Stiffener spacing': np.random.choice(spacings),
-                                 'Plate thickness': np.random.choice(thks), 'Number of primary stiffeners': 10,
-                                 'Stiffener type (L,T,F)': 'F' if this_stf['stf_type'][0] == 'FB' else this_stf['stf_type'][0],
-                                 'Stiffener boundary': stf_boundary,
-                                 'Stiff. Height': this_stf['stf_web_height'][0]*1000,
-                                 'Web thick.': this_stf['stf_web_thk'][0]*1000,
-                                 'Flange width': 0 if this_stf['stf_type'][0] == 'F'
-                                 else this_stf['stf_flange_width'][0]*1000,
-                                 'Flange thick.': 0 if  this_stf['stf_type'][0] == 'F'
-                                 else this_stf['stf_flange_thk'][0]*1000,
-                                 'Tilt angle': 0, 'Number of sec. stiffeners': 0,
-                                 'Modulus of elasticity': 210000, "Poisson's ratio": 0.3,
-                                 'Yield stress plate':yieldstress, 'Yield stress stiffener': yieldstress,
-                                 'Axial stress': 0 if boundary == 'GT' else np.random.choice(axstress),
-                                 'Trans. stress 1': 0 if boundary == 'GL' else transstress1,
-                                 'Trans. stress 2': 0 if boundary == 'GL' else transstress2,
-                                 'Shear stress': np.random.choice(shearstress),
-                                 'Pressure (fixed)': 0 if stf_boundary == 'S' else np.random.choice(pressures),
-                                 'In-plane support': boundary}
+            # run_dict[this_id] = {'Identification': this_id, 'Length of panel': np.random.choice(lengths),
+            #                      'Stiffener spacing': np.random.choice(spacings),
+            #                      'Plate thickness': np.random.choice(thks), 'Number of primary stiffeners': 10,
+            #                      'Stiffener type (L,T,F)': 'F' if this_stf['stf_type'][0] == 'FB' else this_stf['stf_type'][0],
+            #                      'Stiffener boundary': stf_boundary,
+            #                      'Stiff. Height': this_stf['stf_web_height'][0]*1000,
+            #                      'Web thick.': this_stf['stf_web_thk'][0]*1000,
+            #                      'Flange width': 0 if this_stf['stf_type'][0] == 'F'
+            #                      else this_stf['stf_flange_width'][0]*1000,
+            #                      'Flange thick.': 0 if  this_stf['stf_type'][0] == 'F'
+            #                      else this_stf['stf_flange_thk'][0]*1000,
+            #                      'Tilt angle': 0, 'Number of sec. stiffeners': 0,
+            #                      'Modulus of elasticity': 210000, "Poisson's ratio": 0.3,
+            #                      'Yield stress plate':yieldstress, 'Yield stress stiffener': yieldstress,
+            #                      'Axial stress': 0 if boundary == 'GT' else np.random.choice(axstress),
+            #                      'Trans. stress 1': 0 if boundary == 'GL' else transstress1,
+            #                      'Trans. stress 2': 0 if boundary == 'GL' else transstress2,
+            #                      'Shear stress': np.random.choice(shearstress),
+            #                      'Pressure (fixed)': 0 if stf_boundary == 'S' else np.random.choice(pressures),
+            #                      'In-plane support': boundary}
+            #
+            same_ax = np.random.choice(axstress)
+
+            if np.random.choice([True,False,False,False]):
+                support = ['SS','SS','SS','SS']
+            elif np.random.choice([True,False,False,False]):
+                support = ['CL','CL','CL','CL']
+            else:
+                support = [np.random.choice(['SS', 'CL']),np.random.choice(['SS', 'CL']),
+                           np.random.choice(['SS', 'CL']),np.random.choice(['SS', 'CL'])]
+            if np.random.choice([True,False]):
+                press = 0
+            else:
+                press = np.random.choice(pressures)
+            run_dict[this_id] = {'Identification': this_id, 'Length of plate': np.random.choice(lengths),
+                                 'Width of c': np.random.choice(spacings),
+                           'Plate thickness': np.random.choice(thks),
+                         'Modulus of elasticity': 210000, "Poisson's ratio": 0.3,
+                                 'Yield stress plate':yieldstress,
+                         'Axial stress 1': 0 if boundary == 'GT' else same_ax,
+                           'Axial stress 2': 0 if boundary == 'GT' else same_ax,
+                           'Trans. stress 1': 0 if boundary == 'GL' else transstress1,
+                         'Trans. stress 2': 0 if boundary == 'GL' else transstress2,
+                           'Shear stress': np.random.choice(shearstress), 'Pressure (fixed)': press,
+                                 'In-plane support': boundary,
+                         'Rot left': support[0], 'Rot right': support[1],
+                                 'Rot upper': support[2], 'Rot lower': support[3],
+                           'sp or up': 'UP'}
 
         self._all_to_run = run_dict
         self.run_all(store_results=True)

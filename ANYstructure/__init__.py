@@ -2,7 +2,7 @@
 # Project information.
 
 __title__ = 'ANYstructure'
-__version__ = 2.5
+__version__ = 2.8
 __author__ = 'Audun Arnesen Nyhus'
 __license__ = 'MIT'
 

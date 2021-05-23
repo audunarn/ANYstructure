@@ -318,6 +318,8 @@ class Application():
         self._new_colorcode_section_modulus.set(False)
         self._new_colorcode_fatigue = tk.BooleanVar()
         self._new_colorcode_fatigue.set(False)
+        self._new_colorcode_total= tk.BooleanVar()
+        self._new_colorcode_total.set(False)
         self._new_toggle_var = tk.StringVar()
         self._new_toggle_puls = tk.BooleanVar()
         self._new_toggle_puls.set(False)
@@ -352,6 +354,9 @@ class Application():
             .place(relx = 0.26, y=120)
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_fatigue, command = self.on_color_code_check)\
             .place(relx = 0.26, y=140)
+        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_total, command = self.on_color_code_check)\
+            .place(relx = 0.26, y=160)
+
 
         tk.Label(self._main_fr, text='Check to see avaliable shortcuts', font="Text 9").place(relx = 0.27, y=0)
         tk.Label(self._main_fr, text='Beam prop.', font="Text 9").place(relx = 0.27, y=40)
@@ -359,7 +364,8 @@ class Application():
         tk.Label(self._main_fr, text='Pressure', font="Text 9").place(relx = 0.27, y=80)
         tk.Label(self._main_fr, text='Buckling UF', font="Text 9").place(relx = 0.27, y=100)
         tk.Label(self._main_fr, text='Sec. mod. UF', font="Text 9").place(relx=0.27, y=120)
-        tk.Label(self._main_fr, text='Fatigue UF.', font="Text 9").place(relx=0.27, y=140)
+        tk.Label(self._main_fr, text='Fatigue UF', font="Text 9").place(relx=0.27, y=140)
+        tk.Label(self._main_fr, text='Total UF', font="Text 9").place(relx=0.27, y=160)
 
         tk.Entry(self._main_fr, textvariable=self._new_line_p1, width=int(ent_width * 1),
                  bg = self._entry_color, fg = self._entry_text_color)\
@@ -1599,8 +1605,10 @@ class Application():
                     checked_side=obj_scnt_calc.get_side())]
 
                 rec_for_color[current_line]['section modulus']=  min_sec_mod/min(sec_mod)
-                rec_for_color[current_line]['plate thickness']=  min_thk/obj_scnt_calc.get_pl_thk()
 
+                rec_for_color[current_line]['plate thickness']=  (min_thk/1000)/obj_scnt_calc.get_pl_thk()
+                rec_for_color[current_line]['rp buckling'] = max(buckling)
+                rec_for_color[current_line]['shear'] = min_shear/shear_area
                 return_dict['slamming'][current_line] = dict()
                 if slamming_pressure is not None and slamming_pressure > 0:
                     return_dict['slamming'][current_line]['state'] = True
@@ -1655,19 +1663,20 @@ class Application():
                                                        'section': color_sec, 'shear': color_shear,
                                                        'thickness': color_thk}
                 if self._PULS_results != None:
-
                     res = self._PULS_results.get_puls_line_results(current_line)
                     if res is not None:
                         geo_problem = False
                         if type(res['Ultimate capacity']['Actual usage Factor'][0]) != str:
-                            col_ult = 'green' if (res['Ultimate capacity'][
-                                                     'Actual usage Factor'][0] / self._new_puls_uf.get()) < 1 else 'red'
+                            ufnum = res['Ultimate capacity']['Actual usage Factor'][0] / self._new_puls_uf.get()
+                            rec_for_color[current_line]['PULS ultimate']=ufnum
+                            col_ult = 'green' if ufnum < 1 else 'red'
                         else:
                             geo_problem = True
                             col_ult = 'red'
                         if res['Buckling strength']['Actual usage Factor'][0] is not None:
-                            col_buc = 'green' if (res['Buckling strength'][
-                                                     'Actual usage Factor'][0] / self._new_puls_uf.get()) < 1 else 'red'
+                            bnum = res['Buckling strength']['Actual usage Factor'][0] / self._new_puls_uf.get()
+                            rec_for_color[current_line]['PULS buckling'] = bnum
+                            col_buc = 'green' if bnum < 1 else 'red'
                         else:
                             col_buc = 'red'
                         if geo_problem:
@@ -1714,6 +1723,7 @@ class Application():
                 thk_util = 0 if obj_structure.get_plate_thk() == 0 else min_thk / (1000 * obj_structure.get_plate_thk())
                 sec_util = 0 if min(sec_mod) == 0 else min_sec_mod / min(sec_mod)
                 buc_util = 1 if float('inf') in buckling else max(buckling[0:5])
+                rec_for_color[current_line]['rp buckling'] = max(buckling[0:5])
                 return_dict['utilization'][current_line] = {'buckling': buc_util,
                                                             'PULS buckling': buc_util,
                                                             'fatigue': fat_util,
@@ -1864,6 +1874,19 @@ class Application():
                                                cmap_sections(self._PULS_results.get_utilization(
                                                    line, self._line_to_struc[line][1].get_puls_method(),
                                                    self._new_puls_uf.get())))
+
+                if self._new_toggle_puls.get():
+                    if self._line_to_struc[line][1].get_puls_method() == 'buckling':
+                        buc_uf = rec_for_color[line]['PULS buckling']
+                    else:
+                        buc_uf = rec_for_color[line]['PULS ultimate']
+                else:
+                    buc_uf = rec_for_color[line]['rp buckling']
+
+                totuf = max([rec_for_color[line]['fatigue'], buc_uf,
+                             rec_for_color[line]['section modulus'], rec_for_color[line]['shear'],
+                             rec_for_color[line]['plate thickness']])
+
                 line_color_coding[line] = {'plate': matplotlib.colors.rgb2hex(cmap_sections(thk_sort_unique.index(round(line_data[1]
                                                                               .get_pl_thk(),10))/len(thk_sort_unique))),
                                            'section': matplotlib.colors.rgb2hex(cmap_sections(sec_in_model[line_data[1]
@@ -1876,11 +1899,15 @@ class Application():
                                                self.get_highest_pressure(line)['normal']/highest_pressure)),
                                            'utilization': matplotlib.colors.rgb2hex(cmap_sections(
                                                max(list(return_dict['utilization'][line].values())))),
-                                           'section modulus': matplotlib.colors.rgb2hex(
+                                           'section modulus color': matplotlib.colors.rgb2hex(
                                                cmap_sections(rec_for_color[line]['section modulus'])),
-                                           'fatigue': matplotlib.colors.rgb2hex(
+                                           'fatigue color': matplotlib.colors.rgb2hex(
                                                cmap_sections(rec_for_color[line]['fatigue'])),
-                                           'PULS utilization': puls_color,
+                                           'Total uf' : matplotlib.colors.rgb2hex(
+                                               cmap_sections(totuf)),
+                                           'PULS utilization color': puls_color,
+                                           'fatigue uf' : rec_for_color[line]['fatigue'],
+                                           'section uf' : rec_for_color[line]['section modulus'],
                                            'sigma x': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_x()/
                                                                                               max(sig_x))),
                                            'sigma y1': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_y1()/
@@ -1911,7 +1938,8 @@ class Application():
             self._new_colorcode_pressure.get(), self._new_colorcode_utilization.get(),
             self._new_colorcode_sigmax.get(), self._new_colorcode_sigmay1.get(), self._new_colorcode_sigmay2.get(),
             self._new_colorcode_tauxy.get(), self._new_colorcode_structure_type.get(),
-                           self._new_colorcode_fatigue.get(), self._new_colorcode_section_modulus.get()].count(True)> 0
+                           self._new_colorcode_fatigue.get(), self._new_colorcode_section_modulus.get(),
+                          self._new_colorcode_total.get()].count(True)> 0
 
         if chk_box_active and state != None:
             self.color_code_text(state)
@@ -2041,7 +2069,7 @@ class Application():
         cc_state = state['color code']
         if cc_state == {}:
             return
-        start_text, start_text_shift = 170,171
+        start_text, start_text_shift = 190,191
         cmap_sections = plt.get_cmap('jet')
         if self._new_colorcode_beams.get() == True and self._line_to_struc != {}:
             sec_in_model = cc_state['sections in model']
@@ -2167,19 +2195,9 @@ class Application():
                                                                                            .index(structure_type)/
                                                                              len(structure_type_map))),
                                               anchor="nw")
-        elif self._new_colorcode_section_modulus.get() == True:
+        elif self._new_colorcode_section_modulus.get() == True or self._new_colorcode_fatigue.get() == True or \
+                self._new_colorcode_fatigue.get() == True or self._new_colorcode_total.get() == True:
             for idx, value in enumerate(cc_state['section modulus map']):
-                self._main_canvas.create_text(11, start_text_shift+20*idx, text=str(str(round(value,5))),
-                                              font=self._text_size["Text 10 bold"],
-                                              fill='black',
-                                              anchor="nw")
-                self._main_canvas.create_text(10, start_text+20*idx, text=str(str(round(value,5))),
-                                              font=self._text_size["Text 10 bold"],
-                                              fill=matplotlib.colors.rgb2hex(
-                                                  cmap_sections(value)),
-                                              anchor="nw")
-        elif self._new_colorcode_fatigue.get() == True:
-            for idx, value in enumerate(cc_state['fatigue map']):
                 self._main_canvas.create_text(11, start_text_shift+20*idx, text=str(str(round(value,5))),
                                               font=self._text_size["Text 10 bold"],
                                               fill='black',
@@ -2211,7 +2229,7 @@ class Application():
             color = state['color code']['lines'][line]['utilization']
 
         elif self._new_colorcode_utilization.get() == True and self._new_toggle_puls.get():
-            color = state['color code']['lines'][line]['PULS utilization']
+            color = state['color code']['lines'][line]['PULS utilization color']
 
         elif self._new_colorcode_sigmax.get() == True:
             color = state['color code']['lines'][line]['sigma x']
@@ -2229,10 +2247,13 @@ class Application():
             color = state['color code']['lines'][line]['structure type']
 
         elif self._new_colorcode_section_modulus.get() == True:
-            color = state['color code']['lines'][line]['section modulus']
+            color = state['color code']['lines'][line]['section modulus color']
 
         elif self._new_colorcode_fatigue.get() == True:
-            color = state['color code']['lines'][line]['fatigue']
+            color = state['color code']['lines'][line]['fatigue color']
+
+        elif self._new_colorcode_total.get() == True:
+            color = state['color code']['lines'][line]['Total uf']
         else:
             color = 'black'
 
