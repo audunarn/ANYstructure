@@ -4389,7 +4389,8 @@ class Application():
             self._new_colorcode_pressure.get(), self._new_colorcode_utilization.get(),
             self._new_colorcode_sigmax.get(), self._new_colorcode_sigmay1.get(), self._new_colorcode_sigmay2.get(),
             self._new_colorcode_tauxy.get(), self._new_colorcode_structure_type.get(),
-            self._new_colorcode_section_modulus.get(), self._new_colorcode_fatigue.get()].count(True) > 1:
+            self._new_colorcode_section_modulus.get(), self._new_colorcode_fatigue.get(),
+            self._new_colorcode_total.get()].count(True) > 1:
             messagebox.showinfo(title='Information', message='Can only select on color code at the time.')
             self._new_colorcode_beams.set(False)
             self._new_colorcode_plates.set(False)
@@ -4402,6 +4403,7 @@ class Application():
             self._new_colorcode_structure_type.set(False)
             self._new_colorcode_section_modulus.set(False)
             self._new_colorcode_fatigue.set(False)
+            self._new_colorcode_total.set(False)
         self.update_frame()
 
     def logger(self, line = None, point = None, move_coords = None):
