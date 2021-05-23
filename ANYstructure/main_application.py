@@ -1739,7 +1739,6 @@ class Application():
             else:
                 pass
 
-        cmap_sections = plt.get_cmap('jet')
         sec_in_model, idx, recorded_sections = dict(), 0, list()
         for data in self._line_to_struc.values():
             if data[1].get_beam_string() not in recorded_sections:
@@ -1747,18 +1746,7 @@ class Application():
                 recorded_sections.append(data[1].get_beam_string())
                 idx += 1
         sec_in_model['length'] = len(recorded_sections)
-        for section, idx in sec_in_model.items():
-            if section == 'length':
-                continue
-            self._main_canvas.create_text(11, 111 + 20 * idx, text=section,
-                                          font=self._text_size["Text 10 bold"],
-                                          fill='black',
-                                          anchor="nw")
-            self._main_canvas.create_text(10, 110 + 20 * idx, text=section,
-                                          font=self._text_size["Text 10 bold"],
-                                          fill=matplotlib.colors.rgb2hex(
-                                              cmap_sections(idx / sec_in_model['length'])),
-                                          anchor="nw")
+
         if self._line_to_struc != {}:
             sec_mod_map = np.arange(0,1.1,0.1)
             fat_map = np.arange(0,1.1,0.1)
@@ -1865,23 +1853,23 @@ class Application():
             structure_type_unique = return_dict['color code']['structure types map']
             for line, line_data in self._line_to_struc.items():
                 if self._PULS_results is None:
-                    puls_color = 'black'
+                    puls_color, buc_uf = 'black', 0
                 elif self._PULS_results.get_utilization(line, self._line_to_struc[line][1].get_puls_method(),
                                                         self._new_puls_uf.get()) == None:
-                    puls_color = 'black'
+                    puls_color, buc_uf = 'black', 0
                 else:
                     puls_color = matplotlib.colors.rgb2hex(
                                                cmap_sections(self._PULS_results.get_utilization(
                                                    line, self._line_to_struc[line][1].get_puls_method(),
                                                    self._new_puls_uf.get())))
 
-                if self._new_toggle_puls.get():
-                    if self._line_to_struc[line][1].get_puls_method() == 'buckling':
-                        buc_uf = rec_for_color[line]['PULS buckling']
+                    if self._new_toggle_puls.get():
+                        if self._line_to_struc[line][1].get_puls_method() == 'buckling':
+                            buc_uf = rec_for_color[line]['PULS buckling']
+                        else:
+                            buc_uf = rec_for_color[line]['PULS ultimate']
                     else:
-                        buc_uf = rec_for_color[line]['PULS ultimate']
-                else:
-                    buc_uf = rec_for_color[line]['rp buckling']
+                        buc_uf = rec_for_color[line]['rp buckling']
 
                 totuf = max([rec_for_color[line]['fatigue'], buc_uf,
                              rec_for_color[line]['section modulus'], rec_for_color[line]['shear'],

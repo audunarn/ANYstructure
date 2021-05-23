@@ -1,4 +1,6 @@
 # ANYstructure #
+### What's new in 2.9 ###
+* Added more color coding options.
 ### What's new in 2.8 ###
 * Corrected optimization error w.r.t. PULS.
 ### What's new in 2.7 ###
