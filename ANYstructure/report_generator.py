@@ -390,14 +390,14 @@ class LetterMaker(object):
             elif draw_type == 'plate':
                 self.c.setStrokeColor(all_line_data['color code']['lines'][line]['plate'])
             elif draw_type == 'pressure':
-                self.c.setStrokeColor(all_line_data['color code']['lines'][line]['pressure'])
+                self.c.setStrokeColor(all_line_data['color code']['lines'][line]['pressure color'])
             elif draw_type == 'utilization':
                 if self.data._new_puls_uf.get():
-                    self.c.setStrokeColor(all_line_data['color code']['lines'][line]['PULS utilization'])
+                    self.c.setStrokeColor(all_line_data['color code']['lines'][line]['PULS uf color'])
                 else:
-                    self.c.setStrokeColor(all_line_data['color code']['lines'][line]['utilization'])
+                    self.c.setStrokeColor(all_line_data['color code']['lines'][line]['rp uf color'])
             elif draw_type == 'sigma x':
-                self.c.setStrokeColor(all_line_data['color code']['lines'][line]['utilization'])
+                self.c.setStrokeColor(all_line_data['color code']['lines'][line]['sigma x'])
             elif draw_type == 'sigma y1':
                 self.c.setStrokeColor(all_line_data['color code']['lines'][line]['sigma y1'])
             elif draw_type == 'sigma y2':

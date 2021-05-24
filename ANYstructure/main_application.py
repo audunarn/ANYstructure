@@ -301,9 +301,9 @@ class Application():
         self._new_colorcode_utilization = tk.BooleanVar()
         self._new_colorcode_utilization.set(False)
         self._new_draw_point_name = tk.BooleanVar()
-        self._new_draw_point_name.set(True)
+        self._new_draw_point_name.set(False)
         self._new_line_name = tk.BooleanVar()
-        self._new_line_name.set(True)
+        self._new_line_name.set(False)
         self._new_colorcode_sigmax = tk.BooleanVar()
         self._new_colorcode_sigmax.set(False)
         self._new_colorcode_sigmay1 = tk.BooleanVar()
@@ -1249,15 +1249,16 @@ class Application():
         elif var_to_set in ['spacing','plate_thk','stf_web_height','stf_web_thk',
                             'stf_flange_width','stf_flange_thk']:
             set_var = set_var/1000
-
-        for line in self._multiselect_lines:
+        no_of_lines = len(self._multiselect_lines)
+        for idx, line in enumerate(self._multiselect_lines):
             self._active_line = line
             self._line_is_active = True
             if self._active_line in self._line_to_struc.keys():
                 dict = self._line_to_struc[self._active_line][1].get_structure_prop()
                 dict[var_to_set][0] = set_var
 
-                self.new_structure(toggle_multi=dict)
+                self.new_structure(toggle_multi=dict, suspend_recalc=True if (idx+1) != no_of_lines else False)
+                print(True if (idx+1) != no_of_lines else False)
 
     def gui_load_combinations(self,event):
         '''
@@ -1853,15 +1854,15 @@ class Application():
             structure_type_unique = return_dict['color code']['structure types map']
             for line, line_data in self._line_to_struc.items():
                 if self._PULS_results is None:
-                    puls_color, buc_uf = 'black', 0
+                    puls_color, buc_uf, puls_uf = 'black', 0, 0
                 elif self._PULS_results.get_utilization(line, self._line_to_struc[line][1].get_puls_method(),
                                                         self._new_puls_uf.get()) == None:
-                    puls_color, buc_uf = 'black', 0
+                    puls_color, buc_uf, puls_uf = 'black', 0,0
                 else:
-                    puls_color = matplotlib.colors.rgb2hex(
-                                               cmap_sections(self._PULS_results.get_utilization(
+                    puls_uf = self._PULS_results.get_utilization(
                                                    line, self._line_to_struc[line][1].get_puls_method(),
-                                                   self._new_puls_uf.get())))
+                                                   self._new_puls_uf.get())
+                    puls_color = matplotlib.colors.rgb2hex(cmap_sections(puls_uf))
 
                     if self._new_toggle_puls.get():
                         if self._line_to_struc[line][1].get_puls_method() == 'buckling':
@@ -1874,7 +1875,8 @@ class Application():
                 totuf = max([rec_for_color[line]['fatigue'], buc_uf,
                              rec_for_color[line]['section modulus'], rec_for_color[line]['shear'],
                              rec_for_color[line]['plate thickness']])
-
+                this_pressure = self.get_highest_pressure(line)['normal']
+                rp_util = max(list(return_dict['utilization'][line].values()))
                 line_color_coding[line] = {'plate': matplotlib.colors.rgb2hex(cmap_sections(thk_sort_unique.index(round(line_data[1]
                                                                               .get_pl_thk(),10))/len(thk_sort_unique))),
                                            'section': matplotlib.colors.rgb2hex(cmap_sections(sec_in_model[line_data[1]
@@ -1883,17 +1885,20 @@ class Application():
                                            'structure type': matplotlib.colors.rgb2hex(
                                                cmap_sections(structure_type_unique.index(line_data[1].get_structure_type())
                                                              /len(structure_type_unique))),
-                                           'pressure': 'black' if all_pressures in [[0],[0,1]] else matplotlib.colors.rgb2hex(cmap_sections(
-                                               self.get_highest_pressure(line)['normal']/highest_pressure)),
-                                           'utilization': matplotlib.colors.rgb2hex(cmap_sections(
-                                               max(list(return_dict['utilization'][line].values())))),
+                                           'pressure color': 'black' if all_pressures in [[0],[0,1]] else matplotlib.colors.rgb2hex(cmap_sections(
+                                               this_pressure/highest_pressure)),
+                                           'pressure': this_pressure,
+                                           'rp uf color': matplotlib.colors.rgb2hex(cmap_sections(rp_util)),
+                                           'rp uf': rp_util,
                                            'section modulus color': matplotlib.colors.rgb2hex(
                                                cmap_sections(rec_for_color[line]['section modulus'])),
                                            'fatigue color': matplotlib.colors.rgb2hex(
                                                cmap_sections(rec_for_color[line]['fatigue'])),
-                                           'Total uf' : matplotlib.colors.rgb2hex(
+                                           'Total uf color' : matplotlib.colors.rgb2hex(
                                                cmap_sections(totuf)),
-                                           'PULS utilization color': puls_color,
+                                           'Total uf': totuf,
+                                           'PULS uf': round(puls_uf,2),
+                                           'PULS uf color': puls_color,
                                            'fatigue uf' : rec_for_color[line]['fatigue'],
                                            'section uf' : rec_for_color[line]['section modulus'],
                                            'sigma x': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_x()/
@@ -1934,7 +1939,7 @@ class Application():
 
         # Drawing shortcut information if selected.
         if self._new_shortcut_backdrop.get() == True:
-            self._main_canvas.create_text(self._main_canvas.winfo_width()*0.87, self._main_canvas.winfo_height()*0.12,
+            self._main_canvas.create_text(self._main_canvas.winfo_width()*0.87, self._main_canvas.winfo_height()*0.13,
                                           text = self._shortcut_text,
                                           font=self._text_size["Text 8"],
                                           fill = 'black')
@@ -2001,7 +2006,7 @@ class Application():
                     except (KeyError, TypeError):
                         color = 'black'
                 elif chk_box_active and state != None and self._line_to_struc != {}:
-                    color = self.color_code_line(state, line)
+                    color = self.color_code_line(state, line, coord1, [coord2[0] - coord1[0], coord2[1] - coord1[1]])
                 else:
                     color = 'black'
 
@@ -2011,7 +2016,8 @@ class Application():
                     self._main_canvas.create_line(coord1, coord2, width=6, fill = color)
                     if self._new_line_name.get():
                         self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2+10,
-                                                     text='Line ' + str(get_num(line)), font=self._text_size["Text 10 bold"],
+                                                     text='Line ' + str(get_num(line)),
+                                                      font=self._text_size["Text 10 bold"],
                                                      fill = 'red')
                 else:
                     self._main_canvas.create_line(coord1, coord2, width=3, fill = color)
@@ -2076,7 +2082,7 @@ class Application():
         elif self._new_colorcode_plates.get() == True and self._line_to_struc != {}:
 
             all_thicknesses = np.unique(cc_state['all thicknesses']).tolist()
-            thickest_plate = cc_state['thickest plate']
+
             for idx, thk in enumerate(np.unique(all_thicknesses).tolist()):
                 self._main_canvas.create_text(11, start_text_shift+20*idx, text=str('Plate '+ str(thk*1000) + ' mm'),
                                               font=self._text_size["Text 10 bold"],
@@ -2196,7 +2202,7 @@ class Application():
                                                   cmap_sections(value)),
                                               anchor="nw")
 
-    def color_code_line(self, state, line):
+    def color_code_line(self, state, line, coord1, vector):
 
         cc_state = state['color code']
         if line not in state['color code']['lines'].keys():
@@ -2211,37 +2217,57 @@ class Application():
             if cc_state['all pressures'] == [0, 1]:
                 color = 'black'
             else:
-                color = state['color code']['lines'][line]['pressure']
+                color = state['color code']['lines'][line]['pressure color']
+            self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                          text=str(state['color code']['lines'][line]['pressure']) ,fill=color)
 
         elif self._new_colorcode_utilization.get() == True and not self._new_toggle_puls.get():
-            color = state['color code']['lines'][line]['utilization']
+            color = state['color code']['lines'][line]['rp uf color']
+            self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                          text=round(state['color code']['lines'][line]['rp uf'],2),fill=color)
 
         elif self._new_colorcode_utilization.get() == True and self._new_toggle_puls.get():
-            color = state['color code']['lines'][line]['PULS utilization color']
+            color = state['color code']['lines'][line]['PULS uf color']
+            self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                          text=round(state['color code']['lines'][line]['PULS uf'],2),fill=color)
 
         elif self._new_colorcode_sigmax.get() == True:
             color = state['color code']['lines'][line]['sigma x']
+            self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                          text=str(self._line_to_struc[line][1].get_sigma_x()),fill=color)
 
         elif self._new_colorcode_sigmay1.get() == True:
             color = state['color code']['lines'][line]['sigma y1']
+            self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                          text=str(self._line_to_struc[line][1].get_sigma_y2()),fill=color)
 
         elif self._new_colorcode_sigmay2.get() == True:
             color = state['color code']['lines'][line]['sigma y2']
+            self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                          text=str(self._line_to_struc[line][1].get_sigma_y2()),fill=color)
 
         elif self._new_colorcode_tauxy.get() == True:
             color = state['color code']['lines'][line]['tau xy']
+            self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                          text=round(self._line_to_struc[line][1].get_tau_xy(),2),fill=color)
 
         elif self._new_colorcode_structure_type.get() == True:
             color = state['color code']['lines'][line]['structure type']
 
         elif self._new_colorcode_section_modulus.get() == True:
             color = state['color code']['lines'][line]['section modulus color']
+            self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                          text=round(state['color code']['lines'][line]['section uf'],2),fill=color)
 
         elif self._new_colorcode_fatigue.get() == True:
             color = state['color code']['lines'][line]['fatigue color']
+            self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                          text=round(state['color code']['lines'][line]['fatigue uf'],2),fill=color)
 
         elif self._new_colorcode_total.get() == True:
-            color = state['color code']['lines'][line]['Total uf']
+            color = state['color code']['lines'][line]['Total uf color']
+            self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                          text=round(state['color code']['lines'][line]['Total uf'],2),fill=color)
         else:
             color = 'black'
 
@@ -2732,7 +2758,8 @@ class Application():
         except TclError:
             messagebox.showinfo(title='Input error', message='Input must be a line number.')
 
-    def new_structure(self, event = None, pasted_structure = None, multi_return = None, toggle_multi = None):
+    def new_structure(self, event = None, pasted_structure = None, multi_return = None, toggle_multi = None,
+                      suspend_recalc = False):
         '''
         This method maps the structure to the line when clicking "add structure to line" button.
         The result is put in a dictionary. Key is line name and value is the structure object.
@@ -2838,11 +2865,11 @@ class Application():
         if self._PULS_results != None:
             self._PULS_results.result_changed(self._active_line)
 
-        for line, obj in self._line_to_struc.items():
-            obj[1].need_recalc = True
-
-
-        self.update_frame()
+        if not suspend_recalc:
+            # when changing multiple parameters, recalculations are suspended.
+            for line, obj in self._line_to_struc.items():
+                obj[1].need_recalc = True
+            self.update_frame()
         #state = self.get_color_and_calc_state()
 
         # self.draw_results(state=state)
