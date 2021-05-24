@@ -1349,7 +1349,7 @@ class PULSpanel():
         self._all_uf['buckling'] = np.unique(self._all_uf['buckling']).tolist()
         self._all_uf['ultimate'] = np.unique(self._all_uf['ultimate']).tolist()
 
-    def run_all(self, store_results = True if os.getlogin() == 'CEFANY' else False):
+    def run_all(self, store_results = False):
         '''
         Returning following results.:
 
