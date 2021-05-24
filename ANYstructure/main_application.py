@@ -1939,7 +1939,7 @@ class Application():
 
         # Drawing shortcut information if selected.
         if self._new_shortcut_backdrop.get() == True:
-            self._main_canvas.create_text(self._main_canvas.winfo_width()*0.87, self._main_canvas.winfo_height()*0.12,
+            self._main_canvas.create_text(self._main_canvas.winfo_width()*0.87, self._main_canvas.winfo_height()*0.13,
                                           text = self._shortcut_text,
                                           font=self._text_size["Text 8"],
                                           fill = 'black')
