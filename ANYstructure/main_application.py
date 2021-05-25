@@ -214,7 +214,8 @@ class Application():
         self.__copied_line_prop = None  # Used to copy line properties to another.
         self._PULS_results = None # If a puls run is avaliable, it is stored here.
         # Used to select parameter
-        self._stuctural_definition = ['mat_yield', 'span', 'spacing', 'plate_thk', 'stf_web_height', 'stf_web_thk',
+        self._stuctural_definition = ['mat_yield','mat_factor', 'span', 'spacing', 'plate_thk', 'stf_web_height',
+                                      'stf_web_thk',
                                        'stf_flange_width', 'stf_flange_thk', 'structure_type', 'stf_type',
                                        'sigma_y1', 'sigma_y2', 'sigma_x', 'tau_xy', 'plate_kpp', 'stf_kps','stf_km1',
                                        'stf_km2', 'stf_km3', 'press_side', 'structure_types', 'zstar_optimization',
@@ -505,6 +506,7 @@ class Application():
                                         width=int(ent_width * 1),
                                          bg = self._entry_color, fg = self._entry_text_color)
         self._new_puls_uf.trace('w', self.trace_acceptance_change)
+
         self._toggle_btn_puls.place(relx=types_start, rely=prop_vert_start+18*delta_y, relwidth = 0.043,
                                 relheight = 0.035)
         self._puls_run_all.place(relx=types_start +0.046, rely=prop_vert_start+18*delta_y, relwidth = 0.06,
@@ -512,6 +514,7 @@ class Application():
 
         # --- main variable to define the structural properties ---
         self._new_material = tk.DoubleVar()
+        self._new_material_factor = tk.DoubleVar()
         self._new_field_len = tk.DoubleVar()
         self._new_stf_spacing = tk.DoubleVar()
         self._new_plate_thk = tk.DoubleVar()
@@ -556,7 +559,8 @@ class Application():
         self._new_stf_km3.set(12)
         self._new_stf_kps.set(1)
         self._new_plate_kpp.set(1)
-        self._new_material.set(355)
+        self._new_material_factor.set(1.15)
+
         self._new_stucture_type.set('GENERAL_INTERNAL_WT')
         self.option_meny_structure_type_trace(event='GENERAL_INTERNAL_WT')
         self._new_stf_type.set('T')
@@ -567,14 +571,19 @@ class Application():
         self._new_puls_sp_or_up.set('SP')
         self._new_puls_up_boundary.set('SSSS')
 
-
+        #self._new_material_factor.trace('w', self.trace_material_factor)
         # --- main entries and labels to define the structural properties ---
         ent_width = 12 #width of entries
         tk.Label(self._main_fr, text='Yield [MPa]:', font = self._text_size['Text 9'],
                  bg = self._general_color)\
-            .place(relx=0.2, rely=prop_vert_start + 2.6 * delta_y)
+            .place(relx=0.185, rely=prop_vert_start + 2.6 * delta_y)
+        tk.Label(self._main_fr, text='Mat. factor', font = self._text_size['Text 9'],
+                 bg = self._general_color)\
+            .place(relx=0.221, rely=prop_vert_start + 2.6 * delta_y)
 
         self._ent_mat = tk.Entry(self._main_fr, textvariable=self._new_material, bg = self._entry_color,
+                                 fg = self._entry_text_color)
+        self._ent_mat_factor = tk.Entry(self._main_fr, textvariable=self._new_material_factor, bg = self._entry_color,
                                  fg = self._entry_text_color)
         self._ent_field_len = tk.Entry(self._main_fr, textvariable=self._new_field_len, bg = self._entry_color,
                                        fg = self._entry_text_color)
@@ -745,7 +754,8 @@ class Application():
         tk.Label(self._main_fr, text='[mm]', bg = self._general_color).place(relx=types_start + 8*delta_x,
                                                                              rely=ent_geo_y+delta_y*y_red)
 
-        self._ent_mat.place(relx=0.195, rely=ent_rely, relwidth = 0.05)
+        self._ent_mat.place(relx=0.195, rely=ent_rely, relwidth = 0.025)
+        self._ent_mat_factor.place(relx=0.23, rely=ent_rely, relwidth=0.025)
         self._ent_plate_kpp.place(relx = ent_relx , rely=ent_rely)
         self._ent_plate_kps.place(relx=ent_relx + geo_dx, rely=ent_rely)
         self._ent_stf_km1.place(relx=ent_relx + 2*geo_dx, rely=ent_rely)
@@ -1157,8 +1167,14 @@ class Application():
 
         self.update_frame()
         
-    def trace_puls_uf(self):
+    def trace_puls_uf(self, *args):
         if self._PULS_results is not None:
+            pass
+
+    def trace_material_factor(self, *args):
+        try:
+            self._new_puls_uf.set(1/self._new_material_factor.get())
+        except (TclError, ZeroDivisionError):
             pass
 
     def trace_puls_up_or_sp(self, event = None):
@@ -1221,6 +1237,7 @@ class Application():
         # if not self._line_is_active:
         #     tk.messagebox.showerror('Select line', 'Click a line first.')
         obj_dict = {'mat_yield': self._new_material.get,
+                    'mat_factor': self._new_material_factor.get,
                     'span': self._new_field_len.get,
                     'spacing': self._new_stf_spacing.get,
                     'plate_thk': self._new_plate_thk.get,
@@ -2823,6 +2840,7 @@ class Application():
                 obj_dict = toggle_multi
             elif pasted_structure == None:
                 obj_dict = {'mat_yield': [self._new_material.get()*1e6, 'Pa'],
+                            'mat_factor': [self._new_material_factor.get(), ''],
                             'span': [self._new_field_len.get(), 'm'],
                             'spacing': [self._new_stf_spacing.get()/1000, 'm'],
                             'plate_thk': [self._new_plate_thk.get()/1000, 'm'],
@@ -3219,6 +3237,7 @@ class Application():
         if line in self._line_to_struc:
             properties = self._line_to_struc[line][0].get_structure_prop()
             self._new_material.set(round(properties['mat_yield'][0]/1e6,5))
+            self._new_material_factor.set(properties['mat_factor'][0])
             self._new_field_len.set(round(properties['span'][0],5))
             self._new_stf_spacing.set(round(properties['spacing'][0]*1000,5))
             self._new_plate_thk.set(round(properties['plate_thk'][0]*1000,5))
@@ -3899,6 +3918,8 @@ class Application():
                 lines_prop['puls sp or up'] = [self._new_puls_sp_or_up.get(), '']
             if 'puls up boundary' not in lines_prop.keys():
                 lines_prop['puls up boundary'] = [self._new_puls_up_boundary.get(), '']
+            if 'mat_factor' not in lines_prop.keys():
+                lines_prop['mat_factor'] = [self._new_material_factor.get(), '']
 
             self._line_to_struc[line][0] = Structure(lines_prop)
             self._line_to_struc[line][1] = CalcScantlings(lines_prop)
