@@ -302,6 +302,8 @@ class Application():
         self._new_colorcode_utilization.set(False)
         self._new_draw_point_name = tk.BooleanVar()
         self._new_draw_point_name.set(False)
+        self._new_label_color_coding = tk.BooleanVar()
+        self._new_label_color_coding.set(False)
         self._new_line_name = tk.BooleanVar()
         self._new_line_name.set(False)
         self._new_colorcode_sigmax = tk.BooleanVar()
@@ -451,10 +453,14 @@ class Application():
             .place(relx=0.4, rely=0)
         tk.Label(self._main_fr, text='Show point names in GUI', font="Text 9")\
             .place(relx=0.5, rely=0)
+        tk.Label(self._main_fr, text='Label color code', font="Text 9")\
+            .place(relx=0.6, rely=0)
         tk.Checkbutton(self._main_fr, variable = self._new_line_name, command = self.on_color_code_check)\
             .place(relx=0.386, rely=0)
         tk.Checkbutton(self._main_fr, variable = self._new_draw_point_name, command = self.on_color_code_check)\
             .place(relx=0.486, rely=0)
+        tk.Checkbutton(self._main_fr, variable = self._new_label_color_coding, command = self.on_color_code_check)\
+            .place(relx=0.586, rely=0)
 
 
 
@@ -1864,17 +1870,14 @@ class Application():
                                                    self._new_puls_uf.get())
                     puls_color = matplotlib.colors.rgb2hex(cmap_sections(puls_uf))
 
-                    if self._new_toggle_puls.get():
-                        if self._line_to_struc[line][1].get_puls_method() == 'buckling':
-                            buc_uf = rec_for_color[line]['PULS buckling']
-                        else:
-                            buc_uf = rec_for_color[line]['PULS ultimate']
-                    else:
-                        buc_uf = rec_for_color[line]['rp buckling']
+                rp_uf = rec_for_color[line]['rp buckling']
 
-                totuf = max([rec_for_color[line]['fatigue'], buc_uf,
-                             rec_for_color[line]['section modulus'], rec_for_color[line]['shear'],
-                             rec_for_color[line]['plate thickness']])
+                tot_uf_rp = max([rec_for_color[line]['fatigue'], rp_uf,
+                                 rec_for_color[line]['section modulus'], rec_for_color[line]['shear'],
+                                 rec_for_color[line]['plate thickness']])
+                tot_uf_puls = max([rec_for_color[line]['fatigue'], puls_uf,
+                                 rec_for_color[line]['section modulus'], rec_for_color[line]['shear'],
+                                 rec_for_color[line]['plate thickness']])
                 this_pressure = self.get_highest_pressure(line)['normal']
                 rp_util = max(list(return_dict['utilization'][line].values()))
                 line_color_coding[line] = {'plate': matplotlib.colors.rgb2hex(cmap_sections(thk_sort_unique.index(round(line_data[1]
@@ -1894,9 +1897,12 @@ class Application():
                                                cmap_sections(rec_for_color[line]['section modulus'])),
                                            'fatigue color': matplotlib.colors.rgb2hex(
                                                cmap_sections(rec_for_color[line]['fatigue'])),
-                                           'Total uf color' : matplotlib.colors.rgb2hex(
-                                               cmap_sections(totuf)),
-                                           'Total uf': totuf,
+                                           'Total uf color rp' : matplotlib.colors.rgb2hex(
+                                               cmap_sections(tot_uf_rp)),
+                                           'Total uf rp': tot_uf_rp,
+                                           'Total uf color puls': matplotlib.colors.rgb2hex(
+                                               cmap_sections(tot_uf_puls)),
+                                           'Total uf puls': tot_uf_puls,
                                            'PULS uf': round(puls_uf,2),
                                            'PULS uf color': puls_color,
                                            'fatigue uf' : rec_for_color[line]['fatigue'],
@@ -2209,65 +2215,92 @@ class Application():
             return 'black'
         if self._new_colorcode_beams.get() == True and line in list(self._line_to_struc.keys()):
             color = state['color code']['lines'][line]['section']
+            if self._new_label_color_coding.get():
+                self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                              text=self._line_to_struc[line][1].get_beam_string() ,
+                                              font=self._text_size["Text 7"])
 
         elif self._new_colorcode_plates.get() == True and line in list(self._line_to_struc.keys()):
             color = state['color code']['lines'][line]['plate']
+            if self._new_label_color_coding.get():
+                self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                              text=str(self._line_to_struc[line][1].get_pl_thk()*1000))
 
         elif self._new_colorcode_pressure.get() == True and line in list(self._line_to_struc.keys()):
             if cc_state['all pressures'] == [0, 1]:
                 color = 'black'
             else:
                 color = state['color code']['lines'][line]['pressure color']
-            self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                          text=str(state['color code']['lines'][line]['pressure']) ,fill=color)
+            if self._new_label_color_coding.get():
+                self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                              text=str(state['color code']['lines'][line]['pressure']))
 
         elif self._new_colorcode_utilization.get() == True and not self._new_toggle_puls.get():
             color = state['color code']['lines'][line]['rp uf color']
-            self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                          text=round(state['color code']['lines'][line]['rp uf'],2),fill=color)
+            if self._new_label_color_coding.get():
+                self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                              text=round(state['color code']['lines'][line]['rp uf'],2))
 
         elif self._new_colorcode_utilization.get() == True and self._new_toggle_puls.get():
             color = state['color code']['lines'][line]['PULS uf color']
-            self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                          text=round(state['color code']['lines'][line]['PULS uf'],2),fill=color)
+            if self._new_label_color_coding.get():
+                self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                              text=round(state['color code']['lines'][line]['PULS uf'],2))
 
         elif self._new_colorcode_sigmax.get() == True:
             color = state['color code']['lines'][line]['sigma x']
-            self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                          text=str(self._line_to_struc[line][1].get_sigma_x()),fill=color)
+            if self._new_label_color_coding.get():
+                self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                              text=str(self._line_to_struc[line][1].get_sigma_x()))
 
         elif self._new_colorcode_sigmay1.get() == True:
             color = state['color code']['lines'][line]['sigma y1']
-            self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                          text=str(self._line_to_struc[line][1].get_sigma_y2()),fill=color)
+            if self._new_label_color_coding.get():
+                self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                              text=str(self._line_to_struc[line][1].get_sigma_y2()))
 
         elif self._new_colorcode_sigmay2.get() == True:
             color = state['color code']['lines'][line]['sigma y2']
-            self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                          text=str(self._line_to_struc[line][1].get_sigma_y2()),fill=color)
+            if self._new_label_color_coding.get():
+                self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                              text=str(self._line_to_struc[line][1].get_sigma_y2()))
 
         elif self._new_colorcode_tauxy.get() == True:
             color = state['color code']['lines'][line]['tau xy']
-            self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                          text=round(self._line_to_struc[line][1].get_tau_xy(),2),fill=color)
+            if self._new_label_color_coding.get():
+                self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                              text=round(self._line_to_struc[line][1].get_tau_xy(),2))
 
         elif self._new_colorcode_structure_type.get() == True:
             color = state['color code']['lines'][line]['structure type']
+            if self._new_label_color_coding.get():
+                self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                              text=self._line_to_struc[line][1].get_structure_type(),
+                                              font=self._text_size["Text 7"])
 
         elif self._new_colorcode_section_modulus.get() == True:
             color = state['color code']['lines'][line]['section modulus color']
-            self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                          text=round(state['color code']['lines'][line]['section uf'],2),fill=color)
+            if self._new_label_color_coding.get():
+                    self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                                  text=round(state['color code']['lines'][line]['section uf'],2))
 
         elif self._new_colorcode_fatigue.get() == True:
             color = state['color code']['lines'][line]['fatigue color']
-            self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                          text=round(state['color code']['lines'][line]['fatigue uf'],2),fill=color)
+            if self._new_label_color_coding.get():
+                self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                              text=round(state['color code']['lines'][line]['fatigue uf'],2))
 
         elif self._new_colorcode_total.get() == True:
-            color = state['color code']['lines'][line]['Total uf color']
-            self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                          text=round(state['color code']['lines'][line]['Total uf'],2),fill=color)
+            if self._new_toggle_puls.get():
+                color = state['color code']['lines'][line]['Total uf color rp']
+                if self._new_label_color_coding.get():
+                    self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                                  text=round(state['color code']['lines'][line]['Total uf puls'],2))
+            else:
+                color = state['color code']['lines'][line]['Total uf color puls']
+                if self._new_label_color_coding.get():
+                    self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                                  text=round(state['color code']['lines'][line]['Total uf rp'],2))
         else:
             color = 'black'
 
