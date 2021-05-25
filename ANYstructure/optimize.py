@@ -676,7 +676,7 @@ def pso_constraint_geometric(x,*args):
     ''' The sum of the fractions must be 1.'''
     return 1-sum(x)
 
-def create_new_calc_obj(init_obj,x, fat_dict=None):
+def create_new_calc_obj(init_obj,x, fat_dict=None, fdwn = 1, fup = 0.5):
     '''
     Returns a new calculation object to be used in optimization
     :param init_obj:
@@ -686,19 +686,20 @@ def create_new_calc_obj(init_obj,x, fat_dict=None):
     x_old = [init_obj.get_s(), init_obj.get_plate_thk(), init_obj.get_web_h() , init_obj.get_web_thk(),
              init_obj.get_fl_w(),init_obj.get_fl_thk(), init_obj.get_span(), init_obj.get_lg()]
 
-    sigma_y1_new = stress_scaling(init_obj.get_sigma_y1(), init_obj.get_plate_thk(), x[1])
-    sigma_y2_new = stress_scaling(init_obj.get_sigma_y2(), init_obj.get_plate_thk(), x[1])
-    tau_xy_new = stress_scaling(init_obj.get_tau_xy(), init_obj.get_plate_thk(), x[1])
+    sigma_y1_new = stress_scaling(init_obj.get_sigma_y1(), init_obj.get_plate_thk(), x[1], fdwn = fdwn, fup = fup)
+    sigma_y2_new = stress_scaling(init_obj.get_sigma_y2(), init_obj.get_plate_thk(), x[1], fdwn = fdwn, fup = fup)
+    tau_xy_new = stress_scaling(init_obj.get_tau_xy(), init_obj.get_plate_thk(), x[1], fdwn = fdwn, fup = fup)
     sigma_x_new = stress_scaling_area(init_obj.get_sigma_x(),
                                       sum(get_field_tot_area(x_old)),
-                                      sum(get_field_tot_area(x)))
+                                      sum(get_field_tot_area(x)), fdwn = fdwn, fup = fup)
 
     try:
         stf_type = x[8]
     except IndexError:
         stf_type = init_obj.get_stiffener_type()
 
-    main_dict = {'mat_yield': [init_obj.get_fy(), 'Pa'],'span': [init_obj.get_span(), 'm'],
+    main_dict = {'mat_yield': [init_obj.get_fy(), 'Pa'],'mat_factor': [init_obj.get_mat_factor(), 'Pa'],
+                 'span': [init_obj.get_span(), 'm'],
                  'spacing': [x[0], 'm'],'plate_thk': [x[1], 'm'],'stf_web_height':[ x[2], 'm'],
                  'stf_web_thk': [x[3], 'm'],'stf_flange_width': [x[4], 'm'],
                  'stf_flange_thk': [x[5], 'm'],'structure_type': [init_obj.get_structure_type(), ''],
@@ -719,7 +720,7 @@ def create_new_calc_obj(init_obj,x, fat_dict=None):
     else:
         return calc.CalcScantlings(main_dict), calc.CalcFatigue(main_dict, fat_dict)
 
-def create_new_structure_obj(init_obj, x, fat_dict=None):
+def create_new_structure_obj(init_obj, x, fat_dict=None, fdwn = 1, fup = 0.5):
     '''
     Returns a new calculation object to be used in optimization
     :param init_obj:
@@ -728,10 +729,11 @@ def create_new_structure_obj(init_obj, x, fat_dict=None):
     x_old = [init_obj.get_s(), init_obj.get_plate_thk(), init_obj.get_web_h() , init_obj.get_web_thk(),
              init_obj.get_fl_w() ,init_obj.get_fl_thk(), init_obj.get_span(), init_obj.get_lg()]
 
-    sigma_y1_new = stress_scaling(init_obj.get_sigma_y1(), init_obj.get_plate_thk(), x[1])
-    sigma_y2_new = stress_scaling(init_obj.get_sigma_y2(), init_obj.get_plate_thk(), x[1])
-    tau_xy_new = stress_scaling(init_obj.get_tau_xy(), init_obj.get_plate_thk(), x[1])
-    sigma_x_new = stress_scaling_area(init_obj.get_sigma_x(),sum(get_field_tot_area(x_old)),sum(get_field_tot_area(x)))
+    sigma_y1_new = stress_scaling(init_obj.get_sigma_y1(), init_obj.get_plate_thk(), x[1], fdwn = fdwn, fup = fup)
+    sigma_y2_new = stress_scaling(init_obj.get_sigma_y2(), init_obj.get_plate_thk(), x[1], fdwn = fdwn, fup = fup)
+    tau_xy_new = stress_scaling(init_obj.get_tau_xy(), init_obj.get_plate_thk(), x[1],fdwn = fdwn, fup = fup)
+    sigma_x_new = stress_scaling_area(init_obj.get_sigma_x(),sum(get_field_tot_area(x_old)),sum(get_field_tot_area(x)),
+                                      fdwn = fdwn, fup = fup)
 
     try:
         stf_type = x[8]
@@ -739,6 +741,7 @@ def create_new_structure_obj(init_obj, x, fat_dict=None):
         stf_type = init_obj.get_stiffener_type()
 
     main_dict = {'mat_yield': [init_obj.get_fy(), 'Pa'], 'span': [init_obj.get_span(), 'm'],
+                 'mat_factor': [init_obj.get_mat_factor(), 'Pa'],
                    'spacing': [x[0], 'm'], 'plate_thk': [x[1], 'm'], 'stf_web_height': [x[2], 'm'],
                    'stf_web_thk': [x[3], 'm'], 'stf_flange_width': [x[4], 'm'],
                    'stf_flange_thk': [x[5], 'm'], 'structure_type': [init_obj.get_structure_type(), ''],
@@ -756,9 +759,8 @@ def create_new_structure_obj(init_obj, x, fat_dict=None):
                  'puls up boundary': [init_obj.get_puls_up_boundary(), ''],
                  }
 
-
-    if fat_dict == None:
-        return calc.Structure(main_dict)
+    #if fat_dict == None:
+    return calc.Structure(main_dict)
 
 def get_field_tot_area(x):
     ''' Total area of a plate field. '''
@@ -825,30 +827,30 @@ def calc_weight_pso_section(x,*args):
 
     return tot_weight
 
-def stress_scaling(sigma_old,t_old,t_new):
+def stress_scaling(sigma_old,t_old,t_new, fdwn = 1, fup = 0.5):
     if t_new <= t_old: #decreasing the thickness
-        sigma_new = sigma_old*(t_old/(t_old-abs((t_old-t_new))))
+        sigma_new = sigma_old*(t_old/(t_old-fdwn*abs((t_old-t_new))))
         assert sigma_new >= sigma_old, 'ERROR no stress increase: \n' \
                                       't_old '+str(t_old)+' sigma_old '+str(sigma_old)+ \
                                       '\nt_new '+str(t_new)+' sigma_new '+str(sigma_new)
 
     else: #increasing the thickness
-        sigma_new = sigma_old*(t_old/(t_old+0.5*abs((t_old-t_new))))
+        sigma_new = sigma_old*(t_old/(t_old+fup*abs((t_old-t_new))))
         assert sigma_new <= sigma_old, 'ERROR no stress reduction: \n' \
                                       't_old '+str(t_old)+' sigma_old '+str(sigma_old)+ \
                                       '\nt_new '+str(t_new)+' sigma_new '+str(sigma_new)
     return sigma_new
 
-def stress_scaling_area(sigma_old,a_old,a_new):
+def stress_scaling_area(sigma_old,a_old,a_new, fdwn = 1, fup = 0.5):
     ''' Scale stresses using input area '''
 
     if a_new <= a_old: #decreasing the thickness
-        sigma_new = sigma_old*(a_old/(a_old-abs((a_old-a_new))))
+        sigma_new = sigma_old*(a_old/(a_old-fdwn*abs((a_old-a_new))))
         # assert sigma_new >= sigma_old, 'ERROR no stress increase: \n' \
         #                               't_old '+str(a_old)+' sigma_old '+str(sigma_old)+ \
         #                               '\nt_new '+str(a_new)+' sigma_new '+str(sigma_new)
     else: #increasing the thickness
-        sigma_new = sigma_old*(a_old/(a_old+0.5*abs((a_old-a_new))))
+        sigma_new = sigma_old*(a_old/(a_old+fup*abs((a_old-a_new))))
         # assert sigma_new <= sigma_old, 'ERROR no stress reduction: \n' \
         #                               't_old '+str(a_old)+' sigma_old '+str(sigma_old)+ \
         #                               '\nt_new '+str(a_new)+' sigma_new '+str(sigma_new)

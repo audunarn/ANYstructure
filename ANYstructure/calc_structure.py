@@ -204,6 +204,8 @@ class Structure():
         :return:
         '''
         return self.mat_yield
+    def get_mat_factor(self):
+        return self.mat_factor
     def get_span(self):
         '''
         Return the span

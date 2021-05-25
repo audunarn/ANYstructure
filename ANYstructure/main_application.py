@@ -218,7 +218,7 @@ class Application():
                                       'stf_web_thk',
                                        'stf_flange_width', 'stf_flange_thk', 'structure_type', 'stf_type',
                                        'sigma_y1', 'sigma_y2', 'sigma_x', 'tau_xy', 'plate_kpp', 'stf_kps','stf_km1',
-                                       'stf_km2', 'stf_km3', 'press_side', 'structure_types', 'zstar_optimization',
+                                       'stf_km2', 'stf_km3', 'press_side', 'zstar_optimization',
                                       'puls buckling method', 'puls boundary', 'puls stiffener end', 'puls sp or up',
                                       'puls up boundary']
         self._p1_p2_select = False
@@ -330,6 +330,10 @@ class Application():
         self._new_puls_uf.set(0.87)
         self._new_scale_stresses = tk.BooleanVar()
         self._new_scale_stresses.set(False)
+        self._new_fup = tk.DoubleVar()
+        self._new_fup.set(0.5)
+        self._new_fdwn = tk.DoubleVar()
+        self._new_fdwn.set(1)
 
 
 
@@ -474,10 +478,22 @@ class Application():
 
 
         tk.Checkbutton(self._main_fr, variable = self._new_scale_stresses, command = self.on_color_code_check)\
-            .place(relx = types_start+ delta_x*4.7, rely=prop_vert_start+16.9*delta_y)
-        tk.Label(self._main_fr, text='Scale stresses when changing prop.', font=self._text_size['Text 9'],
+            .place(relx = types_start+ delta_x*4.3, rely=prop_vert_start+16.9*delta_y)
+        tk.Label(self._main_fr, text='Scale stresses when\n changing prop.', font=self._text_size['Text 9'],
                  bg = self._general_color)\
-            .place(relx = types_start+ delta_x*5, rely=prop_vert_start+17*delta_y, relwidth = 0.12)
+            .place(relx = types_start+ delta_x*4.7, rely=prop_vert_start+16.5*delta_y, relwidth = 0.065)
+        tk.Label(self._main_fr, text='fup', font=self._text_size['Text 8'],
+                 bg = self._general_color)\
+            .place(relx = types_start+ delta_x*7.3, rely=prop_vert_start+17*delta_y)
+        ent_fup = tk.Entry(self._main_fr, textvariable=self._new_fup,
+                                         bg = self._entry_color, fg = self._entry_text_color)
+        ent_fup.place(relx = types_start+ delta_x*7.8, rely=prop_vert_start+17*delta_y, relwidth = 0.01)
+        tk.Label(self._main_fr, text='fdown', font=self._text_size['Text 8'],
+                 bg = self._general_color)\
+            .place(relx = types_start+ delta_x*8.3, rely=prop_vert_start+17*delta_y)
+        ent_fdwn = tk.Entry(self._main_fr, textvariable=self._new_fdwn,
+                                         bg = self._entry_color, fg = self._entry_text_color)
+        ent_fdwn.place(relx = types_start+ delta_x*9.1, rely=prop_vert_start+17*delta_y, relwidth = 0.01)
         # Toggle buttons
         self._toggle_btn = tk.Button(self._main_fr, text="Toggle select\nmultiple", relief="raised",
                                      command=self.toggle_select_multiple, bg = self._button_bg_color)
@@ -1245,7 +1261,7 @@ class Application():
                     'stf_web_thk': self._new_sft_web_t.get,
                     'stf_flange_width': self._new_stf_fl_w.get,
                     'stf_flange_thk': self._new_stf_fl_t.get,
-                    'structure_type': self._new_stucture_type,
+                    'structure_type': self._new_stucture_type.get,
                     'stf_type': self._new_stf_type.get,
                     'sigma_y1': self._new_sigma_y1.get,
                     'sigma_y2': self._new_sigma_y2.get,
@@ -1710,7 +1726,8 @@ class Application():
                             loc_geom = 'green' if all([val[0] == 'Ok' for val in res[loc_label].values()]) else 'red'
                         csr_label = 'CSR-Tank requirements (primary stiffeners)' if \
                             obj_scnt_calc.get_puls_sp_or_up() == 'SP' else'CSR-Tank req'
-                        csr_geom = 'green' if all([val[0] == 'Ok' for val in res[csr_label].values()]) else 'red'
+
+                        csr_geom = 'green' if all([val[0] in ['Ok', '-'] for val in res[csr_label].values()]) else 'red'
                         return_dict['PULS colors'][current_line] = {'ultimate': col_ult, 'buckling': col_buc,
                                                                     'local geometry': loc_geom, 'csr': csr_geom}
                     else:
@@ -2544,7 +2561,7 @@ class Application():
                                 [val[0] == 'Ok' for val in puls_res[loc_label]
                                 .values()]) else 'Not ok'
                         csr_geom = 'Ok' if all(
-                            [val[0] == 'Ok' for val in puls_res[csr_label]
+                            [val[0] in ['Ok', '-'] for val in puls_res[csr_label]
                             .values()]) else 'Not ok'
                         loc_geom = loc_label + ':   ' + loc_geom
                         csr_geom = csr_label+':   ' + csr_geom
@@ -2889,13 +2906,14 @@ class Application():
                 self._line_to_struc[self._active_line][0].set_main_properties(obj_dict)
                 self._line_to_struc[self._active_line][1].set_main_properties(obj_dict)
 
-                if self._new_scale_stresses.get():
+                if self._new_scale_stresses.get() and prev_str_obj.get_tuple() != \
+                        self._line_to_struc[self._active_line][0].get_tuple():
                     self._line_to_struc[self._active_line][0] = \
-                        op.create_new_structure_obj(prev_str_obj,
-                                                    self._line_to_struc[self._active_line][0].get_tuple())
+                        op.create_new_structure_obj(prev_str_obj, self._line_to_struc[self._active_line][0].get_tuple(),
+                                                    fup=self._new_fup.get(), fdwn=self._new_fdwn.get())
                     self._line_to_struc[self._active_line][1] = \
-                        op.create_new_calc_obj(prev_calc_obj,
-                                                    self._line_to_struc[self._active_line][1].get_tuple())[0]
+                        op.create_new_calc_obj(prev_calc_obj,self._line_to_struc[self._active_line][1].get_tuple(),
+                                               fup=self._new_fup.get(), fdwn=self._new_fdwn.get())[0]
                 self._line_to_struc[self._active_line][1].need_recalc = True
                 if self._line_to_struc[self._active_line][2] is not None:
                     self._line_to_struc[self._active_line][2].set_main_properties(obj_dict)
