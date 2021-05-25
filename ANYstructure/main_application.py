@@ -450,17 +450,17 @@ class Application():
 
 
         tk.Label(self._main_fr, text='Show line names in GUI', font="Text 9")\
-            .place(relx=0.4, rely=0)
+            .place(relx=0.35, rely=0)
         tk.Label(self._main_fr, text='Show point names in GUI', font="Text 9")\
-            .place(relx=0.5, rely=0)
+            .place(relx=0.45, rely=0)
         tk.Label(self._main_fr, text='Label color code', font="Text 9")\
-            .place(relx=0.6, rely=0)
+            .place(relx=0.55, rely=0)
         tk.Checkbutton(self._main_fr, variable = self._new_line_name, command = self.on_color_code_check)\
-            .place(relx=0.386, rely=0)
+            .place(relx=0.346, rely=0)
         tk.Checkbutton(self._main_fr, variable = self._new_draw_point_name, command = self.on_color_code_check)\
-            .place(relx=0.486, rely=0)
+            .place(relx=0.446, rely=0)
         tk.Checkbutton(self._main_fr, variable = self._new_label_color_coding, command = self.on_color_code_check)\
-            .place(relx=0.586, rely=0)
+            .place(relx=0.546, rely=0)
 
 
 
@@ -1264,7 +1264,6 @@ class Application():
                 dict[var_to_set][0] = set_var
 
                 self.new_structure(toggle_multi=dict, suspend_recalc=True if (idx+1) != no_of_lines else False)
-                print(True if (idx+1) != no_of_lines else False)
 
     def gui_load_combinations(self,event):
         '''
