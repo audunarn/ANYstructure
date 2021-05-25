@@ -450,17 +450,17 @@ class Application():
 
 
         tk.Label(self._main_fr, text='Show line names in GUI', font="Text 9")\
-            .place(relx=0.35, rely=0)
+            .place(relx=0.38, rely=0)
         tk.Label(self._main_fr, text='Show point names in GUI', font="Text 9")\
-            .place(relx=0.45, rely=0)
+            .place(relx=0.48, rely=0)
         tk.Label(self._main_fr, text='Label color code', font="Text 9")\
-            .place(relx=0.55, rely=0)
+            .place(relx=0.58, rely=0)
         tk.Checkbutton(self._main_fr, variable = self._new_line_name, command = self.on_color_code_check)\
-            .place(relx=0.346, rely=0)
+            .place(relx=0.366, rely=0)
         tk.Checkbutton(self._main_fr, variable = self._new_draw_point_name, command = self.on_color_code_check)\
-            .place(relx=0.446, rely=0)
+            .place(relx=0.466, rely=0)
         tk.Checkbutton(self._main_fr, variable = self._new_label_color_coding, command = self.on_color_code_check)\
-            .place(relx=0.546, rely=0)
+            .place(relx=0.566, rely=0)
 
 
 
