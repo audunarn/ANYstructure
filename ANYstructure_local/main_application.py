@@ -1408,23 +1408,22 @@ class Application():
                     self._manual_created[3].place(relx=lc_x + 7 * lc_x_delta, rely=lc_y)
 
             #printing the results
-            results = self.calculate_all_load_combinations_for_line(self._active_line)
-            self._result_label_dnva.config(text = 'DNV a [Pa]: ' + str(results['dnva']),
-                                          font = self._text_size['Text 8'])
-            self._result_label_dnvb.config(text = 'DNV b [Pa]: ' + str(results['dnvb']),
-                                          font = self._text_size['Text 8'])
-            self._result_label_tanktest.config(text = 'TT [Pa]: ' + str(results['tanktest']),
+            try:
+                results = self.calculate_all_load_combinations_for_line(self._active_line)
+                self._result_label_dnva.config(text = 'DNV a [Pa]: ' + str(results['dnva']),
                                               font = self._text_size['Text 8'])
+                self._result_label_dnvb.config(text = 'DNV b [Pa]: ' + str(results['dnvb']),
+                                              font = self._text_size['Text 8'])
+                self._result_label_tanktest.config(text = 'TT [Pa]: ' + str(results['tanktest']),
+                                                  font = self._text_size['Text 8'])
 
-            try:
                 self._result_label_manual.config(text = 'Manual [Pa]: ' + str(results['manual']))
-            except KeyError:
-                pass
-            lc_y = self.results_gui_start+0.018518519
-            self._result_label_dnva.place(relx = lc_x+0*lc_x_delta, rely = lc_y+lc_y_delta*1.5)
-            self._result_label_dnvb.place(relx=lc_x+4*lc_x_delta, rely=lc_y+lc_y_delta*1.5)
-            self._result_label_tanktest.place(relx=lc_x+0*lc_x_delta, rely=lc_y+2.4*lc_y_delta)
-            try:
+
+                lc_y = self.results_gui_start+0.018518519
+                self._result_label_dnva.place(relx = lc_x+0*lc_x_delta, rely = lc_y+lc_y_delta*1.5)
+                self._result_label_dnvb.place(relx=lc_x+4*lc_x_delta, rely=lc_y+lc_y_delta*1.5)
+                self._result_label_tanktest.place(relx=lc_x+0*lc_x_delta, rely=lc_y+2.4*lc_y_delta)
+
                 self._result_label_manual.place(relx=lc_x+4*lc_x_delta, rely=lc_y+2.4*lc_y_delta)
             except KeyError:
                 pass
@@ -1924,7 +1923,10 @@ class Application():
                 tot_uf_puls = max([rec_for_color[line]['fatigue'], puls_uf,
                                  rec_for_color[line]['section modulus'], rec_for_color[line]['shear'],
                                  rec_for_color[line]['plate thickness']])
-                this_pressure = self.get_highest_pressure(line)['normal']
+                try:
+                    this_pressure = self.get_highest_pressure(line)['normal']
+                except KeyError:
+                    this_pressure = 0
                 rp_util = max(list(return_dict['utilization'][line].values()))
                 line_color_coding[line] = {'plate': matplotlib.colors.rgb2hex(cmap_sections(thk_sort_unique.index(round(line_data[1]
                                                                               .get_pl_thk(),10))/len(thk_sort_unique))),
@@ -3125,6 +3127,7 @@ class Application():
             acc = (self._accelerations_dict['static'], 0)
 
         load_factors_all = self._new_load_comb_dict
+
         line_name_obj = [line_name, self._line_to_struc[line_name][0]]
 
         if self._line_to_struc[line_name][0].get_structure_type() in ['', 'FRAME','GENERAL_INTERNAL_NONWT']:
