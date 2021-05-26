@@ -26,7 +26,8 @@ def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lat
                      fat_press_ext_int = None,
                      min_max_span = (2,6), tot_len = None, frame_height = 2.5, frame_distance = None,
                      slamming_press = 0, predefined_stiffener_iter = None, processes = None, use_weight_filter = True,
-                     load_pre = False, opt_girder_prop = None, puls_sheet = None, puls_acceptance = 0.87):
+                     load_pre = False, opt_girder_prop = None, puls_sheet = None, puls_acceptance = 0.87,
+                     fdwn = 1, fup = 0.5):
     '''
     The optimazation is initiated here. It is called from optimize_window.
     :param initial_structure_obj:
@@ -62,14 +63,14 @@ def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lat
                                                     fat_dict=fat_dict,
                                                     fat_press=None if fat_press_ext_int is None else fat_press_ext_int,
                                                     predefined_stiffener_iter = predefined_stiffener_iter,
-                                                    slamming_press=slamming_press)
+                                                    slamming_press=slamming_press, fdwn = fdwn, fup = fup)
 
     if algorithm == 'anysmart' and not is_geometric:
         to_return = any_smart_loop(min_var, max_var, deltas, initial_structure_obj, lateral_pressure,
                                    init_filter_weight, side=side, const_chk=const_chk, fat_dict=fat_dict,
                                    fat_press=fat_press_ext_int,slamming_press=slamming_press,
                                    predefiened_stiffener_iter=predefined_stiffener_iter, puls_sheet = puls_sheet,
-                                   puls_acceptance = puls_acceptance)
+                                   puls_acceptance = puls_acceptance, fdwn = fdwn, fup = fup)
         return to_return
     elif algorithm == 'anysmart' and is_geometric:
         return geometric_summary_search(min_var= min_var, max_var=max_var, deltas= deltas,
@@ -151,7 +152,7 @@ def any_optimize_loop(min_var,max_var,deltas,initial_structure_obj,lateral_press
 def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure, init_filter = float('inf'),
                    side='p',const_chk=(True,True,True,True,True,True,True), fat_dict = None, fat_press = None,
                    slamming_press = 0, predefiened_stiffener_iter = None, processes = None,
-                   puls_sheet = None, puls_acceptance = 0.87):
+                   puls_sheet = None, puls_acceptance = 0.87, fdwn = 1, fup = 0.5):
     '''
     Trying to be smart
     :param min_var:
@@ -192,8 +193,8 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
     else:
         ass_var = [round(item, 10) for item in ass_var[0:8]] + [ass_var[8]]
 
-    new_struc_obj = create_new_structure_obj(initial_structure_obj,ass_var)
-    new_calc_obj = create_new_calc_obj(initial_structure_obj,ass_var)[0]
+    new_struc_obj = create_new_structure_obj(initial_structure_obj,ass_var, fdwn = fdwn, fup = fup)
+    new_calc_obj = create_new_calc_obj(initial_structure_obj,ass_var, fdwn = fdwn, fup = fup)[0]
 
     return new_struc_obj, new_calc_obj, fat_dict, True, main_fail
 
@@ -499,7 +500,7 @@ def any_find_min_weight_var(var):
 
 def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True,True, True, True, True, False),
                         fat_dict = None, fat_press = None, slamming_press = 0, PULSrun: calc.PULSpanel = None,
-                        print_result = False):
+                        print_result = False, fdwn = 1, fup = 0.5):
     '''
     Checking all constraints defined.
 
@@ -509,8 +510,8 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
     :return:
     '''
     all_checks = [0,0,0,0,0,0,0,0,0]
-
-    calc_object = create_new_calc_obj(obj, x, fat_dict)
+    print_result = False
+    calc_object = create_new_calc_obj(obj, x, fat_dict, fdwn = fdwn, fup = fup)
 
     # PULS buckling check
     if chk[7] and PULSrun is not None:
@@ -676,7 +677,7 @@ def pso_constraint_geometric(x,*args):
     ''' The sum of the fractions must be 1.'''
     return 1-sum(x)
 
-def create_new_calc_obj(init_obj,x, fat_dict=None):
+def create_new_calc_obj(init_obj,x, fat_dict=None, fdwn = 1, fup = 0.5):
     '''
     Returns a new calculation object to be used in optimization
     :param init_obj:
@@ -686,19 +687,20 @@ def create_new_calc_obj(init_obj,x, fat_dict=None):
     x_old = [init_obj.get_s(), init_obj.get_plate_thk(), init_obj.get_web_h() , init_obj.get_web_thk(),
              init_obj.get_fl_w(),init_obj.get_fl_thk(), init_obj.get_span(), init_obj.get_lg()]
 
-    sigma_y1_new = stress_scaling(init_obj.get_sigma_y1(), init_obj.get_plate_thk(), x[1])
-    sigma_y2_new = stress_scaling(init_obj.get_sigma_y2(), init_obj.get_plate_thk(), x[1])
-    tau_xy_new = stress_scaling(init_obj.get_tau_xy(), init_obj.get_plate_thk(), x[1])
+    sigma_y1_new = stress_scaling(init_obj.get_sigma_y1(), init_obj.get_plate_thk(), x[1], fdwn = fdwn, fup = fup)
+    sigma_y2_new = stress_scaling(init_obj.get_sigma_y2(), init_obj.get_plate_thk(), x[1], fdwn = fdwn, fup = fup)
+    tau_xy_new = stress_scaling(init_obj.get_tau_xy(), init_obj.get_plate_thk(), x[1], fdwn = fdwn, fup = fup)
     sigma_x_new = stress_scaling_area(init_obj.get_sigma_x(),
                                       sum(get_field_tot_area(x_old)),
-                                      sum(get_field_tot_area(x)))
+                                      sum(get_field_tot_area(x)), fdwn = fdwn, fup = fup)
 
     try:
         stf_type = x[8]
     except IndexError:
         stf_type = init_obj.get_stiffener_type()
 
-    main_dict = {'mat_yield': [init_obj.get_fy(), 'Pa'],'span': [init_obj.get_span(), 'm'],
+    main_dict = {'mat_yield': [init_obj.get_fy(), 'Pa'],'mat_factor': [init_obj.get_mat_factor(), 'Pa'],
+                 'span': [init_obj.get_span(), 'm'],
                  'spacing': [x[0], 'm'],'plate_thk': [x[1], 'm'],'stf_web_height':[ x[2], 'm'],
                  'stf_web_thk': [x[3], 'm'],'stf_flange_width': [x[4], 'm'],
                  'stf_flange_thk': [x[5], 'm'],'structure_type': [init_obj.get_structure_type(), ''],
@@ -719,7 +721,7 @@ def create_new_calc_obj(init_obj,x, fat_dict=None):
     else:
         return calc.CalcScantlings(main_dict), calc.CalcFatigue(main_dict, fat_dict)
 
-def create_new_structure_obj(init_obj, x, fat_dict=None):
+def create_new_structure_obj(init_obj, x, fat_dict=None, fdwn = 1, fup = 0.5):
     '''
     Returns a new calculation object to be used in optimization
     :param init_obj:
@@ -728,10 +730,11 @@ def create_new_structure_obj(init_obj, x, fat_dict=None):
     x_old = [init_obj.get_s(), init_obj.get_plate_thk(), init_obj.get_web_h() , init_obj.get_web_thk(),
              init_obj.get_fl_w() ,init_obj.get_fl_thk(), init_obj.get_span(), init_obj.get_lg()]
 
-    sigma_y1_new = stress_scaling(init_obj.get_sigma_y1(), init_obj.get_plate_thk(), x[1])
-    sigma_y2_new = stress_scaling(init_obj.get_sigma_y2(), init_obj.get_plate_thk(), x[1])
-    tau_xy_new = stress_scaling(init_obj.get_tau_xy(), init_obj.get_plate_thk(), x[1])
-    sigma_x_new = stress_scaling_area(init_obj.get_sigma_x(),sum(get_field_tot_area(x_old)),sum(get_field_tot_area(x)))
+    sigma_y1_new = stress_scaling(init_obj.get_sigma_y1(), init_obj.get_plate_thk(), x[1], fdwn = fdwn, fup = fup)
+    sigma_y2_new = stress_scaling(init_obj.get_sigma_y2(), init_obj.get_plate_thk(), x[1], fdwn = fdwn, fup = fup)
+    tau_xy_new = stress_scaling(init_obj.get_tau_xy(), init_obj.get_plate_thk(), x[1],fdwn = fdwn, fup = fup)
+    sigma_x_new = stress_scaling_area(init_obj.get_sigma_x(),sum(get_field_tot_area(x_old)),sum(get_field_tot_area(x)),
+                                      fdwn = fdwn, fup = fup)
 
     try:
         stf_type = x[8]
@@ -739,6 +742,7 @@ def create_new_structure_obj(init_obj, x, fat_dict=None):
         stf_type = init_obj.get_stiffener_type()
 
     main_dict = {'mat_yield': [init_obj.get_fy(), 'Pa'], 'span': [init_obj.get_span(), 'm'],
+                 'mat_factor': [init_obj.get_mat_factor(), 'Pa'],
                    'spacing': [x[0], 'm'], 'plate_thk': [x[1], 'm'], 'stf_web_height': [x[2], 'm'],
                    'stf_web_thk': [x[3], 'm'], 'stf_flange_width': [x[4], 'm'],
                    'stf_flange_thk': [x[5], 'm'], 'structure_type': [init_obj.get_structure_type(), ''],
@@ -756,9 +760,8 @@ def create_new_structure_obj(init_obj, x, fat_dict=None):
                  'puls up boundary': [init_obj.get_puls_up_boundary(), ''],
                  }
 
-
-    if fat_dict == None:
-        return calc.Structure(main_dict)
+    #if fat_dict == None:
+    return calc.Structure(main_dict)
 
 def get_field_tot_area(x):
     ''' Total area of a plate field. '''
@@ -825,30 +828,30 @@ def calc_weight_pso_section(x,*args):
 
     return tot_weight
 
-def stress_scaling(sigma_old,t_old,t_new):
+def stress_scaling(sigma_old,t_old,t_new, fdwn = 1, fup = 0.5):
     if t_new <= t_old: #decreasing the thickness
-        sigma_new = sigma_old*(t_old/(t_old-abs((t_old-t_new))))
+        sigma_new = sigma_old*(t_old/(t_old-fdwn*abs((t_old-t_new))))
         assert sigma_new >= sigma_old, 'ERROR no stress increase: \n' \
                                       't_old '+str(t_old)+' sigma_old '+str(sigma_old)+ \
                                       '\nt_new '+str(t_new)+' sigma_new '+str(sigma_new)
 
     else: #increasing the thickness
-        sigma_new = sigma_old*(t_old/(t_old+0.5*abs((t_old-t_new))))
+        sigma_new = sigma_old*(t_old/(t_old+fup*abs((t_old-t_new))))
         assert sigma_new <= sigma_old, 'ERROR no stress reduction: \n' \
                                       't_old '+str(t_old)+' sigma_old '+str(sigma_old)+ \
                                       '\nt_new '+str(t_new)+' sigma_new '+str(sigma_new)
     return sigma_new
 
-def stress_scaling_area(sigma_old,a_old,a_new):
+def stress_scaling_area(sigma_old,a_old,a_new, fdwn = 1, fup = 0.5):
     ''' Scale stresses using input area '''
 
     if a_new <= a_old: #decreasing the thickness
-        sigma_new = sigma_old*(a_old/(a_old-abs((a_old-a_new))))
+        sigma_new = sigma_old*(a_old/(a_old-fdwn*abs((a_old-a_new))))
         # assert sigma_new >= sigma_old, 'ERROR no stress increase: \n' \
         #                               't_old '+str(a_old)+' sigma_old '+str(sigma_old)+ \
         #                               '\nt_new '+str(a_new)+' sigma_new '+str(sigma_new)
     else: #increasing the thickness
-        sigma_new = sigma_old*(a_old/(a_old+0.5*abs((a_old-a_new))))
+        sigma_new = sigma_old*(a_old/(a_old+fup*abs((a_old-a_new))))
         # assert sigma_new <= sigma_old, 'ERROR no stress reduction: \n' \
         #                               't_old '+str(a_old)+' sigma_old '+str(sigma_old)+ \
         #                               '\nt_new '+str(a_new)+' sigma_new '+str(sigma_new)
@@ -863,7 +866,8 @@ def x_to_string(x):
 
 def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight,side='p',
                          chk=(True,True,True,True,True,True,True, False),fat_dict = None, fat_press = None,
-                         slamming_press=None, processes = None, puls_sheet = None, puls_acceptance = 0.87):
+                         slamming_press=None, processes = None, puls_sheet = None, puls_acceptance = 0.87,
+                         fdwn = 1, fup = 0.5):
     '''
     Using multiprocessing to return list of applicable results.
 
@@ -891,7 +895,7 @@ def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight
         dict_to_run = {}
         for x in iterable_all:
             x_id = x_to_string(x)
-            calc_object = create_new_calc_obj(init_stuc_obj, x, fat_dict)
+            calc_object = create_new_calc_obj(init_stuc_obj, x, fat_dict, fdwn = fdwn, fup = fup)
             dict_to_run[x_id] = calc_object[0].get_puls_input()
             dict_to_run[x_id]['Identification'] = x_id
             dict_to_run[x_id]['Pressure (fixed)'] = lat_press/1000 # PULS sheet to have pressure in MPa
@@ -901,7 +905,8 @@ def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight
     else:
         PULSrun = None
 
-    iter_var = ((item,init_stuc_obj,lat_press,init_filter_weight,side,chk,fat_dict,fat_press,slamming_press, PULSrun)
+    iter_var = ((item,init_stuc_obj,lat_press,init_filter_weight,side,chk,fat_dict,fat_press,slamming_press, PULSrun,
+                 fdwn, fup)
                 for item in iterable_all)
     #res_pre = it.starmap(any_constraints_all, iter_var)
     if processes is None:
@@ -980,7 +985,7 @@ def any_get_all_combs(min_var, max_var,deltas, init_weight = float('inf'), prede
     return comb
 
 def get_initial_weight(obj,lat_press,min_var,max_var,deltas,trials,fat_dict,fat_press, predefined_stiffener_iter,
-                       slamming_press):
+                       slamming_press, fdwn = 1, fup = 0.5):
     '''
     Return a guess of the initial weight used to filter the constraints.
     Only aim is to reduce running time of the algorithm.
@@ -996,7 +1001,8 @@ def get_initial_weight(obj,lat_press,min_var,max_var,deltas,trials,fat_dict,fat_
 
     for x in trial_selection:
         if any_constraints_all(x=x,obj=obj,lat_press=lat_press,init_weight=min_weight,
-                               fat_dict=fat_dict,fat_press = fat_press,slamming_press=slamming_press)[0]:
+                               fat_dict=fat_dict,fat_press = fat_press,slamming_press=slamming_press,
+                               fdwn = fdwn, fup = fup)[0]:
             current_weight = calc_weight(x)
             if current_weight < min_weight:
                 min_weight = current_weight

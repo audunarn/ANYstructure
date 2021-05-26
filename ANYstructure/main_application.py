@@ -1,10 +1,8 @@
  # -*- coding: utf-8 -*-
 
-import os, time
 import tkinter as tk
 from tkinter import filedialog
 from tkinter import messagebox
-import json
 from ANYstructure.calc_loads import *
 from ANYstructure.calc_structure import *
 import ANYstructure.load_window as load_window
@@ -214,10 +212,11 @@ class Application():
         self.__copied_line_prop = None  # Used to copy line properties to another.
         self._PULS_results = None # If a puls run is avaliable, it is stored here.
         # Used to select parameter
-        self._stuctural_definition = ['mat_yield', 'span', 'spacing', 'plate_thk', 'stf_web_height', 'stf_web_thk',
+        self._stuctural_definition = ['mat_yield','mat_factor', 'span', 'spacing', 'plate_thk', 'stf_web_height',
+                                      'stf_web_thk',
                                        'stf_flange_width', 'stf_flange_thk', 'structure_type', 'stf_type',
                                        'sigma_y1', 'sigma_y2', 'sigma_x', 'tau_xy', 'plate_kpp', 'stf_kps','stf_km1',
-                                       'stf_km2', 'stf_km3', 'press_side', 'structure_types', 'zstar_optimization',
+                                       'stf_km2', 'stf_km3', 'press_side', 'zstar_optimization',
                                       'puls buckling method', 'puls boundary', 'puls stiffener end', 'puls sp or up',
                                       'puls up boundary']
         self._p1_p2_select = False
@@ -260,7 +259,7 @@ class Application():
 
         tk.Label(self._main_fr, text='Input point coordinates [mm]', font=self._text_size['Text 9 bold'],
                  bg = self._general_color)\
-            .place(rely=point_start - 0.027777778, relx=-0.018, relwidth = 0.15, anchor = tk.NW)
+            .place(rely=point_start - 0.027777778, relx=point_x_start, anchor = tk.NW)
         tk.Label(self._main_fr, text='Point x (horizontal) [mm]:',font="Text 9", bg = self._general_color)\
             .place(relx=point_x_start, rely=point_start)
         tk.Label(self._main_fr, text='Point y (vertical)   [mm]:',font="Text 9", bg = self._general_color)\
@@ -329,13 +328,17 @@ class Application():
         self._new_puls_uf.set(0.87)
         self._new_scale_stresses = tk.BooleanVar()
         self._new_scale_stresses.set(False)
+        self._new_fup = tk.DoubleVar()
+        self._new_fup.set(0.5)
+        self._new_fdwn = tk.DoubleVar()
+        self._new_fdwn.set(1)
 
 
 
         line_start, line_x = point_start+0.08, 0.005208333
         tk.Label(self._main_fr, text='Input line from "point number" to "point number"',
                  font=self._text_size['Text 9 bold'], bg = self._general_color)\
-            .place(rely=line_start - 0.025, relx=-0.034, relwidth = 0.25, anchor = tk.NW)
+            .place(rely=line_start - 0.025, relx=line_x, anchor = tk.NW)
         tk.Label(self._main_fr, text='From point number:',font="Text 9", bg = self._general_color)\
             .place(relx=line_x, rely=line_start)
         tk.Label(self._main_fr, text='To point number:',font="Text 9", bg = self._general_color)\
@@ -385,7 +388,7 @@ class Application():
         del_start, del_x = line_start + 0.075,0.005208333
         tk.Label(self._main_fr, text='Delete lines and points (or left/right click and use "Delete key")',
                  font=self._text_size['Text 9 bold'], bg = self._general_color)\
-            .place(rely=del_start - 0.027777778*1,relx=-0.008, relwidth = 0.25, anchor = tk.NW)
+            .place(rely=del_start - 0.027777778*1,relx=del_x, anchor = tk.NW)
         self._ent_delete_line = tk.Entry(self._main_fr, textvariable=self._new_delete_line,
                                         width=int(ent_width * 1),
                                          bg = self._entry_color, fg = self._entry_text_color)
@@ -420,7 +423,7 @@ class Application():
         types_start = 0.005208333
         tk.Label(self._main_fr, text='Structural and calculation properties input below:',
                  font=self._text_size['Text 9 bold'],
-                 bg = self._general_color ).place(rely=prop_vert_start-delta_y,relx=-0.034, relwidth = 0.25,
+                 bg = self._general_color ).place(rely=prop_vert_start-delta_y,relx=types_start,
                                                   anchor = tk.NW)
         def show_message():
             messagebox.showinfo(title='Structure type',message='Types - sets default stresses (sigy1/sigy2/sigx/tauxy)'
@@ -450,17 +453,17 @@ class Application():
 
 
         tk.Label(self._main_fr, text='Show line names in GUI', font="Text 9")\
-            .place(relx=0.4, rely=0)
+            .place(relx=0.38, rely=0)
         tk.Label(self._main_fr, text='Show point names in GUI', font="Text 9")\
-            .place(relx=0.5, rely=0)
+            .place(relx=0.48, rely=0)
         tk.Label(self._main_fr, text='Label color code', font="Text 9")\
-            .place(relx=0.6, rely=0)
+            .place(relx=0.58, rely=0)
         tk.Checkbutton(self._main_fr, variable = self._new_line_name, command = self.on_color_code_check)\
-            .place(relx=0.386, rely=0)
+            .place(relx=0.366, rely=0)
         tk.Checkbutton(self._main_fr, variable = self._new_draw_point_name, command = self.on_color_code_check)\
-            .place(relx=0.486, rely=0)
+            .place(relx=0.466, rely=0)
         tk.Checkbutton(self._main_fr, variable = self._new_label_color_coding, command = self.on_color_code_check)\
-            .place(relx=0.586, rely=0)
+            .place(relx=0.566, rely=0)
 
 
 
@@ -473,10 +476,22 @@ class Application():
 
 
         tk.Checkbutton(self._main_fr, variable = self._new_scale_stresses, command = self.on_color_code_check)\
-            .place(relx = types_start+ delta_x*4.7, rely=prop_vert_start+16.9*delta_y)
-        tk.Label(self._main_fr, text='Scale stresses when changing prop.', font=self._text_size['Text 9'],
+            .place(relx = types_start+ delta_x*4.3, rely=prop_vert_start+16.9*delta_y)
+        tk.Label(self._main_fr, text='Scale stresses when\n changing prop.', font=self._text_size['Text 9'],
                  bg = self._general_color)\
-            .place(relx = types_start+ delta_x*5, rely=prop_vert_start+17*delta_y, relwidth = 0.12)
+            .place(relx = types_start+ delta_x*4.7, rely=prop_vert_start+16.5*delta_y, relwidth = 0.065)
+        tk.Label(self._main_fr, text='fup', font=self._text_size['Text 8'],
+                 bg = self._general_color)\
+            .place(relx = types_start+ delta_x*7.3, rely=prop_vert_start+17*delta_y)
+        ent_fup = tk.Entry(self._main_fr, textvariable=self._new_fup,
+                                         bg = self._entry_color, fg = self._entry_text_color)
+        ent_fup.place(relx = types_start+ delta_x*7.8, rely=prop_vert_start+17*delta_y, relwidth = 0.01)
+        tk.Label(self._main_fr, text='fdown', font=self._text_size['Text 8'],
+                 bg = self._general_color)\
+            .place(relx = types_start+ delta_x*8.3, rely=prop_vert_start+17*delta_y)
+        ent_fdwn = tk.Entry(self._main_fr, textvariable=self._new_fdwn,
+                                         bg = self._entry_color, fg = self._entry_text_color)
+        ent_fdwn.place(relx = types_start+ delta_x*9.1, rely=prop_vert_start+17*delta_y, relwidth = 0.01)
         # Toggle buttons
         self._toggle_btn = tk.Button(self._main_fr, text="Toggle select\nmultiple", relief="raised",
                                      command=self.toggle_select_multiple, bg = self._button_bg_color)
@@ -505,6 +520,7 @@ class Application():
                                         width=int(ent_width * 1),
                                          bg = self._entry_color, fg = self._entry_text_color)
         self._new_puls_uf.trace('w', self.trace_acceptance_change)
+
         self._toggle_btn_puls.place(relx=types_start, rely=prop_vert_start+18*delta_y, relwidth = 0.043,
                                 relheight = 0.035)
         self._puls_run_all.place(relx=types_start +0.046, rely=prop_vert_start+18*delta_y, relwidth = 0.06,
@@ -512,6 +528,7 @@ class Application():
 
         # --- main variable to define the structural properties ---
         self._new_material = tk.DoubleVar()
+        self._new_material_factor = tk.DoubleVar()
         self._new_field_len = tk.DoubleVar()
         self._new_stf_spacing = tk.DoubleVar()
         self._new_plate_thk = tk.DoubleVar()
@@ -556,7 +573,8 @@ class Application():
         self._new_stf_km3.set(12)
         self._new_stf_kps.set(1)
         self._new_plate_kpp.set(1)
-        self._new_material.set(355)
+        self._new_material_factor.set(1.15)
+
         self._new_stucture_type.set('GENERAL_INTERNAL_WT')
         self.option_meny_structure_type_trace(event='GENERAL_INTERNAL_WT')
         self._new_stf_type.set('T')
@@ -567,14 +585,19 @@ class Application():
         self._new_puls_sp_or_up.set('SP')
         self._new_puls_up_boundary.set('SSSS')
 
-
+        #self._new_material_factor.trace('w', self.trace_material_factor)
         # --- main entries and labels to define the structural properties ---
         ent_width = 12 #width of entries
         tk.Label(self._main_fr, text='Yield [MPa]:', font = self._text_size['Text 9'],
                  bg = self._general_color)\
-            .place(relx=0.2, rely=prop_vert_start + 2.6 * delta_y)
+            .place(relx=0.185, rely=prop_vert_start + 2.6 * delta_y)
+        tk.Label(self._main_fr, text='Mat. factor', font = self._text_size['Text 9'],
+                 bg = self._general_color)\
+            .place(relx=0.221, rely=prop_vert_start + 2.6 * delta_y)
 
         self._ent_mat = tk.Entry(self._main_fr, textvariable=self._new_material, bg = self._entry_color,
+                                 fg = self._entry_text_color)
+        self._ent_mat_factor = tk.Entry(self._main_fr, textvariable=self._new_material_factor, bg = self._entry_color,
                                  fg = self._entry_text_color)
         self._ent_field_len = tk.Entry(self._main_fr, textvariable=self._new_field_len, bg = self._entry_color,
                                        fg = self._entry_text_color)
@@ -745,7 +768,8 @@ class Application():
         tk.Label(self._main_fr, text='[mm]', bg = self._general_color).place(relx=types_start + 8*delta_x,
                                                                              rely=ent_geo_y+delta_y*y_red)
 
-        self._ent_mat.place(relx=0.195, rely=ent_rely, relwidth = 0.05)
+        self._ent_mat.place(relx=0.195, rely=ent_rely, relwidth = 0.025)
+        self._ent_mat_factor.place(relx=0.23, rely=ent_rely, relwidth=0.025)
         self._ent_plate_kpp.place(relx = ent_relx , rely=ent_rely)
         self._ent_plate_kps.place(relx=ent_relx + geo_dx, rely=ent_rely)
         self._ent_stf_km1.place(relx=ent_relx + 2*geo_dx, rely=ent_rely)
@@ -1157,8 +1181,14 @@ class Application():
 
         self.update_frame()
         
-    def trace_puls_uf(self):
+    def trace_puls_uf(self, *args):
         if self._PULS_results is not None:
+            pass
+
+    def trace_material_factor(self, *args):
+        try:
+            self._new_puls_uf.set(1/self._new_material_factor.get())
+        except (TclError, ZeroDivisionError):
             pass
 
     def trace_puls_up_or_sp(self, event = None):
@@ -1221,6 +1251,7 @@ class Application():
         # if not self._line_is_active:
         #     tk.messagebox.showerror('Select line', 'Click a line first.')
         obj_dict = {'mat_yield': self._new_material.get,
+                    'mat_factor': self._new_material_factor.get,
                     'span': self._new_field_len.get,
                     'spacing': self._new_stf_spacing.get,
                     'plate_thk': self._new_plate_thk.get,
@@ -1228,7 +1259,7 @@ class Application():
                     'stf_web_thk': self._new_sft_web_t.get,
                     'stf_flange_width': self._new_stf_fl_w.get,
                     'stf_flange_thk': self._new_stf_fl_t.get,
-                    'structure_type': self._new_stucture_type,
+                    'structure_type': self._new_stucture_type.get,
                     'stf_type': self._new_stf_type.get,
                     'sigma_y1': self._new_sigma_y1.get,
                     'sigma_y2': self._new_sigma_y2.get,
@@ -1264,7 +1295,6 @@ class Application():
                 dict[var_to_set][0] = set_var
 
                 self.new_structure(toggle_multi=dict, suspend_recalc=True if (idx+1) != no_of_lines else False)
-                print(True if (idx+1) != no_of_lines else False)
 
     def gui_load_combinations(self,event):
         '''
@@ -1694,7 +1724,8 @@ class Application():
                             loc_geom = 'green' if all([val[0] == 'Ok' for val in res[loc_label].values()]) else 'red'
                         csr_label = 'CSR-Tank requirements (primary stiffeners)' if \
                             obj_scnt_calc.get_puls_sp_or_up() == 'SP' else'CSR-Tank req'
-                        csr_geom = 'green' if all([val[0] == 'Ok' for val in res[csr_label].values()]) else 'red'
+
+                        csr_geom = 'green' if all([val[0] in ['Ok', '-'] for val in res[csr_label].values()]) else 'red'
                         return_dict['PULS colors'][current_line] = {'ultimate': col_ult, 'buckling': col_buc,
                                                                     'local geometry': loc_geom, 'csr': csr_geom}
                     else:
@@ -2528,7 +2559,7 @@ class Application():
                                 [val[0] == 'Ok' for val in puls_res[loc_label]
                                 .values()]) else 'Not ok'
                         csr_geom = 'Ok' if all(
-                            [val[0] == 'Ok' for val in puls_res[csr_label]
+                            [val[0] in ['Ok', '-'] for val in puls_res[csr_label]
                             .values()]) else 'Not ok'
                         loc_geom = loc_label + ':   ' + loc_geom
                         csr_geom = csr_label+':   ' + csr_geom
@@ -2824,6 +2855,7 @@ class Application():
                 obj_dict = toggle_multi
             elif pasted_structure == None:
                 obj_dict = {'mat_yield': [self._new_material.get()*1e6, 'Pa'],
+                            'mat_factor': [self._new_material_factor.get(), ''],
                             'span': [self._new_field_len.get(), 'm'],
                             'spacing': [self._new_stf_spacing.get()/1000, 'm'],
                             'plate_thk': [self._new_plate_thk.get()/1000, 'm'],
@@ -2872,13 +2904,14 @@ class Application():
                 self._line_to_struc[self._active_line][0].set_main_properties(obj_dict)
                 self._line_to_struc[self._active_line][1].set_main_properties(obj_dict)
 
-                if self._new_scale_stresses.get():
+                if self._new_scale_stresses.get() and prev_str_obj.get_tuple() != \
+                        self._line_to_struc[self._active_line][0].get_tuple():
                     self._line_to_struc[self._active_line][0] = \
-                        op.create_new_structure_obj(prev_str_obj,
-                                                    self._line_to_struc[self._active_line][0].get_tuple())
+                        op.create_new_structure_obj(prev_str_obj, self._line_to_struc[self._active_line][0].get_tuple(),
+                                                    fup=self._new_fup.get(), fdwn=self._new_fdwn.get())
                     self._line_to_struc[self._active_line][1] = \
-                        op.create_new_calc_obj(prev_calc_obj,
-                                                    self._line_to_struc[self._active_line][1].get_tuple())[0]
+                        op.create_new_calc_obj(prev_calc_obj,self._line_to_struc[self._active_line][1].get_tuple(),
+                                               fup=self._new_fup.get(), fdwn=self._new_fdwn.get())[0]
                 self._line_to_struc[self._active_line][1].need_recalc = True
                 if self._line_to_struc[self._active_line][2] is not None:
                     self._line_to_struc[self._active_line][2].set_main_properties(obj_dict)
@@ -3220,6 +3253,7 @@ class Application():
         if line in self._line_to_struc:
             properties = self._line_to_struc[line][0].get_structure_prop()
             self._new_material.set(round(properties['mat_yield'][0]/1e6,5))
+            self._new_material_factor.set(properties['mat_factor'][0])
             self._new_field_len.set(round(properties['span'][0],5))
             self._new_stf_spacing.set(round(properties['spacing'][0]*1000,5))
             self._new_plate_thk.set(round(properties['plate_thk'][0]*1000,5))
@@ -3900,6 +3934,8 @@ class Application():
                 lines_prop['puls sp or up'] = [self._new_puls_sp_or_up.get(), '']
             if 'puls up boundary' not in lines_prop.keys():
                 lines_prop['puls up boundary'] = [self._new_puls_up_boundary.get(), '']
+            if 'mat_factor' not in lines_prop.keys():
+                lines_prop['mat_factor'] = [self._new_material_factor.get(), '']
 
             self._line_to_struc[line][0] = Structure(lines_prop)
             self._line_to_struc[line][1] = CalcScantlings(lines_prop)

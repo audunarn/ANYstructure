@@ -182,7 +182,9 @@ class CreateOptimizeWindow():
         self._ent_opt_web_thk = tk.Entry(self._frame, textvariable=self._new_opt_web_thk, width=ent_w,bg=bg_col)
         self._ent_opt_fl_w = tk.Entry(self._frame, textvariable=self._new_opt_fl_w, width=ent_w,bg=bg_col)
         self._ent_opt_fl_thk = tk.Entry(self._frame, textvariable=self._new_opt_fl_thk, width=ent_w,bg=bg_col)
-        
+
+
+
         # stresses in plate and stiffener
 
         self._new_trans_stress_high = tk.DoubleVar()
@@ -403,6 +405,7 @@ class CreateOptimizeWindow():
         self._new_maxiter.set(100)
         self._new_minstep.set(1e-8)
         self._new_minfunc.set(1e-8)
+
         
         self._new_delta_spacing.trace('w',self.update_running_time)
         self._new_delta_pl_thk.trace('w',self.update_running_time)
@@ -507,6 +510,21 @@ class CreateOptimizeWindow():
                                                                                    y=start_y + 11 * dy)
         tk.Checkbutton(self._frame, variable=self._new_check_buckling_puls).place(x=start_x + dx * 12,
                                                                                    y=start_y + 12 * dy)
+
+        # Stress scaling
+        self._new_fup = tk.DoubleVar()
+        self._new_fup.set(0.5)
+        self._new_fdwn = tk.DoubleVar()
+        self._new_fdwn.set(1)
+
+        tk.Label(self._frame, text='Factor when scaling stresses up, fup')\
+            .place(x=start_x + dx * 9.7, y=start_y + 16 * dy)
+        ent_fup = tk.Entry(self._frame, textvariable=self._new_fup, width = 10)
+        ent_fup.place(x=start_x + dx * 12, y=start_y + 16 * dy)
+        tk.Label(self._frame, text='Factor when scaling stresses up, fdown')\
+            .place(x=start_x + dx * 9.7, y=start_y + 17 * dy)
+        ent_fdwn = tk.Entry(self._frame, textvariable=self._new_fdwn, width = 10)
+        ent_fdwn.place(x=start_x + dx * 12, y=start_y + 17 * dy)
 
         # tk.Button(self._frame,text='Iterate predefiened stiffeners',command=self.open_multiple_files ,bg='yellow')\
         #     .place(x=start_x, y=start_y - dy * 2)
@@ -649,7 +667,8 @@ class CreateOptimizeWindow():
                                                processes=self._new_processes.get(),
                                                use_weight_filter = False if self._new_check_buckling_puls.get()
                                                else self._new_use_weight_filter.get(),
-                                               puls_sheet = puls_sheet_location, puls_acceptance = puls_acceptance)
+                                               puls_sheet = puls_sheet_location, puls_acceptance = puls_acceptance,
+                                               fdwn = self._new_fdwn.get(), fup = self._new_fdwn.get())
 
         if self._opt_results is not None and self._opt_results[0] is not None:
             self._opt_actual_running_time.config(text='Actual running time: \n'

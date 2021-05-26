@@ -26,6 +26,7 @@ class Structure():
         self.flange_width = main_dict['stf_flange_width'][0]
         self.flange_th = main_dict['stf_flange_thk'][0]
         self.mat_yield = main_dict['mat_yield'][0]
+        self.mat_factor = main_dict['mat_factor'][0]
         self.span = main_dict['span'][0]
         self.spacing = main_dict['spacing'][0]
         self.structure_type = main_dict['structure_type'][0]
@@ -203,6 +204,8 @@ class Structure():
         :return:
         '''
         return self.mat_yield
+    def get_mat_factor(self):
+        return self.mat_factor
     def get_span(self):
         '''
         Return the span
@@ -387,6 +390,7 @@ class Structure():
         self.flange_width = main_dict['stf_flange_width'][0]
         self.flange_th = main_dict['stf_flange_thk'][0]
         self.mat_yield = main_dict['mat_yield'][0]
+        self.mat_factor = main_dict['mat_factor'][0]
         self.span = main_dict['span'][0]
         self.spacing = main_dict['spacing'][0]
         self.structure_type = main_dict['structure_type'][0]
@@ -668,7 +672,7 @@ class CalcScantlings(Structure):
 
         design_pressure = design_pressure_kpa
         fy = self.mat_yield / 1e6
-        fyd = fy/1.15
+        fyd = fy/self.mat_factor
 
         sigma_y = self.sigma_y2 + (self.sigma_y1-self.sigma_y2)\
                                        *(min(0.25*self.span,0.5*self.spacing)/self.span)
@@ -702,7 +706,7 @@ class CalcScantlings(Structure):
         sigma_jd = math.sqrt(math.pow(self.sigma_x,2)+math.pow(sigma_y,2)-
                              self.sigma_x*sigma_y+3*math.pow(self.tauxy,2))
         fy = self.mat_yield / 1000000
-        fyd = fy/1.15
+        fyd = fy/self.mat_factor
         sigma_pd1 = min(1.3*(fyd-sigma_jd), fyd)
         sigma_pd1 = abs(sigma_pd1)
         #print(fyd, sigma_jd, fyd)
@@ -740,7 +744,8 @@ class CalcScantlings(Structure):
         l = self.span
         s = self.spacing
         fy = self.mat_yield
-        fyd = (fy/1.15)/1e6 #yield strength
+
+        fyd = (fy/self.mat_factor)/1e6 #yield strength
         sigxd = self.sigma_x #design membrane stresses, x-dir
 
         taupds = 0.577*math.sqrt(math.pow(fyd, 2) - math.pow(sigxd, 2))
@@ -872,7 +877,7 @@ class CalcScantlings(Structure):
 
         sigyR=( (1.3*t/l)*math.sqrt(E/fy)+kappa*(1-(1.3*t/l)*math.sqrt(E/fy)))*fy*kp # eq 6.6 checked
 
-        sigyRd = sigyR / 1.15 #eq 6.5 checked, ok
+        sigyRd = sigyR / self.mat_factor #eq 6.5 checked, ok
 
 
         # plate resistance check
@@ -899,11 +904,11 @@ class CalcScantlings(Structure):
 
         taucrg = kg*0.904*E*math.pow(t/l,2) # 7.2 critical shear stress, checked not calculated with example
         taucrl = kl*0.904*E*math.pow(t/s,2) # 7.2 critical chear stress, checked not calculated with example
-        tautf = (tauSd - taucrg) if  tauSd>taucrl/1.15 else 0 # checked not calculated with example
+        tautf = (tauSd - taucrg) if  tauSd>taucrl/self.mat_factor else 0 # checked not calculated with example
 
         #7.6 Resistance of stiffened panels to shear stresses (page 20)
         taucrs = (36*E/(s*t*math.pow(l,2)))*((Ip*math.pow(Is,3))**0.25) # checked not calculated with example
-        tauRd = min(fy/(math.sqrt(3)*1.15), taucrl/1.15,taucrs/1.15)# checked not calculated with example
+        tauRd = min(fy/(math.sqrt(3)*self.mat_factor), taucrl/self.mat_factor,taucrs/self.mat_factor)# checked not calculated with example
 
         ci = 1-s/(120*t) if (s/t)<=120 else 0 # checked ok
         Cxs = (alphap-0.22)/math.pow(alphap,2) if alphap>0.673 else 1 # reduction factor longitudinal, ok
@@ -930,7 +935,7 @@ class CalcScantlings(Structure):
         Ae = As+se*t #ch7.7.3 checked, ok
 
         W = min(Wes,Wep) #eq7.75 text, checked
-        pf = (12*W/(math.pow(l,2)*s))*(fy/1.15) #checked, ok
+        pf = (12*W/(math.pow(l,2)*s))*(fy/self.mat_factor) #checked, ok
 
         lk = l*(1-0.5*abs(pSd/pf)) #eq7.74, buckling length, checked
 
@@ -1017,9 +1022,9 @@ class CalcScantlings(Structure):
 
         u = math.pow(tauSd / tauRd, 2)  # eq7.58. checked.
         fr, fks, fkp = get_some_data(lT=lT*0.4)
-        Ms1Rd = Wes*(fr/1.15) #ok, assuming fr calculated with lT=span * 0.4
-        NksRd = Ae * (fks / 1.15) #eq7.66, page 22 - fk according to equation 7.26, sec 7.5,
-        NkpRd = Ae * (fkp / 1.15)  # checked ok, no ex
+        Ms1Rd = Wes*(fr/self.mat_factor) #ok, assuming fr calculated with lT=span * 0.4
+        NksRd = Ae * (fks / self.mat_factor) #eq7.66, page 22 - fk according to equation 7.26, sec 7.5,
+        NkpRd = Ae * (fkp / self.mat_factor)  # checked ok, no ex
 
         M1Sd = abs((qSd*math.pow(l,2))/12) #ch7.7.1, checked ok
 
@@ -1027,16 +1032,16 @@ class CalcScantlings(Structure):
 
         Ne = ((math.pow(math.pi,2))*E*Ae)/(math.pow(lk/ie,2))# eq7.72 , checked ok
 
-        Nrd = Ae * (fy / 1.15) #eq7.65, checked ok
+        Nrd = Ae * (fy / self.mat_factor) #eq7.65, checked ok
 
         Nsd = sigxSd * (As + s*t) + tautf * s *t #  Equation 7.1, section 7.2, checked ok
 
 
-        MstRd = Wes*(fy/1.15) #eq7.70 checked ok, no ex
-        MpRd = Wep*(fy/1.15) #eq7.71 checked ok, no ex
+        MstRd = Wes*(fy/self.mat_factor) #eq7.70 checked ok, no ex
+        MpRd = Wep*(fy/self.mat_factor) #eq7.71 checked ok, no ex
 
         fr, fks, fkp = get_some_data(lT = lT * 0.8)
-        Ms2Rd = Wes*(fr/1.15) #eq7.69 checked ok, no ex
+        Ms2Rd = Wes*(fr/self.mat_factor) #eq7.69 checked ok, no ex
         # print('Nksrd', NksRd, 'Nkprd', NkpRd, 'Ae is', Ae, 'fks is', fks, 'fkp is', fkp,
         #       'alphas are', mu_pl, mu_stf, 'lk', lk, 'lt', lT)
 
@@ -1113,7 +1118,7 @@ class CalcScantlings(Structure):
         kp = 1 if pSd<=2*((t/s)**2)*fy else 1-ha*((pSd/fy)-2*(t/s)**2)
 
         sigyR=( (1.3*t/l)*math.sqrt(E/fy)+kappa*(1-(1.3*t/l)*math.sqrt(E/fy)))*fy*kp
-        sigyRd = sigyR / 1.15
+        sigyRd = sigyR / self.mat_factor
 
         # plate resistance check
         ksp = math.sqrt(1-3*(tauSd/(fy/1))**2)
