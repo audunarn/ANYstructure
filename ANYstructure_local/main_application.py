@@ -319,6 +319,10 @@ class Application():
         self._new_colorcode_section_modulus.set(False)
         self._new_colorcode_fatigue = tk.BooleanVar()
         self._new_colorcode_fatigue.set(False)
+        self._new_colorcode_puls_sp_or_up= tk.BooleanVar()
+        self._new_colorcode_puls_sp_or_up.set(False)
+        self._new_colorcode_puls_acceptance= tk.BooleanVar()
+        self._new_colorcode_puls_acceptance.set(False)
         self._new_colorcode_total= tk.BooleanVar()
         self._new_colorcode_total.set(False)
         self._new_toggle_var = tk.StringVar()
@@ -649,13 +653,13 @@ class Application():
         self._ent_stf_type = tk.OptionMenu(self._main_fr, self._new_stf_type, *['T', 'FB', 'L', 'L-bulb'])
         self._ent_structure_type = tk.OptionMenu(self._main_fr, self._new_stucture_type,
                                                  command = self.option_meny_structure_type_trace, *self._options_type)
+        self._ent_puls_sp_or_up= tk.OptionMenu(self._main_fr, self._new_puls_sp_or_up,
+                                               command = self.trace_puls_up_or_sp, *['SP', 'UP'])
         self._ent_puls_method = tk.OptionMenu(self._main_fr, self._new_puls_method, *['buckling', 'ultimate'])
         self._ent_puls_panel_boundary = tk.OptionMenu(self._main_fr, self._new_puls_panel_boundary,
                                                       *['Int', 'GL', 'GT'])
         self._ent_puls_stf_end_type = tk.OptionMenu(self._main_fr, self._new_puls_stf_end_type,
                                                       *['C', 'S'])
-        self._ent_puls_sp_or_up= tk.OptionMenu(self._main_fr, self._new_puls_sp_or_up,
-                                               command = self.trace_puls_up_or_sp, *['SP', 'UP'])
         self._ent_puls_up_boundary = tk.Entry(self._main_fr, textvariable=self._new_puls_up_boundary, width=int(7*1),
                                    bg = self._entry_color, fg = self._entry_text_color)
 
@@ -702,21 +706,22 @@ class Application():
 
 
         self._zstar_chk = tk.Checkbutton(self._main_fr, variable=self._new_zstar_optimization)\
-            .place(relx=types_start+delta_x*8.5,rely=prop_vert_start+11.5*delta_y)
+            .place(relx=types_start+delta_x*9,rely=prop_vert_start+11.5*delta_y)
         tk.Label(self._main_fr, text='z* optimization (RP-C201)\n'
                                      'for prescriptive buckling \ncalculations', font=self._text_size['Text 8'],
                  bg = self._general_color)\
-            .place(relx=types_start + 5.4*delta_x,rely=prop_vert_start+11.3*delta_y)
+            .place(relx=types_start + 5.9*delta_x,rely=prop_vert_start+11.3*delta_y)
         tk.Label(self._main_fr, text='Pressure side (p-plate, s-stf.):', bg=self._general_color) \
             .place(relx=types_start + 5.4*delta_x,rely=prop_vert_start+13.2*delta_y, relheight = 0.025)
         self._ent_pressure_side.place(relx=types_start+delta_x*8.5,rely=prop_vert_start+13.2*delta_y)
+
 
         tk.Label(self._main_fr, text='PULS input', bg=self._general_color, font=self._text_size['Text 8']) \
             .place(relx=types_start, rely=prop_vert_start + 10.4 * delta_y)
         tk.Label(self._main_fr, text='Siffened: SP Unstf. pl.: UP', bg=self._general_color, font=self._text_size['Text 7']) \
             .place(relx=types_start, rely=prop_vert_start + 11.2 * delta_y)
         tk.Label(self._main_fr, text='UP sup.left,right,upper,lower', bg=self._general_color, font=self._text_size['Text 7']) \
-            .place(relx=types_start, rely=prop_vert_start + 12 * delta_y)
+            .place(relx=types_start, rely=prop_vert_start + 11.8 * delta_y)
         tk.Label(self._main_fr, text='PULS acceptance', bg=self._general_color, font = self._text_size['Text 7'])\
             .place(relx=types_start, rely=prop_vert_start + 13 * delta_y)
         tk.Label(self._main_fr, text='PULS utilization factor:', font=self._text_size['Text 7'],
@@ -783,13 +788,20 @@ class Application():
         self._ent_stf_type.place(relx=ent_relx + 4*geo_dx, rely=ent_rely+drely*0.8)
 
         # Entries below goemetry and stress input.
-        self._ent_puls_sp_or_up.place(relx=types_start + 3 * delta_x, rely=prop_vert_start + 11.2 * delta_y,
+        shift_x = 2.9
+        self._ent_puls_sp_or_up.place(relx=types_start + shift_x  * delta_x, rely=prop_vert_start + 11.2 * delta_y,
                                     relwidth=0.041)
-        self._ent_puls_method.place(relx=types_start+ 3*delta_x, rely=prop_vert_start + 12.5 * delta_y, relwidth = 0.041)
-        self._ent_puls_uf.place(relx=types_start+ 3*delta_x, rely=prop_vert_start + 13.9 * delta_y, relwidth = 0.02,
+        tk.Checkbutton(self._main_fr, variable=self._new_colorcode_puls_sp_or_up, command=self.on_color_code_check)\
+            .place(relx=types_start + shift_x  * delta_x + 0.04, rely=prop_vert_start + 11.2 * delta_y)
+
+        self._ent_puls_method.place(relx=types_start+ shift_x *delta_x, rely=prop_vert_start + 12.5 * delta_y, relwidth = 0.041)
+        tk.Checkbutton(self._main_fr, variable=self._new_colorcode_puls_acceptance, command=self.on_color_code_check)\
+            .place(relx=types_start+ shift_x *delta_x + 0.04, rely=prop_vert_start + 12.5 * delta_y)
+
+        self._ent_puls_uf.place(relx=types_start+ shift_x *delta_x, rely=prop_vert_start + 13.9 * delta_y, relwidth = 0.02,
                                 relheight = 0.025)
-        self._ent_puls_panel_boundary.place(relx=types_start+ 3*delta_x, rely=prop_vert_start + 15.2 * delta_y, relwidth = 0.025)
-        self._ent_puls_stf_end_type.place(relx=types_start+ 3*delta_x, rely=prop_vert_start + 16.5 * delta_y, relwidth = 0.025)
+        self._ent_puls_panel_boundary.place(relx=types_start+ shift_x *delta_x, rely=prop_vert_start + 15.2 * delta_y, relwidth = 0.025)
+        self._ent_puls_stf_end_type.place(relx=types_start+ shift_x *delta_x, rely=prop_vert_start + 16.5 * delta_y, relwidth = 0.025)
 
 
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_sigmax, command = self.on_color_code_check)\
@@ -1197,7 +1209,7 @@ class Application():
             delta_x = 0.026041667
             prop_vert_start = 0.29
             types_start = 0.005208333
-            self._ent_puls_up_boundary.place(relx=types_start + 4.6 * delta_x, rely=prop_vert_start + 11.4 * delta_y,
+            self._ent_puls_up_boundary.place(relx=types_start + 5 * delta_x, rely=prop_vert_start + 11.4 * delta_y,
                                          relwidth=0.02)
         else:
             self._ent_puls_up_boundary.place_forget()
@@ -1885,21 +1897,24 @@ class Application():
                                          'structure types map': np.unique(structure_type).tolist(),
                                          'sections in model': sec_in_model,
                                          'recorded sections': recorded_sections}
-            line_color_coding = {}
+            line_color_coding, puls_method_map, puls_sp_or_up_map = \
+                {}, {None: 0, 'buckling': 0.5, 'ultimate': 1}, {None:0, 'SP': 0.5, 'UP': 1}
             cmap_sections = plt.get_cmap('jet')
             thk_sort_unique = return_dict['color code']['all thicknesses']
             structure_type_unique = return_dict['color code']['structure types map']
             for line, line_data in self._line_to_struc.items():
                 if self._PULS_results is None:
-                    puls_color, buc_uf, puls_uf = 'black', 0, 0
+                    puls_color, buc_uf, puls_uf, puls_method, puls_sp_or_up = 'black', 0, 0, None, None
                 elif self._PULS_results.get_utilization(line, self._line_to_struc[line][1].get_puls_method(),
                                                         self._new_puls_uf.get()) == None:
-                    puls_color, buc_uf, puls_uf = 'black', 0,0
+                    puls_color, buc_uf, puls_uf, puls_method, puls_sp_or_up = 'black', 0,0, None, None
                 else:
+                    puls_method = self._line_to_struc[line][1].get_puls_method()
                     puls_uf = self._PULS_results.get_utilization(
-                                                   line, self._line_to_struc[line][1].get_puls_method(),
+                                                   line, puls_method,
                                                    self._new_puls_uf.get())
                     puls_color = matplotlib.colors.rgb2hex(cmap_sections(puls_uf))
+                    puls_sp_or_up = self._line_to_struc[line][1].get_puls_sp_or_up()
 
                 rp_uf = rec_for_color[line]['rp buckling']
 
@@ -1924,6 +1939,8 @@ class Application():
                                            'pressure': this_pressure,
                                            'rp uf color': matplotlib.colors.rgb2hex(cmap_sections(rp_util)),
                                            'rp uf': rp_util,
+                                           'PULS method': puls_method,
+                                           'PULS sp or up':puls_sp_or_up,
                                            'section modulus color': matplotlib.colors.rgb2hex(
                                                cmap_sections(rec_for_color[line]['section modulus'])),
                                            'fatigue color': matplotlib.colors.rgb2hex(
@@ -1969,7 +1986,8 @@ class Application():
             self._new_colorcode_sigmax.get(), self._new_colorcode_sigmay1.get(), self._new_colorcode_sigmay2.get(),
             self._new_colorcode_tauxy.get(), self._new_colorcode_structure_type.get(),
                            self._new_colorcode_fatigue.get(), self._new_colorcode_section_modulus.get(),
-                          self._new_colorcode_total.get()].count(True)> 0
+                          self._new_colorcode_total.get(), self._new_colorcode_puls_acceptance.get(),
+                          self._new_colorcode_puls_sp_or_up.get()].count(True)> 0
 
         if chk_box_active and state != None:
             self.color_code_text(state)
@@ -2238,6 +2256,28 @@ class Application():
                                               fill=matplotlib.colors.rgb2hex(
                                                   cmap_sections(value)),
                                               anchor="nw")
+        elif self._new_colorcode_puls_sp_or_up.get() == True:
+
+            for idx, value in enumerate(['SP', 'UP']):
+                self._main_canvas.create_text(11, start_text_shift+20*idx, text=value,
+                                              font=self._text_size["Text 10 bold"],
+                                              fill='black',
+                                              anchor="nw")
+                self._main_canvas.create_text(10, start_text+20*idx, text=value,
+                                              font=self._text_size["Text 10 bold"],
+                                              fill='blue' if value == 'SP' else 'red',
+                                              anchor="nw")
+        elif self._new_colorcode_puls_acceptance.get() == True:
+
+            for idx, value in enumerate(['buckling', 'ultimate']):
+                self._main_canvas.create_text(11, start_text_shift+20*idx, text=value,
+                                              font=self._text_size["Text 10 bold"],
+                                              fill='black',
+                                              anchor="nw")
+                self._main_canvas.create_text(10, start_text+20*idx, text=value,
+                                              font=self._text_size["Text 10 bold"],
+                                              fill='blue' if value == 'ultimate' else 'red',
+                                              anchor="nw")
 
     def color_code_line(self, state, line, coord1, vector):
 
@@ -2332,6 +2372,22 @@ class Application():
                 if self._new_label_color_coding.get():
                     self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                                   text=round(state['color code']['lines'][line]['Total uf rp'],2))
+        elif self._new_colorcode_puls_acceptance.get():
+            if state['color code']['lines'][line]['PULS method'] == None:
+                color = 'black'
+            else:
+                color = 'blue' if state['color code']['lines'][line]['PULS method'] == 'ultimate' else 'red'
+            if self._new_label_color_coding.get():
+                self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                              text=round(state['color code']['lines'][line]['PULS method'], 2))
+        elif self._new_colorcode_puls_sp_or_up.get():
+            if state['color code']['lines'][line]['PULS sp or up'] == None:
+                color = 'black'
+            else:
+                color = 'blue' if state['color code']['lines'][line]['PULS sp or up'] == 'SP' else 'red'
+            if self._new_label_color_coding.get():
+                self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                              text=round(state['color code']['lines'][line]['PULS sp or up'], 2))
         else:
             color = 'black'
 
@@ -4474,7 +4530,8 @@ class Application():
             self._new_colorcode_sigmax.get(), self._new_colorcode_sigmay1.get(), self._new_colorcode_sigmay2.get(),
             self._new_colorcode_tauxy.get(), self._new_colorcode_structure_type.get(),
             self._new_colorcode_section_modulus.get(), self._new_colorcode_fatigue.get(),
-            self._new_colorcode_total.get()].count(True) > 1:
+            self._new_colorcode_total.get(), self._new_colorcode_puls_sp_or_up.get(),
+            self._new_colorcode_puls_acceptance.get()].count(True) > 1:
             messagebox.showinfo(title='Information', message='Can only select on color code at the time.')
             self._new_colorcode_beams.set(False)
             self._new_colorcode_plates.set(False)
@@ -4488,6 +4545,8 @@ class Application():
             self._new_colorcode_section_modulus.set(False)
             self._new_colorcode_fatigue.set(False)
             self._new_colorcode_total.set(False)
+            self._new_colorcode_puls_acceptance.set(False)
+            self._new_colorcode_puls_sp_or_up.set(False)
         self.update_frame()
 
     def logger(self, line = None, point = None, move_coords = None):
