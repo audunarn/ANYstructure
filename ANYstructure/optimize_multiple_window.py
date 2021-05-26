@@ -347,7 +347,7 @@ class CreateOptimizeMultipleWindow():
 
 
 
-        start_y, start_x, dy = 530, 200, 35
+        start_y, start_x, dy = 530, 100, 35
         tk.Label(self._frame,text='Check for minimum section modulus').place(x=start_x+dx*9.7,y=start_y+4*dy)
         tk.Label(self._frame, text='Check for minimum plate thk.').place(x=start_x+dx*9.7,y=start_y+5*dy)
         tk.Label(self._frame, text='Check for minimum shear area').place(x=start_x+dx*9.7,y=start_y+6*dy)
@@ -376,8 +376,23 @@ class CreateOptimizeMultipleWindow():
         self._toggle_btn = tk.Button(self._frame, text="Iterate predefiened stiffeners", relief="raised",
                                      command=self.toggle, bg = 'salmon')
 
-        self._toggle_btn.place(x=start_x+dx*8.2, y=start_y - dy * 13)
+        self._toggle_btn.place(x=start_x+dx*9, y=start_y - dy * 13)
         self._toggle_object, self._filez = None, None
+
+        # Stress scaling
+        self._new_fup = tk.DoubleVar()
+        self._new_fup.set(0.5)
+        self._new_fdwn = tk.DoubleVar()
+        self._new_fdwn.set(1)
+
+        tk.Label(self._frame, text='Factor when scaling stresses up, fup')\
+            .place(x=start_x + dx * 13, y=start_y + 5 * dy)
+        ent_fup = tk.Entry(self._frame, textvariable=self._new_fup, width = 10)
+        ent_fup.place(x=start_x + dx * 15.5, y=start_y + 5 * dy)
+        tk.Label(self._frame, text='Factor when scaling stresses up, fdown')\
+            .place(x=start_x + dx * 13, y=start_y + 6 * dy)
+        ent_fdwn = tk.Entry(self._frame, textvariable=self._new_fdwn, width = 10)
+        ent_fdwn.place(x=start_x + dx * 15.5, y=start_y + 6 * dy)
 
         self.draw_properties()
 
@@ -561,7 +576,8 @@ class CreateOptimizeMultipleWindow():
                                                           slamming_press=slamming_pressure,
                                                           predefined_stiffener_iter = predefined_stiffener_iter,
                                                           processes=self._new_processes.get(),
-                                                          min_max_span=max_min_span, use_weight_filter=False))
+                                                          min_max_span=max_min_span, use_weight_filter=False,
+                                                               fdwn = self._new_fdwn.get(), fup = self._new_fdwn.get()))
             self._harmonizer_data[line] = {}
 
             counter += 1
@@ -696,7 +712,8 @@ class CreateOptimizeMultipleWindow():
                                                       fat_press_ext_int=fat_press, slamming_press=slamming_pressure,
                                                       predefined_stiffener_iter = None,
                                                       processes=self._new_processes.get(), min_max_span=None,
-                                                      use_weight_filter=True))[0:4]
+                                                      use_weight_filter=True,
+                                                      fdwn = self._new_fdwn.get(), fup = self._new_fdwn.get()))[0:4]
                 print('Master:', master_line, 'Slave', slave_line, 'Check', chk_result[-1])
                 harm_res[master_line].append(chk_result)
 

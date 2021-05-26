@@ -389,6 +389,20 @@ class CreateOptGeoWindow():
         tk.Checkbutton(self._frame, variable=self._new_check_local_buckling).place(x=start_x + dx * 12,
                                                                                    y=start_y + 10 * dy)
 
+        # Stress scaling
+        self._new_fup = tk.DoubleVar()
+        self._new_fup.set(0.5)
+        self._new_fdwn = tk.DoubleVar()
+        self._new_fdwn.set(1)
+
+        tk.Label(self._frame, text='Factor when scaling stresses up, fup')\
+            .place(x=start_x + dx * 9.7, y=start_y + 12 * dy)
+        ent_fup = tk.Entry(self._frame, textvariable=self._new_fup, width = 5)
+        ent_fup.place(x=start_x + dx * 12, y=start_y + 12 * dy)
+        tk.Label(self._frame, text='Factor when scaling stresses up, fdown')\
+            .place(x=start_x + dx * 9.7, y=start_y + 13 * dy)
+        ent_fdwn = tk.Entry(self._frame, textvariable=self._new_fdwn, width = 5)
+        ent_fdwn.place(x=start_x + dx * 12, y=start_y + 13 * dy)
 
         self._toggle_btn = tk.Button(self._frame, text="Iterate predefiened stiffeners", relief="raised",
                                      command=self.toggle, bg = 'salmon')
@@ -587,7 +601,8 @@ class CreateOptGeoWindow():
                                               frame_height=self.opt_get_distance(), frame_distance = distances,
                                               predefined_stiffener_iter=self._filez,
                                               processes = self._new_processes.get(),
-                                              slamming_press=slamming_press, opt_girder_prop=opt_girder_prop)
+                                              slamming_press=slamming_press, opt_girder_prop=opt_girder_prop,
+                                              fdwn = self._new_fdwn.get(), fup = self._new_fdwn.get())
             self._geo_results = geo_results
 
             if len([val*2 for val in self._geo_results.keys()]) != 0:

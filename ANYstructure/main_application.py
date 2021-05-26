@@ -1,10 +1,8 @@
  # -*- coding: utf-8 -*-
 
-import os, time
 import tkinter as tk
 from tkinter import filedialog
 from tkinter import messagebox
-import json
 from ANYstructure.calc_loads import *
 from ANYstructure.calc_structure import *
 import ANYstructure.load_window as load_window
@@ -261,7 +259,7 @@ class Application():
 
         tk.Label(self._main_fr, text='Input point coordinates [mm]', font=self._text_size['Text 9 bold'],
                  bg = self._general_color)\
-            .place(rely=point_start - 0.027777778, relx=-0.018, relwidth = 0.15, anchor = tk.NW)
+            .place(rely=point_start - 0.027777778, relx=point_x_start, anchor = tk.NW)
         tk.Label(self._main_fr, text='Point x (horizontal) [mm]:',font="Text 9", bg = self._general_color)\
             .place(relx=point_x_start, rely=point_start)
         tk.Label(self._main_fr, text='Point y (vertical)   [mm]:',font="Text 9", bg = self._general_color)\
@@ -340,7 +338,7 @@ class Application():
         line_start, line_x = point_start+0.08, 0.005208333
         tk.Label(self._main_fr, text='Input line from "point number" to "point number"',
                  font=self._text_size['Text 9 bold'], bg = self._general_color)\
-            .place(rely=line_start - 0.025, relx=-0.034, relwidth = 0.25, anchor = tk.NW)
+            .place(rely=line_start - 0.025, relx=line_x, anchor = tk.NW)
         tk.Label(self._main_fr, text='From point number:',font="Text 9", bg = self._general_color)\
             .place(relx=line_x, rely=line_start)
         tk.Label(self._main_fr, text='To point number:',font="Text 9", bg = self._general_color)\
@@ -390,7 +388,7 @@ class Application():
         del_start, del_x = line_start + 0.075,0.005208333
         tk.Label(self._main_fr, text='Delete lines and points (or left/right click and use "Delete key")',
                  font=self._text_size['Text 9 bold'], bg = self._general_color)\
-            .place(rely=del_start - 0.027777778*1,relx=-0.008, relwidth = 0.25, anchor = tk.NW)
+            .place(rely=del_start - 0.027777778*1,relx=del_x, anchor = tk.NW)
         self._ent_delete_line = tk.Entry(self._main_fr, textvariable=self._new_delete_line,
                                         width=int(ent_width * 1),
                                          bg = self._entry_color, fg = self._entry_text_color)
@@ -425,7 +423,7 @@ class Application():
         types_start = 0.005208333
         tk.Label(self._main_fr, text='Structural and calculation properties input below:',
                  font=self._text_size['Text 9 bold'],
-                 bg = self._general_color ).place(rely=prop_vert_start-delta_y,relx=-0.034, relwidth = 0.25,
+                 bg = self._general_color ).place(rely=prop_vert_start-delta_y,relx=types_start,
                                                   anchor = tk.NW)
         def show_message():
             messagebox.showinfo(title='Structure type',message='Types - sets default stresses (sigy1/sigy2/sigx/tauxy)'

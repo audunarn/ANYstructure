@@ -165,12 +165,18 @@ class PulsExcel():
             for data_idx, id in enumerate(all_ids):
                 return_dict[id] = {}
                 return_dict[id]['Identification'] = id
+                same, same_idx = False, 2
                 for top_name, name, data, unit in zip(all_top_names, all_names, all_data[data_idx], all_units):
                     if top_name != None:
                         current_top_row = top_name
                         return_dict[id][current_top_row] = {}
                     if name in return_dict[id][current_top_row].keys():
-                        name = name + ' 2'
+                        same = True
+                        name = name + ' ' +str(same_idx)
+                        same_idx += 1
+                    elif same == True and name not in return_dict[id][current_top_row].keys():
+                        same = False
+                        same_idx = 2
                     return_dict[id][current_top_row][name] = [data, unit]
                 if run == 'UP':
                     return_dict[id]['Ultimate capacity']['Actual usage Factor'] = \
