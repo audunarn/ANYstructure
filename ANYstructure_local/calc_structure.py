@@ -2,15 +2,10 @@ import math
 from scipy.special import gammaln
 from scipy.stats import gamma as gammadist
 import numpy as np
-import ANYstructure_local.PULS.excel_inteface as pulsxl
 import ANYstructure_local.helper as hlp
-from multiprocessing import  Pool, cpu_count, Process
-import multiprocessing
-import shutil, os, time, datetime, json
-from itertools import islice
-import pythoncom
-import random, itertools
-
+import os, time, datetime, json
+import random
+import ANYstructure_local.excel_inteface as pulsxl
 import ANYstructure_local.SN_curve_parameters as snc
 
 class Structure():
@@ -1433,80 +1428,80 @@ class PULSpanel():
         else:
             return None
 
-    def run_all_multi(self):
+    # def run_all_multi(self):
+    #
+    #     tasks = []
+    #
+    #     if len(self._all_to_run) > 20:
+    #         processes = 10#max(cpu_count() - 1, 1)
+    #
+    #         def chunks(data, SIZE=10000):
+    #             it = iter(data)
+    #             for i in range(0, len(data), SIZE):
+    #                 yield {k: data[k] for k in islice(it, SIZE)}
+    #
+    #         # Sample run:
+    #
+    #         for item in chunks({key: value for key, value in ex.run_dict.items()}, int(len(self._all_to_run)/processes)):
+    #             tasks.append(item)
+    #     else:
+    #         tasks.append(self._all_to_run)
+    #     # [print(task) for task in tasks]
+    #     # print(self._all_to_run)
+    #     # quit()
+    #     queue = multiprocessing.SimpleQueue()
+    #
+    #     for idx, name in enumerate(tasks):
+    #         p = Process(target=self.run_all_multi_sub, args=(name, queue, idx+1))
+    #         p.start()
+    #     p.join()
+    #     for task in tasks:
+    #         print(queue.get())
 
-        tasks = []
-
-        if len(self._all_to_run) > 20:
-            processes = 10#max(cpu_count() - 1, 1)
-
-            def chunks(data, SIZE=10000):
-                it = iter(data)
-                for i in range(0, len(data), SIZE):
-                    yield {k: data[k] for k in islice(it, SIZE)}
-
-            # Sample run:
-
-            for item in chunks({key: value for key, value in ex.run_dict.items()}, int(len(self._all_to_run)/processes)):
-                tasks.append(item)
-        else:
-            tasks.append(self._all_to_run)
-        # [print(task) for task in tasks]
-        # print(self._all_to_run)
-        # quit()
-        queue = multiprocessing.SimpleQueue()
-
-        for idx, name in enumerate(tasks):
-            p = Process(target=self.run_all_multi_sub, args=(name, queue, idx+1))
-            p.start()
-        p.join()
-        for task in tasks:
-            print(queue.get())
-
-    def run_all_multi_sub(self, iterator, queue = None, idx = 0):
-        '''
-        Returning following results.:
-
-        Identification:  name of line/run
-        Plate geometry:       dict_keys(['Length of panel', 'Stiffener spacing', 'Plate thick.'])
-        Primary stiffeners: dict_keys(['Number of stiffeners', 'Stiffener type', 'Stiffener boundary', 'Stiff. Height',
-                            'Web thick.', 'Flange width', 'Flange thick.', 'Flange ecc.', 'Tilt angle'])
-        Secondary stiffeners. dict_keys(['Number of sec. stiffeners', 'Secondary stiffener type', 'Stiffener boundary',
-                            'Stiff. Height', 'Web thick.', 'Flange width', 'Flange thick.'])
-        Model imperfections. dict_keys(['Imp. level', 'Plate', 'Stiffener', 'Stiffener tilt'])
-        Material: dict_keys(['Modulus of elasticity', "Poisson's ratio", 'Yield stress plate', 'Yield stress stiffener'])
-        Aluminium prop: dict_keys(['HAZ pattern', 'HAZ red. factor'])
-        Applied loads: dict_keys(['Axial stress', 'Trans. stress', 'Shear stress', 'Pressure (fixed)'])
-        Bound cond.: dict_keys(['In-plane support'])
-        Global elastic buckling: dict_keys(['Axial stress', 'Trans. Stress', 'Trans. stress', 'Shear stress'])
-        Local elastic buckling: dict_keys(['Axial stress', 'Trans. Stress', 'Trans. stress', 'Shear stress'])
-        Ultimate capacity: dict_keys(['Actual usage Factor', 'Allowable usage factor', 'Status'])
-        Failure modes: dict_keys(['Plate buckling', 'Global stiffener buckling', 'Torsional stiffener buckling',
-                            'Web stiffener buckling'])
-        Buckling strength: dict_keys(['Actual usage Factor', 'Allowable usage factor', 'Status'])
-        Local geom req (PULS validity limits): dict_keys(['Plate slenderness', 'Web slend', 'Web flange ratio',
-                            'Flange slend ', 'Aspect ratio'])
-        CSR-Tank requirements (primary stiffeners): dict_keys(['Plating', 'Web', 'Web-flange', 'Flange', 'stiffness'])
-
-        :return:
-        '''
-        old_file = os.path.dirname(os.path.abspath(__file__))+'\\PULS\\PulsExcel_new - Copy (1).xlsm'
-        new_file = os.path.dirname(os.path.abspath(__file__))+'\\PULS\\PulsExcel_new - Copy multi ('+str(idx)+').xlsm'
-        shutil.copy(old_file, new_file)
-        #time.sleep(idx*5)
-        pythoncom.CoInitialize()
-
-        my_puls = pulsxl.PulsExcel(new_file, visible=False)
-        try:
-            my_puls.set_multiple_rows_batch(20, iterator)
-            my_puls.calculate_panels()
-            all_results = my_puls.get_all_results_batch()
-            my_puls.close_book(save=True)
-            queue.put(all_results)
-            os.remove(new_file)
-        except (BaseException, AttributeError):
-            my_puls.close_book(save=False)
-            queue.put(None)
+    # def run_all_multi_sub(self, iterator, queue = None, idx = 0):
+    #     '''
+    #     Returning following results.:
+    #
+    #     Identification:  name of line/run
+    #     Plate geometry:       dict_keys(['Length of panel', 'Stiffener spacing', 'Plate thick.'])
+    #     Primary stiffeners: dict_keys(['Number of stiffeners', 'Stiffener type', 'Stiffener boundary', 'Stiff. Height',
+    #                         'Web thick.', 'Flange width', 'Flange thick.', 'Flange ecc.', 'Tilt angle'])
+    #     Secondary stiffeners. dict_keys(['Number of sec. stiffeners', 'Secondary stiffener type', 'Stiffener boundary',
+    #                         'Stiff. Height', 'Web thick.', 'Flange width', 'Flange thick.'])
+    #     Model imperfections. dict_keys(['Imp. level', 'Plate', 'Stiffener', 'Stiffener tilt'])
+    #     Material: dict_keys(['Modulus of elasticity', "Poisson's ratio", 'Yield stress plate', 'Yield stress stiffener'])
+    #     Aluminium prop: dict_keys(['HAZ pattern', 'HAZ red. factor'])
+    #     Applied loads: dict_keys(['Axial stress', 'Trans. stress', 'Shear stress', 'Pressure (fixed)'])
+    #     Bound cond.: dict_keys(['In-plane support'])
+    #     Global elastic buckling: dict_keys(['Axial stress', 'Trans. Stress', 'Trans. stress', 'Shear stress'])
+    #     Local elastic buckling: dict_keys(['Axial stress', 'Trans. Stress', 'Trans. stress', 'Shear stress'])
+    #     Ultimate capacity: dict_keys(['Actual usage Factor', 'Allowable usage factor', 'Status'])
+    #     Failure modes: dict_keys(['Plate buckling', 'Global stiffener buckling', 'Torsional stiffener buckling',
+    #                         'Web stiffener buckling'])
+    #     Buckling strength: dict_keys(['Actual usage Factor', 'Allowable usage factor', 'Status'])
+    #     Local geom req (PULS validity limits): dict_keys(['Plate slenderness', 'Web slend', 'Web flange ratio',
+    #                         'Flange slend ', 'Aspect ratio'])
+    #     CSR-Tank requirements (primary stiffeners): dict_keys(['Plating', 'Web', 'Web-flange', 'Flange', 'stiffness'])
+    #
+    #     :return:
+    #     '''
+    #     old_file = os.path.dirname(os.path.abspath(__file__))+'\\PULS\\PulsExcel_new - Copy (1).xlsm'
+    #     new_file = os.path.dirname(os.path.abspath(__file__))+'\\PULS\\PulsExcel_new - Copy multi ('+str(idx)+').xlsm'
+    #     shutil.copy(old_file, new_file)
+    #     #time.sleep(idx*5)
+    #     pythoncom.CoInitialize()
+    #
+    #     my_puls = pulsxl.PulsExcel(new_file, visible=False)
+    #     try:
+    #         my_puls.set_multiple_rows_batch(20, iterator)
+    #         my_puls.calculate_panels()
+    #         all_results = my_puls.get_all_results_batch()
+    #         my_puls.close_book(save=True)
+    #         queue.put(all_results)
+    #         os.remove(new_file)
+    #     except (BaseException, AttributeError):
+    #         my_puls.close_book(save=False)
+    #         queue.put(None)
 
     def get_puls_line_results(self, line):
         if line not in self._run_results.keys():
