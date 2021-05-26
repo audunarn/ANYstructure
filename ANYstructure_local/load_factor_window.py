@@ -1,7 +1,7 @@
 # Audun
 
 import tkinter as tk
-import ANYstructure.example_data as test
+import ANYstructure_local.example_data as test
 import os
 from _tkinter import TclError
 

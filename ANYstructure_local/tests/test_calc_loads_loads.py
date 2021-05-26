@@ -1,6 +1,6 @@
-import ANYstructure.calc_loads as calcl
+import ANYstructure_local.calc_loads as calcl
 import pytest
-import ANYstructure.example_data as ex
+import ANYstructure_local.example_data as ex
 
 # Testing the Structure class
 

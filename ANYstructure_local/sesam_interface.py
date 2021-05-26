@@ -3,8 +3,8 @@ Main file for handeling interface toward DNVGL software.
 Consist mainly of helper functions.
 '''
 
-import ANYstructure.helper as hlp
-import ANYstructure.pl_stf_window as plstf
+import ANYstructure_local.helper as hlp
+import ANYstructure_local.pl_stf_window as plstf
 
 def point_to_js_command(point_coord, point_name):
     '''
@@ -91,7 +91,7 @@ class JSfile:
             self.output_lines.append(beam_name + '.section = '+section.__str__()+';\n')
 
 if __name__ == '__main__':
-    import ANYstructure.example_data as test
+    import ANYstructure_local.example_data as test
     from tkinter import filedialog
 
     imp_file = open('test_js.js', 'w')

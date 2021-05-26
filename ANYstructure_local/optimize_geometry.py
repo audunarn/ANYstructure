@@ -2,15 +2,15 @@
 import tkinter as tk
 from _tkinter import TclError
 from tkinter.ttk import Progressbar
-import ANYstructure.optimize as op
+import ANYstructure_local.optimize as op
 import numpy as np
 import time
 from tkinter import messagebox
-import ANYstructure.example_data as test
-from ANYstructure.helper import *
+import ANYstructure_local.example_data as test
+from ANYstructure_local.helper import *
 import copy, pickle
-import ANYstructure.calc_structure
-import ANYstructure.helper as hlp
+import ANYstructure_local.calc_structure
+import ANYstructure_local.helper as hlp
 from tkinter.filedialog import askopenfilenames
 from multiprocessing import cpu_count
 from tkinter import filedialog
@@ -548,7 +548,7 @@ class CreateOptGeoWindow():
                 fatigue_objects.append(fat_obj_single)
 
             if __name__ == '__main__':
-                import ANYstructure.example_data as ex
+                import ANYstructure_local.example_data as ex
                 lateral_press.append(200)  # for testing
                 slamming_press.append(0)
                 fatigue_objects.append(ex.get_fatigue_object())

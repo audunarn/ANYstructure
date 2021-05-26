@@ -2,16 +2,16 @@
 import tkinter as tk
 from _tkinter import TclError
 from tkinter.ttk import Progressbar
-import ANYstructure.optimize as op
+import ANYstructure_local.optimize as op
 import numpy as np
 import time, os
 from tkinter import messagebox
-import ANYstructure.example_data as test
-from ANYstructure.helper import *
-import ANYstructure.helper as hlp
+import ANYstructure_local.example_data as test
+from ANYstructure_local.helper import *
+import ANYstructure_local.helper as hlp
 from tkinter.filedialog import askopenfilenames
 from multiprocessing import cpu_count
-import ANYstructure.optimize as opt
+import ANYstructure_local.optimize as opt
 from multiprocessing import Pool, cpu_count
 
 

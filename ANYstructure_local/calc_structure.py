@@ -2,8 +2,8 @@ import math
 from scipy.special import gammaln
 from scipy.stats import gamma as gammadist
 import numpy as np
-import ANYstructure.PULS.excel_inteface as pulsxl
-import ANYstructure.helper as hlp
+import ANYstructure_local.PULS.excel_inteface as pulsxl
+import ANYstructure_local.helper as hlp
 from multiprocessing import  Pool, cpu_count, Process
 import multiprocessing
 import shutil, os, time, datetime, json
@@ -11,7 +11,7 @@ from itertools import islice
 import pythoncom
 import random, itertools
 
-import ANYstructure.SN_curve_parameters as snc
+import ANYstructure_local.SN_curve_parameters as snc
 
 class Structure():
     '''
@@ -1657,13 +1657,13 @@ def f(name, queue):
 
 
 if __name__ == '__main__':
-    import ANYstructure.example_data as ex
+    import ANYstructure_local.example_data as ex
     # PULS = PULSpanel(ex.run_dict, puls_sheet_location=r'C:\Github\ANYstructure\ANYstructure\PULS\PulsExcel_new - Copy (1).xlsm')
     # PULS.run_all_multi()
     PULS = PULSpanel(puls_sheet_location=r'C:\Github\ANYstructure\ANYstructure\PULS\PulsExcel_new - generator.xlsm')
     for dummy in range(100):
         PULS.generate_random_results(batch_size=10)
-    # import ANYstructure.example_data as test
+    # import ANYstructure_local.example_data as test
     # from multiprocessing import Process
     #
     # queue = multiprocessing.SimpleQueue()
@@ -1690,7 +1690,7 @@ if __name__ == '__main__':
     # print(my_buc.get_net_effective_plastic_section_modulus())
 
     #my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0))
-    # import ANYstructure.example_data as ex
+    # import ANYstructure_local.example_data as ex
     # for example in [CalcScantlings(ex.obj_dict), CalcScantlings(ex.obj_dict2), CalcScantlings(ex.obj_dict_L)]:
     #     my_test = example
         # my_test = CalcScantlings(example)

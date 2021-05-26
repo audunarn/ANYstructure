@@ -1,9 +1,9 @@
 # This scripts provide dtat to be used for testing the code
 
-import ANYstructure.make_grid_numpy as grid
-import ANYstructure.calc_loads as load
-import ANYstructure.calc_structure as calc_structure
-import ANYstructure.helper as hlp
+import ANYstructure_local.make_grid_numpy as grid
+import ANYstructure_local.calc_loads as load
+import ANYstructure_local.calc_structure as calc_structure
+import ANYstructure_local.helper as hlp
 import random
 
 structure_types = {'vertical': ['BBS', 'SIDE_SHELL', 'SSS'],
@@ -339,7 +339,7 @@ def get_grid_coord_from_points_coords(point_coord):
 
 def get_section_list():
     ''' Returning a section list. '''
-    import ANYstructure.pl_stf_window as plstf
+    import ANYstructure_local.pl_stf_window as plstf
     return [plstf.Section(obj_dict), plstf.Section(obj_dict2), plstf.Section(obj_dict_L)]
 
 

@@ -2,12 +2,12 @@
 import tkinter as tk
 from _tkinter import TclError
 
-import ANYstructure.optimize as op
+import ANYstructure_local.optimize as op
 import numpy as np
 import time, os, datetime
 from tkinter import messagebox
-import ANYstructure.example_data as test
-import ANYstructure.helper as hlp
+import ANYstructure_local.example_data as test
+import ANYstructure_local.helper as hlp
 from tkinter.filedialog import askopenfilenames
 from multiprocessing import cpu_count
 

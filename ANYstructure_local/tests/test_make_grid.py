@@ -1,4 +1,4 @@
-import ANYstructure.make_grid_numpy as grid
+import ANYstructure_local.make_grid_numpy as grid
 import pytest
 import numpy as np
 

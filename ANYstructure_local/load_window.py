@@ -1,8 +1,8 @@
 import tkinter as tk
-from ANYstructure.calc_loads import *
+from ANYstructure_local.calc_loads import *
 from tkinter import messagebox
-from ANYstructure.helper import *
-import ANYstructure.example_data as test
+from ANYstructure_local.helper import *
+import ANYstructure_local.example_data as test
 
 class CreateLoadWindow():
     '''

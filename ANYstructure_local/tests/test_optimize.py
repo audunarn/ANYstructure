@@ -1,6 +1,6 @@
-import ANYstructure.optimize as opt
-import ANYstructure.example_data as ex
-import ANYstructure.calc_structure as calc
+import ANYstructure_local.optimize as opt
+import ANYstructure_local.example_data as ex
+import ANYstructure_local.calc_structure as calc
 import numpy as np
 import pytest
 

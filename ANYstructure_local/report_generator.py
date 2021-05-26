@@ -6,7 +6,7 @@ from reportlab.platypus import Spacer
 from reportlab.lib.styles import  ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate
 from PIL import Image
-import ANYstructure.example_data as test
+import ANYstructure_local.example_data as test
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import mm, inch
@@ -14,7 +14,7 @@ from reportlab.pdfgen import canvas
 from reportlab.platypus import Image, Paragraph, Table
 from time import strftime, gmtime
 import os
-import ANYstructure.helper as hlp
+import ANYstructure_local.helper as hlp
 from matplotlib import pyplot as plt
 import matplotlib
 cmap_sections = plt.get_cmap('jet')
@@ -652,7 +652,7 @@ class LetterMaker(object):
 
 if __name__ == '__main__':
     import multiprocessing, ctypes, tkinter
-    import ANYstructure.main_application as app
+    import ANYstructure_local.main_application as app
     multiprocessing.freeze_support()
     errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
     root = tkinter.Tk()

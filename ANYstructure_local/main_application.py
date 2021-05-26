@@ -3,27 +3,27 @@
 import tkinter as tk
 from tkinter import filedialog
 from tkinter import messagebox
-from ANYstructure.calc_loads import *
-from ANYstructure.calc_structure import *
-import ANYstructure.load_window as load_window
-import ANYstructure.make_grid_numpy as grid
-import ANYstructure.grid_window as grid_window
-from ANYstructure.helper import *
+from ANYstructure_local.calc_loads import *
+from ANYstructure_local.calc_structure import *
+import ANYstructure_local.load_window as load_window
+import ANYstructure_local.make_grid_numpy as grid
+import ANYstructure_local.grid_window as grid_window
+from ANYstructure_local.helper import *
 import math, decimal
-import ANYstructure.optimize as op
-import ANYstructure.optimize_window as opw
-import ANYstructure.optimize_multiple_window as opwmult
-import ANYstructure.optimize_geometry as optgeo
-import ANYstructure.pl_stf_window as struc
-import ANYstructure.stresses_window as stress
-import ANYstructure.fatigue_window as fatigue
-import ANYstructure.load_factor_window as load_factors
+import ANYstructure_local.optimize as op
+import ANYstructure_local.optimize_window as opw
+import ANYstructure_local.optimize_multiple_window as opwmult
+import ANYstructure_local.optimize_geometry as optgeo
+import ANYstructure_local.pl_stf_window as struc
+import ANYstructure_local.stresses_window as stress
+import ANYstructure_local.fatigue_window as fatigue
+import ANYstructure_local.load_factor_window as load_factors
 from _tkinter import TclError
 import multiprocessing
-from ANYstructure.report_generator import LetterMaker
+from ANYstructure_local.report_generator import LetterMaker
 import os.path, os
 import ctypes
-import ANYstructure.sesam_interface as sesam
+import ANYstructure_local.sesam_interface as sesam
 from matplotlib import pyplot as plt
 import matplotlib
 

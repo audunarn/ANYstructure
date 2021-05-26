@@ -1,4 +1,4 @@
-from ANYstructure import main_application
+from ANYstructure_local import main_application
 import multiprocessing, ctypes
 import tkinter as tk
 

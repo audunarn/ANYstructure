@@ -390,7 +390,7 @@ def add_new_section(section_list, new_section):
 
 
 if __name__ == '__main__':
-    import ANYstructure.example_data as ex
+    import ANYstructure_local.example_data as ex
     from pathlib import Path
     #file = Path('C:\\Program Files\\DNVGL\\GeniE V8.0-21\\Libraries\\tbar.xml')
     all_returned = helper_read_section_file('C:\\Program Files\\DNVGL\\GeniE V8.0-21\\Libraries\\tbar.xml', to_csv='tbar.csv')

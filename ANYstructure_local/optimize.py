@@ -1,16 +1,16 @@
 #Optimize structure
 import numpy as np
-import ANYstructure.calc_structure as calc
+import ANYstructure_local.calc_structure as calc
 import itertools as it
 import time
 import random
 import matplotlib.pyplot as plt
 #from pyswarm import pso
 import copy
-import ANYstructure.helper as hlp
+import ANYstructure_local.helper as hlp
 #from opt_problem import MyProblem
 from multiprocessing import Pool, cpu_count
-import ANYstructure.example_data as test
+import ANYstructure_local.example_data as test
 #import psopy
 from math import ceil, floor
 from matplotlib import pyplot as plt
@@ -1118,7 +1118,7 @@ def plot_optimization_results(results, multiple = False):
     plt.show()
 
 if __name__ == '__main__':
-    import ANYstructure.example_data as ex
+    import ANYstructure_local.example_data as ex
     obj_dict = ex.obj_dict_sec_error
     fat_obj = ex.get_fatigue_object_problematic()
     fp = ex.get_fatigue_pressures_problematic()

@@ -1,7 +1,7 @@
 
 import tkinter as tk
 from _tkinter import TclError
-import ANYstructure.example_data as test
+import ANYstructure_local.example_data as test
 import os
 
 class CreateStructureWindow():
@@ -299,7 +299,7 @@ class CreateStructureWindow():
         Read a list.
         '''
         from tkinter import filedialog
-        import ANYstructure.helper as hlp
+        import ANYstructure_local.helper as hlp
         from pathlib import Path
 
         file = filedialog.askopenfile('r')
