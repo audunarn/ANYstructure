@@ -3,7 +3,6 @@
 import ANYstructure_local.make_grid_numpy as grid
 import ANYstructure_local.calc_loads as load
 import ANYstructure_local.calc_structure as calc_structure
-import ANYstructure_local.helper as hlp
 import random
 
 structure_types = {'vertical': ['BBS', 'SIDE_SHELL', 'SSS'],
