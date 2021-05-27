@@ -483,7 +483,7 @@ class Application():
             .place(relx = types_start+ delta_x*4.3, rely=prop_vert_start+16.9*delta_y)
         tk.Label(self._main_fr, text='Scale stresses when\n changing prop.', font=self._text_size['Text 9'],
                  bg = self._general_color)\
-            .place(relx = types_start+ delta_x*4.7, rely=prop_vert_start+16.5*delta_y, relwidth = 0.065)
+            .place(relx = types_start+ delta_x*4.7, rely=prop_vert_start+16.6*delta_y, relwidth = 0.065)
         tk.Label(self._main_fr, text='fup', font=self._text_size['Text 8'],
                  bg = self._general_color)\
             .place(relx = types_start+ delta_x*7.3, rely=prop_vert_start+17*delta_y)

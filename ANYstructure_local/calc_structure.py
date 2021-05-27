@@ -1655,9 +1655,9 @@ if __name__ == '__main__':
     import ANYstructure_local.example_data as ex
     # PULS = PULSpanel(ex.run_dict, puls_sheet_location=r'C:\Github\ANYstructure\ANYstructure\PULS\PulsExcel_new - Copy (1).xlsm')
     # PULS.run_all_multi()
-    PULS = PULSpanel(puls_sheet_location=r'C:\Github\ANYstructure\ANYstructure\PULS\PulsExcel_new - generator.xlsm')
+    PULS = PULSpanel(puls_sheet_location=r'C:\Github\ANYstructure\ANYstructure_local\PULS\PulsExcel_new - generator.xlsm')
     for dummy in range(100):
-        PULS.generate_random_results(batch_size=10)
+        PULS.generate_random_results(batch_size=10000)
     # import ANYstructure_local.example_data as test
     # from multiprocessing import Process
     #
