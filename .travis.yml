@@ -1,4 +1,4 @@
 language: python
 python: 3.9
-before_script: cd ANYstructure
+before_script: cd ANYstructure_local
 script: pytest
