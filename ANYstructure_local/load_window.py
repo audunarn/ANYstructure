@@ -8,6 +8,17 @@ class CreateLoadWindow():
     '''
     This class defines the external pressures on the hull (static and dynamic).
     '''
+    @staticmethod
+    def return_dummy_manual(line):
+        load = 'manual'
+        combination = 'manual'
+        load_comb_dict = {}
+        load_comb_dict[(combination, line, load)] = [tk.DoubleVar(), tk.DoubleVar(), tk.IntVar()]
+        load_comb_dict[(combination, line, load)][0].set(0)
+        load_comb_dict[(combination, line, load)][1].set(1)
+        load_comb_dict[(combination, line, load)][2].set(1)
+        return load_comb_dict
+
     def __init__(self, master,app=None):
 
         super(CreateLoadWindow, self).__init__()
@@ -498,6 +509,7 @@ class CreateLoadWindow():
         for line in self.app._line_dict.keys():
             self.make_load_comb_dict(line,'manual')
         if self._load_objects is not None:
+
             self.app.on_close_load_window(self._load_objects, self._load_count, self._load_comb_dict)
         self._frame.destroy()
 

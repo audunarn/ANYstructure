@@ -251,7 +251,8 @@ def helper_tank_test(line_name_obj, coord, defined_loads, load_condition,
 
 def helper_manual(line_name, comb_name,load_factors_all):
     calc_load, load_print = [], ['',]
-
+    if (comb_name, line_name[0], 'manual') not in load_factors_all.keys():
+        return [0, 'Manual pressure: 0']
     load_factors = load_factors_all[(comb_name, line_name[0], 'manual')]
     man_press = load_factors[0].get() * load_factors[1].get() * load_factors[2].get()
     if print_it:

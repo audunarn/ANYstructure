@@ -177,7 +177,9 @@ class Application():
                                 # 'line1':[Structure,CalcScantlings,Fatigue,Load,Combinations]
         self._tank_dict = {} # Main tank dictionary (created when BFS search is executed for the grid) (comp# : TankObj)
         self._load_dict = {} # Main load dictionary (created in separate load window (load# : [LoadObj, lines])
-        self._new_load_comb_dict = {} # Load combination dict.(comb,line,load) : [DoubleVar(), DoubleVar], IntVar()]
+        self._new_load_comb_dict = {} # Load combination dict.(comb,line,load) : [DoubleVar(), DoubleVar(), IntVar()]
+                                      # Example ('dnva', 'line25', 'comp3'),  ('dnvb', 'line14', 'comp4'),
+                                      # ('manual', 'line74', 'manual'), ('tanktest', 'line76', 'comp3')
         self._sections = list()  #  A list containing section property objects.
         #
         # -------------------------------------------------------------------------------------------------------------
@@ -792,11 +794,11 @@ class Application():
         self._ent_puls_sp_or_up.place(relx=types_start + shift_x  * delta_x, rely=prop_vert_start + 11.2 * delta_y,
                                     relwidth=0.041)
         tk.Checkbutton(self._main_fr, variable=self._new_colorcode_puls_sp_or_up, command=self.on_color_code_check)\
-            .place(relx=types_start + shift_x  * delta_x + 0.04, rely=prop_vert_start + 11.2 * delta_y)
+            .place(relx=types_start + shift_x  * delta_x + 0.041, rely=prop_vert_start + 11.2 * delta_y)
 
         self._ent_puls_method.place(relx=types_start+ shift_x *delta_x, rely=prop_vert_start + 12.5 * delta_y, relwidth = 0.041)
         tk.Checkbutton(self._main_fr, variable=self._new_colorcode_puls_acceptance, command=self.on_color_code_check)\
-            .place(relx=types_start+ shift_x *delta_x + 0.04, rely=prop_vert_start + 12.5 * delta_y)
+            .place(relx=types_start+ shift_x *delta_x + 0.041, rely=prop_vert_start + 12.5 * delta_y)
 
         self._ent_puls_uf.place(relx=types_start+ shift_x *delta_x, rely=prop_vert_start + 13.9 * delta_y, relwidth = 0.02,
                                 relheight = 0.025)
@@ -805,11 +807,11 @@ class Application():
 
 
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_sigmax, command = self.on_color_code_check)\
-            .place(relx=ent_relx + 0*geo_dx, rely=ent_rely+1.7*drely)
-        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_sigmay1, command = self.on_color_code_check)\
-            .place(relx=ent_relx + 1*geo_dx, rely=ent_rely+1.7*drely)
-        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_sigmay2, command = self.on_color_code_check)\
             .place(relx=ent_relx + 2*geo_dx, rely=ent_rely+1.7*drely)
+        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_sigmay1, command = self.on_color_code_check)\
+            .place(relx=ent_relx + 0*geo_dx, rely=ent_rely+1.7*drely)
+        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_sigmay2, command = self.on_color_code_check)\
+            .place(relx=ent_relx + 1*geo_dx, rely=ent_rely+1.7*drely)
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_tauxy, command = self.on_color_code_check)\
             .place(relx=ent_relx + 3*geo_dx, rely=ent_rely+1.7*drely)
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_structure_type, command = self.on_color_code_check)\
@@ -817,8 +819,6 @@ class Application():
         tk.Label(text='<-- check to color-\ncode stresses', font=self._text_size['Text 9'],
                  bg=self._general_color).place(relx=ent_relx + 4.5*geo_dx, rely=ent_rely+1.45*drely, relwidth = 0.06,
                                                relheight = 0.03)
-
-
 
         try:
             img_file_name = 'img_stf_button.gif'
@@ -1209,7 +1209,7 @@ class Application():
             delta_x = 0.026041667
             prop_vert_start = 0.29
             types_start = 0.005208333
-            self._ent_puls_up_boundary.place(relx=types_start + 5 * delta_x, rely=prop_vert_start + 11.4 * delta_y,
+            self._ent_puls_up_boundary.place(relx=types_start + 5.05 * delta_x, rely=prop_vert_start + 11.4 * delta_y,
                                          relwidth=0.02)
         else:
             self._ent_puls_up_boundary.place_forget()
@@ -1408,25 +1408,29 @@ class Application():
                     self._manual_created[3].place(relx=lc_x + 7 * lc_x_delta, rely=lc_y)
 
             #printing the results
-            try:
-                results = self.calculate_all_load_combinations_for_line(self._active_line)
-                self._result_label_dnva.config(text = 'DNV a [Pa]: ' + str(results['dnva']),
+
+            #try:
+            # TODO the reason manual does not show is because it others do noe exist in line_comb_dict. FIX.
+            results = self.calculate_all_load_combinations_for_line(self._active_line)
+
+            self._result_label_dnva.config(text = 'DNV a [Pa]: ' + str(results['dnva']),
+                                          font = self._text_size['Text 8'])
+            self._result_label_dnvb.config(text = 'DNV b [Pa]: ' + str(results['dnvb']),
+                                          font = self._text_size['Text 8'])
+            self._result_label_tanktest.config(text = 'TT [Pa]: ' + str(results['tanktest']),
                                               font = self._text_size['Text 8'])
-                self._result_label_dnvb.config(text = 'DNV b [Pa]: ' + str(results['dnvb']),
-                                              font = self._text_size['Text 8'])
-                self._result_label_tanktest.config(text = 'TT [Pa]: ' + str(results['tanktest']),
-                                                  font = self._text_size['Text 8'])
 
-                self._result_label_manual.config(text = 'Manual [Pa]: ' + str(results['manual']))
+            self._result_label_manual.config(text = 'Manual [Pa]: ' + str(results['manual']))
 
-                lc_y = self.results_gui_start+0.018518519
-                self._result_label_dnva.place(relx = lc_x+0*lc_x_delta, rely = lc_y+lc_y_delta*1.5)
-                self._result_label_dnvb.place(relx=lc_x+4*lc_x_delta, rely=lc_y+lc_y_delta*1.5)
-                self._result_label_tanktest.place(relx=lc_x+0*lc_x_delta, rely=lc_y+2.4*lc_y_delta)
+            lc_y = self.results_gui_start+0.018518519
+            self._result_label_dnva.place(relx = lc_x+0*lc_x_delta, rely = lc_y+lc_y_delta*1.5)
+            self._result_label_dnvb.place(relx=lc_x+4*lc_x_delta, rely=lc_y+lc_y_delta*1.5)
+            self._result_label_tanktest.place(relx=lc_x+0*lc_x_delta, rely=lc_y+2.4*lc_y_delta)
 
-                self._result_label_manual.place(relx=lc_x+4*lc_x_delta, rely=lc_y+2.4*lc_y_delta)
-            except KeyError:
-                pass
+            self._result_label_manual.place(relx=lc_x+4*lc_x_delta, rely=lc_y+2.4*lc_y_delta)
+            # except KeyError:
+            #     pass
+
 
     def slider_used(self, event):
         '''
@@ -1577,14 +1581,14 @@ class Application():
                     self._new_load_comb_dict[name][0].set(self._load_factors_dict[combination][1])
                     self._new_load_comb_dict[name][1].set(self._load_factors_dict[combination][2])
                     self._new_load_comb_dict[name][2].set(1)
-
-            name = ('manual', line,'manual')
-            self._new_load_comb_dict[name] = [tk.DoubleVar(), tk.DoubleVar(), tk.IntVar()]
-            self._new_load_comb_dict[name][0].set(0)
-            self._new_load_comb_dict[name][1].set(0)
-            self._new_load_comb_dict[name][2].set(0)
         else:
             pass
+
+        name = ('manual', line, 'manual')
+        self._new_load_comb_dict[name] = [tk.DoubleVar(), tk.DoubleVar(), tk.IntVar()]
+        self._new_load_comb_dict[name][0].set(0)
+        self._new_load_comb_dict[name][1].set(0)
+        self._new_load_comb_dict[name][2].set(0)
 
     def trace_acceptance_change(self, *args):
         try:
@@ -1928,6 +1932,12 @@ class Application():
                 except KeyError:
                     this_pressure = 0
                 rp_util = max(list(return_dict['utilization'][line].values()))
+
+                sig_x_uf = 0 if max(sig_x) == 0 else line_data[1].get_sigma_x()/max(sig_x)
+                sig_y1_uf = 0 if max(sig_y1) == 0 else line_data[1].get_sigma_x() / max(sig_y1)
+                sig_y2_uf = 0 if max(sig_y2) == 0 else line_data[1].get_sigma_x() / max(sig_y2)
+                tau_xy_uf = 0 if max(tau_xy) == 0 else line_data[1].get_sigma_x() / max(tau_xy)
+
                 line_color_coding[line] = {'plate': matplotlib.colors.rgb2hex(cmap_sections(thk_sort_unique.index(round(line_data[1]
                                                                               .get_pl_thk(),10))/len(thk_sort_unique))),
                                            'section': matplotlib.colors.rgb2hex(cmap_sections(sec_in_model[line_data[1]
@@ -1957,14 +1967,10 @@ class Application():
                                            'PULS uf color': puls_color,
                                            'fatigue uf' : rec_for_color[line]['fatigue'],
                                            'section uf' : rec_for_color[line]['section modulus'],
-                                           'sigma x': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_x()/
-                                                                                              max(sig_x))),
-                                           'sigma y1': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_y1()/
-                                                                                               max(sig_y1))),
-                                           'sigma y2': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_sigma_y2()/
-                                                                                               max(sig_y2))),
-                                           'tau xy': matplotlib.colors.rgb2hex(cmap_sections(line_data[1].get_tau_xy()/
-                                                                                             max(tau_xy)))}
+                                           'sigma x': matplotlib.colors.rgb2hex(cmap_sections(sig_x_uf)),
+                                           'sigma y1': matplotlib.colors.rgb2hex(cmap_sections(sig_y1_uf)),
+                                           'sigma y2': matplotlib.colors.rgb2hex(cmap_sections(sig_y2_uf)),
+                                           'tau xy':matplotlib.colors.rgb2hex(cmap_sections(tau_xy_uf)),}
                 return_dict['color code']['lines'] = line_color_coding
         return return_dict
 
@@ -2162,7 +2168,8 @@ class Application():
                                               anchor="nw")
                 self._main_canvas.create_text(10, start_text+20*idx, text=str(str(press) + ' Pa'),
                                               font=self._text_size["Text 10 bold"],
-                                              fill=matplotlib.colors.rgb2hex(cmap_sections(press/highest_pressure)),
+                                              fill=matplotlib.colors.rgb2hex(cmap_sections(0 if highest_pressure == 0
+                                                                                           else press/highest_pressure)),
                                               anchor="nw")
 
         elif all([self._new_colorcode_utilization.get() == True,
@@ -2198,7 +2205,8 @@ class Application():
                 self._main_canvas.create_text(10, start_text+20*idx, text=str(str(round(value,5)) + ' MPa'),
                                               font=self._text_size["Text 10 bold"],
                                               fill=matplotlib.colors.rgb2hex(
-                                                  cmap_sections(value/cc_state['max sigma x'])),
+                                                  cmap_sections(0 if cc_state['max sigma x'] == 0 else
+                                                                value/cc_state['max sigma x'])),
                                               anchor="nw")
         elif self._new_colorcode_sigmay1.get() == True:
             for idx, value in enumerate(cc_state['sigma y1 map']):
@@ -2209,7 +2217,8 @@ class Application():
                 self._main_canvas.create_text(10, start_text+20*idx, text=str(str(round(value,5)) + ' MPa'),
                                               font=self._text_size["Text 10 bold"],
                                               fill=matplotlib.colors.rgb2hex(
-                                                  cmap_sections(value/cc_state['max sigma y1'])),
+                                                  cmap_sections(0 if cc_state['max sigma y1'] == 0 else
+                                                                value/cc_state['max sigma y1'])),
                                               anchor="nw")
         elif self._new_colorcode_sigmay2.get() == True:
             for idx, value in enumerate(cc_state['sigma y2 map']):
@@ -2220,7 +2229,8 @@ class Application():
                 self._main_canvas.create_text(10, start_text+20*idx, text=str(str(round(value,5)) + ' MPa'),
                                               font=self._text_size["Text 10 bold"],
                                               fill=matplotlib.colors.rgb2hex(
-                                                  cmap_sections(value/cc_state['max sigma y2'])),
+                                                  cmap_sections(0 if cc_state['max sigma y2'] == 0 else
+                                                                value/cc_state['max sigma y2'])),
                                               anchor="nw")
         elif self._new_colorcode_tauxy.get() == True:
             for idx, value in enumerate(cc_state['tau xy map']):
@@ -2231,7 +2241,8 @@ class Application():
                 self._main_canvas.create_text(10, start_text+20*idx, text=str(str(round(value,5)) + ' MPa'),
                                               font=self._text_size["Text 10 bold"],
                                               fill=matplotlib.colors.rgb2hex(
-                                                  cmap_sections(value/cc_state['max tau xy'])),
+                                                  cmap_sections(0 if cc_state['max tau xy'] == 0 else
+                                                                value/cc_state['max tau xy'])),
                                               anchor="nw")
         elif self._new_colorcode_structure_type.get() == True:
             structure_type_map = list(cc_state['structure types map'])
@@ -2381,7 +2392,7 @@ class Application():
                 color = 'blue' if state['color code']['lines'][line]['PULS method'] == 'ultimate' else 'red'
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                              text=round(state['color code']['lines'][line]['PULS method'], 2))
+                                              text=state['color code']['lines'][line]['PULS method'])
         elif self._new_colorcode_puls_sp_or_up.get():
             if state['color code']['lines'][line]['PULS sp or up'] == None:
                 color = 'black'
@@ -2389,7 +2400,7 @@ class Application():
                 color = 'blue' if state['color code']['lines'][line]['PULS sp or up'] == 'SP' else 'red'
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                              text=round(state['color code']['lines'][line]['PULS sp or up'], 2))
+                                              text=state['color code']['lines'][line]['PULS sp or up'])
         else:
             color = 'black'
 
@@ -3070,6 +3081,8 @@ class Application():
         results = {} #dict - dnva/dnvb/tanktest/manual
         load_info = []
         # calculating for DNV a and DNV b
+
+
         for dnv_ab in ['dnva', 'dnvb']: #, load_factors in self._load_factors_dict.items():
             results[dnv_ab] = []
             for load_condition in self._load_conditions[0:2]:
@@ -3083,6 +3096,7 @@ class Application():
         res_val = self.calculate_one_load_combination(line, "tanktest", 'tanktest')
         results['tanktest'].append(res_val[0])
         [load_info.append(val) for val in res_val[1]]
+
 
         # calculating for manual condition
         results['manual'] = []
@@ -4335,6 +4349,7 @@ class Application():
         Setting properties created in load window.
         :return:
         '''
+
         try:
             img_file_name = 'img_ext_pressure_button.gif'
             if os.path.isfile('images/' + img_file_name):

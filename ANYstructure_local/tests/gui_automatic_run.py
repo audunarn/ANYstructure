@@ -56,9 +56,9 @@ my_app.delete_line(line='line3')
 my_dict['_new_line_p1'].set(3)
 my_dict['_new_line_p2'].set(4)
 
-my_app.new_line()
-
 print(my_dict['_line_dict'])
+
+my_app.gui_load_combinations(None)
 
 my_app.grid_find_tanks()
 my_app.grid_display_tanks()
