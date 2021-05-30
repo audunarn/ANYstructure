@@ -317,6 +317,7 @@ class CreateOptGeoWindow():
         self.algorithm_random_label = tk.Label(self._frame, text='Number of trials')
         tk.Button(self._frame, text='algorith information', command=self.algorithm_info, bg='white') \
             .place(x=start_x + dx * 10, y=start_y + dy * 2)
+
         self.run_button = tk.Button(self._frame, text='RUN OPTIMIZATION!', command=self.run_optimizaion, bg='red',
                                     font='Verdana 10', fg='Yellow')
         self.run_button.place(x=start_x + dx * 10, y=start_y)
@@ -426,6 +427,11 @@ class CreateOptGeoWindow():
                                     font='Verdana 10',fg='black')
         self.run_results.place(x=start_x+dx*13, y=start_y - dy * 18)
 
+        self.run_results_prev = tk.Button(self._frame,text='Show previous\n'
+                                                      'results', command=self.show_previous_results, bg='white',
+                                    font='Verdana 10',fg='black')
+        self.run_results_prev.place(x=start_x+dx*15, y=start_y - dy * 20)
+
 
         # ----------------------------------END OF OPTIMIZE SINGLE COPY-----------------------------------------------
         self.progress_count = tk.IntVar()
@@ -507,6 +513,15 @@ class CreateOptGeoWindow():
             self._ent_maxiter.place(x=start_x + dx * 15, y=start_y - 1 * dy)
             self._ent_minstep.place(x=start_x + dx * 15, y=start_y + 0 * dy)
             self._ent_minfunc.place(x=start_x + dx * 15, y=start_y + 1 * dy)
+
+    def show_previous_results(self):
+        # if type(self._geo_results) is not list():
+        #     if self._geo_results is not None:
+        #         return
+        # else:
+        #     if self._geo_results[0] is not None:
+        #         return
+        self.draw_select_canvas(opt_results=self._geo_results)
 
     def run_optimizaion(self, load_pre = False, save_results = True):
         '''
@@ -611,6 +626,7 @@ class CreateOptGeoWindow():
                                                            *tuple([val*2 for val in self._geo_results.keys()]),
                                                            command=self.get_plate_field_options)
                 self._ent_option_fractions.place(x=self._option_fractions_place[0], y=self._option_fractions_place[1])
+
             # #SAVING RESULTS
             # if save_results:
             #     with open('geo_opt_2.pickle', 'wb') as file:
@@ -633,8 +649,16 @@ class CreateOptGeoWindow():
             else:
                 filename = save_file.name
 
-        save_file = self.draw_result_text(self._geo_results, save_to_file=filename)
+        save_file, xplot, yplot = self.draw_result_text(self._geo_results, save_to_file=filename)
         self.draw_select_canvas(opt_results=self._geo_results, save_file = save_file)
+
+        plt.axes(facecolor='lightslategray')
+        plt.plot(xplot, yplot,color='yellow', linestyle='solid', marker='o',markerfacecolor='white', markersize=6)
+        plt.xlabel('Length of plate fields [m]')
+        plt.ylabel('Weight / max weight')
+        plt.title('Length of plate fields vs. total weight')
+        plt.grid()
+        plt.show()
 
     def opt_get_fractions(self):
         ''' Finding initial number of fractions '''
@@ -988,13 +1012,14 @@ class CreateOptGeoWindow():
                                          text='Lateral pressure: ' + str(lateral_press) + ' kPa',
                                          font='Verdana 10 bold', fill='red')
 
-    def draw_select_canvas(self, load_selected=False, opt_results = None, save_file = None):
+    def draw_select_canvas(self, opt_results = None, save_file = None):
         '''
         Making the lines canvas.
         :return:
         '''
         self._canvas_select.delete('all')
         text_type = 'Verdana 8'
+
         if opt_results is None:
             # stippled lines and text.
 
@@ -1123,7 +1148,8 @@ class CreateOptGeoWindow():
 
                 for data_idx, data in enumerate(values[1]):
                     for idx, stuc_info in enumerate(data):
-                        if type(stuc_info) == ANYstructure.calc_structure.Structure:
+                        if type(stuc_info) == ANYstructure_local.calc_structure.Structure:
+
                             if y_loc > 700:
                                 y_loc = 120
                                 start_x += 350
@@ -1196,7 +1222,6 @@ class CreateOptGeoWindow():
                 max_weight = weight if weight > max_weight else max_weight
 
 
-
         if save_to_file is not None:
             save_file = open(save_to_file, 'w')
             save_file.write('| Plate fields | Fields length | Weight index | All OK? |\n')
@@ -1232,15 +1257,10 @@ class CreateOptGeoWindow():
                 xplot.append(round(self._geo_results[key][1][0][0].get_span(),4))
                 yplot.append(round(self._geo_results[key][0] / max_weight, 4))
 
-        plt.axes(facecolor='lightslategray')
-        plt.plot(xplot, yplot,color='yellow', linestyle='solid', marker='o',markerfacecolor='white', markersize=6)
-        plt.xlabel('Length of plate fields [m]')
-        plt.ylabel('Weight / max weight')
-        plt.title('Length of plate fields vs. total weight')
-        plt.grid()
-        plt.show()
-        if save_to_file:
-            return save_file
+        if save_to_file is not None:
+            return save_file, xplot, yplot
+        else:
+            return None, xplot, yplot
 
     def algorithm_info(self):
         ''' When button is clicked, info is displayed.'''
@@ -1365,12 +1385,12 @@ class CreateOptGeoWindow():
         method is referenced in
         '''
         self._previous_drag_mouse = [event.x, event.y]
-        if type(self._geo_results) is not list():
-            if self._geo_results is not None:
-                return
-        else:
-            if self._geo_results[0] is not None:
-                return
+        # if type(self._geo_results) is not list():
+        #     if self._geo_results is not None:
+        #         return
+        # else:
+        #     if self._geo_results[0] is not None:
+        #         return
         click_x = self._canvas_select.winfo_pointerx() - self._canvas_select.winfo_rootx()
         click_y = self._canvas_select.winfo_pointery() - self._canvas_select.winfo_rooty()
 
@@ -1471,7 +1491,7 @@ class CreateOptGeoWindow():
             return
         self._frame.destroy()
 
-    def toggle(self, found_files = None, obj = None, iterating = False):
+    def toggle(self, found_files = None, obj = None, iterating = False, given_path: str = None):
         '''
         On off button.
         :param found_files:
@@ -1496,13 +1516,22 @@ class CreateOptGeoWindow():
             self._ent_spacing_upper.config(bg = 'lightgreen')
             self._ent_spacing_lower.config(bg = 'lightgreen')
             self._ent_delta_spacing.config(bg = 'lightgreen')
-            self._filez = list(askopenfilenames(parent=self._frame, title='Choose files to open'))
+            self._ent_pl_thk_upper.config(bg = 'lightgreen')
+            self._ent_pl_thk_lower.config(bg = 'lightgreen')
+            self._ent_delta_pl_thk.config(bg = 'lightgreen')
+            if given_path is None:
+                self._filez = list(askopenfilenames(parent=self._frame, title='Choose files to open'))
+            else:
+                self._filez = [given_path]
             if self._filez == []:
                 self._toggle_btn.config(relief="raised")
                 self._toggle_btn.config(bg='salmon')
                 self._ent_spacing_upper.config(bg='white')
                 self._ent_spacing_lower.config(bg='white')
                 self._ent_delta_spacing.config(bg='white')
+                self._ent_pl_thk_upper.config(bg='white')
+                self._ent_pl_thk_lower.config(bg='white')
+                self._ent_delta_pl_thk.config(bg='white')
 
         return found_files, predefined_structure
 
@@ -1541,9 +1570,11 @@ class CreateOptGeoWindow():
                                   self._canvas_draw_origo[1]-(self._previous_drag_mouse[1]-event.y))
 
         self._previous_drag_mouse = (event.x,event.y)
+
         self.draw_select_canvas()
 
 if __name__ == '__main__':
     root = tk.Tk()
     my_app = CreateOptGeoWindow(master=root)
+
     root.mainloop()
