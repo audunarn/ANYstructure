@@ -1431,7 +1431,6 @@ class Application():
             # except KeyError:
             #     pass
 
-
     def slider_used(self, event):
         '''
         Action when slider is activated.
@@ -1933,10 +1932,11 @@ class Application():
                     this_pressure = 0
                 rp_util = max(list(return_dict['utilization'][line].values()))
 
-                sig_x_uf = 0 if max(sig_x) == 0 else line_data[1].get_sigma_x()/max(sig_x)
-                sig_y1_uf = 0 if max(sig_y1) == 0 else line_data[1].get_sigma_x() / max(sig_y1)
-                sig_y2_uf = 0 if max(sig_y2) == 0 else line_data[1].get_sigma_x() / max(sig_y2)
-                tau_xy_uf = 0 if max(tau_xy) == 0 else line_data[1].get_sigma_x() / max(tau_xy)
+                # TODO obiously wrong.
+                sig_x_uf = 0 if max(sig_x) == 0 else line_data[1].get_sigma_x()/(max(sig_x) - min(sig_x))
+                sig_y1_uf = 0 if max(sig_y1) == 0 else line_data[1].get_sigma_y1() / (max(sig_y1) - min(sig_y1))
+                sig_y2_uf = 0 if max(sig_y2) == 0 else line_data[1].get_sigma_y2() / (max(sig_y2) - min(sig_y1))
+                tau_xy_uf = 0 if max(tau_xy) == 0 else line_data[1].get_tau_xy() / (max(tau_xy) - min(tau_xy))
 
                 line_color_coding[line] = {'plate': matplotlib.colors.rgb2hex(cmap_sections(thk_sort_unique.index(round(line_data[1]
                                                                               .get_pl_thk(),10))/len(thk_sort_unique))),
