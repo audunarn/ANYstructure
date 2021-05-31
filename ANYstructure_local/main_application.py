@@ -710,7 +710,7 @@ class Application():
         self._zstar_chk = tk.Checkbutton(self._main_fr, variable=self._new_zstar_optimization)\
             .place(relx=types_start+delta_x*9,rely=prop_vert_start+11.5*delta_y)
         tk.Label(self._main_fr, text='z* optimization (RP-C201)\n'
-                                     'for prescriptive buckling \ncalculations', font=self._text_size['Text 8'],
+                                     'for buckling \ncalculations', font=self._text_size['Text 8'],
                  bg = self._general_color)\
             .place(relx=types_start + 5.9*delta_x,rely=prop_vert_start+11.3*delta_y)
         tk.Label(self._main_fr, text='Pressure side (p-plate, s-stf.):', bg=self._general_color) \
