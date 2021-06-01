@@ -710,7 +710,7 @@ class Application():
         self._zstar_chk = tk.Checkbutton(self._main_fr, variable=self._new_zstar_optimization)\
             .place(relx=types_start+delta_x*9,rely=prop_vert_start+11.5*delta_y)
         tk.Label(self._main_fr, text='z* optimization (RP-C201)\n'
-                                     'for prescriptive buckling \ncalculations', font=self._text_size['Text 8'],
+                                     'for buckling \ncalculations', font=self._text_size['Text 8'],
                  bg = self._general_color)\
             .place(relx=types_start + 5.9*delta_x,rely=prop_vert_start+11.3*delta_y)
         tk.Label(self._main_fr, text='Pressure side (p-plate, s-stf.):', bg=self._general_color) \
@@ -1431,7 +1431,6 @@ class Application():
             # except KeyError:
             #     pass
 
-
     def slider_used(self, event):
         '''
         Action when slider is activated.
@@ -1933,10 +1932,11 @@ class Application():
                     this_pressure = 0
                 rp_util = max(list(return_dict['utilization'][line].values()))
 
-                sig_x_uf = 0 if max(sig_x) == 0 else line_data[1].get_sigma_x()/max(sig_x)
-                sig_y1_uf = 0 if max(sig_y1) == 0 else line_data[1].get_sigma_x() / max(sig_y1)
-                sig_y2_uf = 0 if max(sig_y2) == 0 else line_data[1].get_sigma_x() / max(sig_y2)
-                tau_xy_uf = 0 if max(tau_xy) == 0 else line_data[1].get_sigma_x() / max(tau_xy)
+                # TODO obiously wrong.
+                sig_x_uf = 0 if max(sig_x) == 0 else (line_data[1].get_sigma_x() + abs(min(sig_x)))/(max(sig_x) - min(sig_x))
+                sig_y1_uf = 0 if max(sig_y1) == 0 else (line_data[1].get_sigma_y1() + abs(min(sig_y1)))/ (max(sig_y1) - min(sig_y1))
+                sig_y2_uf = 0 if max(sig_y2) == 0 else (line_data[1].get_sigma_y2() + abs(min(sig_y2)))/(max(sig_y2) - min(sig_y2))
+                tau_xy_uf = 0 if max(tau_xy) == 0 else (line_data[1].get_tau_xy() + abs(min(tau_xy)))/(max(tau_xy) - min(tau_xy))
 
                 line_color_coding[line] = {'plate': matplotlib.colors.rgb2hex(cmap_sections(thk_sort_unique.index(round(line_data[1]
                                                                               .get_pl_thk(),10))/len(thk_sort_unique))),
@@ -2205,8 +2205,9 @@ class Application():
                 self._main_canvas.create_text(10, start_text+20*idx, text=str(str(round(value,5)) + ' MPa'),
                                               font=self._text_size["Text 10 bold"],
                                               fill=matplotlib.colors.rgb2hex(
-                                                  cmap_sections(0 if cc_state['max sigma x'] == 0 else
-                                                                value/cc_state['max sigma x'])),
+                                                  cmap_sections(0 if cc_state['max sigma x'] == 0 else 
+                                                                (value+ abs(cc_state['min sigma x'])) /  
+                                                                (cc_state['max sigma x']-cc_state['min sigma x']))),
                                               anchor="nw")
         elif self._new_colorcode_sigmay1.get() == True:
             for idx, value in enumerate(cc_state['sigma y1 map']):
@@ -2217,8 +2218,9 @@ class Application():
                 self._main_canvas.create_text(10, start_text+20*idx, text=str(str(round(value,5)) + ' MPa'),
                                               font=self._text_size["Text 10 bold"],
                                               fill=matplotlib.colors.rgb2hex(
-                                                  cmap_sections(0 if cc_state['max sigma y1'] == 0 else
-                                                                value/cc_state['max sigma y1'])),
+                                                  cmap_sections(0 if cc_state['max sigma y1'] == 0 else 
+                                                                (value+ abs(cc_state['min sigma y1'])) /  
+                                                                (cc_state['max sigma y1']-cc_state['min sigma y1']))),
                                               anchor="nw")
         elif self._new_colorcode_sigmay2.get() == True:
             for idx, value in enumerate(cc_state['sigma y2 map']):
@@ -2229,8 +2231,9 @@ class Application():
                 self._main_canvas.create_text(10, start_text+20*idx, text=str(str(round(value,5)) + ' MPa'),
                                               font=self._text_size["Text 10 bold"],
                                               fill=matplotlib.colors.rgb2hex(
-                                                  cmap_sections(0 if cc_state['max sigma y2'] == 0 else
-                                                                value/cc_state['max sigma y2'])),
+                                                  cmap_sections(0 if cc_state['max sigma y2'] == 0 else 
+                                                                (value+ abs(cc_state['min sigma y2'])) /  
+                                                                (cc_state['max sigma y2']-cc_state['min sigma y2']))),
                                               anchor="nw")
         elif self._new_colorcode_tauxy.get() == True:
             for idx, value in enumerate(cc_state['tau xy map']):
@@ -2241,8 +2244,9 @@ class Application():
                 self._main_canvas.create_text(10, start_text+20*idx, text=str(str(round(value,5)) + ' MPa'),
                                               font=self._text_size["Text 10 bold"],
                                               fill=matplotlib.colors.rgb2hex(
-                                                  cmap_sections(0 if cc_state['max tau xy'] == 0 else
-                                                                value/cc_state['max tau xy'])),
+                                                  cmap_sections(0 if cc_state['max tau xy'] == 0 else 
+                                                                (value+ abs(cc_state['min tau xy'])) /  
+                                                                (cc_state['max tau xy']-cc_state['min tau xy']))),
                                               anchor="nw")
         elif self._new_colorcode_structure_type.get() == True:
             structure_type_map = list(cc_state['structure types map'])
@@ -4618,7 +4622,7 @@ class Application():
         Open a about messagebox.
         :return:
         '''
-        messagebox.showinfo(title='Information', message='ANYstructure 2.x (Stable/Production)'
+        messagebox.showinfo(title='Information', message='ANYstructure 3.x (Stable/Production)'
                                                          '\n'
                                                          '\n'
                                                          'By Audun Arnesen Nyhus \n'
