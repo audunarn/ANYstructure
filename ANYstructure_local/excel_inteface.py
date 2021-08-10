@@ -212,9 +212,13 @@ class PulsExcel():
         return return_dict
 
 if __name__ == '__main__':
-    ex1 = {'line25': {'Identification': 'line25', 'Length of plate': 3, 'Width of c': 800.0, 'Plate thickness': 20.0, 'Modulus of elasticity': 210000.0, "Poisson's ratio": 0.3, 'Yield stress plate': 355.0, 'Axial stress 1': 60.0, 'Axial stress 2': 60.0, 'Trans. stress 1': 0, 'Trans. stress 2': 0, 'Shear stress': 10.0, 'Pressure (fixed)': 0.0, 'In-plane support': 'GL', 'Rot left': 'SS', 'Rot right': 'SS', 'Rot upper': 'SS', 'Rot lower': 'SS', 'sp or up': 'UP'}}
-
-    my_puls = PulsExcel(r'C:\Github\ANYstructure\ANYstructure\PULS\PulsExcel_new - Copy.xlsm', visible=True)
+    ex1 = {'line25': {'Identification': 'line25', 'Length of plate': 3, 'Width of c': 800.0, 'Plate thickness': 20.0,
+                      'Modulus of elasticity': 210000.0, "Poisson's ratio": 0.3, 'Yield stress plate': 355.0,
+                      'Axial stress 1': 60.0, 'Axial stress 2': 60.0, 'Trans. stress 1': 0, 'Trans. stress 2': 0,
+                      'Shear stress': 10.0, 'Pressure (fixed)': 0.0, 'In-plane support': 'GL', 'Rot left': 'SS',
+                      'Rot right': 'SS', 'Rot upper': 'SS', 'Rot lower': 'SS', 'sp or up': 'UP'}}
+    my_puls = PulsExcel(r'C:\Github\ANYstructure\ANYstructure\PULS\PulsExcel_new - Copy.xlsm',
+                        visible=True)
     my_puls.set_multiple_rows_batch(ex1)
     # my_puls.set_multiple_rows(20, [ex.ex1, ex.ex2, ex.ex3, ex.ex4, ex.ex5, ex.ex6])
     # my_puls.calculate_panels()

@@ -127,6 +127,10 @@ class CreateLoadWindow():
         self._new_slamming_pressure = tk.DoubleVar()
         self._new_slamming_pressure_name = tk.StringVar()
         self._new_slamming_pressure_name.set('slamming')
+        self._new_slamming_pl_mult = tk.DoubleVar()
+        self._new_slamming_stf_mult = tk.DoubleVar()
+        self._new_slamming_pl_mult.set(1)
+        self._new_slamming_stf_mult.set(1)
 
         ent_w = 15
         ent_dyn_load_name = tk.Entry(self._frame, textvariable=self._new_dynamic_load_name, width=ent_w*2)
@@ -138,16 +142,25 @@ class CreateLoadWindow():
         ent_limit_state = tk.OptionMenu(self._frame, self._new_limit_state, *limit_states)
 
         # Slamming pressures
-        slx, sly = ent_x*5.6, load_vert_start-20
+        slx, sly = ent_x*5.6, load_vert_start-40
         tk.Label(self._frame,text = 'Load name:').place(x = slx-90, y = sly)
         ent_slamming_pressure = tk.Entry(self._frame, textvariable=self._new_slamming_pressure, width=ent_w)
         ent_slamming_pressure.place(x = slx, y = sly+delta_y)
+
+        ent_slamming_pl_mult = tk.Entry(self._frame, textvariable=self._new_slamming_pl_mult, width=7)
+        ent_slamming_pl_mult.place(x = slx + 50, y = sly + 1.8*delta_y)
+
+        ent_slamming_stf_mult = tk.Entry(self._frame, textvariable=self._new_slamming_stf_mult, width=7)
+        ent_slamming_stf_mult.place(x = slx + 50, y = sly+2.6*delta_y)
+
         tk.Label(self._frame,text='Pressure [Pa]:').place(x=slx - 90, y=sly+delta_y)
+        tk.Label(self._frame, text='Plate multiplier, Ppl').place(x=slx - 90, y=sly + 1.8*delta_y)
+        tk.Label(self._frame, text='Stiffener multiplier, Pst:').place(x=slx - 90, y=sly + 2.6*delta_y)
         ent_slamming_pressure_name = tk.Entry(self._frame, textvariable=self._new_slamming_pressure_name, width=ent_w)
         ent_slamming_pressure_name.place(x=slx, y=sly)
         tk.Button(self._frame, text = 'Create slamming load', command = self.create_slamming_load,
                   font='Verdana 9 bold', fg='yellow', bg = 'green' ) \
-            .place(x=slx - 80, y=sly + 2*delta_y)
+            .place(x=slx - 80, y=sly + 3.5*delta_y)
 
         ent_dyn_load_name.place(x=ent_x, y=load_vert_start + 0 * delta_y)
         ent_load_poly_third.place(x=ent_x, y=load_vert_start + 1 * delta_y)

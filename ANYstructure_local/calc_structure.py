@@ -594,10 +594,10 @@ class CalcScantlings(Structure):
     def calculate_slamming_stiffener(self, slamming_pressure, angle = 90):
         tk = 0
         psl = slamming_pressure / 1000  # kPa
-        Pst = psl/2
+        Pst = psl#/2  # Currently DNV does not use psl/2 for slamming.
         sigmaf = self.mat_yield / 1e6  # MPa
-        hw, twa, tp, tf, bf, s = [(val - tk) * 1000 for val in [self.web_height, self.web_th, self.plate_th, self.flange_th,
-                                                            self.flange_width, self.spacing]]
+        hw, twa, tp, tf, bf, s = [(val - tk) * 1000 for val in [self.web_height, self.web_th, self.plate_th,
+                                                                self.flange_th, self.flange_width, self.spacing]]
         ns = 2
         tau_eH = sigmaf/math.sqrt(3)
         h_stf = (self.web_height+self.flange_th)*1000

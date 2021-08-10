@@ -103,6 +103,7 @@ class Application():
         sub_report = tk.Menu(menu)
         menu.add_cascade(label = 'Reporting', menu = sub_report)
         sub_report.add_command(label = 'Generate PDF report', command = self.report_generate)
+        sub_report.add_command(label='Generate PDF result table', command=self.table_generate)
 
         sub_sesam = tk.Menu(menu)
         menu.add_cascade(label = 'SESAM interface', menu = sub_sesam)
@@ -2741,6 +2742,36 @@ class Application():
         doc = LetterMaker(filename, "Section results", 10, self)
         doc.createDocument()
         doc.savePDF()
+        try:
+            os.startfile(filename)
+        except FileNotFoundError:
+            pass
+        self._new_colorcode_beams.set(False)
+        self._new_colorcode_plates.set(False)
+        self._new_colorcode_pressure.set(False)
+        self.update_frame()
+
+    def table_generate(self, autosave = False):
+
+        if not autosave:
+            save_file = filedialog.asksaveasfile(mode="w", defaultextension=".pdf")
+            filename = save_file.name
+            if save_file is None:  # ask saveasfile return `None` if dialog closed with "cancel".
+                return
+        else:
+            filename = 'testrun.pdf'
+
+        from reportlab.lib.pagesizes import letter, landscape
+        from reportlab.platypus import SimpleDocTemplate
+
+        if self._line_dict == {}:
+            tk.messagebox.showerror('No lines', 'No lines defined. Cannot make report.')
+            return
+
+        doc_dat = LetterMaker(filename, "Section results", 10, self)
+        doc = SimpleDocTemplate(filename, pagesize=landscape(letter))
+        elements = doc_dat.createTable()
+        doc.build(elements)
         try:
             os.startfile(filename)
         except FileNotFoundError:
