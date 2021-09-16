@@ -1949,7 +1949,7 @@ class Application():
                                                       line_data[1].get_sigma_y2(), line_data[1].get_tau_xy()]):
                     if len(stress_list) == 1:
                         res.append(1)
-                    elif max(stress_list) == 0:
+                    elif max(stress_list) == 0 and min(stress_list) == 0:
                         res.append(0)
                     elif this_stress < 0:
                         res.append(this_stress /min(stress_list))
