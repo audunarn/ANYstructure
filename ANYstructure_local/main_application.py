@@ -1940,11 +1940,14 @@ class Application():
                     this_pressure = 0
                 rp_util = max(list(return_dict['utilization'][line].values()))
 
-                # TODO obiously wrong.
-                sig_x_uf = 0 if max(sig_x) == 0 else (line_data[1].get_sigma_x() + abs(min(sig_x)))/(max(sig_x) - min(sig_x))
-                sig_y1_uf = 0 if max(sig_y1) == 0 else (line_data[1].get_sigma_y1() + abs(min(sig_y1)))/ (max(sig_y1) - min(sig_y1))
-                sig_y2_uf = 0 if max(sig_y2) == 0 else (line_data[1].get_sigma_y2() + abs(min(sig_y2)))/(max(sig_y2) - min(sig_y2))
-                tau_xy_uf = 0 if max(tau_xy) == 0 else (line_data[1].get_tau_xy() + abs(min(tau_xy)))/(max(tau_xy) - min(tau_xy))
+                sig_x_uf = 0 if max([abs(val) for val in sig_x]) == 0 else \
+                    line_data[1].get_sigma_x()/max([abs(val) for val in sig_x])
+                sig_y1_uf = 0 if max([abs(val) for val in sig_y1]) == 0 else \
+                    line_data[1].get_sigma_y1()/max([abs(val) for val in sig_y1])
+                sig_y2_uf = 0 if max([abs(val) for val in sig_y2]) == 0 else \
+                    line_data[1].get_sigma_y2()/max([abs(val) for val in sig_y2])
+                tau_xy_uf = 0 if max([abs(val) for val in tau_xy]) == 0 else \
+                    line_data[1].get_tau_xy()/max([abs(val) for val in tau_xy])
 
                 line_color_coding[line] = {'plate': matplotlib.colors.rgb2hex(cmap_sections(thk_sort_unique.index(round(line_data[1]
                                                                               .get_pl_thk(),10))/len(thk_sort_unique))),
@@ -2212,7 +2215,8 @@ class Application():
                                               anchor="nw")
                 self._main_canvas.create_text(10, start_text+20*idx, text=str(str(round(value,5)) + ' MPa'),
                                               font=self._text_size["Text 10 bold"],
-                                              fill=matplotlib.colors.rgb2hex(
+                                              fill='black' if cc_state['max sigma x']-cc_state['min sigma x'] == 0 else
+                                              matplotlib.colors.rgb2hex(
                                                   cmap_sections(0 if cc_state['max sigma x'] == 0 else 
                                                                 (value+ abs(cc_state['min sigma x'])) /  
                                                                 (cc_state['max sigma x']-cc_state['min sigma x']))),
@@ -2225,7 +2229,8 @@ class Application():
                                               anchor="nw")
                 self._main_canvas.create_text(10, start_text+20*idx, text=str(str(round(value,5)) + ' MPa'),
                                               font=self._text_size["Text 10 bold"],
-                                              fill=matplotlib.colors.rgb2hex(
+                                              fill='black' if cc_state['max sigma y1']-cc_state['min sigma y1'] == 0
+                                              else matplotlib.colors.rgb2hex(
                                                   cmap_sections(0 if cc_state['max sigma y1'] == 0 else 
                                                                 (value+ abs(cc_state['min sigma y1'])) /  
                                                                 (cc_state['max sigma y1']-cc_state['min sigma y1']))),
@@ -2238,7 +2243,8 @@ class Application():
                                               anchor="nw")
                 self._main_canvas.create_text(10, start_text+20*idx, text=str(str(round(value,5)) + ' MPa'),
                                               font=self._text_size["Text 10 bold"],
-                                              fill=matplotlib.colors.rgb2hex(
+                                              fill='black' if cc_state['max sigma y2']-cc_state['min sigma y2'] == 0 else
+                                              matplotlib.colors.rgb2hex(
                                                   cmap_sections(0 if cc_state['max sigma y2'] == 0 else 
                                                                 (value+ abs(cc_state['min sigma y2'])) /  
                                                                 (cc_state['max sigma y2']-cc_state['min sigma y2']))),
@@ -2251,7 +2257,8 @@ class Application():
                                               anchor="nw")
                 self._main_canvas.create_text(10, start_text+20*idx, text=str(str(round(value,5)) + ' MPa'),
                                               font=self._text_size["Text 10 bold"],
-                                              fill=matplotlib.colors.rgb2hex(
+                                              fill='black' if cc_state['max tau xy']-cc_state['min tau xy'] == 0 else
+                                              matplotlib.colors.rgb2hex(
                                                   cmap_sections(0 if cc_state['max tau xy'] == 0 else 
                                                                 (value+ abs(cc_state['min tau xy'])) /  
                                                                 (cc_state['max tau xy']-cc_state['min tau xy']))),
