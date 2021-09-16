@@ -103,6 +103,7 @@ class Application():
         sub_report = tk.Menu(menu)
         menu.add_cascade(label = 'Reporting', menu = sub_report)
         sub_report.add_command(label = 'Generate PDF report', command = self.report_generate)
+        sub_report.add_command(label='Generate PDF result table', command=self.table_generate)
 
         sub_sesam = tk.Menu(menu)
         menu.add_cascade(label = 'SESAM interface', menu = sub_sesam)
@@ -1640,7 +1641,12 @@ class Application():
                     if norm_and_slam['slamming'] is None:
                         pass
                     else:
-                        slamming_pressure = self.get_highest_pressure(current_line)['slamming']
+                        slamming_dict = self.get_highest_pressure(current_line)
+                        slamming_pressure = slamming_dict['slamming']
+                        slamming_red_fac_pl = slamming_dict['slamming plate reduction factor']
+                        slamming_red_fac_stf = slamming_dict['slamming stf reduction factor']
+
+
                 except KeyError:
                     design_pressure = 0
 
@@ -1688,8 +1694,10 @@ class Application():
                     else 'red'
 
                 if slamming_pressure is not None and slamming_pressure > 0:
-                    slamming_res = obj_scnt_calc.calculate_slamming_stiffener(slamming_pressure)
-                    min_pl_slamming = obj_scnt_calc.calculate_slamming_plate(slamming_pressure)
+                    slamming_res = obj_scnt_calc.calculate_slamming_stiffener(slamming_pressure,
+                                                                              red_fac=slamming_red_fac_pl)
+                    min_pl_slamming = obj_scnt_calc.calculate_slamming_plate(slamming_pressure,
+                                                                             red_fac=slamming_red_fac_stf)
 
                     if slamming_res['Zp_req'] is not None:
                         zpl = obj_scnt_calc.get_net_effective_plastic_section_modulus()
@@ -1932,11 +1940,14 @@ class Application():
                     this_pressure = 0
                 rp_util = max(list(return_dict['utilization'][line].values()))
 
-                # TODO obiously wrong.
-                sig_x_uf = 0 if max(sig_x) == 0 else (line_data[1].get_sigma_x() + abs(min(sig_x)))/(max(sig_x) - min(sig_x))
-                sig_y1_uf = 0 if max(sig_y1) == 0 else (line_data[1].get_sigma_y1() + abs(min(sig_y1)))/ (max(sig_y1) - min(sig_y1))
-                sig_y2_uf = 0 if max(sig_y2) == 0 else (line_data[1].get_sigma_y2() + abs(min(sig_y2)))/(max(sig_y2) - min(sig_y2))
-                tau_xy_uf = 0 if max(tau_xy) == 0 else (line_data[1].get_tau_xy() + abs(min(tau_xy)))/(max(tau_xy) - min(tau_xy))
+                sig_x_uf = 0 if max([abs(val) for val in sig_x]) == 0 else \
+                    line_data[1].get_sigma_x()/max([abs(val) for val in sig_x])
+                sig_y1_uf = 0 if max([abs(val) for val in sig_y1]) == 0 else \
+                    line_data[1].get_sigma_y1()/max([abs(val) for val in sig_y1])
+                sig_y2_uf = 0 if max([abs(val) for val in sig_y2]) == 0 else \
+                    line_data[1].get_sigma_y2()/max([abs(val) for val in sig_y2])
+                tau_xy_uf = 0 if max([abs(val) for val in tau_xy]) == 0 else \
+                    line_data[1].get_tau_xy()/max([abs(val) for val in tau_xy])
 
                 line_color_coding[line] = {'plate': matplotlib.colors.rgb2hex(cmap_sections(thk_sort_unique.index(round(line_data[1]
                                                                               .get_pl_thk(),10))/len(thk_sort_unique))),
@@ -2204,7 +2215,8 @@ class Application():
                                               anchor="nw")
                 self._main_canvas.create_text(10, start_text+20*idx, text=str(str(round(value,5)) + ' MPa'),
                                               font=self._text_size["Text 10 bold"],
-                                              fill=matplotlib.colors.rgb2hex(
+                                              fill='black' if cc_state['max sigma x']-cc_state['min sigma x'] == 0 else
+                                              matplotlib.colors.rgb2hex(
                                                   cmap_sections(0 if cc_state['max sigma x'] == 0 else 
                                                                 (value+ abs(cc_state['min sigma x'])) /  
                                                                 (cc_state['max sigma x']-cc_state['min sigma x']))),
@@ -2217,7 +2229,8 @@ class Application():
                                               anchor="nw")
                 self._main_canvas.create_text(10, start_text+20*idx, text=str(str(round(value,5)) + ' MPa'),
                                               font=self._text_size["Text 10 bold"],
-                                              fill=matplotlib.colors.rgb2hex(
+                                              fill='black' if cc_state['max sigma y1']-cc_state['min sigma y1'] == 0
+                                              else matplotlib.colors.rgb2hex(
                                                   cmap_sections(0 if cc_state['max sigma y1'] == 0 else 
                                                                 (value+ abs(cc_state['min sigma y1'])) /  
                                                                 (cc_state['max sigma y1']-cc_state['min sigma y1']))),
@@ -2230,7 +2243,8 @@ class Application():
                                               anchor="nw")
                 self._main_canvas.create_text(10, start_text+20*idx, text=str(str(round(value,5)) + ' MPa'),
                                               font=self._text_size["Text 10 bold"],
-                                              fill=matplotlib.colors.rgb2hex(
+                                              fill='black' if cc_state['max sigma y2']-cc_state['min sigma y2'] == 0 else
+                                              matplotlib.colors.rgb2hex(
                                                   cmap_sections(0 if cc_state['max sigma y2'] == 0 else 
                                                                 (value+ abs(cc_state['min sigma y2'])) /  
                                                                 (cc_state['max sigma y2']-cc_state['min sigma y2']))),
@@ -2243,7 +2257,8 @@ class Application():
                                               anchor="nw")
                 self._main_canvas.create_text(10, start_text+20*idx, text=str(str(round(value,5)) + ' MPa'),
                                               font=self._text_size["Text 10 bold"],
-                                              fill=matplotlib.colors.rgb2hex(
+                                              fill='black' if cc_state['max tau xy']-cc_state['min tau xy'] == 0 else
+                                              matplotlib.colors.rgb2hex(
                                                   cmap_sections(0 if cc_state['max tau xy'] == 0 else 
                                                                 (value+ abs(cc_state['min tau xy'])) /  
                                                                 (cc_state['max tau xy']-cc_state['min tau xy']))),
@@ -2741,6 +2756,36 @@ class Application():
         doc = LetterMaker(filename, "Section results", 10, self)
         doc.createDocument()
         doc.savePDF()
+        try:
+            os.startfile(filename)
+        except FileNotFoundError:
+            pass
+        self._new_colorcode_beams.set(False)
+        self._new_colorcode_plates.set(False)
+        self._new_colorcode_pressure.set(False)
+        self.update_frame()
+
+    def table_generate(self, autosave = False):
+
+        if not autosave:
+            save_file = filedialog.asksaveasfile(mode="w", defaultextension=".pdf")
+            filename = save_file.name
+            if save_file is None:  # ask saveasfile return `None` if dialog closed with "cancel".
+                return
+        else:
+            filename = 'testrun.pdf'
+
+        from reportlab.lib.pagesizes import letter, landscape
+        from reportlab.platypus import SimpleDocTemplate
+
+        if self._line_dict == {}:
+            tk.messagebox.showerror('No lines', 'No lines defined. Cannot make report.')
+            return
+
+        doc_dat = LetterMaker(filename, "Section results", 10, self)
+        doc = SimpleDocTemplate(filename, pagesize=landscape(letter))
+        elements = doc_dat.createTable()
+        doc.build(elements)
         try:
             os.startfile(filename)
         except FileNotFoundError:
@@ -3368,15 +3413,22 @@ class Application():
         all_press = list()
         if limit_state == 'ULS':
             pressures = self.calculate_all_load_combinations_for_line(line)
+            slm_red, psl, slm_red_pl, slm_red_stf = 1, 0, 1, 1
             for key, value in pressures.items():
                 if key != 'slamming':
                     all_press.append(max(value))
                 else:
                     if value is not None:
+                        for load in self._line_to_struc[line][3]:
+                            if load is not None:
+                                if load.get_load_condition() == 'slamming':
+                                    slm_red_pl = load.get_slamming_reduction_plate()
+                                    slm_red_stf = load.get_slamming_reduction_stf()
                         psl = max(value)
-                    else:
-                        psl = 0
-            return {'normal':max(all_press), 'slamming': psl}
+
+
+            return {'normal':max(all_press), 'slamming': psl, 'slamming plate reduction factor': slm_red_pl,
+                    'slamming stf reduction factor': slm_red_stf}
         elif limit_state == 'FLS':
             pass
         else:
@@ -4026,13 +4078,18 @@ class Application():
 
         # opening the loads
         variables = ['poly_third','poly_second', 'poly_first', 'poly_const', 'load_condition',
-                     'structure_type', 'man_press', 'static_draft', 'name_of_load', 'limit_state']
+                     'structure_type', 'man_press', 'static_draft', 'name_of_load', 'limit_state',
+                     'slamming mult pl', 'slamming mult stf']
 
         if len(imported['load_properties']) != 0:
             for load, data in imported['load_properties'].items():
                 temp_dict = {}
                 count_i = 0
                 values = data[0]
+                if len(values) != len(variables):
+                    # Adding slamming multiplication factors
+                    values.append(1)
+                    values.append(1)
                 for value in values:
                     temp_dict[variables[count_i]]= value
                     count_i += 1
@@ -4047,6 +4104,9 @@ class Application():
             self._accelerations_dict = imported['accelerations_dict']
         except IndexError:
             self._accelerations_dict = {'static':9.81, 'dyn_loaded':0, 'dyn_ballast':0}
+
+
+
 
 
         self._new_static_acc.set(self._accelerations_dict['static'])
@@ -4655,8 +4715,8 @@ if __name__ == '__main__':
     multiprocessing.freeze_support()
     errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
     root = tk.Tk()
-    width = root.winfo_screenwidth()
-    height = root.winfo_screenheight()
+    width = int(root.winfo_screenwidth()*1)
+    height = int(root.winfo_screenheight()*1)
     root.geometry(f'{width}x{height}')
     my_app = Application(root)
     root.mainloop()

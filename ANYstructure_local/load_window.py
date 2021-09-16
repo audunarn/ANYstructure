@@ -36,6 +36,7 @@ class CreateLoadWindow():
             self._canvas_scale = 20
             self._structure_types = {'vertical': ['BBS', 'SIDE_SHELL', 'SSS'],
                                      'horizontal': ['BOTTOM', 'BBT', 'HOPPER', 'MD']}
+
         else:
             self.app = app
             self._load_factors_dict = app._load_factors_dict
@@ -127,6 +128,10 @@ class CreateLoadWindow():
         self._new_slamming_pressure = tk.DoubleVar()
         self._new_slamming_pressure_name = tk.StringVar()
         self._new_slamming_pressure_name.set('slamming')
+        self._new_slamming_pl_mult = tk.DoubleVar()
+        self._new_slamming_stf_mult = tk.DoubleVar()
+        self._new_slamming_pl_mult.set(1.0)
+        self._new_slamming_stf_mult.set(1.0)
 
         ent_w = 15
         ent_dyn_load_name = tk.Entry(self._frame, textvariable=self._new_dynamic_load_name, width=ent_w*2)
@@ -138,16 +143,25 @@ class CreateLoadWindow():
         ent_limit_state = tk.OptionMenu(self._frame, self._new_limit_state, *limit_states)
 
         # Slamming pressures
-        slx, sly = ent_x*5.6, load_vert_start-20
+        slx, sly = ent_x*5.6, load_vert_start-40
         tk.Label(self._frame,text = 'Load name:').place(x = slx-90, y = sly)
         ent_slamming_pressure = tk.Entry(self._frame, textvariable=self._new_slamming_pressure, width=ent_w)
         ent_slamming_pressure.place(x = slx, y = sly+delta_y)
+
+        ent_slamming_pl_mult = tk.Entry(self._frame, textvariable=self._new_slamming_pl_mult, width=7)
+        ent_slamming_pl_mult.place(x = slx + 50, y = sly + 1.8*delta_y)
+
+        ent_slamming_stf_mult = tk.Entry(self._frame, textvariable=self._new_slamming_stf_mult, width=7)
+        ent_slamming_stf_mult.place(x = slx + 50, y = sly+2.6*delta_y)
+
         tk.Label(self._frame,text='Pressure [Pa]:').place(x=slx - 90, y=sly+delta_y)
+        tk.Label(self._frame, text='Plate multiplier, Ppl').place(x=slx - 90, y=sly + 1.8*delta_y)
+        tk.Label(self._frame, text='Stiffener multiplier, Pst:').place(x=slx - 90, y=sly + 2.6*delta_y)
         ent_slamming_pressure_name = tk.Entry(self._frame, textvariable=self._new_slamming_pressure_name, width=ent_w)
         ent_slamming_pressure_name.place(x=slx, y=sly)
         tk.Button(self._frame, text = 'Create slamming load', command = self.create_slamming_load,
                   font='Verdana 9 bold', fg='yellow', bg = 'green' ) \
-            .place(x=slx - 80, y=sly + 2*delta_y)
+            .place(x=slx - 80, y=sly + 3.5*delta_y)
 
         ent_dyn_load_name.place(x=ent_x, y=load_vert_start + 0 * delta_y)
         ent_load_poly_third.place(x=ent_x, y=load_vert_start + 1 * delta_y)
@@ -384,7 +398,8 @@ class CreateLoadWindow():
         '''
 
         variables = ['poly_third','poly_second', 'poly_first', 'poly_const', 'load_condition',
-                     'man_press', 'static_draft', 'name_of_load', 'limit_state', 'structure_types']
+                     'man_press', 'static_draft', 'name_of_load', 'limit_state', 'structure_types',
+                     'slamming mult pl', 'slamming mult stf']
         existing_load = None
         if not slamming_load:
             name_of_load = self._new_dynamic_load_name.get()
@@ -399,7 +414,7 @@ class CreateLoadWindow():
             values = [self._new_load_poly_third.get(),self._new_load_poly_second.get(),
                       self._new_load_poly_first.get(),self._new_load_poly_const.get(),
                       self._new_dyn_load_condition.get(), None, None, name_of_load,
-                      self._new_limit_state.get(), self._structure_types]
+                      self._new_limit_state.get(), self._structure_types, 1, 1]
         else:
             name_of_load = self._new_slamming_pressure_name.get()
             if name_of_load in self._load_objects.keys():
@@ -411,7 +426,9 @@ class CreateLoadWindow():
 
             values = [0, 0, 0, self._new_slamming_pressure.get(),
                       'slamming', None, None, name_of_load,
-                      None, self._structure_types]
+                      None, self._structure_types,
+                      self._new_slamming_pl_mult.get(),
+                      self._new_slamming_stf_mult.get()]
 
         count_i = 0
         current_load_dict = {}
@@ -665,6 +682,12 @@ class CreateLoadWindow():
                 self._new_load_manual_pressure.set(current_object.get_load_parmeters()[6])
                 self._new_dyn_load_condition.set(current_object.get_load_parmeters()[4])
                 self._new_limit_state.set(current_object.get_load_parmeters()[9])
+
+            if current_object.get_load_parmeters()[4] == 'slamming':
+                self._new_slamming_pressure.set(current_object.get_load_parmeters()[3])
+                self._new_slamming_pressure_name.set(current_object.get_load_parmeters()[8])
+                self._new_slamming_pl_mult.set(current_object.get_load_parmeters()[10])
+                self._new_slamming_stf_mult.set(current_object.get_load_parmeters()[11])
 
             self._load_obj_box.update()
             self._ent_assosiate_load.update_idletasks()

@@ -15,6 +15,14 @@ class Loads():
         self.poly_const = main_load_dict['poly_const']
         self.manual_press = main_load_dict['man_press']
         self.load_condition = main_load_dict['load_condition']
+
+        if main_load_dict['load_condition'] == 'slamming':
+            self.slamming_pl_reduction_factor = main_load_dict['slamming mult pl']
+            self.slamming_stf_reduction_factor = main_load_dict['slamming mult stf']
+        else:
+            self.slamming_pl_reduction_factor = 1
+            self.slamming_stf_reduction_factor = 1
+
         self.name_of_load = main_load_dict['name_of_load']
         try:
             self.limit_state = main_load_dict['limit_state']
@@ -68,6 +76,7 @@ class Loads():
             return max(press, psl)
         else:
             return press
+
     def get_report_string(self):
         return [     'Name of load: ' + self.name_of_load,
                      'Polynominal (x^3): '+  str(self.poly_third) ,
@@ -96,7 +105,8 @@ class Loads():
 
     def get_load_parmeters(self):
         return self.poly_third, self.poly_second, self.poly_first, self.poly_const, self.load_condition, \
-               None, self.manual_press, self.static_draft, self.name_of_load, self.limit_state
+               None, self.manual_press, self.static_draft, self.name_of_load, self.limit_state, \
+               self.slamming_pl_reduction_factor, self.slamming_stf_reduction_factor
 
     def get_name(self):
         return self.name_of_load
@@ -125,6 +135,12 @@ class Loads():
     def get_load_condition(self):
         ''' Getting loaded, ballast or part '''
         return self.load_condition
+
+    def get_slamming_reduction_plate(self):
+        return self.slamming_pl_reduction_factor
+
+    def get_slamming_reduction_stf(self):
+        return self.slamming_stf_reduction_factor
 
 class Tanks():
     '''

@@ -7,7 +7,7 @@ from reportlab.lib.styles import  ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate
 from PIL import Image
 import ANYstructure_local.example_data as test
-from reportlab.lib.pagesizes import letter, A4
+from reportlab.lib.pagesizes import letter, A4, landscape
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import mm, inch
 from reportlab.pdfgen import canvas
@@ -18,6 +18,8 @@ import ANYstructure_local.helper as hlp
 from matplotlib import pyplot as plt
 import matplotlib
 cmap_sections = plt.get_cmap('jet')
+from reportlab.platypus import SimpleDocTemplate, TableStyle
+from reportlab.lib import colors
 
 
 def create_report(input_data):
@@ -650,6 +652,66 @@ class LetterMaker(object):
 
     # ----------------------------------------------------------------------
 
+    def createTable(self):
+        '''
+        Create a table of results for all lines.
+        '''
+
+        table_all = []
+        headers = ['Line', 'pl thk', 's', 'web h', 'web thk', 'fl. w', 'fl. thk', 'sig x', 'sig y1',
+                   'sig y2', 'tau xy', 'max press.', 'sec. mod', 'min sec.', 'min plt',
+                   'shr area', 'min shr A', 'fat uf', 'buc uf']
+        table_all.append(headers)
+        for line in sorted(self.data._line_dict.keys()):
+            struc_obj = self.data._line_to_struc[line][1]
+            pressure = round(self.data.get_highest_pressure(line)['normal'] / 1000,0)
+
+            if self.data._PULS_results is not None:
+                puls_method = self.data._line_to_struc[line][1].get_puls_method()
+                if puls_method == 'buckling':
+                    buckling_uf = \
+                    self.data._PULS_results.get_run_results()[line]['Buckling strength']['Actual usage Factor'][0]
+                else:
+                    buckling_uf = \
+                    self.data._PULS_results.get_run_results()[line]['Ultimate capacity']['Actual usage Factor'][0]
+            else:
+                buckling_uf = str(round(max(self.data.get_color_and_calc_state()['buckling'][line]), 2))
+
+            if self.data.get_color_and_calc_state()['fatigue'][line]['damage'] is not None:
+                fat_uf = self.data.get_color_and_calc_state()['fatigue'][line]['damage']
+                fat_uf = round(fat_uf, 3)
+            else:
+                fat_uf = self.data.get_color_and_calc_state()['fatigue'][line]['damage']
+
+
+            data = [line,str(struc_obj.get_pl_thk() * 1000), str(struc_obj.get_s() * 1000),
+                    str(struc_obj.get_web_h() * 1000), str(struc_obj.get_web_thk() * 1000),
+                    str(struc_obj.get_fl_w() * 1000), str(struc_obj.get_fl_thk() * 1000),
+                    str(round(struc_obj.get_sigma_x(), 0)), str(round(struc_obj.get_sigma_y1(), 0)),
+                    str(round(struc_obj.get_sigma_y2(), 0)),
+                    str(round(struc_obj.get_tau_xy(), 0)), str(round(pressure, 2) * 1000),
+                    str(int(min(self.data.get_color_and_calc_state()['section_modulus'][line]['sec_mod']) * 1000 ** 3)),
+                    str(int(self.data.get_color_and_calc_state()['section_modulus'][line]['min_sec_mod'] * 1000 ** 3)),
+                    str(round(self.data.get_color_and_calc_state()['thickness'][line]['min_thk'], 2)),
+                    str(int(self.data.get_color_and_calc_state()['shear_area'][line]['shear_area'] * 1000 ** 2)),
+                    str(int(self.data.get_color_and_calc_state()['shear_area'][line]['min_shear_area'] * 1000 ** 2)),
+                    fat_uf, buckling_uf]
+
+            table_all.append(data)
+
+        t = Table(table_all,colWidths=[0.57*inch])
+        t.setStyle(TableStyle([
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.gray),
+            ('BACKGROUND', (0, 0), (-1, -1), colors.lightblue),
+            ('FONTSIZE', (0, 0), (-1, -1), 8),
+            ('FONTSIZE', (0, 4), (-1, 4), 8),
+            ('TEXTFONT', (0, 1), (-1, 1), 'Times-Bold'),
+            ('TEXTFONT', (0, 4), (-1, 4), 'Times-Bold'),
+        ]))
+
+        return [t,]
+
+
 if __name__ == '__main__':
     import multiprocessing, ctypes, tkinter
     import ANYstructure_local.main_application as app
@@ -657,9 +719,10 @@ if __name__ == '__main__':
     errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
     root = tkinter.Tk()
     my_app = app.Application(root)
-    ship_example = r'C:\Github\ANYstructure\ANYstructure\ship_section_example.txt'
+    ship_example = r'C:\Github\ANYstructure\ANYstructure_local\ship_section_example.txt'
     my_app.openfile(ship_example)
-    my_app.report_generate(autosave=True)
+    my_app.table_generate()
+    #my_app.report_generate(autosave=True)
     # doc = LetterMaker("example.pdf", "The MVP", 10, to_report_gen)
     # doc.createDocument()
     # doc.savePDF()

@@ -575,7 +575,17 @@ class CreateOptGeoWindow():
 
             else:
                 p1, p2 = self._opt_structure[line]
-                closet_line = self.opt_find_closest_orig_line([(p2[0]-p1[0])*0.5, (p2[1]-p1[1])*0.5])
+                # Check if line is horizontal or vertical
+                if p2[0] == p1[0]: # Vertical
+                    to_find = [p2[0], min(p2[1], p1[1]) + abs((p2[1]-p1[1])*0.5)]
+                elif p2[1] == p1[1]: # Horizontal
+                    to_find = [min(p2[0], p1[0])+ (p2[0]-p1[0])*0.5, p2[1]]
+                else: # Other orientations
+                    to_find = [min(p2[0],p1[0])+abs((p2[0]-p1[0])*0.5), min(p2[1]-p1[1])+abs((p2[1]-p1[1])*0.5)]
+
+                # Taking properites from the closest line.
+                closet_line = self.opt_find_closest_orig_line(to_find)
+                #print('Closest line', closet_line, p1, p2, to_find)
                 gotten_lat_press = self.app.get_highest_pressure(closet_line)
                 lateral_press.append(gotten_lat_press['normal'] / 1000)
                 slamming_press.append(gotten_lat_press['slamming'])

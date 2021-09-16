@@ -1,11 +1,9 @@
-import math
 from scipy.special import gammaln
 from scipy.stats import gamma as gammadist
 import numpy as np
 import ANYstructure_local.helper as hlp
-import os, time, datetime, json
-import random
-import ANYstructure_local.excel_inteface as pulsxl
+import os, time, datetime, json, random, math
+
 import ANYstructure_local.SN_curve_parameters as snc
 
 class Structure():
@@ -579,25 +577,26 @@ class CalcScantlings(Structure):
                ' Buckling results: eq7_19: '+str(buc[0])+' eq7_50: '+str(buc[1])+ ' eq7_51: '\
                +str(buc[2])+ ' eq7_52: '+str(buc[3])+ ' eq7_53: '+str(buc[4])
 
-    def calculate_slamming_plate(self, slamming_pressure):
+    def calculate_slamming_plate(self, slamming_pressure, red_fac = 1):
         ''' Slamming pressure input is Pa '''
         ka1 = 1.1
         ka2 = min(max(0.4, self.spacing / self.span), 1)
 
         ka = math.pow(ka1 - 0.25*ka2,2)
         sigmaf = self.mat_yield/1e6  # MPa
-        psl = slamming_pressure/1000  # kPa
+
+        psl = red_fac * slamming_pressure/1000  # kPa
         Cd = 1.5
 
         return 0.0158*ka*self.spacing*1000*math.sqrt(psl/(Cd*sigmaf))
 
-    def calculate_slamming_stiffener(self, slamming_pressure, angle = 90):
+    def calculate_slamming_stiffener(self, slamming_pressure, angle = 90, red_fac = 1):
         tk = 0
         psl = slamming_pressure / 1000  # kPa
-        Pst = psl/2
+        Pst = psl * red_fac  # Currently DNV does not use psl/2 for slamming.
         sigmaf = self.mat_yield / 1e6  # MPa
-        hw, twa, tp, tf, bf, s = [(val - tk) * 1000 for val in [self.web_height, self.web_th, self.plate_th, self.flange_th,
-                                                            self.flange_width, self.spacing]]
+        hw, twa, tp, tf, bf, s = [(val - tk) * 1000 for val in [self.web_height, self.web_th, self.plate_th,
+                                                                self.flange_th, self.flange_width, self.spacing]]
         ns = 2
         tau_eH = sigmaf/math.sqrt(3)
         h_stf = (self.web_height+self.flange_th)*1000
@@ -615,15 +614,15 @@ class CalcScantlings(Structure):
 
         return {'tw_req': tw, 'Zp_req':Zp_req}
 
-    def check_all_slamming(self, slamming_pressure):
+    def check_all_slamming(self, slamming_pressure, stf_red_fact = 1, pl_red_fact = 1):
         ''' A summary check of slamming '''
 
-        pl_chk = self.calculate_slamming_plate(slamming_pressure)
+        pl_chk = self.calculate_slamming_plate(slamming_pressure, red_fac= pl_red_fact)
         if self.plate_th*1000 < pl_chk:
             chk1 = pl_chk / self.plate_th*1000
             return False, chk1
 
-        stf_res = self.calculate_slamming_stiffener(slamming_pressure)
+        stf_res = self.calculate_slamming_stiffener(slamming_pressure, red_fac = stf_red_fact)
         #print('Slamming checked')
         if self.web_th*1000 < stf_res['tw_req']:
             chk2 = stf_res['tw_req'] / self.web_th*1000
@@ -1376,6 +1375,7 @@ class PULSpanel():
 
         :return:
         '''
+        import ANYstructure_local.excel_inteface as pulsxl
 
         iterator = self._all_to_run
 
