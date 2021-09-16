@@ -817,8 +817,11 @@ class Application():
             .place(relx=ent_relx + 3*geo_dx, rely=ent_rely+1.7*drely)
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_structure_type, command = self.on_color_code_check)\
             .place(relx=ent_relx + 4*geo_dx, rely=ent_rely+1.7*drely)
-        tk.Label(text='<-- check to color-\ncode stresses', font=self._text_size['Text 9'],
-                 bg=self._general_color).place(relx=ent_relx + 4.5*geo_dx, rely=ent_rely+1.45*drely, relwidth = 0.06,
+        # tk.Label(text='|    |   |   |   |', font=self._text_size['Text 7'],
+        #          bg=self._general_color).place(relx=ent_relx + 0*geo_dx, rely=ent_rely+1.46*drely, relwidth = 0.06,
+        #                                        relheight = 0.03)
+        tk.Label(text='<-- Color coding', font=self._text_size['Text 9'],
+                 bg=self._general_color).place(relx=ent_relx + 4.5*geo_dx, rely=ent_rely+1.46*drely, relwidth = 0.06,
                                                relheight = 0.03)
 
         try:
@@ -1940,14 +1943,20 @@ class Application():
                     this_pressure = 0
                 rp_util = max(list(return_dict['utilization'][line].values()))
 
-                sig_x_uf = 0 if max([abs(val) for val in sig_x]) == 0 else \
-                    line_data[1].get_sigma_x()/max([abs(val) for val in sig_x])
-                sig_y1_uf = 0 if max([abs(val) for val in sig_y1]) == 0 else \
-                    line_data[1].get_sigma_y1()/max([abs(val) for val in sig_y1])
-                sig_y2_uf = 0 if max([abs(val) for val in sig_y2]) == 0 else \
-                    line_data[1].get_sigma_y2()/max([abs(val) for val in sig_y2])
-                tau_xy_uf = 0 if max([abs(val) for val in tau_xy]) == 0 else \
-                    line_data[1].get_tau_xy()/max([abs(val) for val in tau_xy])
+                res = list()
+                for stress_list, this_stress in zip([sig_x, sig_y1, sig_y2, tau_xy],
+                                                     [line_data[1].get_sigma_x(), line_data[1].get_sigma_y1(),
+                                                      line_data[1].get_sigma_y2(), line_data[1].get_tau_xy()]):
+                    if len(stress_list) == 1:
+                        res.append(1)
+                    elif max(stress_list) == 0:
+                        res.append(0)
+                    elif this_stress < 0:
+                        res.append(this_stress /min(stress_list))
+                    elif this_stress >= 0:
+                        res.append(this_stress/ max(stress_list))
+
+                sig_x_uf, sig_y1_uf, sig_y2_uf , tau_xy_uf = res
 
                 line_color_coding[line] = {'plate': matplotlib.colors.rgb2hex(cmap_sections(thk_sort_unique.index(round(line_data[1]
                                                                               .get_pl_thk(),10))/len(thk_sort_unique))),
