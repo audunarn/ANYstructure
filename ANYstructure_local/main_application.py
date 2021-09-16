@@ -3413,9 +3413,10 @@ class Application():
                 else:
                     if value is not None:
                         for load in self._line_to_struc[line][3]:
-                            if load.get_load_condition() == 'slamming':
-                                slm_red_pl = load.get_slamming_reduction_plate()
-                                slm_red_stf = load.get_slamming_reduction_stf()
+                            if load is not None:
+                                if load.get_load_condition() == 'slamming':
+                                    slm_red_pl = load.get_slamming_reduction_plate()
+                                    slm_red_stf = load.get_slamming_reduction_stf()
                         psl = max(value)
 
 
