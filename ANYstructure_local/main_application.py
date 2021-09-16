@@ -1641,7 +1641,12 @@ class Application():
                     if norm_and_slam['slamming'] is None:
                         pass
                     else:
-                        slamming_pressure = self.get_highest_pressure(current_line)['slamming']
+                        slamming_dict = self.get_highest_pressure(current_line)
+                        slamming_pressure = slamming_dict['slamming']
+                        slamming_red_fac_pl = slamming_dict['slamming plate reduction factor']
+                        slamming_red_fac_stf = slamming_dict['slamming stf reduction factor']
+
+
                 except KeyError:
                     design_pressure = 0
 
@@ -1689,8 +1694,10 @@ class Application():
                     else 'red'
 
                 if slamming_pressure is not None and slamming_pressure > 0:
-                    slamming_res = obj_scnt_calc.calculate_slamming_stiffener(slamming_pressure)
-                    min_pl_slamming = obj_scnt_calc.calculate_slamming_plate(slamming_pressure)
+                    slamming_res = obj_scnt_calc.calculate_slamming_stiffener(slamming_pressure,
+                                                                              red_fac=slamming_red_fac_pl)
+                    min_pl_slamming = obj_scnt_calc.calculate_slamming_plate(slamming_pressure,
+                                                                             red_fac=slamming_red_fac_stf)
 
                     if slamming_res['Zp_req'] is not None:
                         zpl = obj_scnt_calc.get_net_effective_plastic_section_modulus()
@@ -3399,15 +3406,21 @@ class Application():
         all_press = list()
         if limit_state == 'ULS':
             pressures = self.calculate_all_load_combinations_for_line(line)
+            slm_red, psl, slm_red_pl, slm_red_stf = 1, 0, 1, 1
             for key, value in pressures.items():
                 if key != 'slamming':
                     all_press.append(max(value))
                 else:
                     if value is not None:
+                        for load in self._line_to_struc[line][3]:
+                            if load.get_load_condition() == 'slamming':
+                                slm_red_pl = load.get_slamming_reduction_plate()
+                                slm_red_stf = load.get_slamming_reduction_stf()
                         psl = max(value)
-                    else:
-                        psl = 0
-            return {'normal':max(all_press), 'slamming': psl}
+
+
+            return {'normal':max(all_press), 'slamming': psl, 'slamming plate reduction factor': slm_red_pl,
+                    'slamming stf reduction factor': slm_red_stf}
         elif limit_state == 'FLS':
             pass
         else:
@@ -4057,13 +4070,18 @@ class Application():
 
         # opening the loads
         variables = ['poly_third','poly_second', 'poly_first', 'poly_const', 'load_condition',
-                     'structure_type', 'man_press', 'static_draft', 'name_of_load', 'limit_state']
+                     'structure_type', 'man_press', 'static_draft', 'name_of_load', 'limit_state',
+                     'slamming mult pl', 'slamming mult stf']
 
         if len(imported['load_properties']) != 0:
             for load, data in imported['load_properties'].items():
                 temp_dict = {}
                 count_i = 0
                 values = data[0]
+                if len(values) != len(variables):
+                    # Adding slamming multiplication factors
+                    values.append(1)
+                    values.append(1)
                 for value in values:
                     temp_dict[variables[count_i]]= value
                     count_i += 1
@@ -4078,6 +4096,9 @@ class Application():
             self._accelerations_dict = imported['accelerations_dict']
         except IndexError:
             self._accelerations_dict = {'static':9.81, 'dyn_loaded':0, 'dyn_ballast':0}
+
+
+
 
 
         self._new_static_acc.set(self._accelerations_dict['static'])
@@ -4686,8 +4707,8 @@ if __name__ == '__main__':
     multiprocessing.freeze_support()
     errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
     root = tk.Tk()
-    width = root.winfo_screenwidth()
-    height = root.winfo_screenheight()
+    width = int(root.winfo_screenwidth()*1)
+    height = int(root.winfo_screenheight()*1)
     root.geometry(f'{width}x{height}')
     my_app = Application(root)
     root.mainloop()

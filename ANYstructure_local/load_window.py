@@ -36,6 +36,7 @@ class CreateLoadWindow():
             self._canvas_scale = 20
             self._structure_types = {'vertical': ['BBS', 'SIDE_SHELL', 'SSS'],
                                      'horizontal': ['BOTTOM', 'BBT', 'HOPPER', 'MD']}
+
         else:
             self.app = app
             self._load_factors_dict = app._load_factors_dict
@@ -397,7 +398,8 @@ class CreateLoadWindow():
         '''
 
         variables = ['poly_third','poly_second', 'poly_first', 'poly_const', 'load_condition',
-                     'man_press', 'static_draft', 'name_of_load', 'limit_state', 'structure_types']
+                     'man_press', 'static_draft', 'name_of_load', 'limit_state', 'structure_types',
+                     'slamming mult pl', 'slamming mult stf']
         existing_load = None
         if not slamming_load:
             name_of_load = self._new_dynamic_load_name.get()
@@ -412,7 +414,7 @@ class CreateLoadWindow():
             values = [self._new_load_poly_third.get(),self._new_load_poly_second.get(),
                       self._new_load_poly_first.get(),self._new_load_poly_const.get(),
                       self._new_dyn_load_condition.get(), None, None, name_of_load,
-                      self._new_limit_state.get(), self._structure_types]
+                      self._new_limit_state.get(), self._structure_types, 1, 1]
         else:
             name_of_load = self._new_slamming_pressure_name.get()
             if name_of_load in self._load_objects.keys():
@@ -424,7 +426,9 @@ class CreateLoadWindow():
 
             values = [0, 0, 0, self._new_slamming_pressure.get(),
                       'slamming', None, None, name_of_load,
-                      None, self._structure_types]
+                      None, self._structure_types,
+                      self._new_slamming_pl_mult.get(),
+                      self._new_slamming_stf_mult.get()]
 
         count_i = 0
         current_load_dict = {}
