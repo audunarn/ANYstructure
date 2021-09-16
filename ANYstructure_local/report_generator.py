@@ -658,7 +658,7 @@ class LetterMaker(object):
         '''
 
         table_all = []
-        headers = ['plt thk', 's', 'web h', 'web thk', 'fl. w', 'fl. thk', 'sig x', 'sig y1',
+        headers = ['Line', 'pl thk', 's', 'web h', 'web thk', 'fl. w', 'fl. thk', 'sig x', 'sig y1',
                    'sig y2', 'tau xy', 'max press.', 'sec. mod', 'min sec.', 'min plt',
                    'shr area', 'min shr A', 'fat uf', 'buc uf']
         table_all.append(headers)
@@ -684,7 +684,7 @@ class LetterMaker(object):
                 fat_uf = self.data.get_color_and_calc_state()['fatigue'][line]['damage']
 
 
-            data = [str(struc_obj.get_pl_thk() * 1000), str(struc_obj.get_s() * 1000),
+            data = [line,str(struc_obj.get_pl_thk() * 1000), str(struc_obj.get_s() * 1000),
                     str(struc_obj.get_web_h() * 1000), str(struc_obj.get_web_thk() * 1000),
                     str(struc_obj.get_fl_w() * 1000), str(struc_obj.get_fl_thk() * 1000),
                     str(round(struc_obj.get_sigma_x(), 0)), str(round(struc_obj.get_sigma_y1(), 0)),
@@ -699,7 +699,7 @@ class LetterMaker(object):
 
             table_all.append(data)
 
-        t = Table(table_all,colWidths=[0.6*inch])
+        t = Table(table_all,colWidths=[0.57*inch])
         t.setStyle(TableStyle([
             ('GRID', (0, 0), (-1, -1), 0.5, colors.gray),
             ('BACKGROUND', (0, 0), (-1, -1), colors.lightblue),
