@@ -15,12 +15,14 @@ class Loads():
         self.poly_const = main_load_dict['poly_const']
         self.manual_press = main_load_dict['man_press']
         self.load_condition = main_load_dict['load_condition']
+
         if main_load_dict['load_condition'] == 'slamming':
-            self.slamming_pl_reduction_factor = 1
-            self.slamming_stf_reduction_factor = 1
-        else:
             self.slamming_pl_reduction_factor = main_load_dict['slamming mult pl']
             self.slamming_stf_reduction_factor = main_load_dict['slamming mult stf']
+        else:
+            self.slamming_pl_reduction_factor = 1
+            self.slamming_stf_reduction_factor = 1
+
         self.name_of_load = main_load_dict['name_of_load']
         try:
             self.limit_state = main_load_dict['limit_state']

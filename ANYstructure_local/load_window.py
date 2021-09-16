@@ -130,8 +130,8 @@ class CreateLoadWindow():
         self._new_slamming_pressure_name.set('slamming')
         self._new_slamming_pl_mult = tk.DoubleVar()
         self._new_slamming_stf_mult = tk.DoubleVar()
-        self._new_slamming_pl_mult.set(1)
-        self._new_slamming_stf_mult.set(1)
+        self._new_slamming_pl_mult.set(1.0)
+        self._new_slamming_stf_mult.set(1.0)
 
         ent_w = 15
         ent_dyn_load_name = tk.Entry(self._frame, textvariable=self._new_dynamic_load_name, width=ent_w*2)
@@ -682,6 +682,12 @@ class CreateLoadWindow():
                 self._new_load_manual_pressure.set(current_object.get_load_parmeters()[6])
                 self._new_dyn_load_condition.set(current_object.get_load_parmeters()[4])
                 self._new_limit_state.set(current_object.get_load_parmeters()[9])
+
+            if current_object.get_load_parmeters()[4] == 'slamming':
+                self._new_slamming_pressure.set(current_object.get_load_parmeters()[3])
+                self._new_slamming_pressure_name.set(current_object.get_load_parmeters()[8])
+                self._new_slamming_pl_mult.set(current_object.get_load_parmeters()[10])
+                self._new_slamming_stf_mult.set(current_object.get_load_parmeters()[11])
 
             self._load_obj_box.update()
             self._ent_assosiate_load.update_idletasks()
