@@ -1139,6 +1139,9 @@ class CreateOptGeoWindow():
                     vector = [coord2[0] - coord1[0], coord2[1] - coord1[1]]
                     self._canvas_select.create_line(coord1, coord2, width=6, fill=color)
 
+                    # self._canvas_select.create_polygon(points, outline='#f11',
+                    #                       fill='#1f1', width=2)
+
             # drawing the point dictionary
 
             for key,value in self._point_dict.items():
