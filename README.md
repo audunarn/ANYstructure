@@ -1,4 +1,10 @@
 # ANYstructure #
+### What's new in 3.1 ###
+* Span optimization harmonizer added. Fixed bug related to applied loads.
+* Table report added.
+* Slamming pressure option added to scale stresses on plates and stiffeners.
+* Bug fixes.
+* Smaller install file.
 ### What's new in 3.0 ###
 * This version includes lots of minor bug fixing (color coding, manual pressure only, span optimizer...).
 * More control over scaling of stresses during optimization and modification of properties.
