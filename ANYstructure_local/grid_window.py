@@ -160,7 +160,7 @@ class CreateGridWindow():
         ani = animation.FuncAnimation(fig, update, data_gen, interval=50)
         fm = plt.get_current_fig_manager()
         #fm.window.activateWindow()
-        fm.window.raise_()
+        #fm.window.raise_()
         plt.suptitle('Compartments returned from search operation displayed below', fontsize=20, color='red')
         plt.xscale('linear')
         plt.axis('off')
