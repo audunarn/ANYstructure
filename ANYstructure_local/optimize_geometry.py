@@ -124,6 +124,7 @@ class CreateOptGeoWindow():
         self._new_option_fraction = tk.IntVar()
         self._new_option_panel = tk.IntVar()
 
+
         ent_w = 10
         self._ent_spacing_upper = tk.Entry(self._frame, textvariable=self._new_spacing_upper, width=ent_w)
         self._ent_spacing_lower = tk.Entry(self._frame, textvariable=self._new_spacing_lower, width=ent_w)
@@ -223,6 +224,8 @@ class CreateOptGeoWindow():
                                                                                     y=start_y - 0.6 * dy)
         tk.Label(self._frame, text='Estimated running time for algorithm not calculated.',
                  font='Verdana 9 bold').place(x=start_x, y=start_y + 2.8 * dy)
+        tk.Label(self._frame, text='- Harmonize stiffer spacing for section.', font='Verdana 9 bold')\
+            .place(x=start_x + 5*dx, y=start_y + 2.8 * dy)
         # self._runnig_time_label = tk.Label(self._frame, text='', font='Verdana 9 bold')
         # self._runnig_time_label.place(x=start_x + 2.7 * dx, y=start_y + 2.8 * dy)
         # tk.Label(self._frame, text='seconds ', font='Verdana 9 bold').place(x=start_x + 3.3 * dx, y=start_y + 2.8 * dy)
@@ -339,6 +342,8 @@ class CreateOptGeoWindow():
         self._new_check_fatigue = tk.BooleanVar()
         self._new_check_slamming = tk.BooleanVar()
         self._new_check_local_buckling = tk.BooleanVar()
+        self._new_harmonize_spacing = tk.BooleanVar()
+
         self._new_check_sec_mod.set(True)
         self._new_check_min_pl_thk.set(True)
         self._new_check_shear_area.set(True)
@@ -348,6 +353,7 @@ class CreateOptGeoWindow():
         self._new_check_local_buckling.set(True)
         self._new_option_fraction.set(None)
         self._new_option_panel.set(None)
+        self._new_harmonize_spacing.set(False)
 
         start_y, start_x, dy  = 570, 100, 25
         tk.Label(self._frame,text='Check for minimum section modulus').place(x=start_x+dx*9.7,y=start_y+4*dy)
@@ -389,6 +395,8 @@ class CreateOptGeoWindow():
         tk.Checkbutton(self._frame, variable=self._new_check_slamming).place(x=start_x + dx * 12, y=start_y + 9 * dy)
         tk.Checkbutton(self._frame, variable=self._new_check_local_buckling).place(x=start_x + dx * 12,
                                                                                    y=start_y + 10 * dy)
+
+        tk.Checkbutton(self._frame, variable=self._new_harmonize_spacing).place(x=start_x + 3.9*dx, y=180)
 
         # Stress scaling
         self._new_fup = tk.DoubleVar()
@@ -523,7 +531,7 @@ class CreateOptGeoWindow():
         #         return
         self.draw_select_canvas(opt_results=self._geo_results)
 
-    def run_optimizaion(self, load_pre = False, save_results = True):
+    def run_optimizaion(self, load_pre = False, save_results = True, harmonize = False):
         '''
         Function when pressing the optimization botton inside this window.
         :return:
@@ -607,27 +615,67 @@ class CreateOptGeoWindow():
                                 message='This field cannot be subdivided or there are no loads. Error.')
             return None
 
-        # found_files = self._filez
-        # if self._toggle_btn.config('relief')[-1] == 'sunken':
-        #     found_files, predefined_stiffener_iter = self.toggle(found_files=found_files, iterating=True)
-        # else:
-        #     predefined_stiffener_iter = None
-
-
         if not load_pre:
+            min_var = self.get_lower_bounds()
+            max_var = self.get_upper_bounds()
+            deltas = self.get_deltas()
+            spacings = np.arange(min_var[0], max_var[0],
+                                 deltas[0])
+            resulting_geo = list()
 
-            geo_results = op.run_optmizataion(initial_structure_obj=init_objects,min_var=self.get_lower_bounds(),
-                                              max_var=self.get_upper_bounds(),lateral_pressure=lateral_press,
-                                              deltas=self.get_deltas(), algorithm='anysmart',side='p',
-                                              const_chk = contraints,pso_options = self.pso_parameters,
-                                              is_geometric=True,fatigue_obj= fatigue_objects,
-                                              fat_press_ext_int=fat_press_ext_int,
-                                              min_max_span=min_max_span, tot_len=self.opt_get_length(),
-                                              frame_height=self.opt_get_distance(), frame_distance = distances,
-                                              predefined_stiffener_iter=self._filez,
-                                              processes = self._new_processes.get(),
-                                              slamming_press=slamming_press, opt_girder_prop=opt_girder_prop,
-                                              fdwn = self._new_fdwn.get(), fup = self._new_fdwn.get())
+
+            if self._new_harmonize_spacing.get():
+                geo_results = dict()
+                for spacing in spacings:
+                    this_min_var = copy.deepcopy(min_var)
+                    this_min_var[0] = spacing
+                    this_max_var = copy.deepcopy(max_var)
+                    this_max_var[0] = spacing
+
+                    geo_results = op.run_optmizataion(initial_structure_obj=init_objects,min_var=this_min_var,
+                                                      max_var=this_max_var,lateral_pressure=lateral_press,
+                                                      deltas=self.get_deltas(), algorithm='anysmart',side='p',
+                                                      const_chk = contraints,pso_options = self.pso_parameters,
+                                                      is_geometric=True,fatigue_obj= fatigue_objects,
+                                                      fat_press_ext_int=fat_press_ext_int,
+                                                      min_max_span=min_max_span, tot_len=self.opt_get_length(),
+                                                      frame_height=self.opt_get_distance(), frame_distance = distances,
+                                                      predefined_stiffener_iter=self._filez,
+                                                      processes = self._new_processes.get(),
+                                                      slamming_press=slamming_press, opt_girder_prop=opt_girder_prop,
+                                                      fdwn = self._new_fdwn.get(), fup = self._new_fdwn.get())
+                    resulting_geo.append(geo_results)
+
+                #need to find the lowest
+                for fraction in resulting_geo[0].keys():
+                    print('Fraction', fraction)
+                    weight = float('inf')
+                    best_idx = None
+                    for idx, geo_res in enumerate(resulting_geo):
+                        this_sub_fraction_weight = geo_res[fraction][0]
+                        print('..This weight', this_sub_fraction_weight, 'fraction', fraction)
+                        if this_sub_fraction_weight < weight:
+
+                            best_idx = idx
+                            weight = this_sub_fraction_weight
+                            print('..found best',best_idx, weight,'fraction', fraction )
+
+                    geo_results[fraction] = resulting_geo[best_idx][fraction]
+
+            else:
+                geo_results = op.run_optmizataion(initial_structure_obj=init_objects, min_var=self.get_lower_bounds(),
+                                                  max_var=self.get_upper_bounds(), lateral_pressure=lateral_press,
+                                                  deltas=self.get_deltas(), algorithm='anysmart', side='p',
+                                                  const_chk=contraints, pso_options=self.pso_parameters,
+                                                  is_geometric=True, fatigue_obj=fatigue_objects,
+                                                  fat_press_ext_int=fat_press_ext_int,
+                                                  min_max_span=min_max_span, tot_len=self.opt_get_length(),
+                                                  frame_height=self.opt_get_distance(), frame_distance=distances,
+                                                  predefined_stiffener_iter=self._filez,
+                                                  processes=self._new_processes.get(),
+                                                  slamming_press=slamming_press, opt_girder_prop=opt_girder_prop,
+                                                  fdwn=self._new_fdwn.get(), fup=self._new_fdwn.get())
+
             self._geo_results = geo_results
 
             if len([val*2 for val in self._geo_results.keys()]) != 0:
