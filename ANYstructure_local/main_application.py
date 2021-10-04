@@ -69,6 +69,7 @@ class Application():
         self._shortcut_text = 'CTRL-Z Undo geometry action\n' \
                               'CTRL-P Copy selected point\n' \
                               'CTRL-M Move selected point)\n' \
+                              'CTRL-N Move selected line)\n' \
                               'CTRL-Q New line (right click two points)\n' \
                               'CTRL-S Assign structure prop. to line\n' \
                               'CTRL-A Select all lines (change param)\n' \
@@ -88,6 +89,7 @@ class Application():
         #undo_redo.add_command(label='Redo geometry action (CTRL-Y)', command=self.redo)
         undo_redo.add_command(label='Copy selected point (CTRL-P)', command=self.copy_point)
         undo_redo.add_command(label='Move selected point (CTRL-M)', command=self.move_point)
+        undo_redo.add_command(label='Move selected line (CTRL-N)', command=self.move_line)
         undo_redo.add_command(label='New line (right click two points) (CTRL-Q)', command=self.new_line)
         undo_redo.add_command(label='Assign structure properties to clicked line (CTRL-S)',
                               command=self.new_structure)
@@ -282,10 +284,14 @@ class Application():
                   bg = self._button_bg_color, fg = self._button_fg_color,
                   font = self._text_size['Text 9 bold']).place(relx=ent_x + 2 * delta_x, rely=point_start+0.1*delta_y,
                                                                relwidth = 0.08)
-        tk.Button(self._main_fr, text='Move point (relative)', command=self.move_point,
+        tk.Button(self._main_fr, text='Move point', command=self.move_point,
                   bg = self._button_bg_color, fg = self._button_fg_color,
                   font = self._text_size['Text 9 bold']).place(relx=ent_x + 2 * delta_x, rely=point_start+1.2*delta_y,
-                                                               relwidth = 0.08)
+                                                               relwidth = 0.04)
+        tk.Button(self._main_fr, text='Move line', command=self.move_line,
+                  bg = self._button_bg_color, fg = self._button_fg_color,
+                  font = self._text_size['Text 9 bold']).place(relx=ent_x + 3.55 * delta_x, rely=point_start+1.2*delta_y,
+                                                               relwidth = 0.04)
 
         # --- line input/output ---
         self._new_line_p1 = tk.IntVar()
@@ -328,6 +334,8 @@ class Application():
         self._new_colorcode_puls_acceptance.set(False)
         self._new_colorcode_total= tk.BooleanVar()
         self._new_colorcode_total.set(False)
+        self._new_colorcode_spacing= tk.BooleanVar()
+        self._new_colorcode_spacing.set(False)
         self._new_toggle_var = tk.StringVar()
         self._new_toggle_puls = tk.BooleanVar()
         self._new_toggle_puls.set(False)
@@ -368,6 +376,8 @@ class Application():
             .place(relx = 0.26, y=140)
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_total, command = self.on_color_code_check)\
             .place(relx = 0.26, y=160)
+        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_spacing, command = self.on_color_code_check)\
+            .place(relx = 0.095, rely=0.29)
 
 
         tk.Label(self._main_fr, text='Check to see avaliable shortcuts', font="Text 9").place(relx = 0.27, y=0)
@@ -387,7 +397,12 @@ class Application():
             .place(relx=ent_x, rely=line_start + delta_y)
         tk.Button(self._main_fr, text='Add line', command=self.new_line,
                   bg = self._button_bg_color, fg = self._button_fg_color,
-                  font = self._text_size['Text 9 bold']).place(relx=ent_x+2*delta_x, rely=line_start,relwidth = 0.05)
+                  font = self._text_size['Text 9 bold']).place(relx=ent_x+2*delta_x, rely=line_start-delta_y*0.05,
+                                                               relwidth = 0.05)
+        # tk.Button(self._main_fr, text='Move line', command=self.new_line,
+        #           bg = self._button_bg_color, fg = self._button_fg_color,
+        #           font = self._text_size['Text 9 bold']).place(relx=ent_x+2*delta_x, rely=line_start+delta_y*1.05,
+        #                                                        relwidth = 0.05)
 
         # --- delete points and lines ---
         self._new_delete_line = tk.IntVar()
@@ -1764,8 +1779,6 @@ class Application():
                 return_dict['pressure_uls'][current_line] = design_pressure
                 return_dict['pressure_fls'][current_line] = {'p_int': p_int, 'p_ext': p_ext}
                 return_dict['section_modulus'][current_line] = {'sec_mod': sec_mod, 'min_sec_mod': min_sec_mod}
-
-
                 return_dict['shear_area'][current_line] = {'shear_area': shear_area, 'min_shear_area': min_shear}
                 return_dict['thickness'][current_line] = {'thk': obj_scnt_calc.get_plate_thk(), 'min_thk': min_thk}
                 return_dict['struc_obj'][current_line] = obj_structure
@@ -1890,6 +1903,7 @@ class Application():
             else:
                 tau_xy_map = tau_xy
 
+            spacing = np.unique([self._line_to_struc[line][1].get_s() for line in self._line_to_struc.keys()]).tolist()
             structure_type = [self._line_to_struc[line][1].get_structure_type() for line in
                               self._line_to_struc.keys()]
 
@@ -1909,11 +1923,13 @@ class Application():
                                          'max tau xy': max(tau_xy), 'min tau xy': min(tau_xy), 'tau xy map': tau_xy_map,
                                          'structure types map': np.unique(structure_type).tolist(),
                                          'sections in model': sec_in_model,
-                                         'recorded sections': recorded_sections}
+                                         'recorded sections': recorded_sections,
+                                         'spacings': spacing, 'max spacing': max(spacing), 'min spacing': min(spacing)}
             line_color_coding, puls_method_map, puls_sp_or_up_map = \
                 {}, {None: 0, 'buckling': 0.5, 'ultimate': 1}, {None:0, 'SP': 0.5, 'UP': 1}
             cmap_sections = plt.get_cmap('jet')
             thk_sort_unique = return_dict['color code']['all thicknesses']
+            spacing_sort_unique = return_dict['color code']['spacings']
             structure_type_unique = return_dict['color code']['structure types map']
             for line, line_data in self._line_to_struc.items():
                 if self._PULS_results is None:
@@ -1958,8 +1974,13 @@ class Application():
 
                 sig_x_uf, sig_y1_uf, sig_y2_uf , tau_xy_uf = res
 
+
                 line_color_coding[line] = {'plate': matplotlib.colors.rgb2hex(cmap_sections(thk_sort_unique.index(round(line_data[1]
                                                                               .get_pl_thk(),10))/len(thk_sort_unique))),
+                                           'spacing': matplotlib.colors.rgb2hex(
+                                               cmap_sections(spacing_sort_unique.index(round(line_data[1]
+                                                                                         .get_s(), 10)) / len(
+                                                   spacing_sort_unique))),
                                            'section': matplotlib.colors.rgb2hex(cmap_sections(sec_in_model[line_data[1]
                                                                                 .get_beam_string()]
                                                       /len(list(recorded_sections)))),
@@ -1990,7 +2011,8 @@ class Application():
                                            'sigma x': matplotlib.colors.rgb2hex(cmap_sections(sig_x_uf)),
                                            'sigma y1': matplotlib.colors.rgb2hex(cmap_sections(sig_y1_uf)),
                                            'sigma y2': matplotlib.colors.rgb2hex(cmap_sections(sig_y2_uf)),
-                                           'tau xy':matplotlib.colors.rgb2hex(cmap_sections(tau_xy_uf)),}
+                                           'tau xy':matplotlib.colors.rgb2hex(cmap_sections(tau_xy_uf)),
+                                           }
                 return_dict['color code']['lines'] = line_color_coding
         return return_dict
 
@@ -2015,7 +2037,7 @@ class Application():
             self._new_colorcode_tauxy.get(), self._new_colorcode_structure_type.get(),
                            self._new_colorcode_fatigue.get(), self._new_colorcode_section_modulus.get(),
                           self._new_colorcode_total.get(), self._new_colorcode_puls_acceptance.get(),
-                          self._new_colorcode_puls_sp_or_up.get()].count(True)> 0
+                          self._new_colorcode_puls_sp_or_up.get(), self._new_colorcode_spacing.get()].count(True)> 0
 
         if chk_box_active and state != None:
             self.color_code_text(state)
@@ -2177,6 +2199,20 @@ class Application():
                                                                                            /len(all_thicknesses))),
                                               anchor="nw")
 
+        elif self._new_colorcode_spacing.get() == True and self._line_to_struc != {}:
+
+            all_spacings = cc_state['spacings']
+
+            for idx, s in enumerate(all_spacings):
+                self._main_canvas.create_text(11, start_text_shift+20*idx, text=str('Spacing '+ str(s*1000) + ' mm'),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill='black',
+                                              anchor="nw")
+                self._main_canvas.create_text(10, start_text+20*idx, text=str('Spacing '+ str(s*1000) + ' mm'),
+                                              font=self._text_size["Text 10 bold"],
+                                              fill=matplotlib.colors.rgb2hex(cmap_sections(all_spacings.index(s)
+                                                                                           /len(all_spacings))),
+                                              anchor="nw")
         elif self._new_colorcode_pressure.get() == True and self._line_to_struc != {}:
             highest_pressure = cc_state['highest pressure']
             press_map = cc_state['pressure map']
@@ -2337,6 +2373,11 @@ class Application():
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                               text=str(self._line_to_struc[line][1].get_pl_thk()*1000))
+        elif self._new_colorcode_spacing.get() == True and line in list(self._line_to_struc.keys()):
+            color = state['color code']['lines'][line]['spacing']
+            if self._new_label_color_coding.get():
+                self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                              text=str(self._line_to_struc[line][1].get_s()*1000))
 
         elif self._new_colorcode_pressure.get() == True and line in list(self._line_to_struc.keys()):
             if cc_state['all pressures'] == [0, 1]:
@@ -2874,6 +2915,16 @@ class Application():
         except TclError:
             messagebox.showinfo(title='Input error', message='Input must be a number. Dots used not comma.')
 
+    def move_line(self,event = None):
+        if self._line_is_active:
+            line = self._line_dict[self._active_line]
+            for pt_num in self._line_dict[self._active_line]:
+                self._active_point = 'point'+str(pt_num)
+                self._point_is_active = True
+                self.move_point()
+        else:
+            messagebox.showinfo(title='Input error', message='A line must be selected (left click).')
+
     def move_point(self, event = None, redo = None):
         '''
         Moving a point.
@@ -2889,11 +2940,16 @@ class Application():
                     if line in self._line_to_struc.keys():
                         self._line_to_struc[line][0].set_span(dist(coord1,coord2))
                         self._line_to_struc[line][1].set_span(dist(coord1, coord2))
+                        self._PULS_results.result_changed(line)
                         if self._line_to_struc[line][0].get_structure_type() not in ['GENERAL_INTERNAL_NONWT',
                                                                                                 'FRAME']:
                             self._tank_dict = {}
                             self._main_grid.clear()
                             self._compartments_listbox.delete(0, 'end')
+
+            for line, obj in self._line_to_struc.items():
+                obj[1].need_recalc = True
+            self.update_frame()
         else:
             messagebox.showinfo(title='Input error', message='A point must be selected (right click).')
 
@@ -3716,6 +3772,7 @@ class Application():
         self._parent.bind('<Control-l>', self.delete_line)
         self._parent.bind('<Control-p>', self.copy_point)
         self._parent.bind('<Control-m>', self.move_point)
+        self._parent.bind('<Control-n>', self.move_line)
         self._parent.bind('<Control-a>', self.select_all_lines)
         self._parent.bind('<Control-t>', self.select_all_lines)
         self._parent.bind('<Control-q>', self.new_line)
@@ -4622,7 +4679,7 @@ class Application():
             self._new_colorcode_tauxy.get(), self._new_colorcode_structure_type.get(),
             self._new_colorcode_section_modulus.get(), self._new_colorcode_fatigue.get(),
             self._new_colorcode_total.get(), self._new_colorcode_puls_sp_or_up.get(),
-            self._new_colorcode_puls_acceptance.get()].count(True) > 1:
+            self._new_colorcode_puls_acceptance.get(), self._new_colorcode_spacing.get()].count(True) > 1:
             messagebox.showinfo(title='Information', message='Can only select on color code at the time.')
             self._new_colorcode_beams.set(False)
             self._new_colorcode_plates.set(False)

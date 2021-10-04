@@ -224,7 +224,7 @@ class CreateOptGeoWindow():
                                                                                     y=start_y - 0.6 * dy)
         tk.Label(self._frame, text='Estimated running time for algorithm not calculated.',
                  font='Verdana 9 bold').place(x=start_x, y=start_y + 2.8 * dy)
-        tk.Label(self._frame, text='- Harmonize stiffer spacing for section.', font='Verdana 9 bold')\
+        tk.Label(self._frame, text='- Harmonize stiffener spacing for section.', font='Verdana 9 bold')\
             .place(x=start_x + 5*dx, y=start_y + 2.8 * dy)
         # self._runnig_time_label = tk.Label(self._frame, text='', font='Verdana 9 bold')
         # self._runnig_time_label.place(x=start_x + 2.7 * dx, y=start_y + 2.8 * dy)
@@ -648,17 +648,14 @@ class CreateOptGeoWindow():
 
                 #need to find the lowest
                 for fraction in resulting_geo[0].keys():
-                    print('Fraction', fraction)
                     weight = float('inf')
                     best_idx = None
                     for idx, geo_res in enumerate(resulting_geo):
                         this_sub_fraction_weight = geo_res[fraction][0]
-                        print('..This weight', this_sub_fraction_weight, 'fraction', fraction)
                         if this_sub_fraction_weight < weight:
 
                             best_idx = idx
                             weight = this_sub_fraction_weight
-                            print('..found best',best_idx, weight,'fraction', fraction )
 
                     geo_results[fraction] = resulting_geo[best_idx][fraction]
 
