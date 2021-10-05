@@ -2055,16 +2055,6 @@ class Application():
 
         self._main_canvas.delete('all')
         color = 'black' #by default
-
-        if not self._new_shifted_coords.get():
-            # Drawing lines at (0, 0)
-            self._main_canvas.create_line(self._canvas_draw_origo[0], 0, self._canvas_draw_origo[0], self._canvas_dim[1]+500,
-                                         stipple= 'gray50')
-            self._main_canvas.create_line(0, self._canvas_draw_origo[1], self._canvas_dim[0] +500, self._canvas_draw_origo[1],
-                                         stipple='gray50')
-            self._main_canvas.create_text(self._canvas_draw_origo[0] - 30 * 1,
-                                          self._canvas_draw_origo[1] + 12 * 1, text='(0,0)',
-                                          font='Text 10')
         # Drawing the shifted lines
         if any([self._new_shift_viz_coord_hor.get()!=0, self._new_shift_viz_coord_ver.get()!= 0]) and self._new_shifted_coords.get():
             self._main_canvas.create_line(self._canvas_draw_origo[0]+self._canvas_scale*self._new_shift_viz_coord_hor.get()/1000, 0,
@@ -2075,6 +2065,15 @@ class Application():
                                           self._canvas_dim[0] + 500,
                                           self._canvas_draw_origo[1]-self._canvas_scale*self._new_shift_viz_coord_ver.get()/1000,
                                           stipple='gray50', fill = 'peru')
+        else:
+            # Drawing lines at (0, 0)
+            self._main_canvas.create_line(self._canvas_draw_origo[0], 0, self._canvas_draw_origo[0], self._canvas_dim[1]+500,
+                                         stipple= 'gray50')
+            self._main_canvas.create_line(0, self._canvas_draw_origo[1], self._canvas_dim[0] +500, self._canvas_draw_origo[1],
+                                         stipple='gray50')
+            self._main_canvas.create_text(self._canvas_draw_origo[0] - 30 * 1,
+                                          self._canvas_draw_origo[1] + 12 * 1, text='(0,0)',
+                                          font='Text 10')
 
 
         chk_box_active = [self._new_colorcode_beams.get(), self._new_colorcode_plates.get(),
