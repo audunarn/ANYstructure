@@ -347,8 +347,8 @@ class Application():
         self._new_fup.set(0.5)
         self._new_fdwn = tk.DoubleVar()
         self._new_fdwn.set(1)
-
-
+        self._new_shifted_coords = tk.BooleanVar()
+        self._new_shifted_coords.set(False)
 
         line_start, line_x = point_start+0.08, 0.005208333
         tk.Label(self._main_fr, text='Input line from "point number" to "point number"',
@@ -480,12 +480,16 @@ class Application():
             .place(relx=0.48, rely=0)
         tk.Label(self._main_fr, text='Label color code', font="Text 9")\
             .place(relx=0.58, rely=0)
+        tk.Label(self._main_fr, text='Use shifted coordinates', font="Text 9")\
+            .place(relx=0.68, rely=0)
         tk.Checkbutton(self._main_fr, variable = self._new_line_name, command = self.on_color_code_check)\
             .place(relx=0.366, rely=0)
         tk.Checkbutton(self._main_fr, variable = self._new_draw_point_name, command = self.on_color_code_check)\
             .place(relx=0.466, rely=0)
         tk.Checkbutton(self._main_fr, variable = self._new_label_color_coding, command = self.on_color_code_check)\
             .place(relx=0.566, rely=0)
+        tk.Checkbutton(self._main_fr, variable = self._new_shifted_coords, command = self.update_frame)\
+            .place(relx=0.666, rely=0)
 
 
 
@@ -576,6 +580,8 @@ class Application():
         self._new_puls_stf_end_type = tk.StringVar()
         self._new_puls_sp_or_up = tk.StringVar()
         self._new_puls_up_boundary = tk.StringVar()
+        self._new_shift_viz_coord_hor = tk.DoubleVar()
+        self._new_shift_viz_coord_ver = tk.DoubleVar()
 
 
         # Setting default values to tkinter variables
@@ -596,6 +602,8 @@ class Application():
         self._new_stf_kps.set(1)
         self._new_plate_kpp.set(1)
         self._new_material_factor.set(1.15)
+        self._new_shift_viz_coord_hor.set(0)
+        self._new_shift_viz_coord_ver.set(0)
 
         self._new_stucture_type.set('GENERAL_INTERNAL_WT')
         self.option_meny_structure_type_trace(event='GENERAL_INTERNAL_WT')
@@ -655,9 +663,6 @@ class Application():
                                      fg = self._entry_text_color)
 
         self._ent_pressure_side = tk.OptionMenu(self._main_fr, self._new_pressure_side, *('p', 's'))
-
-
-
         self._ent_sigma_y1= tk.Entry(self._main_fr, textvariable=self._new_sigma_y1, width = int(7*1),
                                      bg = self._entry_color, fg = self._entry_text_color)
         self._ent_sigma_y2 = tk.Entry(self._main_fr, textvariable=self._new_sigma_y2, width=int(7*1),
@@ -818,8 +823,10 @@ class Application():
 
         self._ent_puls_uf.place(relx=types_start+ shift_x *delta_x, rely=prop_vert_start + 13.9 * delta_y, relwidth = 0.02,
                                 relheight = 0.025)
-        self._ent_puls_panel_boundary.place(relx=types_start+ shift_x *delta_x, rely=prop_vert_start + 15.2 * delta_y, relwidth = 0.025)
-        self._ent_puls_stf_end_type.place(relx=types_start+ shift_x *delta_x, rely=prop_vert_start + 16.5 * delta_y, relwidth = 0.025)
+        self._ent_puls_panel_boundary.place(relx=types_start+ shift_x *delta_x,
+                                            rely=prop_vert_start + 15.2 * delta_y, relwidth = 0.025)
+        self._ent_puls_stf_end_type.place(relx=types_start+ shift_x *delta_x,
+                                          rely=prop_vert_start + 16.5 * delta_y, relwidth = 0.025)
 
 
         tk.Checkbutton(self._main_fr, variable = self._new_colorcode_sigmax, command = self.on_color_code_check)\
@@ -847,7 +854,7 @@ class Application():
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
             stf_button = tk.Button(self._main_fr,image = photo,command=self.on_open_structure_window,
-                                   bg = self._button_bg_color, fg = self._button_fg_color,)
+                                   bg = 'white', fg = self._button_fg_color,)
             stf_button.image = photo
             stf_button.place(relx=types_start,rely=prop_vert_start,relheight = 0.062, relwidth = 0.042)
         except TclError:
@@ -863,7 +870,7 @@ class Application():
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
             stress_button = tk.Button(self._main_fr,image = photo,command=self.on_open_stresses_window,
-                                      bg = self._button_bg_color, fg = self._button_fg_color)
+                                       fg = self._button_fg_color,  bg = 'white')
             stress_button.image = photo
             stress_button.place(relx=types_start,rely=prop_vert_start+3*delta_y,relheight = 0.062, relwidth = 0.042)
         except TclError:
@@ -878,7 +885,8 @@ class Application():
             else:
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
-            fls_button = tk.Button(self._main_fr,image = photo,command=self.on_open_fatigue_window)
+            fls_button = tk.Button(self._main_fr,image = photo,command=self.on_open_fatigue_window,
+                                   bg = self._button_bg_color)
             fls_button.image = photo
             fls_button.place(relx=types_start,rely=prop_vert_start+6*delta_y,relheight = 0.062, relwidth = 0.042)
         except TclError:
@@ -960,6 +968,26 @@ class Application():
                                         font = self._text_size['Text 8'], bg = self._general_color)
         self._tank_acc_label.place(relx=ent_x-2*delta_x, rely=load_vert_start + delta_y * 10)
 
+        # Shifing of coordinate display
+        tk.Label(self._main_fr, text='Shift coordinate labeling:', font = self._text_size['Text 8'],
+                 bg = self._general_color).place(relx=types_start, rely=load_vert_start + delta_y * 12.5)
+        tk.Label(self._main_fr, text='y - ', font = self._text_size['Text 8'],
+                 bg = self._general_color).place(relx=types_start+ delta_x*4.5, rely=load_vert_start + delta_y * 12.5)
+        tk.Label(self._main_fr, text='x - ', font = self._text_size['Text 8'],
+                 bg = self._general_color).place(relx=types_start+ delta_x*3, rely=load_vert_start + delta_y * 12.5)
+
+        self._ent_shift_hor = tk.Entry(self._main_fr, textvariable = self._new_shift_viz_coord_hor,
+                                       width = int(ent_width * 0.6), bg = self._entry_color, fg = self._entry_text_color)
+
+        self._ent_shift_hor.bind('<FocusOut>', self.trace_shift_change)
+        self._ent_shift_ver = tk.Entry(self._main_fr, textvariable = self._new_shift_viz_coord_ver,
+                                       width = int(ent_width * 0.6), bg = self._entry_color,
+                                       fg = self._entry_text_color)
+        self._ent_shift_ver.bind('<FocusOut>', self.trace_shift_change)
+        #self._ent_shift_ver.trace('w', self.trace_shift_change)
+        self._ent_shift_hor.place(relx=types_start+delta_x*3.5, rely=load_vert_start + delta_y * 12.5)
+        self._ent_shift_ver.place(relx=types_start+ delta_x*5, rely=load_vert_start + delta_y * 12.5)
+
         # --- button to create compartments and define external pressures ---
 
         try:
@@ -969,8 +997,7 @@ class Application():
             else:
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
-
-            self._int_button = tk.Button(self._main_fr,image = photo,command=self.grid_find_tanks)
+            self._int_button = tk.Button(self._main_fr,image = photo,command=self.grid_find_tanks, bg = 'white')
             self._int_button.image = photo
             self._int_button.place(relx=types_start, rely=load_vert_start+1.5*delta_y,
                                    relheight = 0.044, relwidth = 0.12)
@@ -986,7 +1013,6 @@ class Application():
         show_compartment.place(relx=ent_x+delta_x*3, rely=load_vert_start + delta_y * 4.5, relwidth = 0.08)
 
         try:
-
             img_file_name = 'img_ext_pressure_button.gif'
             if os.path.isfile('images/' + img_file_name):
                 file_path = 'images/' + img_file_name
@@ -995,7 +1021,7 @@ class Application():
             photo = tk.PhotoImage(file=file_path)
 
             self._ext_button = tk.Button(self._main_fr,image=photo, command = self.on_show_loads,
-                                         bg = self._button_bg_color, fg = self._button_fg_color)
+                                         bg = 'white')
             self._ext_button.image = photo
             self._ext_button.place(relx=ent_x+delta_x*1.5, rely=load_vert_start+1.5*delta_y,
                                    relheight = 0.044, relwidth = 0.11)
@@ -1092,9 +1118,9 @@ class Application():
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
             opt_button = tk.Button(self._main_fr,image=photo, command = self.on_optimize,
-                                   bg = self._button_bg_color, fg = self._button_fg_color)
+                                   bg = 'white', fg = self._button_fg_color)
             opt_button.image = photo
-            opt_button.place(relx=lc_x, rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.095)
+            opt_button.place(relx=lc_x, rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.098)
         except TclError:
             tk.Button(self._main_fr, text='Optimize', command=self.on_optimize_multiple,
                       bg = self._button_bg_color, fg = self._button_fg_color)\
@@ -1109,7 +1135,7 @@ class Application():
             opt_button_mult = tk.Button(self._main_fr,image=photo, command = self.on_optimize_multiple,
                                         bg = self._button_bg_color, fg = self._button_fg_color)
             opt_button_mult.image = photo
-            opt_button_mult.place(relx=lc_x+delta_x*3.75, rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.065)
+            opt_button_mult.place(relx=lc_x+delta_x*3.8, rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.065)
         except TclError:
             tk.Button(self._main_fr, text='MultiOpt', command=self.on_optimize_multiple,
                       bg = self._button_bg_color, fg = self._button_fg_color).place(relx=lc_x + delta_x*7,
@@ -1608,6 +1634,12 @@ class Application():
         self._new_load_comb_dict[name][1].set(0)
         self._new_load_comb_dict[name][2].set(0)
 
+    def trace_shift_change(self, *args):
+        try:
+            self.update_frame()
+        except (TclError, ZeroDivisionError):
+            pass
+
     def trace_acceptance_change(self, *args):
         try:
             self.update_frame()
@@ -2024,13 +2056,27 @@ class Application():
         self._main_canvas.delete('all')
         color = 'black' #by default
 
-        self._main_canvas.create_line(self._canvas_draw_origo[0], 0, self._canvas_draw_origo[0], self._canvas_dim[1]+500,
-                                     stipple= 'gray50')
-        self._main_canvas.create_line(0, self._canvas_draw_origo[1], self._canvas_dim[0] +500, self._canvas_draw_origo[1],
-                                     stipple='gray50')
-        self._main_canvas.create_text(self._canvas_draw_origo[0] - 30*1,
-                                     self._canvas_draw_origo[1] + 12* 1, text='(0,0)',
-                                     font = 'Text 10')
+        if not self._new_shifted_coords.get():
+            # Drawing lines at (0, 0)
+            self._main_canvas.create_line(self._canvas_draw_origo[0], 0, self._canvas_draw_origo[0], self._canvas_dim[1]+500,
+                                         stipple= 'gray50')
+            self._main_canvas.create_line(0, self._canvas_draw_origo[1], self._canvas_dim[0] +500, self._canvas_draw_origo[1],
+                                         stipple='gray50')
+            self._main_canvas.create_text(self._canvas_draw_origo[0] - 30 * 1,
+                                          self._canvas_draw_origo[1] + 12 * 1, text='(0,0)',
+                                          font='Text 10')
+        # Drawing the shifted lines
+        if any([self._new_shift_viz_coord_hor.get()!=0, self._new_shift_viz_coord_ver.get()!= 0]) and self._new_shifted_coords.get():
+            self._main_canvas.create_line(self._canvas_draw_origo[0]+self._canvas_scale*self._new_shift_viz_coord_hor.get()/1000, 0,
+                                          self._canvas_draw_origo[0]+self._canvas_scale*self._new_shift_viz_coord_hor.get()/1000,
+                                          self._canvas_dim[1] + 500,
+                                          stipple='gray50', fill = 'peru')
+            self._main_canvas.create_line(0, self._canvas_draw_origo[1]-self._canvas_scale*self._new_shift_viz_coord_ver.get()/1000,
+                                          self._canvas_dim[0] + 500,
+                                          self._canvas_draw_origo[1]-self._canvas_scale*self._new_shift_viz_coord_ver.get()/1000,
+                                          stipple='gray50', fill = 'peru')
+
+
         chk_box_active = [self._new_colorcode_beams.get(), self._new_colorcode_plates.get(),
             self._new_colorcode_pressure.get(), self._new_colorcode_utilization.get(),
             self._new_colorcode_sigmax.get(), self._new_colorcode_sigmay1.get(), self._new_colorcode_sigmay2.get(),
@@ -2044,7 +2090,7 @@ class Application():
 
         # Drawing shortcut information if selected.
         if self._new_shortcut_backdrop.get() == True:
-            self._main_canvas.create_text(self._main_canvas.winfo_width()*0.87, self._main_canvas.winfo_height()*0.13,
+            self._main_canvas.create_text(self._main_canvas.winfo_width()*0.87, self._main_canvas.winfo_height()*0.16,
                                           text = self._shortcut_text,
                                           font=self._text_size["Text 8"],
                                           fill = 'black')
@@ -2052,21 +2098,32 @@ class Application():
         # drawing the point dictionary
         pt_size = 3
         for key, value in self._point_dict.items():
+            if self._new_shifted_coords.get():
+                x_coord = round(self.get_point_actual_coord(key)[0] - self._new_shift_viz_coord_hor.get() / 1000, 3)
+                y_coord = round(self.get_point_actual_coord(key)[1] - self._new_shift_viz_coord_ver.get() / 1000, 3)
+                coord_color = 'peru'
+            else:
+                x_coord = round(self.get_point_actual_coord(key)[0], 3)
+                y_coord = round(self.get_point_actual_coord(key)[1], 3)
+                coord_color = 'black'
+
             if self._point_is_active and key == self._active_point :
                 self._main_canvas.create_oval(self.get_point_canvas_coord(key)[0] - pt_size+2,
                                              self.get_point_canvas_coord(key)[1] - pt_size+2,
                                              self.get_point_canvas_coord(key)[0] + pt_size+2,
                                              self.get_point_canvas_coord(key)[1] + pt_size+2, fill='blue')
                 if self._new_draw_point_name.get():
+                    # drawing the name of the point
+
                     self._main_canvas.create_text(self.get_point_canvas_coord(key)[0] - 5,
                                                  self.get_point_canvas_coord(key)[1] - 14, text='pt.'+str(get_num(key)),
-                                                 font=self._text_size["Text 10 bold"], fill = 'red')
-                    #printing the coordinates of the point
-                    self._main_canvas.create_text(self.get_point_canvas_coord(key)[0],
-                                                  self.get_point_canvas_coord(key)[1] - 25,
-                                                 text='(' + str(round(self.get_point_actual_coord(key)[0],2)) + ' , ' +
-                                                      str(round(self.get_point_actual_coord(key)[1],2)) + ')',
-                                                  font="Text 10", fill = 'red')
+                                                 font=self._text_size["Text 12 bold"], fill = 'red')
+                    # drawing the coordinates of the point
+                    self._main_canvas.create_text(self.get_point_canvas_coord(key)[0]+20,
+                                                  self.get_point_canvas_coord(key)[1] - 40,
+                                                 text='(' + str(x_coord) + ' , ' +
+                                                      str(y_coord) + ')',
+                                                  font="Text 14", fill = 'red')
 
             else:
                 self._main_canvas.create_oval(self.get_point_canvas_coord(key)[0] - pt_size,
@@ -2076,13 +2133,14 @@ class Application():
                 if self._new_draw_point_name.get():
                     #printing 'pt.#'
                     self._main_canvas.create_text(self.get_point_canvas_coord(key)[0] - 5,
-                                                 self.get_point_canvas_coord(key)[1] - 14, text='pt.'+str(get_num(key)))
+                                                 self.get_point_canvas_coord(key)[1] - 14, text='pt.'+str(get_num(key)),
+                                                  font="Text 10")
                     #printing the coordinates of the point
                     self._main_canvas.create_text(self.get_point_canvas_coord(key)[0]+20,
                                                   self.get_point_canvas_coord(key)[1] - 25,
-                                                 text='(' + str(round(self.get_point_actual_coord(key)[0],2)) + ' , ' +
-                                                      str(round(self.get_point_actual_coord(key)[1],2)) + ')',
-                                                  font="Text 6")
+                                                 text='(' + str(x_coord) + ' , ' +
+                                                      str(y_coord) + ')',
+                                                  font="Text 10", fill = coord_color)
         # drawing the line dictionary.
 
         if len(self._line_dict) != 0:
@@ -2183,7 +2241,6 @@ class Application():
                                               font=self._text_size["Text 10 bold"],
                                               fill=matplotlib.colors.rgb2hex(cmap_sections(idx/sec_in_model['length'])),
                                               anchor="nw")
-
         elif self._new_colorcode_plates.get() == True and self._line_to_struc != {}:
 
             all_thicknesses = np.unique(cc_state['all thicknesses']).tolist()
@@ -2198,7 +2255,6 @@ class Application():
                                               fill=matplotlib.colors.rgb2hex(cmap_sections(all_thicknesses.index(thk)
                                                                                            /len(all_thicknesses))),
                                               anchor="nw")
-
         elif self._new_colorcode_spacing.get() == True and self._line_to_struc != {}:
 
             all_spacings = cc_state['spacings']
@@ -2227,7 +2283,6 @@ class Application():
                                               fill=matplotlib.colors.rgb2hex(cmap_sections(0 if highest_pressure == 0
                                                                                            else press/highest_pressure)),
                                               anchor="nw")
-
         elif all([self._new_colorcode_utilization.get() == True,
                   self._line_to_struc != {}, self._new_toggle_puls.get() != True]):
             all_utils = cc_state['utilization map']
@@ -4078,6 +4133,10 @@ class Application():
         if self._PULS_results is not None:
             export_all['PULS results'] = self._PULS_results.get_run_results()
             export_all['PULS results']['sheet location'] = self._PULS_results.puls_sheet_location
+        export_all['shifting'] = {'shifted checked': self._new_shifted_coords.get(),
+                                  'shift hor': self._new_shift_viz_coord_hor.get(),
+                                  'shift ver': self._new_shift_viz_coord_ver.get()}
+
         json.dump(export_all, save_file)#, sort_keys=True, indent=4)
         save_file.close()
         self._parent.wm_title('| ANYstructure |     ' + save_file.name)
@@ -4100,9 +4159,15 @@ class Application():
         self.reset()
         if 'project information' in imported.keys():
             self._new_project_infomation.set(imported['project information'])
-
         else:
             self._new_project_infomation.set('No project information provided. Input here.')
+
+        if 'shifting' in imported.keys():
+            self._new_shifted_coords.set(imported['shifting']['shifted checked'])
+            self._new_shift_viz_coord_hor.set(imported['shifting']['shift hor'])
+            self._new_shift_viz_coord_ver.set(imported['shifting']['shift ver'])
+        else:
+            pass
 
         self._point_dict = imported['point_dict']
         self._line_dict = imported['line_dict']
@@ -4170,10 +4235,6 @@ class Application():
             self._accelerations_dict = imported['accelerations_dict']
         except IndexError:
             self._accelerations_dict = {'static':9.81, 'dyn_loaded':0, 'dyn_ballast':0}
-
-
-
-
 
         self._new_static_acc.set(self._accelerations_dict['static'])
         self._new_dyn_acc_loaded.set(self._accelerations_dict['dyn_loaded'])

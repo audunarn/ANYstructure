@@ -1,6 +1,5 @@
 matplotlib==3.2
 numpy
-pytest
 reportlab
 scipy==1.5.4
 xlwings
