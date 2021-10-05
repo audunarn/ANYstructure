@@ -969,12 +969,12 @@ class Application():
         self._tank_acc_label.place(relx=ent_x-2*delta_x, rely=load_vert_start + delta_y * 10)
 
         # Shifing of coordinate display
-        tk.Label(self._main_fr, text='Shift coordinate labeling:', font = self._text_size['Text 8'],
+        tk.Label(self._main_fr, text='Shift coordinate labeling [mm]:', font = self._text_size['Text 8'],
                  bg = self._general_color).place(relx=types_start, rely=load_vert_start + delta_y * 12.5)
         tk.Label(self._main_fr, text='y - ', font = self._text_size['Text 8'],
-                 bg = self._general_color).place(relx=types_start+ delta_x*4.5, rely=load_vert_start + delta_y * 12.5)
+                 bg = self._general_color).place(relx=types_start+ delta_x*5.5, rely=load_vert_start + delta_y * 12.5)
         tk.Label(self._main_fr, text='x - ', font = self._text_size['Text 8'],
-                 bg = self._general_color).place(relx=types_start+ delta_x*3, rely=load_vert_start + delta_y * 12.5)
+                 bg = self._general_color).place(relx=types_start+ delta_x*4, rely=load_vert_start + delta_y * 12.5)
 
         self._ent_shift_hor = tk.Entry(self._main_fr, textvariable = self._new_shift_viz_coord_hor,
                                        width = int(ent_width * 0.6), bg = self._entry_color, fg = self._entry_text_color)
@@ -985,8 +985,8 @@ class Application():
                                        fg = self._entry_text_color)
         self._ent_shift_ver.bind('<FocusOut>', self.trace_shift_change)
         #self._ent_shift_ver.trace('w', self.trace_shift_change)
-        self._ent_shift_hor.place(relx=types_start+delta_x*3.5, rely=load_vert_start + delta_y * 12.5)
-        self._ent_shift_ver.place(relx=types_start+ delta_x*5, rely=load_vert_start + delta_y * 12.5)
+        self._ent_shift_hor.place(relx=types_start+delta_x*4.5, rely=load_vert_start + delta_y * 12.5)
+        self._ent_shift_ver.place(relx=types_start+ delta_x*6, rely=load_vert_start + delta_y * 12.5)
 
         # --- button to create compartments and define external pressures ---
 
