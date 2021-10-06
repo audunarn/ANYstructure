@@ -969,12 +969,12 @@ class Application():
         self._tank_acc_label.place(relx=ent_x-2*delta_x, rely=load_vert_start + delta_y * 10)
 
         # Shifing of coordinate display
-        tk.Label(self._main_fr, text='Shift coordinate labeling:', font = self._text_size['Text 8'],
+        tk.Label(self._main_fr, text='Shift coordinate labeling [mm]:', font = self._text_size['Text 8'],
                  bg = self._general_color).place(relx=types_start, rely=load_vert_start + delta_y * 12.5)
         tk.Label(self._main_fr, text='y - ', font = self._text_size['Text 8'],
-                 bg = self._general_color).place(relx=types_start+ delta_x*4.5, rely=load_vert_start + delta_y * 12.5)
+                 bg = self._general_color).place(relx=types_start+ delta_x*5.5, rely=load_vert_start + delta_y * 12.5)
         tk.Label(self._main_fr, text='x - ', font = self._text_size['Text 8'],
-                 bg = self._general_color).place(relx=types_start+ delta_x*3, rely=load_vert_start + delta_y * 12.5)
+                 bg = self._general_color).place(relx=types_start+ delta_x*4, rely=load_vert_start + delta_y * 12.5)
 
         self._ent_shift_hor = tk.Entry(self._main_fr, textvariable = self._new_shift_viz_coord_hor,
                                        width = int(ent_width * 0.6), bg = self._entry_color, fg = self._entry_text_color)
@@ -985,8 +985,8 @@ class Application():
                                        fg = self._entry_text_color)
         self._ent_shift_ver.bind('<FocusOut>', self.trace_shift_change)
         #self._ent_shift_ver.trace('w', self.trace_shift_change)
-        self._ent_shift_hor.place(relx=types_start+delta_x*3.5, rely=load_vert_start + delta_y * 12.5)
-        self._ent_shift_ver.place(relx=types_start+ delta_x*5, rely=load_vert_start + delta_y * 12.5)
+        self._ent_shift_hor.place(relx=types_start+delta_x*4.5, rely=load_vert_start + delta_y * 12.5)
+        self._ent_shift_ver.place(relx=types_start+ delta_x*6, rely=load_vert_start + delta_y * 12.5)
 
         # --- button to create compartments and define external pressures ---
 
@@ -2055,16 +2055,6 @@ class Application():
 
         self._main_canvas.delete('all')
         color = 'black' #by default
-
-        if not self._new_shifted_coords.get():
-            # Drawing lines at (0, 0)
-            self._main_canvas.create_line(self._canvas_draw_origo[0], 0, self._canvas_draw_origo[0], self._canvas_dim[1]+500,
-                                         stipple= 'gray50')
-            self._main_canvas.create_line(0, self._canvas_draw_origo[1], self._canvas_dim[0] +500, self._canvas_draw_origo[1],
-                                         stipple='gray50')
-            self._main_canvas.create_text(self._canvas_draw_origo[0] - 30 * 1,
-                                          self._canvas_draw_origo[1] + 12 * 1, text='(0,0)',
-                                          font='Text 10')
         # Drawing the shifted lines
         if any([self._new_shift_viz_coord_hor.get()!=0, self._new_shift_viz_coord_ver.get()!= 0]) and self._new_shifted_coords.get():
             self._main_canvas.create_line(self._canvas_draw_origo[0]+self._canvas_scale*self._new_shift_viz_coord_hor.get()/1000, 0,
@@ -2075,6 +2065,15 @@ class Application():
                                           self._canvas_dim[0] + 500,
                                           self._canvas_draw_origo[1]-self._canvas_scale*self._new_shift_viz_coord_ver.get()/1000,
                                           stipple='gray50', fill = 'peru')
+        else:
+            # Drawing lines at (0, 0)
+            self._main_canvas.create_line(self._canvas_draw_origo[0], 0, self._canvas_draw_origo[0], self._canvas_dim[1]+500,
+                                         stipple= 'gray50')
+            self._main_canvas.create_line(0, self._canvas_draw_origo[1], self._canvas_dim[0] +500, self._canvas_draw_origo[1],
+                                         stipple='gray50')
+            self._main_canvas.create_text(self._canvas_draw_origo[0] - 30 * 1,
+                                          self._canvas_draw_origo[1] + 12 * 1, text='(0,0)',
+                                          font='Text 10')
 
 
         chk_box_active = [self._new_colorcode_beams.get(), self._new_colorcode_plates.get(),
@@ -2115,12 +2114,12 @@ class Application():
                 if self._new_draw_point_name.get():
                     # drawing the name of the point
 
-                    self._main_canvas.create_text(self.get_point_canvas_coord(key)[0] - 5,
+                    self._main_canvas.create_text(self.get_point_canvas_coord(key)[0] + 5,
                                                  self.get_point_canvas_coord(key)[1] - 14, text='pt.'+str(get_num(key)),
                                                  font=self._text_size["Text 12 bold"], fill = 'red')
                     # drawing the coordinates of the point
-                    self._main_canvas.create_text(self.get_point_canvas_coord(key)[0]+20,
-                                                  self.get_point_canvas_coord(key)[1] - 40,
+                    self._main_canvas.create_text(self.get_point_canvas_coord(key)[0]+30,
+                                                  self.get_point_canvas_coord(key)[1]-40,
                                                  text='(' + str(x_coord) + ' , ' +
                                                       str(y_coord) + ')',
                                                   font="Text 14", fill = 'red')
@@ -2132,12 +2131,12 @@ class Application():
                                              self.get_point_canvas_coord(key)[1] + pt_size, fill='red')
                 if self._new_draw_point_name.get():
                     #printing 'pt.#'
-                    self._main_canvas.create_text(self.get_point_canvas_coord(key)[0] - 5,
-                                                 self.get_point_canvas_coord(key)[1] - 14, text='pt.'+str(get_num(key)),
+                    self._main_canvas.create_text(self.get_point_canvas_coord(key)[0] + 15,
+                                                 self.get_point_canvas_coord(key)[1] - 10, text='pt.'+str(get_num(key)),
                                                   font="Text 10")
                     #printing the coordinates of the point
-                    self._main_canvas.create_text(self.get_point_canvas_coord(key)[0]+20,
-                                                  self.get_point_canvas_coord(key)[1] - 25,
+                    self._main_canvas.create_text(self.get_point_canvas_coord(key)[0]+35,
+                                                  self.get_point_canvas_coord(key)[1]+10 ,
                                                  text='(' + str(x_coord) + ' , ' +
                                                       str(y_coord) + ')',
                                                   font="Text 10", fill = coord_color)

@@ -1,4 +1,9 @@
 # ANYstructure #
+### What's new in 3.2 ###
+* Shifting of coordinates for visualization.
+* Color coding of span.
+* Move line.
+* Bug fixes.
 ### What's new in 3.1 ###
 * Span optimization harmonizer added. Fixed bug related to applied loads.
 * Table report added.
