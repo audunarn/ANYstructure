@@ -1558,10 +1558,10 @@ class PULSpanel():
                 if stf['stf_type'][0] == stf_type:
                     new_profiles.append(stf)
             profiles = new_profiles
-        lengths = np.arange(1000,8000,100)
-        spacings = np.arange(400,1000,10)
-        thks = np.arange(5,50,1)
-        axstress =transsress1 = transsress2 = shearstress = np.arange(-300,310,10) #np.concatenate((np.arange(-400,-200,10), np.arange(210,410,10)))
+        lengths = np.arange(2000,6000,100)
+        spacings = np.arange(500,900,10)
+        thks = np.arange(10,25,1)
+        axstress =transsress1 = transsress2 = shearstress = np.arange(-100,100,10) #np.concatenate((np.arange(-400,-200,10), np.arange(210,410,10)))
         pressures = np.arange(0,0.5,0.01)
         now = time.time()
         yields = np.array([235,265,315,355,355,355,355,355,390,420,460])
@@ -1644,6 +1644,7 @@ class PULSpanel():
         self._all_to_run = run_dict
         self.run_all(store_results=True)
         print('Time to run', batch_size, 'batches:', time.time() - now)
+
 
 
 
