@@ -3,7 +3,9 @@ from scipy.stats import gamma as gammadist
 import numpy as np
 import ANYstructure_local.helper as hlp
 import os, time, datetime, json, random, math
-
+from sklearn.preprocessing import StandardScaler
+from sklearn.neural_network import MLPClassifier
+import pickle
 import ANYstructure_local.SN_curve_parameters as snc
 
 class Structure():
@@ -543,6 +545,35 @@ class Structure():
                            'sp or up': self._puls_sp_or_up}
         return return_dict
 
+    def get_buckling_ml_input(self, design_lat_press: float = 0):
+        '''
+        Classes in data from ML
+
+        {'negative utilisation': 1, 'non-zero': 2, 'Division by zero': 3, 'Overflow': 4, 'aspect ratio': 5,
+        'global slenderness': 6, 'pressure': 7, 'web-flange-ratio': 8,  'below 0.87': 9,
+                  'between 0.87 and 1': 10, 'above 1': 11}
+        '''
+        stf_type = {'T-bar': 1,'T': 1,  'L-bulb': 2, 'Angle': 3, 'Flatbar': 4, 'FB': 4}
+        stf_end = {'Cont': 1, 'C':1 , 'Sniped': 2, 'S': 2}
+        field_type = {'Integrated': 1,'Int': 1, 'Girder - long': 2,'GL': 2, 'Girder - trans': 3,  'GT': 3}
+
+        inp_cols = ['Length of panel', 'Stiffener spacing', 'Plate thick.', 'Stiff. Height', 'Web thick.',
+                    'Flange width',
+                    'Flange thick.', 'Yield stress plate', 'Yield stress stiffener', 'Axial stress', 'Trans. stress 1',
+                    'Trans. stress 2', 'Shear stress', 'Pressure (fixed)', 'Stiffener type cl', 'Stiffener boundary cl',
+                    'In-plane support cl']
+
+        this_field = [
+            [self.span * 1000, self.spacing * 1000, self.plate_th * 1000, self.web_height * 1000, self.web_th * 1000,
+             self.flange_width * 1000, self.flange_th * 1000, self.mat_yield / 1e6, self.mat_yield / 1e6,
+             self.sigma_x, self.sigma_y1, self.sigma_y2, self.tauxy, design_lat_press/1000, stf_type[self.stiffener_type],
+             stf_end[self._puls_stf_end], field_type[self._puls_boundary]]]
+
+        return this_field
+
+
+
+
 class CalcScantlings(Structure):
     '''
     This Class does the calculations for the plate fields. 
@@ -1077,6 +1108,7 @@ class CalcScantlings(Structure):
                 #print('eq7_19, eq7_54, eq7_55, eq7_56, eq7_57')
             min_of_max_ufs_idx = max_lfs.index(min(max_lfs))
             return ufs[min_of_max_ufs_idx]
+
 
     def calculate_buckling_plate(self,design_lat_press,axial_stress=20,
                                  trans_stress_small=100,trans_stress_large=100,

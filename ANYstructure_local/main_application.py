@@ -141,7 +141,8 @@ class Application():
                            'Text 9': 'Verdana ' + str(int(8 * self.text_scale)),
                            'Text 7': 'Verdana ' + str(int(7 * self.text_scale)),
                            'Text 10': 'Verdana ' + str(int(10 * self.text_scale)),
-                           'Text 7 bold': 'Verdana ' + str(int(7 * self.text_scale)) + ' bold'}
+                           'Text 7 bold': 'Verdana ' + str(int(7 * self.text_scale)) + ' bold',
+                           'Text 6 bold': 'Verdana ' + str(int(6 * self.text_scale)) + ' bold'}
 
         self._canvas_scale = 20 # Used for slider and can change
         self._base_scale_factor = 10 # Used for grid and will not change, 10 is default
@@ -216,6 +217,30 @@ class Application():
         self.__returned_load_data = None # Temporary data for returned loads from the load window.
         self.__copied_line_prop = None  # Used to copy line properties to another.
         self._PULS_results = None # If a puls run is avaliable, it is stored here.
+
+        self._ML_buckling = dict() # Buckling machine learning algorithm
+        for name, file_base in zip(['cl SP buc', 'cl SP ult'], ['CL output cl buc', 'CL output cl ult']):
+            self._ML_buckling[name]= dict()
+            for kind in ['predictor', 'scaler']:
+                file_name = file_base +' predictor.pickle' if kind == 'predictor' else file_base +' scaler.pickle'
+                print(file_name)
+                if os.path.isfile(file_name):
+                    file = open(file_name, 'rb')
+                    self._ML_buckling[name][kind] = pickle.load(file)
+                    file.close()
+
+        self._ML_classes ={1: 'A negative utilisation factor is found.',
+                           2: 'At least one of the in-plane loads must be non-zero.',
+                           3: 'Division by zero',
+                           4: 'Overflow',
+                           5: 'The aspect ratio exceeds the PULS code limit',
+                           6: 'The global slenderness exceeds 4. Please reduce stiffener span or increase stiffener height.',
+                           7: 'The applied pressure is too high for this plate field.', 8: 'web-flange-ratio',
+                           9:  'UF below or equal 0.87', 10: 'UF between 0.87 and 1.0', 11: 'UF above 1.0'}
+        print(self._ML_buckling)
+
+
+
         # Used to select parameter
         self._stuctural_definition = ['mat_yield','mat_factor', 'span', 'spacing', 'plate_thk', 'stf_web_height',
                                       'stf_web_thk',
@@ -349,6 +374,8 @@ class Application():
         self._new_fdwn.set(1)
         self._new_shifted_coords = tk.BooleanVar()
         self._new_shifted_coords.set(False)
+        self._new_buckling_slider = tk.IntVar()
+        self._new_buckling_slider.set(1)
 
         line_start, line_x = point_start+0.08, 0.005208333
         tk.Label(self._main_fr, text='Input line from "point number" to "point number"',
@@ -538,7 +565,7 @@ class Application():
         self._toggle_btn_puls = tk.Button(self._main_fr, text="Use PULS\n"
                                                               "results", relief="raised",
                                      command=self.toggle_puls_run, bg = self._button_bg_color)
-        self._puls_run_all = tk.Button(self._main_fr, text='Run PULS\nget missing results', relief="raised",
+        self._puls_run_all = tk.Button(self._main_fr, text='Run PULS\nupdate results', relief="raised",
                                      command=self.puls_run_all_lines, bg = self._button_bg_color)
         # self._puls_run_one = tk.Button(self._main_fr, text="PULS\nRun one line", relief="raised",
         #                              command=self.puls_run_one_line, bg = self._button_bg_color)
@@ -547,10 +574,20 @@ class Application():
                                          bg = self._entry_color, fg = self._entry_text_color)
         self._new_puls_uf.trace('w', self.trace_acceptance_change)
 
-        self._toggle_btn_puls.place(relx=types_start, rely=prop_vert_start+18*delta_y, relwidth = 0.043,
+        # self._toggle_btn_puls.place(relx=types_start, rely=prop_vert_start+18*delta_y, relwidth = 0.043,
+        #                         relheight = 0.035)
+
+        self._puls_run_all.place(relx=types_start +0.065, rely=prop_vert_start+18*delta_y, relwidth = 0.045,
                                 relheight = 0.035)
-        self._puls_run_all.place(relx=types_start +0.046, rely=prop_vert_start+18*delta_y, relwidth = 0.06,
-                                relheight = 0.035)
+
+        # Buckling slider
+        self._buckling_slider = tk.Scale(self._main_fr, from_=1, to=3, command=self.slider_buckling_used,length=200,
+                                           orient = 'horizontal', background=self._general_color,
+                                            label='RP-C201 | PULS | ML', #font=self._text_size['Text 7 bold'],
+                                            relief='groove')
+        self._buckling_slider.place(relx=types_start, rely=prop_vert_start+17.5*delta_y, relwidth = 0.065,
+                                    relheight = 0.055)
+
 
         # --- main variable to define the structural properties ---
         self._new_material = tk.DoubleVar()
@@ -1076,11 +1113,12 @@ class Application():
             .place(relx=lc_x, rely=lc_y + 2.5*delta_y)
 
         lc_y += 0.148148148
-
         self._combination_slider = tk.Scale(self._main_fr, from_=1, to=3, command=self.gui_load_combinations,length=400,
                                            orient = 'horizontal', background=self._general_color,
                                             label='OS-C101 Table 1    1: DNV a)    2: DNV b)    3: TankTest',
                                             relief='groove')
+
+
 
         self._combination_slider.place(relx=lc_x +0*lc_x_delta, rely=lc_y - 3*lc_y_delta)
         self._combination_slider_map = {1:'dnva',2:'dnvb',3:'tanktest'}
@@ -1352,6 +1390,18 @@ class Application():
                 dict[var_to_set][0] = set_var
 
                 self.new_structure(toggle_multi=dict, suspend_recalc=True if (idx+1) != no_of_lines else False)
+
+    def slider_buckling_used(self, event):
+
+        if self._buckling_slider.get() == 1:
+            self._new_buckling_slider.set(1)
+        elif self._buckling_slider.get() == 2:
+            self._new_buckling_slider.set(2)
+        elif self._buckling_slider.get() == 3:
+            self._new_buckling_slider.set(3)
+        else:
+            pass
+        self.update_frame()
 
     def gui_load_combinations(self,event):
         '''
@@ -1662,8 +1712,8 @@ class Application():
         return_dict = {'colors': {}, 'section_modulus': {}, 'thickness': {}, 'shear_area': {}, 'buckling': {},
                        'fatigue': {}, 'pressure_uls': {}, 'pressure_fls': {},
                        'struc_obj': {}, 'scant_calc_obj': {}, 'fatigue_obj': {}, 'utilization': {}, 'slamming': {},
-                       'color code': {}, 'PULS colors': {}}
-        line_iterator, slamming_pressure = [], None
+                       'color code': {}, 'PULS colors': {}, 'ML buckling colors' : {}, 'ML buckling class' : {}}
+
         return_dict['slamming'][current_line] = {}
 
         if current_line is None and active_line_only:
@@ -1711,10 +1761,11 @@ class Application():
                     design_lat_press=design_pressure,
                     checked_side=obj_scnt_calc.get_side())]
 
-                rec_for_color[current_line]['section modulus']=  min_sec_mod/min(sec_mod)
+                rec_for_color[current_line]['section modulus'] = min_sec_mod/min(sec_mod)
 
-                rec_for_color[current_line]['plate thickness']=  (min_thk/1000)/obj_scnt_calc.get_pl_thk()
+                rec_for_color[current_line]['plate thickness'] = (min_thk/1000)/obj_scnt_calc.get_pl_thk()
                 rec_for_color[current_line]['rp buckling'] = max(buckling)
+
                 rec_for_color[current_line]['shear'] = min_shear/shear_area
                 return_dict['slamming'][current_line] = dict()
                 if slamming_pressure is not None and slamming_pressure > 0:
@@ -1732,7 +1783,6 @@ class Application():
                                                                                                 p_ext['part']))
                     dff = fatigue_obj.get_dff()
                     color_fatigue = 'green' if damage * dff <= 1 else 'red'
-
                 except AttributeError:
                     fatigue_obj, p_int, p_ext, damage, dff = [None for dummy in range(5)]
                     color_fatigue = 'green'
@@ -1807,6 +1857,23 @@ class Application():
                     return_dict['PULS colors'][current_line] = {'ultimate': 'black', 'buckling': 'black',
                                                                 'local geometry': 'black', 'csr': 'black'}
 
+                # Machine learning buckling
+                '''
+                'cl SP buc', 'cl SP ult'
+                '''
+                buckling_ml_input = obj_scnt_calc.get_buckling_ml_input(
+                    design_lat_press=design_pressure)
+
+                x_buc = self._ML_buckling['cl SP buc']['scaler'].transform(buckling_ml_input)
+                x_ult = self._ML_buckling['cl SP ult']['scaler'].transform(buckling_ml_input)
+                y_pred_buc = self._ML_buckling['cl SP buc']['predictor'].predict(x_buc)[0]
+                y_pred_ult = self._ML_buckling['cl SP ult']['predictor'].predict(x_ult)[0]
+                return_dict['ML buckling colors'][current_line] = \
+                    {'buckling': 'green' if int(y_pred_buc) == 9 else 'red',
+                     'ultimate': 'green' if int(y_pred_ult) == 9 else 'red'}
+                return_dict['ML buckling class'][current_line] = {'buckling': int(y_pred_buc),
+                                                                  'ultimate': int(y_pred_ult)}
+
                 return_dict['buckling'][current_line] = buckling
                 return_dict['pressure_uls'][current_line] = design_pressure
                 return_dict['pressure_fls'][current_line] = {'p_int': p_int, 'p_ext': p_ext}
@@ -1833,7 +1900,7 @@ class Application():
                 buc_util = 1 if float('inf') in buckling else max(buckling[0:5])
                 rec_for_color[current_line]['rp buckling'] = max(buckling[0:5])
                 return_dict['utilization'][current_line] = {'buckling': buc_util,
-                                                            'PULS buckling': buc_util,
+                                                            'PULS buckling': buc_util, # TODO double check
                                                             'fatigue': fat_util,
                                                             'section': sec_util,
                                                             'shear': shear_util,
@@ -1843,7 +1910,6 @@ class Application():
 
                 self._state_logger[current_line] = return_dict #  Logging the current state of the line.
                 self._line_to_struc[current_line][1].need_recalc = False
-
             else:
                 pass
 
@@ -2148,7 +2214,7 @@ class Application():
                 coord2 = self.get_point_canvas_coord('point' + str(value[1]))
                 if not chk_box_active and state != None:
                     try:
-                        if self._toggle_btn_puls.config('relief')[-1] == 'sunken':
+                        if self._new_buckling_slider.get() == 2:
                             if 'black' in state['PULS colors'][line].values():
                                 color = 'black'
                             else:
@@ -2163,8 +2229,32 @@ class Application():
                                 if color == 'green':
                                     color = 'green' if all([state['colors'][line][key] == 'green' for key in
                                                             ['fatigue', 'section', 'shear','thickness']]) else 'red'
-                        else:
+                        elif self._new_buckling_slider.get() == 1:
                             color = 'red' if 'red' in state['colors'][line].values() else 'green'
+                        elif self._new_buckling_slider.get() == 3:
+                            '''
+                        return_dict['ML buckling colors'][current_line] = \
+                            {'buckling': 'green' if int(y_pred_buc) == 9 else 'red', 
+                             'ultimate': 'green' if int(y_pred_ult) == 9 else 'red'}
+                        return_dict['ML buckling class'][current_line] = {'buckling': int(y_pred_buc),  
+                                                                          'ultimate': int(y_pred_ult)}
+
+                            '''
+                            if 'black' in state['ML buckling colors'][line].values():
+                                color = 'black'
+                            else:
+                                col1, col2 = state['ML buckling colors'][line]['buckling'], \
+                                             state['ML buckling colors'][line]['ultimate']
+
+                                if self._line_to_struc[line][1].get_puls_method() == 'buckling':
+                                    color = 'red' if any([col1 == 'red', col2 == 'red']) else 'green'
+                                else:
+                                    color = col2
+
+                                if color == 'green':
+                                    color = 'green' if all([state['colors'][line][key] == 'green' for key in
+                                                            ['fatigue', 'section', 'shear','thickness']]) else 'red'
+
                     except (KeyError, TypeError):
                         color = 'black'
                 elif chk_box_active and state != None and self._line_to_struc != {}:
@@ -2283,7 +2373,7 @@ class Application():
                                                                                            else press/highest_pressure)),
                                               anchor="nw")
         elif all([self._new_colorcode_utilization.get() == True,
-                  self._line_to_struc != {}, self._new_toggle_puls.get() != True]):
+                  self._line_to_struc != {}, self._new_buckling_slider.get() != 2]):
             all_utils = cc_state['utilization map']
             for idx, uf in enumerate(cc_state['utilization map']):
                 self._main_canvas.create_text(11, start_text_shift + 20 * idx, text=str('UF = ' +str(round(uf,1))),
@@ -2295,7 +2385,7 @@ class Application():
                                               fill=matplotlib.colors.rgb2hex(cmap_sections(uf/max(all_utils))),
                                               anchor="nw")
         elif all([self._new_colorcode_utilization.get() == True,
-                  self._line_to_struc != {}, self._new_toggle_puls.get() == True]):
+                  self._line_to_struc != {}, self._new_buckling_slider.get() == 2]):
             all_utils = cc_state['PULS utilization map']
             for idx, uf in enumerate(cc_state['utilization map']):
                 self._main_canvas.create_text(11, start_text_shift + 20 * idx, text=str('UF = ' +str(round(uf,1))),
@@ -2442,17 +2532,22 @@ class Application():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                               text=str(state['color code']['lines'][line]['pressure']))
 
-        elif self._new_colorcode_utilization.get() == True and not self._new_toggle_puls.get():
+        elif self._new_colorcode_utilization.get() == True and self._new_buckling_slider.get() == 1:
             color = state['color code']['lines'][line]['rp uf color']
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                               text=round(state['color code']['lines'][line]['rp uf'],2))
 
-        elif self._new_colorcode_utilization.get() == True and self._new_toggle_puls.get():
+        elif self._new_colorcode_utilization.get() == True and self._new_buckling_slider.get() == 2:
             color = state['color code']['lines'][line]['PULS uf color']
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                               text=round(state['color code']['lines'][line]['PULS uf'],2))
+        elif self._new_colorcode_utilization.get() == True and self._new_buckling_slider.get() == 3:
+            color = 'black'
+            if self._new_label_color_coding.get():
+                self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                              text='N/A')
 
         elif self._new_colorcode_sigmax.get() == True:
             color = state['color code']['lines'][line]['sigma x']
@@ -2498,7 +2593,7 @@ class Application():
                                               text=round(state['color code']['lines'][line]['fatigue uf'],2))
 
         elif self._new_colorcode_total.get() == True:
-            if self._new_toggle_puls.get():
+            if self._new_buckling_slider.get() == 2:
                 color = state['color code']['lines'][line]['Total uf color rp']
                 if self._new_label_color_coding.get():
                     self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
@@ -2718,7 +2813,8 @@ class Application():
                                                font=self._text_size["Text 9 bold"],anchor='nw', fill=color_thk)
 
                 # buckling results
-                if self._PULS_results != None and self._toggle_btn_puls.config('relief')[-1] == 'sunken':
+
+                if self._PULS_results != None and self._new_buckling_slider.get() == 2:
                     line_results = state['PULS colors'][self._active_line]
                     puls_res = self._PULS_results.get_puls_line_results(self._active_line)
                     if puls_res != None:
@@ -2782,7 +2878,7 @@ class Application():
                                                         font=self._text_size['Text 9 bold'],
                                                         anchor='nw',
                                                         fill='Orange')
-                else:
+                elif self._new_buckling_slider.get() == 1:
                     self._result_canvas.create_text([x * 1, (y+9*dy) * 1],
                                                    text='Buckling results DNV-RP-C201:',
                                                    font=self._text_size["Text 9 bold"], anchor='nw')
@@ -2805,6 +2901,19 @@ class Application():
                         self._result_canvas.create_text([x * 1, (y+10*dy) * 1],
                                                    text=res_text,font=self._text_size["Text 9 bold"],
                                                    anchor='nw',fill=color_buckling)
+                elif self._new_buckling_slider.get() == 3:
+
+                    self._result_canvas.create_text([x * 1, (y + 9 * dy) * 1],
+                                                    text='Buckling results ANYstructure ML algorithm:',
+                                                    font=self._text_size["Text 9 bold"], anchor='nw')
+                    self._result_canvas.create_text([x * 1, (y + 10 * dy) * 1],
+                                                    text='Buckling: ' + self._ML_classes[state['ML buckling class'][current_line]['buckling']],
+                                                    font=self._text_size["Text 9 bold"],
+                                                    anchor='nw', fill=state['ML buckling colors'][current_line]['buckling'])
+                    self._result_canvas.create_text([x * 1, (y + 11 * dy) * 1],
+                                                    text='Ultimate: ' +self._ML_classes[state['ML buckling class'][current_line]['ultimate']],
+                                                    font=self._text_size["Text 9 bold"],
+                                                    anchor='nw', fill=state['ML buckling colors'][current_line]['ultimate'])
 
                 # fatigue results
 
