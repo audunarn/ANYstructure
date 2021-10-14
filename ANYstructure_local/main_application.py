@@ -376,6 +376,8 @@ class Application():
         self._new_shifted_coords.set(False)
         self._new_buckling_slider = tk.IntVar()
         self._new_buckling_slider.set(1)
+        self._new_show_cog = tk.BooleanVar()
+        self._new_show_cog.set(False)
 
         line_start, line_x = point_start+0.08, 0.005208333
         tk.Label(self._main_fr, text='Input line from "point number" to "point number"',
@@ -504,19 +506,23 @@ class Application():
         tk.Label(self._main_fr, text='Show line names in GUI', font="Text 9")\
             .place(relx=0.38, rely=0)
         tk.Label(self._main_fr, text='Show point names in GUI', font="Text 9")\
-            .place(relx=0.48, rely=0)
+            .place(relx=0.47, rely=0)
         tk.Label(self._main_fr, text='Label color code', font="Text 9")\
-            .place(relx=0.58, rely=0)
+            .place(relx=0.57, rely=0)
         tk.Label(self._main_fr, text='Use shifted coordinates', font="Text 9")\
-            .place(relx=0.68, rely=0)
+            .place(relx=0.64, rely=0)
+        tk.Label(self._main_fr, text='Show COG', font="Text 9")\
+            .place(relx=0.74, rely=0)
         tk.Checkbutton(self._main_fr, variable = self._new_line_name, command = self.on_color_code_check)\
             .place(relx=0.366, rely=0)
         tk.Checkbutton(self._main_fr, variable = self._new_draw_point_name, command = self.on_color_code_check)\
-            .place(relx=0.466, rely=0)
+            .place(relx=0.455, rely=0)
         tk.Checkbutton(self._main_fr, variable = self._new_label_color_coding, command = self.on_color_code_check)\
-            .place(relx=0.566, rely=0)
+            .place(relx=0.55, rely=0)
         tk.Checkbutton(self._main_fr, variable = self._new_shifted_coords, command = self.update_frame)\
-            .place(relx=0.666, rely=0)
+            .place(relx=0.615, rely=0)
+        tk.Checkbutton(self._main_fr, variable = self._new_show_cog, command = self.update_frame)\
+            .place(relx=0.72, rely=0)
 
 
 
@@ -1712,7 +1718,8 @@ class Application():
         return_dict = {'colors': {}, 'section_modulus': {}, 'thickness': {}, 'shear_area': {}, 'buckling': {},
                        'fatigue': {}, 'pressure_uls': {}, 'pressure_fls': {},
                        'struc_obj': {}, 'scant_calc_obj': {}, 'fatigue_obj': {}, 'utilization': {}, 'slamming': {},
-                       'color code': {}, 'PULS colors': {}, 'ML buckling colors' : {}, 'ML buckling class' : {}}
+                       'color code': {}, 'PULS colors': {}, 'ML buckling colors' : {}, 'ML buckling class' : {},
+                       'weights': {}}
 
         return_dict['slamming'][current_line] = {}
 
@@ -1821,6 +1828,9 @@ class Application():
                 return_dict['colors'][current_line] = {'buckling': color_buckling, 'fatigue': color_fatigue,
                                                        'section': color_sec, 'shear': color_shear,
                                                        'thickness': color_thk}
+                '''
+                PULS calculations
+                '''
                 if self._PULS_results != None:
                     res = self._PULS_results.get_puls_line_results(current_line)
                     if res is not None:
@@ -1857,9 +1867,8 @@ class Application():
                     return_dict['PULS colors'][current_line] = {'ultimate': 'black', 'buckling': 'black',
                                                                 'local geometry': 'black', 'csr': 'black'}
 
-                # Machine learning buckling
                 '''
-                'cl SP buc', 'cl SP ult'
+                Machine learning buckling 
                 '''
                 buckling_ml_input = obj_scnt_calc.get_buckling_ml_input(
                     design_lat_press=design_pressure)
@@ -1873,6 +1882,26 @@ class Application():
                      'ultimate': 'green' if int(y_pred_ult) == 9 else 'red'}
                 return_dict['ML buckling class'][current_line] = {'buckling': int(y_pred_buc),
                                                                   'ultimate': int(y_pred_ult)}
+
+
+                '''
+                Weight calculations for line.
+                '''
+                line_weight = op.calc_weight([obj_scnt_calc.get_s(), obj_scnt_calc.get_pl_thk(),
+                                              obj_scnt_calc.get_web_h(), obj_scnt_calc.get_web_thk(),
+                                              obj_scnt_calc.get_fl_w(), obj_scnt_calc.get_fl_thk(),
+                                              obj_scnt_calc.get_span(), obj_scnt_calc.get_lg()])
+                points = self._line_dict[current_line]
+                p1 = self._point_dict['point' + str(points[0])]
+                p2 = self._point_dict['point' + str(points[1])]
+
+                mid_coord = [(p1[0]+p2[0])/2, (p1[1]+p2[1])/2]
+
+                return_dict['weights'][current_line] = {'line weight': line_weight, 'mid_coord': mid_coord}
+
+                '''
+                xxxxxxx
+                '''
 
                 return_dict['buckling'][current_line] = buckling
                 return_dict['pressure_uls'][current_line] = design_pressure
@@ -2029,6 +2058,7 @@ class Application():
             thk_sort_unique = return_dict['color code']['all thicknesses']
             spacing_sort_unique = return_dict['color code']['spacings']
             structure_type_unique = return_dict['color code']['structure types map']
+            tot_weight, weight_mult_dist_x, weight_mult_dist_y = 0, 0,0
             for line, line_data in self._line_to_struc.items():
                 if self._PULS_results is None:
                     puls_color, buc_uf, puls_uf, puls_method, puls_sp_or_up = 'black', 0, 0, None, None
@@ -2112,6 +2142,19 @@ class Application():
                                            'tau xy':matplotlib.colors.rgb2hex(cmap_sections(tau_xy_uf)),
                                            }
                 return_dict['color code']['lines'] = line_color_coding
+
+                # COG calculations
+                tot_weight += return_dict['weights'][line]['line weight']
+                weight_mult_dist_x += return_dict['weights'][line]['line weight']\
+                                      *return_dict['weights'][line]['mid_coord'][0]
+                weight_mult_dist_y += return_dict['weights'][line]['line weight']\
+                                      *return_dict['weights'][line]['mid_coord'][1]
+
+            tot_cog = [weight_mult_dist_x/tot_weight, weight_mult_dist_y/tot_weight]
+        else:
+            tot_cog = [0,0]
+
+        return_dict['COG'] = tot_cog
         return return_dict
 
     def draw_canvas(self, state = None, event = None):
@@ -2140,6 +2183,21 @@ class Application():
             self._main_canvas.create_text(self._canvas_draw_origo[0] - 30 * 1,
                                           self._canvas_draw_origo[1] + 12 * 1, text='(0,0)',
                                           font='Text 10')
+
+        # Drawing COG
+        if self._new_show_cog.get() and 'COG' in state.keys():
+            pt_size = 5
+            point_coord_x = self._canvas_draw_origo[0] + state['COG'][0] * self._canvas_scale
+            point_coord_y = self._canvas_draw_origo[1] - state['COG'][1] * self._canvas_scale
+            self._main_canvas.create_oval(point_coord_x - pt_size + 2,
+                                          point_coord_y - pt_size + 2,
+                                          point_coord_x  + pt_size + 2,
+                                          point_coord_y + pt_size + 2, fill='yellow')
+
+            self._main_canvas.create_text(point_coord_x  + 5,
+                                          point_coord_y - 14, text='COG: x=' + str(round(state['COG'][0], 2)) +
+                                                                   ' y=' +str(round(state['COG'][1],2)),
+                                          font=self._text_size["Text 8 bold"], fill='black')
 
 
         chk_box_active = [self._new_colorcode_beams.get(), self._new_colorcode_plates.get(),
@@ -2232,14 +2290,6 @@ class Application():
                         elif self._new_buckling_slider.get() == 1:
                             color = 'red' if 'red' in state['colors'][line].values() else 'green'
                         elif self._new_buckling_slider.get() == 3:
-                            '''
-                        return_dict['ML buckling colors'][current_line] = \
-                            {'buckling': 'green' if int(y_pred_buc) == 9 else 'red', 
-                             'ultimate': 'green' if int(y_pred_ult) == 9 else 'red'}
-                        return_dict['ML buckling class'][current_line] = {'buckling': int(y_pred_buc),  
-                                                                          'ultimate': int(y_pred_ult)}
-
-                            '''
                             if 'black' in state['ML buckling colors'][line].values():
                                 color = 'black'
                             else:
