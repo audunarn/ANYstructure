@@ -1875,24 +1875,36 @@ class Application():
                 '''
                 buckling_ml_input = obj_scnt_calc.get_buckling_ml_input(
                     design_lat_press=design_pressure)
-                if self._ML_buckling['cl SP buc'] != {}:
-                    x_buc = self._ML_buckling['cl SP buc']['scaler'].transform(buckling_ml_input)
-                    y_pred_buc = self._ML_buckling['cl SP buc']['predictor'].predict(x_buc)[0]
+                if obj_scnt_calc.get_puls_sp_or_up() == 'UP':
+                    # if self._ML_buckling['cl SP buc'] != {}:
+                    #     x_buc = self._ML_buckling['cl SP buc']['scaler'].transform(buckling_ml_input)
+                    #     y_pred_buc = self._ML_buckling['cl SP buc']['predictor'].predict(x_buc)[0]
+                    # else:
+                    #     y_pred_buc = 0
+                    # if self._ML_buckling['cl SP ult'] != {}:
+                    #     x_ult = self._ML_buckling['cl SP ult']['scaler'].transform(buckling_ml_input)
+                    #     y_pred_ult = self._ML_buckling['cl SP ult']['predictor'].predict(x_ult)[0]
+                    # else:
+                    #     y_pred_ult = 0
+                    return_dict['ML buckling colors'][current_line] =  {'buckling': 'black', 'ultimate': 'black'}
+                    return_dict['ML buckling class'][current_line] = {'buckling': 0, 'ultimate': 0}
                 else:
-                    y_pred_buc = 0
-                if self._ML_buckling['cl SP ult'] != {}:
-                    x_ult = self._ML_buckling['cl SP ult']['scaler'].transform(buckling_ml_input)
-                    y_pred_ult = self._ML_buckling['cl SP ult']['predictor'].predict(x_ult)[0]
-                else:
-                    y_pred_ult = 0
+                    if self._ML_buckling['cl SP buc'] != {}:
+                        x_buc = self._ML_buckling['cl SP buc']['scaler'].transform(buckling_ml_input)
+                        y_pred_buc = self._ML_buckling['cl SP buc']['predictor'].predict(x_buc)[0]
+                    else:
+                        y_pred_buc = 0
+                    if self._ML_buckling['cl SP ult'] != {}:
+                        x_ult = self._ML_buckling['cl SP ult']['scaler'].transform(buckling_ml_input)
+                        y_pred_ult = self._ML_buckling['cl SP ult']['predictor'].predict(x_ult)[0]
+                    else:
+                        y_pred_ult = 0
 
-
-                return_dict['ML buckling colors'][current_line] = \
-                    {'buckling': 'green' if int(y_pred_buc) == 9 else 'red',
-                     'ultimate': 'green' if int(y_pred_ult) == 9 else 'red'}
-                return_dict['ML buckling class'][current_line] = {'buckling': int(y_pred_buc),
-                                                                  'ultimate': int(y_pred_ult)}
-
+                    return_dict['ML buckling colors'][current_line] = \
+                        {'buckling': 'green' if int(y_pred_buc) == 9 else 'red',
+                         'ultimate': 'green' if int(y_pred_ult) == 9 else 'red'}
+                    return_dict['ML buckling class'][current_line] = {'buckling': int(y_pred_buc),
+                                                                      'ultimate': int(y_pred_ult)}
 
                 '''
                 Weight calculations for line.
