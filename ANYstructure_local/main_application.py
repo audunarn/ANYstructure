@@ -223,7 +223,6 @@ class Application():
             self._ML_buckling[name]= dict()
             for kind in ['predictor', 'scaler']:
                 file_name = file_base +' predictor.pickle' if kind == 'predictor' else file_base +' scaler.pickle'
-                print(file_name)
                 if os.path.isfile(file_name):
                     file = open(file_name, 'rb')
                     self._ML_buckling[name][kind] = pickle.load(file)
@@ -508,11 +507,11 @@ class Application():
         tk.Label(self._main_fr, text='Show point names in GUI', font="Text 9")\
             .place(relx=0.47, rely=0)
         tk.Label(self._main_fr, text='Label color code', font="Text 9")\
-            .place(relx=0.57, rely=0)
+            .place(relx=0.565, rely=0)
         tk.Label(self._main_fr, text='Use shifted coordinates', font="Text 9")\
-            .place(relx=0.64, rely=0)
+            .place(relx=0.635, rely=0)
         tk.Label(self._main_fr, text='Show COG', font="Text 9")\
-            .place(relx=0.74, rely=0)
+            .place(relx=0.735, rely=0)
         tk.Checkbutton(self._main_fr, variable = self._new_line_name, command = self.on_color_code_check)\
             .place(relx=0.366, rely=0)
         tk.Checkbutton(self._main_fr, variable = self._new_draw_point_name, command = self.on_color_code_check)\
@@ -520,7 +519,7 @@ class Application():
         tk.Checkbutton(self._main_fr, variable = self._new_label_color_coding, command = self.on_color_code_check)\
             .place(relx=0.55, rely=0)
         tk.Checkbutton(self._main_fr, variable = self._new_shifted_coords, command = self.update_frame)\
-            .place(relx=0.615, rely=0)
+            .place(relx=0.62, rely=0)
         tk.Checkbutton(self._main_fr, variable = self._new_show_cog, command = self.update_frame)\
             .place(relx=0.72, rely=0)
 
@@ -1872,11 +1871,18 @@ class Application():
                 '''
                 buckling_ml_input = obj_scnt_calc.get_buckling_ml_input(
                     design_lat_press=design_pressure)
+                if self._ML_buckling['cl SP buc'] != {}:
+                    x_buc = self._ML_buckling['cl SP buc']['scaler'].transform(buckling_ml_input)
+                    y_pred_buc = self._ML_buckling['cl SP buc']['predictor'].predict(x_buc)[0]
+                else:
+                    y_pred_buc = 0
+                if self._ML_buckling['cl SP ult'] != {}:
+                    x_ult = self._ML_buckling['cl SP ult']['scaler'].transform(buckling_ml_input)
+                    y_pred_ult = self._ML_buckling['cl SP ult']['predictor'].predict(x_ult)[0]
+                else:
+                    y_pred_ult = 0
 
-                x_buc = self._ML_buckling['cl SP buc']['scaler'].transform(buckling_ml_input)
-                x_ult = self._ML_buckling['cl SP ult']['scaler'].transform(buckling_ml_input)
-                y_pred_buc = self._ML_buckling['cl SP buc']['predictor'].predict(x_buc)[0]
-                y_pred_ult = self._ML_buckling['cl SP ult']['predictor'].predict(x_ult)[0]
+
                 return_dict['ML buckling colors'][current_line] = \
                     {'buckling': 'green' if int(y_pred_buc) == 9 else 'red',
                      'ultimate': 'green' if int(y_pred_ult) == 9 else 'red'}
@@ -2187,15 +2193,23 @@ class Application():
         # Drawing COG
         if self._new_show_cog.get() and 'COG' in state.keys():
             pt_size = 5
-            point_coord_x = self._canvas_draw_origo[0] + state['COG'][0] * self._canvas_scale
-            point_coord_y = self._canvas_draw_origo[1] - state['COG'][1] * self._canvas_scale
+            if self._new_shifted_coords.get():
+                point_coord_x = self._canvas_draw_origo[0] + (state['COG'][0] +
+                                                              self._new_shift_viz_coord_hor.get()/1000) * \
+                                self._canvas_scale
+                point_coord_y = self._canvas_draw_origo[1] - (state['COG'][1] +
+                                                              self._new_shift_viz_coord_ver.get()/1000) * \
+                                self._canvas_scale
+            else:
+                point_coord_x = self._canvas_draw_origo[0] + state['COG'][0]*self._canvas_scale
+                point_coord_y = self._canvas_draw_origo[1] - state['COG'][1]*self._canvas_scale
             self._main_canvas.create_oval(point_coord_x - pt_size + 2,
                                           point_coord_y - pt_size + 2,
                                           point_coord_x  + pt_size + 2,
                                           point_coord_y + pt_size + 2, fill='yellow')
 
             self._main_canvas.create_text(point_coord_x  + 5,
-                                          point_coord_y - 14, text='COG: x=' + str(round(state['COG'][0], 2)) +
+                                          point_coord_y - 14, text='steel COG: x=' + str(round(state['COG'][0], 2)) +
                                                                    ' y=' +str(round(state['COG'][1],2)),
                                           font=self._text_size["Text 8 bold"], fill='black')
 
