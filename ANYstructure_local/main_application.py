@@ -4320,6 +4320,8 @@ class Application():
         export_all['load_combinations'] = load_combiantions
         export_all['tank_properties'] = tank_properties
         export_all['fatigue_properties'] = fatigue_properties
+        export_all['buckling type'] = self._new_buckling_slider.get()
+
         if self._PULS_results is not None:
             export_all['PULS results'] = self._PULS_results.get_run_results()
             export_all['PULS results']['sheet location'] = self._PULS_results.puls_sheet_location
@@ -4484,6 +4486,10 @@ class Application():
         highest_y = max([coord[1] for coord in points.values()])
         highest_x = max([coord[0] for coord in points.values()])
         self._canvas_scale = min(800 / highest_y, 800 / highest_x, 15)
+
+        if 'buckling type' in imported.keys():
+            self._new_buckling_slider.set(imported['buckling type'])
+            self._buckling_slider.set(imported['buckling type'])
 
         imp_file.close()
         self._parent.wm_title('| ANYstructure |     ' + imp_file.name)
