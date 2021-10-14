@@ -295,10 +295,10 @@ class Application():
         tk.Label(self._main_fr, text='Point y (vertical)   [mm]:',font="Text 9", bg = self._general_color)\
             .place(relx=point_x_start, rely=point_start + delta_y)
 
-        tk.Entry(self._main_fr, textvariable=self._new_point_x, width = int(ent_width * 1),
+        tk.Entry(self._main_fr, textvariable=self._new_point_x, width = int(ent_width * 1.5),
                  bg = self._entry_color, fg = self._entry_text_color)\
             .place(relx=ent_x, rely=point_start)
-        tk.Entry(self._main_fr, textvariable=self._new_point_y, width = int(ent_width * 1),
+        tk.Entry(self._main_fr, textvariable=self._new_point_y, width = int(ent_width * 1.5),
                  bg = self._entry_color, fg = self._entry_text_color)\
             .place(relx=ent_x, rely=point_start + delta_y)
         tk.Button(self._main_fr, text='Add point (coords)', command=self.new_point,
@@ -1401,10 +1401,13 @@ class Application():
 
         if self._buckling_slider.get() == 1:
             self._new_buckling_slider.set(1)
+            self._ent_puls_uf.config(bg = 'white')
         elif self._buckling_slider.get() == 2:
             self._new_buckling_slider.set(2)
+            self._ent_puls_uf.config(bg='white')
         elif self._buckling_slider.get() == 3:
             self._new_buckling_slider.set(3)
+            self._ent_puls_uf.config(bg = 'red')
         else:
             pass
         self.update_frame()
@@ -4225,6 +4228,8 @@ class Application():
                 else:
                     self._new_line_p2.set(get_num(point))
                     self._p1_p2_select = False
+                self._new_point_x.set(round(self._point_dict[self._active_point][0]*1000, 1))
+                self._new_point_y.set(round(self._point_dict[self._active_point][1]*1000, 1))
         if self._toggle_btn.config('relief')[-1] == 'sunken':
             if len(self._multiselect_lines) != 0:
                 self._multiselect_lines.pop(-1)
