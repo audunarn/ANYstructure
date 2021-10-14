@@ -228,7 +228,8 @@ class Application():
                     self._ML_buckling[name][kind] = pickle.load(file)
                     file.close()
 
-        self._ML_classes ={1: 'A negative utilisation factor is found.',
+        self._ML_classes ={0: 'N/A',
+                           1: 'A negative utilisation factor is found.',
                            2: 'At least one of the in-plane loads must be non-zero.',
                            3: 'Division by zero',
                            4: 'Overflow',
