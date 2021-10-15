@@ -217,16 +217,27 @@ class Application():
         self.__returned_load_data = None # Temporary data for returned loads from the load window.
         self.__copied_line_prop = None  # Used to copy line properties to another.
         self._PULS_results = None # If a puls run is avaliable, it is stored here.
+        self._center_of_buoyancy = dict()   # Center of buoyancy for all and for carious static drafts
+                                            # Example {8: (5,20), 22: (12,20), 'all': (16,20)}
 
         self._ML_buckling = dict() # Buckling machine learning algorithm
-        for name, file_base in zip(['cl SP buc', 'cl SP ult'], ['CL output cl buc', 'CL output cl ult']):
-            self._ML_buckling[name]= dict()
-            for kind in ['predictor', 'scaler']:
-                file_name = file_base +' predictor.pickle' if kind == 'predictor' else file_base +' scaler.pickle'
-                if os.path.isfile(file_name):
-                    file = open(file_name, 'rb')
-                    self._ML_buckling[name][kind] = pickle.load(file)
-                    file.close()
+        for name, file_base in zip(['cl SP buc int predictor', 'cl SP buc int scaler',
+                                    'cl SP ult int predictor', 'cl SP ult int scaler',
+                                    'cl SP buc GLGT predictor', 'cl SP buc GLGT scaler',
+                                    'cl SP ult GLGT predictor', 'cl SP ult GLGT scaler'],
+                                    ['CL output cl buc predictor In-plane support cl 1',
+                                    'CL output cl buc scaler In-plane support cl 1',
+                                    'CL output cl ult predictor In-plane support cl 1',
+                                    'CL output cl ult scaler In-plane support cl 1',
+                                    'CL output cl buc predictor In-plane support cl [2, 3]',
+                                    'CL output cl buc scaler In-plane support cl [2, 3]',
+                                    'CL output cl ult predictor In-plane support cl [2, 3]',
+                                    'CL output cl ult scaler In-plane support cl [2, 3]']):
+            self._ML_buckling[name]= None
+            if os.path.isfile(file_base + '.pickle'):
+                file = open(file_base + '.pickle', 'rb')
+                self._ML_buckling[name]= pickle.load(file)
+                file.close()
 
         self._ML_classes ={0: 'N/A',
                            1: 'A negative utilisation factor is found.',
@@ -260,6 +271,8 @@ class Application():
 
         # Initsializing the calculation grid used for tank definition
         self._grid_dimensions = [self._canvas_base_origo[1] + 1, base_canvas_dim[0] - self._canvas_base_origo[0] + 1]
+
+
         #self._grid_dimensions = [self._canvas_base_origo[1], base_canvas_dim[0] - self._canvas_base_origo[0] + 1]
 
         self._main_grid  = grid.Grid(self._grid_dimensions[0], self._grid_dimensions[1])
@@ -511,8 +524,8 @@ class Application():
             .place(relx=0.565, rely=0)
         tk.Label(self._main_fr, text='Use shifted coordinates', font="Text 9")\
             .place(relx=0.635, rely=0)
-        tk.Label(self._main_fr, text='Show COG', font="Text 9")\
-            .place(relx=0.735, rely=0)
+        tk.Label(self._main_fr, text='Show COG/COB', font="Text 9")\
+            .place(relx=0.733, rely=0)
         tk.Checkbutton(self._main_fr, variable = self._new_line_name, command = self.on_color_code_check)\
             .place(relx=0.366, rely=0)
         tk.Checkbutton(self._main_fr, variable = self._new_draw_point_name, command = self.on_color_code_check)\
@@ -1657,6 +1670,9 @@ class Application():
                 self._grid_calc.animate_grid(grids_to_animate=compartment_search_return['grids'],
                                              tank_count = None if len(self._tank_dict)==0 else len(self._tank_dict))
 
+        self.get_cob()  # Calculating COB
+        self.update_frame()
+
     def grid_display_tanks(self, save = False):
         '''
         Opening matplotlib grid illustation
@@ -1872,6 +1888,10 @@ class Application():
 
                 '''
                 Machine learning buckling 
+                        ['cl SP buc int predictor', 'cl SP buc int scaler',
+                        'cl SP ult int predictor', 'cl SP ult int scaler',
+                        'cl SP buc GLGT predictor', 'cl SP buc GLGT scaler',
+                        'cl SP ult GLGT predictor', 'cl SP ult GLGT scaler']
                 '''
                 buckling_ml_input = obj_scnt_calc.get_buckling_ml_input(
                     design_lat_press=design_pressure)
@@ -1889,16 +1909,28 @@ class Application():
                     return_dict['ML buckling colors'][current_line] =  {'buckling': 'black', 'ultimate': 'black'}
                     return_dict['ML buckling class'][current_line] = {'buckling': 0, 'ultimate': 0}
                 else:
-                    if self._ML_buckling['cl SP buc'] != {}:
-                        x_buc = self._ML_buckling['cl SP buc']['scaler'].transform(buckling_ml_input)
-                        y_pred_buc = self._ML_buckling['cl SP buc']['predictor'].predict(x_buc)[0]
+                    if obj_scnt_calc.get_puls_boundary() == 'Int':
+                        if self._ML_buckling['cl SP buc int predictor'] != None:
+                            x_buc = self._ML_buckling['cl SP buc int scaler'].transform(buckling_ml_input)
+                            y_pred_buc = self._ML_buckling['cl SP buc int predictor'].predict(x_buc)[0]
+                        else:
+                            y_pred_buc = 0
+                        if self._ML_buckling['cl SP ult int predictor'] != None:
+                            x_ult = self._ML_buckling['cl SP ult int scaler'].transform(buckling_ml_input)
+                            y_pred_ult = self._ML_buckling['cl SP ult int predictor'].predict(x_ult)[0]
+                        else:
+                            y_pred_ult = 0
                     else:
-                        y_pred_buc = 0
-                    if self._ML_buckling['cl SP ult'] != {}:
-                        x_ult = self._ML_buckling['cl SP ult']['scaler'].transform(buckling_ml_input)
-                        y_pred_ult = self._ML_buckling['cl SP ult']['predictor'].predict(x_ult)[0]
-                    else:
-                        y_pred_ult = 0
+                        if self._ML_buckling['cl SP buc GLGT predictor'] != None:
+                            x_buc = self._ML_buckling['cl SP buc GLGT scaler'].transform(buckling_ml_input)
+                            y_pred_buc = self._ML_buckling['cl SP buc GLGT predictor'].predict(x_buc)[0]
+                        else:
+                            y_pred_buc = 0
+                        if self._ML_buckling['cl SP ult GLGT predictor'] != None:
+                            x_ult = self._ML_buckling['cl SP ult GLGT scaler'].transform(buckling_ml_input)
+                            y_pred_ult = self._ML_buckling['cl SP ult GLGT predictor'].predict(x_ult)[0]
+                        else:
+                            y_pred_ult = 0
 
                     return_dict['ML buckling colors'][current_line] = \
                         {'buckling': 'green' if int(y_pred_buc) == 9 else 'red',
@@ -2166,6 +2198,7 @@ class Application():
                 return_dict['color code']['lines'] = line_color_coding
 
                 # COG calculations
+                # Steel
                 tot_weight += return_dict['weights'][line]['line weight']
                 weight_mult_dist_x += return_dict['weights'][line]['line weight']\
                                       *return_dict['weights'][line]['mid_coord'][0]
@@ -2175,8 +2208,8 @@ class Application():
             tot_cog = [weight_mult_dist_x/tot_weight, weight_mult_dist_y/tot_weight]
         else:
             tot_cog = [0,0]
-
         return_dict['COG'] = tot_cog
+
         return return_dict
 
     def draw_canvas(self, state = None, event = None):
@@ -2206,29 +2239,55 @@ class Application():
                                           self._canvas_draw_origo[1] + 12 * 1, text='(0,0)',
                                           font='Text 10')
 
-        # Drawing COG
-        if self._new_show_cog.get() and 'COG' in state.keys():
+        # Drawing COG and COB
+        if self._new_show_cog.get():
             pt_size = 5
-            if self._new_shifted_coords.get():
-                point_coord_x = self._canvas_draw_origo[0] + (state['COG'][0] +
-                                                              self._new_shift_viz_coord_hor.get()/1000) * \
-                                self._canvas_scale
-                point_coord_y = self._canvas_draw_origo[1] - (state['COG'][1] +
-                                                              self._new_shift_viz_coord_ver.get()/1000) * \
-                                self._canvas_scale
-            else:
-                point_coord_x = self._canvas_draw_origo[0] + state['COG'][0]*self._canvas_scale
-                point_coord_y = self._canvas_draw_origo[1] - state['COG'][1]*self._canvas_scale
-            self._main_canvas.create_oval(point_coord_x - pt_size + 2,
-                                          point_coord_y - pt_size + 2,
-                                          point_coord_x  + pt_size + 2,
-                                          point_coord_y + pt_size + 2, fill='yellow')
+            if 'COG' in state.keys():
+                if self._new_shifted_coords.get():
+                    point_coord_x = self._canvas_draw_origo[0] + (state['COG'][0] +
+                                                                  self._new_shift_viz_coord_hor.get()/1000) * \
+                                    self._canvas_scale
+                    point_coord_y = self._canvas_draw_origo[1] - (state['COG'][1] +
+                                                                  self._new_shift_viz_coord_ver.get()/1000) * \
+                                    self._canvas_scale
+                else:
+                    point_coord_x = self._canvas_draw_origo[0] + state['COG'][0]*self._canvas_scale
+                    point_coord_y = self._canvas_draw_origo[1] - state['COG'][1]*self._canvas_scale
 
-            self._main_canvas.create_text(point_coord_x  + 5,
-                                          point_coord_y - 14, text='steel COG: x=' + str(round(state['COG'][0], 2)) +
-                                                                   ' y=' +str(round(state['COG'][1],2)),
-                                          font=self._text_size["Text 8 bold"], fill='black')
+                self._main_canvas.create_oval(point_coord_x - pt_size + 2,
+                                              point_coord_y - pt_size + 2,
+                                              point_coord_x  + pt_size + 2,
+                                              point_coord_y + pt_size + 2, fill='yellow')
 
+                self._main_canvas.create_text(point_coord_x  + 5,
+                                              point_coord_y - 14, text='steel COG: x=' + str(round(state['COG'][0], 2)) +
+                                                                       ' y=' +str(round(state['COG'][1],2)),
+                                              font=self._text_size["Text 8 bold"], fill='black')
+
+            if self._center_of_buoyancy != {}:
+                for draft, cob in self._center_of_buoyancy.items():
+
+                    if self._new_shifted_coords.get():
+                        point_coord_x = self._canvas_draw_origo[0] + (cob[1] +
+                                                                      self._new_shift_viz_coord_hor.get() / 1000) * \
+                                        self._canvas_scale
+                        point_coord_y = self._canvas_draw_origo[1] - (cob[0] +
+                                                                      self._new_shift_viz_coord_ver.get() / 1000) * \
+                                        self._canvas_scale
+                    else:
+                        point_coord_x = self._canvas_draw_origo[0] + cob[1] * self._canvas_scale
+                        point_coord_y = self._canvas_draw_origo[1] - cob[0] * self._canvas_scale
+
+                    self._main_canvas.create_oval(point_coord_x - pt_size + 2,
+                                                  point_coord_y - pt_size + 2,
+                                                  point_coord_x + pt_size + 2,
+                                                  point_coord_y + pt_size + 2, fill='blue')
+
+                    self._main_canvas.create_text(point_coord_x + 5,
+                                                  point_coord_y + 14,
+                                                  text='COB d='+str(draft) +': x=' + str(round(cob[0], 2)) +
+                                                       ' y=' + str(round(cob[1], 2)),
+                                                  font=self._text_size["Text 8"], fill='blue')
 
         chk_box_active = [self._new_colorcode_beams.get(), self._new_colorcode_plates.get(),
             self._new_colorcode_pressure.get(), self._new_colorcode_utilization.get(),
@@ -2327,7 +2386,7 @@ class Application():
                                              state['ML buckling colors'][line]['ultimate']
 
                                 if self._line_to_struc[line][1].get_puls_method() == 'buckling':
-                                    color = 'red' if any([col1 == 'red', col2 == 'red']) else 'green'
+                                    color = col1
                                 else:
                                     color = col2
 
@@ -3414,6 +3473,21 @@ class Application():
         if self.__returned_load_data is not None:
             map(self.on_close_load_window, self.__returned_load_data)
 
+        self.get_cob()  # Recalculating COB
+
+    def get_cob(self):
+        '''
+        Calculation of center of buoyancy.
+        '''
+        self._center_of_buoyancy = dict()
+        #self._center_of_buoyancy['all'] = self._grid_calc.grid.get_center_of_matrix(scale=self._base_scale_factor)
+
+        for load, data in self._load_dict.items():
+            if data[0].is_static():
+                draft = data[0].get_static_draft()
+                cob = self._grid_calc.grid.get_center_of_matrix(height_limit=draft, scale=self._base_scale_factor)
+                self._center_of_buoyancy[draft] = cob
+
     def calculate_all_load_combinations_for_line_all_lines(self):
         '''
         Calculating all results.
@@ -3675,6 +3749,8 @@ class Application():
             map(self.on_close_load_window, self.__returned_load_data)
         # else:
         #     pass
+        self._center_of_buoyancy = dict()  # Resetting dict
+        self.update_frame()
 
     def set_selected_variables(self, line):
         '''
@@ -4491,6 +4567,7 @@ class Application():
             self._new_buckling_slider.set(imported['buckling type'])
             self._buckling_slider.set(imported['buckling type'])
 
+        self.get_cob()
         imp_file.close()
         self._parent.wm_title('| ANYstructure |     ' + imp_file.name)
         self.update_frame()
@@ -4777,8 +4854,10 @@ class Application():
 
         # Storing the the returned data to temporary variable.
         self.__returned_load_data = [returned_loads, counter, load_comb_dict]
-        # Displaying the loads
 
+       # Calculating center of buoyancy from static cases.
+
+        self.get_cob() # Update COB
         self.update_frame()
 
     def on_close_opt_window(self,returned_object):
