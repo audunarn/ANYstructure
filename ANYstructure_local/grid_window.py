@@ -286,8 +286,10 @@ if __name__ == '__main__':
     canvas_dim = [1000,720]
     canvas_origo = (50,670)
     my_grid = CreateGridWindow(test.get_grid_no_inp(), canvas_dim, test.get_to_draw(), canvas_origo)
+
     search_return = my_grid.search_bfs(animate = True)
     my_grid.draw_grid(tank_count=4)
+    print(np.unique(my_grid.grid))
 
 
 
