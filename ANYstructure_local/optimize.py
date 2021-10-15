@@ -21,13 +21,13 @@ import csv
 
 def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lateral_pressure=None,
                      deltas=None, algorithm='anysmart', trials=30000, side='p',
-                     const_chk = (True,True,True,True,True,True, True, False),
+                     const_chk = (True,True,True,True,True,True, True, False, False, False),
                      pso_options = (100,0.5,0.5,0.5,100,1e-8,1e-8), is_geometric=False, fatigue_obj = None ,
                      fat_press_ext_int = None,
                      min_max_span = (2,6), tot_len = None, frame_height = 2.5, frame_distance = None,
                      slamming_press = 0, predefined_stiffener_iter = None, processes = None, use_weight_filter = True,
                      load_pre = False, opt_girder_prop = None, puls_sheet = None, puls_acceptance = 0.87,
-                     fdwn = 1, fup = 0.5):
+                     fdwn = 1, fup = 0.5, ml_algo = None):
     '''
     The optimazation is initiated here. It is called from optimize_window.
     :param initial_structure_obj:
@@ -70,7 +70,7 @@ def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lat
                                    init_filter_weight, side=side, const_chk=const_chk, fat_dict=fat_dict,
                                    fat_press=fat_press_ext_int,slamming_press=slamming_press,
                                    predefiened_stiffener_iter=predefined_stiffener_iter, puls_sheet = puls_sheet,
-                                   puls_acceptance = puls_acceptance, fdwn = fdwn, fup = fup)
+                                   puls_acceptance = puls_acceptance, fdwn = fdwn, fup = fup, ml_algo=ml_algo)
         return to_return
     elif algorithm == 'anysmart' and is_geometric:
         return geometric_summary_search(min_var= min_var, max_var=max_var, deltas= deltas,
@@ -80,7 +80,7 @@ def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lat
                                         tot_len= tot_len, frame_distance = frame_distance,
                                         algorithm= 'anysmart', predefiened_stiffener_iter=predefined_stiffener_iter,
                                         slamming_press = slamming_press, load_pre = load_pre,
-                                        opt_girder_prop = opt_girder_prop)
+                                        opt_girder_prop = opt_girder_prop, ml_algo=ml_algo)
     elif algorithm == 'anydetail' and not is_geometric:
         return any_optimize_loop(min_var, max_var, deltas, initial_structure_obj, lateral_pressure,init_filter_weight,
                                  side=side, const_chk=const_chk, fat_dict=fat_dict, fat_press=fat_press_ext_int,
@@ -150,9 +150,10 @@ def any_optimize_loop(min_var,max_var,deltas,initial_structure_obj,lateral_press
     return new_struc_obj, new_calc_obj, fat_dict, True, main_fail
 
 def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure, init_filter = float('inf'),
-                   side='p',const_chk=(True,True,True,True,True,True,True), fat_dict = None, fat_press = None,
+                   side='p',const_chk=(True,True,True,True,True,True,True, False, False,False), fat_dict = None,
+                   fat_press = None,
                    slamming_press = 0, predefiened_stiffener_iter = None, processes = None,
-                   puls_sheet = None, puls_acceptance = 0.87, fdwn = 1, fup = 0.5):
+                   puls_sheet = None, puls_acceptance = 0.87, fdwn = 1, fup = 0.5, ml_algo = None):
     '''
     Trying to be smart
     :param min_var:
@@ -171,7 +172,7 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
     main_result = get_filtered_results(structure_to_check, initial_structure_obj,lateral_pressure,
                                        init_filter_weight=init_filter, side=side,chk=const_chk, fat_dict=fat_dict,
                                        fat_press=fat_press, slamming_press=slamming_press, processes=processes,
-                                       puls_sheet = puls_sheet, puls_acceptance = puls_acceptance)
+                                       puls_sheet = puls_sheet, puls_acceptance = puls_acceptance, ml_algo=ml_algo)
 
     main_iter = main_result[0]
     main_fail = main_result[1]
@@ -200,7 +201,7 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
 
 def any_smart_loop_geometric(min_var,max_var,deltas,initial_structure_obj,lateral_pressure, init_filter = float('inf'),
                              side='p',const_chk=(True,True,True,True,True,True), fat_obj = None, fat_press = None,
-                             slamming_press = None, predefiened_stiffener_iter=None, processes = None):
+                             slamming_press = None, predefiened_stiffener_iter=None, processes = None, ml_algo = None):
     ''' Searching multiple sections using the smart loop. '''
 
     all_obj = []
@@ -219,7 +220,8 @@ def any_smart_loop_geometric(min_var,max_var,deltas,initial_structure_obj,latera
                                  fat_dict = None if fatigue_obj is None else fatigue_obj.get_fatigue_properties(),
                                  fat_press = None if fatigue_press is None else fatigue_press,
                                  slamming_press = 0 if slam_press is None else slam_press,
-                                 predefiened_stiffener_iter=this_predefiened_objects, processes=processes)
+                                 predefiened_stiffener_iter=this_predefiened_objects, processes=processes,
+                                 ml_algo=ml_algo)
         # TODO-any set check if not solution acceptable.
         all_obj.append(opt_obj)
         idx += 1
@@ -293,7 +295,8 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                              pso_options=(100,0.5,0.5,0.5,100,1e-8,1e-8), fat_obj = None, fat_press = None,
                              min_max_span = (2,6), tot_len = None, frame_distance = None,
                              algorithm = 'anysmart', predefiened_stiffener_iter=None, reiterate = True,
-                             processes = None, slamming_press = None, load_pre = False, opt_girder_prop = None):
+                             processes = None, slamming_press = None, load_pre = False, opt_girder_prop = None,
+                             ml_algo = None):
 
     '''Geometric optimization of all relevant sections. '''
     # Checking the number of initial objects and adding if number of fraction is to be changed.
@@ -430,7 +433,8 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                                                            fat_obj = working_fatigue[no_of_fractions],
                                                            slamming_press = working_slamming[no_of_fractions],
                                                            fat_press=working_fatigue_press[no_of_fractions],
-                                                           predefiened_stiffener_iter = predefiened_stiffener_iter)
+                                                           predefiened_stiffener_iter = predefiened_stiffener_iter,
+                                                           ml_algo=ml_algo)
                 # TODO fatigue and slamming implemetation
 
             # Finding weight of this solution.
@@ -498,9 +502,10 @@ def any_find_min_weight_var(var):
     return min(map(calc_weight))
 
 
-def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True,True, True, True, True, False),
+def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True,True, True, True, True, False,
+                                                                  False, False),
                         fat_dict = None, fat_press = None, slamming_press = 0, PULSrun: calc.PULSpanel = None,
-                        print_result = False, fdwn = 1, fup = 0.5):
+                        print_result = False, fdwn = 1, fup = 0.5, ml_algo = None):
     '''
     Checking all constraints defined.
 
@@ -509,7 +514,7 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
     :param x:
     :return:
     '''
-    all_checks = [0,0,0,0,0,0,0,0,0]
+    all_checks = [0,0,0,0,0,0,0,0,0,0,0]
     print_result = False
     calc_object = create_new_calc_obj(obj, x, fat_dict, fdwn = fdwn, fup = fup)
 
@@ -529,6 +534,7 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
             return False, 'PULS', x, all_checks
 
     this_weight = calc_weight(x)
+
 
     if this_weight > init_weight:
         weigt_frac = this_weight / init_weight
@@ -568,6 +574,14 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
             if print_result:
                 print('Buckling',calc_object[0].get_one_line_string(), False)
             return False, 'Buckling', x, all_checks
+
+    # Buckling ml-cl
+    if chk[8]:
+        pass
+
+    # Buckling ml-reg
+    if chk[9]:
+        pass
 
     # Minimum plate thickness
     if chk[1]:
@@ -867,7 +881,7 @@ def x_to_string(x):
 def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight,side='p',
                          chk=(True,True,True,True,True,True,True, False),fat_dict = None, fat_press = None,
                          slamming_press=None, processes = None, puls_sheet = None, puls_acceptance = 0.87,
-                         fdwn = 1, fup = 0.5):
+                         fdwn = 1, fup = 0.5, ml_algo = None):
     '''
     Using multiprocessing to return list of applicable results.
 
@@ -906,7 +920,7 @@ def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight
         PULSrun = None
 
     iter_var = ((item,init_stuc_obj,lat_press,init_filter_weight,side,chk,fat_dict,fat_press,slamming_press, PULSrun,
-                 fdwn, fup)
+                 fdwn, fup, ml_algo)
                 for item in iterable_all)
     #res_pre = it.starmap(any_constraints_all, iter_var)
     if processes is None:

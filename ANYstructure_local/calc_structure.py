@@ -3,9 +3,6 @@ from scipy.stats import gamma as gammadist
 import numpy as np
 import ANYstructure_local.helper as hlp
 import os, time, datetime, json, random, math
-from sklearn.preprocessing import StandardScaler
-from sklearn.neural_network import MLPClassifier
-import pickle
 import ANYstructure_local.SN_curve_parameters as snc
 
 class Structure():

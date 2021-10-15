@@ -21,7 +21,7 @@ import ANYstructure_local.load_factor_window as load_factors
 from _tkinter import TclError
 import multiprocessing
 from ANYstructure_local.report_generator import LetterMaker
-import os.path, os
+import os.path, os, pickle
 import ctypes
 import ANYstructure_local.sesam_interface as sesam
 from matplotlib import pyplot as plt
@@ -236,6 +236,8 @@ class Application():
             self._ML_buckling[name]= None
             if os.path.isfile(file_base + '.pickle'):
                 file = open(file_base + '.pickle', 'rb')
+                from sklearn.neural_network import MLPClassifier
+                from sklearn.preprocessing import StandardScaler
                 self._ML_buckling[name]= pickle.load(file)
                 file.close()
 
@@ -248,9 +250,6 @@ class Application():
                            6: 'The global slenderness exceeds 4. Please reduce stiffener span or increase stiffener height.',
                            7: 'The applied pressure is too high for this plate field.', 8: 'web-flange-ratio',
                            9:  'UF below or equal 0.87', 10: 'UF between 0.87 and 1.0', 11: 'UF above 1.0'}
-        print(self._ML_buckling)
-
-
 
         # Used to select parameter
         self._stuctural_definition = ['mat_yield','mat_factor', 'span', 'spacing', 'plate_thk', 'stf_web_height',

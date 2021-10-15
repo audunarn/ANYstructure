@@ -472,6 +472,7 @@ class CreateOptimizeWindow():
         self._new_check_shear_area = tk.BooleanVar()
         self._new_check_buckling = tk.BooleanVar()
         self._new_check_buckling_puls = tk.BooleanVar()
+        self._new_check_buckling_ml_cl = tk.BooleanVar()
         self._new_check_fatigue = tk.BooleanVar()
         self._new_check_slamming = tk.BooleanVar()
         self._new_check_local_buckling = tk.BooleanVar()
@@ -485,7 +486,9 @@ class CreateOptimizeWindow():
         self._new_check_local_buckling.set(True)
         self._new_use_weight_filter.set(True)
         self._new_check_buckling_puls.set(False)
+        self._new_check_buckling_ml_cl.set(False)
         self._new_check_buckling_puls.trace('w', self.update_running_time)
+
 
         start_y = 140
         tk.Label(self._frame,text='Check for minimum section modulus').place(x=start_x+dx*9.7,y=start_y+4*dy)
@@ -497,6 +500,7 @@ class CreateOptimizeWindow():
         tk.Label(self._frame, text='Check for local stf. buckling').place(x=start_x + dx * 9.7, y=start_y + 10 * dy)
         tk.Label(self._frame, text='Use weight filter (for speed)').place(x=start_x + dx * 9.7, y=start_y + 11 * dy)
         tk.Label(self._frame, text='Check for buckling (PULS)').place(x=start_x + dx * 9.7, y=start_y + 12 * dy)
+        tk.Label(self._frame, text='Check for buckling (ML-CL)').place(x=start_x + dx * 9.7, y=start_y + 12 * dy)
 
         tk.Checkbutton(self._frame,variable=self._new_check_sec_mod).place(x=start_x+dx*12,y=start_y+4*dy)
         tk.Checkbutton(self._frame, variable=self._new_check_min_pl_thk).place(x=start_x+dx*12,y=start_y+5*dy)
@@ -510,6 +514,8 @@ class CreateOptimizeWindow():
                                                                                    y=start_y + 11 * dy)
         tk.Checkbutton(self._frame, variable=self._new_check_buckling_puls).place(x=start_x + dx * 12,
                                                                                    y=start_y + 12 * dy)
+        tk.Checkbutton(self._frame, variable=self._new_check_buckling_ml_cl).place(x=start_x + dx * 12,
+                                                                                   y=start_y + 13 * dy)
 
         # Stress scaling
         self._new_fup = tk.DoubleVar()
@@ -642,7 +648,8 @@ class CreateOptimizeWindow():
         contraints = (self._new_check_sec_mod.get(),self._new_check_min_pl_thk.get(),
                       self._new_check_shear_area.get(), self._new_check_buckling.get(),
                       self._new_check_fatigue.get(), self._new_check_slamming.get(),
-                      self._new_check_local_buckling.get(), self._new_check_buckling_puls.get())
+                      self._new_check_local_buckling.get(), self._new_check_buckling_puls.get(),
+                      self._new_check_buckling_ml_cl.get(), False)
         self._initial_structure_obj.set_span(self._new_span.get())
 
         if self._fatigue_pressure is not None:
@@ -668,7 +675,8 @@ class CreateOptimizeWindow():
                                                use_weight_filter = False if self._new_check_buckling_puls.get()
                                                else self._new_use_weight_filter.get(),
                                                puls_sheet = puls_sheet_location, puls_acceptance = puls_acceptance,
-                                               fdwn = self._new_fdwn.get(), fup = self._new_fdwn.get())
+                                               fdwn = self._new_fdwn.get(), fup = self._new_fdwn.get(),
+                                               ml_algo= self.app._ML_buckling)
 
         if self._opt_results is not None and self._opt_results[0] is not None:
             self._opt_actual_running_time.config(text='Actual running time: \n'
