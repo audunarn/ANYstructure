@@ -1908,21 +1908,8 @@ class Application():
                 '''
 
                 if obj_scnt_calc.get_puls_sp_or_up() == 'UP':
-                    buckling_ml_input = obj_scnt_calc.get_buckling_ml_input(design_lat_press=design_pressure,
-                                                                            sp_or_up='UP')
-                    # if self._ML_buckling['cl SP buc'] != {}:
-                    #     x_buc = self._ML_buckling['cl SP buc']['scaler'].transform(buckling_ml_input)
-                    #     y_pred_buc = self._ML_buckling['cl SP buc']['predictor'].predict(x_buc)[0]
-                    # else:
-                    #     y_pred_buc = 0
-                    # if self._ML_buckling['cl SP ult'] != {}:
-                    #     x_ult = self._ML_buckling['cl SP ult']['scaler'].transform(buckling_ml_input)
-                    #     y_pred_ult = self._ML_buckling['cl SP ult']['predictor'].predict(x_ult)[0]
-                    # else:
-                    #     y_pred_ult = 0
-                    # return_dict['ML buckling colors'][current_line] =  {'buckling': 'black', 'ultimate': 'black'}
-                    # return_dict['ML buckling class'][current_line] = {'buckling': 0, 'ultimate': 0}
-                    
+                    buckling_ml_input = obj_scnt_calc.get_buckling_ml_input(design_lat_press=design_pressure)
+
                     if obj_scnt_calc.get_puls_boundary() == 'Int':
                         if self._ML_buckling['cl UP buc int predictor'] != None:
                             x_buc = self._ML_buckling['cl UP buc int scaler'].transform(buckling_ml_input)
@@ -1951,8 +1938,7 @@ class Application():
                     return_dict['ML buckling class'][current_line] = {'buckling': int(y_pred_buc),
                                                                       'ultimate': int(y_pred_ult)}
                 else:
-                    buckling_ml_input = obj_scnt_calc.get_buckling_ml_input(design_lat_press=design_pressure,
-                                                                            sp_or_up='SP')
+                    buckling_ml_input = obj_scnt_calc.get_buckling_ml_input(design_lat_press=design_pressure)
                     if obj_scnt_calc.get_puls_boundary() == 'Int':
                         if self._ML_buckling['cl SP buc int predictor'] != None:
                             x_buc = self._ML_buckling['cl SP buc int scaler'].transform(buckling_ml_input)
