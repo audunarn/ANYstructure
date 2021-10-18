@@ -542,7 +542,7 @@ class Structure():
                            'sp or up': self._puls_sp_or_up}
         return return_dict
 
-    def get_buckling_ml_input(self, design_lat_press: float = 0):
+    def get_buckling_ml_input(self, design_lat_press: float = 0, sp_or_up: str = 'SP'):
         '''
         Classes in data from ML
 
@@ -553,17 +553,36 @@ class Structure():
         stf_type = {'T-bar': 1,'T': 1,  'L-bulb': 2, 'Angle': 3, 'Flatbar': 4, 'FB': 4}
         stf_end = {'Cont': 1, 'C':1 , 'Sniped': 2, 'S': 2}
         field_type = {'Integrated': 1,'Int': 1, 'Girder - long': 2,'GL': 2, 'Girder - trans': 3,  'GT': 3}
+        up_boundary = {'SS': 1, 'CL': 2}
 
-        inp_cols = ['Length of panel', 'Stiffener spacing', 'Plate thick.', 'Stiff. Height', 'Web thick.',
-                    'Flange width',
-                    'Flange thick.', 'Yield stress plate', 'Yield stress stiffener', 'Axial stress', 'Trans. stress 1',
-                    'Trans. stress 2', 'Shear stress', 'Pressure (fixed)', 'Stiffener type cl', 'Stiffener boundary cl']
+        # inp_cols = ['Length of panel', 'Stiffener spacing', 'Plate thick.', 'Stiff. Height', 'Web thick.',
+        #             'Flange width',
+        #             'Flange thick.', 'Yield stress plate', 'Yield stress stiffener', 'Axial stress', 'Trans. stress 1',
+        #             'Trans. stress 2', 'Shear stress', 'Pressure (fixed)', 'Stiffener type cl', 'Stiffener boundary cl']
+        #
+        # inp_cols = ['Length of panel', 'Stiffener spacing', 'Plate thick.',
+        #             'Yield stress plate', 'Axial stress', 'Trans. stress 1',
+        #             'Trans. stress 2', 'Shear stress', 'Pressure (fixed)', 'In-plane support cl', 'Rot left cl',
+        #             'Rot right cl', 'Rot upper cl', 'Rot lower cl']
 
-        this_field = [
-            [self.span * 1000, self.spacing * 1000, self.plate_th * 1000, self.web_height * 1000, self.web_th * 1000,
-             self.flange_width * 1000, self.flange_th * 1000, self.mat_yield / 1e6, self.mat_yield / 1e6,
-             self.sigma_x, self.sigma_y1, self.sigma_y2, self.tauxy, design_lat_press/1000, stf_type[self.stiffener_type],
-             stf_end[self._puls_stf_end]]]
+        if sp_or_up == 'SP':
+            this_field = [
+                [self.span * 1000, self.spacing * 1000, self.plate_th * 1000, self.web_height * 1000, self.web_th * 1000,
+                 self.flange_width * 1000, self.flange_th * 1000, self.mat_yield / 1e6, self.mat_yield / 1e6,
+                 self.sigma_x, self.sigma_y1, self.sigma_y2, self.tauxy, design_lat_press/1000, stf_type[self.stiffener_type],
+                 stf_end[self._puls_stf_end]]]
+        else:
+            ss_cl_list = list()
+            for letter_i in self._puls_up_boundary:
+                if letter_i == 'S':
+                    ss_cl_list.append(up_boundary['SS'])
+                else:
+                    ss_cl_list.append(up_boundary['CL'])
+            b1, b2, b3, b4 = ss_cl_list
+
+            this_field =  [[self.span * 1000, self.spacing * 1000, self.plate_th * 1000, self.mat_yield / 1e6,
+                           self.sigma_x, self.sigma_y1, self.sigma_y2, self.tauxy, design_lat_press/1000,
+                           b1, b2, b3, b4],]
 
         return this_field
 
@@ -1589,11 +1608,11 @@ class PULSpanel():
         lengths = np.arange(2000,6000,100)
         spacings = np.arange(500,900,10)
         thks = np.arange(10,25,1)
-        axstress =transsress1 = transsress2 = shearstress = np.arange(-100,110,10) #np.concatenate((np.arange(-400,-200,10), np.arange(210,410,10)))
+        axstress =transsress1 = transsress2 = shearstress = np.arange(-200,210,10) #np.concatenate((np.arange(-400,-200,10), np.arange(210,410,10)))
 
         pressures =  np.arange(0,0.45,0.01)
         now = time.time()
-        yields = np.array([235,265,315,355,355,355,355,355,355,355,390,420,460])
+        yields = np.array([235,265,315,355,355,355,355,390,420,460])
         for idx in range(batch_size):
             ''' Adding 'Stiffener type (L,T,F)': self.stf_type,  'Stiffener boundary': 'C',
                 'Stiff. Height': self.stf_web_height*1000, 'Web thick.': self.stf_web_thk*1000, 
@@ -1602,16 +1621,17 @@ class PULSpanel():
             this_id = 'run_' + str(idx) + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
             this_stf = random.choice(profiles)
 
-            # if random.choice([True, False]):
-            #     boundary = 'Int'
-            # else:
-            #     boundary = random.choice(['GL', 'GT'])
+            if random.choice([True, False]):
+                boundary = 'Int'
+            else:
+                boundary = random.choice(['GL', 'GT'])
             if random.choice([True, True, True, False]):
                 stf_boundary = 'C'
             else:
                 stf_boundary = 'S'
-            boundary = 'Int'
+            #boundary = 'Int'
             #stf_boundary = 'C'
+
 
             yieldstress = np.random.choice(yields)
             if random.choice([True, True, True, False]):
@@ -1643,9 +1663,10 @@ class PULSpanel():
             #                      'In-plane support': boundary, 'sp or up': 'SP'}
 
             same_ax = np.random.choice(axstress)
-            lengths = np.arange(500, 6000, 100)
-            spacings = np.arange(500, 6000, 100)
-            thks = np.arange(10, 25, 1)
+            lengths = np.arange(100, 6000, 100)
+            spacings = np.arange(100, 26000, 100)
+            thks = np.arange(10, 50, 1)
+            boundary = random.choice(['GL', 'GT'])
 
             if np.random.choice([True,False,False,False]):
                 support = ['SS','SS','SS','SS']

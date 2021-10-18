@@ -224,7 +224,12 @@ class Application():
         for name, file_base in zip(['cl SP buc int predictor', 'cl SP buc int scaler',
                                     'cl SP ult int predictor', 'cl SP ult int scaler',
                                     'cl SP buc GLGT predictor', 'cl SP buc GLGT scaler',
-                                    'cl SP ult GLGT predictor', 'cl SP ult GLGT scaler'],
+                                    'cl SP ult GLGT predictor', 'cl SP ult GLGT scaler',
+                                    'cl UP buc int predictor', 'cl UP buc int scaler',
+                                    'cl UP ult int predictor', 'cl UP ult int scaler',
+                                    'cl UP buc GLGT predictor', 'cl UP buc GLGT scaler',
+                                    'cl UP ult GLGT predictor', 'cl UP ult GLGT scaler'
+                                    ],
                                     ['CL output cl buc predictor In-plane support cl 1',
                                     'CL output cl buc scaler In-plane support cl 1',
                                     'CL output cl ult predictor In-plane support cl 1',
@@ -232,7 +237,16 @@ class Application():
                                     'CL output cl buc predictor In-plane support cl [2, 3]',
                                     'CL output cl buc scaler In-plane support cl [2, 3]',
                                     'CL output cl ult predictor In-plane support cl [2, 3]',
-                                    'CL output cl ult scaler In-plane support cl [2, 3]']):
+                                    'CL output cl ult scaler In-plane support cl [2, 3]',
+                                     'CL output cl buc predictor In-plane support cl 1 UP',
+                                     'CL output cl buc scaler In-plane support cl 1 UP',
+                                     'CL output cl ult predictor In-plane support cl 1 UP',
+                                     'CL output cl ult scaler In-plane support cl 1 UP',
+                                     'CL output cl buc predictor In-plane support cl [2, 3] UP',
+                                     'CL output cl buc scaler In-plane support cl [2, 3] UP',
+                                     'CL output cl ult predictor In-plane support cl [2, 3] UP',
+                                     'CL output cl ult scaler In-plane support cl [2, 3] UP'
+                                     ]):
             self._ML_buckling[name]= None
             if os.path.isfile(file_base + '.pickle'):
                 file = open(file_base + '.pickle', 'rb')
@@ -1892,9 +1906,10 @@ class Application():
                         'cl SP buc GLGT predictor', 'cl SP buc GLGT scaler',
                         'cl SP ult GLGT predictor', 'cl SP ult GLGT scaler']
                 '''
-                buckling_ml_input = obj_scnt_calc.get_buckling_ml_input(
-                    design_lat_press=design_pressure)
+
                 if obj_scnt_calc.get_puls_sp_or_up() == 'UP':
+                    buckling_ml_input = obj_scnt_calc.get_buckling_ml_input(design_lat_press=design_pressure,
+                                                                            sp_or_up='UP')
                     # if self._ML_buckling['cl SP buc'] != {}:
                     #     x_buc = self._ML_buckling['cl SP buc']['scaler'].transform(buckling_ml_input)
                     #     y_pred_buc = self._ML_buckling['cl SP buc']['predictor'].predict(x_buc)[0]
@@ -1905,9 +1920,39 @@ class Application():
                     #     y_pred_ult = self._ML_buckling['cl SP ult']['predictor'].predict(x_ult)[0]
                     # else:
                     #     y_pred_ult = 0
-                    return_dict['ML buckling colors'][current_line] =  {'buckling': 'black', 'ultimate': 'black'}
-                    return_dict['ML buckling class'][current_line] = {'buckling': 0, 'ultimate': 0}
+                    # return_dict['ML buckling colors'][current_line] =  {'buckling': 'black', 'ultimate': 'black'}
+                    # return_dict['ML buckling class'][current_line] = {'buckling': 0, 'ultimate': 0}
+                    
+                    if obj_scnt_calc.get_puls_boundary() == 'Int':
+                        if self._ML_buckling['cl UP buc int predictor'] != None:
+                            x_buc = self._ML_buckling['cl UP buc int scaler'].transform(buckling_ml_input)
+                            y_pred_buc = self._ML_buckling['cl UP buc int predictor'].predict(x_buc)[0]
+                        else:
+                            y_pred_buc = 0
+                        if self._ML_buckling['cl UP ult int predictor'] != None:
+                            x_ult = self._ML_buckling['cl UP ult int scaler'].transform(buckling_ml_input)
+                            y_pred_ult = self._ML_buckling['cl UP ult int predictor'].predict(x_ult)[0]
+                        else:
+                            y_pred_ult = 0
+                    else:
+                        if self._ML_buckling['cl UP buc GLGT predictor'] != None:
+                            x_buc = self._ML_buckling['cl UP buc GLGT scaler'].transform(buckling_ml_input)
+                            y_pred_buc = self._ML_buckling['cl UP buc GLGT predictor'].predict(x_buc)[0]
+                        else:
+                            y_pred_buc = 0
+                        if self._ML_buckling['cl UP ult GLGT predictor'] != None:
+                            x_ult = self._ML_buckling['cl UP ult GLGT scaler'].transform(buckling_ml_input)
+                            y_pred_ult = self._ML_buckling['cl UP ult GLGT predictor'].predict(x_ult)[0]
+                        else:
+                            y_pred_ult = 0
+                    return_dict['ML buckling colors'][current_line] = \
+                        {'buckling': 'green' if int(y_pred_buc) == 9 else 'red',
+                         'ultimate': 'green' if int(y_pred_ult) == 9 else 'red'}
+                    return_dict['ML buckling class'][current_line] = {'buckling': int(y_pred_buc),
+                                                                      'ultimate': int(y_pred_ult)}
                 else:
+                    buckling_ml_input = obj_scnt_calc.get_buckling_ml_input(design_lat_press=design_pressure,
+                                                                            sp_or_up='SP')
                     if obj_scnt_calc.get_puls_boundary() == 'Int':
                         if self._ML_buckling['cl SP buc int predictor'] != None:
                             x_buc = self._ML_buckling['cl SP buc int scaler'].transform(buckling_ml_input)
