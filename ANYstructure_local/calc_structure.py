@@ -550,7 +550,7 @@ class Structure():
         'global slenderness': 6, 'pressure': 7, 'web-flange-ratio': 8,  'below 0.87': 9,
                   'between 0.87 and 1': 10, 'above 1': 11}
         '''
-        stf_type = {'T-bar': 1,'T': 1,  'L-bulb': 2, 'Angle': 3, 'Flatbar': 4, 'FB': 4}
+        stf_type = {'T-bar': 1,'T': 1,  'L-bulb': 2, 'Angle': 3, 'Flatbar': 4, 'FB': 4, 'L': 3}
         stf_end = {'Cont': 1, 'C':1 , 'Sniped': 2, 'S': 2}
         field_type = {'Integrated': 1,'Int': 1, 'Girder - long': 2,'GL': 2, 'Girder - trans': 3,  'GT': 3}
         up_boundary = {'SS': 1, 'CL': 2}
