@@ -41,7 +41,8 @@ class CreateOptGeoWindow():
                                         'cl UP buc int predictor', 'cl UP buc int scaler',
                                         'cl UP ult int predictor', 'cl UP ult int scaler',
                                         'cl UP buc GLGT predictor', 'cl UP buc GLGT scaler',
-                                        'cl UP ult GLGT predictor', 'cl UP ult GLGT scaler'
+                                        'cl UP ult GLGT predictor', 'cl UP ult GLGT scaler',
+                                        'CSR predictor', 'CSR scaler'
                                         ],
                                        ['CL output cl buc predictor In-plane support cl 1',
                                         'CL output cl buc scaler In-plane support cl 1',
@@ -58,7 +59,11 @@ class CreateOptGeoWindow():
                                         'CL output cl buc predictor In-plane support cl [2, 3] UP',
                                         'CL output cl buc scaler In-plane support cl [2, 3] UP',
                                         'CL output cl ult predictor In-plane support cl [2, 3] UP',
-                                        'CL output cl ult scaler In-plane support cl [2, 3] UP'
+                                        'CL output cl ult scaler In-plane support cl [2, 3] UP',
+                                        "CL ['CSR plate cl', 'CSR web cl', 'CSR web flange cl', 'CSR flange cl'] predictor.pickle",
+                                        "CL ['CSR plate cl', 'CSR web cl', 'CSR web flange cl', 'CSR flange cl'] predictor.pickle"
+
+
                                         ]):
                     self._ML_buckling[name] = None
                     if os.path.isfile(file_base + '.pickle'):

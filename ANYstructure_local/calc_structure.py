@@ -542,7 +542,7 @@ class Structure():
                            'sp or up': self._puls_sp_or_up}
         return return_dict
 
-    def get_buckling_ml_input(self, design_lat_press: float = 0, sp_or_up: str = 'SP', alone = True):
+    def get_buckling_ml_input(self, design_lat_press: float = 0, sp_or_up: str = 'SP', alone = True, csr = False):
         '''
         Classes in data from ML
 
@@ -556,10 +556,17 @@ class Structure():
         up_boundary = {'SS': 1, 'CL': 2}
 
         if self._puls_sp_or_up == 'SP':
-            this_field =  [self.span * 1000, self.spacing * 1000, self.plate_th * 1000, self.web_height * 1000,
-                           self.web_th * 1000, self.flange_width * 1000, self.flange_th * 1000, self.mat_yield / 1e6,
-                           self.mat_yield / 1e6,  self.sigma_x, self.sigma_y1, self.sigma_y2, self.tauxy,
-                           design_lat_press/1000, stf_type[self.stiffener_type], stf_end[self._puls_stf_end]]
+            if csr == False:
+                this_field =  [self.span * 1000, self.spacing * 1000, self.plate_th * 1000, self.web_height * 1000,
+                               self.web_th * 1000, self.flange_width * 1000, self.flange_th * 1000, self.mat_yield / 1e6,
+                               self.mat_yield / 1e6,  self.sigma_x, self.sigma_y1, self.sigma_y2, self.tauxy,
+                               design_lat_press/1000, stf_type[self.stiffener_type], stf_end[self._puls_stf_end]]
+            else:
+                this_field =  [self.span * 1000, self.spacing * 1000, self.plate_th * 1000, self.web_height * 1000,
+                               self.web_th * 1000, self.flange_width * 1000, self.flange_th * 1000, self.mat_yield / 1e6,
+                               self.mat_yield / 1e6,  self.sigma_x, self.sigma_y1, self.sigma_y2, self.tauxy,
+                               design_lat_press/1000, stf_type[self.stiffener_type], stf_end[self._puls_stf_end],
+                               field_type[self._puls_boundary]]
         else:
             ss_cl_list = list()
             for letter_i in self._puls_up_boundary:
@@ -568,10 +575,14 @@ class Structure():
                 else:
                     ss_cl_list.append(up_boundary['CL'])
             b1, b2, b3, b4 = ss_cl_list
-
-            this_field =  [self.span * 1000, self.spacing * 1000, self.plate_th * 1000, self.mat_yield / 1e6,
-                           self.sigma_x, self.sigma_y1, self.sigma_y2, self.tauxy, design_lat_press/1000,
-                           b1, b2, b3, b4]
+            if csr == False:
+                this_field =  [self.span * 1000, self.spacing * 1000, self.plate_th * 1000, self.mat_yield / 1e6,
+                               self.sigma_x, self.sigma_y1, self.sigma_y2, self.tauxy, design_lat_press/1000,
+                               b1, b2, b3, b4]
+            else:
+                this_field =  [self.span * 1000, self.spacing * 1000, self.plate_th * 1000, self.mat_yield / 1e6,
+                               self.sigma_x, self.sigma_y1, self.sigma_y2, self.tauxy, design_lat_press/1000,
+                               field_type[self._puls_boundary], b1, b2, b3, b4]
         if alone:
             return [this_field,]
         else:
