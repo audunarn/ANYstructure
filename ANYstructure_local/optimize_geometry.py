@@ -4,7 +4,7 @@ from _tkinter import TclError
 from tkinter.ttk import Progressbar
 import ANYstructure_local.optimize as op
 import numpy as np
-import time
+import time, os
 from tkinter import messagebox
 import ANYstructure_local.example_data as test
 from ANYstructure_local.helper import *
@@ -33,6 +33,40 @@ class CreateOptGeoWindow():
             self._line_to_struc = test.get_line_to_struc()
             self._opt_frames = {}
             self._active_points = ['point1','point4','point8','point5']
+            self._ML_buckling = dict()  # Buckling machine learning algorithm
+            for name, file_base in zip(['cl SP buc int predictor', 'cl SP buc int scaler',
+                                        'cl SP ult int predictor', 'cl SP ult int scaler',
+                                        'cl SP buc GLGT predictor', 'cl SP buc GLGT scaler',
+                                        'cl SP ult GLGT predictor', 'cl SP ult GLGT scaler',
+                                        'cl UP buc int predictor', 'cl UP buc int scaler',
+                                        'cl UP ult int predictor', 'cl UP ult int scaler',
+                                        'cl UP buc GLGT predictor', 'cl UP buc GLGT scaler',
+                                        'cl UP ult GLGT predictor', 'cl UP ult GLGT scaler'
+                                        ],
+                                       ['CL output cl buc predictor In-plane support cl 1',
+                                        'CL output cl buc scaler In-plane support cl 1',
+                                        'CL output cl ult predictor In-plane support cl 1',
+                                        'CL output cl ult scaler In-plane support cl 1',
+                                        'CL output cl buc predictor In-plane support cl [2, 3]',
+                                        'CL output cl buc scaler In-plane support cl [2, 3]',
+                                        'CL output cl ult predictor In-plane support cl [2, 3]',
+                                        'CL output cl ult scaler In-plane support cl [2, 3]',
+                                        'CL output cl buc predictor In-plane support cl 1 UP',
+                                        'CL output cl buc scaler In-plane support cl 1 UP',
+                                        'CL output cl ult predictor In-plane support cl 1 UP',
+                                        'CL output cl ult scaler In-plane support cl 1 UP',
+                                        'CL output cl buc predictor In-plane support cl [2, 3] UP',
+                                        'CL output cl buc scaler In-plane support cl [2, 3] UP',
+                                        'CL output cl ult predictor In-plane support cl [2, 3] UP',
+                                        'CL output cl ult scaler In-plane support cl [2, 3] UP'
+                                        ]):
+                    self._ML_buckling[name] = None
+                    if os.path.isfile(file_base + '.pickle'):
+                        file = open(file_base + '.pickle', 'rb')
+                        from sklearn.neural_network import MLPClassifier
+                        from sklearn.preprocessing import StandardScaler
+                        self._ML_buckling[name] = pickle.load(file)
+                        file.close()
         else:
             self.app = app
             self._load_objects = app._load_dict
@@ -45,6 +79,7 @@ class CreateOptGeoWindow():
             self._opt_frames = {}
             self._active_points = []
             self._root_dir = app._root_dir
+            self._ML_buckling = app._ML_buckling
 
 
         self._opt_structure = {}
@@ -314,6 +349,7 @@ class CreateOptGeoWindow():
         # self._new_algorithm_random_trials.trace('w', self.update_running_time)
         # self._new_algorithm.trace('w', self.update_running_time)
 
+
         self.running_time_per_item = 4e-05
         #self._runnig_time_label.config(text=str(self.get_running_time()))
         self._ent_algorithm.place(x=start_x + dx * 10, y=start_y + dy)
@@ -343,6 +379,7 @@ class CreateOptGeoWindow():
         self._new_check_slamming = tk.BooleanVar()
         self._new_check_local_buckling = tk.BooleanVar()
         self._new_harmonize_spacing = tk.BooleanVar()
+        self._new_check_buckling_ml_cl = tk.BooleanVar()
 
         self._new_check_sec_mod.set(True)
         self._new_check_min_pl_thk.set(True)
@@ -354,6 +391,9 @@ class CreateOptGeoWindow():
         self._new_option_fraction.set(None)
         self._new_option_panel.set(None)
         self._new_harmonize_spacing.set(False)
+        self._new_check_buckling_ml_cl.set(False)
+
+        self._new_check_buckling_ml_cl.trace('w', self.update_running_time)
 
         start_y, start_x, dy  = 570, 100, 25
         tk.Label(self._frame,text='Check for minimum section modulus').place(x=start_x+dx*9.7,y=start_y+4*dy)
@@ -363,6 +403,7 @@ class CreateOptGeoWindow():
         tk.Label(self._frame, text='Check for fatigue (RP-C203)').place(x=start_x + dx * 9.7, y=start_y + 8 * dy)
         tk.Label(self._frame, text='Check for bow slamming').place(x=start_x + dx * 9.7, y=start_y + 9 * dy)
         tk.Label(self._frame, text='Check for local stf. buckling').place(x=start_x + dx * 9.7, y=start_y + 10 * dy)
+        tk.Label(self._frame, text='Check for buckling, ML-CL').place(x=start_x + dx * 9.7, y=start_y + 11 * dy)
 
         tk.Label(self._frame, text='Frame (girder data) for weight calculation:', font = 'Verdana 9 bold')\
             .place(x=start_x + dx * 13,
@@ -395,6 +436,9 @@ class CreateOptGeoWindow():
         tk.Checkbutton(self._frame, variable=self._new_check_slamming).place(x=start_x + dx * 12, y=start_y + 9 * dy)
         tk.Checkbutton(self._frame, variable=self._new_check_local_buckling).place(x=start_x + dx * 12,
                                                                                    y=start_y + 10 * dy)
+        tk.Checkbutton(self._frame, variable=self._new_check_buckling_ml_cl).place(x=start_x + dx * 12,
+                                                                                   y=start_y + 11 * dy)
+
 
         tk.Checkbutton(self._frame, variable=self._new_harmonize_spacing).place(x=start_x + 3.9*dx, y=180)
 
@@ -544,7 +588,7 @@ class CreateOptGeoWindow():
         contraints = (self._new_check_sec_mod.get(), self._new_check_min_pl_thk.get(),
                       self._new_check_shear_area.get(), self._new_check_buckling.get(),
                       self._new_check_fatigue.get(), self._new_check_slamming.get(),
-                      self._new_check_local_buckling.get(), False, False, False)
+                      self._new_check_local_buckling.get(), False, self._new_check_buckling_ml_cl.get(), False)
 
         self.pso_parameters = (self._new_swarm_size.get(), self._new_omega.get(), self._new_phip.get(),
                                self._new_phig.get(),self._new_maxiter.get(), self._new_minstep.get(),
@@ -643,7 +687,8 @@ class CreateOptGeoWindow():
                                                       predefined_stiffener_iter=self._filez,
                                                       processes = self._new_processes.get(),
                                                       slamming_press=slamming_press, opt_girder_prop=opt_girder_prop,
-                                                      fdwn = self._new_fdwn.get(), fup = self._new_fdwn.get())
+                                                      fdwn = self._new_fdwn.get(), fup = self._new_fdwn.get(),
+                                                      ml_algo=self._ML_buckling)
                     resulting_geo.append(geo_results)
 
                 #need to find the lowest
@@ -909,11 +954,15 @@ class CreateOptGeoWindow():
         Estimate the running time of the algorithm.
         :return:
         '''
-        pass
+
         # try:
         #     self._runnig_time_label.config(text=str(self.get_running_time()))
         # except ZeroDivisionError:
         #     pass  # _tkinter.TclError: pass
+
+        if self._new_check_buckling_ml_cl.get():
+            self._new_check_buckling.set(False)
+            self._new_check_local_buckling.set(False)
 
     def get_upper_bounds(self):
         '''
