@@ -2326,6 +2326,9 @@ class Application():
                                                                       self._new_shift_viz_coord_ver.get() / 1000) * \
                                         self._canvas_scale
                     else:
+                        print(cob)
+                        print(self._canvas_draw_origo)
+                        print(self._canvas_scale)
                         point_coord_x = self._canvas_draw_origo[0] + cob[1] * self._canvas_scale
                         point_coord_y = self._canvas_draw_origo[1] - cob[0] * self._canvas_scale
 
@@ -2336,8 +2339,8 @@ class Application():
 
                     self._main_canvas.create_text(point_coord_x + 5,
                                                   point_coord_y + 14,
-                                                  text='COB d='+str(draft) +': x=' + str(round(cob[0], 2)) +
-                                                       ' y=' + str(round(cob[1], 2)),
+                                                  text='COB d='+str(draft) +': x=' + str(round(cob[1], 2)) +
+                                                       ' y=' + str(round(cob[0], 2)),
                                                   font=self._text_size["Text 8"], fill='blue')
 
         chk_box_active = [self._new_colorcode_beams.get(), self._new_colorcode_plates.get(),
@@ -3552,7 +3555,7 @@ class Application():
         Calculation of center of buoyancy.
         '''
         self._center_of_buoyancy = dict()
-        #self._center_of_buoyancy['all'] = self._grid_calc.grid.get_center_of_matrix(scale=self._base_scale_factor)
+        self._center_of_buoyancy['all'] = self._grid_calc.grid.get_center_of_matrix(scale=self._base_scale_factor)
 
         for load, data in self._load_dict.items():
             if data[0].is_static():

@@ -484,7 +484,7 @@ class Grid:
 
         center_of_mass = ndimage.measurements.center_of_mass(calc_grid)
 
-        center_of_mass = (center_of_mass[0]/scale, center_of_mass[1]/scale)
+        center_of_mass = ((calc_grid.shape[0]-center_of_mass[0])/scale, center_of_mass[1]/scale)
         return center_of_mass
 
 if __name__ ==  '__main__':
