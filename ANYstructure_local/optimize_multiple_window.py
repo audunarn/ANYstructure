@@ -667,7 +667,12 @@ class CreateOptimizeMultipleWindow():
         for line, data in self._opt_results.items():
             for fail_ok in data[4]:
                 if fail_ok[0] == True:
-                    all_ok_checks.append(tuple([round(val,10) for val in fail_ok[2]][0:6]))
+                    # try:
+                    #     [round(val, 10) for val in fail_ok[2]]
+                    # except TypeError:
+                    #     [print(val) for val in fail_ok[2]]
+
+                    all_ok_checks.append(tuple([round(val,10) for val in fail_ok[2][0:6]]))
         all_ok_checks = set(all_ok_checks)
 
         # make iterator for multiprocessing

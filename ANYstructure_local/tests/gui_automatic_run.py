@@ -1,5 +1,5 @@
 from ANYstructure_local import main_application
-import multiprocessing, ctypes
+import multiprocessing, ctypes, os, pickle
 import tkinter as tk
 
 
@@ -33,22 +33,83 @@ def run_cc_chks():
         my_app.on_color_code_check()
         my_dict[chks].set(False)
 
+
+my_dict['_ML_buckling'] = dict()
+
+for name, file_base in zip(['cl SP buc int predictor', 'cl SP buc int scaler',
+                            'cl SP ult int predictor', 'cl SP ult int scaler',
+                            'cl SP buc GLGT predictor', 'cl SP buc GLGT scaler',
+                            'cl SP ult GLGT predictor', 'cl SP ult GLGT scaler',
+                            'cl UP buc int predictor', 'cl UP buc int scaler',
+                            'cl UP ult int predictor', 'cl UP ult int scaler',
+                            'cl UP buc GLGT predictor', 'cl UP buc GLGT scaler',
+                            'cl UP ult GLGT predictor', 'cl UP ult GLGT scaler',
+                            'CSR predictor UP', 'CSR scaler UP',
+                            'CSR predictor SP', 'CSR scaler SP'
+                            ],
+                           ["CL ['output cl buc'] predictor In-plane support cl 1 SP",
+                            "CL ['output cl buc'] scaler In-plane support cl 1 SP",
+                            "CL ['output cl ult'] predictor In-plane support cl 1 SP",
+                            "CL ['output cl ult'] scaler In-plane support cl 1 SP",
+                            "CL ['output cl buc'] predictor In-plane support cl [2, 3] SP",
+                            "CL ['output cl buc'] scaler In-plane support cl [2, 3] SP",
+                            "CL ['output cl ult'] predictor In-plane support cl [2, 3] SP",
+                            "CL ['output cl ult'] scaler In-plane support cl [2, 3] SP",
+                            "CL ['output cl buc'] predictor In-plane support cl 1 UP",
+                            "CL ['output cl buc'] scaler In-plane support cl 1 UP",
+                            "CL ['output cl ult'] predictor In-plane support cl 1 UP",
+                            "CL ['output cl ult'] scaler In-plane support cl 1 UP",
+                            "CL ['output cl buc'] predictor In-plane support cl [2, 3] UP",
+                            "CL ['output cl buc'] scaler In-plane support cl [2, 3] UP",
+                            "CL ['output cl ult'] predictor In-plane support cl [2, 3] UP",
+                            "CL ['output cl ult'] scaler In-plane support cl [2, 3] UP",
+                            "CL ['CSR-Tank req cl'] predictor",
+                            "CL ['CSR-Tank req cl'] UP scaler",
+                            "CL ['CSR plate cl', 'CSR web cl', 'CSR web flange cl', 'CSR flange cl'] predictor",
+                            "CL ['CSR plate cl', 'CSR web cl', 'CSR web flange cl', 'CSR flange cl'] SP scaler"
+
+                            ]):
+    my_dict['_ML_buckling'][name] = None
+    if os.path.isfile('C:\\Github\\ANYstructure\\ANYstructure_local\\'+file_base + '.pickle'):
+        file = open('C:\\Github\\ANYstructure\\ANYstructure_local\\'+file_base + '.pickle', 'rb')
+        from sklearn.neural_network import MLPClassifier
+        from sklearn.preprocessing import StandardScaler
+
+        my_dict['_ML_buckling'] [name] = pickle.load(file)
+        file.close()
+
+my_dict['_ML_classes'] = {0: 'N/A',
+                    1: 'A negative utilisation factor is found.',
+                    2: 'At least one of the in-plane loads must be non-zero.',
+                    3: 'Division by zero',
+                    4: 'Overflow',
+                    5: 'The aspect ratio exceeds the PULS code limit',
+                    6: 'The global slenderness exceeds 4. Please reduce stiffener span or increase stiffener height.',
+                    7: 'The applied pressure is too high for this plate field.', 8: 'web-flange-ratio',
+                    9: 'UF below or equal 0.87', 10: 'UF between 0.87 and 1.0', 11: 'UF above 1.0'}
+
+
 for x,y in [[0,0],[3000,0],[6000,0],[8000,0],[0,2500],[3000,2500],[6000,2500],[8000,2500],[0,10000], [8000,10000]]:
     my_dict['_new_point_x'].set(x)
     my_dict['_new_point_y'].set(y)
     my_app.new_point()
+
 print(my_dict['_point_dict'])
 run_cc_chks()
+
 for p1, p2 in [[1,2],[2,3],[3,4],[5,6],[6,7],[7,8], [1,5], [2,6], [3,7], [4, 8], [9,10], [5,9], [8,10]]:
     my_dict['_new_line_p1'].set(p1)
     my_dict['_new_line_p2'].set(p2)
     my_app.new_line()
+
 print(my_dict['_line_dict'])
 run_cc_chks()
+
 for key in my_dict['_line_dict'].keys():
     my_dict['_active_line'] = key
     my_dict['_line_is_active'] = True
     my_app.new_structure()
+
 run_cc_chks()
 my_dict['_active_line'] = 'line3'
 my_dict['_line_is_active'] = True
@@ -59,7 +120,6 @@ my_dict['_new_line_p2'].set(4)
 print(my_dict['_line_dict'])
 
 my_app.gui_load_combinations(None)
-
 my_app.grid_find_tanks()
 my_app.grid_display_tanks()
 run_cc_chks()

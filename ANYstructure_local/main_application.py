@@ -411,6 +411,8 @@ class Application():
         self._new_buckling_slider.set(1)
         self._new_show_cog = tk.BooleanVar()
         self._new_show_cog.set(False)
+        self._new_content_type = tk.StringVar()
+        self._new_content_type.set('ballast')
 
         line_start, line_x = point_start+0.08, 0.005208333
         tk.Label(self._main_fr, text='Input line from "point number" to "point number"',
@@ -996,7 +998,7 @@ class Application():
         tk.Button(self._main_fr, text="Delete all tanks", command=self.delete_all_tanks,
                   font=self._text_size['Text 9 bold'],bg = self._button_bg_color, fg = self._button_fg_color
                   ).place(relx=ent_x+delta_x*3, rely=load_vert_start + delta_y * 8.5, relwidth = 0.08)
-        self._new_content_type = tk.StringVar()
+
 
         self._ent_content_type = tk.OptionMenu(self._main_fr, self._new_content_type, *list(self._tank_options.keys()),
                                                command=self.tank_density_trace)
@@ -2328,9 +2330,6 @@ class Application():
                                                                       self._new_shift_viz_coord_ver.get() / 1000) * \
                                         self._canvas_scale
                     else:
-                        print(cob)
-                        print(self._canvas_draw_origo)
-                        print(self._canvas_scale)
                         point_coord_x = self._canvas_draw_origo[0] + cob[1] * self._canvas_scale
                         point_coord_y = self._canvas_draw_origo[1] - cob[0] * self._canvas_scale
 
@@ -3050,14 +3049,14 @@ class Application():
                                                         font=self._text_size['Text 9 bold'],
                                                         anchor='nw',
                                                         fill='black')
-                        self._result_canvas.create_text([x * 1, y + 9.5 * dy], text=ult_text,
-                                                        font=self._text_size['Text 9 bold'],
-                                                        anchor='nw',
-                                                        fill=line_results['ultimate'])
-                        self._result_canvas.create_text([x * 1, y + 10.5 * dy], text=buc_text,
+                        self._result_canvas.create_text([x * 1, y + 9.5 * dy], text=buc_text,
                                                         font=self._text_size['Text 9 bold'],
                                                         anchor='nw',
                                                         fill=line_results['buckling'])
+                        self._result_canvas.create_text([x * 1, y + 10.5 * dy], text=ult_text,
+                                                        font=self._text_size['Text 9 bold'],
+                                                        anchor='nw',
+                                                        fill=line_results['ultimate'])
                         self._result_canvas.create_text([x * 1, y + 11.5 * dy], text=loc_geom,
                                                         font=self._text_size['Text 9 bold'],
                                                         anchor='nw',
@@ -3682,9 +3681,10 @@ class Application():
         current_tank.set_content(self._new_content_type.get())
         current_tank.set_acceleration(self._accelerations_dict)
         current_tank.set_density(self._new_density.get())
-
         for line, obj in self._line_to_struc.items():
             obj[1].need_recalc = True
+            if  self._compartments_listbox.get('active') in self.get_compartments_for_line(line):
+                self._PULS_results.result_changed(line)
 
     def delete_line(self, event = None, undo = None, line = None):
         '''
