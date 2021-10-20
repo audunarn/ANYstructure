@@ -3,6 +3,7 @@ Grid class
 """
 
 import numpy as np
+from scipy import ndimage
 
 class Grid:
     """
@@ -464,6 +465,28 @@ class Grid:
         #print('Shape of rebuilt grid is',np.array(expanded_list).shape)
         return np.array(expanded_list)
 
+    def get_center_of_matrix(self, height_limit: float = None, scale: float = 10):
+        '''
+
+        '''
+        import copy
+        calc_grid = copy.deepcopy(self.get_array())
+        all_compartments = np.unique(calc_grid)
+        calc_grid[calc_grid == 1] = 0
+
+        #set all values to a value
+        for val in all_compartments:
+            if val != 0:
+                calc_grid[calc_grid == val] = 1
+
+        if height_limit != None:
+            calc_grid = calc_grid[int(self._grid_height-height_limit*scale):, :]
+
+        center_of_mass = ndimage.measurements.center_of_mass(calc_grid)
+
+        center_of_mass = ((calc_grid.shape[0]-center_of_mass[0])/scale, center_of_mass[1]/scale)
+        return center_of_mass
+
 if __name__ ==  '__main__':
     import ANYstructure_local.example_data as ex
     import ANYstructure_local.grid_window as grd
@@ -474,13 +497,10 @@ if __name__ ==  '__main__':
     canvas_dim = [1000,720]
     canvas_origo = (50,670)
     empty_grid = np.zeros((720, 1000))
-    my_grid = grd.CreateGridWindow(ex.get_grid_no_inp(empty_grid=True), canvas_dim, {}, canvas_origo)
-    # print('before search', my_grid.grid.get_array().shape)
-    # search_return = my_grid.search_bfs(animate = True)
-    # print('after search', my_grid.grid.get_array().shape)
-    grid_only = my_grid.grid
-    print('Initial shape is', grid_only.cells.shape)
-    compgrd = grid_only.export_compressed_grid()
-    rebuilt_grid = grid_only.rebuild_compressed(compgrd)
+    my_grid = grd.CreateGridWindow(ex.get_grid_no_inp(empty_grid=False), canvas_dim, {}, canvas_origo)
+    print('before search', my_grid.grid.get_array().shape)
+    search_return = my_grid.search_bfs(animate = True)
+    print('after search', my_grid.grid.get_array().shape)
+    my_grid.grid.get_center_of_matrix(height_limit=5)
 
 

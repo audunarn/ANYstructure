@@ -19,6 +19,7 @@ class CreateOptimizeWindow():
     def __init__(self,master,app=None):
         super(CreateOptimizeWindow,self).__init__()
         if __name__ == '__main__':
+            import pickle
             self._initial_structure_obj = test.get_structure_calc_object(heavy=True)
             self._initial_calc_obj = test.get_structure_calc_object(heavy=True)
             self._lateral_pressure = 200
@@ -28,6 +29,51 @@ class CreateOptimizeWindow():
             image_dir = os.path.dirname(__file__)+'\\images\\'
             self._PULS_object = None
             self._puls_acceptance = 0.87
+
+            self._ML_buckling = dict()  # Buckling machine learning algorithm
+            for name, file_base in zip(['cl SP buc int predictor', 'cl SP buc int scaler',
+                                        'cl SP ult int predictor', 'cl SP ult int scaler',
+                                        'cl SP buc GLGT predictor', 'cl SP buc GLGT scaler',
+                                        'cl SP ult GLGT predictor', 'cl SP ult GLGT scaler',
+                                        'cl UP buc int predictor', 'cl UP buc int scaler',
+                                        'cl UP ult int predictor', 'cl UP ult int scaler',
+                                        'cl UP buc GLGT predictor', 'cl UP buc GLGT scaler',
+                                        'cl UP ult GLGT predictor', 'cl UP ult GLGT scaler'
+                                        ],
+                                       ['CL output cl buc predictor In-plane support cl 1',
+                                        'CL output cl buc scaler In-plane support cl 1',
+                                        'CL output cl ult predictor In-plane support cl 1',
+                                        'CL output cl ult scaler In-plane support cl 1',
+                                        'CL output cl buc predictor In-plane support cl [2, 3]',
+                                        'CL output cl buc scaler In-plane support cl [2, 3]',
+                                        'CL output cl ult predictor In-plane support cl [2, 3]',
+                                        'CL output cl ult scaler In-plane support cl [2, 3]',
+                                        'CL output cl buc predictor In-plane support cl 1 UP',
+                                        'CL output cl buc scaler In-plane support cl 1 UP',
+                                        'CL output cl ult predictor In-plane support cl 1 UP',
+                                        'CL output cl ult scaler In-plane support cl 1 UP',
+                                        'CL output cl buc predictor In-plane support cl [2, 3] UP',
+                                        'CL output cl buc scaler In-plane support cl [2, 3] UP',
+                                        'CL output cl ult predictor In-plane support cl [2, 3] UP',
+                                        'CL output cl ult scaler In-plane support cl [2, 3] UP'
+                                        ]):
+                self._ML_buckling[name] = None
+                if os.path.isfile(file_base + '.pickle'):
+                    file = open(file_base + '.pickle', 'rb')
+                    from sklearn.neural_network import MLPClassifier
+                    from sklearn.preprocessing import StandardScaler
+                    self._ML_buckling[name] = pickle.load(file)
+                    file.close()
+
+            self._ML_classes = {0: 'N/A',
+                                1: 'A negative utilisation factor is found.',
+                                2: 'At least one of the in-plane loads must be non-zero.',
+                                3: 'Division by zero',
+                                4: 'Overflow',
+                                5: 'The aspect ratio exceeds the PULS code limit',
+                                6: 'The global slenderness exceeds 4. Please reduce stiffener span or increase stiffener height.',
+                                7: 'The applied pressure is too high for this plate field.', 8: 'web-flange-ratio',
+                                9: 'UF below or equal 0.87', 10: 'UF between 0.87 and 1.0', 11: 'UF above 1.0'}
         else:
             self.app = app
             self._initial_structure_obj = app._line_to_struc[app._active_line][0]
@@ -54,6 +100,8 @@ class CreateOptimizeWindow():
             self._root_dir = app._root_dir
             self._PULS_object = app._PULS_results
             self._puls_acceptance = self.app._new_puls_uf.get()
+
+            self._ML_buckling = app._ML_buckling
 
         self._predefined_stiffener_iter = None
 
@@ -223,7 +271,8 @@ class CreateOptimizeWindow():
         tk.Label(self._frame, text='Flange thk. [mm]', font='Verdana 7 bold').place(x=start_x + 6.97 * dx, y=start_y-0.6*dy)
         tk.Label(self._frame, text='--------- Number of combinations to run --------->\n'
                                    'PULS buckling is time consuming, about 0.2 sec. per comb.\n'
-                                   'RP-C203 is much faster and can run many more combinations, 1M+. ',
+                                   'RP-C203 is much faster and can run many more combinations, 1M+.\n'
+                                   'ML-CL is about as fast as RP-C203.',
                  font='Verdana 9 bold').place(x=start_x+0.1*dx, y=start_y + 2.8 * dy, anchor = tk.NW)
 
         self._runnig_time_label = tk.Label(self._frame, text='',font='Verdana 12 bold', fg = 'red')
@@ -472,6 +521,7 @@ class CreateOptimizeWindow():
         self._new_check_shear_area = tk.BooleanVar()
         self._new_check_buckling = tk.BooleanVar()
         self._new_check_buckling_puls = tk.BooleanVar()
+        self._new_check_buckling_ml_cl = tk.BooleanVar()
         self._new_check_fatigue = tk.BooleanVar()
         self._new_check_slamming = tk.BooleanVar()
         self._new_check_local_buckling = tk.BooleanVar()
@@ -485,7 +535,10 @@ class CreateOptimizeWindow():
         self._new_check_local_buckling.set(True)
         self._new_use_weight_filter.set(True)
         self._new_check_buckling_puls.set(False)
+        self._new_check_buckling_ml_cl.set(False)
         self._new_check_buckling_puls.trace('w', self.update_running_time)
+        self._new_check_buckling_ml_cl.trace('w', self.update_running_time)
+
 
         start_y = 140
         tk.Label(self._frame,text='Check for minimum section modulus').place(x=start_x+dx*9.7,y=start_y+4*dy)
@@ -497,6 +550,7 @@ class CreateOptimizeWindow():
         tk.Label(self._frame, text='Check for local stf. buckling').place(x=start_x + dx * 9.7, y=start_y + 10 * dy)
         tk.Label(self._frame, text='Use weight filter (for speed)').place(x=start_x + dx * 9.7, y=start_y + 11 * dy)
         tk.Label(self._frame, text='Check for buckling (PULS)').place(x=start_x + dx * 9.7, y=start_y + 12 * dy)
+        tk.Label(self._frame, text='Check for buckling (ML-CL)').place(x=start_x + dx * 9.7, y=start_y + 13 * dy)
 
         tk.Checkbutton(self._frame,variable=self._new_check_sec_mod).place(x=start_x+dx*12,y=start_y+4*dy)
         tk.Checkbutton(self._frame, variable=self._new_check_min_pl_thk).place(x=start_x+dx*12,y=start_y+5*dy)
@@ -510,6 +564,8 @@ class CreateOptimizeWindow():
                                                                                    y=start_y + 11 * dy)
         tk.Checkbutton(self._frame, variable=self._new_check_buckling_puls).place(x=start_x + dx * 12,
                                                                                    y=start_y + 12 * dy)
+        tk.Checkbutton(self._frame, variable=self._new_check_buckling_ml_cl).place(x=start_x + dx * 12,
+                                                                                   y=start_y + 13 * dy)
 
         # Stress scaling
         self._new_fup = tk.DoubleVar()
@@ -642,7 +698,8 @@ class CreateOptimizeWindow():
         contraints = (self._new_check_sec_mod.get(),self._new_check_min_pl_thk.get(),
                       self._new_check_shear_area.get(), self._new_check_buckling.get(),
                       self._new_check_fatigue.get(), self._new_check_slamming.get(),
-                      self._new_check_local_buckling.get(), self._new_check_buckling_puls.get())
+                      self._new_check_local_buckling.get(), self._new_check_buckling_puls.get(),
+                      self._new_check_buckling_ml_cl.get(), False)
         self._initial_structure_obj.set_span(self._new_span.get())
 
         if self._fatigue_pressure is not None:
@@ -668,7 +725,8 @@ class CreateOptimizeWindow():
                                                use_weight_filter = False if self._new_check_buckling_puls.get()
                                                else self._new_use_weight_filter.get(),
                                                puls_sheet = puls_sheet_location, puls_acceptance = puls_acceptance,
-                                               fdwn = self._new_fdwn.get(), fup = self._new_fdwn.get())
+                                               fdwn = self._new_fdwn.get(), fup = self._new_fdwn.get(),
+                                               ml_algo= self._ML_buckling)
 
         if self._opt_results is not None and self._opt_results[0] is not None:
             self._opt_actual_running_time.config(text='Actual running time: \n'
@@ -713,20 +771,6 @@ class CreateOptimizeWindow():
             return int(number_of_combinations * self.running_time_per_item['PULS' if self._new_check_buckling_puls.get()
             else 'RP']), number_of_combinations
 
-            # try:
-            #     number_of_combinations = \
-            #     max((self._new_spacing_upper.get()-self._new_spacing_lower.get())/self._new_delta_spacing.get(),1)* \
-            #     max((self._new_pl_thk_upper.get()-self._new_pl_thk_lower.get())/self._new_delta_pl_thk.get(),1)*\
-            #     max((self._new_web_h_upper.get()-self._new_web_h_lower.get())/self._new_delta_web_h.get(),1)*\
-            #     max((self._new_web_thk_upper.get()-self._new_web_thk_lower.get())/self._new_delta_web_thk.get(),1)*\
-            #     max((self._new_fl_w_upper.get()-self._new_fl_w_lower.get())/self._new_delta_fl_w.get(),1)*\
-            #     max((self._new_fl_thk_upper.get()-self._new_fl_thk_lower.get())/self._new_delta_fl_thk.get(),1)
-            #
-            #     return int(number_of_combinations*self.running_time_per_item),number_of_combinations,  \
-            #            number_of_combinations*0.1 \
-            #         if not self._new_check_buckling_puls.get() else number_of_combinations*1
-            # except TclError:
-            #     return 0,0,0
         elif self._new_algorithm.get() in ['pso','random','random_no_delta']:
             try:
                 number_of_combinations = \
@@ -772,9 +816,18 @@ class CreateOptimizeWindow():
         except (ZeroDivisionError, TclError):
             pass# _tkinter.TclError: pass
 
+        if [self._new_check_buckling_ml_cl.get(),self._new_check_buckling_puls.get(),
+            self._new_check_buckling.get()].count(True) > 1:
+            if self._new_check_buckling_puls.get():
+                self._new_check_buckling_puls.set(False)
+            if self._new_check_buckling_ml_cl.get():
+                self._new_check_buckling_ml_cl.set(False)
+            if self._new_check_buckling.get():
+                self._new_check_buckling.set(False)
+                self._new_check_local_buckling.set(False)
+
+
         if self._new_check_buckling_puls.get():
-            self._new_check_local_buckling.set(False)
-            self._new_check_buckling.set(False)
             if self._PULS_object is None or self._PULS_object.puls_sheet_location is None:
                 tk.messagebox.showerror('Missing PULS sheet', 'Go back to main window and set a PULS sheet location\n'
                                                     'by running one or more lines.')

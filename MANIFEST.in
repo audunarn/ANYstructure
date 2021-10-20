@@ -24,3 +24,11 @@ include ANYstructure_local\ship_section_example.txt
 include ANYstructure_local\ANYstructure_documentation.pdf
 include ANYstructure_local\sections.csv
 include ANYstructure_local\bulb_anglebar_tbar_flatbar.csv
+include ANYstructure_local\CL output cl ult scaler In-plane support cl 1.pickle
+include ANYstructure_local\CL output cl ult scaler In-plane support cl [2, 3].pickle
+include ANYstructure_local\CL output cl ult predictor In-plane support cl 1.pickle
+include ANYstructure_local\CL output cl ult predictor In-plane support cl [2, 3].pickle
+include ANYstructure_local\CL output cl buc scaler In-plane support cl 1.pickle
+include ANYstructure_local\CL output cl buc scaler In-plane support cl [2, 3].pickle
+include ANYstructure_local\CL output cl buc predictor In-plane support cl 1.pickle
+include ANYstructure_local\CL output cl buc predictor In-plane support cl [2, 3].pickle

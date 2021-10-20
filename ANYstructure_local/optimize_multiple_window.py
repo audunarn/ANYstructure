@@ -29,6 +29,9 @@ def helper_harmonizer_multi(iterator):
         slamming_pressure = iterator['info'][slave_line]['slamming pressure']
         chk_calc_obj = iterator['info'][slave_line]['chk_calc_obj']
         master_x = list(iterator['x'])
+        ml_cl = iterator['info'][slave_line]['ML-CL']
+        fup = iterator['info'][slave_line]['fup']
+        fdwn = iterator['info'][slave_line]['fdwn']
         if iterator['info']['keep spacing']:
             x = [chk_calc_obj.get_s()] + master_x[1:] + [chk_calc_obj.get_span(), chk_calc_obj.get_lg()]
         else:
@@ -37,7 +40,8 @@ def helper_harmonizer_multi(iterator):
         chk_any = op.any_constraints_all(x=x, obj=chk_calc_obj, lat_press=lateral_press,
                                          init_weight=float('inf'), side='p', chk=iterator['info']['checks'],
                                          fat_dict=None if fat_obj == None else fat_obj.get_fatigue_properties(),
-                                         fat_press=fat_press, slamming_press=slamming_pressure)
+                                         fat_press=fat_press, slamming_press=slamming_pressure,PULSrun=None,
+                                         print_result=False,fdwn=fdwn, fup=fup, ml_results=ml_cl)
         this_check.append(chk_any[0])
 
     if all(this_check) and master_x is not None:
@@ -52,6 +56,7 @@ class CreateOptimizeMultipleWindow():
     def __init__(self, master, app=None):
         super(CreateOptimizeMultipleWindow, self).__init__()
         if __name__ == '__main__':
+            import pickle
             self._load_objects = {}
             self._load_comb_dict = {}
             self._line_dict = test.get_line_dict()
@@ -62,8 +67,43 @@ class CreateOptimizeMultipleWindow():
             self._slamming_pressure = test.get_slamming_pressure()
             self._fatigue_pressure = test.get_fatigue_pressures()
             self._fatigue_object = test.get_fatigue_object()
+            self._normal_pressure = test.get_random_pressure()
             image_dir = os.path.dirname(__file__)+'\\images\\'
             self._active_lines = []
+            self._ML_buckling = dict()  # Buckling machine learning algorithm
+            for name, file_base in zip(['cl SP buc int predictor', 'cl SP buc int scaler',
+                                        'cl SP ult int predictor', 'cl SP ult int scaler',
+                                        'cl SP buc GLGT predictor', 'cl SP buc GLGT scaler',
+                                        'cl SP ult GLGT predictor', 'cl SP ult GLGT scaler',
+                                        'cl UP buc int predictor', 'cl UP buc int scaler',
+                                        'cl UP ult int predictor', 'cl UP ult int scaler',
+                                        'cl UP buc GLGT predictor', 'cl UP buc GLGT scaler',
+                                        'cl UP ult GLGT predictor', 'cl UP ult GLGT scaler'
+                                        ],
+                                       ['CL output cl buc predictor In-plane support cl 1',
+                                        'CL output cl buc scaler In-plane support cl 1',
+                                        'CL output cl ult predictor In-plane support cl 1',
+                                        'CL output cl ult scaler In-plane support cl 1',
+                                        'CL output cl buc predictor In-plane support cl [2, 3]',
+                                        'CL output cl buc scaler In-plane support cl [2, 3]',
+                                        'CL output cl ult predictor In-plane support cl [2, 3]',
+                                        'CL output cl ult scaler In-plane support cl [2, 3]',
+                                        'CL output cl buc predictor In-plane support cl 1 UP',
+                                        'CL output cl buc scaler In-plane support cl 1 UP',
+                                        'CL output cl ult predictor In-plane support cl 1 UP',
+                                        'CL output cl ult scaler In-plane support cl 1 UP',
+                                        'CL output cl buc predictor In-plane support cl [2, 3] UP',
+                                        'CL output cl buc scaler In-plane support cl [2, 3] UP',
+                                        'CL output cl ult predictor In-plane support cl [2, 3] UP',
+                                        'CL output cl ult scaler In-plane support cl [2, 3] UP'
+                                        ]):
+                    self._ML_buckling[name] = None
+                    if os.path.isfile(file_base + '.pickle'):
+                        file = open(file_base + '.pickle', 'rb')
+                        from sklearn.neural_network import MLPClassifier
+                        from sklearn.preprocessing import StandardScaler
+                        self._ML_buckling[name] = pickle.load(file)
+                        file.close()
         else:
             self.app = app
             self._load_objects = app._load_dict
@@ -76,6 +116,7 @@ class CreateOptimizeMultipleWindow():
             image_dir = app._root_dir + '\\images\\'
             self._root_dir = app._root_dir
             self._active_lines = app._multiselect_lines
+            self._ML_buckling = app._ML_buckling
 
         self._frame = master
         self._frame.wm_title("Optimize structure")
@@ -259,11 +300,11 @@ class CreateOptimizeMultipleWindow():
         self._new_spacing_upper.set(round(800, 5))
         self._new_spacing_lower.set(round(600, 5))
         self._new_pl_thk_upper.set(round(25, 5))
-        self._new_pl_thk_lower.set(round(12, 5))
+        self._new_pl_thk_lower.set(round(15, 5))
         self._new_web_h_upper.set(round(500, 5))
-        self._new_web_h_lower.set(round(300, 5))
+        self._new_web_h_lower.set(round(400, 5))
         self._new_web_thk_upper.set(round(20, 5))
-        self._new_web_thk_lower.set(round(12, 5))
+        self._new_web_thk_lower.set(round(10, 5))
         self._new_fl_w_upper.set(round(200, 5))
         self._new_fl_w_lower.set(round(100, 5))
         self._new_fl_thk_upper.set(round(30, 5))
@@ -278,8 +319,11 @@ class CreateOptimizeMultipleWindow():
         self._new_check_fatigue = tk.BooleanVar()
         self._new_check_slamming = tk.BooleanVar()
         self._new_check_local_buckling = tk.BooleanVar()
+        self._new_check_ml_buckling = tk.BooleanVar()
         self._new_harmonizer = tk.BooleanVar()
         self._keep_spacing = tk.BooleanVar()
+
+
         self._new_check_sec_mod.set(True)
         self._new_check_min_pl_thk.set(True)
         self._new_check_shear_area.set(True)
@@ -289,6 +333,7 @@ class CreateOptimizeMultipleWindow():
         self._new_check_local_buckling.set(True)
         self._new_harmonizer.set(False)
         self._keep_spacing.set(False)
+        self._new_check_ml_buckling.set(False)
 
         self._new_swarm_size.set(100)
         self._new_omega.set(0.5)
@@ -319,6 +364,7 @@ class CreateOptimizeMultipleWindow():
         self._new_algorithm_random_trials.trace('w', self.update_running_time)
         self._new_algorithm.trace('w', self.update_running_time)
         self._keep_spacing.trace('w',self.trace_keep_spacing_check)
+        self._new_check_ml_buckling.trace('w', self.update_running_time)
 
         self.running_time_per_item = 1.009943181818182e-5
         self._runnig_time_label.config(text=str(self.get_running_time()))
@@ -355,12 +401,13 @@ class CreateOptimizeMultipleWindow():
         tk.Label(self._frame, text='Check for fatigue (RP-C203)').place(x=start_x + dx * 9.7, y=start_y + 8 * dy)
         tk.Label(self._frame, text='Check for bow slamming').place(x=start_x + dx * 9.7, y=start_y + 9 * dy)
         tk.Label(self._frame, text='Check for local stf. buckling').place(x=start_x + dx * 9.7, y=start_y + 10 * dy)
+        tk.Label(self._frame, text='Check for buckling (ML-CL)').place(x=start_x + dx * 9.7, y=start_y + 11 * dy)
         tk.Label(self._frame, text='Check to harmonize results. Same stiffener and plate dimensions '
                                    '(defined by largest in opt).', font='Verdana 10 bold')\
-            .place(x=start_x + dx * +8.5, y=start_y - 10.7 * dy)
+            .place(x=start_x + dx * +8.5, y=start_y - 10.5 * dy)
         tk.Label(self._frame, text='Check to skip iterating over spacing (respective line spacing used).',
                  font='Verdana 10 bold')\
-            .place(x=start_x + dx * +8.5, y=start_y - 10 * dy)
+            .place(x=start_x + dx * +8.5, y=start_y - 9.8 * dy)
 
         tk.Checkbutton(self._frame,variable=self._new_check_sec_mod).place(x=start_x+dx*12,y=start_y+4*dy)
         tk.Checkbutton(self._frame, variable=self._new_check_min_pl_thk).place(x=start_x+dx*12,y=start_y+5*dy)
@@ -370,8 +417,10 @@ class CreateOptimizeMultipleWindow():
         tk.Checkbutton(self._frame, variable=self._new_check_slamming).place(x=start_x + dx * 12, y=start_y + 9 * dy)
         tk.Checkbutton(self._frame, variable=self._new_check_local_buckling).place(x=start_x + dx * 12,
                                                                                    y=start_y + 10 * dy)
-        tk.Checkbutton(self._frame, variable=self._new_harmonizer).place(x=start_x + dx * 8, y=start_y - 10.7 * dy)
-        tk.Checkbutton(self._frame, variable=self._keep_spacing).place(x=start_x + dx * +8, y=start_y - 10 * dy)
+        tk.Checkbutton(self._frame, variable=self._new_check_ml_buckling).place(x=start_x + dx * 12,
+                                                                                   y=start_y + 11 * dy)
+        tk.Checkbutton(self._frame, variable=self._new_harmonizer).place(x=start_x + dx * 8, y=start_y - 10.5 * dy)
+        tk.Checkbutton(self._frame, variable=self._keep_spacing).place(x=start_x + dx * +8, y=start_y - 9.8 * dy)
 
         self._toggle_btn = tk.Button(self._frame, text="Iterate predefiened stiffeners", relief="raised",
                                      command=self.toggle, bg = 'salmon')
@@ -484,25 +533,31 @@ class CreateOptimizeMultipleWindow():
             self._ent_minfunc.place(x=start_x + dx*15, y=start_y + 1 * dy)
 
     def get_pressure_input(self, line):
-        lateral_press = self.app.get_highest_pressure(line)['normal'] / 1000
-
-        fat_obj = self.app._line_to_struc[line][2]
-        if fat_obj is not None:
-            try:
-                fat_press = self.app.get_fatigue_pressures(line, fat_obj.get_accelerations())
-            except AttributeError:
-                fat_press = None
+        if __name__ == '__main__':
+            lateral_press = self._normal_pressure
+            fat_press = self._fatigue_pressure
+            slamming_pressure = self._slamming_pressure
+            fat_obj = self._fatigue_object
         else:
-            fat_press = {'p_ext': {'loaded': 0, 'ballast': 0, 'part': 0},
-                         'p_int': {'loaded': 0, 'ballast': 0, 'part': 0}}
+            lateral_press = self.app.get_highest_pressure(line)['normal'] / 1000
 
-        try:
-            if self.app.get_highest_pressure(line)['slamming'] is None:
-                slamming_pressure = 0
+            fat_obj = self.app._line_to_struc[line][2]
+            if fat_obj is not None:
+                try:
+                    fat_press = self.app.get_fatigue_pressures(line, fat_obj.get_accelerations())
+                except AttributeError:
+                    fat_press = None
             else:
-                slamming_pressure = self.app.get_highest_pressure(line)['slamming']
-        except KeyError:
-            slamming_pressure = 0
+                fat_press = {'p_ext': {'loaded': 0, 'ballast': 0, 'part': 0},
+                             'p_int': {'loaded': 0, 'ballast': 0, 'part': 0}}
+
+            try:
+                if self.app.get_highest_pressure(line)['slamming'] is None:
+                    slamming_pressure = 0
+                else:
+                    slamming_pressure = self.app.get_highest_pressure(line)['slamming']
+            except [KeyError, AttributeError]:
+                slamming_pressure = 0
 
         fat_press = ((fat_press['p_ext']['loaded'], fat_press['p_ext']['ballast'],
                       fat_press['p_ext']['part']),
@@ -526,7 +581,7 @@ class CreateOptimizeMultipleWindow():
         contraints = (self._new_check_sec_mod.get(), self._new_check_min_pl_thk.get(),
                       self._new_check_shear_area.get(), self._new_check_buckling.get(),
                       self._new_check_fatigue.get(), self._new_check_slamming.get(),
-                      self._new_check_local_buckling.get(), False)
+                      self._new_check_local_buckling.get(), False, self._new_check_ml_buckling.get(), False)
         
         self.pso_parameters = (self._new_swarm_size.get(),self._new_omega.get(),self._new_phip.get(),
                                self._new_phig.get(),self._new_maxiter.get(),self._new_minstep.get(),
@@ -577,7 +632,8 @@ class CreateOptimizeMultipleWindow():
                                                           predefined_stiffener_iter = predefined_stiffener_iter,
                                                           processes=self._new_processes.get(),
                                                           min_max_span=max_min_span, use_weight_filter=False,
-                                                               fdwn = self._new_fdwn.get(), fup = self._new_fdwn.get()))
+                                                               fdwn = self._new_fdwn.get(), fup = self._new_fdwn.get(),
+                                                               ml_algo=self._ML_buckling))
             self._harmonizer_data[line] = {}
 
             counter += 1
@@ -587,9 +643,9 @@ class CreateOptimizeMultipleWindow():
             if self._opt_results[line] != None:
                 self._opt_actual_running_time.config(text='Accumulated running time: \n'
                                                          + str(time.time() - t_start) + ' sec')
-                print('Runned', line, 'OK')
-            else:
-                print('Runned', line, 'NOT OK - no results')
+            #     print('Runned', line, 'OK')
+            # else:
+            #     print('Runned', line, 'NOT OK - no results')
 
         self.draw_select_canvas()
 
@@ -606,13 +662,17 @@ class CreateOptimizeMultipleWindow():
         self.draw_properties()
 
     def opt_harmonizer_historic(self):
-
         # getting all acceptable solutions.
         all_ok_checks = []
         for line, data in self._opt_results.items():
             for fail_ok in data[4]:
                 if fail_ok[0] == True:
-                    all_ok_checks.append(tuple([round(val,10) for val in fail_ok[2]][0:6]))
+                    # try:
+                    #     [round(val, 10) for val in fail_ok[2]]
+                    # except TypeError:
+                    #     [print(val) for val in fail_ok[2]]
+
+                    all_ok_checks.append(tuple([round(val,10) for val in fail_ok[2][0:6]]))
         all_ok_checks = set(all_ok_checks)
 
         # make iterator for multiprocessing
@@ -620,7 +680,7 @@ class CreateOptimizeMultipleWindow():
         to_check = (self._new_check_sec_mod.get(), self._new_check_min_pl_thk.get(),
                     self._new_check_shear_area.get(), self._new_check_buckling.get(),
                     self._new_check_fatigue.get(), self._new_check_slamming.get(),
-                    self._new_check_local_buckling.get())
+                    self._new_check_local_buckling.get(), False, self._new_check_ml_buckling.get(), False)
         iter_run_info = dict()
         for slave_line in self._opt_results.keys():
             input_pressures = self.get_pressure_input(slave_line)
@@ -628,12 +688,100 @@ class CreateOptimizeMultipleWindow():
                                          'fatigue pressure': input_pressures['fatigue pressure'],
                                          'fatigue object':input_pressures['fatigue object'],
                                          'slamming pressure':input_pressures['slamming pressure'],
-                                         'chk_calc_obj': self._opt_results[slave_line][1]}
+                                         'chk_calc_obj': self._opt_results[slave_line][1], 'ML-CL': [0,0],
+                                         'fup': self._new_fup.get(), 'fdwn': self._new_fdwn.get()}
         iter_run_info['lines'] = list(self._opt_results.keys())
         iter_run_info['checks'] = to_check
         iter_run_info['keep spacing'] = self._keep_spacing.get()
+
         for x_check in all_ok_checks:
             iterator.append({'x': x_check, 'info': iter_run_info})
+
+        if to_check[8]:
+            # Do ML-CL checks
+            to_run = list()
+            for x_and_info in iterator:
+                for slave_line in x_and_info['info']['lines']:
+                    iter_run_info = x_and_info['info']
+                    lateral_press = iter_run_info[slave_line]['lateral pressure']
+                    fat_press = iter_run_info[slave_line]['fatigue pressure']
+                    fat_obj = iter_run_info[slave_line]['fatigue object']
+                    slamming_pressure = iter_run_info[slave_line]['slamming pressure']
+                    chk_calc_obj = iter_run_info[slave_line]['chk_calc_obj']
+                    master_x = list(x_and_info['x'])
+                    if iter_run_info['keep spacing']:
+                        x = [chk_calc_obj.get_s()] + master_x[1:] + [chk_calc_obj.get_span(), chk_calc_obj.get_lg()]
+                    else:
+                        x = master_x + [chk_calc_obj.get_span(), chk_calc_obj.get_lg()]
+                    fdwn = self._new_fdwn.get()
+                    fup = self._new_fdwn.get()
+                    calc_object = op.create_new_calc_obj(chk_calc_obj, x, fat_obj.get_fatigue_properties(), fdwn=fdwn,
+                                                         fup=fup)
+                    to_run.append((calc_object, x, lateral_press))
+
+            # ML-CL to be used.
+            sp_int, sp_gl_gt, up_int, up_gl_gt, \
+            sp_int_idx, sp_gl_gt_idx, up_int_idx, up_gl_gt_idx = \
+                list(), list(), list(), list(), list(), list(), list(), list()
+
+            # Create iterator
+            idx_count = 0
+            for calc_object, x, lat_press in to_run:
+                idx_count += 1
+
+                if calc_object[0].get_puls_sp_or_up() == 'UP':
+                    if calc_object[0].get_puls_boundary() == 'Int':
+                        up_int.append(calc_object[0].get_buckling_ml_input(lat_press, alone=False))
+                        up_int_idx.append(idx_count-1)
+                    else:
+                        up_gl_gt.append(calc_object[0].get_buckling_ml_input(lat_press, alone=False))
+                        up_gl_gt_idx.append(idx_count-1)
+                else:
+                    if calc_object[0].get_puls_boundary() == 'Int':
+                        sp_int.append(calc_object[0].get_buckling_ml_input(lat_press, alone=False))
+                        sp_int_idx.append(idx_count-1)
+                    else:
+                        sp_gl_gt.append(calc_object[0].get_buckling_ml_input(lat_press, alone=False))
+                        sp_gl_gt_idx.append(idx_count-1)
+
+            # Predict
+            sort_again = np.zeros([len(to_run), 2])
+
+            if len(sp_int) != 0:
+                sp_int_res = [self._ML_buckling['cl SP buc int predictor'].predict(self._ML_buckling['cl SP buc int scaler']
+                                                                         .transform(sp_int)),
+                              self._ML_buckling['cl SP ult int predictor'].predict(self._ML_buckling['cl SP buc int scaler']
+                                                                         .transform(sp_int))]
+                for idx, res_buc, res_ult in zip(sp_int_idx, sp_int_res[0], sp_int_res[1]):
+                    sort_again[idx] = [res_buc, res_ult]
+
+            if len(sp_gl_gt) != 0:
+                sp_gl_gt_res = [self._ML_buckling['cl SP buc GLGT predictor'].predict(self._ML_buckling['cl SP buc GLGT scaler']
+                                                                            .transform(sp_gl_gt)),
+                                self._ML_buckling['cl SP buc GLGT predictor'].predict(self._ML_buckling['cl SP buc GLGT scaler']
+                                                                            .transform(sp_gl_gt))]
+                for idx, res_buc, res_ult in zip(sp_gl_gt_idx, sp_gl_gt_res[0], sp_gl_gt_res[1]):
+                    sort_again[idx] = [res_buc, res_ult]
+            if len(up_int) != 0:
+                up_int_res = [self._ML_buckling['cl UP buc int predictor'].predict(self._ML_buckling['cl UP buc int scaler']
+                                                                         .transform(up_int)),
+                              self._ML_buckling['cl UP ult int predictor'].predict(self._ML_buckling['cl UP buc int scaler']
+                                                                         .transform(up_int))]
+                for idx, res_buc, res_ult in zip(up_int_idx, up_int_res[0], up_int_res[1]):
+                    sort_again[idx] = [res_buc, res_ult]
+            if len(up_gl_gt) != 0:
+                up_gl_gt_res = [self._ML_buckling['cl UP buc GLGT predictor'].predict(self._ML_buckling['cl UP buc GLGT scaler']
+                                                                            .transform(up_gl_gt)),
+                                self._ML_buckling['cl UP buc GLGT predictor'].predict(self._ML_buckling['cl UP buc GLGT scaler']
+                                                                            .transform(up_gl_gt))]
+                for idx, res_buc, res_ult in zip(up_gl_gt_idx, up_gl_gt_res[0], up_gl_gt_res[1]):
+                    sort_again[idx] = [res_buc, res_ult]
+
+            for idx, x_and_info in enumerate(iterator):
+                for slave_line in x_and_info['info']['lines']:
+                    iterator[idx]['info'][slave_line]['ML-CL'] = sort_again[idx]
+
+        # END ML-CL calc
 
         processes = max(cpu_count() - 1, 1)
         with Pool(processes) as my_process:
@@ -782,6 +930,8 @@ class CreateOptimizeMultipleWindow():
                          float(self._new_delta_web_h.get()) / 1000, float(self._new_delta_web_thk.get()) / 1000,
                          float(self._new_delta_fl_w.get()) / 1000, float(self._new_delta_fl_thk.get()) / 1000])
 
+
+
     def update_running_time(self, *args):
         '''
         Estimate the running time of the algorithm.
@@ -791,6 +941,10 @@ class CreateOptimizeMultipleWindow():
             self._runnig_time_label.config(text=str(self.get_running_time()))
         except ZeroDivisionError:
             pass  # _tkinter.TclError: pass
+
+        if self._new_check_ml_buckling.get() == True:
+            self._new_check_buckling.set(False)
+            self._new_check_local_buckling.set(False)
 
     def get_upper_bounds(self,obj):
         '''

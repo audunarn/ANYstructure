@@ -1,5 +1,5 @@
  # -*- coding: utf-8 -*-
-
+import time, datetime
 import tkinter as tk
 from tkinter import filedialog
 from tkinter import messagebox
@@ -21,7 +21,7 @@ import ANYstructure_local.load_factor_window as load_factors
 from _tkinter import TclError
 import multiprocessing
 from ANYstructure_local.report_generator import LetterMaker
-import os.path, os
+import os.path, os, pickle
 import ctypes
 import ANYstructure_local.sesam_interface as sesam
 from matplotlib import pyplot as plt
@@ -141,7 +141,8 @@ class Application():
                            'Text 9': 'Verdana ' + str(int(8 * self.text_scale)),
                            'Text 7': 'Verdana ' + str(int(7 * self.text_scale)),
                            'Text 10': 'Verdana ' + str(int(10 * self.text_scale)),
-                           'Text 7 bold': 'Verdana ' + str(int(7 * self.text_scale)) + ' bold'}
+                           'Text 7 bold': 'Verdana ' + str(int(7 * self.text_scale)) + ' bold',
+                           'Text 6 bold': 'Verdana ' + str(int(6 * self.text_scale)) + ' bold'}
 
         self._canvas_scale = 20 # Used for slider and can change
         self._base_scale_factor = 10 # Used for grid and will not change, 10 is default
@@ -192,6 +193,7 @@ class Application():
         # These are created and destroyed and is not permanent in the application.
         self._lc_comb_created,self._comp_comb_created,self._manual_created, self._info_created = [],[],[], []
         self._state_logger = dict()  # Used to see if recalculation is needed.
+        self._weight_logger = {'new structure': {'COG': list(), 'weight': list(), 'time': list()}}  # Recording of weight development
 
         # The next dictionaries feed various infomation to the application
         self._load_factors_dict = {'dnva':[1.3,1.2,0.7], 'dnvb':[1,1,1.2], 'tanktest':[1,1,0]} # DNV  loads factors
@@ -216,6 +218,61 @@ class Application():
         self.__returned_load_data = None # Temporary data for returned loads from the load window.
         self.__copied_line_prop = None  # Used to copy line properties to another.
         self._PULS_results = None # If a puls run is avaliable, it is stored here.
+        self._center_of_buoyancy = dict()   # Center of buoyancy for all and for carious static drafts
+                                            # Example {8: (5,20), 22: (12,20), 'all': (16,20)}
+
+        self._ML_buckling = dict()  # Buckling machine learning algorithm
+        for name, file_base in zip(['cl SP buc int predictor', 'cl SP buc int scaler',
+                                    'cl SP ult int predictor', 'cl SP ult int scaler',
+                                    'cl SP buc GLGT predictor', 'cl SP buc GLGT scaler',
+                                    'cl SP ult GLGT predictor', 'cl SP ult GLGT scaler',
+                                    'cl UP buc int predictor', 'cl UP buc int scaler',
+                                    'cl UP ult int predictor', 'cl UP ult int scaler',
+                                    'cl UP buc GLGT predictor', 'cl UP buc GLGT scaler',
+                                    'cl UP ult GLGT predictor', 'cl UP ult GLGT scaler',
+                                    'CSR predictor UP', 'CSR scaler UP',
+                                    'CSR predictor SP', 'CSR scaler SP'
+                                    ],
+                                   ["CL ['output cl buc'] predictor In-plane support cl 1 SP",
+                                    "CL ['output cl buc'] scaler In-plane support cl 1 SP",
+                                    "CL ['output cl ult'] predictor In-plane support cl 1 SP",
+                                    "CL ['output cl ult'] scaler In-plane support cl 1 SP",
+                                    "CL ['output cl buc'] predictor In-plane support cl [2, 3] SP",
+                                    "CL ['output cl buc'] scaler In-plane support cl [2, 3] SP",
+                                    "CL ['output cl ult'] predictor In-plane support cl [2, 3] SP",
+                                    "CL ['output cl ult'] scaler In-plane support cl [2, 3] SP",
+                                    "CL ['output cl buc'] predictor In-plane support cl 1 UP",
+                                    "CL ['output cl buc'] scaler In-plane support cl 1 UP",
+                                    "CL ['output cl ult'] predictor In-plane support cl 1 UP",
+                                    "CL ['output cl ult'] scaler In-plane support cl 1 UP",
+                                    "CL ['output cl buc'] predictor In-plane support cl [2, 3] UP",
+                                    "CL ['output cl buc'] scaler In-plane support cl [2, 3] UP",
+                                    "CL ['output cl ult'] predictor In-plane support cl [2, 3] UP",
+                                    "CL ['output cl ult'] scaler In-plane support cl [2, 3] UP",
+                                    "CL ['CSR-Tank req cl'] predictor",
+                                    "CL ['CSR-Tank req cl'] UP scaler",
+                                    "CL ['CSR plate cl', 'CSR web cl', 'CSR web flange cl', 'CSR flange cl'] predictor",
+                                    "CL ['CSR plate cl', 'CSR web cl', 'CSR web flange cl', 'CSR flange cl'] SP scaler"
+
+                                    ]):
+            self._ML_buckling[name] = None
+            if os.path.isfile(file_base + '.pickle'):
+                file = open(file_base + '.pickle', 'rb')
+                from sklearn.neural_network import MLPClassifier
+                from sklearn.preprocessing import StandardScaler
+                self._ML_buckling[name] = pickle.load(file)
+                file.close()
+
+        self._ML_classes ={0: 'N/A',
+                           1: 'A negative utilisation factor is found.',
+                           2: 'At least one of the in-plane loads must be non-zero.',
+                           3: 'Division by zero',
+                           4: 'Overflow',
+                           5: 'The aspect ratio exceeds the PULS code limit',
+                           6: 'The global slenderness exceeds 4. Please reduce stiffener span or increase stiffener height.',
+                           7: 'The applied pressure is too high for this plate field.', 8: 'web-flange-ratio',
+                           9:  'UF below or equal 0.87', 10: 'UF between 0.87 and 1.0', 11: 'UF above 1.0'}
+
         # Used to select parameter
         self._stuctural_definition = ['mat_yield','mat_factor', 'span', 'spacing', 'plate_thk', 'stf_web_height',
                                       'stf_web_thk',
@@ -235,6 +292,8 @@ class Application():
 
         # Initsializing the calculation grid used for tank definition
         self._grid_dimensions = [self._canvas_base_origo[1] + 1, base_canvas_dim[0] - self._canvas_base_origo[0] + 1]
+
+
         #self._grid_dimensions = [self._canvas_base_origo[1], base_canvas_dim[0] - self._canvas_base_origo[0] + 1]
 
         self._main_grid  = grid.Grid(self._grid_dimensions[0], self._grid_dimensions[1])
@@ -270,10 +329,10 @@ class Application():
         tk.Label(self._main_fr, text='Point y (vertical)   [mm]:',font="Text 9", bg = self._general_color)\
             .place(relx=point_x_start, rely=point_start + delta_y)
 
-        tk.Entry(self._main_fr, textvariable=self._new_point_x, width = int(ent_width * 1),
+        tk.Entry(self._main_fr, textvariable=self._new_point_x, width = int(ent_width * 1.5),
                  bg = self._entry_color, fg = self._entry_text_color)\
             .place(relx=ent_x, rely=point_start)
-        tk.Entry(self._main_fr, textvariable=self._new_point_y, width = int(ent_width * 1),
+        tk.Entry(self._main_fr, textvariable=self._new_point_y, width = int(ent_width * 1.5),
                  bg = self._entry_color, fg = self._entry_text_color)\
             .place(relx=ent_x, rely=point_start + delta_y)
         tk.Button(self._main_fr, text='Add point (coords)', command=self.new_point,
@@ -349,6 +408,12 @@ class Application():
         self._new_fdwn.set(1)
         self._new_shifted_coords = tk.BooleanVar()
         self._new_shifted_coords.set(False)
+        self._new_buckling_slider = tk.IntVar()
+        self._new_buckling_slider.set(1)
+        self._new_show_cog = tk.BooleanVar()
+        self._new_show_cog.set(False)
+        self._new_content_type = tk.StringVar()
+        self._new_content_type.set('ballast')
 
         line_start, line_x = point_start+0.08, 0.005208333
         tk.Label(self._main_fr, text='Input line from "point number" to "point number"',
@@ -477,19 +542,23 @@ class Application():
         tk.Label(self._main_fr, text='Show line names in GUI', font="Text 9")\
             .place(relx=0.38, rely=0)
         tk.Label(self._main_fr, text='Show point names in GUI', font="Text 9")\
-            .place(relx=0.48, rely=0)
+            .place(relx=0.47, rely=0)
         tk.Label(self._main_fr, text='Label color code', font="Text 9")\
-            .place(relx=0.58, rely=0)
+            .place(relx=0.565, rely=0)
         tk.Label(self._main_fr, text='Use shifted coordinates', font="Text 9")\
-            .place(relx=0.68, rely=0)
+            .place(relx=0.635, rely=0)
+        tk.Label(self._main_fr, text='Show COG/COB', font="Text 9")\
+            .place(relx=0.733, rely=0)
         tk.Checkbutton(self._main_fr, variable = self._new_line_name, command = self.on_color_code_check)\
             .place(relx=0.366, rely=0)
         tk.Checkbutton(self._main_fr, variable = self._new_draw_point_name, command = self.on_color_code_check)\
-            .place(relx=0.466, rely=0)
+            .place(relx=0.455, rely=0)
         tk.Checkbutton(self._main_fr, variable = self._new_label_color_coding, command = self.on_color_code_check)\
-            .place(relx=0.566, rely=0)
+            .place(relx=0.55, rely=0)
         tk.Checkbutton(self._main_fr, variable = self._new_shifted_coords, command = self.update_frame)\
-            .place(relx=0.666, rely=0)
+            .place(relx=0.62, rely=0)
+        tk.Checkbutton(self._main_fr, variable = self._new_show_cog, command = self.update_frame)\
+            .place(relx=0.72, rely=0)
 
 
 
@@ -538,7 +607,7 @@ class Application():
         self._toggle_btn_puls = tk.Button(self._main_fr, text="Use PULS\n"
                                                               "results", relief="raised",
                                      command=self.toggle_puls_run, bg = self._button_bg_color)
-        self._puls_run_all = tk.Button(self._main_fr, text='Run PULS\nget missing results', relief="raised",
+        self._puls_run_all = tk.Button(self._main_fr, text='Run PULS\nupdate results', relief="raised",
                                      command=self.puls_run_all_lines, bg = self._button_bg_color)
         # self._puls_run_one = tk.Button(self._main_fr, text="PULS\nRun one line", relief="raised",
         #                              command=self.puls_run_one_line, bg = self._button_bg_color)
@@ -547,10 +616,20 @@ class Application():
                                          bg = self._entry_color, fg = self._entry_text_color)
         self._new_puls_uf.trace('w', self.trace_acceptance_change)
 
-        self._toggle_btn_puls.place(relx=types_start, rely=prop_vert_start+18*delta_y, relwidth = 0.043,
+        # self._toggle_btn_puls.place(relx=types_start, rely=prop_vert_start+18*delta_y, relwidth = 0.043,
+        #                         relheight = 0.035)
+
+        self._puls_run_all.place(relx=types_start +0.065, rely=prop_vert_start+18*delta_y, relwidth = 0.045,
                                 relheight = 0.035)
-        self._puls_run_all.place(relx=types_start +0.046, rely=prop_vert_start+18*delta_y, relwidth = 0.06,
-                                relheight = 0.035)
+
+        # Buckling slider
+        self._buckling_slider = tk.Scale(self._main_fr, from_=1, to=3, command=self.slider_buckling_used,length=200,
+                                           orient = 'horizontal', background=self._general_color,
+                                            label='RP-C201 | PULS | ML', #font=self._text_size['Text 7 bold'],
+                                            relief='groove')
+        self._buckling_slider.place(relx=types_start, rely=prop_vert_start+17.5*delta_y, relwidth = 0.065,
+                                    relheight = 0.055)
+
 
         # --- main variable to define the structural properties ---
         self._new_material = tk.DoubleVar()
@@ -604,6 +683,13 @@ class Application():
         self._new_material_factor.set(1.15)
         self._new_shift_viz_coord_hor.set(0)
         self._new_shift_viz_coord_ver.set(0)
+
+        self._new_overpresure = tk.DoubleVar()
+        self._new_overpresure.set(25000)
+        self._new_density = tk.DoubleVar()
+        self._new_density.set(1025)
+        self._new_max_el = tk.DoubleVar()
+        self._new_min_el = tk.DoubleVar()
 
         self._new_stucture_type.set('GENERAL_INTERNAL_WT')
         self.option_meny_structure_type_trace(event='GENERAL_INTERNAL_WT')
@@ -920,26 +1006,24 @@ class Application():
         tk.Button(self._main_fr, text="Delete all tanks", command=self.delete_all_tanks,
                   font=self._text_size['Text 9 bold'],bg = self._button_bg_color, fg = self._button_fg_color
                   ).place(relx=ent_x+delta_x*3, rely=load_vert_start + delta_y * 8.5, relwidth = 0.08)
-        self._new_content_type = tk.StringVar()
+
 
         self._ent_content_type = tk.OptionMenu(self._main_fr, self._new_content_type, *list(self._tank_options.keys()),
                                                command=self.tank_density_trace)
         ent_width = 10
-        self._new_overpresure = tk.DoubleVar()
+
         self._ent_overpressure = tk.Entry(self._main_fr, textvariable = self._new_overpresure,
                                          width = int(ent_width * 1),
                                           bg = self._entry_color, fg = self._entry_text_color)
-        self._new_overpresure.set(25000)
-        self._new_density = tk.DoubleVar()
+
         self._ent_density = tk.Entry(self._main_fr, textvariable = self._new_density,
                                     width = int(ent_width * 1),
                                      bg = self._entry_color, fg = self._entry_text_color)
-        self._new_density.set(0)
-        self._new_max_el = tk.DoubleVar()
+
         self._ent_max_el = tk.Entry(self._main_fr, textvariable=self._new_max_el,
                                    width=int(ent_width * 1),
                                     bg = self._entry_color, fg = self._entry_text_color)
-        self._new_min_el = tk.DoubleVar()
+
         self._ent_min_el = tk.Entry(self._main_fr, textvariable=self._new_min_el,
                                    width=int(ent_width * 1),
                                     bg = self._entry_color, fg = self._entry_text_color)
@@ -1076,11 +1160,12 @@ class Application():
             .place(relx=lc_x, rely=lc_y + 2.5*delta_y)
 
         lc_y += 0.148148148
-
         self._combination_slider = tk.Scale(self._main_fr, from_=1, to=3, command=self.gui_load_combinations,length=400,
                                            orient = 'horizontal', background=self._general_color,
                                             label='OS-C101 Table 1    1: DNV a)    2: DNV b)    3: TankTest',
                                             relief='groove')
+
+
 
         self._combination_slider.place(relx=lc_x +0*lc_x_delta, rely=lc_y - 3*lc_y_delta)
         self._combination_slider_map = {1:'dnva',2:'dnvb',3:'tanktest'}
@@ -1148,22 +1233,29 @@ class Application():
 
         # Load information button
         tk.Button(self._main_fr, text='Load info', command=self.button_load_info_click,
-                 font = self._text_size['Text 10 bold'], height = 1,
+                 font = self._text_size['Text 9 bold'], height = 1,
                   bg = self._button_bg_color, fg = self._button_fg_color)\
-           .place(relx=lc_x + delta_x * 6,rely=lc_y + delta_y*19.5, relwidth = 0.05)
+           .place(relx=lc_x + delta_x * 6.4,rely=lc_y + delta_y*19.5, relwidth = 0.04)
 
         # Load information button
         tk.Button(self._main_fr, text='Load factors', command=self.on_open_load_factor_window,
-                 font = self._text_size['Text 10 bold'], height = 1,
+                 font = self._text_size['Text 9 bold'], height = 1,
                   bg = self._button_bg_color, fg = self._button_fg_color)\
-           .place(relx=lc_x + delta_x * 4,rely=lc_y + delta_y*19.5, relwidth = 0.05)
+           .place(relx=lc_x + delta_x * 4.4,rely=lc_y + delta_y*19.5, relwidth = 0.05)
 
         # PULS result information
         self._puls_information_button = tk.Button(self._main_fr, text='PULS results for line',
                                                   command=self.on_puls_results_for_line,
-                 font = self._text_size['Text 10 bold'], height = 1,
+                 font = self._text_size['Text 9 bold'], height = 1,
                   bg = self._button_bg_color, fg = self._button_fg_color)
-        self._puls_information_button.place(relx=lc_x + delta_x * 0,rely=lc_y + delta_y*19.5, relwidth = 0.08)
+        self._puls_information_button.place(relx=lc_x + delta_x * 0,rely=lc_y + delta_y*19.5, relwidth = 0.075)
+
+        # Wight developement plot
+        self._weight_button = tk.Button(self._main_fr, text='Weights',
+                                                  command=self.on_plot_cog_dev,
+                 font = self._text_size['Text 9 bold'], height = 1,
+                  bg = self._button_bg_color, fg = self._button_fg_color)
+        self._weight_button.place(relx=lc_x + delta_x * 2.9,rely=lc_y + delta_y*19.5, relwidth = 0.038)
 
         self.update_frame()
 
@@ -1352,6 +1444,21 @@ class Application():
                 dict[var_to_set][0] = set_var
 
                 self.new_structure(toggle_multi=dict, suspend_recalc=True if (idx+1) != no_of_lines else False)
+
+    def slider_buckling_used(self, event):
+
+        if self._buckling_slider.get() == 1:
+            self._new_buckling_slider.set(1)
+            self._ent_puls_uf.config(bg = 'white')
+        elif self._buckling_slider.get() == 2:
+            self._new_buckling_slider.set(2)
+            self._ent_puls_uf.config(bg='white')
+        elif self._buckling_slider.get() == 3:
+            self._new_buckling_slider.set(3)
+            self._ent_puls_uf.config(bg = 'red')
+        else:
+            pass
+        self.update_frame()
 
     def gui_load_combinations(self,event):
         '''
@@ -1598,6 +1705,9 @@ class Application():
                 self._grid_calc.animate_grid(grids_to_animate=compartment_search_return['grids'],
                                              tank_count = None if len(self._tank_dict)==0 else len(self._tank_dict))
 
+        self.get_cob()  # Calculating COB
+        self.update_frame()
+
     def grid_display_tanks(self, save = False):
         '''
         Opening matplotlib grid illustation
@@ -1656,14 +1766,17 @@ class Application():
         self.draw_prop()
         self.trace_puls_up_or_sp()
 
+        return state
+
     def get_color_and_calc_state(self, current_line = None, active_line_only = False):
         ''' Return calculations and colors for line and results. '''
 
         return_dict = {'colors': {}, 'section_modulus': {}, 'thickness': {}, 'shear_area': {}, 'buckling': {},
                        'fatigue': {}, 'pressure_uls': {}, 'pressure_fls': {},
                        'struc_obj': {}, 'scant_calc_obj': {}, 'fatigue_obj': {}, 'utilization': {}, 'slamming': {},
-                       'color code': {}, 'PULS colors': {}}
-        line_iterator, slamming_pressure = [], None
+                       'color code': {}, 'PULS colors': {}, 'ML buckling colors' : {}, 'ML buckling class' : {},
+                       'weights': {}}
+
         return_dict['slamming'][current_line] = {}
 
         if current_line is None and active_line_only:
@@ -1711,10 +1824,11 @@ class Application():
                     design_lat_press=design_pressure,
                     checked_side=obj_scnt_calc.get_side())]
 
-                rec_for_color[current_line]['section modulus']=  min_sec_mod/min(sec_mod)
+                rec_for_color[current_line]['section modulus'] = min_sec_mod/min(sec_mod)
 
-                rec_for_color[current_line]['plate thickness']=  (min_thk/1000)/obj_scnt_calc.get_pl_thk()
+                rec_for_color[current_line]['plate thickness'] = (min_thk/1000)/obj_scnt_calc.get_pl_thk()
                 rec_for_color[current_line]['rp buckling'] = max(buckling)
+
                 rec_for_color[current_line]['shear'] = min_shear/shear_area
                 return_dict['slamming'][current_line] = dict()
                 if slamming_pressure is not None and slamming_pressure > 0:
@@ -1732,7 +1846,6 @@ class Application():
                                                                                                 p_ext['part']))
                     dff = fatigue_obj.get_dff()
                     color_fatigue = 'green' if damage * dff <= 1 else 'red'
-
                 except AttributeError:
                     fatigue_obj, p_int, p_ext, damage, dff = [None for dummy in range(5)]
                     color_fatigue = 'green'
@@ -1771,6 +1884,9 @@ class Application():
                 return_dict['colors'][current_line] = {'buckling': color_buckling, 'fatigue': color_fatigue,
                                                        'section': color_sec, 'shear': color_shear,
                                                        'thickness': color_thk}
+                '''
+                PULS calculations
+                '''
                 if self._PULS_results != None:
                     res = self._PULS_results.get_puls_line_results(current_line)
                     if res is not None:
@@ -1807,6 +1923,110 @@ class Application():
                     return_dict['PULS colors'][current_line] = {'ultimate': 'black', 'buckling': 'black',
                                                                 'local geometry': 'black', 'csr': 'black'}
 
+                '''
+                Machine learning buckling 
+                        ['cl SP buc int predictor', 'cl SP buc int scaler',
+                        'cl SP ult int predictor', 'cl SP ult int scaler',
+                        'cl SP buc GLGT predictor', 'cl SP buc GLGT scaler',
+                        'cl SP ult GLGT predictor', 'cl SP ult GLGT scaler']
+                '''
+
+                if obj_scnt_calc.get_puls_sp_or_up() == 'UP':
+                    buckling_ml_input = obj_scnt_calc.get_buckling_ml_input(design_lat_press=design_pressure)
+
+                    if obj_scnt_calc.get_puls_boundary() == 'Int':
+                        if self._ML_buckling['cl UP buc int predictor'] != None:
+                            x_buc = self._ML_buckling['cl UP buc int scaler'].transform(buckling_ml_input)
+                            y_pred_buc = self._ML_buckling['cl UP buc int predictor'].predict(x_buc)[0]
+                        else:
+                            y_pred_buc = 0
+                        if self._ML_buckling['cl UP ult int predictor'] != None:
+                            x_ult = self._ML_buckling['cl UP ult int scaler'].transform(buckling_ml_input)
+                            y_pred_ult = self._ML_buckling['cl UP ult int predictor'].predict(x_ult)[0]
+                        else:
+                            y_pred_ult = 0
+                    else:
+                        if self._ML_buckling['cl UP buc GLGT predictor'] != None:
+                            x_buc = self._ML_buckling['cl UP buc GLGT scaler'].transform(buckling_ml_input)
+                            y_pred_buc = self._ML_buckling['cl UP buc GLGT predictor'].predict(x_buc)[0]
+                        else:
+                            y_pred_buc = 0
+                        if self._ML_buckling['cl UP ult GLGT predictor'] != None:
+                            x_ult = self._ML_buckling['cl UP ult GLGT scaler'].transform(buckling_ml_input)
+                            y_pred_ult = self._ML_buckling['cl UP ult GLGT predictor'].predict(x_ult)[0]
+                        else:
+                            y_pred_ult = 0
+
+                    x_csr = obj_scnt_calc.get_buckling_ml_input(design_lat_press=design_pressure, csr = True)
+                    x_csr = self._ML_buckling['CSR scaler UP'].transform(x_csr)
+                    csr_pl = self._ML_buckling['CSR predictor UP'].predict(x_csr)[0]
+
+                    return_dict['ML buckling colors'][current_line] = \
+                        {'buckling': 'green' if int(y_pred_buc) == 9 else 'red',
+                         'ultimate': 'green' if int(y_pred_ult) == 9 else 'red',
+                         'CSR requirement': 'green' if csr_pl == 1 else 'red'}
+
+                    return_dict['ML buckling class'][current_line] = {'buckling': int(y_pred_buc),
+                                                                      'ultimate': int(y_pred_ult),
+                                                                      'CSR': [csr_pl, float('inf'),
+                                                                              float('inf'), float('inf')]}
+                else:
+                    buckling_ml_input = obj_scnt_calc.get_buckling_ml_input(design_lat_press=design_pressure)
+                    if obj_scnt_calc.get_puls_boundary() == 'Int':
+                        if self._ML_buckling['cl SP buc int predictor'] != None:
+                            x_buc = self._ML_buckling['cl SP buc int scaler'].transform(buckling_ml_input)
+                            y_pred_buc = self._ML_buckling['cl SP buc int predictor'].predict(x_buc)[0]
+                        else:
+                            y_pred_buc = 0
+                        if self._ML_buckling['cl SP ult int predictor'] != None:
+                            x_ult = self._ML_buckling['cl SP ult int scaler'].transform(buckling_ml_input)
+                            y_pred_ult = self._ML_buckling['cl SP ult int predictor'].predict(x_ult)[0]
+                        else:
+                            y_pred_ult = 0
+                    else:
+                        if self._ML_buckling['cl SP buc GLGT predictor'] != None:
+                            x_buc = self._ML_buckling['cl SP buc GLGT scaler'].transform(buckling_ml_input)
+                            y_pred_buc = self._ML_buckling['cl SP buc GLGT predictor'].predict(x_buc)[0]
+                        else:
+                            y_pred_buc = 0
+                        if self._ML_buckling['cl SP ult GLGT predictor'] != None:
+                            x_ult = self._ML_buckling['cl SP ult GLGT scaler'].transform(buckling_ml_input)
+                            y_pred_ult = self._ML_buckling['cl SP ult GLGT predictor'].predict(x_ult)[0]
+                        else:
+                            y_pred_ult = 0
+
+                    x_csr = obj_scnt_calc.get_buckling_ml_input(design_lat_press=design_pressure, csr = True)
+                    x_csr = self._ML_buckling['CSR scaler SP'].transform(x_csr)
+                    csr_pl, csr_web, csr_web_fl, csr_fl = self._ML_buckling['CSR predictor SP'].predict(x_csr)[0]
+
+                    return_dict['ML buckling colors'][current_line] = \
+                        {'buckling': 'green' if int(y_pred_buc) == 9 else 'red',
+                         'ultimate': 'green' if int(y_pred_ult) == 9 else 'red',
+                         'CSR requirement': 'green' if
+                         all([csr_pl == 1, csr_web == 1, csr_web_fl == 1, csr_fl == 1]) else 'red'}
+                    return_dict['ML buckling class'][current_line] = {'buckling': int(y_pred_buc),
+                                                                      'ultimate': int(y_pred_ult),
+                                                                      'CSR': [csr_pl, csr_web, csr_web_fl, csr_fl]}
+
+                '''
+                Weight calculations for line.
+                '''
+                line_weight = op.calc_weight([obj_scnt_calc.get_s(), obj_scnt_calc.get_pl_thk(),
+                                              obj_scnt_calc.get_web_h(), obj_scnt_calc.get_web_thk(),
+                                              obj_scnt_calc.get_fl_w(), obj_scnt_calc.get_fl_thk(),
+                                              obj_scnt_calc.get_span(), obj_scnt_calc.get_lg()])
+                points = self._line_dict[current_line]
+                p1 = self._point_dict['point' + str(points[0])]
+                p2 = self._point_dict['point' + str(points[1])]
+
+                mid_coord = [(p1[0]+p2[0])/2, (p1[1]+p2[1])/2]
+
+                return_dict['weights'][current_line] = {'line weight': line_weight, 'mid_coord': mid_coord}
+
+                '''
+                xxxxxxx
+                '''
+
                 return_dict['buckling'][current_line] = buckling
                 return_dict['pressure_uls'][current_line] = design_pressure
                 return_dict['pressure_fls'][current_line] = {'p_int': p_int, 'p_ext': p_ext}
@@ -1833,7 +2053,7 @@ class Application():
                 buc_util = 1 if float('inf') in buckling else max(buckling[0:5])
                 rec_for_color[current_line]['rp buckling'] = max(buckling[0:5])
                 return_dict['utilization'][current_line] = {'buckling': buc_util,
-                                                            'PULS buckling': buc_util,
+                                                            'PULS buckling': buc_util, # TODO double check
                                                             'fatigue': fat_util,
                                                             'section': sec_util,
                                                             'shear': shear_util,
@@ -1843,7 +2063,6 @@ class Application():
 
                 self._state_logger[current_line] = return_dict #  Logging the current state of the line.
                 self._line_to_struc[current_line][1].need_recalc = False
-
             else:
                 pass
 
@@ -1963,6 +2182,7 @@ class Application():
             thk_sort_unique = return_dict['color code']['all thicknesses']
             spacing_sort_unique = return_dict['color code']['spacings']
             structure_type_unique = return_dict['color code']['structure types map']
+            tot_weight, weight_mult_dist_x, weight_mult_dist_y = 0, 0,0
             for line, line_data in self._line_to_struc.items():
                 if self._PULS_results is None:
                     puls_color, buc_uf, puls_uf, puls_method, puls_sp_or_up = 'black', 0, 0, None, None
@@ -2046,6 +2266,23 @@ class Application():
                                            'tau xy':matplotlib.colors.rgb2hex(cmap_sections(tau_xy_uf)),
                                            }
                 return_dict['color code']['lines'] = line_color_coding
+
+                # COG calculations
+                # Steel
+                tot_weight += return_dict['weights'][line]['line weight']
+                weight_mult_dist_x += return_dict['weights'][line]['line weight']\
+                                      *return_dict['weights'][line]['mid_coord'][0]
+                weight_mult_dist_y += return_dict['weights'][line]['line weight']\
+                                      *return_dict['weights'][line]['mid_coord'][1]
+
+            tot_cog = [weight_mult_dist_x/tot_weight, weight_mult_dist_y/tot_weight]
+        else:
+            tot_cog = [0,0]
+            tot_weight = 0
+
+        return_dict['COG'] = tot_cog
+        return_dict['Total weight'] = tot_weight
+
         return return_dict
 
     def draw_canvas(self, state = None, event = None):
@@ -2075,6 +2312,55 @@ class Application():
                                           self._canvas_draw_origo[1] + 12 * 1, text='(0,0)',
                                           font='Text 10')
 
+        # Drawing COG and COB
+        if self._new_show_cog.get():
+            pt_size = 5
+            if 'COG' in state.keys():
+                if self._new_shifted_coords.get():
+                    point_coord_x = self._canvas_draw_origo[0] + (state['COG'][0] +
+                                                                  self._new_shift_viz_coord_hor.get()/1000) * \
+                                    self._canvas_scale
+                    point_coord_y = self._canvas_draw_origo[1] - (state['COG'][1] +
+                                                                  self._new_shift_viz_coord_ver.get()/1000) * \
+                                    self._canvas_scale
+                else:
+                    point_coord_x = self._canvas_draw_origo[0] + state['COG'][0]*self._canvas_scale
+                    point_coord_y = self._canvas_draw_origo[1] - state['COG'][1]*self._canvas_scale
+
+                self._main_canvas.create_oval(point_coord_x - pt_size + 2,
+                                              point_coord_y - pt_size + 2,
+                                              point_coord_x  + pt_size + 2,
+                                              point_coord_y + pt_size + 2, fill='yellow')
+
+                self._main_canvas.create_text(point_coord_x  + 5,
+                                              point_coord_y - 14, text='steel COG: x=' + str(round(state['COG'][0], 2)) +
+                                                                       ' y=' +str(round(state['COG'][1],2)),
+                                              font=self._text_size["Text 8 bold"], fill='black')
+
+            if self._center_of_buoyancy != {}:
+                for draft, cob in self._center_of_buoyancy.items():
+
+                    if self._new_shifted_coords.get():
+                        point_coord_x = self._canvas_draw_origo[0] + (cob[1] +
+                                                                      self._new_shift_viz_coord_hor.get() / 1000) * \
+                                        self._canvas_scale
+                        point_coord_y = self._canvas_draw_origo[1] - (cob[0] +
+                                                                      self._new_shift_viz_coord_ver.get() / 1000) * \
+                                        self._canvas_scale
+                    else:
+                        point_coord_x = self._canvas_draw_origo[0] + cob[1] * self._canvas_scale
+                        point_coord_y = self._canvas_draw_origo[1] - cob[0] * self._canvas_scale
+
+                    self._main_canvas.create_oval(point_coord_x - pt_size + 2,
+                                                  point_coord_y - pt_size + 2,
+                                                  point_coord_x + pt_size + 2,
+                                                  point_coord_y + pt_size + 2, fill='blue')
+
+                    self._main_canvas.create_text(point_coord_x + 5,
+                                                  point_coord_y + 14,
+                                                  text='COB d='+str(draft) +': x=' + str(round(cob[1], 2)) +
+                                                       ' y=' + str(round(cob[0], 2)),
+                                                  font=self._text_size["Text 8"], fill='blue')
 
         chk_box_active = [self._new_colorcode_beams.get(), self._new_colorcode_plates.get(),
             self._new_colorcode_pressure.get(), self._new_colorcode_utilization.get(),
@@ -2148,7 +2434,7 @@ class Application():
                 coord2 = self.get_point_canvas_coord('point' + str(value[1]))
                 if not chk_box_active and state != None:
                     try:
-                        if self._toggle_btn_puls.config('relief')[-1] == 'sunken':
+                        if self._new_buckling_slider.get() == 2:
                             if 'black' in state['PULS colors'][line].values():
                                 color = 'black'
                             else:
@@ -2163,8 +2449,24 @@ class Application():
                                 if color == 'green':
                                     color = 'green' if all([state['colors'][line][key] == 'green' for key in
                                                             ['fatigue', 'section', 'shear','thickness']]) else 'red'
-                        else:
+                        elif self._new_buckling_slider.get() == 1:
                             color = 'red' if 'red' in state['colors'][line].values() else 'green'
+                        elif self._new_buckling_slider.get() == 3:
+                            if 'black' in state['ML buckling colors'][line].values():
+                                color = 'black'
+                            else:
+                                col1, col2 = state['ML buckling colors'][line]['buckling'], \
+                                             state['ML buckling colors'][line]['ultimate']
+
+                                if self._line_to_struc[line][1].get_puls_method() == 'buckling':
+                                    color = col1
+                                else:
+                                    color = col2
+
+                                if color == 'green':
+                                    color = 'green' if all([state['colors'][line][key] == 'green' for key in
+                                                            ['fatigue', 'section', 'shear','thickness']]) else 'red'
+
                     except (KeyError, TypeError):
                         color = 'black'
                 elif chk_box_active and state != None and self._line_to_struc != {}:
@@ -2283,7 +2585,7 @@ class Application():
                                                                                            else press/highest_pressure)),
                                               anchor="nw")
         elif all([self._new_colorcode_utilization.get() == True,
-                  self._line_to_struc != {}, self._new_toggle_puls.get() != True]):
+                  self._line_to_struc != {}, self._new_buckling_slider.get() != 2]):
             all_utils = cc_state['utilization map']
             for idx, uf in enumerate(cc_state['utilization map']):
                 self._main_canvas.create_text(11, start_text_shift + 20 * idx, text=str('UF = ' +str(round(uf,1))),
@@ -2295,7 +2597,7 @@ class Application():
                                               fill=matplotlib.colors.rgb2hex(cmap_sections(uf/max(all_utils))),
                                               anchor="nw")
         elif all([self._new_colorcode_utilization.get() == True,
-                  self._line_to_struc != {}, self._new_toggle_puls.get() == True]):
+                  self._line_to_struc != {}, self._new_buckling_slider.get() == 2]):
             all_utils = cc_state['PULS utilization map']
             for idx, uf in enumerate(cc_state['utilization map']):
                 self._main_canvas.create_text(11, start_text_shift + 20 * idx, text=str('UF = ' +str(round(uf,1))),
@@ -2442,17 +2744,22 @@ class Application():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                               text=str(state['color code']['lines'][line]['pressure']))
 
-        elif self._new_colorcode_utilization.get() == True and not self._new_toggle_puls.get():
+        elif self._new_colorcode_utilization.get() == True and self._new_buckling_slider.get() == 1:
             color = state['color code']['lines'][line]['rp uf color']
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                               text=round(state['color code']['lines'][line]['rp uf'],2))
 
-        elif self._new_colorcode_utilization.get() == True and self._new_toggle_puls.get():
+        elif self._new_colorcode_utilization.get() == True and self._new_buckling_slider.get() == 2:
             color = state['color code']['lines'][line]['PULS uf color']
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                               text=round(state['color code']['lines'][line]['PULS uf'],2))
+        elif self._new_colorcode_utilization.get() == True and self._new_buckling_slider.get() == 3:
+            color = 'black'
+            if self._new_label_color_coding.get():
+                self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                              text='N/A')
 
         elif self._new_colorcode_sigmax.get() == True:
             color = state['color code']['lines'][line]['sigma x']
@@ -2498,16 +2805,21 @@ class Application():
                                               text=round(state['color code']['lines'][line]['fatigue uf'],2))
 
         elif self._new_colorcode_total.get() == True:
-            if self._new_toggle_puls.get():
+            if self._new_buckling_slider.get() == 2:
                 color = state['color code']['lines'][line]['Total uf color rp']
                 if self._new_label_color_coding.get():
                     self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                                   text=round(state['color code']['lines'][line]['Total uf puls'],2))
-            else:
+            elif self._new_buckling_slider.get() == 1:
                 color = state['color code']['lines'][line]['Total uf color puls']
                 if self._new_label_color_coding.get():
                     self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                                   text=round(state['color code']['lines'][line]['Total uf rp'],2))
+            elif self._new_buckling_slider.get() == 3:
+                color = 'black'
+                if self._new_label_color_coding.get():
+                    self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                                  text='N/A')
         elif self._new_colorcode_puls_acceptance.get():
             if state['color code']['lines'][line]['PULS method'] == None:
                 color = 'black'
@@ -2718,7 +3030,8 @@ class Application():
                                                font=self._text_size["Text 9 bold"],anchor='nw', fill=color_thk)
 
                 # buckling results
-                if self._PULS_results != None and self._toggle_btn_puls.config('relief')[-1] == 'sunken':
+
+                if self._PULS_results != None and self._new_buckling_slider.get() == 2:
                     line_results = state['PULS colors'][self._active_line]
                     puls_res = self._PULS_results.get_puls_line_results(self._active_line)
                     if puls_res != None:
@@ -2759,14 +3072,14 @@ class Application():
                                                         font=self._text_size['Text 9 bold'],
                                                         anchor='nw',
                                                         fill='black')
-                        self._result_canvas.create_text([x * 1, y + 9.5 * dy], text=ult_text,
-                                                        font=self._text_size['Text 9 bold'],
-                                                        anchor='nw',
-                                                        fill=line_results['ultimate'])
-                        self._result_canvas.create_text([x * 1, y + 10.5 * dy], text=buc_text,
+                        self._result_canvas.create_text([x * 1, y + 9.5 * dy], text=buc_text,
                                                         font=self._text_size['Text 9 bold'],
                                                         anchor='nw',
                                                         fill=line_results['buckling'])
+                        self._result_canvas.create_text([x * 1, y + 10.5 * dy], text=ult_text,
+                                                        font=self._text_size['Text 9 bold'],
+                                                        anchor='nw',
+                                                        fill=line_results['ultimate'])
                         self._result_canvas.create_text([x * 1, y + 11.5 * dy], text=loc_geom,
                                                         font=self._text_size['Text 9 bold'],
                                                         anchor='nw',
@@ -2782,7 +3095,7 @@ class Application():
                                                         font=self._text_size['Text 9 bold'],
                                                         anchor='nw',
                                                         fill='Orange')
-                else:
+                elif self._new_buckling_slider.get() == 1:
                     self._result_canvas.create_text([x * 1, (y+9*dy) * 1],
                                                    text='Buckling results DNV-RP-C201:',
                                                    font=self._text_size["Text 9 bold"], anchor='nw')
@@ -2793,6 +3106,8 @@ class Application():
                     else:
                         if buckling[0]==float('inf'):
                             res_text = 'Plate resistance not ok (equation 6.12). '
+                        elif buckling[1] == float('inf'):
+                            res_text = 'Spacing/thickness aspect ratio error (equation eq 6.11 - ha < 0). '
                         else:
                             if obj_structure.get_side() == 'p':
                                 res_text = '|eq 7.19: '+str(buckling[0])+' |eq 7.50: '+str(buckling[1])+ ' |eq 7.51: '+ \
@@ -2805,6 +3120,40 @@ class Application():
                         self._result_canvas.create_text([x * 1, (y+10*dy) * 1],
                                                    text=res_text,font=self._text_size["Text 9 bold"],
                                                    anchor='nw',fill=color_buckling)
+                elif self._new_buckling_slider.get() == 3:
+
+                    self._result_canvas.create_text([x * 1, (y + 9 * dy) * 1],
+                                                    text='Buckling results ANYstructure ML algorithm:',
+                                                    font=self._text_size["Text 9 bold"], anchor='nw')
+                    self._result_canvas.create_text([x * 1, (y + 10 * dy) * 1],
+                                                    text='Buckling: ' + self._ML_classes[state['ML buckling class'][current_line]['buckling']],
+                                                    font=self._text_size["Text 9 bold"],
+                                                    anchor='nw', fill=state['ML buckling colors'][current_line]['buckling'])
+                    self._result_canvas.create_text([x * 1, (y + 11 * dy) * 1],
+                                                    text='Ultimate: ' +self._ML_classes[state['ML buckling class'][current_line]['ultimate']],
+                                                    font=self._text_size["Text 9 bold"],
+                                                    anchor='nw', fill=state['ML buckling colors'][current_line]['ultimate'])
+                    if obj_structure.get_puls_sp_or_up() == 'SP':
+                        csr = state['ML buckling class'][current_line]['CSR']
+                        csr_str = ['Ok' if csr[0] == 1 else 'Not ok', 'Ok' if csr[1] == 1 else 'Not ok',
+                                   'Ok' if csr[2] == 1 else 'Not ok', 'Ok' if csr[3] == 1 else 'Not ok']
+                        self._result_canvas.create_text([x * 1, (y + 12.5 * dy) * 1],
+                                                        text='CSR requirements (stiffener):  plate-'+ csr_str[0]+ ' web-'+
+                                                             csr_str[1] + ' web/flange ratio-'+ csr_str[2] +
+                                                             ' flange-'+ csr_str[3] ,
+                                                        font=self._text_size["Text 9"],
+                                                        anchor='nw',
+                                                        fill=state['ML buckling colors'][current_line]['CSR requirement'])
+                    else:
+                        csr = state['ML buckling class'][current_line]['CSR']
+                        csr_str = 'Ok' if csr[0] == 1 else 'Not ok'
+                        self._result_canvas.create_text([x * 1, (y + 12.5 * dy) * 1],
+                                                        text='CSR requirements (stiffener):  Plate slenderness -'+
+                                                             csr_str,
+                                                        font=self._text_size["Text 9"],
+                                                        anchor='nw',
+                                                        fill=state['ML buckling colors'][current_line]['CSR requirement'])
+
 
                 # fatigue results
 
@@ -3162,6 +3511,7 @@ class Application():
                 self.calculate_all_load_combinations_for_line_all_lines()
             except (KeyError, AttributeError):
                 pass
+
         else:
             pass
 
@@ -3172,11 +3522,11 @@ class Application():
             # when changing multiple parameters, recalculations are suspended.
             for line, obj in self._line_to_struc.items():
                 obj[1].need_recalc = True
-            self.update_frame()
-        #state = self.get_color_and_calc_state()
-
-        # self.draw_results(state=state)
-        # self.draw_canvas(state=state)
+            state = self.update_frame()
+            if state != None:
+                self._weight_logger['new structure']['COG'].append(self.get_color_and_calc_state()['COG'])
+                self._weight_logger['new structure']['weight'].append(self.get_color_and_calc_state()['Total weight'])
+                self._weight_logger['new structure']['time'].append(time.time())
 
     def option_meny_structure_type_trace(self, event):
         ''' Updating of the values in the structure type option menu. '''
@@ -3224,6 +3574,21 @@ class Application():
         self._tank_dict['comp' + str(comp_no)] =  Tanks(temp_tank_dict)
         if self.__returned_load_data is not None:
             map(self.on_close_load_window, self.__returned_load_data)
+
+        self.get_cob()  # Recalculating COB
+
+    def get_cob(self):
+        '''
+        Calculation of center of buoyancy.
+        '''
+        self._center_of_buoyancy = dict()
+        self._center_of_buoyancy['all'] = self._grid_calc.grid.get_center_of_matrix(scale=self._base_scale_factor)
+
+        for load, data in self._load_dict.items():
+            if data[0].is_static():
+                draft = data[0].get_static_draft()
+                cob = self._grid_calc.grid.get_center_of_matrix(height_limit=draft, scale=self._base_scale_factor)
+                self._center_of_buoyancy[draft] = cob
 
     def calculate_all_load_combinations_for_line_all_lines(self):
         '''
@@ -3342,9 +3707,10 @@ class Application():
         current_tank.set_content(self._new_content_type.get())
         current_tank.set_acceleration(self._accelerations_dict)
         current_tank.set_density(self._new_density.get())
-
         for line, obj in self._line_to_struc.items():
             obj[1].need_recalc = True
+            if  self._compartments_listbox.get('active') in self.get_compartments_for_line(line):
+                self._PULS_results.result_changed(line)
 
     def delete_line(self, event = None, undo = None, line = None):
         '''
@@ -3486,6 +3852,8 @@ class Application():
             map(self.on_close_load_window, self.__returned_load_data)
         # else:
         #     pass
+        self._center_of_buoyancy = dict()  # Resetting dict
+        self.update_frame()
 
     def set_selected_variables(self, line):
         '''
@@ -4051,6 +4419,8 @@ class Application():
                 else:
                     self._new_line_p2.set(get_num(point))
                     self._p1_p2_select = False
+                self._new_point_x.set(round(self._point_dict[self._active_point][0]*1000, 1))
+                self._new_point_y.set(round(self._point_dict[self._active_point][1]*1000, 1))
         if self._toggle_btn.config('relief')[-1] == 'sunken':
             if len(self._multiselect_lines) != 0:
                 self._multiselect_lines.pop(-1)
@@ -4129,12 +4499,16 @@ class Application():
         export_all['load_combinations'] = load_combiantions
         export_all['tank_properties'] = tank_properties
         export_all['fatigue_properties'] = fatigue_properties
+        export_all['buckling type'] = self._new_buckling_slider.get()
+
         if self._PULS_results is not None:
             export_all['PULS results'] = self._PULS_results.get_run_results()
             export_all['PULS results']['sheet location'] = self._PULS_results.puls_sheet_location
         export_all['shifting'] = {'shifted checked': self._new_shifted_coords.get(),
                                   'shift hor': self._new_shift_viz_coord_hor.get(),
                                   'shift ver': self._new_shift_viz_coord_ver.get()}
+
+        export_all['Weight and COG'] = self._weight_logger
 
         json.dump(export_all, save_file)#, sort_keys=True, indent=4)
         save_file.close()
@@ -4294,6 +4668,14 @@ class Application():
         highest_x = max([coord[0] for coord in points.values()])
         self._canvas_scale = min(800 / highest_y, 800 / highest_x, 15)
 
+        if 'buckling type' in imported.keys():
+            self._new_buckling_slider.set(imported['buckling type'])
+            self._buckling_slider.set(imported['buckling type'])
+
+        if 'Weight and COG' in imported.keys():
+            self._weight_logger = imported['Weight and COG']
+
+        self.get_cob()
         imp_file.close()
         self._parent.wm_title('| ANYstructure |     ' + imp_file.name)
         self.update_frame()
@@ -4329,6 +4711,53 @@ class Application():
             #tk.messagebox.showinfo('Load info for '+self._active_line, ''.join(load_text))
         else:
             tk.messagebox.showerror('No data', 'No load data for this line')
+
+    def on_plot_cog_dev(self):
+        '''
+        Plot the COG and COB development.
+        '''
+        if self._weight_logger['new structure']['time'] == []:
+            return
+        import matplotlib.dates as mdate
+
+
+        cog = np.array(self._weight_logger['new structure']['COG'])
+        weight = np.array(self._weight_logger['new structure']['weight'])/\
+                 max(self._weight_logger['new structure']['weight'])
+        time_stamp = np.array(self._weight_logger['new structure']['time'])
+
+
+        time_stamp = [mdate.epoch2num(val) for val in time_stamp]
+        fig, ax = plt.subplots()
+
+        ax3 = plt.subplot(212)
+        plt.plot(time_stamp, weight, 'tab:green')
+
+        ax1 = plt.subplot(221, sharex=ax3)
+        plt.plot(time_stamp, cog[:,0])
+
+        ax2 = plt.subplot(222, sharex=ax3)
+        plt.plot(time_stamp, cog[:,1], 'tab:orange')
+
+        # Choose your xtick format string
+        date_fmt = '%d-%m-%y %H:%M:%S'
+
+        # Use a DateFormatter to set the data to the correct format.
+        date_formatter = mdate.DateFormatter(date_fmt)
+        ax1.xaxis.set_major_formatter(date_formatter)
+        ax2.xaxis.set_major_formatter(date_formatter)
+        ax3.xaxis.set_major_formatter(date_formatter)
+        ax1.set_title('COG X')
+        ax2.set_title('COG Y')
+        ax3.set_title('Total weight / max(total weight)')
+
+        fig.suptitle('Developement of weight and COG')
+
+        # Sets the tick labels diagonal so they fit easier.
+        fig.autofmt_xdate()
+
+        plt.tight_layout()
+        plt.show()
 
     def on_open_structure_window(self):
         '''
@@ -4580,8 +5009,10 @@ class Application():
 
         # Storing the the returned data to temporary variable.
         self.__returned_load_data = [returned_loads, counter, load_comb_dict]
-        # Displaying the loads
 
+       # Calculating center of buoyancy from static cases.
+
+        self.get_cob() # Update COB
         self.update_frame()
 
     def on_close_opt_window(self,returned_object):
