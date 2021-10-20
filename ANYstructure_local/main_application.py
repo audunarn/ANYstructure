@@ -3523,7 +3523,6 @@ class Application():
                 self._weight_logger['new structure']['weight'].append(self.get_color_and_calc_state()['Total weight'])
                 self._weight_logger['new structure']['time'].append(time.time())
 
-
     def option_meny_structure_type_trace(self, event):
         ''' Updating of the values in the structure type option menu. '''
 

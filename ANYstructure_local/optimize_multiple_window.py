@@ -643,9 +643,9 @@ class CreateOptimizeMultipleWindow():
             if self._opt_results[line] != None:
                 self._opt_actual_running_time.config(text='Accumulated running time: \n'
                                                          + str(time.time() - t_start) + ' sec')
-                print('Runned', line, 'OK')
-            else:
-                print('Runned', line, 'NOT OK - no results')
+            #     print('Runned', line, 'OK')
+            # else:
+            #     print('Runned', line, 'NOT OK - no results')
 
         self.draw_select_canvas()
 

@@ -271,7 +271,8 @@ class CreateOptimizeWindow():
         tk.Label(self._frame, text='Flange thk. [mm]', font='Verdana 7 bold').place(x=start_x + 6.97 * dx, y=start_y-0.6*dy)
         tk.Label(self._frame, text='--------- Number of combinations to run --------->\n'
                                    'PULS buckling is time consuming, about 0.2 sec. per comb.\n'
-                                   'RP-C203 is much faster and can run many more combinations, 1M+. ',
+                                   'RP-C203 is much faster and can run many more combinations, 1M+.\n'
+                                   'ML-CL is about as fast as RP-C203.',
                  font='Verdana 9 bold').place(x=start_x+0.1*dx, y=start_y + 2.8 * dy, anchor = tk.NW)
 
         self._runnig_time_label = tk.Label(self._frame, text='',font='Verdana 12 bold', fg = 'red')
@@ -815,15 +816,18 @@ class CreateOptimizeWindow():
         except (ZeroDivisionError, TclError):
             pass# _tkinter.TclError: pass
 
-        if self._new_check_buckling_ml_cl.get():
-            self._new_check_buckling_puls.set(False)
-            self._new_check_local_buckling.set(False)
-            self._new_check_buckling.set(False)
+        if [self._new_check_buckling_ml_cl.get(),self._new_check_buckling_puls.get(),
+            self._new_check_buckling.get()].count(True) > 1:
+            if self._new_check_buckling_puls.get():
+                self._new_check_buckling_puls.set(False)
+            if self._new_check_buckling_ml_cl.get():
+                self._new_check_buckling_ml_cl.set(False)
+            if self._new_check_buckling.get():
+                self._new_check_buckling.set(False)
+                self._new_check_local_buckling.set(False)
+
 
         if self._new_check_buckling_puls.get():
-            self._new_check_local_buckling.set(False)
-            self._new_check_buckling.set(False)
-            self._new_check_buckling_ml_cl.set(False)
             if self._PULS_object is None or self._PULS_object.puls_sheet_location is None:
                 tk.messagebox.showerror('Missing PULS sheet', 'Go back to main window and set a PULS sheet location\n'
                                                     'by running one or more lines.')
