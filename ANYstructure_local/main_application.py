@@ -1,5 +1,5 @@
  # -*- coding: utf-8 -*-
-
+import time, datetime
 import tkinter as tk
 from tkinter import filedialog
 from tkinter import messagebox
@@ -193,6 +193,7 @@ class Application():
         # These are created and destroyed and is not permanent in the application.
         self._lc_comb_created,self._comp_comb_created,self._manual_created, self._info_created = [],[],[], []
         self._state_logger = dict()  # Used to see if recalculation is needed.
+        self._weight_logger = {'new structure': {'COG': list(), 'weight': list(), 'time': list()}}  # Recording of weight development
 
         # The next dictionaries feed various infomation to the application
         self._load_factors_dict = {'dnva':[1.3,1.2,0.7], 'dnvb':[1,1,1.2], 'tanktest':[1,1,0]} # DNV  loads factors
@@ -683,6 +684,13 @@ class Application():
         self._new_shift_viz_coord_hor.set(0)
         self._new_shift_viz_coord_ver.set(0)
 
+        self._new_overpresure = tk.DoubleVar()
+        self._new_overpresure.set(25000)
+        self._new_density = tk.DoubleVar()
+        self._new_density.set(1025)
+        self._new_max_el = tk.DoubleVar()
+        self._new_min_el = tk.DoubleVar()
+
         self._new_stucture_type.set('GENERAL_INTERNAL_WT')
         self.option_meny_structure_type_trace(event='GENERAL_INTERNAL_WT')
         self._new_stf_type.set('T')
@@ -1003,21 +1011,19 @@ class Application():
         self._ent_content_type = tk.OptionMenu(self._main_fr, self._new_content_type, *list(self._tank_options.keys()),
                                                command=self.tank_density_trace)
         ent_width = 10
-        self._new_overpresure = tk.DoubleVar()
+
         self._ent_overpressure = tk.Entry(self._main_fr, textvariable = self._new_overpresure,
                                          width = int(ent_width * 1),
                                           bg = self._entry_color, fg = self._entry_text_color)
-        self._new_overpresure.set(25000)
-        self._new_density = tk.DoubleVar()
+
         self._ent_density = tk.Entry(self._main_fr, textvariable = self._new_density,
                                     width = int(ent_width * 1),
                                      bg = self._entry_color, fg = self._entry_text_color)
-        self._new_density.set(0)
-        self._new_max_el = tk.DoubleVar()
+
         self._ent_max_el = tk.Entry(self._main_fr, textvariable=self._new_max_el,
                                    width=int(ent_width * 1),
                                     bg = self._entry_color, fg = self._entry_text_color)
-        self._new_min_el = tk.DoubleVar()
+
         self._ent_min_el = tk.Entry(self._main_fr, textvariable=self._new_min_el,
                                    width=int(ent_width * 1),
                                     bg = self._entry_color, fg = self._entry_text_color)
@@ -1227,22 +1233,29 @@ class Application():
 
         # Load information button
         tk.Button(self._main_fr, text='Load info', command=self.button_load_info_click,
-                 font = self._text_size['Text 10 bold'], height = 1,
+                 font = self._text_size['Text 9 bold'], height = 1,
                   bg = self._button_bg_color, fg = self._button_fg_color)\
-           .place(relx=lc_x + delta_x * 6,rely=lc_y + delta_y*19.5, relwidth = 0.05)
+           .place(relx=lc_x + delta_x * 6.4,rely=lc_y + delta_y*19.5, relwidth = 0.04)
 
         # Load information button
         tk.Button(self._main_fr, text='Load factors', command=self.on_open_load_factor_window,
-                 font = self._text_size['Text 10 bold'], height = 1,
+                 font = self._text_size['Text 9 bold'], height = 1,
                   bg = self._button_bg_color, fg = self._button_fg_color)\
-           .place(relx=lc_x + delta_x * 4,rely=lc_y + delta_y*19.5, relwidth = 0.05)
+           .place(relx=lc_x + delta_x * 4.4,rely=lc_y + delta_y*19.5, relwidth = 0.05)
 
         # PULS result information
         self._puls_information_button = tk.Button(self._main_fr, text='PULS results for line',
                                                   command=self.on_puls_results_for_line,
-                 font = self._text_size['Text 10 bold'], height = 1,
+                 font = self._text_size['Text 9 bold'], height = 1,
                   bg = self._button_bg_color, fg = self._button_fg_color)
-        self._puls_information_button.place(relx=lc_x + delta_x * 0,rely=lc_y + delta_y*19.5, relwidth = 0.08)
+        self._puls_information_button.place(relx=lc_x + delta_x * 0,rely=lc_y + delta_y*19.5, relwidth = 0.075)
+
+        # Wight developement plot
+        self._weight_button = tk.Button(self._main_fr, text='Weights',
+                                                  command=self.on_plot_cog_dev,
+                 font = self._text_size['Text 9 bold'], height = 1,
+                  bg = self._button_bg_color, fg = self._button_fg_color)
+        self._weight_button.place(relx=lc_x + delta_x * 2.9,rely=lc_y + delta_y*19.5, relwidth = 0.038)
 
         self.update_frame()
 
@@ -1752,6 +1765,8 @@ class Application():
         self.draw_canvas(state=state)
         self.draw_prop()
         self.trace_puls_up_or_sp()
+
+        return state
 
     def get_color_and_calc_state(self, current_line = None, active_line_only = False):
         ''' Return calculations and colors for line and results. '''
@@ -2263,7 +2278,10 @@ class Application():
             tot_cog = [weight_mult_dist_x/tot_weight, weight_mult_dist_y/tot_weight]
         else:
             tot_cog = [0,0]
+            tot_weight = 0
+
         return_dict['COG'] = tot_cog
+        return_dict['Total weight'] = tot_weight
 
         return return_dict
 
@@ -3083,6 +3101,8 @@ class Application():
                     else:
                         if buckling[0]==float('inf'):
                             res_text = 'Plate resistance not ok (equation 6.12). '
+                        elif buckling[1] == float('inf'):
+                            res_text = 'Spacing/thickness aspect ratio error (equation eq 6.11 - ha < 0). '
                         else:
                             if obj_structure.get_side() == 'p':
                                 res_text = '|eq 7.19: '+str(buckling[0])+' |eq 7.50: '+str(buckling[1])+ ' |eq 7.51: '+ \
@@ -3486,6 +3506,7 @@ class Application():
                 self.calculate_all_load_combinations_for_line_all_lines()
             except (KeyError, AttributeError):
                 pass
+
         else:
             pass
 
@@ -3496,11 +3517,12 @@ class Application():
             # when changing multiple parameters, recalculations are suspended.
             for line, obj in self._line_to_struc.items():
                 obj[1].need_recalc = True
-            self.update_frame()
-        #state = self.get_color_and_calc_state()
+            state = self.update_frame()
+            if state != None:
+                self._weight_logger['new structure']['COG'].append(self.get_color_and_calc_state()['COG'])
+                self._weight_logger['new structure']['weight'].append(self.get_color_and_calc_state()['Total weight'])
+                self._weight_logger['new structure']['time'].append(time.time())
 
-        # self.draw_results(state=state)
-        # self.draw_canvas(state=state)
 
     def option_meny_structure_type_trace(self, event):
         ''' Updating of the values in the structure type option menu. '''
@@ -4482,6 +4504,8 @@ class Application():
                                   'shift hor': self._new_shift_viz_coord_hor.get(),
                                   'shift ver': self._new_shift_viz_coord_ver.get()}
 
+        export_all['Weight and COG'] = self._weight_logger
+
         json.dump(export_all, save_file)#, sort_keys=True, indent=4)
         save_file.close()
         self._parent.wm_title('| ANYstructure |     ' + save_file.name)
@@ -4644,6 +4668,9 @@ class Application():
             self._new_buckling_slider.set(imported['buckling type'])
             self._buckling_slider.set(imported['buckling type'])
 
+        if 'Weight and COG' in imported.keys():
+            self._weight_logger = imported['Weight and COG']
+
         self.get_cob()
         imp_file.close()
         self._parent.wm_title('| ANYstructure |     ' + imp_file.name)
@@ -4680,6 +4707,53 @@ class Application():
             #tk.messagebox.showinfo('Load info for '+self._active_line, ''.join(load_text))
         else:
             tk.messagebox.showerror('No data', 'No load data for this line')
+
+    def on_plot_cog_dev(self):
+        '''
+        Plot the COG and COB development.
+        '''
+        if self._weight_logger['new structure']['time'] == []:
+            return
+        import matplotlib.dates as mdate
+
+
+        cog = np.array(self._weight_logger['new structure']['COG'])
+        weight = np.array(self._weight_logger['new structure']['weight'])/\
+                 max(self._weight_logger['new structure']['weight'])
+        time_stamp = np.array(self._weight_logger['new structure']['time'])
+
+
+        time_stamp = [mdate.epoch2num(val) for val in time_stamp]
+        fig, ax = plt.subplots()
+
+        ax3 = plt.subplot(212)
+        plt.plot(time_stamp, weight, 'tab:green')
+
+        ax1 = plt.subplot(221, sharex=ax3)
+        plt.plot(time_stamp, cog[:,0])
+
+        ax2 = plt.subplot(222, sharex=ax3)
+        plt.plot(time_stamp, cog[:,1], 'tab:orange')
+
+        # Choose your xtick format string
+        date_fmt = '%d-%m-%y %H:%M:%S'
+
+        # Use a DateFormatter to set the data to the correct format.
+        date_formatter = mdate.DateFormatter(date_fmt)
+        ax1.xaxis.set_major_formatter(date_formatter)
+        ax2.xaxis.set_major_formatter(date_formatter)
+        ax3.xaxis.set_major_formatter(date_formatter)
+        ax1.set_title('COG X')
+        ax2.set_title('COG Y')
+        ax3.set_title('Total weight / max(total weight)')
+
+        fig.suptitle('Developement of weight and COG')
+
+        # Sets the tick labels diagonal so they fit easier.
+        fig.autofmt_xdate()
+
+        plt.tight_layout()
+        plt.show()
 
     def on_open_structure_window(self):
         '''

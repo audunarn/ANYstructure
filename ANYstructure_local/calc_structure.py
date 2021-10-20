@@ -914,7 +914,10 @@ class CalcScantlings(Structure):
 
         ha = 0.05*(s/t)-0.75 #eq 6.11 - checked, ok
 
-        assert ha>= 0,'ha must be larger than 0'
+        #assert ha>= 0,'ha must be larger than 0'
+        if ha < 0:
+            return [0, float('inf'), 0, 0, 0, 0]
+
         kp = 1 if pSd<=2*math.pow(t/s,2)*fy else max(1-ha*((pSd/fy)-2*math.pow(t/s,2)),0) #eq 6.10, checked
 
         sigyR=( (1.3*t/l)*math.sqrt(E/fy)+kappa*(1-(1.3*t/l)*math.sqrt(E/fy)))*fy*kp # eq 6.6 checked
