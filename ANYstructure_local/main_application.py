@@ -106,6 +106,7 @@ class Application():
         menu.add_cascade(label = 'Reporting', menu = sub_report)
         sub_report.add_command(label = 'Generate PDF report', command = self.report_generate)
         sub_report.add_command(label='Generate PDF result table', command=self.table_generate)
+        sub_report.add_command(label='Weight development, plates and beams', command=self.on_plot_cog_dev)
 
         sub_sesam = tk.Menu(menu)
         menu.add_cascade(label = 'SESAM interface', menu = sub_sesam)
@@ -4139,10 +4140,10 @@ class Application():
             for line, data in self._line_to_struc.items():
                 this_beam = data[0].get_beam_string()
                 this_plate = data[0].get_pl_thk()*1000
-                if [this_beam] not in beams:
-                    beams.append([this_beam])
-                if [this_plate] not in plates:
-                    plates.append([this_plate])
+                if this_beam not in beams:
+                    beams.append(this_beam)
+                if this_plate not in plates:
+                    plates.append(this_plate)
 
         return {'plates':plates, 'beams': beams}
 
@@ -4732,6 +4733,13 @@ class Application():
         Plot the COG and COB development.
         '''
         if self._weight_logger['new structure']['time'] == []:
+            tk.messagebox.showinfo('New functionality ver. 3.3', 'If you are using and existing model,'
+                                                                 ' weights have not been'
+                                                        ' recorded in previous versions.\n'
+                                                        'Press "Add structure properties to line....." button to add a '
+                                                        'blank datapoint.\n'
+                                                        'Other data will then be avaliable.\n\n'
+                                                        'If you are making a new model add some structure properties.')
             return
         import matplotlib.dates as mdate
 
