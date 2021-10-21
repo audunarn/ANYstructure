@@ -234,28 +234,26 @@ class Application():
                                     'CSR predictor UP', 'CSR scaler UP',
                                     'CSR predictor SP', 'CSR scaler SP'
                                     ],
-                                   ["CL ['output cl buc'] predictor In-plane support cl 1 SP",
-                                    "CL ['output cl buc'] scaler In-plane support cl 1 SP",
-                                    "CL ['output cl ult'] predictor In-plane support cl 1 SP",
-                                    "CL ['output cl ult'] scaler In-plane support cl 1 SP",
-                                    "CL ['output cl buc'] predictor In-plane support cl [2, 3] SP",
-                                    "CL ['output cl buc'] scaler In-plane support cl [2, 3] SP",
-                                    "CL ['output cl ult'] predictor In-plane support cl [2, 3] SP",
-                                    "CL ['output cl ult'] scaler In-plane support cl [2, 3] SP",
-                                    "CL ['output cl buc'] predictor In-plane support cl 1 UP",
-                                    "CL ['output cl buc'] scaler In-plane support cl 1 UP",
-                                    "CL ['output cl ult'] predictor In-plane support cl 1 UP",
-                                    "CL ['output cl ult'] scaler In-plane support cl 1 UP",
-                                    "CL ['output cl buc'] predictor In-plane support cl [2, 3] UP",
-                                    "CL ['output cl buc'] scaler In-plane support cl [2, 3] UP",
-                                    "CL ['output cl ult'] predictor In-plane support cl [2, 3] UP",
-                                    "CL ['output cl ult'] scaler In-plane support cl [2, 3] UP",
-                                    "CL ['CSR-Tank req cl'] predictor",
-                                    "CL ['CSR-Tank req cl'] UP scaler",
-                                    "CL ['CSR plate cl', 'CSR web cl', 'CSR web flange cl', 'CSR flange cl'] predictor",
-                                    "CL ['CSR plate cl', 'CSR web cl', 'CSR web flange cl', 'CSR flange cl'] SP scaler"
-
-                                    ]):
+                                   ['CL_[output_cl_buc]_predictor_In-plane_support_cl_1_SP',
+                                    'CL_[output_cl_buc]_scaler_In-plane_support_cl_1_SP',
+                                    'CL_[output_cl_ult]_predictor_In-plane_support_cl_1_SP',
+                                    'CL_[output_cl_ult]_scaler_In-plane_support_cl_1_SP',
+                                    'CL_[output_cl_buc]_predictor_In-plane_support_cl_[2,_3]_SP',
+                                    'CL_[output_cl_buc]_scaler_In-plane_support_cl_[2,_3]_SP',
+                                    'CL_[output_cl_ult]_predictor_In-plane_support_cl_[2,_3]_SP',
+                                    'CL_[output_cl_ult]_scaler_In-plane_support_cl_[2,_3]_SP',
+                                    'CL_[output_cl_buc]_predictor_In-plane_support_cl_1_UP',
+                                    'CL_[output_cl_buc]_scaler_In-plane_support_cl_1_UP',
+                                    'CL_[output_cl_ult]_predictor_In-plane_support_cl_1_UP',
+                                    'CL_[output_cl_ult]_scaler_In-plane_support_cl_1_UP',
+                                    'CL_[output_cl_buc]_predictor_In-plane_support_cl_[2,_3]_UP',
+                                    'CL_[output_cl_buc]_scaler_In-plane_support_cl_[2,_3]_UP',
+                                    'CL_[output_cl_ult]_predictor_In-plane_support_cl_[2,_3]_UP',
+                                    'CL_[output_cl_ult]_scaler_In-plane_support_cl_[2,_3]_UP',
+                                    'CL_[CSR-Tank_req_cl]_predictor',
+                                    'CL_[CSR-Tank_req_cl]_UP_scaler',
+                                    'CL_[CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl]_predictor',
+                                    'CL_[CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl]_SP_scaler']):
             self._ML_buckling[name] = None
             if os.path.isfile(file_base + '.pickle'):
                 file = open(file_base + '.pickle', 'rb')
