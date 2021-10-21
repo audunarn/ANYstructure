@@ -1,6 +1,6 @@
 # ANYstructure #
 ### What's new in 3.3 ###
-* ####Extremely efficient Machine Learning version of PULS called ML-CL. Implemented for all optimizer options.
+* Extremely efficient Machine Learning version of PULS called ML-CL. Implemented for all optimizer options.
 * Calculation of Center of Gravity and Center of Buoyancy.
 * Reporting of weights and COG.
 * Lots of bug fixes.
