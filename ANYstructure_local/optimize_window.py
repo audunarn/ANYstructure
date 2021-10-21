@@ -40,23 +40,26 @@ class CreateOptimizeWindow():
                                         'cl UP buc GLGT predictor', 'cl UP buc GLGT scaler',
                                         'cl UP ult GLGT predictor', 'cl UP ult GLGT scaler'
                                         ],
-                                       ['CL output cl buc predictor In-plane support cl 1',
-                                        'CL output cl buc scaler In-plane support cl 1',
-                                        'CL output cl ult predictor In-plane support cl 1',
-                                        'CL output cl ult scaler In-plane support cl 1',
-                                        'CL output cl buc predictor In-plane support cl [2, 3]',
-                                        'CL output cl buc scaler In-plane support cl [2, 3]',
-                                        'CL output cl ult predictor In-plane support cl [2, 3]',
-                                        'CL output cl ult scaler In-plane support cl [2, 3]',
-                                        'CL output cl buc predictor In-plane support cl 1 UP',
-                                        'CL output cl buc scaler In-plane support cl 1 UP',
-                                        'CL output cl ult predictor In-plane support cl 1 UP',
-                                        'CL output cl ult scaler In-plane support cl 1 UP',
-                                        'CL output cl buc predictor In-plane support cl [2, 3] UP',
-                                        'CL output cl buc scaler In-plane support cl [2, 3] UP',
-                                        'CL output cl ult predictor In-plane support cl [2, 3] UP',
-                                        'CL output cl ult scaler In-plane support cl [2, 3] UP'
-                                        ]):
+                                       ["CL_output_cl_buc_predictor_In-plane_support_cl_1_SP",
+                                        "CL_output_cl_buc_scaler_In-plane_support_cl_1_SP",
+                                        "CL_output_cl_ult_predictor_In-plane_support_cl_1_SP",
+                                        "CL_output_cl_ult_scaler_In-plane_support_cl_1_SP",
+                                        "CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_SP",
+                                        "CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_SP",
+                                        "CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_SP",
+                                        "CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_SP",
+                                        "CL_output_cl_buc_predictor_In-plane_support_cl_1_UP",
+                                        "CL_output_cl_buc_scaler_In-plane_support_cl_1_UP",
+                                        "CL_output_cl_ult_predictor_In-plane_support_cl_1_UP",
+                                        "CL_output_cl_ult_scaler_In-plane_support_cl_1_UP",
+                                        "CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_UP",
+                                        "CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_UP",
+                                        "CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_UP",
+                                        "CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_UP",
+                                        "CL_CSR-Tank_req_cl_predictor",
+                                        "CL_CSR-Tank_req_cl_UP_scaler",
+                                        "CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_predictor",
+                                        "CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_SP_scaler"]):
                 self._ML_buckling[name] = None
                 if os.path.isfile(file_base + '.pickle'):
                     file = open(file_base + '.pickle', 'rb')
