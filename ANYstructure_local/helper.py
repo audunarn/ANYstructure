@@ -3,6 +3,9 @@ Helper funations to be used.
 '''
 
 import math, copy, csv
+
+import numpy as np
+
 print_it = True
 
 def print_helper(properties, prop_text, units):
@@ -390,13 +393,67 @@ def add_new_section(section_list, new_section):
 
     return section_list
 
+def plot_weights(time_stamp, cog, structure, weight):
+
+    cog = np.array(cog)
+
+    import matplotlib.dates as mdate
+    from matplotlib import pyplot as plt
+    from matplotlib.gridspec import GridSpec
+
+    fig = plt.figure(figsize=(14, 8))
+    gs = GridSpec(2, 4, figure=fig)
+
+    time_stamp = [mdate.epoch2num(val) for val in time_stamp]
+
+
+    ax3 = plt.subplot(gs[1, 0:2])
+    plt.plot(time_stamp, weight, 'tab:green')
+
+    ax1 = plt.subplot(gs[0, 0], sharex=ax3)
+    plt.plot(time_stamp, cog[:, 0])
+
+    ax2 = plt.subplot(gs[0, 1], sharex=ax3)
+    plt.plot(time_stamp, cog[:, 1], 'tab:orange')
+
+    ax4 = plt.subplot(gs[0:2, 2])
+    ax4.set_axis_off()
+    table1 = plt.table(cellText=structure['plates'], colLabels = ['Plates in model'],loc='center')
+    table1.auto_set_column_width(0)
+    table1.scale(1,1.5)
+    ax5 = plt.subplot(gs[0:2, 3])
+    ax5.set_axis_off()
+    table2 = plt.table(cellText=structure['beams'], colLabels = ['Beams in model'],loc='center')
+    table2.scale(1,1.5)
+    table2.auto_set_column_width(0)
+    # Choose your xtick format string
+    date_fmt = '%d-%m-%y %H:%M:%S'
+
+    # Use a DateFormatter to set the data to the correct format.
+    date_formatter = mdate.DateFormatter(date_fmt)
+    ax1.xaxis.set_major_formatter(date_formatter)
+    ax2.xaxis.set_major_formatter(date_formatter)
+    ax3.xaxis.set_major_formatter(date_formatter)
+    ax1.set_title('COG X')
+    ax2.set_title('COG Y')
+    # ax3.set_title('Total weight / max(total weight)')
+
+    fig.suptitle('Developement of weight and COG')
+
+    # Sets the tick labels diagonal so they fit easier.
+    fig.autofmt_xdate()
+
+    plt.tight_layout()
+    plt.show()
+
 
 if __name__ == '__main__':
     import ANYstructure_local.example_data as ex
     from pathlib import Path
     #file = Path('C:\\Program Files\\DNVGL\\GeniE V8.0-21\\Libraries\\tbar.xml')
-    all_returned = helper_read_section_file('C:\\Program Files\\DNVGL\\GeniE V8.0-21\\Libraries\\tbar.xml', to_csv='tbar.csv')
-
-    import random
-
-    print(all_returned)
+    # all_returned = helper_read_section_file('C:\\Program Files\\DNVGL\\GeniE V8.0-21\\Libraries\\tbar.xml', to_csv='tbar.csv')
+    #
+    # import random
+    #
+    # print(all_returned)
+    plot_weights()
