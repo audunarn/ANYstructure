@@ -1,5 +1,6 @@
-matplotlib==3.2
+matplotlib
 numpy
 reportlab
-scipy==1.5.4
+scipy
 xlwings
+sklearn

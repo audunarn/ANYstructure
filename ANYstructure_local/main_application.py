@@ -3527,6 +3527,7 @@ class Application():
                 self._weight_logger['new structure']['COG'].append(self.get_color_and_calc_state()['COG'])
                 self._weight_logger['new structure']['weight'].append(self.get_color_and_calc_state()['Total weight'])
                 self._weight_logger['new structure']['time'].append(time.time())
+        self.get_unique_plates_and_beams()
 
     def option_meny_structure_type_trace(self, event):
         ''' Updating of the values in the structure type option menu. '''
@@ -4131,6 +4132,20 @@ class Application():
     def get_lines(self):
         return self._line_dict
 
+    def get_unique_plates_and_beams(self):
+
+        beams, plates = list(), list()
+        if self._line_to_struc != {}:
+            for line, data in self._line_to_struc.items():
+                this_beam = data[0].get_beam_string()
+                this_plate = data[0].get_pl_thk()*1000
+                if [this_beam] not in beams:
+                    beams.append([this_beam])
+                if [this_plate] not in plates:
+                    plates.append([this_plate])
+
+        return {'plates':plates, 'beams': beams}
+
     def make_point_point_line_string(self, point1, point2):
         '''
         For a line, this method makes a string 'p1p2' and 'p2p1'. Ensuring that lines are not overwritten.
@@ -4720,44 +4735,14 @@ class Application():
             return
         import matplotlib.dates as mdate
 
-
         cog = np.array(self._weight_logger['new structure']['COG'])
         weight = np.array(self._weight_logger['new structure']['weight'])/\
                  max(self._weight_logger['new structure']['weight'])
         time_stamp = np.array(self._weight_logger['new structure']['time'])
-
-
         time_stamp = [mdate.epoch2num(val) for val in time_stamp]
-        fig, ax = plt.subplots()
+        structure = self.get_unique_plates_and_beams()
 
-        ax3 = plt.subplot(212)
-        plt.plot(time_stamp, weight, 'tab:green')
-
-        ax1 = plt.subplot(221, sharex=ax3)
-        plt.plot(time_stamp, cog[:,0])
-
-        ax2 = plt.subplot(222, sharex=ax3)
-        plt.plot(time_stamp, cog[:,1], 'tab:orange')
-
-        # Choose your xtick format string
-        date_fmt = '%d-%m-%y %H:%M:%S'
-
-        # Use a DateFormatter to set the data to the correct format.
-        date_formatter = mdate.DateFormatter(date_fmt)
-        ax1.xaxis.set_major_formatter(date_formatter)
-        ax2.xaxis.set_major_formatter(date_formatter)
-        ax3.xaxis.set_major_formatter(date_formatter)
-        ax1.set_title('COG X')
-        ax2.set_title('COG Y')
-        ax3.set_title('Total weight / max(total weight)')
-
-        fig.suptitle('Developement of weight and COG')
-
-        # Sets the tick labels diagonal so they fit easier.
-        fig.autofmt_xdate()
-
-        plt.tight_layout()
-        plt.show()
+        hlp.plot_weights(time_stamp=time_stamp, cog=cog,structure=structure,weight=weight)
 
     def on_open_structure_window(self):
         '''
