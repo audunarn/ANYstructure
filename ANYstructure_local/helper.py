@@ -393,7 +393,7 @@ def add_new_section(section_list, new_section):
 
     return section_list
 
-def plot_weights(time_stamp, cog, structure, weight):
+def plot_weights(time_stamp = None, cog = None, structure = None, weight = None):
     if __name__ == '__main__':
         cog = [[22.15329254, 12.24742235],
                [22.1937807, 12.1975691],
@@ -409,13 +409,14 @@ def plot_weights(time_stamp, cog, structure, weight):
                [22.2458229, 11.99243978],
                [22.20984338, 11.96499817]]
         cog = np.array(cog)
-        structure = {'plates': [[18.0], [25.0], [12.0], [20.0], [14.0], [30.0], [15.0]],
-                     'beams': [['T_400_0x12_0__200_0x20_0'], ['T_400_0x12_0__250_0x14_0'], ['T_400_0x12_0__250_0x12_0'],
-                               ['T_400_0x12_0__200_0x18_0'], ['T_400_0x12_0__150_0x20_0'], ['T_500_0x12_0__150_0x20_0'],
-                               ['T_340_0x12_0__200_0x20_0'], ['T_340_0x12_0__150_0x16_0'], ['T_250_0x12_0__150_0x14_0'],
-                               ['T_450_0x12_0__150_0x20_0'], ['T_375_0x12_0__150_0x18_0'], ['T_500_0x12_0__150_0x25_0'],
-                               ['T_325_0x12_0__150_0x16_0'], ['FB_250_0x18_0'], ['FB_400_0x18_0'],
-                               ['T_350_0x12_0__150_0x20_0'], ['T_320_0x12_0__150_0x20_0'], ['T_300_0x12_0__150_0x20_0']]}
+        structure = {'plates': [18.0, 25.0, 12.0, 20.0, 14.0, 30.0, 15.0],
+                     'beams': ['T_400_0x12_0__200_0x20_0', 'T_400_0x12_0__250_0x14_0', 'T_400_0x12_0__250_0x12_0',
+                               'T_400_0x12_0__200_0x18_0', 'T_400_0x12_0__150_0x20_0', 'T_500_0x12_0__150_0x20_0',
+                               'T_340_0x12_0__200_0x20_0', 'T_340_0x12_0__150_0x16_0', 'T_250_0x12_0__150_0x14_0',
+                               'T_450_0x12_0__150_0x20_0', 'T_375_0x12_0__150_0x18_0', 'T_500_0x12_0__150_0x25_0',
+                               'T_325_0x12_0__150_0x16_0', 'FB_250_0x18_0', 'FB_400_0x18_0',
+                               'T_350_0x12_0__150_0x20_0', 'T_320_0x12_0__150_0x20_0', 'T_300_0x12_0__150_0x20_0']}
+
         time_stamp = [18920.477643045164, 18920.477684256162, 18920.477721255855, 18920.477761896746, 18920.477798285963,
                       18920.477841150896, 18920.4778763735, 18920.477939357952, 18920.47800752034, 18920.47808087777,
                       18920.478203353003, 18920.478237156338, 18920.47826686926]
@@ -427,11 +428,19 @@ def plot_weights(time_stamp, cog, structure, weight):
     from matplotlib import pyplot as plt
     from matplotlib.gridspec import GridSpec
 
+    pl_and_bm = [['', ''] for dummy in range(max(len(list(structure.values())[0]), len(list(structure.values())[1])))]
+
+    for key, value in structure.items():
+        for idx, val in enumerate(value):
+            if key == 'plates':
+                pl_and_bm[idx][0] = str(val) + ' mm'
+            else:
+                pl_and_bm[idx][1] = val
+
     fig = plt.figure(figsize=(14, 8))
-    gs = GridSpec(2, 4, figure=fig)
+    gs = GridSpec(2, 3, figure=fig)
 
     time_stamp = [mdate.epoch2num(val) for val in time_stamp]
-
 
     ax3 = plt.subplot(gs[1, 0:2])
     plt.plot(time_stamp, weight, 'tab:green')
@@ -444,14 +453,14 @@ def plot_weights(time_stamp, cog, structure, weight):
 
     ax4 = plt.subplot(gs[0:2, 2])
     ax4.set_axis_off()
-    table1 = plt.table(cellText=structure['plates'], colLabels = ['Plates in model'],loc='center')
-    table1.auto_set_column_width(0)
+    table1 = plt.table(cellText=pl_and_bm, colLabels = ['Plates in model', 'Beams in model'],loc='center')
+    table1.auto_set_column_width((0,1))
     table1.scale(1,1.5)
-    ax5 = plt.subplot(gs[0:2, 3])
-    ax5.set_axis_off()
-    table2 = plt.table(cellText=structure['beams'], colLabels = ['Beams in model'],loc='center')
-    table2.scale(1,1.5)
-    table2.auto_set_column_width(0)
+    # ax5 = plt.subplot(gs[0:2, 3])
+    # ax5.set_axis_off()
+    # table2 = plt.table(cellText=structure['beams'], colLabels = ['Beams in model'],loc='center')
+    # table2.scale(1,1.5)
+    # table2.auto_set_column_width(0)
     # Choose your xtick format string
     date_fmt = '%d-%m-%y %H:%M:%S'
 
@@ -462,7 +471,7 @@ def plot_weights(time_stamp, cog, structure, weight):
     ax3.xaxis.set_major_formatter(date_formatter)
     ax1.set_title('COG X')
     ax2.set_title('COG Y')
-    # ax3.set_title('Total weight / max(total weight)')
+    ax3.set_title('Total weight / max(total weight)')
 
     fig.suptitle('Developement of weight and COG')
 
