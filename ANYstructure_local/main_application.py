@@ -255,13 +255,20 @@ class Application():
                                     "CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_predictor",
                                     "CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_SP_scaler"]):
             self._ML_buckling[name] = None
+
             if os.path.isfile(file_base + '.pickle'):
                 file = open(file_base + '.pickle', 'rb')
                 from sklearn.neural_network import MLPClassifier
                 from sklearn.preprocessing import StandardScaler
                 self._ML_buckling[name] = pickle.load(file)
                 file.close()
-        print(self._ML_buckling)
+            else:
+                file = open(self._root_dir + file_base + '.pickle', 'rb')
+                from sklearn.neural_network import MLPClassifier
+                from sklearn.preprocessing import StandardScaler
+                self._ML_buckling[name] = pickle.load(file)
+                file.close()
+
         self._ML_classes ={0: 'N/A',
                            1: 'A negative utilisation factor is found.',
                            2: 'At least one of the in-plane loads must be non-zero.',
