@@ -24,11 +24,25 @@ include ANYstructure_local\ship_section_example.txt
 include ANYstructure_local\ANYstructure_documentation.pdf
 include ANYstructure_local\sections.csv
 include ANYstructure_local\bulb_anglebar_tbar_flatbar.csv
-include ANYstructure_local\CL output cl ult scaler In-plane support cl 1.pickle
-include ANYstructure_local\CL output cl ult scaler In-plane support cl [2, 3].pickle
-include ANYstructure_local\CL output cl ult predictor In-plane support cl 1.pickle
-include ANYstructure_local\CL output cl ult predictor In-plane support cl [2, 3].pickle
-include ANYstructure_local\CL output cl buc scaler In-plane support cl 1.pickle
-include ANYstructure_local\CL output cl buc scaler In-plane support cl [2, 3].pickle
-include ANYstructure_local\CL output cl buc predictor In-plane support cl 1.pickle
-include ANYstructure_local\CL output cl buc predictor In-plane support cl [2, 3].pickle
+include ANYstructure_local\CL_output_cl_buc_predictor_In-plane_support_cl_1_SP.pickle
+include ANYstructure_local\CL_output_cl_buc_scaler_In-plane_support_cl_1_SP.pickle
+include ANYstructure_local\CL_output_cl_ult_predictor_In-plane_support_cl_1_SP.pickle
+include ANYstructure_local\CL_output_cl_ult_scaler_In-plane_support_cl_1_SP.pickle
+include ANYstructure_local\CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_SP.pickle
+include ANYstructure_local\CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_SP.pickle
+include ANYstructure_local\CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_SP.pickle
+include ANYstructure_local\CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_SP.pickle
+include ANYstructure_local\CL_output_cl_buc_predictor_In-plane_support_cl_1_UP.pickle
+include ANYstructure_local\CL_output_cl_buc_scaler_In-plane_support_cl_1_UP.pickle
+include ANYstructure_local\CL_output_cl_ult_predictor_In-plane_support_cl_1_UP.pickle
+include ANYstructure_local\CL_output_cl_ult_scaler_In-plane_support_cl_1_UP.pickle
+include ANYstructure_local\CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_UP.pickle
+include ANYstructure_local\CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_UP.pickle
+include ANYstructure_local\CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_UP.pickle
+include ANYstructure_local\CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_UP.pickle
+include ANYstructure_local\CL_CSR-Tank_req_cl_predictor.pickle
+include ANYstructure_local\CL_CSR-Tank_req_cl_UP_scaler.pickle
+include ANYstructure_local\CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_predictor.pickle
+include ANYstructure_local\CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_SP_scaler.pickle
+
+

@@ -234,28 +234,26 @@ class Application():
                                     'CSR predictor UP', 'CSR scaler UP',
                                     'CSR predictor SP', 'CSR scaler SP'
                                     ],
-                                   ["CL ['output cl buc'] predictor In-plane support cl 1 SP",
-                                    "CL ['output cl buc'] scaler In-plane support cl 1 SP",
-                                    "CL ['output cl ult'] predictor In-plane support cl 1 SP",
-                                    "CL ['output cl ult'] scaler In-plane support cl 1 SP",
-                                    "CL ['output cl buc'] predictor In-plane support cl [2, 3] SP",
-                                    "CL ['output cl buc'] scaler In-plane support cl [2, 3] SP",
-                                    "CL ['output cl ult'] predictor In-plane support cl [2, 3] SP",
-                                    "CL ['output cl ult'] scaler In-plane support cl [2, 3] SP",
-                                    "CL ['output cl buc'] predictor In-plane support cl 1 UP",
-                                    "CL ['output cl buc'] scaler In-plane support cl 1 UP",
-                                    "CL ['output cl ult'] predictor In-plane support cl 1 UP",
-                                    "CL ['output cl ult'] scaler In-plane support cl 1 UP",
-                                    "CL ['output cl buc'] predictor In-plane support cl [2, 3] UP",
-                                    "CL ['output cl buc'] scaler In-plane support cl [2, 3] UP",
-                                    "CL ['output cl ult'] predictor In-plane support cl [2, 3] UP",
-                                    "CL ['output cl ult'] scaler In-plane support cl [2, 3] UP",
-                                    "CL ['CSR-Tank req cl'] predictor",
-                                    "CL ['CSR-Tank req cl'] UP scaler",
-                                    "CL ['CSR plate cl', 'CSR web cl', 'CSR web flange cl', 'CSR flange cl'] predictor",
-                                    "CL ['CSR plate cl', 'CSR web cl', 'CSR web flange cl', 'CSR flange cl'] SP scaler"
-
-                                    ]):
+                                   ["CL_output_cl_buc_predictor_In-plane_support_cl_1_SP",
+                                    "CL_output_cl_buc_scaler_In-plane_support_cl_1_SP",
+                                    "CL_output_cl_ult_predictor_In-plane_support_cl_1_SP",
+                                    "CL_output_cl_ult_scaler_In-plane_support_cl_1_SP",
+                                    "CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_SP",
+                                    "CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_SP",
+                                    "CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_SP",
+                                    "CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_SP",
+                                    "CL_output_cl_buc_predictor_In-plane_support_cl_1_UP",
+                                    "CL_output_cl_buc_scaler_In-plane_support_cl_1_UP",
+                                    "CL_output_cl_ult_predictor_In-plane_support_cl_1_UP",
+                                    "CL_output_cl_ult_scaler_In-plane_support_cl_1_UP",
+                                    "CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_UP",
+                                    "CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_UP",
+                                    "CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_UP",
+                                    "CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_UP",
+                                    "CL_CSR-Tank_req_cl_predictor",
+                                    "CL_CSR-Tank_req_cl_UP_scaler",
+                                    "CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_predictor",
+                                    "CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_SP_scaler"]):
             self._ML_buckling[name] = None
             if os.path.isfile(file_base + '.pickle'):
                 file = open(file_base + '.pickle', 'rb')
@@ -263,7 +261,7 @@ class Application():
                 from sklearn.preprocessing import StandardScaler
                 self._ML_buckling[name] = pickle.load(file)
                 file.close()
-
+        print(self._ML_buckling)
         self._ML_classes ={0: 'N/A',
                            1: 'A negative utilisation factor is found.',
                            2: 'At least one of the in-plane loads must be non-zero.',
