@@ -24,11 +24,23 @@ include ANYstructure_local\ship_section_example.txt
 include ANYstructure_local\ANYstructure_documentation.pdf
 include ANYstructure_local\sections.csv
 include ANYstructure_local\bulb_anglebar_tbar_flatbar.csv
-include ANYstructure_local\CL output cl ult scaler In-plane support cl 1.pickle
-include ANYstructure_local\CL output cl ult scaler In-plane support cl [2, 3].pickle
-include ANYstructure_local\CL output cl ult predictor In-plane support cl 1.pickle
-include ANYstructure_local\CL output cl ult predictor In-plane support cl [2, 3].pickle
-include ANYstructure_local\CL output cl buc scaler In-plane support cl 1.pickle
-include ANYstructure_local\CL output cl buc scaler In-plane support cl [2, 3].pickle
-include ANYstructure_local\CL output cl buc predictor In-plane support cl 1.pickle
-include ANYstructure_local\CL output cl buc predictor In-plane support cl [2, 3].pickle
+include CL ['output cl buc'] predictor In-plane support cl 1 SP.pickle
+include CL ['output cl buc'] scaler In-plane support cl 1 SP.pickle
+include CL ['output cl ult'] predictor In-plane support cl 1 SP.pickle
+include CL ['output cl ult'] scaler In-plane support cl 1 SP.pickle
+include CL ['output cl buc'] predictor In-plane support cl [2, 3] SP.pickle
+include CL ['output cl buc'] scaler In-plane support cl [2, 3] SP.pickle
+include CL ['output cl ult'] predictor In-plane support cl [2, 3] SP.pickle
+include CL ['output cl ult'] scaler In-plane support cl [2, 3] SP.pickle
+include CL ['output cl buc'] predictor In-plane support cl 1 UP.pickle
+include CL ['output cl buc'] scaler In-plane support cl 1 UP.pickle
+include CL ['output cl ult'] predictor In-plane support cl 1 UP.pickle
+include CL ['output cl ult'] scaler In-plane support cl 1 UP.pickle
+include CL ['output cl buc'] predictor In-plane support cl [2, 3] UP.pickle
+include CL ['output cl buc'] scaler In-plane support cl [2, 3] UP.pickle
+include CL ['output cl ult'] predictor In-plane support cl [2, 3] UP.pickle
+include CL ['output cl ult'] scaler In-plane support cl [2, 3] UP.pickle
+include CL ['CSR-Tank req cl'] predictor.pickle
+include CL ['CSR-Tank req cl'] UP scaler.pickle
+include CL ['CSR plate cl', 'CSR web cl', 'CSR web flange cl', 'CSR flange cl'] predictor.pickle
+include CL ['CSR plate cl', 'CSR web cl', 'CSR web flange cl', 'CSR flange cl'] SP scaler.pickle
