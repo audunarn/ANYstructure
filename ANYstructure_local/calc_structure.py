@@ -1369,10 +1369,10 @@ class CalcScantlings(Structure):
         # --------------------3.4 Elastic buckling strength of unstiffened circular cylinders-------------------------
 
         #3.4.2 Shell buckling
-        fE = C * ( (math.pow(math.pi, 2)*E) / (12*(1-math.pow(v, 2)) )) * math.pow(t/l, 2) #(3.4.1)
-        C = psi * math.sqrt(1 + math.pow(rho * ksi / psi, 2))  # (3.4.2)
+        fE = C * ( (math.pow(math.pi, 2)*E) / (12*(1-math.pow(v, 2)) )) * math.pow(t/l, 2) #(3.4.1) (3.6.3)
+        C = psi * math.sqrt(1 + math.pow(rho * ksi / psi, 2))  # (3.4.2) (3.6.4)
 
-        Zl = (math.pow(l, 2)/(r*t)) * math.sqrt(1 - math.pow(v, 2)) #(3.4.3)
+        Zl = (math.pow(l, 2)/(r*t)) * math.sqrt(1 - math.pow(v, 2)) #(3.4.3) (3.6.5)
 
         long_cylinder = False
 
@@ -1437,14 +1437,16 @@ class CalcScantlings(Structure):
         #The torsional buckling strength, fT, may be taken equal to the yield strength, fy, if the following
         # requirements are satisfied: TODO type of stiffener must be specified
 
-        chk1 = h <= 0.4*tw*math.sqrt(E/fy) #(3.5.9)
-        chk2 = h <= 1.35 * tw * math.sqrt(E / fy) #(3.5.10)
-        chk3 = b >= (7*h) / math.sqrt(10+(E/fy)*(h/r)) #(3.5.11)
+        chk1 = h <= 0.4*tw*math.sqrt(E/fy) #(3.5.9) (3.5.17)
+        chk2 = h <= 1.35 * tw * math.sqrt(E / fy) #(3.5.10) (3.5.18)
+        chk3 = b >= (7*h) / math.sqrt(10+(E/fy)*(h/r)) #(3.5.11) (3.5.19)
 
         if all(chk1, chk2, chk3):
             fT = fy
+            fr = fy
         else:
             fT = None # TODO chapter 3.9
+            fr = None  # TODO chapter 3.9, fT
 
         w = delta0*math.cos(2*theta) #(3.5.12)
 
@@ -1474,21 +1476,105 @@ class CalcScantlings(Structure):
         #The characteristic material strength, fr, may be taken equal to the yield strength, fy, if the following
         # requirements are satisfied: TODO type of stiffener must be specified
 
-        chk1 = h <= 0.4*tw*math.sqrt(E/fy) #(3.5.17)
-        chk2 = h <= 1.35 * tw * math.sqrt(E / fy) #(3.5.18)
-        chk3 = b >= (7*h) / math.sqrt(10+(E/fy)*(h/r)) #(3.5.19)
-
-        if all(chk1, chk2, chk3):
-            fr = fy
-        else:
-            fr = None # TODO chapter 3.9, fT
-
         fE = C1 * ( (math.pow(math.pi,2)*E)/(12*(1-math.pow(v,2))) ) * math.pow(t/L, 2) # (3.5.20)
 
         # --------------------3.6 Longitudinally stiffened shells-------------------------
         # 3.6.3 Panel stiffener buckling
         checks['3.6 Longitudinally stiffened shells'] = dict()
         checks['3.6 Longitudinally stiffened shells']['3.6.3 Panel stiffener buckling'] = dict()
+
+        alphaT = None
+        chk4 = alphaT <= 0.6 #(3.6.2)
+        checks['3.6 Longitudinally stiffened shells']['3.6.3 Panel stiffener buckling']['3.6.3.1 General'] = all(chk1, chk4)
+
+        ##3.6.3.2 Elastic buckling strength
+        alphaC = (12*(1-math.pow(v,2))) #(3.6.6)
+        se = se = (fks/sigjsd) * (abs(sigxSd)/fy) #(3.6.7)
+
+        # Table 3-3
+        psi = {'Axial stress': (1+alphaC) / (1+A/(se*t)),
+               'Torsion and shear stress': 5.54+1.82*math.pow(l/s, 4/3) * math.pow(alphaC, 1/3),
+               'Lateral Pressure': 2*(1+math.sqrt(1+alphaC))}                      # ψ
+        ksi = {'Axial stress': 0.702*Zl,
+               'Torsion and shear stress': 0.856*math.pow(Zl, 3/4),
+               'Lateral Pressure': 1.04*math.sqrt(Zl)}                             # ξ
+        rho = {'Axial stress': 0.5,
+               'Torsion and shear stress': 0.6,
+               'Lateral Pressure': 0.6}
+
+        # where A = area of one stiffener, exclusive shell plate
+
+        ## 3.6.3.3 Effective shell width
+
+        # --------------------3.7 Orthogonally stiffened shells--------------------------
+
+        # --------------------3.8 Column buckling--------------------------
+        checks['3.8 Column buckling'] = dict()
+
+
+        k = None    #effective length factor
+        ic = None   #iC = = radius of gyration of cylinder section
+        Ic = None   # IC = moment of inertia of the complete cylinder section (about weakest axis), including
+                    # longitudinal stiffeners/internal bulkheads if any
+        Lc = None   # total cylinder length
+        Ac = None   # cross sectional area of complete cylinder section;
+                    # including longitudinal stiffeners/internal bulkheads if any
+
+        chk_381 = math.pow((k*Lc) / ic, 2) >= 2.5*E/fy
+        checks['3.8 Column buckling']['3.8.1 Stability requirement'] = dict()
+        checks['3.8 Column buckling']['3.8.1 Stability requirement']['3.8.1'] = chk_381
+
+        #The stability requirement for a shell-column subjected to axial compression, bending and circumferential
+        # compression is given by:
+        faK = None
+        alpha_overline = math.sqrt(faK/fE) # (3.8.7)
+        fkc = (1-0.28*math.pow(alpha_overline,2)) if alpha_overline<=1.34 \
+            else 0.9 / math.pow(alpha_overline, 2) # (3.8.5) (3.8.6)
+        fkcd = fkc / gammaM
+        fakd = None
+        sigm1Sd = None
+        sigm2Sd = None
+        Ic1 = None
+        k1 = None
+        Lc1 = None
+        Ic2 = None
+        k2 = None
+        Lc2 = None
+        fE1 = (math.pow(math.pi, 2)*E*Ic1) / ( math.pow(k1*Lc1,2) * Ac) # (3.8.3)
+        fE2 = (math.pow(math.pi, 2)*E*Ic2) / ( math.pow(k2*Lc2,2) * Ac) # (3.8.3)
+
+        chk_382 = (siga0sd/fkcd) + \
+                  (1/fakd)*math.pow( math.pow( sigm1Sd/(1-siga0sd/fE1),2) +
+                                     math.pow( sigm2Sd (1-siga0sd/fE2),2),0.5) <= 1 # 3.8.2
+        checks['3.8 Column buckling']['3.8.1 Stability requirement']['3.8.2'] = chk_382
+
+        ## 3.8.2 Column buckling strength
+
+        # --------------------3.9 Torsional buckling--------------------------
+        G = None
+        It = None
+        Ipo = None
+        hs = None
+        Iz = None
+        lT = None
+
+        fET = beta*(G*It/Ipo) + math.pow(math.pi, 2)* ( (E*math.pow(hs, 2)*Iz) / (Ipo*math.pow(lT,2)) )   # GENERAL (3.9.5) TODO
+
+
+        alphaT_overline = math.sqrt(fy/fET) # (3.9.3)
+        mu = 0.35*(alphaT_overline-0.6) #(3.9.4)
+
+        if alphaT_overline <= 0.6:
+            fT = fy  # (3.9.1)
+        else:
+            fT = ((1 + mu + math.pow(alphaT_overline, 2) -
+                   math.sqrt(math.pow(1+mu+math.pow(alphaT_overline,2),2) -
+                             4*math.pow(alphaT_overline,2)))/(2*math.pow(alphaT_overline,2)))*fy  # (3.9.2)
+
+
+
+
+
 
 
 
