@@ -263,7 +263,7 @@ class Application():
                 self._ML_buckling[name] = pickle.load(file)
                 file.close()
             else:
-                file = open(self._root_dir + file_base + '.pickle', 'rb')
+                file = open(self._root_dir +'\\' + file_base + '.pickle', 'rb')
                 from sklearn.neural_network import MLPClassifier
                 from sklearn.preprocessing import StandardScaler
                 self._ML_buckling[name] = pickle.load(file)
