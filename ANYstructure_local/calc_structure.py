@@ -1695,7 +1695,7 @@ class CalcScantlings(Structure):
         print(checks)
 
     def cyl_buckling_unstiffend_shell(self):
-
+        from scipy.optimize import fsolve
         E = 210000
         t = 20.0
         s = 600.0
@@ -1707,7 +1707,7 @@ class CalcScantlings(Structure):
         sasd = 100
         smsd = 100
         tsd = 60
-        psd = 0.3
+        psd = -0.3
         shsd = psd*r/t
 
         provide_data = dict()
@@ -1728,7 +1728,7 @@ class CalcScantlings(Structure):
         #   Pnt. 3.3 Unstifffed curved panel
 
 
-        geometry = 3
+        geometry = 7
         if smsd < 0:
             smsd = -smsd
         else:
@@ -1759,7 +1759,7 @@ class CalcScantlings(Structure):
             psi, epsilon, rho = table_3_1(chk=chk)
             C = psi * math.sqrt(1 + math.pow(rho * epsilon / psi, 2))  # (3.4.2) (3.6.4)
             fE = C*(math.pow(math.pi, 2)*E/(12*(1-math.pow(v,2)))) *math.pow(t/s,2)
-            #print(chk, 'C', C, 'psi', psi,'epsilon', epsilon,'rho' ,rho, 'fE', fE)
+            print(chk, 'C', C, 'psi', psi,'epsilon', epsilon,'rho' ,rho, 'fE', fE)
             vals.append(fE)
         fEax, fEshear, fEcirc = vals
         sa0sd = -sjsd if sjsd < 0 else 0
@@ -1773,16 +1773,44 @@ class CalcScantlings(Structure):
         lambda_s = math.sqrt(lambda_s_pow)
         fks = fy/math.sqrt(1+math.pow(lambda_s,4 ))
         provide_data['fks - Unstifffed curved panel'] = fks
-
-
-        gammaM = self.mat_factor
+        if lambda_s < 0.5:
+            gammaM = self.mat_factor
+        else:
+            if lambda_s > 1:
+                gammaM = 1.45
+            else:
+                gammaM = 0.85+0.6*lambda_s
         fksd = fks/gammaM
         uf = sjsd/fksd
-        print('UF', uf, 'Unstifffed curved panel')
 
-        # TODO additional check
+        sjsd_max = math.sqrt(math.pow(sasd+smsd,2)-(sasd+smsd)*shsd+math.pow(shsd,2)+3*math.pow(tsd,2))
+
+        uf_max =  self.mat_factor* sjsd_max/fy
+        # print('Unstifffed curved panel', 'UF', uf, 'UFmax', uf_max, 'sigjsd', sjsd, 'Zs', Zs, 'lambda_s', lambda_s,
+        #       'fks', fks, 'gammaM', gammaM, 'sjsd_max', sjsd_max)
+
+        def iter_table_1(sasd_iter):
+            # Iteration
+            sigmsd_iter = smsd if geometry in [2,6] else min([-smsd, smsd])
+            siga0sd_iter = 0 if sasd_iter >= 0 else -sasd_iter  # (3.2.4)
+            sigm0sd_iter = 0 if sigmsd_iter >= 0 else -sigmsd_iter  # (3.2.5)
+            sigh0sd_iter = 0 if shsd>= 0 else -shsd  # (3.2.6)
+
+            sjsd_iter = math.sqrt(math.pow(sasd_iter+sigmsd_iter, 2) - (sasd_iter+sigmsd_iter)*shsd + math.pow(shsd, 2)+
+                                  3*math.pow(tsd, 2)) #(3.2.3)
+
+            lambdas_iter = math.sqrt((fy / sjsd_iter) * ((siga0sd_iter+sigm0sd_iter)/fEax+ sigh0sd_iter/fEcirc+tsd/fEshear)) # (3.2.2)
+
+            gammaM_iter = 1  # As taken in the DNVGL sheets
+            fks_iter = fy / math.sqrt(1 + math.pow(lambdas_iter,4))
+            fksd_iter = fks_iter / gammaM_iter
+            #print('sjsd', sjsd_iter, 'fksd', fksd_iter, 'fks', fks, 'gammaM', gammaM_iter, 'lambdas_iter', lambdas_iter)
+            return sjsd_iter/fksd_iter - 1
+
+        provide_data['max axial stress - 3.3 Unstifffed curved panel'] = abs(fsolve(iter_table_1, 0)[0])
 
 
+        # Pnt. 3.4 Unstifffed circular cylinders
         Zl = (math.pow(l, 2)/(r*t)) * math.sqrt(1 - math.pow(v, 2)) #(3.4.3) (3.6.5)
 
         def table_3_2(chk):
@@ -1812,12 +1840,18 @@ class CalcScantlings(Structure):
 
         fEax, fEbend,  fEtors, fElat, fEhyd = vals
 
-        if l / r > 3.85 * math.sqrt(r / t):
+        provide_data['fEax - Unstifffed circular cylinders'] = fEax
+
+        test1 = 3.85 * math.sqrt(r / t)
+        test2 = 2.25 * math.sqrt(r / t)
+        test_l_div_r = l/r
+        provide_data['fEh - Unstifffed circular cylinders  - Psi=4'] = 0.25*E*math.pow(t/r,2) if test_l_div_r > test2 else fElat
+        if l / r > test1:
             fEt_used = 0.25 * E * math.pow(t / r, 3 / 2)  # (3.4.4)
         else:
             fEt_used = fEtors
 
-        if l / r > 2.25 * math.sqrt(r / t):
+        if l / r > test2:
             fEh_used = 0.25 * E * math.pow(t / r, 2)
         else:
             fEh_used = fElat if not axial_due_to_hydrostatic else fEhyd
@@ -1865,8 +1899,28 @@ class CalcScantlings(Structure):
         uf = sjsd/fksd
         print('UF', uf, 'Unstifffed circular cylinders')
 
-        # TODO additional check
+        def iter_table_2(sasd_iter):
+            # Iteration
+            sigmsd_iter = smsd if geometry in [2, 6] else min([-smsd, smsd])
+            siga0sd_iter = 0 if sasd_iter >= 0 else -sasd_iter  # (3.2.4)
+            sigm0sd_iter = 0 if sigmsd_iter >= 0 else -sigmsd_iter  # (3.2.5)
+            sigh0sd_iter = 0 if shsd >= 0 else -shsd  # (3.2.6)
 
+            sjsd_iter = math.sqrt(
+                math.pow(sasd_iter + sigmsd_iter, 2) - (sasd_iter + sigmsd_iter) * shsd + math.pow(shsd, 2) +
+                3 * math.pow(tsd, 2))  # (3.2.3)
+
+
+            lambdas_iter = math.sqrt((fy/sjsd_iter) * (siga0sd_iter/fEax + sigm0sd_iter/fEbend +
+                                                       sigh0sd_iter/fElat + tsd/fEtors))
+
+            gammaM_iter = 1  # As taken in the DNVGL sheets
+            fks_iter = fy / math.sqrt(1 + math.pow(lambdas_iter, 4))
+            fksd_iter = fks_iter / gammaM_iter
+            # print('sjsd', sjsd_iter, 'fksd', fksd_iter, 'fks', fks, 'gammaM', gammaM_iter, 'lambdas_iter', lambdas_iter)
+            return sjsd_iter / fksd_iter - 1
+
+        provide_data['max axial stress - 3.4.2 Shell buckling'] = abs(fsolve(iter_table_2, 0)[0])
         return provide_data
 
     def cyl_buckling_long_sft_shell(self):
@@ -1877,9 +1931,10 @@ class CalcScantlings(Structure):
         v = 0.3
         r = 2500.0
         l = 5000.0
-        L = 5000.0
-        Lc = 5000.0
-        G = 80769.2
+
+        psd = -0.3
+        shsd = psd*r/t
+
         fy = 355
         h = 400
 
@@ -1891,8 +1946,7 @@ class CalcScantlings(Structure):
         sasd = 100
         smsd = 100
         tsd = 60
-        psd = 0.3
-        shsd = psd*r/t
+
 
         lightly_stf = s/t > math.sqrt(r/t)
 
@@ -1941,8 +1995,6 @@ class CalcScantlings(Structure):
         Ishell = (math.pi/4) * ( math.pow(r+t/2,4) - math.pow(r-t/2,4))
         Itot = Ishell + Istf_tot # Checked
 
-
-
         tf1 = 0
         tf2 = tf
         b1 = 0
@@ -1977,15 +2029,110 @@ class CalcScantlings(Structure):
             C = 0 if psi == 0 else psi * math.sqrt(1 + math.pow(rho * epsilon / psi, 2))  # (3.4.2) (3.6.4)
             fE = C * ((math.pow(math.pi, 2) * E) / (12 * (1 - math.pow(v, 2)))) * math.pow(t / l,2)
             vals.append(fE)
-            print(chk, 'C', C, 'psi', psi,'epsilon', epsilon,'rho' ,rho, 'fE', fE)
-        fEax, fEtos, fElat = vals
+            #print(chk, 'C', C, 'psi', psi,'epsilon', epsilon,'rho' ,rho, 'fE', fE)
+        fEax, fEtors, fElat = vals
 
         #Torsional Buckling can be excluded as possible failure if:
         if self.stiffener_type == 'FB':
             chk_fb = hw <= 0.4*tw*math.sqrt(E/fy)
 
+        # TODO continue
+
+    def cyl_column_buckling(self):
+
+        E = 210000
+        t = 20.0
+        s = 600.0
+        v = 0.3
+        r = 2500.0
+        l = 5000.0
+        L = 5000.0
+        Lc = 5000.0
+        G = 80769.2
+
+        fy = 355
+        h = 400
+
+        hw = h-t
+        tw = 12
+        b = 150
+        tf = 20
+
+        sasd = 100
+        smsd = 100
+        tsd = 60
+        psd = -0.3
+        shsd = psd*r/t
+
+        geometry = 3
+
+        get_data = dict()
+
+        # Moment of inertia
+        As = A = hw*tw + b*tf  # checked
+
+        num_stf = math.floor(2*math.pi*r/s)
+
+        Atot = As*num_stf + 2*math.pi*r*t
+
+        e= (hw*tw*(hw/2) + b*tf*(hw+tf/2)) / (hw*tw+b*tw)
+        Istf = h*math.pow(tw,3)/12 + tf*math.pow(b, 3)/12
+
+        dist_stf = r - t / 2 - e
+        Istf_tot = 0
+        angle = 0
+        for stf_no in range(num_stf):
+            Istf_tot += Istf + As*math.pow(dist_stf*math.cos(angle),2)
+            angle += 2*math.pi/num_stf
+
+        Ishell = (math.pi/4) * ( math.pow(r+t/2,4) - math.pow(r-t/2,4))
+        Itot = Ishell + Istf_tot # Checked
+
+        k_factor = 1 # TODO input field
+        col_test =math.pow(k_factor*Lc/math.sqrt(Itot/Atot),2) >= 2.5*E/fy
+        print("Column buckling should be assessed") if col_test else \
+            print("Column buckling does not need to be checked")
 
 
+        #Sec. 3.8.2   Column buckling strength:
+        data = self.cyl_buckling_unstiffend_shell()
+        fEa = data['fEax - Unstifffed circular cylinders']
+        #fEa = any([geometry in [1,5], s > l])
+        fEh = data['fEh - Unstifffed circular cylinders  - Psi=4']
+
+        #   Special case:  calculation of fak for unstiffened shell:
+        a = 1+math.pow(fy,2)/math.pow(fEa,2)
+        b = ( (2*math.pow(fy,2)/(fEa*fEh)) -1)*shsd
+        c = math.pow(shsd,2) + math.pow(fy,2)*math.pow(shsd,2)/math.pow(fEh,2) - math.pow(fy,2)
+
+        fak = (b+math.sqrt(math.pow(b,2) - 4*a*c))/(2*a)
+
+        #   General case:
+        # TODO iteration
+        use_fac = 1 if geometry < 3 else 2
+
+        if use_fac == 1:
+            fak = fak
+        elif any([geometry in [1,5], s > l]):
+            fak = data['max axial stress - 3.4.2 Shell buckling']
+        else:
+            fak = data['max axial stress - 3.3 Unstifffed curved panel']
+
+        i = Itot/Atot
+        fE = E*math.sqrt(math.pi*i  / (Lc * k_factor))
+        print(fak/fE, fak, fE)
+        Lambda_ = math.sqrt(fak/fE)
+
+        fkc = (1-0-28*math.pow(Lambda_,2))*fak if Lambda_ <= 1.34 else fak/math.pow(Lambda_,2)
+        gammaM = self.mat_factor  # Check TODO
+        fakd = fak/gammaM
+        fkcd = fkc/gammaM
+
+        sa0sd = -sasd if sasd<0 else 0
+
+        stab_chk = sa0sd/fkcd + (abs(smsd) / (1-sa0sd/fE))/fakd <= 1
+
+        print("Stability requirement satisfied") if stab_chk else print("Not acceptable")
 
 
 
@@ -2562,4 +2709,4 @@ if __name__ == '__main__':
         # print('MINIMUM PLATE THICKNESS',my_test.get_dnv_min_thickness(pressure))
         # print('MINIMUM SECTION MOD.', my_test.get_dnv_min_section_modulus(pressure))
         print()
-        my_test.cyl_buckling_long_sft_shell()
+        my_test.cyl_buckling_unstiffend_shell()
