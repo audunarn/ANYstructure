@@ -592,7 +592,7 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
 
     # Minimum plate thickness
     if chk[1]:
-        act_pl_thk = calc_object[0].get_plate_thk()
+        act_pl_thk = calc_object[0].get_pl_thk()
         min_pl_thk = calc_object[0].get_dnv_min_thickness(lat_press)/1000
         plate_frac = min_pl_thk / act_pl_thk
         all_checks[4] = plate_frac
@@ -668,7 +668,7 @@ def any_constraints_all_number(x,*args):
             return -1
     #Minimum plate thickeness
     if chk[1]:
-        if not calc_object[0].get_plate_thk()>calc_object[0].get_dnv_min_thickness(lat_press)/1000:
+        if not calc_object[0].get_pl_thk()>calc_object[0].get_dnv_min_thickness(lat_press)/1000:
             return -1
     # Shear area
     if chk[2]:

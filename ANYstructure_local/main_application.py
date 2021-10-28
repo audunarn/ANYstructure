@@ -420,6 +420,8 @@ class Application():
         self._new_show_cog.set(False)
         self._new_content_type = tk.StringVar()
         self._new_content_type.set('ballast')
+        self._new_panel_or_shell = tk.StringVar()
+        self._new_panel_or_shell.set('panel')
 
         line_start, line_x = point_start+0.08, 0.005208333
         tk.Label(self._main_fr, text='Input line from "point number" to "point number"',
@@ -3426,6 +3428,7 @@ class Application():
             [2] calc fatigue class instance
             [3] load class instance
             [4] load combinations result (currently not used)
+            [5] Cylinder buckling data (under development)
         :return:
         '''
 
@@ -3473,12 +3476,14 @@ class Application():
                             'puls boundary': [self._new_puls_panel_boundary.get(), ''],
                             'puls stiffener end': [self._new_puls_stf_end_type.get(), ''],
                             'puls sp or up':  [self._new_puls_sp_or_up.get(), ''],
-                            'puls up boundary': [self._new_puls_up_boundary.get(), ''],}
+                            'puls up boundary': [self._new_puls_up_boundary.get(), ''],
+
+                            'panel or shell': [self._new_panel_or_shell.get(), '']}
             else:
                 obj_dict = pasted_structure.get_structure_prop()
 
             if self._active_line not in self._line_to_struc.keys():
-                self._line_to_struc[self._active_line] = [None, None, None, [None], {}]
+                self._line_to_struc[self._active_line] = [None, None, None, [None], {}, None]
                 self._line_to_struc[self._active_line][0] = Structure(obj_dict)
                 self._sections = add_new_section(self._sections, struc.Section(obj_dict))
                 self._line_to_struc[self._active_line][1] = CalcScantlings(obj_dict)

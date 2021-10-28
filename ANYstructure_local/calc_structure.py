@@ -11,7 +11,9 @@ class Structure():
     '''
     def __init__(self, main_dict, *args, **kwargs):
         super(Structure,self).__init__()
+
         self.main_dict = main_dict
+        self.panel_or_shell = main_dict['panel or shell'][0]
         self.plate_th = main_dict['plate_thk'][0]
         self.web_height = main_dict['stf_web_height'][0]
         self.web_th = main_dict['stf_web_thk'][0]
@@ -79,6 +81,8 @@ class Structure():
             '\n Global shear, tau_xy:          ' + str(round(self.tauxy,3)) + ' MPa' +
             '\n km1,km2,km3:                   ' + str(self.km1)+'/'+str(self.km2)+'/'+str(self.km3)+
             '\n Pressure side (p-plate/s-stf): ' + str(self.pressure_side) + ' ')
+
+
 
     def get_beam_string(self):
         ''' Returning a string. '''
@@ -334,13 +338,17 @@ class Structure():
         Iz2 = tf2 * math.pow(b2, 3)
         ht = h - tf1 / 2 - tf2 / 2
         return (Iz1 * ht) / (Iz1 + Iz2) + tf2 / 2 - ez
-    def get_moment_of_intertia(self, efficent_se=None):
+    def get_moment_of_intertia(self, efficent_se=None, only_stf = False):
         '''
         Returning moment of intertia.
         :return:
         '''
-        tf1 = self.plate_th
-        b1 = self.spacing if efficent_se==None else efficent_se
+        if only_stf:
+            tf1 = 0
+            b1 = 0
+        else:
+            tf1 = self.plate_th
+            b1 = self.spacing if efficent_se==None else efficent_se
         h = self.flange_th+self.web_height+self.plate_th
         tw = self.web_th
         hw = self.web_height
@@ -353,6 +361,36 @@ class Structure():
         Iy = Iyc + (tf1 * b1 * math.pow(tf2 + hw + tf1 / 2, 2) + tw * hw * math.pow(tf2 + hw / 2, 2) +
              tf2 * b2 * math.pow(tf2 / 2, 2)) - Ax * math.pow(ez, 2)
         return Iy
+
+    def get_torsional_moment(self):
+        ef = self.get_flange_eccentricity()
+        tf = self.flange_th
+        tw = self.web_th
+        bf = self.flange_width
+        It = (((ef-0.5*tf)*tw**3)/3e4)*(1-0.63*(tw/(ef-0.5*tf)))+( (bf*tf)/3e4*(1-0.63*(tf/bf)))/(1000**4) #torsonal moment of interia mm^4
+        return It
+
+    def get_polar_moment(self):
+        Aw = self.web_th*self.web_height
+        tf = self.flange_th
+        Af = self.flange_width*self.flange_th
+        tw = self.web_th
+        ef = self.get_flange_eccentricity()
+        hw = self.web_height
+        b = self.flange_width
+        
+        #Ipo = (Aw*(ef-0.5*tf)**2/3+Af*ef**2)*10e-4 #polar moment of interia in cm^4
+        Ipo = (tw/3)*math.pow(hw, 3) + tf*(math.pow(hw+tf/2,2)*b)+tf/3*(math.pow(ef+b/2,3)-math.pow(ef-b/2,3))
+        return Ipo
+
+    def get_flange_eccentricity(self):
+        ef = 0 if self.stiffener_type in ['FB', 'T'] else self.flange_width / 2 - self.web_th / 2
+        return ef
+
+    def get_stf_cog_eccentricity(self):
+        e = (self.web_height * self.web_th * (self.web_height / 2) + self.flange_width * self.flange_th *
+             (self.web_height + self.web_th / 2)) / (self.web_height * self.web_th + self.flange_width * self.flange_th)
+        return e
 
     def get_structure_prop(self):
         return self.main_dict
@@ -433,13 +471,6 @@ class Structure():
 
         self.main_dict['tau_xy'][0]= tauxy
         self.tauxy  = tauxy
-
-    def get_plate_thk(self):
-        '''
-        Return the plate thickness
-        :return:
-        '''
-        return self.plate_th
 
     def get_cross_section_area(self, efficient_se = None):
         '''
@@ -1201,500 +1232,36 @@ class CalcScantlings(Structure):
         '''
         return self.get_dnv_min_thickness(design_pressure) <= self.plate_th*1000
 
-    def buckling_stiffened_cylinder(self, force_input: bool = True):
+class Shell():
+    '''
+    Small class to contain shell properties.
+    '''
+    def __init__(self, main_dict):
+        super(Shell, self).__init__()
+        pass
+
+
+class CylinderAndCurvedPlate():
+    '''
+    Buckling of cylinders and curved plates.
+    '''
+
+    def __init__(self, main_dict, shell: Shell = None, long_stf: Structure = None, ring_stf: Structure = None,
+                 ring_frame: Structure = None):
+        super(CylinderAndCurvedPlate, self).__init__()
+
+        self._Shell = shell
+        self._LongStf = long_stf
+        self._RingStf = ring_stf
+        self._RingFrame = ring_frame
+
+    def shell_buckling(self):
         '''
-        Calculate bucling of cylinder
-
-        σx,Sd = #design membrane stress in the longitudinal direction (tension is positive)
-        σh,Sd = #design membrane stress in the circumferential direction (tension is positive)
-        τSd =   #design shear stress tangential to the shell surface (in sections x = constant and θ = constant)
-        NSd = #Design axial force
-        MSd = #Design bending moments
-        TSd = #Design torsional moment
-        QSd = #Design shear force
-        pSd = #Design lateral pressure
-        θ = 0 #circumferential co-ordinate measured from axis 1
-        A = #cross-sectional area of a longitudinal stiffener (exclusive of shell flange)
-        Ac cross sectional area of complete cylinder section; including longitudinal stiffeners/internal bulkheads if any
-        Af cross sectional area of flange (=btf)
-        AR cross-sectional area of a ring frame (exclusive of shell flange)
-        AReq required cross sectional area (exclusive of effective plate flange) of ring
-        s = 0 #distance between longitudinal stiffeners
+        Main sheet to calculate cylinder buckling.
         '''
+        pass
 
-        sigxSd = None  # design membrane stress in the longitudinal direction (tension is positive)
-        sighSd = None  # design membrane stress in the circumferential direction (tension is positive)
-        tauSd = None  # design shear stress tangential to the shell surface (in sections x = constant and θ = constant)
-
-        NSd = None  # Design axial force
-        MSd = None  # Design bending moments
-        M1Sd = None
-        M2Sd = None
-
-        TSd = None  # Design torsional moment
-        QSd = None  # Design shear force
-        Q1Sd = None
-        Q2Sd = None
-
-        pSd = None  # Design lateral pressure
-        r = 2500  # Radius of cylinder.
-        rr = None  # Radius (variable)
-        t = 20  # Thickness of cylinder.
-        theta = None  # circumferential co-ordinate measured from axis 1, θ
-
-        A = None  # cross-sectional area of a longitudinal stiffener (exclusive of shell flange)
-        Ar = None  # cross-sectional area of a ring frame (exclusive of shell flange)
-        s = 600  # distance between longitudinal stiffeners
-        l = 5000  # distance between ring frames
-        lt = None  # torsional buckling length
-
-        h = 400  # Web height
-        tw = 12  # Web thickness
-        b = 150  # Flange width
-        tf = 20
-
-        sigaSd = 100
-        sigmSd = 100
-        tauTSd = 50
-        tauQSd = 10
-        pSd = 0.3
-
-        TSd = tauTSd * 2 * math.pi * t * math.pow(l, 2) / 1000000  # Design torsional moment
-        v = 0.3  # Poisson
-
-        long_stiff = True
-        bhd = False
-
-        checks = dict()
-
-        # Moment of inertia
-        As = h * tw + b * tf  # checked
-        num_stf = math.floor(2 * math.pi * r / s)
-
-        e = (h * tw * (h / 2) + b * tf * (h + tf / 2)) / (h * tw + b * tw)
-        Istf = h * math.pow(tw, 3) / 12 + tf * math.pow(b, 3) / 12
-        dist_stf = r - t / 2 - e
-        Istf_tot = 0
-        angle = 0
-        for stf_no in range(num_stf):
-            Istf_tot += Istf + As * dist_stf * math.cos(angle)
-            angle += 2 * math.pi / num_stf
-
-        Ishell = (math.pi / 4) * (math.pow(r + t / 2, 4) - math.pow(r - t / 2, 4))
-        Itot = Ishell + Istf  # Checked
-
-        # --------------------2.2.2 Longitudinal membrane stress-------------------------
-        # if force_input:
-        #     #For a cylindrical shell without longitudinal stiffeners:
-        #     sigaSd = NSd/(2*math.pi*r*t) #(2.2.2)
-        #     sigmSd = (M1Sd/(math.pi*math.pow(r,2)*t))*math.sin(theta) - \
-        #              (M2Sd/(math.pi*math.pow(r,2)*t))*math.cos(theta) #(2.2.3)
-        #
-        #     #For a cylindrical shell with longitudinal stiffeners it is usually permissible to replace the shell thickness by the
-        #     #equivalent thickness for calculation of longitudinal membrane stress only:
-        #
-        #
-        #     sigxSd = sigaSd + sigmSd #(2.2.1)
-        #
-        #     # --------------------2.2.3 Shear stress-------------------------
-        #
-        # tauTSd= TSd/(2*math.pi*math.pow(r,2)*t) #(2.2.6)
-        #
-        # tauQsd = (Q1Sd/(math.pi*r*t))*math.sin(theta) - \
-        #          (Q2Sd/(math.pi*r*t))*math.cos(theta) #(2.2.7)
-
-        tauSd = tauTSd + tauQSd  # (2.2.5)
-        # else:
-        #     te = t + A / s  # (2.2.4)
-        #     sigxSd = sigasd + sigmsd #(2.2.1)
-        #     Nsd = sigxSd*2*math.pi()*r*te
-        #     MSd = (sigmsd/(r+t/2)) #TOTO itot
-        # --------------------2.2.4 Circumferential membrane stress-------------------------
-        # For an unstiffened cylinder the circumferential membrane stress may be taken as:
-
-        sighSd = math.pow(pSd, r) / t  # (2.2.8)
-        sigxSd = sigaSd + sigmSd  # (2.2.1
-
-        # For a ringstiffened cylinder (without longitudinal stiffeners) the circumferential membrane stress midway
-        # between two ring frames may be taken as:
-
-        beta = l / (1.56 * math.sqrt(r * t))  # (2.2.11)
-
-        # leq = (l/beta) * ( (math.cosh(2*beta) - math.cos(2*beta)) / (math.sinh(2*beta) + math.sin(2*beta))) # (2.2.13)
-        # alpha = Ar / (leq * t)  # (2.2.12)
-        # zeta = max(0.0, 2*( (math.sinh(beta)*math.cos(beta) + math.cosh(beta)*math.sin(beta)) / (math.sinh(2*beta) + math.sin(2*beta)))) #(2.2.10)
-        # sighSd = math.pow(pSd, r) / t + (alpha*zeta/(alpha+1)) * ( (math.pow(pSd, r)/t) - v*sigxSd) #(2.2.9)
-
-        # --------------------2.2.5 Circumferential stress in a ring frame-------------------------
-        # For ring stiffened shells the circumferential stress in a ring frame at the distance rr (rr is variable, rr = rf at ring
-        # flange position and rr = r at shell) from the cylinder axis may be taken as:
-
-        # if long_stiff:
-        #     this_alpha = A/lt
-        # else:
-        #     this_alpha = alpha
-
-        # sighRSd = (pSd*r/r - v*sigxSd)*(1/(1+this_alpha))*(r/rr) #(2.2.15)
-
-        # --------------------2.2.6 Stresses in shells at bulkheads and ring stiffeners-------------------------
-        # The circumferential membrane stress at a ring frame for a ring stiffened cylinder (without longitudinal
-        # stiffeners) may be taken as:
-        # TODO provision for bulkeheads
-
-        # 2.2.6.2 Circumferential membrane stress
-        # sighSd = (pSd*r/t-v*sigxSd) * (1/(1+alpha)) + v*sigxSd #(2.2.17)
-
-        # 2.2.6.3 Bending stress
-
-        sigxmSd = (math.pow(pSd, r) / t - sighSd) * math.sqrt(
-            3 / (1 - v))  # (2.2.19) where σh,Sd is given in (2.2.17) or (2.2.18).
-
-        # The circumferential bending stress in the shell at a bulkhead or a ring frame is:
-
-        sighmSd = v * sigxmSd  # (2.2.20)
-
-        # --------------------3 Buckling Resistance of Cylindrical Shells-------------------------
-        checks['3 Buckling Resistance of Cylindrical Shells'] = dict()
-        sigjsd = None
-
-        # 3.2 Characteristic buckling strength of shells
-        fy = self.mat_yield / 1e6
-
-        siga0sd = 0 if sigaSd >= 0 else -sigaSd  # (3.2.4)
-        sigm0sd = 0 if sigmSd >= 0 else -sigmSd  # (3.2.5)
-        sigh0sd = 0 if sighSd >= 0 else -sighSd  # (3.2.6)
-
-        # checks['3 Buckling Resistance of Cylindrical Shells']['fks/fy'] = fks/fy
-        #
-        #
-        # checks['3 Buckling Resistance of Cylindrical Shells']['fksd - design shell buckling strength'] = fksd
-
-        # --------------------3.3 Elastic buckling strength of unstiffened curved panels-------------------------
-        Zs = (math.pow(s, 2) / (r * t)) * math.sqrt(1 - math.pow(v, 2))  # The curvature parameter Zs (3.3.3)
-
-        # Table 3-1 Buckling coefficient for unstiffened curved panels, mode a) Shell buckling
-        def table_3_1(chk):
-
-            psi = {'Axial stress': 4, 'Shear stress': 5.54 + 4 * math.pow(s / l, 2),
-                   'Circumferential compression': math.pow(1 + math.pow(s / l, 2), 2)}  # ψ
-            ksi = {'Axial stress': 0.702 * Zs, 'Shear stress': 0.856 * math.sqrt(s / l) * math.pow(Zs, 3 / 4),
-                   'Circumferential compression': 1.04 * (s / l) * math.sqrt(Zs)}  # ξ
-            rho = {'Axial stress': 0.5 * math.pow(1 + (r / (150 * t)), -0.5), 'Shear stress': 0.6,
-                   'Circumferential compression': 0.6}
-            return psi[chk], ksi[chk], rho[chk]
-
-        # End table 3-1
-
-        E = 2.1e11 / 1e6
-
-        checks['3.3 Elastic buckling strength of unstiffened curved panels'] = dict()
-
-        vals = list()
-        for chk in ['Axial stress', 'Shear stress', 'Circumferential compression']:
-            psi, ksi, rho = table_3_1(chk=chk)
-            C = psi * math.sqrt(1 + math.pow(rho * ksi / psi, 2))  # (3.4.2) (3.6.4)
-            fE = C * (math.pow(math.pi, 2) * E / (12 * (1 - math.pow(v, 2)))) * math.pow(t / s, 2)
-            checks['3.3 Elastic buckling strength of unstiffened curved panels'][chk] = fE
-            vals.append(fE)
-
-        # fEa, fEm, fEh, fEtau = vals
-
-        # --------------------3.4 Elastic buckling strength of unstiffened circular cylinders-------------------------
-        checks['3.4 Elastic buckling strength of unstiffened circular cylinders'] = dict()
-
-        # 3.4.2 Shell buckling
-
-        # C = psi * math.sqrt(1 + math.pow(rho * ksi / psi, 2))  # (3.4.2) (3.6.4)
-
-        Zl = (math.pow(l, 2) / (r * t)) * math.sqrt(1 - math.pow(v, 2))  # (3.4.3) (3.6.5)
-
-        long_cylinder = False
-
-        # Buckling coefficients for unstiffened cylindrical shells, mode a) Shell buckling
-        def table_3_2(chk):
-            psi = {'Axial stress': 1, 'Bending': 1,
-                   'Torsion and shear force': 5.34,
-                   'lateral pressure': 4, 'Hydrostatic pressure': 2}  # ψ
-
-            ksi = {'Axial stress': 0.702 * Zl, 'Bending': 0.702 * Zl,
-                   'Torsion and shear force': 0.856 * math.pow(Zl, 3 / 4), 'lateral pressure': 1.04 * math.sqrt(Zl),
-                   'Hydrostatic pressure': 1.04 * math.sqrt(Zl)}  # ξ
-
-            rho = {'Axial stress': 0.5 * math.pow(1 + (r / (150 * t)), -0.5),
-                   'Bending': 0.5 * math.pow(1 + (r / (300 * t)), -0.5),
-                   'Torsion and shear force': 0.6,
-                   'lateral pressure': 0.6, 'Hydrostatic pressure': 0.6}
-            return psi[chk], ksi[chk], rho[chk]
-
-        sigjsd = math.sqrt(math.pow(sigaSd + sigmSd, 2) - (sigaSd + sigmSd) * sighSd + math.pow(sighSd, 2) +
-                           3 * math.pow(tauSd, 2))  # (3.2.3)
-
-        vals = list()
-        for chk in ['Axial stress', 'Bending', 'Torsion and shear force', 'lateral pressure', 'Hydrostatic pressure']:
-            psi, ksi, rho = table_3_2(chk=chk)
-            C = psi * math.sqrt(1 + math.pow(rho * ksi / psi, 2))  # (3.4.2) (3.6.4)
-
-            if l / r > 3.85 * math.sqrt(r / t) and chk == 'Torsion and shear force':
-                fEtau = 0.25 * E * math.pow(t / r, 3 / 2)  # (3.4.4)
-                checks['3.4 Elastic buckling strength of unstiffened circular cylinders'][chk] = fEtau / fy
-            else:
-                fE = C * ((math.pow(math.pi, 2) * E) / (12 * (1 - math.pow(v, 2)))) * math.pow(t / l,
-                                                                                               2)  # (3.4.1) (3.6.3)
-
-                checks['3.4 Elastic buckling strength of unstiffened circular cylinders'][chk] = fE / fy
-
-            if l / r > 2.25 * math.sqrt(r / t) and chk in ['lateral pressure', 'Hydrostatic pressure']:
-                fEh = 0.25 * E * math.pow(t / r, 2)  # (3.4.5)
-                checks['3.4 Elastic buckling strength of unstiffened circular cylinders'][chk] = fEh / fy
-            else:
-                fE = C * ((math.pow(math.pi, 2) * E) / (12 * (1 - math.pow(v, 2)))) * math.pow(t / l,
-                                                                                               2)  # (3.4.1)
-                checks['3.4 Elastic buckling strength of unstiffened circular cylinders'][chk] = fE / fy
-
-            if chk != 'Hydrostatic pressure':  # TODO not for end cap pressure
-                vals.append(fE)
-
-        fEa, fEm, fEtau, fEh = vals
-        print('fEa', fEa, 'fEm', fEm, 'fEtau', fEtau, 'fEh', fEh)
-        lambdas = (fy / sigjsd) * (siga0sd / fEa + sigm0sd / fEm + sigh0sd / fEh + tauSd / fEtau)  # (3.2.2)
-        fks = fy / math.sqrt(1 + lambdas)  # (3.2.1) used in [(3.9.11),
-        print('fy', fy, 'lambdas', lambdas)
-        if lambdas < 0.5:
-            gammaM = 1.15  # (3.1.3)
-        elif 0.5 <= lambdas <= 1:
-            gammaM = 0.85 + 0.6 * lambdas  # (3.1.3)
-        else:
-            gammaM = 1.45  # (3.1.3)
-
-        fksd = fks / gammaM  # (3.1.2)
-
-        # --------------------3.5 Ring stiffened shells-------------------------
-        checks['3.5 Ring stiffened shells'] = dict()
-        # Panel ring buckling
-        checks['3.5 Ring stiffened shells']['3.5.2 Panel ring buckling'] = dict()
-        ##Cross sectional area.
-
-        Areq = None
-        checks['3.5 Ring stiffened shells']['3.5.2 Panel ring buckling']['3.5.2.1 Cross sectional area'] = \
-            Areq >= (2 / math.pow(Zl, 2) + 0.06) * l * t  # (3.5.1)
-
-        ##Moment of inertia
-        Ix = None
-        Ixh = None
-        Ih = None
-
-        Ir = Ix + Ixh + Ih  # (3.5.2)
-
-        lef = min((1.56 * math.sqrt(r * t)) / (1 + 12 * (t / r)), l)  # (3.5.3), (3.5.4)
-
-        ## Calculation of Ix
-        alphaA = A / (s * t)  # (3.5.6) A = cross sectional area of a longitudinal stiffener.
-        r0 = None  # r0 radius of the shell measured to the neutral axis of ring frame with effective shell flange, leo
-        Ix = abs(sigxSd) * t * (1 + alphaA) * math.pow(r0, 4) / (500 * E * l)  # (3.5.5)
-
-        ## 3.5.2.5 Calculation of Ixh
-        L = None  # distance between effective supports of the ring stiffened cylinder
-        Ixh = math.pow(tauSd / E, 8 / 5) * math.pow(r0 / L, 1 / 5) * L * r0 * t * l  # (3.5.7)
-
-        ##General calculation of Ih for external pressure
-        zt = None
-        delta0 = 0.005 * r  # (3.5.13)
-
-        fT = None  # The torsional buckling strength,
-        fabricated = True
-        fr = fT if fabricated else 0.9 * fT
-
-        Ih = ((abs(pSd) * r * math.pow(r0, 2) * l) / (3 * E)) * (1.5 + ((3 * E * zt * delta0) /
-                                                                        (math.pow(r0, 2) * (fr / 2) - abs(
-                                                                            sighRSd))))  # (3.5.8) TODO criteras here
-
-        # The torsional buckling strength, fT, may be taken equal to the yield strength, fy, if the following
-        # requirements are satisfied: TODO type of stiffener must be specified
-
-        chk1 = h <= 0.4 * tw * math.sqrt(E / fy)  # (3.5.9) (3.5.17)
-        chk2 = h <= 1.35 * tw * math.sqrt(E / fy)  # (3.5.10) (3.5.18)
-        chk3 = b >= (7 * h) / math.sqrt(10 + (E / fy) * (h / r))  # (3.5.11) (3.5.19)
-
-        if all(chk1, chk2, chk3):
-            fT = fy
-            fr = fy
-        else:
-            fT = None  # TODO chapter 3.9
-            fr = None  # TODO chapter 3.9, fT
-
-        w = delta0 * math.cos(2 * theta)  # (3.5.12)
-
-        ## Special calculation of Ih for external pressure
-        fk = None
-        rf = None  # radius of the shell measured to the ring flange,
-        chk_psd = abs(pSd) <= 0.75 * (fk / gammaM) * (
-                    (t * rf * (1 + (Ar / (leq * t)))) / (math.pow(r, 2) * (1 - v / 2)))
-
-        checks['3.5 Ring stiffened shells']['3.5.2 Panel ring buckling'][
-            'Special calculation of Ih for external pressure'] = chk_psd
-
-        # fK is the characteristic buckling strength found from:
-
-        ZL = (math.pow(L, 2) / (r * t)) * math.sqrt(1 - math.pow(v, 2))  # (3.5.22)
-        alphaB = (12 * (1 - math.pow(v, 2)) * Ih) / (l * math.pow(t, 3))  # (3.5.23)
-        alpha = Ar / (leq * t)  # (3.5.24)
-        C1 = (2 * (1 + alphaB) / (1 + alpha)) * (
-                    math.sqrt(1 + (0.27 * ZL) / math.sqrt(1 + alphaB)) - alphaB / (1 + alphaB))  # (3.5.21)
-        C2 = 2 * math.sqrt(1 + 0.27 * ZL)
-        ih = math.sqrt(Ih / (Ar + leq * t))  # (3.5.27)
-        mu = (zt * delta0 / math.pow(ih, 2)) * (rf / r) * (l / leq) * (1 - C2 / C1) * (1 / (1 - (v / 2)))  # μ (3.5.25)
-
-        alpha_overline = math.sqrt(fr / fE)  # (3.5.16)
-
-        fK = ((1 + mu + math.pow(alpha_overline, 2) - math.sqrt(math.pow(1 + mu + math.pow(alpha_overline, 2), 2) -
-                                                                4 * math.pow(alpha_overline, 2))) /
-              (2 * math.pow(alpha_overline, 2))) * fr  # (3.5.15)
-
-        # The characteristic material strength, fr, may be taken equal to the yield strength, fy, if the following
-        # requirements are satisfied: TODO type of stiffener must be specified
-
-        fE = C1 * ((math.pow(math.pi, 2) * E) / (12 * (1 - math.pow(v, 2)))) * math.pow(t / L, 2)  # (3.5.20)
-
-        # --------------------3.6 Longitudinally stiffened shells-------------------------
-        # 3.6.3 Panel stiffener buckling
-        checks['3.6 Longitudinally stiffened shells'] = dict()
-        checks['3.6 Longitudinally stiffened shells']['3.6.3 Panel stiffener buckling'] = dict()
-
-        alphaT = None
-        chk4 = alphaT <= 0.6  # (3.6.2)
-        checks['3.6 Longitudinally stiffened shells']['3.6.3 Panel stiffener buckling']['3.6.3.1 General'] = all(chk1,
-                                                                                                                 chk4)
-
-        ##3.6.3.2 Elastic buckling strength
-        alphaC = (12 * (1 - math.pow(v, 2)))  # (3.6.6)
-        se = (fks / sigjsd) * (abs(sigxSd) / fy)  # (3.6.7)
-
-        # Table 3-3
-        def table_3_3(chk):
-            psi = {'Axial stress': (1 + alphaC) / (1 + A / (se * t)),
-                   'Torsion and shear stress': 5.54 + 1.82 * math.pow(l / s, 4 / 3) * math.pow(alphaC, 1 / 3),
-                   'Lateral Pressure': 2 * (1 + math.sqrt(1 + alphaC))}  # ψ
-            ksi = {'Axial stress': 0.702 * Zl,
-                   'Torsion and shear stress': 0.856 * math.pow(Zl, 3 / 4),
-                   'Lateral Pressure': 1.04 * math.sqrt(Zl)}  # ξ
-            rho = {'Axial stress': 0.5,
-                   'Torsion and shear stress': 0.6,
-                   'Lateral Pressure': 0.6}
-            return psi[chk], ksi[chk], rho[chk]
-
-        for chk in ['Axial stress', 'Torsion and shear stress', 'Lateral Pressure']:
-            psi, ksi, rho = table_3_2(chk=chk)
-            C = psi * math.sqrt(1 + math.pow(rho * ksi / psi, 2))  # (3.4.2) (3.6.4)
-            fE = C * ((math.pow(math.pi, 2) * E) / (12 * (1 - math.pow(v, 2)))) * math.pow(t / l, 2)
-            checks['3.6 Longitudinally stiffened shells']['3.6.3 Panel stiffener buckling'][chk] = fE
-
-        # where A = area of one stiffener, exclusive shell plate
-
-        ## 3.6.3.3 Effective shell width
-
-        # --------------------3.7 Orthogonally stiffened shells--------------------------
-
-        # --------------------3.8 Column buckling--------------------------
-        checks['3.8 Column buckling'] = dict()
-
-        k = None  # effective length factor
-        ic = None  # iC = = radius of gyration of cylinder section
-        Ic = None  # IC = moment of inertia of the complete cylinder section (about weakest axis), including
-        # longitudinal stiffeners/internal bulkheads if any
-        Lc = None  # total cylinder length
-        Ac = None  # cross sectional area of complete cylinder section;
-        # including longitudinal stiffeners/internal bulkheads if any
-
-        chk_381 = math.pow((k * Lc) / ic, 2) >= 2.5 * E / fy
-        checks['3.8 Column buckling']['3.8.1 Stability requirement'] = dict()
-        checks['3.8 Column buckling']['3.8.1 Stability requirement']['3.8.1'] = chk_381
-
-        # The stability requirement for a shell-column subjected to axial compression, bending and circumferential
-        # compression is given by:
-        faK = None
-        alpha_overline = math.sqrt(faK / fE)  # (3.8.7)
-        fkc = (1 - 0.28 * math.pow(alpha_overline, 2)) if alpha_overline <= 1.34 \
-            else 0.9 / math.pow(alpha_overline, 2)  # (3.8.5) (3.8.6)
-        fkcd = fkc / gammaM
-        fakd = None
-        sigm1Sd = None
-        sigm2Sd = None
-        Ic1 = None
-        k1 = None
-        Lc1 = None
-        Ic2 = None
-        k2 = None
-        Lc2 = None
-        fE1 = (math.pow(math.pi, 2) * E * Ic1) / (math.pow(k1 * Lc1, 2) * Ac)  # (3.8.3)
-        fE2 = (math.pow(math.pi, 2) * E * Ic2) / (math.pow(k2 * Lc2, 2) * Ac)  # (3.8.3)
-
-        chk_382 = (siga0sd / fkcd) + \
-                  (1 / fakd) * math.pow(math.pow(sigm1Sd / (1 - siga0sd / fE1), 2) +
-                                        math.pow(sigm2Sd(1 - siga0sd / fE2), 2), 0.5) <= 1  # 3.8.2
-        checks['3.8 Column buckling']['3.8.1 Stability requirement']['3.8.2'] = chk_382
-
-        ## 3.8.2 Column buckling strength
-
-        # --------------------3.9 Torsional buckling--------------------------
-        checks['3.9 Torsional buckling'] = dict()
-        G = None
-        It = None
-        # Ipo = None
-        hs = None
-        Iz = None
-        lT = None
-        Aw = None
-        hw = None
-        tw = None
-        Af = None
-        bf = None
-        tf = None
-        le0 = None
-        eta = sigjsd / fks  # (3.9.11)
-
-        rings_frame = None
-        if long_stiff:
-            C = (h / s) * math.pow(t / tw, 3) * math.sqrt(1 - eta)
-        elif rings_frame:
-            C = (h / le0) * math.pow(t / tw, 3) * math.sqrt(1 - eta)
-
-        beta = (3 * C + 0.5) / (C + 0.2)
-        stf_type = 'T'
-
-        ef = 0 if stf_type in ['FB', 'T'] else self.flange_width / 2 - self.web_th / 2
-        Iz = (1 / 12) * Af * math.pow(bf, 2) + math.pow(ef, 2) * (
-                    Af / (1 + (Af / Aw)))  # moment of inertia about z-axis, checked
-        Ipo = (Aw * (ef - 0.5 * tf) ** 2 / 3 + Af * ef ** 2) * 10e-4  # polar moment of interia in cm^4
-        It = (((ef - 0.5 * tf) * tw ** 3) / 3e4) * (1 - 0.63 * (tw / (ef - 0.5 * tf))) + (
-                    (bf * tf) / 3e4 * (1 - 0.63 * (tf / bf))) / (100 ** 4)  # torsonal moment of interia cm^4
-
-        # def get_some_data(lT):
-        if stf_type in ['T', 'L', 'L-bulb']:
-            fET = beta * (((Aw + Af * math.pow(tf / tw, 2)) / (Aw + 3 * Af)) * G * math.pow(tw / hw, 2)) + \
-                  (math.pow(math.pi, 2) * E * Iz) / ((Aw / 3 + Af) * math.pow(lT, 2)) \
-                if bf != 0 \
-                else (beta + 2 * math.pow(hw / lT, 2)) * G * math.pow(tw / hw, 2)  # eq7.32 checked, no example
-        elif stf_type == 'FB':
-            fET = (beta + 2 * math.pow(hw / lT, 2)) * G * math.pow(tw / hw, 2)  # eq7.34 checked, no example
-        else:
-            fET = beta * (G * It / Ipo) + math.pow(math.pi, 2) * (
-                    (E * math.pow(hs, 2) * Iz) / (Ipo * math.pow(lT, 2)))  # GENERAL (3.9.5) TODO
-
-        alphaT_overline = math.sqrt(fy / fET)  # (3.9.4)
-        mu = 0.35 * (alphaT_overline - 0.6)  # (3.9.3)
-
-        if alphaT_overline <= 0.6:
-            fT = fy  # (3.9.1)
-        else:
-            fT = ((1 + mu + math.pow(alphaT_overline, 2) -
-                   math.sqrt(math.pow(1 + mu + math.pow(alphaT_overline, 2), 2) -
-                             4 * math.pow(alphaT_overline, 2))) / (2 * math.pow(alphaT_overline, 2))) * fy  # (3.9.2)
-
-        checks['3.9 Torsional buckling']['fT/fy'] = fT / fy
-
-        print(checks)
-
-    def cyl_buckling_unstiffend_shell(self):
+    def unstiffened_shell(self):
         from scipy.optimize import fsolve
         E = 210000
         t = 20.0
@@ -1759,7 +1326,7 @@ class CalcScantlings(Structure):
             psi, epsilon, rho = table_3_1(chk=chk)
             C = psi * math.sqrt(1 + math.pow(rho * epsilon / psi, 2))  # (3.4.2) (3.6.4)
             fE = C*(math.pow(math.pi, 2)*E/(12*(1-math.pow(v,2)))) *math.pow(t/s,2)
-            print(chk, 'C', C, 'psi', psi,'epsilon', epsilon,'rho' ,rho, 'fE', fE)
+            #print(chk, 'C', C, 'psi', psi,'epsilon', epsilon,'rho' ,rho, 'fE', fE)
             vals.append(fE)
         fEax, fEshear, fEcirc = vals
         sa0sd = -sjsd if sjsd < 0 else 0
@@ -1789,25 +1356,47 @@ class CalcScantlings(Structure):
         # print('Unstifffed curved panel', 'UF', uf, 'UFmax', uf_max, 'sigjsd', sjsd, 'Zs', Zs, 'lambda_s', lambda_s,
         #       'fks', fks, 'gammaM', gammaM, 'sjsd_max', sjsd_max)
 
-        def iter_table_1(sasd_iter):
-            # Iteration
-            sigmsd_iter = smsd if geometry in [2,6] else min([-smsd, smsd])
-            siga0sd_iter = 0 if sasd_iter >= 0 else -sasd_iter  # (3.2.4)
-            sigm0sd_iter = 0 if sigmsd_iter >= 0 else -sigmsd_iter  # (3.2.5)
-            sigh0sd_iter = 0 if shsd>= 0 else -shsd  # (3.2.6)
+        def iter_table_1():
+            found, sasd_iter, count, this_val, logger  = False, 0 if uf > 1 else sasd, 0, 0, list()
 
-            sjsd_iter = math.sqrt(math.pow(sasd_iter+sigmsd_iter, 2) - (sasd_iter+sigmsd_iter)*shsd + math.pow(shsd, 2)+
-                                  3*math.pow(tsd, 2)) #(3.2.3)
+            while not found:
+                # Iteration
+                sigmsd_iter = smsd if geometry in [2,6] else min([-smsd, smsd])
+                siga0sd_iter = 0 if sasd_iter >= 0 else -sasd_iter  # (3.2.4)
+                sigm0sd_iter = 0 if sigmsd_iter >= 0 else -sigmsd_iter  # (3.2.5)
+                sigh0sd_iter = 0 if shsd>= 0 else -shsd  # (3.2.6)
 
-            lambdas_iter = math.sqrt((fy / sjsd_iter) * ((siga0sd_iter+sigm0sd_iter)/fEax+ sigh0sd_iter/fEcirc+tsd/fEshear)) # (3.2.2)
+                sjsd_iter = math.sqrt(math.pow(sasd_iter+sigmsd_iter, 2) - (sasd_iter+sigmsd_iter)*shsd + math.pow(shsd, 2)+
+                                      3*math.pow(tsd, 2)) #(3.2.3)
 
-            gammaM_iter = 1  # As taken in the DNVGL sheets
-            fks_iter = fy / math.sqrt(1 + math.pow(lambdas_iter,4))
-            fksd_iter = fks_iter / gammaM_iter
-            #print('sjsd', sjsd_iter, 'fksd', fksd_iter, 'fks', fks, 'gammaM', gammaM_iter, 'lambdas_iter', lambdas_iter)
-            return sjsd_iter/fksd_iter - 1
+                lambdas_iter = math.sqrt((fy / sjsd_iter) * ((siga0sd_iter+sigm0sd_iter)/fEax+ sigh0sd_iter/fEcirc+tsd/fEshear)) # (3.2.2)
 
-        provide_data['max axial stress - 3.3 Unstifffed curved panel'] = abs(fsolve(iter_table_1, 0)[0])
+                gammaM_iter = 1  # As taken in the DNVGL sheets
+                fks_iter = fy / math.sqrt(1 + math.pow(lambdas_iter,4))
+                fksd_iter = fks_iter / gammaM_iter
+                #print('sjsd', sjsd_iter, 'fksd', fksd_iter, 'fks', fks, 'gammaM', gammaM_iter, 'lambdas_iter', lambdas_iter)
+                this_val = sjsd_iter/fksd_iter
+                logger.append(sasd_iter)
+                if this_val > 1.0 or count == 1e6:
+                    found = True
+                count += 1
+                if this_val >0.98:
+                    sasd_iter -= 0.5
+                elif this_val > 0.95:
+                    sasd_iter -= 1
+                elif this_val > 0.9:
+                    sasd_iter -= 2
+                elif this_val > 0.7:
+                    sasd_iter -= 10
+                else:
+                    sasd_iter -= 20
+
+                print(sasd_iter, this_val)
+
+            return 0 if len(logger) == 0 else logger[-2]
+
+
+        provide_data['max axial stress - 3.3 Unstifffed curved panel'] = iter_table_1()
 
 
         # Pnt. 3.4 Unstifffed circular cylinders
@@ -1897,33 +1486,58 @@ class CalcScantlings(Structure):
 
         fksd = fks/gammaM
         uf = sjsd/fksd
-        print('UF', uf, 'Unstifffed circular cylinders')
+        #print('UF', uf, 'Unstifffed circular cylinders')
+        def iter_table_2():
 
-        def iter_table_2(sasd_iter):
-            # Iteration
-            sigmsd_iter = smsd if geometry in [2, 6] else min([-smsd, smsd])
-            siga0sd_iter = 0 if sasd_iter >= 0 else -sasd_iter  # (3.2.4)
-            sigm0sd_iter = 0 if sigmsd_iter >= 0 else -sigmsd_iter  # (3.2.5)
-            sigh0sd_iter = 0 if shsd >= 0 else -shsd  # (3.2.6)
+            found, sasd_iter, count, this_val, logger  = False, 0 if uf > 1 else sasd, 0, 0, list()
 
-            sjsd_iter = math.sqrt(
-                math.pow(sasd_iter + sigmsd_iter, 2) - (sasd_iter + sigmsd_iter) * shsd + math.pow(shsd, 2) +
-                3 * math.pow(tsd, 2))  # (3.2.3)
+            while not found:
+                # Iteration
+                sigmsd_iter = smsd if geometry in [2, 6] else min([-smsd, smsd])
+                siga0sd_iter = 0 if sasd_iter >= 0 else -sasd_iter  # (3.2.4)
+                sigm0sd_iter = 0 if sigmsd_iter >= 0 else -sigmsd_iter  # (3.2.5)
+                sigh0sd_iter = 0 if shsd >= 0 else -shsd  # (3.2.6)
+
+                sjsd_iter = math.sqrt(
+                    math.pow(sasd_iter + sigmsd_iter, 2) - (sasd_iter + sigmsd_iter) * shsd + math.pow(shsd, 2) +
+                    3 * math.pow(tsd, 2))  # (3.2.3)
 
 
-            lambdas_iter = math.sqrt((fy/sjsd_iter) * (siga0sd_iter/fEax + sigm0sd_iter/fEbend +
-                                                       sigh0sd_iter/fElat + tsd/fEtors))
+                lambdas_iter = math.sqrt((fy/sjsd_iter) * (siga0sd_iter/fEax + sigm0sd_iter/fEbend +
+                                                           sigh0sd_iter/fElat + tsd/fEtors))
 
-            gammaM_iter = 1  # As taken in the DNVGL sheets
-            fks_iter = fy / math.sqrt(1 + math.pow(lambdas_iter, 4))
-            fksd_iter = fks_iter / gammaM_iter
-            # print('sjsd', sjsd_iter, 'fksd', fksd_iter, 'fks', fks, 'gammaM', gammaM_iter, 'lambdas_iter', lambdas_iter)
-            return sjsd_iter / fksd_iter - 1
+                gammaM_iter = 1  # As taken in the DNVGL sheets
+                fks_iter = fy / math.sqrt(1 + math.pow(lambdas_iter, 4))
+                fksd_iter = fks_iter / gammaM_iter
+                # print('sjsd', sjsd_iter, 'fksd', fksd_iter, 'fks', fks, 'gammaM', gammaM_iter, 'lambdas_iter', lambdas_iter)
 
-        provide_data['max axial stress - 3.4.2 Shell buckling'] = abs(fsolve(iter_table_2, 0)[0])
+                this_val = sjsd_iter / fksd_iter
+                logger.append(sasd_iter)
+
+                if this_val > 1.0 or count == 1e6:
+                    found = True
+                count += 1
+
+                if this_val >0.98:
+                    sasd_iter -= 0.5
+                elif this_val > 0.95:
+                    sasd_iter -= 1
+                elif this_val > 0.9:
+                    sasd_iter -= 2
+                elif this_val > 0.7:
+                    sasd_iter -= 10
+                else:
+                    sasd_iter -= 20
+
+            return 0 if len(logger) == 1 else logger[-2]
+
+        provide_data['max axial stress - 3.4.2 Shell buckling'] = iter_table_2()
         return provide_data
 
-    def cyl_buckling_long_sft_shell(self):
+    def ring_stiffened_shell(self):
+        pass
+
+    def longitudinally_stiffened_shell(self):
 
         E = 210000
         t = 20.0
@@ -2038,7 +1652,7 @@ class CalcScantlings(Structure):
 
         # TODO continue
 
-    def cyl_column_buckling(self):
+    def column_buckling(self):
 
         E = 210000
         t = 20.0
@@ -2108,7 +1722,7 @@ class CalcScantlings(Structure):
         fak = (b+math.sqrt(math.pow(b,2) - 4*a*c))/(2*a)
 
         #   General case:
-        # TODO iteration
+
         use_fac = 1 if geometry < 3 else 2
 
         if use_fac == 1:
@@ -2133,8 +1747,10 @@ class CalcScantlings(Structure):
         stab_chk = sa0sd/fkcd + (abs(smsd) / (1-sa0sd/fE))/fakd <= 1
 
         print("Stability requirement satisfied") if stab_chk else print("Not acceptable")
+        # Sec. 3.9   Torsional buckling
 
-
+        # tors_buc_table = [['Variable',  'Longitudinal stiff.'   'Ring Stiff.',  'Ring Girder'],
+        #                   ['sjsd', if geometry in [3,4,7,8]]]
 
 class CalcFatigue(Structure):
     '''
@@ -2709,4 +2325,5 @@ if __name__ == '__main__':
         # print('MINIMUM PLATE THICKNESS',my_test.get_dnv_min_thickness(pressure))
         # print('MINIMUM SECTION MOD.', my_test.get_dnv_min_section_modulus(pressure))
         print()
-        my_test.cyl_buckling_unstiffend_shell()
+        #my_test.cyl_buckling_long_sft_shell()
+    my_cyl = CylinderAndCurvedPlate(None)
