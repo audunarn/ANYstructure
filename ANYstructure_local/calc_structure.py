@@ -551,15 +551,15 @@ class Structure():
         #print('Plate: thk', tf1, 's', b1, 'Flange: thk', tf2, 'width', b2, 'Web: thk', tw, 'h', h)
         return tf1 * b1 + tf2 * b2 + h * tw
 
-    def get_cross_section_centroid_with_effective_plate(self, se):
+    def get_cross_section_centroid_with_effective_plate(self, se = None, tf1 = None):
         '''
         Returns cross section centroid
         :return:
         '''
         # checked with example
-        tf1 = self._plate_th
+        tf1 = self._plate_th if tf1 == None else tf1
         tf2 = self._flange_th
-        b1 = se
+        b1 = self._spacing if se == None else se
         b2 = self._flange_width
         h = self._flange_th+self._web_height+self._plate_th
         tw = self._web_th
@@ -1342,6 +1342,14 @@ class Shell():
     def tot_cyl_length(self, val):
         self._tot_cyl_length = val
 
+    def get_Zl(self):
+        L = self.tot_cyl_length*1000
+        Zl = math.pow(L,2)*math.sqrt(1-math.pow(0.3,2))/(self._radius*1000 * self._thk*1000) if self._thk*self._radius else 0
+        return Zl
+
+    def get_effective_width_shell_plate(self):
+        return 1.56*math.sqrt(self._radius * self._thk)/(1+12*self.thk/self._radius)
+
 class CylinderAndCurvedPlate():
     '''
     Buckling of cylinders and curved plates.
@@ -1393,15 +1401,13 @@ class CylinderAndCurvedPlate():
         l = self._Shell.dist_between_rings*1000
         r = self._Shell.radius*1000
         t = self._Shell.thk*1000
-        hs, alpha = list(),list()
+
         e = [self._LongStf.get_stf_cog_eccentricity()/100, np.nan, np.nan]
-        rf= [r-t/2-(self._RingStf.hw*1000+self._RingStf.tf*1000),
-             r - t / 2 - (self._RingFrame.hw * 1000 + self._RingFrame.tf * 1000)]
+
         parameters, cross_sec_data = list(), list()
         for idx, obj in stucture_objects.items():
             if idx != 'Unstiffened':
                 hs = obj.hw/2 if stf_type !='FB' else 1 + obj.tf/2
-                A = obj.get_cross_section_area(include_plate=False)*math.pow(1000,2)
                 It = obj.get_torsional_moment_venant()
                 Ipo = obj.get_polar_moment()
                 Iz = obj.get_Iz_moment_of_inertia()
@@ -1421,7 +1427,15 @@ class CylinderAndCurvedPlate():
                 zeta = max([0, 2*(math.sinh(beta)*math.cos(beta)+math.cosh(beta)*math.sin(beta))/
                             (math.sinh(2*beta)+math.sin(2*beta))])
 
-                parameters.append([alpha, beta, leo, zeta])
+                se = self._Shell.get_effective_width_shell_plate()
+                zp = obj.get_cross_section_centroid_with_effective_plate(se=se, tf1=self._Shell.thk)*1000 - \
+                     self._Shell.thk*1000 / 2   # ch7.5.1 page 19
+                zt = (self._Shell.thk*1000 / 2 + obj.hw + obj.tf) - zp  # ch 7.5.1 page 19
+                rf = r - t / 2 - (obj.hw * 1000 + obj.tf * 1000)
+                r0 = zt + rf
+
+                parameters.append([alpha, beta, leo, zeta, rf, r0])
+
                 #print(beta, leo, alpha, zeta)
         sxsd, shsd, shRsd, tsd = list(), list(), list(), list()
         sasd_ring = None
@@ -1445,8 +1459,9 @@ class CylinderAndCurvedPlate():
                 tsd.append(self._tTsd + self._tQsd)
 
             elif idx == 'Ring Stiffeners':
+                rf = parameters[0][4]
                 shsd.append(np.nan if stucture_objects['Ring Stiffeners'] == None else shsd_ring)
-                shRsd.append((self._psd*r/t-0.3*sxsd[0])*(1/(1+parameters[0][0]))*(t/rf[0]))
+                shRsd.append((self._psd*r/t-0.3*sxsd[0])*(1/(1+parameters[0][0]))*(t/rf))
                 if self._geometry > 4:
                     sxsd.append(sxsd[0])
                     tsd.append(tsd[0])
@@ -1454,9 +1469,10 @@ class CylinderAndCurvedPlate():
                     sxsd.append(np.nan)
                     tsd.append(np.nan)
             else:
+                rf = parameters[1][4]
                 shsd.append((self._psd*r/t)-parameters[1][0]*parameters[1][3]/(parameters[1][0]+1)*
                             (self._psd*r/t-0.3*self._sasd))
-                shRsd.append((self._psd*r/t-0.3*self._sasd)*(1/(1+parameters[1][0]))*(r/rf[1]))
+                shRsd.append((self._psd*r/t-0.3*self._sasd)*(1/(1+parameters[1][0]))*(r/rf))
                 if self._geometry > 4:
                     sxsd.append(sxsd[0])
                     tsd.append(tsd[0])
@@ -1758,7 +1774,39 @@ class CylinderAndCurvedPlate():
         return provide_data
 
     def ring_stiffened_shell(self):
-        pass
+        E = 210000
+        t = 20.0
+        s = 600.0
+        v = 0.3
+        r = 2500.0
+        l = 5000.0
+        LH = 5000.0
+        L = 5000.0
+
+        sasd = self._sasd
+        smsd = self._smsd
+        tsd = self._tTsd + self._tQsd
+        psd = self._psd
+        fy = 355
+
+        data_unstiff_shell = 0
+        #Pnt. 3.5:  Ring stiffened shell
+
+        # Pnt. 3.5.2.1   Requirement for cross-sectional area:
+        Zl = self._Shell.get_Zl()
+        Areq = 0 if Zl == 0 else (2/math.pow(Zl,2)+0.06)*l*t
+        Areq = np.array([Areq, Areq])
+        A = np.array([self._RingStf.get_cross_section_area(include_plate=False)*1000**2,
+             self._RingFrame.get_cross_section_area(include_plate=False)*1000**2,])
+
+        uf = Areq/A
+
+        #Pnt. 3.5.2.3   Effective width calculation of shell plate
+        lef = 1.56*math.sqrt(r*t)/(1+12*t/r)
+
+        lef_used = np.array([min([lef, LH]), min([lef, LH])])
+        A_long_stf = self._LongStf.get_cross_section_area(include_plate=False)*1000**2
+        alfaA = 0 if s*t <= 0 else A_long_stf/(s*t)
 
     def longitudinally_stiffened_shell(self, ret_sxsd = False):
 
@@ -2646,4 +2694,4 @@ if __name__ == '__main__':
     my_cyl = CylinderAndCurvedPlate(main_dict = None, shell= Shell(None), long_stf= Structure(ex.obj_dict_cyl_long),
                                     ring_stf = Structure(ex.obj_dict_cyl_ring),
                                     ring_frame= Structure(ex.obj_dict_cyl_heavy_ring))
-    my_cyl.longitudinally_stiffened_shell()
+    my_cyl.shell_buckling()
