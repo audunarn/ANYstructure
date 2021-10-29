@@ -1726,7 +1726,6 @@ class CylinderAndCurvedPlate():
                     math.pow(sasd_iter + sigmsd_iter, 2) - (sasd_iter + sigmsd_iter) * shsd + math.pow(shsd, 2) +
                     3 * math.pow(tsd, 2))  # (3.2.3)
 
-
                 lambdas_iter = math.sqrt((fy/sjsd_iter) * (siga0sd_iter/fEax + sigm0sd_iter/fEbend +
                                                            sigh0sd_iter/fElat + tsd/fEtors))
 
@@ -1877,12 +1876,51 @@ class CylinderAndCurvedPlate():
         fEax, fEtors, fElat = vals
 
         #Torsional Buckling can be excluded as possible failure if:
-        if self._stiffener_type == 'FB':
+        if self._LongStf._stiffener_type == 'FB':
             chk_fb = hw <= 0.4*tw*math.sqrt(E/fy)
 
+        data_col_buc = self.column_buckling(ret_lambda_T=True)
+
+        fy_used = fy if data_col_buc[0] <= 0.6 else data_col_buc[1]
+
+        sasd = sasd*(A+s*t)/(A+Se*t) if A+Se*t>0 else 0
+        smsd = smsd * (A + s * t) / (A + Se * t) if A + Se * t > 0 else 0
+
+        sa0sd = 0 if sasd < 0 else -sasd
+        sm0sd = 0 if smsd < 0 else -smsd
+        sh0sd = 0 if shsd < 0 else -shsd
+
+        sjsd_panels = math.sqrt(math.pow(sasd+smsd,2)-(sasd+smsd)*shsd+math.pow(shsd,2)+3*math.pow(tsd,2))
+        worst_axial_comb = min(sasd-smsd,sasd+smsd)
+        sjsd_shells = math.sqrt(math.pow(worst_axial_comb,2)-worst_axial_comb*shsd -math.pow(shsd,2)+3*math.pow(tsd,2))
+
+        sxsd_used = worst_axial_comb
+        sjsd_used = sjsd_panels if self._geometry in [2,6] else sjsd_shells
+
+        lambda_s2_panel = fy_used/sjsd_panels*((sa0sd+sm0sd)/fEax+sh0sd/fElat+tsd/fEtors) if\
+            sjsd_panels*fEax*fEtors*fElat>0 else 0
+
+        lambda_s2_shell = fy_used/sjsd_shells**(max(0,-worst_axial_comb)/fEax+sh0sd/fElat+tsd/fEtors) if\
+            sjsd_shells*fEax*fEtors*fElat>0 else 0
+
+        shell_type = 2 if self._geometry in [1,5] else 1
+        lambda_s = math.sqrt(lambda_s2_panel) if shell_type == 1 else math.sqrt(lambda_s2_shell)
+
+        fks = fy_used/math.sqrt(1+math.pow(lambda_s,4))
+
+        if lambda_s < 0.5:
+            gammaM = self._mat_factor
+        else:
+            if lambda_s > 1:
+                gammaM = 1.45
+            else:
+                gammaM = 0.85+0.6*lambda_s
+
+        fksd = fks/gammaM
+        print(fks, fksd)
         # TODO continue
 
-    def column_buckling(self):
+    def column_buckling(self, ret_lambda_T = False):
 
         E = 210000
         t = 20.0
@@ -1911,90 +1949,12 @@ class CylinderAndCurvedPlate():
 
         geometry = 3
 
-        get_data = dict()
-
-        # Moment of inertia
-        As = A = hw*tw + b*tf  # checked
-
-        num_stf = math.floor(2*math.pi*r/s)
-
-        Atot = As*num_stf + 2*math.pi*r*t
-
-        e= (hw*tw*(hw/2) + b*tf*(hw+tf/2)) / (hw*tw+b*tw)
-        Istf = h*math.pow(tw,3)/12 + tf*math.pow(b, 3)/12
-
-        dist_stf = r - t / 2 - e
-        Istf_tot = 0
-        angle = 0
-        for stf_no in range(num_stf):
-            Istf_tot += Istf + As*math.pow(dist_stf*math.cos(angle),2)
-            angle += 2*math.pi/num_stf
-
-        Ishell = (math.pi/4) * ( math.pow(r+t/2,4) - math.pow(r-t/2,4))
-        Itot = Ishell + Istf_tot # Checked
-
-        k_factor = 1 # TODO input field
-        col_test =math.pow(k_factor*Lc/math.sqrt(Itot/Atot),2) >= 2.5*E/fy
-        print("Column buckling should be assessed") if col_test else \
-            print("Column buckling does not need to be checked")
-
-
-        #Sec. 3.8.2   Column buckling strength:
-        data = self.unstiffened_shell()
-        fEa = data['fEax - Unstifffed circular cylinders']
-        #fEa = any([geometry in [1,5], s > l])
-        fEh = data['fEh - Unstifffed circular cylinders  - Psi=4']
-
-        #   Special case:  calculation of fak for unstiffened shell:
-        a = 1+math.pow(fy,2)/math.pow(fEa,2)
-        b = ( (2*math.pow(fy,2)/(fEa*fEh)) -1)*shsd
-        c = math.pow(shsd,2) + math.pow(fy,2)*math.pow(shsd,2)/math.pow(fEh,2) - math.pow(fy,2)
-
-        fak = (b+math.sqrt(math.pow(b,2) - 4*a*c))/(2*a)
-
-        #   General case:
-
-        use_fac = 1 if geometry < 3 else 2
-
-        if use_fac == 1:
-            fak = fak
-        elif any([geometry in [1,5], s > l]):
-            fak = data['max axial stress - 3.4.2 Shell buckling']
-        else:
-            fak = data['max axial stress - 3.3 Unstifffed curved panel']
-
-        i = Itot/Atot
-        fE = E*math.sqrt(math.pi*i  / (Lc * k_factor))
-        print(fak/fE, fak, fE)
-        Lambda_ = math.sqrt(fak/fE)
-
-        fkc = (1-0-28*math.pow(Lambda_,2))*fak if Lambda_ <= 1.34 else fak/math.pow(Lambda_,2)
-        gammaM = self._mat_factor  # Check TODO
-        fakd = fak/gammaM
-        fkcd = fkc/gammaM
-
-        sa0sd = -sasd if sasd<0 else 0
-
-        stab_chk = sa0sd/fkcd + (abs(smsd) / (1-sa0sd/fE))/fakd <= 1
-
-        print("Stability requirement satisfied") if stab_chk else print("Not acceptable")
-        # Sec. 3.9   Torsional buckling
-
-        # tors_buc_table = [['Variable',  'Longitudinal stiff.'   'Ring Stiff.',  'Ring Girder'],
-        #                   ['sjsd', if geometry in [3,4,7,8]]]
-        #if geometry in [3,4,7,8]:
-
-        alpha = [np.nan, ]
-        beta = 0
-        leo = 0
-        zeta = 0
-        shsd = psd*r/t
-
         shell_buckling_data = self.shell_buckling()
+        data = self.unstiffened_shell()
+
         idx = 1
         param_map = {'Ring Stiff.': 0,'Ring Girder': 1}
-        for key, obj in {'Longitudinal stiff.': self._LongStf, 'Ring Stiff.': self._RingStf,
-                           'Ring Girder': self._RingFrame}.items():
+        for key, obj in {'Longitudinal stiff.': self._LongStf, 'Ring Stiff.': self._RingStf, 'Ring Girder': self._RingFrame}.items():
             gammaM = data['gammaM circular cylinder'] if self._geometry > 2 else \
                 data['gammaM curved panel']
             sjsd = shell_buckling_data['sjsd'][idx]
@@ -2030,13 +1990,82 @@ class CylinderAndCurvedPlate():
                       *E*Iz/((Aw/3+Af)*math.pow(lT,2))
 
             lambdaT = math.sqrt(fy/fEt)
+
             mu = 0.35*(lambdaT-0.6)
             fT = (1+mu+math.pow(lambdaT,2)-math.sqrt(math.pow(1+mu+math.pow(lambdaT,2),2)-4*math.pow(lambdaT,2)))\
                  /(2*math.pow(lambdaT,2))*fy if lambdaT > 0.6 else fy
+            if ret_lambda_T:
+                return  lambdaT, fT
 
             idx += 1
 
-            # TODO stiffener check
+        # Moment of inertia
+        As = A = hw*tw + b*tf  # checked
+
+        num_stf = math.floor(2*math.pi*r/s)
+
+        Atot = As*num_stf + 2*math.pi*r*t
+
+        e= (hw*tw*(hw/2) + b*tf*(hw+tf/2)) / (hw*tw+b*tw)
+        Istf = h*math.pow(tw,3)/12 + tf*math.pow(b, 3)/12
+
+        dist_stf = r - t / 2 - e
+        Istf_tot = 0
+        angle = 0
+        for stf_no in range(num_stf):
+            Istf_tot += Istf + As*math.pow(dist_stf*math.cos(angle),2)
+            angle += 2*math.pi/num_stf
+
+        Ishell = (math.pi/4) * ( math.pow(r+t/2,4) - math.pow(r-t/2,4))
+        Itot = Ishell + Istf_tot # Checked
+
+        k_factor = 1 # TODO input field
+        col_test =math.pow(k_factor*Lc/math.sqrt(Itot/Atot),2) >= 2.5*E/fy
+        print("Column buckling should be assessed") if col_test else \
+            print("Column buckling does not need to be checked")
+
+
+        #Sec. 3.8.2   Column buckling strength:
+
+        fEa = data['fEax - Unstifffed circular cylinders']
+        #fEa = any([geometry in [1,5], s > l])
+        fEh = data['fEh - Unstifffed circular cylinders  - Psi=4']
+
+        #   Special case:  calculation of fak for unstiffened shell:
+        a = 1+math.pow(fy,2)/math.pow(fEa,2)
+        b = ( (2*math.pow(fy,2)/(fEa*fEh)) -1)*shsd
+        c = math.pow(shsd,2) + math.pow(fy,2)*math.pow(shsd,2)/math.pow(fEh,2) - math.pow(fy,2)
+
+        fak = (b+math.sqrt(math.pow(b,2) - 4*a*c))/(2*a)
+
+        #   General case:
+
+        use_fac = 1 if geometry < 3 else 2
+
+        if use_fac == 1:
+            fak = fak
+        elif any([geometry in [1,5], s > l]):
+            fak = data['max axial stress - 3.4.2 Shell buckling']
+        else:
+            fak = data['max axial stress - 3.3 Unstifffed curved panel']
+
+        i = Itot/Atot
+        fE = E*math.sqrt(math.pi*i  / (Lc * k_factor))
+        Lambda_ = math.sqrt(fak/fE)
+
+        fkc = (1-0-28*math.pow(Lambda_,2))*fak if Lambda_ <= 1.34 else fak/math.pow(Lambda_,2)
+        gammaM = self._mat_factor  # Check TODO
+        fakd = fak/gammaM
+        fkcd = fkc/gammaM
+
+        sa0sd = -sasd if sasd<0 else 0
+
+        stab_chk = sa0sd/fkcd + (abs(smsd) / (1-sa0sd/fE))/fakd <= 1
+
+        print("Stability requirement satisfied") if stab_chk else print("Not acceptable")
+        # Sec. 3.9   Torsional buckling:  moved to the top
+
+        # TODO stiffener check
 
 
 
@@ -2617,4 +2646,4 @@ if __name__ == '__main__':
     my_cyl = CylinderAndCurvedPlate(main_dict = None, shell= Shell(None), long_stf= Structure(ex.obj_dict_cyl_long),
                                     ring_stf = Structure(ex.obj_dict_cyl_ring),
                                     ring_frame= Structure(ex.obj_dict_cyl_heavy_ring))
-    my_cyl.column_buckling()
+    my_cyl.longitudinally_stiffened_shell()
