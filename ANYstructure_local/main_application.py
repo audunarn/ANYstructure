@@ -2040,7 +2040,7 @@ class Application():
                 return_dict['pressure_fls'][current_line] = {'p_int': p_int, 'p_ext': p_ext}
                 return_dict['section_modulus'][current_line] = {'sec_mod': sec_mod, 'min_sec_mod': min_sec_mod}
                 return_dict['shear_area'][current_line] = {'shear_area': shear_area, 'min_shear_area': min_shear}
-                return_dict['thickness'][current_line] = {'thk': obj_scnt_calc.get_plate_thk(), 'min_thk': min_thk}
+                return_dict['thickness'][current_line] = {'thk': obj_scnt_calc.get_pl_thk(), 'min_thk': min_thk}
                 return_dict['struc_obj'][current_line] = obj_structure
                 return_dict['scant_calc_obj'][current_line] = obj_scnt_calc
                 return_dict['fatigue_obj'][current_line] = fatigue_obj
@@ -2056,7 +2056,7 @@ class Application():
 
                 fat_util = 0 if damage is None else damage * dff
                 shear_util = 0 if shear_area == 0 else min_shear / shear_area
-                thk_util = 0 if obj_structure.get_plate_thk() == 0 else min_thk / (1000 * obj_structure.get_plate_thk())
+                thk_util = 0 if obj_structure.get_pl_thk() == 0 else min_thk / (1000 * obj_structure.get_pl_thk())
                 sec_util = 0 if min(sec_mod) == 0 else min_sec_mod / min(sec_mod)
                 buc_util = 1 if float('inf') in buckling else max(buckling[0:5])
                 rec_for_color[current_line]['rp buckling'] = max(buckling[0:5])
@@ -2975,7 +2975,7 @@ class Application():
                     slm_min_web_thk = state['slamming'][current_line]['min_web_thk']
 
                     slm_text_pl_thk = 'Minimum plate thickness (BOW SLAMMING): '+str(round(slm_min_pl_thk,1))+' [mm]' \
-                        if obj_structure.get_plate_thk() * 1000 < slm_min_pl_thk else None
+                        if obj_structure.get_pl_thk() * 1000 < slm_min_pl_thk else None
 
                     slm_text_min_web_thk = 'Minimum web thickness (BOW SLAMMING): '+str(round(slm_min_web_thk,1))+' [mm]' \
                         if obj_structure.get_web_thk()*1000 < slm_min_web_thk else None
@@ -3029,7 +3029,7 @@ class Application():
 
                 self._result_canvas.create_text([x*1, (y+6*dy)*1],
                                                text='Plate thickness: '
-                                                    +str(obj_structure.get_plate_thk()*1000)+' [mm] ',
+                                                    +str(obj_structure.get_pl_thk()*1000)+' [mm] ',
                                                font=self._text_size["Text 9 bold"],anchor='nw')
                 text = 'Minimum plate thickness: '+str(round(min_thk,1)) + ' [mm]' if not slm_text_pl_thk \
                     else 'Minimum plate thickness due to SLAMMING'+str(slm_min_pl_thk)+' [mm]'

@@ -12,34 +12,37 @@ class Structure():
     def __init__(self, main_dict, *args, **kwargs):
         super(Structure,self).__init__()
 
-        self.main_dict = main_dict
-        self.panel_or_shell = main_dict['panel or shell'][0]
-        self.plate_th = main_dict['plate_thk'][0]
-        self.web_height = main_dict['stf_web_height'][0]
-        self.web_th = main_dict['stf_web_thk'][0]
-        self.flange_width = main_dict['stf_flange_width'][0]
-        self.flange_th = main_dict['stf_flange_thk'][0]
-        self.mat_yield = main_dict['mat_yield'][0]
-        self.mat_factor = main_dict['mat_factor'][0]
-        self.span = main_dict['span'][0]
-        self.spacing = main_dict['spacing'][0]
-        self.structure_type = main_dict['structure_type'][0]
-        self.sigma_y1=main_dict['sigma_y1'][0]
-        self.sigma_y2=main_dict['sigma_y2'][0]
-        self.sigma_x=main_dict['sigma_x'][0]
-        self.tauxy=main_dict['tau_xy'][0]
-        self.plate_kpp = main_dict['plate_kpp'][0]
-        self.stf_kps = main_dict['stf_kps'][0]
-        self.km1 = main_dict['stf_km1'][0]
-        self.km2 = main_dict['stf_km2'][0]
-        self.km3 = main_dict['stf_km3'][0]
-        self.stiffener_type=main_dict['stf_type'][0]
-        self.structure_types = main_dict['structure_types'][0]
-        self.dynamic_variable_orientation = None
-        if self.structure_type in self.structure_types['vertical']:
-            self.dynamic_variable_orientation = 'z - vertical'
-        elif self.structure_type in self.structure_types['horizontal']:
-            self.dynamic_variable_orientation = 'x - horizontal'
+        self._main_dict = main_dict
+        if 'panel or shell' not in main_dict.keys():
+            self._panel_or_shell = 'panel'
+        else:
+            self._panel_or_shell = main_dict['panel or shell'][0]
+        self._plate_th = main_dict['plate_thk'][0]
+        self._web_height = main_dict['stf_web_height'][0]
+        self._web_th = main_dict['stf_web_thk'][0]
+        self._flange_width = main_dict['stf_flange_width'][0]
+        self._flange_th = main_dict['stf_flange_thk'][0]
+        self._mat_yield = main_dict['mat_yield'][0]
+        self._mat_factor = main_dict['mat_factor'][0]
+        self._span = main_dict['span'][0]
+        self._spacing = main_dict['spacing'][0]
+        self._structure_type = main_dict['structure_type'][0]
+        self._sigma_y1=main_dict['sigma_y1'][0]
+        self._sigma_y2=main_dict['sigma_y2'][0]
+        self._sigma_x=main_dict['sigma_x'][0]
+        self._tauxy=main_dict['tau_xy'][0]
+        self._plate_kpp = main_dict['plate_kpp'][0]
+        self._stf_kps = main_dict['stf_kps'][0]
+        self._km1 = main_dict['stf_km1'][0]
+        self._km2 = main_dict['stf_km2'][0]
+        self._km3 = main_dict['stf_km3'][0]
+        self._stiffener_type=main_dict['stf_type'][0]
+        self._structure_types = main_dict['structure_types'][0]
+        self._dynamic_variable_orientation = None
+        if self._structure_type in self._structure_types['vertical']:
+            self._dynamic_variable_orientation = 'z - vertical'
+        elif self._structure_type in self._structure_types['horizontal']:
+            self._dynamic_variable_orientation = 'x - horizontal'
         self._puls_method = main_dict['puls buckling method'][0]
         self._puls_boundary = main_dict['puls boundary'][0]
         self._puls_stf_end = main_dict['puls stiffener end'][0]
@@ -48,15 +51,45 @@ class Structure():
 
         self._zstar_optimization = main_dict['zstar_optimization'][0]
         try:
-            self.girder_lg=main_dict['girder_lg'][0]
+            self._girder_lg=main_dict['girder_lg'][0]
         except KeyError:
-            self.girder_lg = 10
+            self._girder_lg = 10
         try:
-            self.pressure_side = main_dict['press_side'][0]
+            self._pressure_side = main_dict['press_side'][0]
         except KeyError:
-            self.pressure_side = 'p'
+            self._pressure_side = 'p'
 
-        self._shell_radius = None
+    # Property decorators are used in buckling of shells. IN mm!
+    @property # in mm
+    def hw(self):
+        return self._web_height * 1000
+    @hw.setter # in mm
+    def hw(self, val):
+        self._web_height = val / 1000
+    @property # in mm
+    def tw(self):
+        return self._web_th * 1000
+    @tw.setter # in mm
+    def tw(self, val):
+        self._web_th = val / 1000
+    @property # in mm
+    def b(self):
+        return self._flange_width * 1000
+    @b.setter # in mm
+    def b(self, val):
+        self._flange_width = val / 1000
+    @property # in mm
+    def tf(self):
+        return self._flange_th * 1000
+    @tf.setter # in mm
+    def tf(self, val):
+        self._flange_th = val / 1000
+    @property  # in mm
+    def s(self):
+        return self._spacing* 1000
+    @s.setter  # in mm
+    def s(self, val):
+        self._spacing = val / 1000
 
     def __str__(self):
         '''
@@ -64,42 +97,40 @@ class Structure():
         '''
         return \
             str(
-            '\n Plate field span:              ' + str(round(self.span,3)) + ' meters' +
-            '\n Stiffener spacing:             ' + str(self.spacing*1000)+' mm'+
-            '\n Plate thickness:               ' + str(self.plate_th*1000)+' mm'+
-            '\n Stiffener web height:          ' + str(self.web_height*1000)+' mm'+
-            '\n Stiffener web thickness:       ' + str(self.web_th*1000)+' mm'+
-            '\n Stiffener flange width:        ' + str(self.flange_width*1000)+' mm'+
-            '\n Stiffener flange thickness:    ' + str(self.flange_th*1000)+' mm'+
-            '\n Material yield:                ' + str(self.mat_yield/1e6)+' MPa'+
-            '\n Structure/stiffener type:      ' + str(self.structure_type)+'/'+(self.stiffener_type)+
-            '\n Dynamic load varible_          ' + str(self.dynamic_variable_orientation)+
-            '\n Plate fixation paramter,kpp:   ' + str(self.plate_kpp) + ' ' +
-            '\n Stf. fixation paramter,kps:    ' + str(self.stf_kps) + ' ' +
-            '\n Global stress, sig_y1/sig_y2:  ' + str(round(self.sigma_y1,3))+'/'+str(round(self.sigma_y2,3))+ ' MPa' +
-            '\n Global stress, sig_x:          ' + str(round(self.sigma_x,3)) + ' MPa' +
-            '\n Global shear, tau_xy:          ' + str(round(self.tauxy,3)) + ' MPa' +
-            '\n km1,km2,km3:                   ' + str(self.km1)+'/'+str(self.km2)+'/'+str(self.km3)+
-            '\n Pressure side (p-plate/s-stf): ' + str(self.pressure_side) + ' ')
-
-
+            '\n Plate field span:              ' + str(round(self._span,3)) + ' meters' +
+            '\n Stiffener spacing:             ' + str(self._spacing*1000)+' mm'+
+            '\n Plate thickness:               ' + str(self._plate_th*1000)+' mm'+
+            '\n Stiffener web height:          ' + str(self._web_height*1000)+' mm'+
+            '\n Stiffener web thickness:       ' + str(self._web_th*1000)+' mm'+
+            '\n Stiffener flange width:        ' + str(self._flange_width*1000)+' mm'+
+            '\n Stiffener flange thickness:    ' + str(self._flange_th*1000)+' mm'+
+            '\n Material yield:                ' + str(self._mat_yield/1e6)+' MPa'+
+            '\n Structure/stiffener type:      ' + str(self._structure_type)+'/'+(self._stiffener_type)+
+            '\n Dynamic load varible_          ' + str(self._dynamic_variable_orientation)+
+            '\n Plate fixation paramter,kpp:   ' + str(self._plate_kpp) + ' ' +
+            '\n Stf. fixation paramter,kps:    ' + str(self._stf_kps) + ' ' +
+            '\n Global stress, sig_y1/sig_y2:  ' + str(round(self._sigma_y1,3))+'/'+str(round(self._sigma_y2,3))+ ' MPa' +
+            '\n Global stress, sig_x:          ' + str(round(self._sigma_x,3)) + ' MPa' +
+            '\n Global shear, tau_xy:          ' + str(round(self._tauxy,3)) + ' MPa' +
+            '\n km1,km2,km3:                   ' + str(self._km1)+'/'+str(self._km2)+'/'+str(self._km3)+
+            '\n Pressure side (p-plate/s-stf): ' + str(self._pressure_side) + ' ')
 
     def get_beam_string(self):
         ''' Returning a string. '''
-        base_name = self.stiffener_type+ '_' + str(round(self.web_height*1000, 0)) + 'x' + \
-                   str(round(self.web_th*1000, 0))
-        if self.stiffener_type == 'FB':
+        base_name = self._stiffener_type+ '_' + str(round(self._web_height*1000, 0)) + 'x' + \
+                   str(round(self._web_th*1000, 0))
+        if self._stiffener_type == 'FB':
             ret_str = base_name
         else:
-            ret_str = base_name + '__' + str(round(self.flange_width*1000, 0)) + 'x' + \
-                      str(round(self.flange_th*1000, 0))
+            ret_str = base_name + '__' + str(round(self._flange_width*1000, 0)) + 'x' + \
+                      str(round(self._flange_th*1000, 0))
 
         ret_str = ret_str.replace('.', '_')
 
         return ret_str
 
     def get_structure_types(self):
-        return self.structure_types
+        return self._structure_types
 
     def get_z_opt(self):
         return self._zstar_optimization
@@ -121,141 +152,141 @@ class Structure():
 
     def get_one_line_string(self):
         ''' Returning a one line string. '''
-        return 'pl_'+str(round(self.spacing*1000, 1))+'x'+str(round(self.plate_th*1000,1))+' stf_'+self.stiffener_type+\
-               str(round(self.web_height*1000,1))+'x'+str(round(self.web_th*1000,1))+'+'\
-               +str(round(self.flange_width*1000,1))+'x'+\
-               str(round(self.flange_th*1000,1))
+        return 'pl_'+str(round(self._spacing*1000, 1))+'x'+str(round(self._plate_th*1000,1))+' stf_'+self._stiffener_type+\
+               str(round(self._web_height*1000,1))+'x'+str(round(self._web_th*1000,1))+'+'\
+               +str(round(self._flange_width*1000,1))+'x'+\
+               str(round(self._flange_th*1000,1))
 
     def get_report_stresses(self):
         'Return the stresses to the report'
-        return 'sigma_y1: '+str(round(self.sigma_y1,1))+' sigma_y2: '+str(round(self.sigma_y2,1))+ \
-               ' sigma_x: ' + str(round(self.sigma_x,1))+' tauxy: '+ str(round(self.tauxy,1))
+        return 'sigma_y1: '+str(round(self._sigma_y1,1))+' sigma_y2: '+str(round(self._sigma_y2,1))+ \
+               ' sigma_x: ' + str(round(self._sigma_x,1))+' tauxy: '+ str(round(self._tauxy,1))
 
     def get_extended_string(self):
         ''' Some more information returned. '''
-        return 'span: '+str(round(self.span,4))+' structure type: '+ self.structure_type + ' stf. type: ' + \
-               self.stiffener_type + ' pressure side: ' + self.pressure_side
+        return 'span: '+str(round(self._span,4))+' structure type: '+ self._structure_type + ' stf. type: ' + \
+               self._stiffener_type + ' pressure side: ' + self._pressure_side
     
     def get_sigma_y1(self):
         '''
         Return sigma_y1
         :return:
         '''
-        return self.sigma_y1
+        return self._sigma_y1
     def get_sigma_y2(self):
         '''
         Return sigma_y2
         :return:
         '''
-        return self.sigma_y2
+        return self._sigma_y2
     def get_sigma_x(self):
         '''
         Return sigma_x
         :return:
         '''
-        return self.sigma_x
+        return self._sigma_x
     def get_tau_xy(self):
         '''
         Return tau_xy
         :return:
         '''
-        return self.tauxy
+        return self._tauxy
     def get_s(self):
         '''
         Return the spacing
         :return:
         '''
-        return self.spacing
+        return self._spacing
     def get_pl_thk(self):
         '''
         Return the plate thickness
         :return:
         '''
-        return self.plate_th
+        return self._plate_th
     def get_web_h(self):
         '''
         Return the web heigh
         :return:
         '''
-        return self.web_height
+        return self._web_height
     def get_web_thk(self):
         '''
         Return the spacing
         :return:
         '''
-        return self.web_th
+        return self._web_th
     def get_fl_w(self):
         '''
         Return the flange width
         :return:
         '''
-        return self.flange_width
+        return self._flange_width
     def get_fl_thk(self):
         '''
         Return the flange thickness
         :return:
         '''
-        return self.flange_th
+        return self._flange_th
     def get_fy(self):
         '''
         Return material yield
         :return:
         '''
-        return self.mat_yield
+        return self._mat_yield
     def get_mat_factor(self):
-        return self.mat_factor
+        return self._mat_factor
     def get_span(self):
         '''
         Return the span
         :return:
         '''
-        return self.span
+        return self._span
     def get_lg(self):
         '''
         Return the girder length
         :return:
         '''
-        return self.girder_lg
+        return self._girder_lg
     def get_kpp(self):
         '''
         Return var
         :return:
         '''
-        return self.plate_kpp
+        return self._plate_kpp
     def get_kps(self):
         '''
         Return var
         :return:
         '''
-        return self.stf_kps
+        return self._stf_kps
     def get_km1(self):
         '''
         Return var
         :return:
         '''
-        return self.km1
+        return self._km1
     def get_km2(self):
         '''
         Return var
         :return:
         '''
-        return self.km2
+        return self._km2
     def get_km3(self):
         '''
         Return var
         :return:
         '''
-        return self.km3
+        return self._km3
     def get_side(self):
         '''
         Return the checked pressure side.
         :return: 
         '''
-        return self.pressure_side
+        return self._pressure_side
     def get_tuple(self):
         ''' Return a tuple of the plate stiffener'''
-        return (self.spacing, self.plate_th, self.web_height, self.web_th, self.flange_width,
-                self.flange_th, self.span, self.girder_lg, self.stiffener_type)
+        return (self._spacing, self._plate_th, self._web_height, self._web_th, self._flange_width,
+                self._flange_th, self._span, self._girder_lg, self._stiffener_type)
 
     def get_section_modulus(self, efficient_se = None, dnv_table = False):
         '''
@@ -264,15 +295,15 @@ class Structure():
         :return: 
         '''
         #Plate. When using DNV table, default values are used for the plate
-        b1 = self.spacing if efficient_se==None else efficient_se
-        tf1 = self.plate_th
+        b1 = self._spacing if efficient_se==None else efficient_se
+        tf1 = self._plate_th
 
         #Stiffener
-        tf2 = self.flange_th
-        b2 = self.flange_width
-        h = self.flange_th+self.web_height+self.plate_th
-        tw = self.web_th
-        hw = self.web_height
+        tf2 = self._flange_th
+        b2 = self._flange_width
+        h = self._flange_th+self._web_height+self._plate_th
+        tw = self._web_th
+        hw = self._web_height
 
         # cross section area
         Ax = tf1 * b1 + tf2 * b2 + hw * tw
@@ -297,13 +328,13 @@ class Structure():
         Returns the plastic section modulus
         :return:
         '''
-        tf1 = self.plate_th
-        tf2 = self.flange_th
-        b1 = self.spacing
-        b2 = self.flange_width
-        h = self.flange_th+self.web_height+self.plate_th
-        tw = self.web_th
-        hw = self.web_height
+        tf1 = self._plate_th
+        tf2 = self._flange_th
+        b1 = self._spacing
+        b2 = self._flange_width
+        h = self._flange_th+self._web_height+self._plate_th
+        tw = self._web_th
+        hw = self._web_height
 
         Ax = tf1 * b1 + tf2 * b2 + (h-tf1-tf2) * tw
 
@@ -321,13 +352,13 @@ class Structure():
         Returning the shear center
         :return:
         '''
-        tf1 = self.plate_th
-        tf2 = self.flange_th
-        b1 = self.spacing
-        b2 = self.flange_width
-        h = self.flange_th+self.web_height+self.plate_th
-        tw = self.web_th
-        hw = self.web_height
+        tf1 = self._plate_th
+        tf2 = self._flange_th
+        b1 = self._spacing
+        b2 = self._flange_width
+        h = self._flange_th+self._web_height+self._plate_th
+        tw = self._web_th
+        hw = self._web_height
         Ax = tf1 * b1 + tf2 * b2 + (h-tf1-tf2) * tw
         # distance to center of gravity in z-direction
         ez = (b2*tf2*tf2/2 + tw*hw*(tf2+hw/2)+tf1*b1*(tf2+hw+tf1/2)) / Ax
@@ -347,66 +378,96 @@ class Structure():
             tf1 = 0
             b1 = 0
         else:
-            tf1 = self.plate_th
-            b1 = self.spacing if efficent_se==None else efficent_se
-        h = self.flange_th+self.web_height+self.plate_th
-        tw = self.web_th
-        hw = self.web_height
-        tf2 = self.flange_th
-        b2 = self.flange_width
+            tf1 = self._plate_th
+            b1 = self._spacing if efficent_se==None else efficent_se
+        h = self._flange_th+self._web_height+self._plate_th
+        tw = self._web_th
+        hw = self._web_height
+        tf2 = self._flange_th
+        b2 = self._flange_width
 
-        Ax = tf1 * b1 + tf2 * b2 + (h-tf1-tf2) * tw
+        Ax = tf1 * b1 + tf2 * b2 + hw * tw
         Iyc = (1 / 12) * (b1 * math.pow(tf1, 3) + b2 * math.pow(tf2, 3) + tw * math.pow(hw, 3))
         ez = (tf1 * b1 * (h - tf1 / 2) + hw * tw * (tf2 + hw / 2) + tf2 * b2 * (tf2 / 2)) / Ax
         Iy = Iyc + (tf1 * b1 * math.pow(tf2 + hw + tf1 / 2, 2) + tw * hw * math.pow(tf2 + hw / 2, 2) +
              tf2 * b2 * math.pow(tf2 / 2, 2)) - Ax * math.pow(ez, 2)
         return Iy
 
-    def get_torsional_moment(self):
-        ef = self.get_flange_eccentricity()
-        tf = self.flange_th
-        tw = self.web_th
-        bf = self.flange_width
-        It = (((ef-0.5*tf)*tw**3)/3e4)*(1-0.63*(tw/(ef-0.5*tf)))+( (bf*tf)/3e4*(1-0.63*(tf/bf)))/(1000**4) #torsonal moment of interia mm^4
-        return It
+    def get_Iz_moment_of_inertia(self):
+        tw = self._web_th * 1000
+        hw = self._web_height * 1000
+        tf2 = self._flange_th * 1000
+        b2 = self._flange_width * 1000
+
+        Af = b2*tf2
+        Aw = tw*hw
+        if self._stiffener_type == 'FB':
+            Iz = math.pow(tw,3)*hw/12
+        else:
+            Iz = (Af*math.pow(b2,2)/12) + math.pow(self.get_flange_eccentricity(),2) * (Af/(1+Af/Aw))
+        return Iz
+
+    def get_torsional_moment_venant(self):
+        ef = self.get_ef_iacs()*1000
+        tf = self._flange_th*1000
+        tw = self._web_th*1000
+        bf = self._flange_width*1000
+        hw = self._web_height*1000
+
+        if self._stiffener_type == 'FB':
+            It = ((hw*math.pow(tw,3)/3e4) * (1-0.63*(tw/hw)) )
+        else:
+            It = ((((ef-0.5*tf)*math.pow(tw,3))/3e4) * (1-0.63*(tw/(ef-0.5*tf))) + ((bf*math.pow(tf,3))/3e4)
+                  * (1-0.63*(tf/bf)) )
+
+        return It * 1e4
+
 
     def get_polar_moment(self):
-        Aw = self.web_th*self.web_height
-        tf = self.flange_th
-        Af = self.flange_width*self.flange_th
-        tw = self.web_th
+        tf = self._flange_th*1000
+        tw = self._web_th*1000
         ef = self.get_flange_eccentricity()
-        hw = self.web_height
-        b = self.flange_width
+        hw = self._web_height*1000
+        b = self._flange_width*1000
         
-        #Ipo = (Aw*(ef-0.5*tf)**2/3+Af*ef**2)*10e-4 #polar moment of interia in cm^4
-        Ipo = (tw/3)*math.pow(hw, 3) + tf*(math.pow(hw+tf/2,2)*b)+tf/3*(math.pow(ef+b/2,3)-math.pow(ef-b/2,3))
+        #Ipo = (A|w*(ef-0.5*tf)**2/3+Af*ef**2)*10e-4 #polar moment of interia in cm^4
+        Ipo = (tw/3)*math.pow(hw, 3) + tf*(math.pow(hw+tf/2,2)*b)+(tf/3)*(math.pow(ef+b/2,3)-math.pow(ef-b/2,3))
         return Ipo
 
     def get_flange_eccentricity(self):
-        ef = 0 if self.stiffener_type in ['FB', 'T'] else self.flange_width / 2 - self.web_th / 2
+        ecc = 0 if self._stiffener_type in ['FB', 'T'] else self._flange_width / 2 - self._web_th / 2
+        return ecc
+
+    def get_ef_iacs(self):
+
+        if self._stiffener_type == 'FB':
+            ef = self._web_height
+        # elif self._stiffener_type == 'L-bulb':
+        #     ef = self._web_height-0.5*self._flange_th
+        elif self._stiffener_type in ['L', 'T', 'L-bulb']:
+            ef = self._web_height + 0.5*self._flange_th
         return ef
 
     def get_stf_cog_eccentricity(self):
-        e = (self.web_height * self.web_th * (self.web_height / 2) + self.flange_width * self.flange_th *
-             (self.web_height + self.web_th / 2)) / (self.web_height * self.web_th + self.flange_width * self.flange_th)
+        e = (self._web_height * self._web_th * (self._web_height / 2) + self._flange_width * self._flange_th *
+             (self._web_height + self._web_th / 2)) / (self._web_height * self._web_th + self._flange_width * self._flange_th)
         return e
 
     def get_structure_prop(self):
-        return self.main_dict
+        return self._main_dict
 
     def get_structure_type(self):
-        return self.structure_type
+        return self._structure_type
 
     def get_stiffener_type(self):
-        return self.stiffener_type
+        return self._stiffener_type
 
     def get_shear_area(self):
         '''
         Returning the shear area in [m^2]
         :return:
         '''
-        return ((self.flange_th*self.web_th) + (self.web_th*self.plate_th) + (self.web_height*self.web_th))
+        return ((self._flange_th*self._web_th) + (self._web_th*self._plate_th) + (self._web_height*self._web_th))
 
     def set_main_properties(self, main_dict):
         '''
@@ -415,35 +476,35 @@ class Structure():
         :return:
         '''
 
-        self.main_dict = main_dict
-        self.plate_th = main_dict['plate_thk'][0]
-        self.web_height = main_dict['stf_web_height'][0]
-        self.web_th = main_dict['stf_web_thk'][0]
-        self.flange_width = main_dict['stf_flange_width'][0]
-        self.flange_th = main_dict['stf_flange_thk'][0]
-        self.mat_yield = main_dict['mat_yield'][0]
-        self.mat_factor = main_dict['mat_factor'][0]
-        self.span = main_dict['span'][0]
-        self.spacing = main_dict['spacing'][0]
-        self.structure_type = main_dict['structure_type'][0]
-        self.sigma_y1=main_dict['sigma_y1'][0]
-        self.sigma_y2=main_dict['sigma_y2'][0]
-        self.sigma_x=main_dict['sigma_x'][0]
-        self.tauxy=main_dict['tau_xy'][0]
-        self.plate_kpp = main_dict['plate_kpp'][0]
-        self.stf_kps = main_dict['stf_kps'][0]
-        self.km1 = main_dict['stf_km1'][0]
-        self.km2 = main_dict['stf_km2'][0]
-        self.km3 = main_dict['stf_km3'][0]
-        self.stiffener_type=main_dict['stf_type'][0]
+        self._main_dict = main_dict
+        self._plate_th = main_dict['plate_thk'][0]
+        self._web_height = main_dict['stf_web_height'][0]
+        self._web_th = main_dict['stf_web_thk'][0]
+        self._flange_width = main_dict['stf_flange_width'][0]
+        self._flange_th = main_dict['stf_flange_thk'][0]
+        self._mat_yield = main_dict['mat_yield'][0]
+        self._mat_factor = main_dict['mat_factor'][0]
+        self._span = main_dict['span'][0]
+        self._spacing = main_dict['spacing'][0]
+        self._structure_type = main_dict['structure_type'][0]
+        self._sigma_y1=main_dict['sigma_y1'][0]
+        self._sigma_y2=main_dict['sigma_y2'][0]
+        self._sigma_x=main_dict['sigma_x'][0]
+        self._tauxy=main_dict['tau_xy'][0]
+        self._plate_kpp = main_dict['plate_kpp'][0]
+        self._stf_kps = main_dict['stf_kps'][0]
+        self._km1 = main_dict['stf_km1'][0]
+        self._km2 = main_dict['stf_km2'][0]
+        self._km3 = main_dict['stf_km3'][0]
+        self._stiffener_type=main_dict['stf_type'][0]
         try:
-            self.girder_lg=main_dict['girder_lg'][0]
+            self._girder_lg=main_dict['girder_lg'][0]
         except KeyError:
-            self.girder_lg = 10
+            self._girder_lg = 10
         try:
-            self.pressure_side = main_dict['press_side'][0]
+            self._pressure_side = main_dict['press_side'][0]
         except KeyError:
-            self.pressure_side = 'p'
+            self._pressure_side = 'p'
         self._zstar_optimization = main_dict['zstar_optimization'][0]
         self._puls_method = main_dict['puls buckling method'][0]
         self._puls_boundary = main_dict['puls boundary'][0]
@@ -460,30 +521,35 @@ class Structure():
         :param tauxy:
         :return:
         '''
-        self.main_dict['sigma_y1'][0]= sigy1
-        self.sigma_y1 = sigy1
+        self._main_dict['sigma_y1'][0]= sigy1
+        self._sigma_y1 = sigy1
 
-        self.main_dict['sigma_y2'][0]= sigy2
-        self.sigma_y2  = sigy2
+        self._main_dict['sigma_y2'][0]= sigy2
+        self._sigma_y2  = sigy2
 
-        self.main_dict['sigma_x'][0]= sigx
-        self.sigma_x = sigx
+        self._main_dict['sigma_x'][0]= sigx
+        self._sigma_x = sigx
 
-        self.main_dict['tau_xy'][0]= tauxy
-        self.tauxy  = tauxy
+        self._main_dict['tau_xy'][0]= tauxy
+        self._tauxy  = tauxy
 
-    def get_cross_section_area(self, efficient_se = None):
+    def get_cross_section_area(self, efficient_se = None, include_plate = True):
         '''
         Returns the cross section area.
         :return:
         '''
-        tf1 = self.plate_th
-        tf2 = self.flange_th
-        b1 = self.spacing if efficient_se==None else efficient_se
-        b2 = self.flange_width
-        h = self.flange_th+self.web_height+self.plate_th
-        tw = self.web_th
-        return tf1 * b1 + tf2 * b2 + (h-tf1-tf2) * tw
+        tf1 = self._plate_th if include_plate else 0
+        tf2 = self._flange_th
+        if include_plate:
+            b1 = self._spacing if efficient_se==None else efficient_se
+        else:
+            b1 = 0
+        b2 = self._flange_width
+        #h = self._flange_th+self._web_height+self._plate_th
+        h = self._web_height
+        tw = self._web_th
+        #print('Plate: thk', tf1, 's', b1, 'Flange: thk', tf2, 'width', b2, 'Web: thk', tw, 'h', h)
+        return tf1 * b1 + tf2 * b2 + h * tw
 
     def get_cross_section_centroid_with_effective_plate(self, se):
         '''
@@ -491,13 +557,13 @@ class Structure():
         :return:
         '''
         # checked with example
-        tf1 = self.plate_th
-        tf2 = self.flange_th
+        tf1 = self._plate_th
+        tf2 = self._flange_th
         b1 = se
-        b2 = self.flange_width
-        h = self.flange_th+self.web_height+self.plate_th
-        tw = self.web_th
-        hw = self.web_height
+        b2 = self._flange_width
+        h = self._flange_th+self._web_height+self._plate_th
+        tw = self._web_th
+        hw = self._web_height
         Ax = tf1 * b1 + tf2 * b2 + hw * tw
 
         return (tf1 * b1 * tf1/2 + hw * tw * (tf1 + hw / 2) + tf2 * b2 * (tf1+hw+tf2/2)) / Ax
@@ -507,45 +573,45 @@ class Structure():
         Return the weight.
         :return:
         '''
-        return 7850*self.span*(self.spacing*self.plate_th+self.web_height*self.web_th+self.flange_width*self.flange_th)
+        return 7850*self._span*(self._spacing*self._plate_th+self._web_height*self._web_th+self._flange_width*self._flange_th)
 
     def get_weight_width_lg(self):
         '''
         Return the weight including Lg
         :return:
         '''
-        pl_area = self.girder_lg*self.plate_th
-        stf_area = (self.web_height*self.web_th+self.flange_width*self.flange_th)*(self.girder_lg//self.spacing)
-        return (pl_area+stf_area)*7850*self.span
+        pl_area = self._girder_lg*self._plate_th
+        stf_area = (self._web_height*self._web_th+self._flange_width*self._flange_th)*(self._girder_lg//self._spacing)
+        return (pl_area+stf_area)*7850*self._span
 
     def set_span(self,span):
         '''
         Setting the span. Used when moving a point.
         :return: 
         '''
-        self.span = span
-        self.main_dict['span'][0] = span
+        self._span = span
+        self._main_dict['span'][0] = span
 
     def get_puls_input(self, run_type: str = 'SP'):
-        if self.stiffener_type == 'FB':
+        if self._stiffener_type == 'FB':
             stf_type = 'F'
         else:
-            stf_type = self.stiffener_type
+            stf_type = self._stiffener_type
         if self._puls_sp_or_up == 'SP':
-            return_dict = {'Identification': None, 'Length of panel': self.span*1000, 'Stiffener spacing': self.spacing*1000,
-                            'Plate thickness': self.plate_th*1000,
+            return_dict = {'Identification': None, 'Length of panel': self._span*1000, 'Stiffener spacing': self._spacing*1000,
+                            'Plate thickness': self._plate_th*1000,
                           'Number of primary stiffeners': 10,
                            'Stiffener type (L,T,F)': stf_type,
                             'Stiffener boundary': self._puls_stf_end,
-                          'Stiff. Height': self.web_height*1000, 'Web thick.': self.web_th*1000,
-                           'Flange width': self.flange_width*1000,
-                            'Flange thick.': self.flange_th*1000, 'Tilt angle': 0,
+                          'Stiff. Height': self._web_height*1000, 'Web thick.': self._web_th*1000,
+                           'Flange width': self._flange_width*1000,
+                            'Flange thick.': self._flange_th*1000, 'Tilt angle': 0,
                           'Number of sec. stiffeners': 0, 'Modulus of elasticity': 2.1e11/1e6, "Poisson's ratio": 0.3,
-                          'Yield stress plate': self.mat_yield/1e6, 'Yield stress stiffener': self.mat_yield/1e6,
-                            'Axial stress': 0 if self._puls_boundary == 'GT' else self.sigma_x,
-                           'Trans. stress 1': 0 if self._puls_boundary == 'GL' else self.sigma_y1,
-                          'Trans. stress 2': 0 if self._puls_boundary == 'GL' else self.sigma_y2,
-                           'Shear stress': self.tauxy,
+                          'Yield stress plate': self._mat_yield/1e6, 'Yield stress stiffener': self._mat_yield/1e6,
+                            'Axial stress': 0 if self._puls_boundary == 'GT' else self._sigma_x,
+                           'Trans. stress 1': 0 if self._puls_boundary == 'GL' else self._sigma_y1,
+                          'Trans. stress 2': 0 if self._puls_boundary == 'GL' else self._sigma_y2,
+                           'Shear stress': self._tauxy,
                             'Pressure (fixed)': None, 'In-plane support': self._puls_boundary,
                            'sp or up': self._puls_sp_or_up}
         else:
@@ -562,15 +628,15 @@ class Structure():
                     else:
                         blist.append('SS')
 
-            return_dict = {'Identification': None, 'Length of plate': self.span*1000, 'Width of c': self.spacing*1000,
-                           'Plate thickness': self.plate_th*1000,
+            return_dict = {'Identification': None, 'Length of plate': self._span*1000, 'Width of c': self._spacing*1000,
+                           'Plate thickness': self._plate_th*1000,
                          'Modulus of elasticity': 2.1e11/1e6, "Poisson's ratio": 0.3,
-                          'Yield stress plate': self.mat_yield/1e6,
-                         'Axial stress 1': 0 if self._puls_boundary == 'GT' else self.sigma_x,
-                           'Axial stress 2': 0 if self._puls_boundary == 'GT' else self.sigma_x,
-                           'Trans. stress 1': 0 if self._puls_boundary == 'GL' else self.sigma_y1,
-                         'Trans. stress 2': 0 if self._puls_boundary == 'GL' else self.sigma_y2,
-                           'Shear stress': self.tauxy, 'Pressure (fixed)': None, 'In-plane support': self._puls_boundary,
+                          'Yield stress plate': self._mat_yield/1e6,
+                         'Axial stress 1': 0 if self._puls_boundary == 'GT' else self._sigma_x,
+                           'Axial stress 2': 0 if self._puls_boundary == 'GT' else self._sigma_x,
+                           'Trans. stress 1': 0 if self._puls_boundary == 'GL' else self._sigma_y1,
+                         'Trans. stress 2': 0 if self._puls_boundary == 'GL' else self._sigma_y2,
+                           'Shear stress': self._tauxy, 'Pressure (fixed)': None, 'In-plane support': self._puls_boundary,
                          'Rot left': blist[0], 'Rot right': blist[1], 'Rot upper': blist[2], 'Rot lower': blist[3],
                            'sp or up': self._puls_sp_or_up}
         return return_dict
@@ -590,15 +656,15 @@ class Structure():
 
         if self._puls_sp_or_up == 'SP':
             if csr == False:
-                this_field =  [self.span * 1000, self.spacing * 1000, self.plate_th * 1000, self.web_height * 1000,
-                               self.web_th * 1000, self.flange_width * 1000, self.flange_th * 1000, self.mat_yield / 1e6,
-                               self.mat_yield / 1e6,  self.sigma_x, self.sigma_y1, self.sigma_y2, self.tauxy,
-                               design_lat_press/1000, stf_type[self.stiffener_type], stf_end[self._puls_stf_end]]
+                this_field =  [self._span * 1000, self._spacing * 1000, self._plate_th * 1000, self._web_height * 1000,
+                               self._web_th * 1000, self._flange_width * 1000, self._flange_th * 1000, self._mat_yield / 1e6,
+                               self._mat_yield / 1e6,  self._sigma_x, self._sigma_y1, self._sigma_y2, self._tauxy,
+                               design_lat_press/1000, stf_type[self._stiffener_type], stf_end[self._puls_stf_end]]
             else:
-                this_field =  [self.span * 1000, self.spacing * 1000, self.plate_th * 1000, self.web_height * 1000,
-                               self.web_th * 1000, self.flange_width * 1000, self.flange_th * 1000, self.mat_yield / 1e6,
-                               self.mat_yield / 1e6,  self.sigma_x, self.sigma_y1, self.sigma_y2, self.tauxy,
-                               design_lat_press/1000, stf_type[self.stiffener_type], stf_end[self._puls_stf_end],
+                this_field =  [self._span * 1000, self._spacing * 1000, self._plate_th * 1000, self._web_height * 1000,
+                               self._web_th * 1000, self._flange_width * 1000, self._flange_th * 1000, self._mat_yield / 1e6,
+                               self._mat_yield / 1e6,  self._sigma_x, self._sigma_y1, self._sigma_y2, self._tauxy,
+                               design_lat_press/1000, stf_type[self._stiffener_type], stf_end[self._puls_stf_end],
                                field_type[self._puls_boundary]]
         else:
             ss_cl_list = list()
@@ -609,12 +675,12 @@ class Structure():
                     ss_cl_list.append(up_boundary['CL'])
             b1, b2, b3, b4 = ss_cl_list
             if csr == False:
-                this_field =  [self.span * 1000, self.spacing * 1000, self.plate_th * 1000, self.mat_yield / 1e6,
-                               self.sigma_x, self.sigma_y1, self.sigma_y2, self.tauxy, design_lat_press/1000,
+                this_field =  [self._span * 1000, self._spacing * 1000, self._plate_th * 1000, self._mat_yield / 1e6,
+                               self._sigma_x, self._sigma_y1, self._sigma_y2, self._tauxy, design_lat_press/1000,
                                b1, b2, b3, b4]
             else:
-                this_field =  [self.span * 1000, self.spacing * 1000, self.plate_th * 1000, self.mat_yield / 1e6,
-                               self.sigma_x, self.sigma_y1, self.sigma_y2, self.tauxy, design_lat_press/1000,
+                this_field =  [self._span * 1000, self._spacing * 1000, self._plate_th * 1000, self._mat_yield / 1e6,
+                               self._sigma_x, self._sigma_y1, self._sigma_y2, self._tauxy, design_lat_press/1000,
                                field_type[self._puls_boundary], b1, b2, b3, b4]
         if alone:
             return [this_field,]
@@ -658,33 +724,33 @@ class CalcScantlings(Structure):
     def calculate_slamming_plate(self, slamming_pressure, red_fac = 1):
         ''' Slamming pressure input is Pa '''
         ka1 = 1.1
-        ka2 = min(max(0.4, self.spacing / self.span), 1)
+        ka2 = min(max(0.4, self._spacing / self._span), 1)
 
         ka = math.pow(ka1 - 0.25*ka2,2)
-        sigmaf = self.mat_yield/1e6  # MPa
+        sigmaf = self._mat_yield/1e6  # MPa
 
         psl = red_fac * slamming_pressure/1000  # kPa
         Cd = 1.5
 
-        return 0.0158*ka*self.spacing*1000*math.sqrt(psl/(Cd*sigmaf))
+        return 0.0158*ka*self._spacing*1000*math.sqrt(psl/(Cd*sigmaf))
 
     def calculate_slamming_stiffener(self, slamming_pressure, angle = 90, red_fac = 1):
         tk = 0
         psl = slamming_pressure / 1000  # kPa
         Pst = psl * red_fac  # Currently DNV does not use psl/2 for slamming.
-        sigmaf = self.mat_yield / 1e6  # MPa
-        hw, twa, tp, tf, bf, s = [(val - tk) * 1000 for val in [self.web_height, self.web_th, self.plate_th,
-                                                                self.flange_th, self.flange_width, self.spacing]]
+        sigmaf = self._mat_yield / 1e6  # MPa
+        hw, twa, tp, tf, bf, s = [(val - tk) * 1000 for val in [self._web_height, self._web_th, self._plate_th,
+                                                                self._flange_th, self._flange_width, self._spacing]]
         ns = 2
         tau_eH = sigmaf/math.sqrt(3)
-        h_stf = (self.web_height+self.flange_th)*1000
+        h_stf = (self._web_height+self._flange_th)*1000
         f_shr = 0.7
-        lbdg = self.span
-        lshr = self.span - self.spacing/4000
+        lbdg = self._span
+        lshr = self._span - self._spacing/4000
         dshr = h_stf + tp if 75 <= angle <= 90 else (h_stf + tp)*math.sin(math.radians(angle))
         tw = (f_shr*Pst*s*lshr)/(dshr*tau_eH)
 
-        if self.web_th*1000 < tw:
+        if self._web_th*1000 < tw:
             return {'tw_req': tw, 'Zp_req':None}
         fpl = 8* (1+(ns/2))
         Zp_req = (1.2*Pst*s*math.pow(lbdg,2)/(fpl*sigmaf)) + \
@@ -696,14 +762,14 @@ class CalcScantlings(Structure):
         ''' A summary check of slamming '''
 
         pl_chk = self.calculate_slamming_plate(slamming_pressure, red_fac= pl_red_fact)
-        if self.plate_th*1000 < pl_chk:
-            chk1 = pl_chk / self.plate_th*1000
+        if self._plate_th*1000 < pl_chk:
+            chk1 = pl_chk / self._plate_th*1000
             return False, chk1
 
         stf_res = self.calculate_slamming_stiffener(slamming_pressure, red_fac = stf_red_fact)
         #print('Slamming checked')
-        if self.web_th*1000 < stf_res['tw_req']:
-            chk2 = stf_res['tw_req'] / self.web_th*1000
+        if self._web_th*1000 < stf_res['tw_req']:
+            chk2 = stf_res['tw_req'] / self._web_th*1000
             return False, chk2
 
         if stf_res['Zp_req'] is not None:
@@ -719,11 +785,11 @@ class CalcScantlings(Structure):
             page 83 '''
         tk = 0
         angle_rad = math.radians(angle)
-        hw, tw, tp, tf, bf = [(val - tk) * 1000 for val in [self.web_height, self.web_th, self.plate_th, self.flange_th,
-                                                            self.flange_width]]
-        h_stf = (self.web_height+self.flange_th)*1000
+        hw, tw, tp, tf, bf = [(val - tk) * 1000 for val in [self._web_height, self._web_th, self._plate_th, self._flange_th,
+                                                            self._flange_width]]
+        h_stf = (self._web_height+self._flange_th)*1000
         de_gr = 0
-        tw_gr = self.web_th*1000
+        tw_gr = self._web_th*1000
         hf_ctr = h_stf-0.5*tf if self.get_stiffener_type() not in ['L','L-bulb'] else h_stf - de_gr - 0.5*tf
         bf_ctr = 0 if self.get_stiffener_type() == 'T' else 0.5*(tf - tw_gr)
         beta = 0.5
@@ -743,25 +809,25 @@ class CalcScantlings(Structure):
         ''' Section modulus according to DNV rules '''
 
         design_pressure = design_pressure_kpa
-        fy = self.mat_yield / 1e6
-        fyd = fy/self.mat_factor
+        fy = self._mat_yield / 1e6
+        fyd = fy/self._mat_factor
 
-        sigma_y = self.sigma_y2 + (self.sigma_y1-self.sigma_y2)\
-                                       *(min(0.25*self.span,0.5*self.spacing)/self.span)
+        sigma_y = self._sigma_y2 + (self._sigma_y1-self._sigma_y2)\
+                                       *(min(0.25*self._span,0.5*self._spacing)/self._span)
 
-        sigma_jd = math.sqrt(math.pow(self.sigma_x,2)+math.pow(sigma_y,2)-
-                             self.sigma_x*sigma_y+3*math.pow(self.tauxy,2))
+        sigma_jd = math.sqrt(math.pow(self._sigma_x,2)+math.pow(sigma_y,2)-
+                             self._sigma_x*sigma_y+3*math.pow(self._tauxy,2))
 
         sigma_pd2 = fyd-sigma_jd  # design_bending_stress_mpa
 
-        kps = self.stf_kps  # 1 is clamped, 0.9 is simply supported.
-        km_sides = min(self.km1,self.km3)  # see table 3 in DNVGL-OS-C101 (page 62)
-        km_middle = self.km2  # see table 3 in DNVGL-OS-C101 (page 62)
+        kps = self._stf_kps  # 1 is clamped, 0.9 is simply supported.
+        km_sides = min(self._km1,self._km3)  # see table 3 in DNVGL-OS-C101 (page 62)
+        km_middle = self._km2  # see table 3 in DNVGL-OS-C101 (page 62)
 
-        Zs = ((math.pow(self.span, 2) * self.spacing * design_pressure) /
+        Zs = ((math.pow(self._span, 2) * self._spacing * design_pressure) /
               (min(km_middle, km_sides) * (sigma_pd2) * kps)) * math.pow(10, 6)
         if printit:
-            print('Sigma y1', self.sigma_y1, 'Sigma y2', self.sigma_y2, 'Sigma x', self.sigma_x, 'Pressure', design_pressure)
+            print('Sigma y1', self._sigma_y1, 'Sigma y2', self._sigma_y2, 'Sigma x', self._sigma_x, 'Pressure', design_pressure)
         return max(math.pow(15, 3) / math.pow(1000, 3), Zs / math.pow(1000, 3))
 
     def get_dnv_min_thickness(self, design_pressure_kpa):
@@ -772,13 +838,13 @@ class CalcScantlings(Structure):
         '''
 
         design_pressure = design_pressure_kpa
-        #print(self.sigma_x)
-        sigma_y = self.sigma_y2 + (self.sigma_y1-self.sigma_y2)\
-                                       *(min(0.25*self.span,0.5*self.spacing)/self.span)
-        sigma_jd = math.sqrt(math.pow(self.sigma_x,2)+math.pow(sigma_y,2)-
-                             self.sigma_x*sigma_y+3*math.pow(self.tauxy,2))
-        fy = self.mat_yield / 1000000
-        fyd = fy/self.mat_factor
+        #print(self._sigma_x)
+        sigma_y = self._sigma_y2 + (self._sigma_y1-self._sigma_y2)\
+                                       *(min(0.25*self._span,0.5*self._spacing)/self._span)
+        sigma_jd = math.sqrt(math.pow(self._sigma_x,2)+math.pow(sigma_y,2)-
+                             self._sigma_x*sigma_y+3*math.pow(self._tauxy,2))
+        fy = self._mat_yield / 1000000
+        fyd = fy/self._mat_factor
         sigma_pd1 = min(1.3*(fyd-sigma_jd), fyd)
         sigma_pd1 = abs(sigma_pd1)
         #print(fyd, sigma_jd, fyd)
@@ -789,7 +855,7 @@ class CalcScantlings(Structure):
 
         t_min = (14.3 * t0) / math.sqrt(fyd)
 
-        ka = math.pow(1.1 - 0.25  * self.spacing/self.span, 2)
+        ka = math.pow(1.1 - 0.25  * self._spacing/self._span, 2)
 
         if ka > 1:
             ka =1
@@ -797,8 +863,8 @@ class CalcScantlings(Structure):
             ka = 0.72
 
         assert sigma_pd1 > 0, 'sigma_pd1 must be negative | current value is: ' + str(sigma_pd1)
-        t_min_bend = (15.8 * ka * self.spacing * math.sqrt(design_pressure)) / \
-                     math.sqrt(sigma_pd1 *self.plate_kpp)
+        t_min_bend = (15.8 * ka * self._spacing * math.sqrt(design_pressure)) / \
+                     math.sqrt(sigma_pd1 *self._plate_kpp)
 
         if self.lat_press:
             return max(t_min, t_min_bend)
@@ -812,13 +878,13 @@ class CalcScantlings(Structure):
         Return [m^2]
         :return:
         '''
-        #print('SIGMA_X ', self.sigma_x)
-        l = self.span
-        s = self.spacing
-        fy = self.mat_yield
+        #print('SIGMA_X ', self._sigma_x)
+        l = self._span
+        s = self._spacing
+        fy = self._mat_yield
 
-        fyd = (fy/self.mat_factor)/1e6 #yield strength
-        sigxd = self.sigma_x #design membrane stresses, x-dir
+        fyd = (fy/self._mat_factor)/1e6 #yield strength
+        sigxd = self._sigma_x #design membrane stresses, x-dir
 
         taupds = 0.577*math.sqrt(math.pow(fyd, 2) - math.pow(sigxd, 2))
 
@@ -855,9 +921,9 @@ class CalcScantlings(Structure):
 
         #7.2 Forces in the idealised stiffened plate
 
-        s = self.spacing #ok
-        t = self.plate_th #ok
-        l = self.span #ok
+        s = self._spacing #ok
+        t = self._plate_th #ok
+        l = self._span #ok
 
         E = 2.1e11 #ok
 
@@ -866,7 +932,7 @@ class CalcScantlings(Structure):
         sigy2Sd =trans_stress_small*1e6
         sigxSd = axial_stress*1e6
 
-        fy = self.mat_yield #ok
+        fy = self._mat_yield #ok
 
         #7.3 Effective plate width
         alphap=0.525*(s/t)*math.sqrt(fy/E) # reduced plate slenderness, checked not calculated with ex
@@ -906,15 +972,15 @@ class CalcScantlings(Structure):
         :return:
         '''
         #7.2 Forces in the idealised stiffened plate
-        As = self.web_height*self.web_th+self.flange_width*self.flange_th #checked
-        s = self.spacing #ok
-        t = self.plate_th #ok
-        l = self.span #ok
-        tf = self.flange_th
-        tw = self.web_th
-        hw = self.web_height
-        bf = self.flange_width
-        fy = self.mat_yield  # ok
+        As = self._web_height*self._web_th+self._flange_width*self._flange_th #checked
+        s = self._spacing #ok
+        t = self._plate_th #ok
+        l = self._span #ok
+        tf = self._flange_th
+        tw = self._web_th
+        hw = self._web_height
+        bf = self._flange_width
+        fy = self._mat_yield  # ok
         stf_type = self.get_stiffener_type()
         zstar = self._zstar_optimization  # simplification as per 7.7.1 Continuous stiffeners
 
@@ -923,10 +989,10 @@ class CalcScantlings(Structure):
         mc = 13.3  # assume continous stiffeners
 
         pSd = design_lat_press*1000
-        tauSd = self.tauxy*1e6
-        sigy1Sd =self.sigma_y1*1e6
-        sigy2Sd =self.sigma_y2*1e6
-        sigxSd = self.sigma_x*1e6
+        tauSd = self._tauxy*1e6
+        sigy1Sd =self._sigma_y1*1e6
+        sigy2Sd =self._sigma_y2*1e6
+        sigxSd = self._sigma_x*1e6
 
 
         #7.3 Effective plate width
@@ -952,7 +1018,7 @@ class CalcScantlings(Structure):
 
         sigyR=( (1.3*t/l)*math.sqrt(E/fy)+kappa*(1-(1.3*t/l)*math.sqrt(E/fy)))*fy*kp # eq 6.6 checked
 
-        sigyRd = sigyR / self.mat_factor #eq 6.5 checked, ok
+        sigyRd = sigyR / self._mat_factor #eq 6.5 checked, ok
 
 
         # plate resistance check
@@ -979,11 +1045,11 @@ class CalcScantlings(Structure):
 
         taucrg = kg*0.904*E*math.pow(t/l,2) # 7.2 critical shear stress, checked not calculated with example
         taucrl = kl*0.904*E*math.pow(t/s,2) # 7.2 critical chear stress, checked not calculated with example
-        tautf = (tauSd - taucrg) if  tauSd>taucrl/self.mat_factor else 0 # checked not calculated with example
+        tautf = (tauSd - taucrg) if  tauSd>taucrl/self._mat_factor else 0 # checked not calculated with example
 
         #7.6 Resistance of stiffened panels to shear stresses (page 20)
         taucrs = (36*E/(s*t*math.pow(l,2)))*((Ip*math.pow(Is,3))**0.25) # checked not calculated with example
-        tauRd = min(fy/(math.sqrt(3)*self.mat_factor), taucrl/self.mat_factor,taucrs/self.mat_factor)# checked not calculated with example
+        tauRd = min(fy/(math.sqrt(3)*self._mat_factor), taucrl/self._mat_factor,taucrs/self._mat_factor)# checked not calculated with example
 
         ci = 1-s/(120*t) if (s/t)<=120 else 0 # checked ok
         Cxs = (alphap-0.22)/math.pow(alphap,2) if alphap>0.673 else 1 # reduction factor longitudinal, ok
@@ -1010,7 +1076,7 @@ class CalcScantlings(Structure):
         Ae = As+se*t #ch7.7.3 checked, ok
 
         W = min(Wes,Wep) #eq7.75 text, checked
-        pf = (12*W/(math.pow(l,2)*s))*(fy/self.mat_factor) #checked, ok
+        pf = (12*W/(math.pow(l,2)*s))*(fy/self._mat_factor) #checked, ok
 
         lk = l*(1-0.5*abs(pSd/pf)) #eq7.74, buckling length, checked
 
@@ -1042,10 +1108,10 @@ class CalcScantlings(Structure):
 
         beta = (3*C+0.2)/(C+0.2) # eq 7.35, checked, ok
 
-        Af = self.flange_width*self.flange_th #flange area, ok
-        Aw = self.web_height*self.web_th #web area, ok
+        Af = self._flange_width*self._flange_th #flange area, ok
+        Aw = self._web_height*self._web_th #web area, ok
 
-        ef = 0 if stf_type in ['FB','T'] else self.flange_width/2-self.web_th/2
+        ef = 0 if stf_type in ['FB','T'] else self._flange_width/2-self._web_th/2
         #Ipo = (Aw*(ef-0.5*tf)**2/3+Af*ef**2)*10e-4 #polar moment of interia in cm^4
         #It = (((ef-0.5*tf)*tw**3)/3e4)*(1-0.63*(tw/(ef-0.5*tf)))+( (bf*tf)/3e4*(1-0.63*(tf/bf)))/(100**4) #torsonal moment of interia cm^4
 
@@ -1053,7 +1119,7 @@ class CalcScantlings(Structure):
         Iz = (1/12)*Af*math.pow(bf,2)+math.pow(ef,2)*(Af/(1+(Af/Aw))) #moment of inertia about z-axis, checked
 
         G = E/(2*(1+0.3)) #rules for ships Pt.8 Ch.1, page 334
-        lT = self.span # Calculated further down
+        lT = self._span # Calculated further down
         #print('Aw ',Aw,'Af ', Af,'tf ', tf,'tw ', tw,'G ', G,'E ', E,'Iz ', Iz,'lt ', lT)
 
         def get_some_data(lT):
@@ -1097,9 +1163,9 @@ class CalcScantlings(Structure):
 
         u = math.pow(tauSd / tauRd, 2)  # eq7.58. checked.
         fr, fks, fkp = get_some_data(lT=lT*0.4)
-        Ms1Rd = Wes*(fr/self.mat_factor) #ok, assuming fr calculated with lT=span * 0.4
-        NksRd = Ae * (fks / self.mat_factor) #eq7.66, page 22 - fk according to equation 7.26, sec 7.5,
-        NkpRd = Ae * (fkp / self.mat_factor)  # checked ok, no ex
+        Ms1Rd = Wes*(fr/self._mat_factor) #ok, assuming fr calculated with lT=span * 0.4
+        NksRd = Ae * (fks / self._mat_factor) #eq7.66, page 22 - fk according to equation 7.26, sec 7.5,
+        NkpRd = Ae * (fkp / self._mat_factor)  # checked ok, no ex
 
         M1Sd = abs((qSd*math.pow(l,2))/12) #ch7.7.1, checked ok
 
@@ -1107,16 +1173,16 @@ class CalcScantlings(Structure):
 
         Ne = ((math.pow(math.pi,2))*E*Ae)/(math.pow(lk/ie,2))# eq7.72 , checked ok
 
-        Nrd = Ae * (fy / self.mat_factor) #eq7.65, checked ok
+        Nrd = Ae * (fy / self._mat_factor) #eq7.65, checked ok
 
         Nsd = sigxSd * (As + s*t) + tautf * s *t #  Equation 7.1, section 7.2, checked ok
 
 
-        MstRd = Wes*(fy/self.mat_factor) #eq7.70 checked ok, no ex
-        MpRd = Wep*(fy/self.mat_factor) #eq7.71 checked ok, no ex
+        MstRd = Wes*(fy/self._mat_factor) #eq7.70 checked ok, no ex
+        MpRd = Wep*(fy/self._mat_factor) #eq7.71 checked ok, no ex
 
         fr, fks, fkp = get_some_data(lT = lT * 0.8)
-        Ms2Rd = Wes*(fr/self.mat_factor) #eq7.69 checked ok, no ex
+        Ms2Rd = Wes*(fr/self._mat_factor) #eq7.69 checked ok, no ex
         # print('Nksrd', NksRd, 'Nkprd', NkpRd, 'Ae is', Ae, 'fks is', fks, 'fkp is', fkp,
         #       'alphas are', mu_pl, mu_stf, 'lk', lk, 'lt', lT)
 
@@ -1159,7 +1225,6 @@ class CalcScantlings(Structure):
             min_of_max_ufs_idx = max_lfs.index(min(max_lfs))
             return ufs[min_of_max_ufs_idx]
 
-
     def calculate_buckling_plate(self,design_lat_press,axial_stress=20,
                                  trans_stress_small=100,trans_stress_large=100,
                                  design_shear_stress = 10):
@@ -1171,15 +1236,15 @@ class CalcScantlings(Structure):
 
         #7.2 Forces in the idealised stiffened plate
 
-        s = self.spacing
-        t = self.plate_th
-        l = self.span
+        s = self._spacing
+        t = self._plate_th
+        l = self._span
         E = 2.1e11
 
         pSd = design_lat_press*1000
         tauSd = design_shear_stress*1e6
         sigy2Sd =trans_stress_small*1e6
-        fy = self.mat_yield
+        fy = self._mat_yield
 
         #7.3 Effective plate width
         alphac = 1.1*(s/t)*math.sqrt(fy/E)
@@ -1194,7 +1259,7 @@ class CalcScantlings(Structure):
         kp = 1 if pSd<=2*((t/s)**2)*fy else 1-ha*((pSd/fy)-2*(t/s)**2)
 
         sigyR=( (1.3*t/l)*math.sqrt(E/fy)+kappa*(1-(1.3*t/l)*math.sqrt(E/fy)))*fy*kp
-        sigyRd = sigyR / self.mat_factor
+        sigyRd = sigyR / self._mat_factor
 
         # plate resistance check
         ksp = math.sqrt(1-3*(tauSd/(fy/1))**2)
@@ -1207,30 +1272,30 @@ class CalcScantlings(Structure):
         :return:
         '''
 
-        epsilon = math.sqrt(235 / (self.mat_yield / 1e6))
+        epsilon = math.sqrt(235 / (self._mat_yield / 1e6))
 
-        if self.stiffener_type in ['L', 'L-bulb']:
-            c = self.flange_width - self.web_th/2
-        elif self.stiffener_type == 'T':
-            c = self.flange_width/2 - self.web_th/2
-        elif self.stiffener_type == 'FB':
-            return self.web_height <= 42 * self.web_th * epsilon, self.web_height/(42 * self.web_th * epsilon)
+        if self._stiffener_type in ['L', 'L-bulb']:
+            c = self._flange_width - self._web_th/2
+        elif self._stiffener_type == 'T':
+            c = self._flange_width/2 - self._web_th/2
+        elif self._stiffener_type == 'FB':
+            return self._web_height <= 42 * self._web_th * epsilon, self._web_height/(42 * self._web_th * epsilon)
 
-        # print(self.web_height, self.web_th, self.flange_width ,self.flange_th )
-        # print('c:',c, 14 * self.flange_th * epsilon, ' | ',  self.web_height, 42 * self.web_th * epsilon)
-        # print(c <= (14  * self.flange_th * epsilon) and self.web_height <= 42 * self.web_th * epsilon)
-        # print(c/(14  * self.flange_th * epsilon), self.web_height / (42 * self.web_th * epsilon))
+        # print(self._web_height, self._web_th, self._flange_width ,self._flange_th )
+        # print('c:',c, 14 * self._flange_th * epsilon, ' | ',  self._web_height, 42 * self._web_th * epsilon)
+        # print(c <= (14  * self._flange_th * epsilon) and self._web_height <= 42 * self._web_th * epsilon)
+        # print(c/(14  * self._flange_th * epsilon), self._web_height / (42 * self._web_th * epsilon))
         # print('')
 
-        return c <= (14  * self.flange_th * epsilon) and self.web_height <= 42 * self.web_th * epsilon, \
-               max(c/(14  * self.flange_th * epsilon), self.web_height / (42 * self.web_th * epsilon))
+        return c <= (14  * self._flange_th * epsilon) and self._web_height <= 42 * self._web_th * epsilon, \
+               max(c/(14  * self._flange_th * epsilon), self._web_height / (42 * self._web_th * epsilon))
 
     def is_acceptable_pl_thk(self, design_pressure):
         '''
         Checking if the thickness is acceptable.
         :return:
         '''
-        return self.get_dnv_min_thickness(design_pressure) <= self.plate_th*1000
+        return self.get_dnv_min_thickness(design_pressure) <= self._plate_th*1000
 
 class Shell():
     '''
@@ -1238,17 +1303,80 @@ class Shell():
     '''
     def __init__(self, main_dict):
         super(Shell, self).__init__()
-        pass
-
+        self._thk = 0.02
+        self._yield = 355e6
+        self._radius = 2.5
+        self._dist_between_rings = 5
+        self._length_of_shell = 5
+        self._tot_cyl_length = 5
+        self._k_factor = 1
+        
+    @property
+    def thk(self):
+        return self._thk
+    @thk.setter
+    def thk(self, val):
+        self._thk = val
+    @property
+    def radius(self):
+        return self._radius
+    @radius.setter
+    def radius(self, val):
+        self._radius = val
+    @property
+    def dist_between_rings(self):
+        return self._dist_between_rings
+    @dist_between_rings.setter
+    def dist_between_rings(self, val):
+        self._dist_between_rings = val
+    @property
+    def length_of_shell(self):
+        return self._length_of_shell
+    @length_of_shell.setter
+    def length_of_shell(self, val):
+        self._length_of_shell = val
+    @property
+    def tot_cyl_length(self):
+        return self._tot_cyl_length
+    @tot_cyl_length.setter
+    def tot_cyl_length(self, val):
+        self._tot_cyl_length = val
 
 class CylinderAndCurvedPlate():
     '''
     Buckling of cylinders and curved plates.
-    '''
+    Geomeries
+    	Selections for: Type of Structure Geometry:
+    geomeries = {1:'Unstiffened shell (Force input)', 2:'Unstiffened panel (Stress input)',
+                    3:'Longitudinal Stiffened shell  (Force input)',
+                    4:'Longitudinal Stiffened panel (Stress input)',
+                    5:'Ring Stiffened shell (Force input)',
+                    6:'Ring Stiffened panel (Stress input)',
+                    7:'Orthogonally Stiffened shell (Force input)',
+                    8:'Orthogonally Stiffened panel (Stress input)'}
 
-    def __init__(self, main_dict, shell: Shell = None, long_stf: Structure = None, ring_stf: Structure = None,
+    '''
+    geomeries = {1:'Unstiffened shell (Force input)', 2:'Unstiffened panel (Stress input)',
+                 3:'Longitudinal Stiffened shell  (Force input)', 4:'Longitudinal Stiffened panel (Stress input)',
+                 5:'Ring Stiffened shell (Force input)', 6:'Ring Stiffened panel (Stress input)',
+                 7:'Orthogonally Stiffened shell (Force input)', 8:'Orthogonally Stiffened panel (Stress input)'}
+
+    def __init__(self, main_dict = None, shell: Shell = None, long_stf: Structure = None, ring_stf: Structure = None,
                  ring_frame: Structure = None):
         super(CylinderAndCurvedPlate, self).__init__()
+
+        main_dict = {'sasd': 100, 'smsd': 100, 'tTsd': 50, 'tQsd':10, 'psd': -0.3, 'shsd': 0, 'geometry': 7,
+                     'material factor': 1.15, 'lT': 0}
+
+        self._sasd = main_dict['sasd']
+        self._smsd = main_dict['smsd']
+        self._tTsd = main_dict['tTsd']
+        self._tQsd= main_dict['tQsd']
+        self._psd = main_dict['psd']
+        self._shsd = main_dict['shsd']
+        self._geometry = main_dict['geometry']
+        self._mat_factor = main_dict['material factor']
+        self._lT = main_dict['lT']
 
         self._Shell = shell
         self._LongStf = long_stf
@@ -1259,7 +1387,97 @@ class CylinderAndCurvedPlate():
         '''
         Main sheet to calculate cylinder buckling.
         '''
-        pass
+        stucture_objects = {'Unstiffened':self._Shell, 'Long Stiff.': self._LongStf, 'Ring Stiffeners': self._RingStf,
+                            'Heavy ring Frame': self._RingFrame}
+        stf_type = ['T', 'FB', 'T']
+        l = self._Shell.dist_between_rings*1000
+        r = self._Shell.radius*1000
+        t = self._Shell.thk*1000
+        hs, alpha = list(),list()
+        e = [self._LongStf.get_stf_cog_eccentricity()/100, np.nan, np.nan]
+        rf= [r-t/2-(self._RingStf.hw*1000+self._RingStf.tf*1000),
+             r - t / 2 - (self._RingFrame.hw * 1000 + self._RingFrame.tf * 1000)]
+        parameters, cross_sec_data = list(), list()
+        for idx, obj in stucture_objects.items():
+            if idx != 'Unstiffened':
+                hs = obj.hw/2 if stf_type !='FB' else 1 + obj.tf/2
+                A = obj.get_cross_section_area(include_plate=False)*math.pow(1000,2)
+                It = obj.get_torsional_moment_venant()
+                Ipo = obj.get_polar_moment()
+                Iz = obj.get_Iz_moment_of_inertia()
+
+                cross_sec_data.append([hs, It, Iz, Ipo])
+
+            if idx not in ['Unstiffened', 'Long Stiff.']:  # Parameters
+
+                A = obj.get_cross_section_area(include_plate=False)*math.pow(1000,2)
+
+                beta = l/(1.56*math.sqrt(r*t))
+
+                leo = (l/beta) *  ((math.cosh(2*beta)-math.cos(2*beta))/(math.sinh(2*beta)+math.sin(2*beta)))
+
+                alpha = A/(leo*t)
+
+                zeta = max([0, 2*(math.sinh(beta)*math.cos(beta)+math.cosh(beta)*math.sin(beta))/
+                            (math.sinh(2*beta)+math.sin(2*beta))])
+
+                parameters.append([alpha, beta, leo, zeta])
+                #print(beta, leo, alpha, zeta)
+        sxsd, shsd, shRsd, tsd = list(), list(), list(), list()
+        sasd_ring = None
+        for idx, obj in stucture_objects.items():
+            if idx == 'Unstiffened':
+                shsd.append(self._psd*r/t+self._shsd)
+                sxsd.append(self._sasd+self._smsd if self._geometry in [2,6] else
+                            min([self._sasd, self._sasd-self._smsd, self._sasd+self._smsd]))
+                tsd.append(self._tTsd + self._tQsd)
+            elif idx == 'Long Stiff.':
+                if stucture_objects['Ring Stiffeners'] == None:
+                    shsd.append(shsd[0]+self._shsd)
+                else:
+                    shsd_ring = (self._psd*r/t)-parameters[0][0]*parameters[0][3]/(parameters[0][0]+1)*\
+                                (self._psd*r/t-0.3*sxsd[0])
+                    shsd.append(shsd_ring + self._shsd)
+                if self._geometry in [3,4,7,8]:
+                    sxsd.append(self.longitudinally_stiffened_shell(ret_sxsd=True))
+                else:
+                    sxsd.append(sxsd[0])
+                tsd.append(self._tTsd + self._tQsd)
+
+            elif idx == 'Ring Stiffeners':
+                shsd.append(np.nan if stucture_objects['Ring Stiffeners'] == None else shsd_ring)
+                shRsd.append((self._psd*r/t-0.3*sxsd[0])*(1/(1+parameters[0][0]))*(t/rf[0]))
+                if self._geometry > 4:
+                    sxsd.append(sxsd[0])
+                    tsd.append(tsd[0])
+                else:
+                    sxsd.append(np.nan)
+                    tsd.append(np.nan)
+            else:
+                shsd.append((self._psd*r/t)-parameters[1][0]*parameters[1][3]/(parameters[1][0]+1)*
+                            (self._psd*r/t-0.3*self._sasd))
+                shRsd.append((self._psd*r/t-0.3*self._sasd)*(1/(1+parameters[1][0]))*(r/rf[1]))
+                if self._geometry > 4:
+                    sxsd.append(sxsd[0])
+                    tsd.append(tsd[0])
+                else:
+                    sxsd.append(np.nan)
+                    tsd.append(np.nan)
+        sxsd = np.array(sxsd)
+        shsd = np.array(shsd)
+        tsd = np.array(tsd)
+        sjsd = np.sqrt(sxsd**2 - sxsd*shsd + shsd**2+3*tsd**2)
+
+        return {'sjsd': sjsd, 'parameters': parameters, 'cross section data': cross_sec_data}
+
+    def shell_buckling_summary(self):
+
+        # BUCKLING CHECK SUMMARY:
+        data_unstiffened_shell = self.unstiffened_shell()
+        UF_shell_buckling = data_unstiffened_shell['UF circular cylinder'] if \
+            any([self._geometry in [1,5], self._LongStf.s/(self._Shell.dist_between_rings*1000)]) \
+            else data_unstiffened_shell['UF curved panel']
+        UF_panel_stiffener = None
 
     def unstiffened_shell(self):
         from scipy.optimize import fsolve
@@ -1341,18 +1559,20 @@ class CylinderAndCurvedPlate():
         fks = fy/math.sqrt(1+math.pow(lambda_s,4 ))
         provide_data['fks - Unstifffed curved panel'] = fks
         if lambda_s < 0.5:
-            gammaM = self.mat_factor
+            gammaM = self._mat_factor
         else:
             if lambda_s > 1:
                 gammaM = 1.45
             else:
                 gammaM = 0.85+0.6*lambda_s
         fksd = fks/gammaM
+        provide_data['fksd - Unstifffed curved panel'] = fksd
         uf = sjsd/fksd
-
+        provide_data['UF curved panel'] = uf
+        provide_data['gammaM curved panel'] = gammaM
         sjsd_max = math.sqrt(math.pow(sasd+smsd,2)-(sasd+smsd)*shsd+math.pow(shsd,2)+3*math.pow(tsd,2))
 
-        uf_max =  self.mat_factor* sjsd_max/fy
+        uf_max =  self._mat_factor* sjsd_max/fy
         # print('Unstifffed curved panel', 'UF', uf, 'UFmax', uf_max, 'sigjsd', sjsd, 'Zs', Zs, 'lambda_s', lambda_s,
         #       'fks', fks, 'gammaM', gammaM, 'sjsd_max', sjsd_max)
 
@@ -1376,7 +1596,7 @@ class CylinderAndCurvedPlate():
                 fksd_iter = fks_iter / gammaM_iter
                 #print('sjsd', sjsd_iter, 'fksd', fksd_iter, 'fks', fks, 'gammaM', gammaM_iter, 'lambdas_iter', lambdas_iter)
                 this_val = sjsd_iter/fksd_iter
-                logger.append(sasd_iter)
+                logger.append(0 if this_val > 1 else siga0sd_iter)
                 if this_val > 1.0 or count == 1e6:
                     found = True
                 count += 1
@@ -1391,7 +1611,7 @@ class CylinderAndCurvedPlate():
                 else:
                     sasd_iter -= 20
 
-                print(sasd_iter, this_val)
+                #print(sasd_iter, this_val)
 
             return 0 if len(logger) == 0 else logger[-2]
 
@@ -1476,7 +1696,7 @@ class CylinderAndCurvedPlate():
         provide_data['fks - Unstifffed circular cylinders'] = fks
 
         if lambda_s < 0.5:
-            gammaM = self.mat_factor
+            gammaM = self._mat_factor
         else:
             if lambda_s > 1:
                 gammaM = 1.45
@@ -1485,7 +1705,11 @@ class CylinderAndCurvedPlate():
         # TODO possibly correct gammaM with factor, seee sheet
 
         fksd = fks/gammaM
+        provide_data['fksd - Unstifffed circular cylinders'] = fksd
         uf = sjsd/fksd
+
+        provide_data['UF circular cylinder'] = uf
+        provide_data['gammaM circular cylinder'] = gammaM
         #print('UF', uf, 'Unstifffed circular cylinders')
         def iter_table_2():
 
@@ -1537,7 +1761,7 @@ class CylinderAndCurvedPlate():
     def ring_stiffened_shell(self):
         pass
 
-    def longitudinally_stiffened_shell(self):
+    def longitudinally_stiffened_shell(self, ret_sxsd = False):
 
         E = 210000
         t = 20.0
@@ -1557,8 +1781,8 @@ class CylinderAndCurvedPlate():
         b = 150
         tf = 20
 
-        sasd = 100
-        smsd = 100
+        sasd = self._sasd
+        smsd = self._smsd
         tsd = 60
 
 
@@ -1579,7 +1803,8 @@ class CylinderAndCurvedPlate():
         '''
         #   Pnt. 3.3 Unstifffed curved panel
         geometry = 3
-        data = self.cyl_buckling_unstiffend_shell()
+        data = self.unstiffened_shell()
+        data_to_return = dict()
 
         if geometry == 1:
             fks = data['fks - Unstifffed circular cylinders']
@@ -1587,6 +1812,11 @@ class CylinderAndCurvedPlate():
             fks = data['fks - Unstifffed curved panel']
         geometry = 3
         sxSd  =min([sasd+smsd, sasd-smsd])
+
+        if ret_sxsd:
+            return sxSd
+
+
         sjsd  = math.sqrt(math.pow(sxSd,2) - sxSd*shsd + math.pow(shsd,2) + 3 * math.pow(tsd, 2))
 
         Se = (fks*abs(sxSd) / (sjsd*fy))*s
@@ -1647,7 +1877,7 @@ class CylinderAndCurvedPlate():
         fEax, fEtors, fElat = vals
 
         #Torsional Buckling can be excluded as possible failure if:
-        if self.stiffener_type == 'FB':
+        if self._stiffener_type == 'FB':
             chk_fb = hw <= 0.4*tw*math.sqrt(E/fy)
 
         # TODO continue
@@ -1667,6 +1897,7 @@ class CylinderAndCurvedPlate():
         fy = 355
         h = 400
 
+        # long stf
         hw = h-t
         tw = 12
         b = 150
@@ -1709,7 +1940,7 @@ class CylinderAndCurvedPlate():
 
 
         #Sec. 3.8.2   Column buckling strength:
-        data = self.cyl_buckling_unstiffend_shell()
+        data = self.unstiffened_shell()
         fEa = data['fEax - Unstifffed circular cylinders']
         #fEa = any([geometry in [1,5], s > l])
         fEh = data['fEh - Unstifffed circular cylinders  - Psi=4']
@@ -1738,7 +1969,7 @@ class CylinderAndCurvedPlate():
         Lambda_ = math.sqrt(fak/fE)
 
         fkc = (1-0-28*math.pow(Lambda_,2))*fak if Lambda_ <= 1.34 else fak/math.pow(Lambda_,2)
-        gammaM = self.mat_factor  # Check TODO
+        gammaM = self._mat_factor  # Check TODO
         fakd = fak/gammaM
         fkcd = fkc/gammaM
 
@@ -1751,6 +1982,63 @@ class CylinderAndCurvedPlate():
 
         # tors_buc_table = [['Variable',  'Longitudinal stiff.'   'Ring Stiff.',  'Ring Girder'],
         #                   ['sjsd', if geometry in [3,4,7,8]]]
+        #if geometry in [3,4,7,8]:
+
+        alpha = [np.nan, ]
+        beta = 0
+        leo = 0
+        zeta = 0
+        shsd = psd*r/t
+
+        shell_buckling_data = self.shell_buckling()
+        idx = 1
+        param_map = {'Ring Stiff.': 0,'Ring Girder': 1}
+        for key, obj in {'Longitudinal stiff.': self._LongStf, 'Ring Stiff.': self._RingStf,
+                           'Ring Girder': self._RingFrame}.items():
+            gammaM = data['gammaM circular cylinder'] if self._geometry > 2 else \
+                data['gammaM curved panel']
+            sjsd = shell_buckling_data['sjsd'][idx]
+            if any([self._geometry in [1, 5], self._LongStf.s > (self._Shell.dist_between_rings * 1000)]):
+                fksd = data['fksd - Unstifffed circular cylinders']
+            else:
+                fksd = data['fksd - Unstifffed curved panel']
+
+            fks = fksd * gammaM
+            eta = sjsd/fks
+            hw = obj.hw
+
+            if key == 'Longitudinal stiff.':
+                s_or_leo = obj.s
+                lT = l
+            else:
+                s_or_leo = shell_buckling_data['parameters'][param_map[key]][2]
+                lT = math.pi*math.sqrt(r*hw)
+            tw = obj.tw
+            C = hw/s_or_leo*math.pow(t/tw,3)*math.sqrt(1-min([1,eta])) if s_or_leo*tw>0 else 0
+
+            beta = (3*C+0.2)/(C+0.2)
+
+            #parameters.append([alpha, beta, leo, zeta])
+            if obj.get_stiffener_type() == 'FB':
+                fEt = (beta+2*math.pow(hw/lT,2))*G*math.pow(tw/hw,2)
+            else:
+                #cross_sec_data.append([hs, It, Iz, Ipo])
+                hs, It, Iz, Ipo = shell_buckling_data['cross section data'][idx-1]
+                Af = obj.tf * obj.b
+                Aw = obj.hw * obj.tw
+                fEt = beta*(Aw+math.pow(obj.tf/obj.tw,2)*Af)/(Aw+3*Af)*G*math.pow(obj.tw/hw,2)+math.pow(math.pi,2)\
+                      *E*Iz/((Aw/3+Af)*math.pow(lT,2))
+
+            lambdaT = math.sqrt(fy/fEt)
+            mu = 0.35*(lambdaT-0.6)
+            fT = (1+mu+math.pow(lambdaT,2)-math.sqrt(math.pow(1+mu+math.pow(lambdaT,2),2)-4*math.pow(lambdaT,2)))\
+                 /(2*math.pow(lambdaT,2))*fy if lambdaT > 0.6 else fy
+
+            idx += 1
+
+            # TODO stiffener check
+
+
 
 class CalcFatigue(Structure):
     '''
@@ -1781,10 +2069,10 @@ class CalcFatigue(Structure):
         return self._sn_curve
 
     def __get_sigma_ext(self, int_press):
-        return -0.5*int_press* ((self.spacing / (self.plate_th))**2) * (self._k_factor/1000**2)
+        return -0.5*int_press* ((self._spacing / (self._plate_th))**2) * (self._k_factor/1000**2)
 
     def __get_sigma_int(self, ext_press):
-        return 0.5*ext_press*((self.spacing/(self.plate_th))**2) * (self._k_factor/1000**2)
+        return 0.5*ext_press*((self._spacing/(self._plate_th))**2) * (self._k_factor/1000**2)
 
     def __get_range(self, idx, int_press, ext_press):
         return 2*math.sqrt(math.pow(self.__get_sigma_ext(ext_press), 2) +
@@ -1806,7 +2094,7 @@ class CalcFatigue(Structure):
         m1, log_a1, k, slope = snc.get_paramter(curve,'m1'), snc.get_paramter(curve,'log a1'),\
                                snc.get_paramter(curve,'k'), snc.get_paramter(curve,'slope')
         cycles = self._design_life*365*24*3600/self._period[idx]
-        thk_eff = math.log10(max(1,self.plate_th/0.025)) * k
+        thk_eff = math.log10(max(1,self._plate_th/0.025)) * k
         slope_ch = math.exp( math.log( math.pow(10, log_a1-m1*thk_eff)/slope) / m1)
         gamma1 = self.__get_gamma1(idx)
         weibull = self._weibull[idx]
@@ -1826,7 +2114,7 @@ class CalcFatigue(Structure):
         m2, log_m2, k, slope = snc.get_paramter(curve,'m2'), snc.get_paramter(curve,'log a2'),\
                                snc.get_paramter(curve,'k'), snc.get_paramter(curve,'slope')
         cycles = self._design_life*365*24*3600/self._period[idx]
-        thk_eff = math.log10(max(1,self.plate_th/25)) * k
+        thk_eff = math.log10(max(1,self._plate_th/25)) * k
         slope_ch = math.exp( math.log( math.pow(10, log_m2-m2*thk_eff)/slope) / m2)
         gammm2 = self.__get_gamma2(idx)
         weibull = self._weibull[idx]
@@ -2326,4 +2614,7 @@ if __name__ == '__main__':
         # print('MINIMUM SECTION MOD.', my_test.get_dnv_min_section_modulus(pressure))
         print()
         #my_test.cyl_buckling_long_sft_shell()
-    my_cyl = CylinderAndCurvedPlate(None)
+    my_cyl = CylinderAndCurvedPlate(main_dict = None, shell= Shell(None), long_stf= Structure(ex.obj_dict_cyl_long),
+                                    ring_stf = Structure(ex.obj_dict_cyl_ring),
+                                    ring_frame= Structure(ex.obj_dict_cyl_heavy_ring))
+    my_cyl.column_buckling()
