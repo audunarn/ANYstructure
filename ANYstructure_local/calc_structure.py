@@ -1320,7 +1320,14 @@ class Shell():
         self._length_of_shell = 5
         self._tot_cyl_length = 5
         self._k_factor = 1
-        
+        self._total_cylinder_length = 5
+
+    @property
+    def Lc(self):
+        return self._tot_cyl_length
+    @Lc.setter
+    def Lc(self, val):
+        self._tot_cyl_length = val
     @property
     def thk(self):
         return self._thk
@@ -1385,7 +1392,7 @@ class CylinderAndCurvedPlate():
 
         main_dict = {'sasd': 100, 'smsd': 100, 'tTsd': 50, 'tQsd':10, 'psd': -0.3, 'shsd': 0, 'geometry': 7,
                      'material factor': 1.15, 'lT': 0, 'delta0': 0.005, 'fab method ring stf': 1,
-                     'fab method ring girder': 2}
+                     'fab method ring girder': 2, 'E-module':2.1e11, 'poisson': 0.3, 'yield': 355e6}
 
         self._sasd = main_dict['sasd']
         self._smsd = main_dict['smsd']
@@ -1399,6 +1406,9 @@ class CylinderAndCurvedPlate():
         self._delta0 = main_dict['delta0']
         self._fab_method_ring_stf = main_dict['fab method ring stf']
         self._fab_method_ring_girder = main_dict['fab method ring girder']
+        self._E = main_dict['E-module']
+        self._v = main_dict['poisson']
+        self._yield = main_dict['yield']
 
         self._Shell = shell
         self._LongStf = long_stf
@@ -1514,19 +1524,20 @@ class CylinderAndCurvedPlate():
         UF_panel_stiffener = None
 
     def unstiffened_shell(self):
-        from scipy.optimize import fsolve
-        E = 210000
-        t = 20.0
-        s = 600.0
-        v = 0.3
-        r = 2500.0
-        l = 5000.0
-        fy = 355
 
-        sasd = 100
-        smsd = 100
-        tsd = 60
-        psd = -0.3
+        E = self._E/1e6
+        t = self._Shell.thk*1000
+        s = max([self._Shell.dist_between_rings, 2*math.pi*self._Shell.radius])*1000 if self._LongStf == None else \
+            self._LongStf.s
+        v = self._v
+        r = self._Shell.radius*1000
+        l = self._Shell.dist_between_rings * 1000
+        fy = self._yield/1e6
+
+        sasd = self._sasd
+        smsd = self._smsd
+        tsd = self._tTsd+self._tQsd
+        psd = self._psd
         shsd = psd*r/t
 
         provide_data = dict()
@@ -1791,24 +1802,27 @@ class CylinderAndCurvedPlate():
         provide_data['max axial stress - 3.4.2 Shell buckling'] = iter_table_2()
         return provide_data
 
-    def ring_stiffened_shell(self):
-        E = 210000
-        t = 20.0
-        s = 600.0
-        v = 0.3
-        r = 2500.0
-        l = 5000.0
-        LH = 5000.0
-        L = 5000.0
+    def ring_stiffened_shell(self, data_shell_buckling = None):
 
+        E = self._E/1e6
+        t = self._Shell.thk*1000
+        s = max([self._Shell.dist_between_rings, 2*math.pi*self._Shell.radius])*1000 if self._LongStf == None else \
+            self._LongStf.s
+        v = self._v
+        r = self._Shell.radius*1000
+        l = self._Shell.dist_between_rings * 1000
+        fy = self._yield/1e6
+        psd = self._psd
+        L = self._Shell.tot_cyl_length*1000
+        LH = L
         sasd = self._sasd
         smsd = self._smsd
         tsd = self._tTsd + self._tQsd
         psd = self._psd
-        fy = 355
 
 
-        data_shell_buckling = self.shell_buckling()
+
+        data_shell_buckling = self.shell_buckling() if data_shell_buckling == None else data_shell_buckling
         #Pnt. 3.5:  Ring stiffened shell
 
         # Pnt. 3.5.2.1   Requirement for cross-sectional area:
@@ -1944,32 +1958,31 @@ class CylinderAndCurvedPlate():
         return np.max([uf_cross_section, uf_moment_of_inertia, uf_refined], axis=0)
 
 
-
-
     def longitudinally_stiffened_shell(self, ret_sxsd = False):
 
-        E = 210000
-        t = 20.0
-        s = 600.0
-        v = 0.3
-        r = 2500.0
-        l = 5000.0
+        h = self._Shell.thk*1000 + self._LongStf.hw + self._LongStf.tf
 
-        psd = -0.3
-        shsd = psd*r/t
+        hw = self._LongStf.hw
+        tw = self._LongStf.tw
+        b = self._LongStf.b
+        tf = self._LongStf.tf
 
-        fy = 355
-        h = 400
+        E = self._E/1e6
+        t = self._Shell.thk*1000
+        s = max([self._Shell.dist_between_rings, 2*math.pi*self._Shell.radius])*1000 if self._LongStf == None else \
+            self._LongStf.s
+        v = self._v
+        r = self._Shell.radius*1000
+        l = self._Shell.dist_between_rings * 1000
+        fy = self._yield/1e6
 
-        hw = h-t
-        tw = 12
-        b = 150
-        tf = 20
-
+        L = self._Shell.tot_cyl_length*1000
+        LH = L
         sasd = self._sasd
         smsd = self._smsd
-        tsd = 60
-
+        tsd = self._tTsd + self._tQsd
+        psd = self._psd
+        shsd = psd * r / t
 
         lightly_stf = s/t > math.sqrt(r/t)
 
@@ -1987,7 +2000,7 @@ class CylinderAndCurvedPlate():
         3	Longitudinal Stiffened shell  (Force input)
         '''
         #   Pnt. 3.3 Unstifffed curved panel
-        geometry = 3
+        geometry = self._geometry
         data = self.unstiffened_shell()
         data_to_return = dict()
 
@@ -1995,12 +2008,11 @@ class CylinderAndCurvedPlate():
             fks = data['fks - Unstifffed circular cylinders']
         else:
             fks = data['fks - Unstifffed curved panel']
-        geometry = 3
+
         sxSd  =min([sasd+smsd, sasd-smsd])
 
         if ret_sxsd:
             return sxSd
-
 
         sjsd  = math.sqrt(math.pow(sxSd,2) - sxSd*shsd + math.pow(shsd,2) + 3 * math.pow(tsd, 2))
 
@@ -2102,41 +2114,46 @@ class CylinderAndCurvedPlate():
             else:
                 gammaM = 0.85+0.6*lambda_s
 
+        # Design buckling strength:
         fksd = fks/gammaM
         print(fks, fksd)
-        # TODO continue
 
-    def column_buckling(self, ret_lambda_T = False, ret_fT = False):
 
-        E = 210000
-        t = 20.0
-        s = 600.0
-        v = 0.3
-        r = 2500.0
-        l = 5000.0
-        L = 5000.0
-        Lc = 5000.0
+    def column_buckling(self, ret_lambda_T = False, ret_fT = False, shell_bukcling_data = None,
+                        unstf_shell_data = None):
+
+        geometry = self._geometry
+
         G = 80769.2
 
-        fy = 355
-        h = 400
+        h = self._Shell.thk*1000 + self._LongStf.hw + self._LongStf.tf
 
-        # long stf
-        hw = h-t
-        tw = 12
-        b = 150
-        tf = 20
+        hw = self._LongStf.hw
+        tw = self._LongStf.tw
+        b = self._LongStf.b
+        tf = self._LongStf.tf
 
-        sasd = 100
-        smsd = 100
-        tsd = 60
-        psd = -0.3
-        shsd = psd*r/t
+        E = self._E/1e6
+        t = self._Shell.thk*1000
+        s = max([self._Shell.dist_between_rings, 2*math.pi*self._Shell.radius])*1000 if self._LongStf == None else \
+            self._LongStf.s
+        v = self._v
+        r = self._Shell.radius*1000
+        l = self._Shell.dist_between_rings * 1000
+        fy = self._yield/1e6
 
-        geometry = 3
+        L = self._Shell.tot_cyl_length*1000
+        LH = L
+        Lc = max([L, LH])
 
-        shell_buckling_data = self.shell_buckling()
-        data = self.unstiffened_shell()
+        sasd = self._sasd
+        smsd = self._smsd
+        tsd = self._tTsd + self._tQsd
+        psd = self._psd
+        shsd = psd * r / t
+
+        shell_buckling_data = self.shell_buckling() if shell_bukcling_data == None else shell_bukcling_data
+        data = self.unstiffened_shell() if unstf_shell_data == None else unstf_shell_data
 
         idx = 1
         param_map = {'Ring Stiff.': 0,'Ring Girder': 1}
@@ -2259,8 +2276,47 @@ class CylinderAndCurvedPlate():
         print("Stability requirement satisfied") if stab_chk else print("Not acceptable")
         # Sec. 3.9   Torsional buckling:  moved to the top
 
-        # TODO stiffener check
+        # Stiffener check
 
+        stf_req_h = [0.4*obj.tw*math.sqrt(E/fy) if obj.get_stiffener_type() == 'FB'
+                     else 1.35*obj.tw*math.sqrt(E/fy) for idx, obj in enumerate([self._LongStf, self._RingStf, self._RingFrame])]
+        stf_req_h = np.array(stf_req_h)
+        stf_req_h_chk = stf_req_h > np.array([self._LongStf.hw, self._RingStf.hw, self._RingFrame.hw])
+
+        stf_req_b = [np.nan if obj.get_stiffener_type() == 'FB'
+                     else 0.4*obj.tf*math.sqrt(E/fy) for idx, obj in enumerate([self._LongStf, self._RingStf, self._RingFrame])]
+        bf = list()
+        for idx, obj in enumerate([self._LongStf, self._RingStf, self._RingFrame]):
+            if obj.get_stiffener_type() == 'FB':
+                bf.append(obj.b)
+            elif obj.get_stiffener_type() == 'T':
+                bf.append((obj.b-obj.tw)/2)
+            else:
+                bf.append(obj.b-obj.tw)
+        bf = np.array(bf)
+        stf_req_b_chk = stf_req_b > bf
+
+        hw_div_tw = np.array([self._RingStf.hw, self._RingFrame.hw])/np.array([self._RingStf.tw, self._RingFrame.tw])
+
+        #parameters - [alpha, beta, leo, zeta, rf, r0, zt]
+
+        req_hw_div_tw = [np.nan if obj.b*obj.tf == 0 else
+                         2/3*math.sqrt(shell_buckling_data['parameters'][idx][4]*(obj.tw*obj.hw)*E/
+                                       (obj.hw*obj.b*obj.tf*fy))
+                         for idx, obj in enumerate([self._RingStf, self._RingFrame])]
+        req_hw_div_tw = np.array(req_hw_div_tw)
+        req_hw_div_tw_chk = hw_div_tw > req_hw_div_tw
+
+        ef_div_tw = np.array([obj.get_flange_eccentricity() for idx, obj in enumerate([self._RingStf,
+                                                                                       self._RingFrame])])
+        ef_div_tw_req = [np.nan if obj.b*obj.tf == 0 else
+                     1/3*shell_buckling_data['parameters'][idx][4]/obj.hw*obj.hw*obj.tw/(obj.b*obj.tf)
+                     for idx, obj in enumerate([self._RingStf, self._RingFrame])]
+        ef_div_tw_chk = ef_div_tw > ef_div_tw_req
+        print(stf_req_h , '>', np.array([self._LongStf.hw, self._RingStf.hw, self._RingFrame.hw]))
+        print(stf_req_b , '>', bf)
+        print(hw_div_tw , '>', req_hw_div_tw)
+        print(ef_div_tw , '>', ef_div_tw_req)
 
 
 class CalcFatigue(Structure):
@@ -2840,4 +2896,4 @@ if __name__ == '__main__':
     my_cyl = CylinderAndCurvedPlate(main_dict = None, shell= Shell(None), long_stf= Structure(ex.obj_dict_cyl_long),
                                     ring_stf = Structure(ex.obj_dict_cyl_ring),
                                     ring_frame= Structure(ex.obj_dict_cyl_heavy_ring))
-    my_cyl.ring_stiffened_shell()
+    my_cyl.column_buckling()
