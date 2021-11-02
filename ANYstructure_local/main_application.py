@@ -903,7 +903,7 @@ class Application():
         self._new_shell_k_factor.set(1)
 
         self._shell_gui_items = list()
-        self._lab_shell =  tk.Label(self._main_fr, text='Shell and curved plate input',
+        self._lab_shell =  tk.Label(self._main_fr, text='Shell and curved plate input [mm]',
                                     font=self._text_size['Text 8 bold'], bg = self._general_color)
         self._ent_shell_plate_thk = tk.Entry(self._main_fr, textvariable=self._new_shell_thk, bg = self._entry_color,
                                        fg = self._entry_text_color)
@@ -930,17 +930,18 @@ class Application():
         Shell, lognitudinal stiffeners
         '''
         # USING stiffeners for flat plates
-        self._lab_shell_long_stiffener =  tk.Label(self._main_fr, text='Ring stiffener properties',
-                                                   font=self._text_size['Text 7'],
+        self._lab_shell_long_stiffener =  tk.Label(self._main_fr, text='Longitudinal stiffener properties [mm]',
+                                                   font=self._text_size['Text 8 bold'],
                                       bg = self._general_color)
         self._shell_long_stf_gui_items = [self._lab_shell_long_stiffener ,self._ent_stf_web_h, self._ent_stf_web_t,
-                                          self._ent_stf_fl_w, self._ent_str_fl_t, self._ent_stf_type]
+                                          self._ent_stf_fl_w, self._ent_str_fl_t, self._ent_stf_spacing,
+                                          self._ent_stf_type]
         
         '''
         Shell, ring stiffener
         '''
-        self._lab_shell_ring_stiffener =  tk.Label(self._main_fr, text='Ring stiffener properties',
-                                                   font=self._text_size['Text 7'],bg = self._general_color)
+        self._lab_shell_ring_stiffener =  tk.Label(self._main_fr, text='Ring stiffener properties [mm]',
+                                                   font=self._text_size['Text 8 bold'],bg = self._general_color)
         self._new_shell_ring_stf_hw = tk.DoubleVar()
         self._new_shell_ring_stf_tw = tk.DoubleVar()
         self._new_shell_ring_stf_b = tk.DoubleVar()
@@ -976,13 +977,14 @@ class Application():
         '''
         Shell ring girder/frame
         '''
-        self._lab_shell_ring_stiffener = tk.Label(self._main_fr, text='Ring stiffener properties',
-                                                  font=self._text_size['Text 7'], bg=self._general_color)
+        self._lab_shell_ring_frame = tk.Label(self._main_fr, text='Ring frame/girder properties [mm]',
+                                                  font=self._text_size['Text 8 bold'], bg=self._general_color)
         self._new_shell_ring_frame_hw = tk.DoubleVar()
         self._new_shell_ring_frame_tw = tk.DoubleVar()
         self._new_shell_ring_frame_b = tk.DoubleVar()
         self._new_shell_ring_frame_tf = tk.DoubleVar()
         self._new_shell_ring_frame_tripping_brackets = tk.DoubleVar()
+        self._new_shell_ring_frame_l_between_girders = tk.DoubleVar()
         self._new_shell_ring_frame_type = tk.StringVar()
         self._new_shell_ring_frame_hw.set(300)
         self._new_shell_ring_frame_tw.set(12)
@@ -1002,32 +1004,45 @@ class Application():
         self._ent_shell_ring_frame_tripping_brackets = tk.Entry(self._main_fr,
                                                               textvariable=self._new_shell_ring_frame_tripping_brackets,
                                                               bg=self._entry_color, fg=self._entry_text_color)
+        self._ent_shell_ring_frame_l_between_girders = tk.Entry(self._main_fr,
+                                                              textvariable=self._new_shell_ring_frame_tripping_brackets,
+                                                              bg=self._entry_color, fg=self._entry_text_color)
         self._ent_shell_ring_stf_type = tk.OptionMenu(self._main_fr, self._new_shell_ring_frame_type,
                                                       *['T', 'FB', 'L', 'L-bulb'])
 
         self._shell_ring_frame_gui_items = [self._lab_shell_ring_stiffener, self._ent_shell_ring_frame_hw,
                                           self._ent_shell_ring_frame_tw, self._ent_shell_ring_frame_b,
                                           self._ent_shell_ring_frame_tf, self._ent_shell_ring_frame_tripping_brackets,
+                                            self._ent_shell_ring_frame_l_between_girders,
                                             self._ent_shell_ring_stf_type]
 
         '''
         Shell/panel load data
         '''
 
-        self._lab_shell_loads =  tk.Label(self._main_fr, text='Load data',
-                                                   font=self._text_size['Text 7'],bg = self._general_color)
+        self._lab_shell_loads =  tk.Label(self._main_fr, text='Load data, compression pressure,\n stresses and '
+                                                              'forces negative.',
+                                                   font=self._text_size['Text 8 bold'],bg = self._general_color)
         self._new_shell_stress_or_force = tk.IntVar()
+        self._new_shell_stress_or_force.set(1)
 
         self._ent_shell_force_input = tk.Radiobutton(self._main_fr, text="Force input",
-                                                     variable=self._new_shell_stress_or_force, value=1)
+                                                     variable=self._new_shell_stress_or_force, value=1,
+                                                     command = self.calculation_domain_selected)
         self._ent_shell_stress_input = tk.Radiobutton(self._main_fr, text="Stress input",
-                                                      variable=self._new_shell_stress_or_force, value=2)
+                                                      variable=self._new_shell_stress_or_force, value=2,
+                                                      command = self.calculation_domain_selected)
 
         self._new_shell_Nsd = tk.DoubleVar()
         self._new_shell_Msd = tk.DoubleVar()
         self._new_shell_Tsd = tk.DoubleVar()
         self._new_shell_Qsd = tk.DoubleVar()
         self._new_shell_psd = tk.DoubleVar()
+        self._new_shell_Nsd.set(500000)
+        self._new_shell_Msd.set(500000)
+        self._new_shell_Tsd.set(40000)
+        self._new_shell_Qsd.set(1500)
+        self._new_shell_psd.set(-0.2)
 
         self._new_shell_sasd = tk.DoubleVar()
         self._new_shell_smsd = tk.DoubleVar()
@@ -1381,8 +1396,7 @@ class Application():
         delta_x = 0.026041667
         types_start = 0.005208333
         shift_x = 2.9
-        y_red = 0.8
-
+        y_red = 0.7
         self._unit_informations_dimensions = list()
         if flat_panel:
             if any([shell, long_stf, ring_stf, ring_frame, force_input, stress_input]):
@@ -1443,6 +1457,7 @@ class Application():
             self._ent_str_fl_t.place(relx=ent_relx + 6 * geo_dx, rely=ent_geo_y, relwidth=geo_ent_width)
 
             tmp_units = list()
+
             for lab, idx in zip(['[m]', '[mm]', '[mm]', '[mm]', '[mm]', '[mm]', '[mm]'], np.arange(2, 9.9, 1.1)):
                 tmp_units.append(tk.Label(self._main_fr, text=lab, bg=self._general_color))
             for lab, idx  in zip(tmp_units, np.arange(2, 9.9, 1.1)):
@@ -1501,28 +1516,107 @@ class Application():
                                      self._ent_shell_dist_rings,
                                      self._ent_shell_length,self._ent_shell_tot_length,self._ent_shell_k_factor]
             '''
-            self._lab_shell.place(relx=ent_relx, rely=ent_geo_y-delta_y)
+            self._lab_shell.place(relx=types_start, rely=ent_geo_y-delta_y*y_red)
 
             for idx, entry in enumerate(self._shell_gui_items[1:]):
 
                 entry.place(relx=types_start + 1.4*idx * geo_dx, rely=ent_geo_y + delta_y, relwidth=geo_ent_width)
 
-            tmp_unit_info = list()
-            for lab, idx in zip(['[mm]', '[mm]', '[mm]', '[mm]', '[mm]', '[-]',], np.arange(2, 9.9, 1.1)):
-                tmp_unit_info.append(tk.Label(self._main_fr, text=lab, bg=self._general_color))
-
-            for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
-                lab.place(relx=types_start + idx * geo_dx*1.4,rely=ent_geo_y+ delta_y*2*0.9)
-                self._unit_informations_dimensions.append(lab)
 
             tmp_unit_info = list()
-            for lab in ['Thickness, t', 'Radius, r', 'Length, l', 'Shell len., L', 'Tot len., Lc', 'k-factor, k']:
+            for lab in ['Thickness, t', 'Radius, r', 'Length, l', 'Shell len., L', 'Tot len., Lc', 'k-factor, k [-]']:
                 tmp_unit_info.append(tk.Label(self._main_fr, text=lab, bg=self._general_color))
 
             for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
                 lab.place(relx=types_start + idx * geo_dx*1.4,rely=ent_geo_y)
                 self._unit_informations_dimensions.append(lab)
-        
+
+        if long_stf:
+            ent_geo_y += 2.5*delta_y
+            self._lab_shell_long_stiffener.place(relx=types_start, rely=ent_geo_y-delta_y*y_red)
+
+            for idx, entry in enumerate(self._shell_long_stf_gui_items[1:]):
+                entry.place(relx=types_start + 1.4*idx * geo_dx, rely=ent_geo_y + delta_y, relwidth=geo_ent_width)
+
+
+            tmp_unit_info = list()
+            for lab in ['Web, hw', 'Web, tw', 'Flange b', 'Flange, tw', 'Spacing, s', 'Stf. type']:
+                tmp_unit_info.append(tk.Label(self._main_fr, text=lab, bg=self._general_color))
+
+            for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
+                lab.place(relx=types_start + idx * geo_dx*1.4,rely=ent_geo_y)
+                self._unit_informations_dimensions.append(lab)
+
+        if ring_stf:
+            ent_geo_y += 2.5*delta_y
+            self._lab_shell_ring_stiffener.place(relx=types_start, rely=ent_geo_y-delta_y*y_red)
+
+            for idx, entry in enumerate(self._shell_ring_stf_gui_items[1:]):
+                entry.place(relx=types_start + 1.4*idx * geo_dx, rely=ent_geo_y + delta_y, relwidth=geo_ent_width)
+
+            tmp_unit_info = list()
+            for lab in ['Web, hw', 'Web, tw', 'Flange, b', 'Flange, tw','tr. br. dist', 'Stf. type']:
+                tmp_unit_info.append(tk.Label(self._main_fr, text=lab, bg=self._general_color))
+
+            for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
+                lab.place(relx=types_start + idx * geo_dx*1.4,rely=ent_geo_y)
+                self._unit_informations_dimensions.append(lab)
+
+        if ring_frame:
+            ent_geo_y += 2.5*delta_y
+            self._lab_shell_ring_frame.place(relx=types_start, rely=ent_geo_y-delta_y*y_red)
+
+            for idx, entry in enumerate(self._shell_ring_frame_gui_items[1:]):
+                sx = 1.2 if idx != len(self._shell_ring_frame_gui_items[1:]) - 1 else 1.3
+                entry.place(relx=types_start + sx*idx * geo_dx, rely=ent_geo_y + delta_y, relwidth=geo_ent_width)
+
+
+            tmp_unit_info = list()
+            for lab in ['Web, hw', 'Web, tw', 'Flange, b', 'Flange, tw', 'tr. br. dist', 'L between Gird.', 'Stf. type']:
+                tmp_unit_info.append(tk.Label(self._main_fr, text=lab, bg=self._general_color))
+
+            for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
+                sx = 1.2 if idx != len(tmp_unit_info)-1 else 1.3
+                lab.place(relx=types_start + idx * geo_dx*sx,rely=ent_geo_y)
+                self._unit_informations_dimensions.append(lab)
+        if not flat_panel:
+            # Load data
+            ent_geo_y += 3.3 * delta_y
+            self._lab_shell_loads.place(relx=types_start, rely=ent_geo_y - delta_y*1.5)
+            self._ent_shell_force_input.place(relx=types_start, rely=ent_geo_y)
+            self._ent_shell_stress_input.place(relx=types_start + 2 * geo_dx, rely=ent_geo_y)
+            lab_force = ['Axial', 'Bending', 'Torsional','Shear', 'Lateral']
+            lab_force_unit = ['kN', 'kNm', 'kNm', 'kN', 'N/mm2']
+            lab_stress = ['Axial', 'Bending', 'Torsional', 'Shear',
+                          'Lateral', 'Add hoop']
+            lab_stress_unit = ['N/mm2', 'N/mm2', 'N/mm2', 'N/mm2', 'N/mm2', 'N/mm2']
+            to_use = self._shell_loads_forces_gui_items if self._new_shell_stress_or_force.get() == 1 \
+                else self._shell_loads_stress_gui_items
+
+            lab_to_use =  [lab_force, lab_force_unit] if self._new_shell_stress_or_force.get() == 1\
+                else [lab_stress, lab_stress_unit]
+
+
+
+            tmp_unit_info = list()
+            tmp_unit_info_unit = list()
+            [tmp_unit_info.append(tk.Label(self._main_fr, text=val, bg=self._general_color))
+             for val in lab_to_use[0]]
+            [tmp_unit_info_unit.append(tk.Label(self._main_fr, text=val, bg=self._general_color))
+             for val in lab_to_use[1]]
+
+            for idx,lab in enumerate(tmp_unit_info):
+                lab.place(relx=types_start, rely=ent_geo_y + (idx+1)*delta_y)
+                self._unit_informations_dimensions.append(lab)
+
+            for idx, entry in enumerate(to_use):
+                entry.place(relx=types_start + 1.5*delta_x,
+                            rely=ent_geo_y + (idx+1)*delta_y, relwidth=geo_ent_width)
+
+            for idx, lab in enumerate(tmp_unit_info_unit):
+                lab.place(relx=types_start + 2.5*delta_x,
+                          rely=ent_geo_y + (idx+1)*delta_y)
+                self._unit_informations_dimensions.append(lab)
 
     def calculation_domain_selected(self, event = None):
         '''
@@ -1560,7 +1654,7 @@ class Application():
         if self._new_calculation_domain.get() == 'Stiffened panel, flat':
             self.gui_structural_properties(flat_panel=True)
         elif self._new_calculation_domain.get() != 'Stiffened panel, flat':
-            self.gui_structural_properties(flat_panel=False, shell=True)
+            self.gui_structural_properties(flat_panel=False, shell=True, long_stf=True, ring_stf=True, ring_frame=True)
 
         self._current_calculation_domain = self._new_calculation_domain.get()
 
