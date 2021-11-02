@@ -699,11 +699,15 @@ class Application():
         # --- main entries and labels to define the structural properties ---
         ent_width = 12 #width of entries
 
-
+        
         self._ent_mat = tk.Entry(self._main_fr, textvariable=self._new_material, bg = self._entry_color,
                                  fg = self._entry_text_color)
         self._ent_mat_factor = tk.Entry(self._main_fr, textvariable=self._new_material_factor, bg = self._entry_color,
                                  fg = self._entry_text_color)
+        
+        '''
+        Flat plate input
+        '''
         self._ent_field_len = tk.Entry(self._main_fr, textvariable=self._new_field_len, bg = self._entry_color,
                                        fg = self._entry_text_color)
         self._ent_stf_spacing = tk.Entry(self._main_fr, textvariable=self._new_stf_spacing, bg = self._entry_color,
@@ -879,9 +883,189 @@ class Application():
         self._lab_press_side = tk.Label(self._main_fr, text='Pressure side (p-plate, s-stf.):',
                                         bg=self._general_color)
 
+        ''' Start shell input '''
+
+
         ''' 
-        Placement of structural properties.
+        Shell input
         '''
+        self._new_shell_thk = tk.DoubleVar()
+        self._new_shell_radius = tk.DoubleVar()
+        self._new_shell_dist_rings = tk.DoubleVar()
+        self._new_shell_length = tk.DoubleVar()
+        self._new_shell_tot_length= tk.DoubleVar()
+        self._new_shell_k_factor = tk.DoubleVar()
+        self._new_shell_thk.set(20)
+        self._new_shell_radius.set(5000)
+        self._new_shell_dist_rings.set(5000)
+        self._new_shell_length.set(5000)
+        self._new_shell_tot_length.set(5000)
+        self._new_shell_k_factor.set(1)
+
+        self._shell_gui_items = list()
+        self._lab_shell =  tk.Label(self._main_fr, text='Shell and curved plate input',
+                                    font=self._text_size['Text 8 bold'], bg = self._general_color)
+        self._ent_shell_plate_thk = tk.Entry(self._main_fr, textvariable=self._new_shell_thk, bg = self._entry_color,
+                                       fg = self._entry_text_color)
+
+        self._ent_shell_radius = tk.Entry(self._main_fr, textvariable=self._new_shell_radius, bg = self._entry_color,
+                                       fg = self._entry_text_color)
+        self._ent_shell_dist_rings = tk.Entry(self._main_fr, textvariable=self._new_shell_dist_rings,
+                                              bg = self._entry_color,
+                                         fg = self._entry_text_color)
+        self._ent_shell_length = tk.Entry(self._main_fr, textvariable=self._new_shell_length,
+                                      width = int(5*1), bg = self._entry_color,
+                                       fg = self._entry_text_color)
+        self._ent_shell_tot_length = tk.Entry(self._main_fr, textvariable=self._new_shell_tot_length,
+                                              bg = self._entry_color,
+                                       fg = self._entry_text_color)
+        self._ent_shell_k_factor= tk.Entry(self._main_fr, textvariable=self._new_shell_k_factor, bg = self._entry_color,
+                                      fg = self._entry_text_color)
+
+        self._shell_gui_items = [self._lab_shell, self._ent_shell_plate_thk, self._ent_shell_radius,
+                                 self._ent_shell_dist_rings,
+                                 self._ent_shell_length,self._ent_shell_tot_length,self._ent_shell_k_factor]
+
+        '''
+        Shell, lognitudinal stiffeners
+        '''
+        # USING stiffeners for flat plates
+        self._lab_shell_long_stiffener =  tk.Label(self._main_fr, text='Ring stiffener properties',
+                                                   font=self._text_size['Text 7'],
+                                      bg = self._general_color)
+        self._shell_long_stf_gui_items = [self._lab_shell_long_stiffener ,self._ent_stf_web_h, self._ent_stf_web_t,
+                                          self._ent_stf_fl_w, self._ent_str_fl_t, self._ent_stf_type]
+        
+        '''
+        Shell, ring stiffener
+        '''
+        self._lab_shell_ring_stiffener =  tk.Label(self._main_fr, text='Ring stiffener properties',
+                                                   font=self._text_size['Text 7'],bg = self._general_color)
+        self._new_shell_ring_stf_hw = tk.DoubleVar()
+        self._new_shell_ring_stf_tw = tk.DoubleVar()
+        self._new_shell_ring_stf_b = tk.DoubleVar()
+        self._new_shell_ring_stf_tf = tk.DoubleVar()
+        self._new_shell_ring_stf_tripping_brackets = tk.DoubleVar()
+        self._new_shell_ring_stf_type = tk.StringVar()
+        self._new_shell_ring_stf_hw.set(300)
+        self._new_shell_ring_stf_tw.set(12)
+        self._new_shell_ring_stf_b.set(120)
+        self._new_shell_ring_stf_tf.set(20)
+        self._new_shell_ring_stf_tripping_brackets.set(0)
+        self._new_shell_ring_stf_type.set('T')
+
+        self._ent_shell_ring_stf_hw = tk.Entry(self._main_fr, textvariable=self._new_shell_ring_stf_hw,
+                                      width = int(5*1), bg = self._entry_color, fg = self._entry_text_color)
+        self._ent_shell_ring_stf_tw = tk.Entry(self._main_fr, textvariable=self._new_shell_ring_stf_tw,
+                                               bg = self._entry_color, fg = self._entry_text_color)
+        self._ent_shell_ring_stf_b = tk.Entry(self._main_fr, textvariable=self._new_shell_ring_stf_b,
+                                              bg = self._entry_color, fg = self._entry_text_color)
+        self._ent_shell_ring_stf_tf = tk.Entry(self._main_fr, textvariable=self._new_shell_ring_stf_tf,
+                                               bg = self._entry_color, fg = self._entry_text_color)
+        self._ent_shell_ring_stf_tripping_brackets = tk.Entry(self._main_fr, 
+                                                              textvariable=self._new_shell_ring_stf_tripping_brackets,
+                                               bg=self._entry_color, fg=self._entry_text_color)
+
+        self._ent_shell_ring_stf_type = tk.OptionMenu(self._main_fr, self._new_shell_ring_stf_type,
+                                                      *['T', 'FB', 'L', 'L-bulb'])
+        
+        self._shell_ring_stf_gui_items = [self._lab_shell_ring_stiffener,self._ent_shell_ring_stf_hw,
+                                          self._ent_shell_ring_stf_tw,self._ent_shell_ring_stf_b,
+                                          self._ent_shell_ring_stf_tf, self._ent_shell_ring_stf_tripping_brackets,
+                                          self._ent_shell_ring_stf_type]
+        '''
+        Shell ring girder/frame
+        '''
+        self._lab_shell_ring_stiffener = tk.Label(self._main_fr, text='Ring stiffener properties',
+                                                  font=self._text_size['Text 7'], bg=self._general_color)
+        self._new_shell_ring_frame_hw = tk.DoubleVar()
+        self._new_shell_ring_frame_tw = tk.DoubleVar()
+        self._new_shell_ring_frame_b = tk.DoubleVar()
+        self._new_shell_ring_frame_tf = tk.DoubleVar()
+        self._new_shell_ring_frame_tripping_brackets = tk.DoubleVar()
+        self._new_shell_ring_frame_type = tk.StringVar()
+        self._new_shell_ring_frame_hw.set(300)
+        self._new_shell_ring_frame_tw.set(12)
+        self._new_shell_ring_frame_b.set(120)
+        self._new_shell_ring_frame_tf.set(20)
+        self._new_shell_ring_frame_tripping_brackets.set(0)
+        self._new_shell_ring_frame_type.set('T')
+
+        self._ent_shell_ring_frame_hw = tk.Entry(self._main_fr, textvariable=self._new_shell_ring_frame_hw,
+                                               width=int(5 * 1), bg=self._entry_color, fg=self._entry_text_color)
+        self._ent_shell_ring_frame_tw = tk.Entry(self._main_fr, textvariable=self._new_shell_ring_frame_tw,
+                                               bg=self._entry_color, fg=self._entry_text_color)
+        self._ent_shell_ring_frame_b = tk.Entry(self._main_fr, textvariable=self._new_shell_ring_frame_b,
+                                              bg=self._entry_color, fg=self._entry_text_color)
+        self._ent_shell_ring_frame_tf = tk.Entry(self._main_fr, textvariable=self._new_shell_ring_frame_tf,
+                                               bg=self._entry_color, fg=self._entry_text_color)
+        self._ent_shell_ring_frame_tripping_brackets = tk.Entry(self._main_fr,
+                                                              textvariable=self._new_shell_ring_frame_tripping_brackets,
+                                                              bg=self._entry_color, fg=self._entry_text_color)
+        self._ent_shell_ring_stf_type = tk.OptionMenu(self._main_fr, self._new_shell_ring_frame_type,
+                                                      *['T', 'FB', 'L', 'L-bulb'])
+
+        self._shell_ring_frame_gui_items = [self._lab_shell_ring_stiffener, self._ent_shell_ring_frame_hw,
+                                          self._ent_shell_ring_frame_tw, self._ent_shell_ring_frame_b,
+                                          self._ent_shell_ring_frame_tf, self._ent_shell_ring_frame_tripping_brackets,
+                                            self._ent_shell_ring_stf_type]
+
+        '''
+        Shell/panel load data
+        '''
+
+        self._lab_shell_loads =  tk.Label(self._main_fr, text='Load data',
+                                                   font=self._text_size['Text 7'],bg = self._general_color)
+        self._new_shell_stress_or_force = tk.IntVar()
+
+        self._ent_shell_force_input = tk.Radiobutton(self._main_fr, text="Force input",
+                                                     variable=self._new_shell_stress_or_force, value=1)
+        self._ent_shell_stress_input = tk.Radiobutton(self._main_fr, text="Stress input",
+                                                      variable=self._new_shell_stress_or_force, value=2)
+
+        self._new_shell_Nsd = tk.DoubleVar()
+        self._new_shell_Msd = tk.DoubleVar()
+        self._new_shell_Tsd = tk.DoubleVar()
+        self._new_shell_Qsd = tk.DoubleVar()
+        self._new_shell_psd = tk.DoubleVar()
+
+        self._new_shell_sasd = tk.DoubleVar()
+        self._new_shell_smsd = tk.DoubleVar()
+        self._new_shell_tTsd = tk.DoubleVar()
+        self._new_shell_tQsd = tk.DoubleVar()
+        #self._new_shell_psd = tk.DoubleVar()
+        self._new_shell_shsd = tk.DoubleVar()
+
+        self._ent_shell_Nsd = tk.Entry(self._main_fr, textvariable=self._new_shell_Nsd,
+                                               width=int(5 * 1), bg=self._entry_color, fg=self._entry_text_color)
+        self._ent_shell_Msd = tk.Entry(self._main_fr, textvariable=self._new_shell_Msd,
+                                               width=int(5 * 1), bg=self._entry_color, fg=self._entry_text_color)
+        self._ent_shell_Tsd  = tk.Entry(self._main_fr, textvariable=self._new_shell_Tsd,
+                                               width=int(5 * 1), bg=self._entry_color, fg=self._entry_text_color)
+        self._ent_shell_Qsd = tk.Entry(self._main_fr, textvariable=self._new_shell_Qsd,
+                                               width=int(5 * 1), bg=self._entry_color, fg=self._entry_text_color)
+        self._ent_shell_psd = tk.Entry(self._main_fr, textvariable=self._new_shell_psd,
+                                               width=int(5 * 1), bg=self._entry_color, fg=self._entry_text_color)
+
+        self._ent_shell_sasd = tk.Entry(self._main_fr, textvariable=self._new_shell_sasd,
+                                               width=int(5 * 1), bg=self._entry_color, fg=self._entry_text_color)
+        self._ent_shell_smsd = tk.Entry(self._main_fr, textvariable=self._new_shell_smsd,
+                                               width=int(5 * 1), bg=self._entry_color, fg=self._entry_text_color)
+        self._ent_shell_tTsd  = tk.Entry(self._main_fr, textvariable=self._new_shell_tTsd,
+                                               width=int(5 * 1), bg=self._entry_color, fg=self._entry_text_color)
+        self._ent_shell_tQsd = tk.Entry(self._main_fr, textvariable=self._new_shell_tQsd,
+                                               width=int(5 * 1), bg=self._entry_color, fg=self._entry_text_color)
+        self._new_shell_psd = self._new_shell_psd
+        self._ent_shell_shsd = tk.Entry(self._main_fr, textvariable=self._new_shell_shsd,
+                                               width=int(5 * 1), bg=self._entry_color, fg=self._entry_text_color)
+
+        self._shell_loads_other_gui_items = [self._lab_shell_loads, self._ent_shell_force_input,
+                                              self._ent_shell_stress_input]
+        self._shell_loads_forces_gui_items = [self._ent_shell_Nsd, self._ent_shell_Msd,
+                                              self._ent_shell_Tsd, self._ent_shell_Qsd, self._ent_shell_psd]
+        self._shell_loads_stress_gui_items = [self._ent_shell_sasd, self._ent_shell_smsd,self._ent_shell_tTsd,
+                                              self._ent_shell_tQsd, self._ent_shell_psd,self._ent_shell_shsd]
+        ''' END shell input '''
 
         ent_x = 0.09375
         delta_y = 0.022
@@ -1186,7 +1370,8 @@ class Application():
 
         self.update_frame()
 
-    def gui_structural_properties(self, flat_panel = True):
+    def gui_structural_properties(self, flat_panel = True, shell = False, long_stf = False, ring_stf = False,
+                                  ring_frame = False, force_input = False, stress_input = False):
         prop_vert_start = 0.29
         ent_rely, ent_relx, drelx = prop_vert_start + 0.082, 0.059, 0.026
         ent_geo_y, loc_y = ent_rely - 0.06, 0.000740741
@@ -1196,9 +1381,12 @@ class Application():
         delta_x = 0.026041667
         types_start = 0.005208333
         shift_x = 2.9
+        y_red = 0.8
 
+        self._unit_informations_dimensions = list()
         if flat_panel:
-
+            if any([shell, long_stf, ring_stf, ring_frame, force_input, stress_input]):
+                return
             self._puls_run_all.place(relx=types_start + 0.065, rely=prop_vert_start + 18 * delta_y, relwidth=0.045,
                                      relheight=0.035)
             self._chk_cc_spacing.place(relx=0.095, rely=0.29)
@@ -1254,13 +1442,12 @@ class Application():
             self._ent_stf_fl_w.place(relx=ent_relx + 5 * geo_dx, rely=ent_geo_y, relwidth=geo_ent_width)
             self._ent_str_fl_t.place(relx=ent_relx + 6 * geo_dx, rely=ent_geo_y, relwidth=geo_ent_width)
 
-            y_red = 0.8
-            self._unit_informations_dimensions = list()
+            tmp_units = list()
             for lab, idx in zip(['[m]', '[mm]', '[mm]', '[mm]', '[mm]', '[mm]', '[mm]'], np.arange(2, 9.9, 1.1)):
-                self._unit_informations_dimensions.append(tk.Label(self._main_fr, text=lab, bg=self._general_color))
-
-            for lab, idx  in zip(self._unit_informations_dimensions, np.arange(2, 9.9, 1.1)):
+                tmp_units.append(tk.Label(self._main_fr, text=lab, bg=self._general_color))
+            for lab, idx  in zip(tmp_units, np.arange(2, 9.9, 1.1)):
                 lab.place(relx=types_start + idx * delta_x,rely=ent_geo_y + delta_y * y_red)
+                self._unit_informations_dimensions.append(lab)
 
             self._ent_mat.place(relx=0.195, rely=ent_rely, relwidth=0.025)
             self._ent_mat_factor.place(relx=0.23, rely=ent_rely, relwidth=0.025)
@@ -1308,6 +1495,35 @@ class Application():
             self._fls_button.place(relx=types_start, rely=prop_vert_start + 6 * delta_y, relheight=0.062,
                                    relwidth=0.042)
 
+        if shell:
+            '''
+            self._shell_gui_items = [self._lab_shell, self._ent_shell_plate_thk, self._ent_shell_radius,
+                                     self._ent_shell_dist_rings,
+                                     self._ent_shell_length,self._ent_shell_tot_length,self._ent_shell_k_factor]
+            '''
+            self._lab_shell.place(relx=ent_relx, rely=ent_geo_y-delta_y)
+
+            for idx, entry in enumerate(self._shell_gui_items[1:]):
+
+                entry.place(relx=types_start + 1.4*idx * geo_dx, rely=ent_geo_y + delta_y, relwidth=geo_ent_width)
+
+            tmp_unit_info = list()
+            for lab, idx in zip(['[mm]', '[mm]', '[mm]', '[mm]', '[mm]', '[-]',], np.arange(2, 9.9, 1.1)):
+                tmp_unit_info.append(tk.Label(self._main_fr, text=lab, bg=self._general_color))
+
+            for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
+                lab.place(relx=types_start + idx * geo_dx*1.4,rely=ent_geo_y+ delta_y*2*0.9)
+                self._unit_informations_dimensions.append(lab)
+
+            tmp_unit_info = list()
+            for lab in ['Thickness, t', 'Radius, r', 'Length, l', 'Shell len., L', 'Tot len., Lc', 'k-factor, k']:
+                tmp_unit_info.append(tk.Label(self._main_fr, text=lab, bg=self._general_color))
+
+            for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
+                lab.place(relx=types_start + idx * geo_dx*1.4,rely=ent_geo_y)
+                self._unit_informations_dimensions.append(lab)
+        
+
     def calculation_domain_selected(self, event = None):
         '''
         ['Stiffened panel, flat', 'Unstiffened shell (Force input)', 'Unstiffened panel (Stress input)',
@@ -1334,18 +1550,19 @@ class Application():
                       self._ent_puls_stf_end_type, self._chk_button_puls_acceptance, self._chk_button_puls_spup,
                       self._stf_button, self._stress_button,self._fls_button]
 
-        if self._new_calculation_domain.get() == 'Stiffened panel, flat' and \
-                self._current_calculation_domain != 'Stiffened panel, flat':
+        to_process = to_process+self._shell_gui_items+self._shell_long_stf_gui_items+self._shell_ring_stf_gui_items+\
+                     self._shell_ring_frame_gui_items+self._shell_loads_other_gui_items+\
+                     self._shell_loads_forces_gui_items+self._shell_loads_stress_gui_items+\
+                     self._unit_informations_dimensions
+        for item in to_process:
+            item.place_forget()
+
+        if self._new_calculation_domain.get() == 'Stiffened panel, flat':
             self.gui_structural_properties(flat_panel=True)
-        elif self._new_calculation_domain.get() != 'Stiffened panel, flat' and  \
-                self._current_calculation_domain == 'Stiffened panel, flat':
-            for item in to_process:
-                item.place_forget()
-            for lab, idx in zip(self._unit_informations_dimensions, np.arange(2, 10, 1.1)):
-                lab.place_forget()
+        elif self._new_calculation_domain.get() != 'Stiffened panel, flat':
+            self.gui_structural_properties(flat_panel=False, shell=True)
 
         self._current_calculation_domain = self._new_calculation_domain.get()
-
 
     def toggle_puls_run(self):
         if self._toggle_btn_puls.config('relief')[-1] == 'sunken':
