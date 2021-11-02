@@ -1381,6 +1381,7 @@ class CylinderAndCurvedPlate():
                     8:'Orthogonally Stiffened panel (Stress input)'}
 
     '''
+
     geomeries = {1:'Unstiffened shell (Force input)', 2:'Unstiffened panel (Stress input)',
                  3:'Longitudinal Stiffened shell  (Force input)', 4:'Longitudinal Stiffened panel (Stress input)',
                  5:'Ring Stiffened shell (Force input)', 6:'Ring Stiffened panel (Stress input)',
@@ -2318,7 +2319,6 @@ class CylinderAndCurvedPlate():
         print(hw_div_tw , '>', req_hw_div_tw)
         print(ef_div_tw , '>', ef_div_tw_req)
 
-
 class CalcFatigue(Structure):
     '''
     This Class does the calculations for the plate fields. 
@@ -2819,9 +2819,6 @@ class PULSpanel():
         self._all_to_run = run_dict
         self.run_all(store_results=True)
         print('Time to run', batch_size, 'batches:', time.time() - now)
-
-
-
 
 def f(name, queue):
     import time
