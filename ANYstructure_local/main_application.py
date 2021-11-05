@@ -631,7 +631,7 @@ class Application():
         self._new_stf_spacing = tk.DoubleVar()
         self._new_plate_thk = tk.DoubleVar()
         self._new_stf_web_h = tk.DoubleVar()
-        self._new_sft_web_t = tk.DoubleVar()
+        self._new_stf_web_t = tk.DoubleVar()
         self._new_stf_fl_w = tk.DoubleVar()
         self._new_stf_fl_t = tk.DoubleVar()
         self._new_stucture_type = tk.StringVar()
@@ -661,7 +661,7 @@ class Application():
         self._new_stf_spacing.set(750)
         self._new_plate_thk.set(18)
         self._new_stf_web_h.set(400)
-        self._new_sft_web_t.set(12)
+        self._new_stf_web_t.set(12)
         self._new_stf_fl_w.set(150)
         self._new_stf_fl_t.set(20)
         self._new_sigma_y1.set(80)
@@ -716,7 +716,7 @@ class Application():
         self._ent_stf_web_h = tk.Entry(self._main_fr, textvariable=self._new_stf_web_h,
                                       width = int(5*1), bg = self._entry_color,
                                        fg = self._entry_text_color)
-        self._ent_stf_web_t = tk.Entry(self._main_fr, textvariable=self._new_sft_web_t, bg = self._entry_color,
+        self._ent_stf_web_t = tk.Entry(self._main_fr, textvariable=self._new_stf_web_t, bg = self._entry_color,
                                        fg = self._entry_text_color)
         self._ent_stf_fl_w = tk.Entry(self._main_fr, textvariable=self._new_stf_fl_w, bg = self._entry_color,
                                       fg = self._entry_text_color)
@@ -1847,7 +1847,7 @@ class Application():
                     'spacing': self._new_stf_spacing.get,
                     'plate_thk': self._new_plate_thk.get,
                     'stf_web_height': self._new_stf_web_h.get,
-                    'stf_web_thk': self._new_sft_web_t.get,
+                    'stf_web_thk': self._new_stf_web_t.get,
                     'stf_flange_width': self._new_stf_fl_w.get,
                     'stf_flange_thk': self._new_stf_fl_t.get,
                     'structure_type': self._new_stucture_type.get,
@@ -3874,7 +3874,7 @@ class Application():
 
         if all([pasted_structure == None, multi_return == None]):
             if any([self._new_stf_spacing.get()==0, self._new_plate_thk.get()==0, self._new_stf_web_h.get()==0,
-                    self._new_sft_web_t.get()==0]):
+                    self._new_stf_web_t.get()==0]):
                 mess = tk.messagebox.showwarning('No propertied defined', 'No properties is defined for the line!\n'
                                                                           'Define spacing, web height, web thickness etc.\n'
                                                                           'Either press button with stiffener or input'
@@ -3896,7 +3896,7 @@ class Application():
                             'spacing': [self._new_stf_spacing.get()/1000, 'm'],
                             'plate_thk': [self._new_plate_thk.get()/1000, 'm'],
                             'stf_web_height': [self._new_stf_web_h.get()/1000, 'm'],
-                            'stf_web_thk': [self._new_sft_web_t.get()/1000, 'm'],
+                            'stf_web_thk': [self._new_stf_web_t.get()/1000, 'm'],
                             'stf_flange_width': [self._new_stf_fl_w.get()/1000, 'm'],
                             'stf_flange_thk': [self._new_stf_fl_t.get()/1000, 'm'],
                             'structure_type': [self._new_stucture_type.get(), ''],
@@ -3929,6 +3929,7 @@ class Application():
                     '''
                     domain_string = self._new_calculation_domain.get()
                     domain_int = self._shell_geometries_map[domain_string]
+
                     dummy_data = {'span': [self._new_field_len.get(), 'm'],
                                   'plate_thk': [self._new_plate_thk.get()/1000, 'm'],
                                   'structure_type': [self._new_stucture_type.get(), ''],
@@ -3954,12 +3955,92 @@ class Application():
                                   'spacing': [self._new_stf_spacing.get()/1000, 'm'],}
 
                     # Main class input
-                    main_dict = {'sasd': [self._new_shell_sasd.get() *1e6, 'Pa'],
-                                 'smsd': [self._new_shell_smsd.get() *1e6, 'Pa'],
-                                 'tTsd': [self._new_shell_tTsd.get() *1e6, 'Pa'],
-                                 'tQsd': [self._new_shell_tQsd.get() *1e6, 'Pa'],
-                                 'psd': [self._new_shell_psd.get()  *1e6, 'Pa'],
-                                 'shsd': [self._new_shell_shsd.get() *1e6, 'Pa'],
+
+                    # Shell data input
+                    shell_dict = {'plate_thk': [self._new_shell_thk.get() / 1000, 'm'],
+                                  'radius': [self._new_shell_radius.get() / 1000, 'm'],
+                                  'distance between rings, l': [self._new_shell_dist_rings.get() / 1000, 'm'],
+                                  'length of shell, L': [self._new_shell_length.get() / 1000, 'm'],
+                                  'tot cyl length, Lc': [self._new_shell_tot_length.get() / 1000, 'm'],
+                                  'eff. buckling lenght factor': [self._new_shell_k_factor.get(), ''],
+                                  'mat_yield': [self._new_shell_yield.get() * 1e6, 'Pa'],
+                                  }
+                    # Longitudinal stiffener input
+                    long_dict = {'spacing': [self._new_stf_spacing.get() / 1000, 'm'],
+                                 'stf_web_height': [self._new_stf_web_h.get() / 1000, 'm'],
+                                 'stf_web_thk': [self._new_stf_web_t.get() / 1000, 'm'],
+                                 'stf_flange_width': [self._new_stf_fl_w.get() / 1000, 'm'],
+                                 'stf_flange_thk': [self._new_stf_fl_t.get() / 1000, 'm'],
+                                 'stf_type': [self._new_stf_type.get(), ''],
+                                 'span': [self._new_field_len.get(), 'm'],
+                                 'mat_yield': [self._new_shell_yield.get() * 1e6, 'Pa'],
+                                 'panel or shell': ['shell', 'Pa']}
+                    ring_stf_dict = {'stf_web_height': [self._new_shell_ring_stf_hw.get() / 1000, 'm'],
+                                     'stf_web_thk': [self._new_shell_ring_stf_tw.get() / 1000, 'm'],
+                                     'stf_flange_width': [self._new_shell_ring_stf_b.get() / 1000, 'm'],
+                                     'stf_flange_thk': [self._new_shell_ring_stf_tf.get() / 1000, 'm'],
+                                     'stf_type': [self._new_shell_ring_stf_type.get(), ''],
+                                     'mat_yield': [self._new_shell_yield.get() * 1e6, 'Pa'],
+                                     'panel or shell': ['shell', 'Pa']}
+                    ring_frame_dict = {'stf_web_height': [self._new_shell_ring_frame_hw.get() / 1000, 'm'],
+                                       'stf_web_thk': [self._new_shell_ring_frame_tw.get() / 1000, 'm'],
+                                       'stf_flange_width': [self._new_shell_ring_frame_b.get() / 1000, 'm'],
+                                       'stf_flange_thk': [self._new_shell_ring_frame_tf.get() / 1000, 'm'],
+                                       'stf_type': [self._new_shell_ring_frame_type.get(), ''],
+                                       'span': [self._new_field_len.get(), 'm'],
+                                       'mat_yield': [self._new_shell_yield.get() * 1e6, 'Pa'],
+                                       'panel or shell': ['shell', 'Pa']}
+
+                    geometry = self._shell_geometries_map[self._new_calculation_domain.get()]
+                    A = 0 if geometry in [1, 2] else self._new_stf_web_h.get() * self._new_stf_web_t.get() + \
+                                                     self._new_stf_fl_w.get() * self._new_stf_fl_t.get()
+                    eq_thk = self._new_shell_thk.get() if geometry in [1, 2] else self._new_shell_thk.get() + A \
+                                                                                  / self._new_stf_spacing.get()
+                    Itot = CylinderAndCurvedPlate.get_Itot(hw=0 if geometry in [1, 2] else self._new_stf_web_h.get(),
+                                                           tw=0 if geometry in [1, 2] else self._new_stf_web_t.get(),
+                                                           b=0 if geometry in [1, 2] else self._new_stf_fl_w.get(),
+                                                           tf=0 if geometry in [1, 2] else self._new_stf_fl_t.get(),
+                                                           r=self._new_shell_radius.get(),
+                                                           s=self._new_stf_spacing.get(),
+                                                           t=self._new_shell_thk.get())
+                    if self._new_shell_stress_or_force.get() == 1:
+                        #if self._shell_geometries_map[self._new_calculation_domain.get()] in [1, 3, 5, 7]:  # Need to convert from forces to stresses.
+                        sasd =  (self._new_shell_Nsd.get()/2)/(math.pi*self._new_shell_radius.get()*eq_thk) * 1000
+                        self._new_shell_sasd.set(sasd)
+
+
+                        smsd = (self._new_shell_Msd.get() / Itot) * \
+                               (self._new_shell_radius.get() + self._new_shell_thk.get()/2) * 1000000
+                        self._new_shell_smsd.set(smsd)
+                        tTsd = (self._new_shell_Tsd.get()*10**6)/(2*math.pi*self._new_shell_thk.get()
+                                                                  *math.pow(self._new_shell_radius.get(), 2))
+                        self._new_shell_tTsd.set(tTsd)
+                        tQsd = self._new_shell_Qsd.get()/(math.pi*self._new_shell_radius.get()
+                                                          *self._new_shell_thk.get())*1000
+                        self._new_shell_tQsd.set(tQsd)
+                        shsd = 0
+
+                    else:
+                        sasd = self._new_shell_sasd.get()
+                        smsd = self._new_shell_smsd.get()
+                        tTsd = self._new_shell_tTsd.get()
+                        tQsd = self._new_shell_tQsd.get()
+                        shsd = self._new_shell_shsd.get()
+                        Nsd = (sasd*2*math.pi*self._new_shell_radius.get()*eq_thk)/1000
+                        Msd = (smsd/(self._new_shell_radius.get()*self._new_shell_thk.get()/2))*Itot/1000000
+                        Tsd = tTsd*2*math.pi*self._new_shell_thk.get()*math.pow(self._new_shell_radius.get(),2)/1000000
+                        Qsd = tQsd*math.pi*self._new_shell_radius.get()*self._new_shell_thk.get()/1000
+                        self._new_shell_Nsd.set(Nsd)
+                        self._new_shell_Msd.set(Msd)
+                        self._new_shell_Tsd.set(Tsd)
+                        self._new_shell_Qsd.set(Qsd)
+
+                    main_dict = {'sasd': [sasd*1e6, 'Pa'],
+                                 'smsd': [smsd*1e6, 'Pa'],
+                                 'tTsd': [tTsd*1e6, 'Pa'],
+                                 'tQsd': [tQsd*1e6, 'Pa'],
+                                 'psd': [self._new_shell_psd.get() *1e6, 'Pa'],
+                                 'shsd': [shsd *1e6, 'Pa'],
                                  'geometry': [self._shell_geometries_map[self._new_calculation_domain.get()], ''],
                                  'material factor':  [self._new_shell_mat_factor.get(), ''],
                                  'delta0': [0.005, ''],
@@ -3968,40 +4049,7 @@ class Application():
                                  'E-module':  [self._new_shell_e_module.get(), 'Pa'],
                                  'poisson':  [self._new_shell_poisson.get(), ''],
                                  'mat_yield': [self._new_shell_yield.get() *1e6, 'Pa']}
-                    # Shell data input
-                    shell_dict = {'plate_thk': [self._new_shell_thk.get() / 1000, 'm'],
-                                  'radius': [self._new_shell_radius.get() / 1000, 'm'],
-                                  'distance between rings, l': [self._new_shell_dist_rings.get() / 1000, 'm'],
-                                  'length of shell, L': [self._new_shell_length.get() / 1000, 'm'],
-                                  'tot cyl length, Lc': [self._new_shell_tot_length.get() / 1000, 'm'],
-                                  'eff. buckling lenght factor': [self._new_shell_k_factor.get(), ''],
-                                  'mat_yield': [self._new_shell_yield.get() *1e6, 'Pa'],
-}
-                    # Longitudinal stiffener input
-                    long_dict = {'spacing': [self._new_stf_spacing.get()/1000, 'm'],
-                                'stf_web_height': [self._new_stf_web_h.get()/1000, 'm'],
-                                'stf_web_thk': [self._new_sft_web_t.get()/1000, 'm'],
-                                'stf_flange_width': [self._new_stf_fl_w.get()/1000, 'm'],
-                                'stf_flange_thk': [self._new_stf_fl_t.get()/1000, 'm'],
-                                'stf_type': [self._new_stf_type.get(), ''],
-                                'span': [self._new_field_len.get(), 'm'],
-                                'mat_yield': [self._new_shell_yield.get() *1e6, 'Pa'],
-                                 'panel or shell': ['shell', 'Pa']}
-                    ring_stf_dict = {'stf_web_height': [self._new_shell_ring_stf_hw.get()/1000, 'm'],
-                                     'stf_web_thk': [self._new_shell_ring_stf_tw.get()/1000, 'm'],
-                                     'stf_flange_width': [self._new_shell_ring_stf_b.get()/1000, 'm'],
-                                     'stf_flange_thk': [self._new_shell_ring_stf_tf.get()/1000, 'm'],
-                                     'stf_type': [self._new_shell_ring_stf_type.get(), ''],
-                                     'mat_yield': [self._new_shell_yield.get() *1e6, 'Pa'],
-                                     'panel or shell': ['shell', 'Pa']}
-                    ring_frame_dict = {'stf_web_height': [self._new_shell_ring_frame_hw.get()/1000, 'm'],
-                                     'stf_web_thk': [self._new_shell_ring_frame_tw.get()/1000, 'm'],
-                                     'stf_flange_width': [self._new_shell_ring_frame_b.get()/1000, 'm'],
-                                     'stf_flange_thk': [self._new_shell_ring_frame_tf.get()/1000, 'm'],
-                                     'stf_type': [self._new_shell_ring_frame_type.get(), ''],
-                                       'span': [self._new_field_len.get(), 'm'],
-                                       'mat_yield': [self._new_shell_yield.get() *1e6, 'Pa'],
-                                       'panel or shell': ['shell', 'Pa']}
+
                     for key, value in dummy_data.items():
                         if key not in long_dict.keys():
                             long_dict[key] = value
@@ -4430,7 +4478,7 @@ class Application():
             self._new_stf_spacing.set(round(properties['spacing'][0]*1000,5))
             self._new_plate_thk.set(round(properties['plate_thk'][0]*1000,5))
             self._new_stf_web_h.set(round(properties['stf_web_height'][0]*1000,5))
-            self._new_sft_web_t.set(round(properties['stf_web_thk'][0]*1000,5))
+            self._new_stf_web_t.set(round(properties['stf_web_thk'][0]*1000,5))
             self._new_stf_fl_w.set(round(properties['stf_flange_width'][0]*1000,5))
             self._new_stf_fl_t.set(round(properties['stf_flange_thk'][0]*1000,5))
             self._new_plate_kpp.set(properties['plate_kpp'][0])
@@ -5631,7 +5679,7 @@ class Application():
         self._new_stf_spacing.set(returned_structure[0])
         self._new_plate_thk.set(returned_structure[1])
         self._new_stf_web_h.set(returned_structure[2])
-        self._new_sft_web_t.set(returned_structure[3])
+        self._new_stf_web_t.set(returned_structure[3])
         self._new_stf_fl_w.set(returned_structure[4])
         self._new_stf_fl_t.set(returned_structure[5])
         self._new_stf_type.set(returned_structure[6])
