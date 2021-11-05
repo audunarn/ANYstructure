@@ -1560,6 +1560,8 @@ class CylinderAndCurvedPlate():
 
         parameters, cross_sec_data = list(), list()
         for idx, obj in stucture_objects.items():
+            if obj is None:
+                continue
             if idx != 'Unstiffened':
                 hs = obj.hw/2 if stf_type =='FB' else obj.hw + obj.tf/2
                 It = obj.get_torsional_moment_venant()
@@ -1598,6 +1600,8 @@ class CylinderAndCurvedPlate():
         sxsd, shsd, shRsd, tsd = list(), list(), list(), list()
 
         for idx, obj in stucture_objects.items():
+            if obj is None:
+                continue
             if idx == 'Unstiffened':
                 shsd.append(self._psd*r/t+self._shsd/1e6)
                 sxsd.append(self._sasd/1e6+self._smsd/1e6 if self._geometry in [2,6] else
@@ -2303,7 +2307,10 @@ class CylinderAndCurvedPlate():
         idx = 1
         param_map = {'Ring Stiff.': 0,'Ring Girder': 1}
         fT_dict = dict()
-        for key, obj in {'Longitudinal stiff.': self._LongStf, 'Ring Stiff.': self._RingStf, 'Ring Girder': self._RingFrame}.items():
+        for key, obj in {'Longitudinal stiff.': self._LongStf, 'Ring Stiff.': self._RingStf,
+                         'Ring Girder': self._RingFrame}.items():
+            if obj is None:
+                continue
             gammaM = data['gammaM circular cylinder'] if self._geometry > 2 else \
                 data['gammaM curved panel']
             sjsd = shell_buckling_data['sjsd'][idx] # TODO wrong magnitude
@@ -2427,51 +2434,85 @@ class CylinderAndCurvedPlate():
 
         # Stiffener check
 
-        stf_req_h = [0.4*obj.tw*math.sqrt(E/fy) if obj.get_stiffener_type() == 'FB'
-                     else 1.35*obj.tw*math.sqrt(E/fy) for idx, obj in enumerate([self._LongStf, self._RingStf, self._RingFrame])]
-        stf_req_h = np.array(stf_req_h)
-        stf_req_h_chk = stf_req_h > np.array([self._LongStf.hw, self._RingStf.hw, self._RingFrame.hw])
+        stf_req_h = list()
+        for idx, obj in enumerate([self._LongStf, self._RingStf, self._RingFrame]):
+            if obj is None:
+                stf_req_h.append(np.nan)
+            else:
+                stf_req_h.append(0.4*obj.tw*math.sqrt(E/fy) if obj.get_stiffener_type() == 'FB'
+                                 else 1.35*obj.tw*math.sqrt(E/fy))
 
-        stf_req_b = [np.nan if obj.get_stiffener_type() == 'FB'
-                     else 0.4*obj.tf*math.sqrt(E/fy) for idx, obj in enumerate([self._LongStf, self._RingStf, self._RingFrame])]
+        stf_req_h = np.array(stf_req_h)
+
+        stf_req_b = list()
+        for idx, obj in enumerate([self._LongStf, self._RingStf, self._RingFrame]):
+            if obj is None:
+                stf_req_b.append(np.nan)
+            else:
+                stf_req_b.append(np.nan if obj.get_stiffener_type() == 'FB' else 0.4*obj.tf*math.sqrt(E/fy))
+
         bf = list()
         for idx, obj in enumerate([self._LongStf, self._RingStf, self._RingFrame]):
-            if obj.get_stiffener_type() == 'FB':
+            if obj is None:
+                bf.append(np.nan)
+            elif obj.get_stiffener_type() == 'FB':
                 bf.append(obj.b)
             elif obj.get_stiffener_type() == 'T':
                 bf.append((obj.b-obj.tw)/2)
             else:
                 bf.append(obj.b-obj.tw)
         bf = np.array(bf)
-        stf_req_b_chk = stf_req_b > bf
 
-        hw_div_tw = np.array([self._RingStf.hw, self._RingFrame.hw])/np.array([self._RingStf.tw, self._RingFrame.tw])
+        hw_div_tw = list()
+        for idx, obj in enumerate([self._RingStf, self._RingFrame]):
+            if obj is None:
+                hw_div_tw.append(np.nan)
+            else:
+                hw_div_tw.append(obj.hw/obj.tw)
+        hw_div_tw = np.array(hw_div_tw)
 
         #parameters - [alpha, beta, leo, zeta, rf, r0, zt]
-
-        req_hw_div_tw = [np.nan if obj.b*obj.tf == 0 else
-                         2/3*math.sqrt(shell_buckling_data['parameters'][idx][4]*(obj.tw*obj.hw)*E/
-                                       (obj.hw*obj.b*obj.tf*fy))
-                         for idx, obj in enumerate([self._RingStf, self._RingFrame])]
+        req_hw_div_tw = list()
+        for idx, obj in enumerate([self._RingStf, self._RingFrame]):
+            if obj is None:
+                req_hw_div_tw.append(np.nan)
+            else:
+                req_hw_div_tw = np.nan if obj.b*obj.tf == 0 else 2/3*math.sqrt(shell_buckling_data['parameters'][idx][4]
+                                                                               *(obj.tw*obj.hw)*E/
+                                                                               (obj.hw*obj.b*obj.tf*fy))
         req_hw_div_tw = np.array(req_hw_div_tw)
-        req_hw_div_tw_chk = hw_div_tw<req_hw_div_tw
 
-        ef_div_tw = np.array([obj.get_flange_eccentricity() for idx, obj in enumerate([self._RingStf,
-                                                                                       self._RingFrame])])
-        ef_div_tw_req = [np.nan if obj.b*obj.tf == 0 else
-                     1/3*shell_buckling_data['parameters'][idx][4]/obj.hw*obj.hw*obj.tw/(obj.b*obj.tf)
-                     for idx, obj in enumerate([self._RingStf, self._RingFrame])]
-        ef_div_tw_chk = ef_div_tw<ef_div_tw_req
+        ef_div_tw = list()
+        for idx, obj in enumerate([self._RingStf, self._RingFrame]):
+            if obj is None:
+                ef_div_tw.append(np.nan)
+            else:
+                ef_div_tw.append(obj.get_flange_eccentricity())
+        ef_div_tw = np.array(ef_div_tw)
 
-        print(stf_req_h , '>', np.array([self._LongStf.hw, self._RingStf.hw, self._RingFrame.hw]))
+        ef_div_tw_req = list()
+        for idx, obj in enumerate([self._RingStf, self._RingFrame]):
+            if obj is None:
+                ef_div_tw_req.append(np.nan)
+            else:
+                ef_div_tw_req.append(np.nan if obj.b*obj.tf == 0 else
+                             1/3*shell_buckling_data['parameters'][idx][4]/obj.hw*obj.hw*obj.tw/(obj.b*obj.tf))
+        ef_div_tw_req = np.array(ef_div_tw_req)
+
+
+        print(stf_req_h , '>', np.array([np.nan if self._LongStf is None else self._LongStf.hw,
+                                         np.nan if self._RingStf is None else self._RingStf.hw,
+                                         np.nan if self._RingFrame is None else self._RingFrame.hw]))
         print(stf_req_b , '>', bf)
         print(hw_div_tw , '<', req_hw_div_tw)
         print(ef_div_tw , '<', ef_div_tw_req)
-        print(stf_req_h>np.array([self._LongStf.hw, self._RingStf.hw, self._RingFrame.hw]))
+
+        print(stf_req_h>np.array([np.nan if self._LongStf is None else self._LongStf.hw,
+                                  np.nan if self._RingStf is None else self._RingStf.hw,
+                                  np.nan if self._RingFrame is None else self._RingFrame.hw]))
         print(stf_req_b>bf)
         print(hw_div_tw<req_hw_div_tw)
         print(ef_div_tw<ef_div_tw_req)
-
 
         return provide_data
 
@@ -3073,9 +3114,10 @@ if __name__ == '__main__':
         #my_test.cyl_buckling_long_sft_shell()
 
     shell_main_dict = ex.shell_main_dict
-    shell_main_dict['geometry'] = [2, '']
-
+    shell_main_dict['geometry'] = [4, '']
+    #Structure(ex.obj_dict_cyl_ring)
+    #Structure(ex.obj_dict_cyl_heavy_ring)
     my_cyl = CylinderAndCurvedPlate(main_dict = ex.shell_main_dict, shell= Shell(ex.shell_dict), long_stf= Structure(ex.obj_dict_cyl_long),
-                                    ring_stf = Structure(ex.obj_dict_cyl_ring),
-                                    ring_frame= Structure(ex.obj_dict_cyl_heavy_ring))
+                                    ring_stf = None,
+                                    ring_frame= None)
     my_cyl.get_utilization_factors()

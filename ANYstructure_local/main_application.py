@@ -4007,8 +4007,6 @@ class Application():
                         #if self._shell_geometries_map[self._new_calculation_domain.get()] in [1, 3, 5, 7]:  # Need to convert from forces to stresses.
                         sasd =  (self._new_shell_Nsd.get()/2)/(math.pi*self._new_shell_radius.get()*eq_thk) * 1000
                         self._new_shell_sasd.set(sasd)
-
-
                         smsd = (self._new_shell_Msd.get() / Itot) * \
                                (self._new_shell_radius.get() + self._new_shell_thk.get()/2) * 1000000
                         self._new_shell_smsd.set(smsd)
@@ -4019,7 +4017,6 @@ class Application():
                                                           *self._new_shell_thk.get())*1000
                         self._new_shell_tQsd.set(tQsd)
                         shsd = 0
-
                     else:
                         sasd = self._new_shell_sasd.get()
                         smsd = self._new_shell_smsd.get()
