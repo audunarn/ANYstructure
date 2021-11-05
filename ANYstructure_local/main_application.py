@@ -699,7 +699,6 @@ class Application():
         # --- main entries and labels to define the structural properties ---
         ent_width = 12 #width of entries
 
-        
         self._ent_mat = tk.Entry(self._main_fr, textvariable=self._new_material, bg = self._entry_color,
                                  fg = self._entry_text_color)
         self._ent_mat_factor = tk.Entry(self._main_fr, textvariable=self._new_material_factor, bg = self._entry_color,
@@ -3961,13 +3960,13 @@ class Application():
                                  'tQsd': [self._new_shell_tQsd.get() *1e6, 'Pa'],
                                  'psd': [self._new_shell_psd.get()  *1e6, 'Pa'],
                                  'shsd': [self._new_shell_shsd.get() *1e6, 'Pa'],
-                                 'geometry': [self._shell_geometries_map[self._new_calculation_domain.get()], '-'],
-                                 'material factor':  [self._new_shell_mat_factor.get(), 'Pa'],
+                                 'geometry': [self._shell_geometries_map[self._new_calculation_domain.get()], ''],
+                                 'material factor':  [self._new_shell_mat_factor.get(), ''],
                                  'delta0': [0.005, ''],
-                                 'fab method ring stf':  [self._new_shell_ring_stf_fab_method.get(), '-'],
-                                 'fab method ring girder':  [self._new_shell_ring_frame_fab_method.get(), '-'],
+                                 'fab method ring stf':  [self._new_shell_ring_stf_fab_method.get(), ''],
+                                 'fab method ring girder':  [self._new_shell_ring_frame_fab_method.get(), ''],
                                  'E-module':  [self._new_shell_e_module.get(), 'Pa'],
-                                 'poisson':  [self._new_shell_poisson.get(), '-'],
+                                 'poisson':  [self._new_shell_poisson.get(), ''],
                                  'mat_yield': [self._new_shell_yield.get() *1e6, 'Pa']}
                     # Shell data input
                     shell_dict = {'plate_thk': [self._new_shell_thk.get() / 1000, 'm'],
@@ -3975,7 +3974,7 @@ class Application():
                                   'distance between rings, l': [self._new_shell_dist_rings.get() / 1000, 'm'],
                                   'length of shell, L': [self._new_shell_length.get() / 1000, 'm'],
                                   'tot cyl length, Lc': [self._new_shell_tot_length.get() / 1000, 'm'],
-                                  'eff. buckling lenght factor': [self._new_shell_k_factor.get() / 1000, 'm'],
+                                  'eff. buckling lenght factor': [self._new_shell_k_factor.get(), ''],
                                   'mat_yield': [self._new_shell_yield.get() *1e6, 'Pa'],
 }
                     # Longitudinal stiffener input
