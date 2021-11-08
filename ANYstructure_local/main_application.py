@@ -3677,7 +3677,10 @@ class Application():
                 for key, value in cyl_obj.get_utilization_factors().items():
                     if key != 'Stiffener check':
                         text_key = key
-                        text_value = 'N/A' if value is None else str(round(value, 2))
+                        if key == 'Column stability check':
+                            text_value = 'N/A' if value is None else 'OK' if value else 'Not ok'
+                        else:
+                            text_value = 'N/A' if value is None else str(round(value, 2))
                         self._result_canvas.create_text([x*1, y*y_location],
                                                        text=text_key,font=self._text_size['Text 10 bold'],anchor='nw',
                                                         fill='black')

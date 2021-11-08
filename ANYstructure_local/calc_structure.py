@@ -1481,7 +1481,8 @@ class CylinderAndCurvedPlate():
         # Local buckling of stiffeners
 
 
-        unstiffend_shell, uf_long_stf, uf_ring_stf, uf_ring_frame, data_shell_buckling, stiffener_check = None, None, None, None, None, None
+        unstiffend_shell, uf_long_stf, uf_ring_stf, uf_ring_frame, data_shell_buckling, stiffener_check,\
+        column_stability = None,None, None, None, None, None, None
         # UF for unstiffened shell
         unstiffend_shell = self.unstiffened_shell()
 
@@ -1500,6 +1501,7 @@ class CylinderAndCurvedPlate():
                 long_stf_shell = self.longitudinally_stiffened_shell(column_buckling_data=column_buckling_data,
                                                                      unstiffened_shell=unstiffend_shell)
                 stiffener_check = column_buckling_data['stiffener check']
+                column_stability = column_buckling_data['Column stability check']
                 if self._geometry in [3,4,7,8] and long_stf_shell['fksd'] > 0:
                     uf_long_stf = long_stf_shell['sjsd_used']/long_stf_shell['fksd'] if self._geometry in [3,4,7,8]\
                         else 0
@@ -1516,6 +1518,7 @@ class CylinderAndCurvedPlate():
                 ring_stf_shell = self.ring_stiffened_shell(data_shell_buckling=data_shell_buckling,
                                                            column_buckling_data=column_buckling_data)
                 stiffener_check = column_buckling_data['stiffener check']
+                column_stability = column_buckling_data['Column stability check']
                 if self._geometry > 4:
                     uf_ring_stf = ring_stf_shell[0]
 
@@ -1531,6 +1534,7 @@ class CylinderAndCurvedPlate():
                     self.ring_stiffened_shell(data_shell_buckling=data_shell_buckling,
                                               column_buckling_data=column_buckling_data)
                 stiffener_check = column_buckling_data['stiffener check']
+                column_stability = column_buckling_data['Column stability check']
                 if self._geometry > 4:
                     uf_ring_frame = ring_stf_shell[1]
 
@@ -1538,6 +1542,7 @@ class CylinderAndCurvedPlate():
                    'Longitudinal stiffened shell': uf_long_stf,
                    'Ring stiffened shell': uf_ring_stf,
                    'Heavy ring frame': uf_ring_frame,
+                   'Column stability check': column_stability,
                    'Stiffener check': stiffener_check}
         # print('Results for geometry', self._geometry)
         # print('UF',uf_unstf_shell, uf_long_stf, uf_ring_stf, uf_ring_frame)
@@ -2444,7 +2449,7 @@ class CylinderAndCurvedPlate():
         else:
             stab_chk = True
 
-        print("Stability requirement satisfied") if stab_chk else print("Not acceptable")
+        #print("Stability requirement satisfied") if stab_chk else print("Not acceptable")
         # Sec. 3.9   Torsional buckling:  moved to the top
 
         # Stiffener check
@@ -2531,8 +2536,8 @@ class CylinderAndCurvedPlate():
 
         provide_data['stiffener check'] = {'longitudinal':all([chk1[0], chk2[0]]),
                                            'ring stiffener': all([chk1[1],chk2[1],chk3[0],chk4[0]]),
-                                           'ring frame': all([chk1[2],chk2[2],chk3[1],chk4[1]]),
-                                           'stability check': stab_chk}
+                                           'ring frame': all([chk1[2],chk2[2],chk3[1],chk4[1]])}
+        provide_data['Column stability check'] = stab_chk
 
 
         return provide_data
