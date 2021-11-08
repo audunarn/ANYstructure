@@ -1688,16 +1688,37 @@ class Application():
         elif self._new_calculation_domain.get() in ['Orthogonally Stiffened shell (Force input)',
                                                     'Orthogonally Stiffened panel (Stress input)']:
             self.gui_structural_properties(flat_panel=False, shell=True, long_stf=True, ring_stf=True, ring_frame=True)
-        if event == None:
+
+        if event == None and self._line_to_struc[self._active_line][5] is not None:
             mapper ={1: 'Force', 2: 'Stress'}
             load = mapper[self._new_shell_stress_or_force.get()]
-
-            if load == 'Stress' and 'Stress' not in self._new_calculation_domain.get():
-                self._new_calculation_domain.set(self._new_calculation_domain.get().replace('Force', 'Stress'))
-                self._new_calculation_domain.set(self._new_calculation_domain.get().replace('shell', 'panel'))
-            elif load == 'Force' and 'Force' not in self._new_calculation_domain.get():
-                self._new_calculation_domain.set(self._new_calculation_domain.get().replace('Stress', 'Force'))
-                self._new_calculation_domain.set(self._new_calculation_domain.get().replace('panel', 'shell'))
+            struc_obj = self._line_to_struc[self._active_line][5]
+            if self._new_shell_stress_or_force.get() == 1:
+                forces = [self._new_shell_Nsd.get(), self._new_shell_Msd.get(), \
+                          self._new_shell_Tsd.get(), self._new_shell_Qsd.get()]
+                sasd, smsd, tTsd, tQsd, shsd = hlp.helper_cylinder_stress_to_force_to_stress(
+                    stresses=None, forces=forces, geometry=struc_obj.geometry, shell_t=self._new_shell_thk.get(),
+                    shell_radius=self._new_shell_radius.get(), shell_spacing=self._new_stf_spacing.get(),
+                    hw=self._new_stf_web_h.get(), tw=self._new_stf_web_t.get(), b=self._new_stf_fl_w.get(),
+                    tf=self._new_stf_fl_t.get(), CylinderAndCurvedPlate=CylinderAndCurvedPlate)
+                self._new_shell_sasd.set(sasd)
+                self._new_shell_smsd.set(smsd)
+                self._new_shell_tTsd.set(tTsd)
+                self._new_shell_tQsd.set(tQsd)
+                # self._new_shell_shsd.set(0)
+            else:
+                stresses = [self._new_shell_sasd.get(), self._new_shell_smsd.get(), self._new_shell_tTsd.get(),
+                            self._new_shell_tQsd.get(), self._new_shell_shsd.get()]
+                sasd, smsd, tTsd, tQsd, shsd = stresses
+                Nsd, Msd, Tsd, Qsd, shsd = hlp.helper_cylinder_stress_to_force_to_stress(
+                    stresses=stresses, geometry=struc_obj.geometry, shell_t=self._new_shell_thk.get(),
+                    shell_radius=self._new_shell_radius.get(), shell_spacing=self._new_stf_spacing.get(),
+                    hw=self._new_stf_web_h.get(), tw=self._new_stf_web_t.get(), b=self._new_stf_fl_w.get(),
+                    tf=self._new_stf_fl_t.get(), CylinderAndCurvedPlate=CylinderAndCurvedPlate)
+                self._new_shell_Nsd.set(Nsd)
+                self._new_shell_Msd.set(Msd)
+                self._new_shell_Tsd.set(Tsd)
+                self._new_shell_Qsd.set(Qsd)
 
         self._current_calculation_domain = self._new_calculation_domain.get()
 
@@ -2217,7 +2238,7 @@ class Application():
                        'fatigue': {}, 'pressure_uls': {}, 'pressure_fls': {},
                        'struc_obj': {}, 'scant_calc_obj': {}, 'fatigue_obj': {}, 'utilization': {}, 'slamming': {},
                        'color code': {}, 'PULS colors': {}, 'ML buckling colors' : {}, 'ML buckling class' : {},
-                       'weights': {}}
+                       'weights': {}, 'cylinder': {}}
 
         return_dict['slamming'][current_line] = {}
 
@@ -2517,6 +2538,12 @@ class Application():
         sec_in_model['length'] = len(recorded_sections)
 
         if self._line_to_struc != {}:
+            for line in self._line_to_struc.keys():
+                if self._line_to_struc[line][5] is not None:
+                    if self._line_to_struc[line][5] is None:
+                        return_dict['cylinder'] = None
+                    else:
+                        return_dict['cylinder'] = self._line_to_struc[line][5].get_utilization_factors()
             sec_mod_map = np.arange(0,1.1,0.1)
             fat_map = np.arange(0,1.1,0.1)
             all_thicknesses = [round(objs[0].get_pl_thk(), 5) for objs in self._line_to_struc.values()]
@@ -2569,34 +2596,39 @@ class Application():
             else:
                 puls_util_map = None
 
-            sig_x = np.unique([self._line_to_struc[line][1].get_sigma_x() for line in self._line_to_struc.keys()]).tolist()
+            sig_x = np.unique([self._line_to_struc[line][1].get_sigma_x() for line in
+                               self._line_to_struc.keys()]).tolist()
             if len(sig_x) > 1:
                 sig_x_map = np.arange(min(sig_x), max(sig_x) + (max(sig_x) - min(sig_x)) / 10,
                                       (max(sig_x) - min(sig_x)) / 10)
             else:
                 sig_x_map = sig_x
-            sig_y1 = np.unique([self._line_to_struc[line][1].get_sigma_y1() for line in self._line_to_struc.keys()]).tolist()
+            sig_y1 = np.unique([self._line_to_struc[line][1].get_sigma_y1() for line in
+                                self._line_to_struc.keys()]).tolist()
             if len(sig_y1) > 1:
                 sig_y1_map = np.arange(min(sig_y1), max(sig_y1) + (max(sig_y1) - min(sig_y1)) / 10,
                                        (max(sig_y1) - min(sig_y1)) / 10)
             else:
                 sig_y1_map = sig_y1
 
-            sig_y2 = np.unique([self._line_to_struc[line][1].get_sigma_y2() for line in self._line_to_struc.keys()]).tolist()
+            sig_y2 = np.unique([self._line_to_struc[line][1].get_sigma_y2() for line in
+                                self._line_to_struc.keys()]).tolist()
             if len(sig_y2) > 1:
 
                 sig_y2_map = np.arange(min(sig_y2), max(sig_y2) + (max(sig_y2) - min(sig_y2)) / 10,
                                        (max(sig_y2) - min(sig_y2)) / 10)
             else:
                 sig_y2_map = sig_y2
-            tau_xy = np.unique([self._line_to_struc[line][1].get_tau_xy() for line in self._line_to_struc.keys()]).tolist()
+            tau_xy = np.unique([self._line_to_struc[line][1].get_tau_xy() for line in
+                                self._line_to_struc.keys()]).tolist()
             if len(tau_xy) > 1:
                 tau_xy_map = np.arange(min(tau_xy), max(tau_xy) + (max(tau_xy) - min(tau_xy)) / 10,
                                        (max(tau_xy) - min(tau_xy)) / 10)
             else:
                 tau_xy_map = tau_xy
 
-            spacing = np.unique([self._line_to_struc[line][1].get_s() for line in self._line_to_struc.keys()]).tolist()
+            spacing = np.unique([self._line_to_struc[line][1].get_s() for line in
+                                 self._line_to_struc.keys()]).tolist()
             structure_type = [self._line_to_struc[line][1].get_structure_type() for line in
                               self._line_to_struc.keys()]
 
@@ -2918,8 +2950,11 @@ class Application():
 
                 vector = [coord2[0] - coord1[0], coord2[1] - coord1[1]]
                 # drawing a bold line if it is selected
-                if line == self._active_line and self._line_is_active:
-                    if self._line_to_struc[line][5] is not None:
+
+                if all([line == self._active_line, self._line_is_active]):
+                    if line not in self._line_to_struc.keys():
+                        self._main_canvas.create_line(coord1, coord2, width=6, fill='black')
+                    elif self._line_to_struc[line][5] is not None:
                         self._main_canvas.create_line(coord1, coord2, width=10, fill = color, stipple = 'gray50')
                     else:
                         self._main_canvas.create_line(coord1, coord2, width=6, fill=color)
@@ -2929,7 +2964,9 @@ class Application():
                                                       font=self._text_size["Text 10 bold"],
                                                      fill = 'red')
                 else:
-                    if self._line_to_struc[line][5] is not None:
+                    if line not in self._line_to_struc.keys():
+                        self._main_canvas.create_line(coord1, coord2, width=3, fill = 'black')
+                    elif self._line_to_struc[line][5] is not None:
                         self._main_canvas.create_line(coord1, coord2, width=6, fill = color, stipple = 'gray50')
                     else:
                         self._main_canvas.create_line(coord1, coord2, width=3, fill = color)
@@ -3389,9 +3426,9 @@ class Application():
             return
 
         if self._line_is_active:
-            x, y, dx, dy = 0, 15, 15, 14
+            x, y, dx, dy = 0, 15, 15, 15
 
-            if self._active_line in self._line_to_struc:
+            if self._active_line in self._line_to_struc and self._line_to_struc[self._active_line][5] is None:
 
                 m3_to_mm3 = float(math.pow(1000,3))
                 m2_to_mm2 = float(math.pow(1000, 2))
@@ -3629,6 +3666,49 @@ class Application():
                                                     text='Total damage: NO RESULTS ',
                                                     font=self._text_size["Text 9 bold"],
                                                     anchor='nw')
+
+            elif self._active_line in self._line_to_struc and self._line_to_struc[self._active_line][5] is not None:
+                cyl_obj = self._line_to_struc[self._active_line][5]
+
+                text = 'Results for cylinders and curved plates/panels:'
+                self._result_canvas.create_text([x * 1, y * 1],
+                                                text=text, font=self._text_size['Text 12 bold'], anchor='nw')
+                y_location = 3
+                for key, value in cyl_obj.get_utilization_factors().items():
+                    if key != 'Stiffener check':
+                        text_key = key
+                        text_value = 'N/A' if value is None else str(round(value, 2))
+                        self._result_canvas.create_text([x*1, y*y_location],
+                                                       text=text_key,font=self._text_size['Text 10 bold'],anchor='nw',
+                                                        fill='black')
+                        self._result_canvas.create_text([dx*20, y*y_location],
+                                                       text=text_value,font=self._text_size['Text 10 bold'],anchor='nw',
+                                                        fill='blue')
+                    else:
+                        if value is not None:
+                            y_location +=1
+                            self._result_canvas.create_text([x, y * y_location],
+                                                            text='Stiffener requirement checks:', font=self._text_size['Text 10 bold'],
+                                                            anchor='nw',
+                                                            fill='blue')
+                            y_location += 1
+                            idx_y = 0
+                            for stf_type, chk_bool in value.items():
+                                stf_text = stf_type
+                                chk_text = 'OK' if chk_bool else 'Not OK'
+
+                                self._result_canvas.create_text([10*dx*idx_y, y * y_location],
+                                                                text=stf_text, font=self._text_size['Text 10 bold'],
+                                                                anchor='nw',
+                                                                fill='blue')
+
+                                self._result_canvas.create_text([10*dx*idx_y, y * (y_location+1)],
+                                                                text=chk_text, font=self._text_size['Text 10 bold'],
+                                                                anchor='nw',
+                                                                fill='blue')
+                                idx_y += 1
+
+                    y_location += 1
 
     def report_generate(self, autosave = False):
         '''
@@ -3974,14 +4054,14 @@ class Application():
                                  'stf_type': [self._new_stf_type.get(), ''],
                                  'span': [self._new_field_len.get(), 'm'],
                                  'mat_yield': [self._new_shell_yield.get() * 1e6, 'Pa'],
-                                 'panel or shell': ['shell', 'Pa']}
+                                 'panel or shell': ['shell', '']}
                     ring_stf_dict = {'stf_web_height': [self._new_shell_ring_stf_hw.get() / 1000, 'm'],
                                      'stf_web_thk': [self._new_shell_ring_stf_tw.get() / 1000, 'm'],
                                      'stf_flange_width': [self._new_shell_ring_stf_b.get() / 1000, 'm'],
                                      'stf_flange_thk': [self._new_shell_ring_stf_tf.get() / 1000, 'm'],
                                      'stf_type': [self._new_shell_ring_stf_type.get(), ''],
                                      'mat_yield': [self._new_shell_yield.get() * 1e6, 'Pa'],
-                                     'panel or shell': ['shell', 'Pa']}
+                                     'panel or shell': ['shell', '']}
                     ring_frame_dict = {'stf_web_height': [self._new_shell_ring_frame_hw.get() / 1000, 'm'],
                                        'stf_web_thk': [self._new_shell_ring_frame_tw.get() / 1000, 'm'],
                                        'stf_flange_width': [self._new_shell_ring_frame_b.get() / 1000, 'm'],
@@ -3989,50 +4069,38 @@ class Application():
                                        'stf_type': [self._new_shell_ring_frame_type.get(), ''],
                                        'span': [self._new_field_len.get(), 'm'],
                                        'mat_yield': [self._new_shell_yield.get() * 1e6, 'Pa'],
-                                       'panel or shell': ['shell', 'Pa']}
+                                       'panel or shell': ['shell', '']}
 
                     geometry = self._shell_geometries_map[self._new_calculation_domain.get()]
-                    A = 0 if geometry in [1, 2] else self._new_stf_web_h.get() * self._new_stf_web_t.get() + \
-                                                     self._new_stf_fl_w.get() * self._new_stf_fl_t.get()
-                    eq_thk = self._new_shell_thk.get() if geometry in [1, 2] else self._new_shell_thk.get() + A \
-                                                                                  / self._new_stf_spacing.get()
-                    Itot = CylinderAndCurvedPlate.get_Itot(hw=0 if geometry in [1, 2] else self._new_stf_web_h.get(),
-                                                           tw=0 if geometry in [1, 2] else self._new_stf_web_t.get(),
-                                                           b=0 if geometry in [1, 2] else self._new_stf_fl_w.get(),
-                                                           tf=0 if geometry in [1, 2] else self._new_stf_fl_t.get(),
-                                                           r=self._new_shell_radius.get(),
-                                                           s=self._new_stf_spacing.get(),
-                                                           t=self._new_shell_thk.get())
+
                     if self._new_shell_stress_or_force.get() == 1:
-                        #if self._shell_geometries_map[self._new_calculation_domain.get()] in [1, 3, 5, 7]:  # Need to convert from forces to stresses.
-                        sasd =  (self._new_shell_Nsd.get()/2)/(math.pi*self._new_shell_radius.get()*eq_thk) * 1000
+                        forces = [self._new_shell_Nsd.get(), self._new_shell_Msd.get(), \
+                                 self._new_shell_Tsd.get(), self._new_shell_Qsd.get()]
+                        sasd, smsd, tTsd, tQsd, shsd = hlp.helper_cylinder_stress_to_force_to_stress(
+                            stresses=None, forces=forces,  geometry=geometry, shell_t=self._new_shell_thk.get(),
+                            shell_radius=self._new_shell_radius.get(), shell_spacing=self._new_stf_spacing.get(),
+                            hw=self._new_stf_web_h.get(), tw=self._new_stf_web_t.get(), b=self._new_stf_fl_w.get(),
+                            tf=self._new_stf_fl_t.get(), CylinderAndCurvedPlate=CylinderAndCurvedPlate)
                         self._new_shell_sasd.set(sasd)
-                        smsd = (self._new_shell_Msd.get() / Itot) * \
-                               (self._new_shell_radius.get() + self._new_shell_thk.get()/2) * 1000000
                         self._new_shell_smsd.set(smsd)
-                        tTsd = (self._new_shell_Tsd.get()*10**6)/(2*math.pi*self._new_shell_thk.get()
-                                                                  *math.pow(self._new_shell_radius.get(), 2))
                         self._new_shell_tTsd.set(tTsd)
-                        tQsd = self._new_shell_Qsd.get()/(math.pi*self._new_shell_radius.get()
-                                                          *self._new_shell_thk.get())*1000
                         self._new_shell_tQsd.set(tQsd)
-                        shsd = 0
+                        #self._new_shell_shsd.set(0)
                     else:
-                        sasd = self._new_shell_sasd.get()
-                        smsd = self._new_shell_smsd.get()
-                        tTsd = self._new_shell_tTsd.get()
-                        tQsd = self._new_shell_tQsd.get()
-                        shsd = self._new_shell_shsd.get()
-                        Nsd = (sasd*2*math.pi*self._new_shell_radius.get()*eq_thk)/1000
-                        Msd = (smsd/(self._new_shell_radius.get()*self._new_shell_thk.get()/2))*Itot/1000000
-                        Tsd = tTsd*2*math.pi*self._new_shell_thk.get()*math.pow(self._new_shell_radius.get(),2)/1000000
-                        Qsd = tQsd*math.pi*self._new_shell_radius.get()*self._new_shell_thk.get()/1000
+                        stresses = [self._new_shell_sasd.get(), self._new_shell_smsd.get(), self._new_shell_tTsd.get(),
+                                    self._new_shell_tQsd.get(), self._new_shell_shsd.get()]
+                        sasd, smsd, tTsd, tQsd, shsd = stresses
+                        Nsd, Msd, Tsd, Qsd, shsd = hlp.helper_cylinder_stress_to_force_to_stress(
+                            stresses=stresses, geometry=geometry, shell_t=self._new_shell_thk.get(),
+                            shell_radius=self._new_shell_radius.get(), shell_spacing=self._new_stf_spacing.get(),
+                            hw=self._new_stf_web_h.get(), tw=self._new_stf_web_t.get(), b=self._new_stf_fl_w.get(),
+                            tf=self._new_stf_fl_t.get(), CylinderAndCurvedPlate=CylinderAndCurvedPlate)
                         self._new_shell_Nsd.set(Nsd)
                         self._new_shell_Msd.set(Msd)
                         self._new_shell_Tsd.set(Tsd)
                         self._new_shell_Qsd.set(Qsd)
 
-                    main_dict = {'sasd': [sasd*1e6, 'Pa'],
+                    main_dict_cyl = {'sasd': [sasd*1e6, 'Pa'],
                                  'smsd': [smsd*1e6, 'Pa'],
                                  'tTsd': [tTsd*1e6, 'Pa'],
                                  'tQsd': [tQsd*1e6, 'Pa'],
@@ -4055,7 +4123,7 @@ class Application():
                         if key not in ring_frame_dict.keys():
                             ring_frame_dict[key] = value
 
-                    CylinderObj = CylinderAndCurvedPlate(main_dict, Shell(shell_dict), long_stf=Structure(long_dict),
+                    CylinderObj = CylinderAndCurvedPlate(main_dict_cyl, Shell(shell_dict), long_stf=Structure(long_dict),
                                                           ring_stf=Structure(ring_stf_dict),
                                                           ring_frame=Structure(ring_frame_dict))
 
@@ -4073,6 +4141,17 @@ class Application():
                     self._tank_dict = {}
                     self._main_grid.clear()
                     self._compartments_listbox.delete(0, 'end')
+                if self._new_calculation_domain.get() != 'Stiffened panel, flat':
+                    CylinderObj = CylinderAndCurvedPlate(main_dict_cyl, Shell(shell_dict),
+                                                         long_stf=None if geometry in [1,2]
+                                                         else Structure(long_dict),
+                                                          ring_stf=None if geometry in [1,2,3,4]
+                                                          else Structure(ring_stf_dict),
+                                                          ring_frame=None if geometry in [1,2]
+                                                          else Structure(ring_frame_dict))
+
+                    self._line_to_struc[self._active_line][5] = CylinderObj
+
             else:
                 prev_type = self._line_to_struc[self._active_line][0].get_structure_type()
                 prev_str_obj, prev_calc_obj = copy.deepcopy(self._line_to_struc[self._active_line][0]),\
@@ -4099,17 +4178,24 @@ class Application():
                     self._main_grid.clear()
                     self._compartments_listbox.delete(0, 'end')
                 if self._line_to_struc[self._active_line][5] is not None and CylinderObj is not None:
-                    print(self._line_to_struc[self._active_line][5])
                     self._line_to_struc[self._active_line][5].ShellObj.set_main_properties(shell_dict)
-                    self._line_to_struc[self._active_line][5].LongStfObj.set_main_properties(long_dict)
-                    self._line_to_struc[self._active_line][5].RingStfObj.set_main_properties(ring_stf_dict)
-                    self._line_to_struc[self._active_line][5].RingFrameObj.set_main_properties(ring_frame_dict)
+                    if self._line_to_struc[self._active_line][5].LongStfObj is not None:
+                        self._line_to_struc[self._active_line][5].LongStfObj.set_main_properties(long_dict)
+                    if self._line_to_struc[self._active_line][5].RingStfObj is not None:
+                        self._line_to_struc[self._active_line][5].RingStfObj.set_main_properties(ring_stf_dict)
+                    if self._line_to_struc[self._active_line][5].RingFrameObj is not None:
+                        self._line_to_struc[self._active_line][5].RingFrameObj.set_main_properties(ring_frame_dict)
+                    self._line_to_struc[self._active_line][5].set_main_properties(main_dict_cyl )
                 elif self._line_to_struc[self._active_line][5] is not None and CylinderObj is  None:
                     self._line_to_struc[self._active_line][5] = None
                 elif self._line_to_struc[self._active_line][5] is None and CylinderObj is not None:
-                    CylinderObj = CylinderAndCurvedPlate(main_dict, Shell(shell_dict), long_stf=Structure(long_dict),
-                                                          ring_stf=Structure(ring_stf_dict),
-                                                          ring_frame=Structure(ring_frame_dict))
+                    CylinderObj = CylinderAndCurvedPlate(main_dict_cyl, Shell(shell_dict),
+                                                         long_stf=None if geometry in [1,2]
+                                                         else Structure(long_dict),
+                                                          ring_stf=None if geometry in [1,2,3,4]
+                                                          else Structure(ring_stf_dict),
+                                                          ring_frame=None if geometry in [1,2]
+                                                          else Structure(ring_frame_dict))
 
                     self._line_to_struc[self._active_line][5] = CylinderObj
 
@@ -4435,6 +4521,7 @@ class Application():
         if line != None:
             self._line_to_struc.pop(line)
             self._state_logger.pop(line)
+
             action_taken = True
         elif self._active_line != '' and self._active_line in self._line_to_struc.keys():
             self._line_to_struc.pop(self._active_line)
@@ -4986,6 +5073,15 @@ class Application():
             except (KeyError, AttributeError):
                 pass
 
+        if self._active_line in self._line_to_struc.keys():
+            if self._line_to_struc[self._active_line][5] is not None:
+                self._new_calculation_domain.set(CylinderAndCurvedPlate
+                                                 .geomeries[self._line_to_struc[self._active_line][5].geometry])
+                self.calculation_domain_selected()
+            else:
+                self._new_calculation_domain.set('Stiffened panel, flat')
+                self.calculation_domain_selected()
+
     def button_1_click_comp_box(self,event):
         '''
         Action when clicking the compartment box.
@@ -5085,7 +5181,7 @@ class Application():
         shell_structure_properties = {}
         for key, value in self._line_to_struc.items():
             structure_properties[key] = value[0].get_structure_prop()
-            shell_structure_properties[key] = None if value[5] is None else value[5].get_main_properties()
+            shell_structure_properties[key] = None if value[5] is None else value[5].get_all_properties()
 
         fatigue_properties = {}
         for key, value in self._line_to_struc.items():
