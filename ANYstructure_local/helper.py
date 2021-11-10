@@ -519,12 +519,64 @@ def helper_cylinder_stress_to_force_to_stress(stresses = None, forces = None, ge
 
 
 if __name__ == '__main__':
-    import ANYstructure_local.example_data as ex
-    from pathlib import Path
-    #file = Path('C:\\Program Files\\DNVGL\\GeniE V8.0-21\\Libraries\\tbar.xml')
-    # all_returned = helper_read_section_file('C:\\Program Files\\DNVGL\\GeniE V8.0-21\\Libraries\\tbar.xml', to_csv='tbar.csv')
-    #
-    # import random
-    #
-    # print(all_returned)
-    plot_weights()
+    from tkinter import *
+
+
+
+    class AllTkinterWidgets:
+        def __init__(self, master):
+            frame = Frame(master, width=500, height=400, bd=1)
+            frame.pack()
+
+            iframe5 = Frame(frame, bd=2, relief=RAISED)
+            iframe5.pack(expand=1, fill=X, pady=10, padx=5)
+            c = Canvas(iframe5, bg='white', width=340, height=200)
+            c.pack()
+
+            height = 150
+            radius = 150
+            offset_oval = 30
+            start_x_cyl = 150
+            start_y_cyl = 20
+            coord1 = start_x_cyl, start_y_cyl, start_x_cyl + radius, offset_oval
+            coord2 = start_x_cyl, start_y_cyl + height, start_x_cyl + radius, offset_oval+ height
+
+            arc_1 = c.create_oval(coord1, width = 5, fill = 'grey90')
+            arc_2 = c.create_arc(coord2, extent = 180, start = 180,style=ARC, width = 3)
+
+            line1 = c.create_line(coord1[0], coord1[1]+offset_oval/4,
+                                  coord1[0], coord1[1]+height+offset_oval/4,
+                                  width = 3)
+            line2 = c.create_line(coord1[0]+radius, coord1[1]+offset_oval/4,
+                                  coord1[0]+radius, coord1[1]+height+offset_oval/4,
+                                  width = 3)
+            num_stf = 10
+            for line_num in range(1,num_stf,1):
+                angle = 180 - 180/(num_stf) *line_num
+                arc_x, arc_y = 1*math.cos(math.radians(angle)), 0.5*math.sin(math.radians(angle))
+                arc_x = (arc_x + 1)/2
+
+                line1 = c.create_line(coord1[0] + radius*arc_x,
+                                      coord1[1] +2*arc_y*offset_oval/3,
+                                      coord1[0] + radius*arc_x,
+                                      coord1[1] + height +2*arc_y*offset_oval/3,fill = 'blue')
+            num_ring_stiff = 5
+            for ring_stf in range(1,num_ring_stiff+1,1):
+                coord3 = coord1[0], coord1[1]+(height/(num_ring_stiff+1))*ring_stf,  \
+                         start_x_cyl +radius, coord1[3]+ (height/(num_ring_stiff+1))*ring_stf,
+                arc_2 = c.create_arc(coord3, extent=180, start=180, style=ARC, width=2,fill = 'orange', outline = 'orange')
+
+            num_ring_girder = 1
+            for ring_girder in range(1, num_ring_girder+1,1):
+                coord3 = coord1[0], coord1[1]+(height/(num_ring_girder+1))*ring_girder,  \
+                         start_x_cyl+ radius, coord1[3]+ (height/(num_ring_girder+1))*ring_girder,
+                arc_2 = c.create_arc(coord3, extent=180, start=180, style=ARC, width=4, fill = 'grey', outline = 'grey')
+
+            iframe5.pack(expand=1, fill=X, pady=10, padx=5)
+
+
+    root = Tk()
+    # root.option_add('*font', ('verdana', 10, 'bold'))
+    all = AllTkinterWidgets(root)
+    root.title('Tkinter Widgets')
+    root.mainloop()

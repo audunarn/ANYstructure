@@ -900,6 +900,10 @@ class Application():
         self._new_shell_e_module = tk.DoubleVar()
         self._new_shell_ring_stf_fab_method = tk.IntVar()
         self._new_shell_ring_frame_fab_method = tk.IntVar()
+        self._new_shell_exclude_ring_stf = tk.BooleanVar()
+        self._new_shell_exclude_ring_frame = tk.BooleanVar()
+
+        self._new_shell_panel_spacing = tk.DoubleVar()
         self._new_shell_thk.set(20)
         self._new_shell_radius.set(5000)
         self._new_shell_dist_rings.set(5000)
@@ -912,7 +916,9 @@ class Application():
         self._new_shell_e_module.set(2.1e11)
         self._new_shell_ring_stf_fab_method.set(1)
         self._new_shell_ring_frame_fab_method.set(2)
-
+        self._new_shell_panel_spacing.set(2000)
+        self._new_shell_exclude_ring_stf.set(False)
+        self._new_shell_exclude_ring_frame.set(False)
 
         self._shell_gui_items = list()
         self._lab_shell =  tk.Label(self._main_fr, text='Shell and curved plate input [mm]',
@@ -981,11 +987,15 @@ class Application():
 
         self._ent_shell_ring_stf_type = tk.OptionMenu(self._main_fr, self._new_shell_ring_stf_type,
                                                       *['T', 'FB', 'L', 'L-bulb'])
+
+        self._chk_shell_ring_frame_exclude = tk.Checkbutton(self._main_fr,
+                                                            variable = self._new_shell_exclude_ring_stf,
+                                                            command = self.calculation_domain_selected)
         
         self._shell_ring_stf_gui_items = [self._lab_shell_ring_stiffener,self._ent_shell_ring_stf_hw,
                                           self._ent_shell_ring_stf_tw,self._ent_shell_ring_stf_b,
                                           self._ent_shell_ring_stf_tf, self._ent_shell_ring_stf_tripping_brackets,
-                                          self._ent_shell_ring_stf_type]
+                                          self._ent_shell_ring_stf_type, self._chk_shell_ring_frame_exclude ]
         '''
         Shell ring girder/frame
         '''
@@ -1004,6 +1014,8 @@ class Application():
         self._new_shell_ring_frame_tf.set(20)
         self._new_shell_ring_frame_tripping_brackets.set(0)
         self._new_shell_ring_frame_type.set('T')
+        self._new_shell_ring_frame_length_between_girders = tk.DoubleVar()
+        self._new_shell_ring_frame_length_between_girders.set(2500)
 
         self._ent_shell_ring_frame_hw = tk.Entry(self._main_fr, textvariable=self._new_shell_ring_frame_hw,
                                                width=int(5 * 1), bg=self._entry_color, fg=self._entry_text_color)
@@ -1017,16 +1029,19 @@ class Application():
                                                               textvariable=self._new_shell_ring_frame_tripping_brackets,
                                                               bg=self._entry_color, fg=self._entry_text_color)
         self._ent_shell_ring_frame_l_between_girders = tk.Entry(self._main_fr,
-                                                              textvariable=self._new_shell_ring_frame_tripping_brackets,
+                                                              textvariable=self._new_shell_ring_frame_length_between_girders,
                                                               bg=self._entry_color, fg=self._entry_text_color)
         self._ent_shell_ring_stf_type = tk.OptionMenu(self._main_fr, self._new_shell_ring_frame_type,
                                                       *['T', 'FB', 'L', 'L-bulb'])
+        self._chk_shell_ring_frame_exclude = tk.Checkbutton(self._main_fr,
+                                                            variable = self._new_shell_exclude_ring_frame,
+                                                            command = self.calculation_domain_selected)
 
         self._shell_ring_frame_gui_items = [self._lab_shell_ring_stiffener, self._ent_shell_ring_frame_hw,
                                           self._ent_shell_ring_frame_tw, self._ent_shell_ring_frame_b,
                                           self._ent_shell_ring_frame_tf, self._ent_shell_ring_frame_tripping_brackets,
                                             self._ent_shell_ring_frame_l_between_girders,
-                                            self._ent_shell_ring_stf_type]
+                                            self._ent_shell_ring_stf_type, self._chk_shell_ring_frame_exclude]
 
         '''
         Shell/panel load data
@@ -1060,7 +1075,6 @@ class Application():
         self._new_shell_smsd = tk.DoubleVar()
         self._new_shell_tTsd = tk.DoubleVar()
         self._new_shell_tQsd = tk.DoubleVar()
-        #self._new_shell_psd = tk.DoubleVar()
         self._new_shell_shsd = tk.DoubleVar()
 
         self._ent_shell_Nsd = tk.Entry(self._main_fr, textvariable=self._new_shell_Nsd,
@@ -1092,6 +1106,10 @@ class Application():
                                               self._ent_shell_Tsd, self._ent_shell_Qsd, self._ent_shell_psd]
         self._shell_loads_stress_gui_items = [self._ent_shell_sasd, self._ent_shell_smsd,self._ent_shell_tTsd,
                                               self._ent_shell_tQsd, self._ent_shell_psd,self._ent_shell_shsd]
+
+        self._shell_exclude_ring_stf = tk.Frame(self._main_fr, height=10, bg="black", colormap="new", )
+        self._shell_exclude_ring_frame = tk.Frame(self._main_fr, height=10, bg="black", colormap="new")
+
         ''' END shell input '''
 
         ent_x = 0.09375
@@ -1565,42 +1583,55 @@ class Application():
             self._lab_shell_ring_stiffener.place(relx=types_start, rely=ent_geo_y-delta_y*y_red)
 
             for idx, entry in enumerate(self._shell_ring_stf_gui_items[1:]):
-                entry.place(relx=types_start + 1.4*idx * geo_dx, rely=ent_geo_y + delta_y, relwidth=geo_ent_width)
+                entry.place(relx=types_start + 1.1*idx * geo_dx, rely=ent_geo_y + delta_y, relwidth=geo_ent_width)
 
             tmp_unit_info = list()
-            for lab in ['Web, hw', 'Web, tw', 'Flange, b', 'Flange, tw','tr. br. dist', 'Stf. type']:
+            for lab in ['Web, hw', 'Web, tw', 'Flange, b', 'Flange, tw','tr. br. dist', 'Stf. type', 'Exclude']:
                 tmp_unit_info.append(tk.Label(self._main_fr, text=lab, bg=self._general_color))
 
             for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
-                lab.place(relx=types_start + idx * geo_dx*1.4,rely=ent_geo_y)
+                lab.place(relx=types_start + idx * geo_dx*1.1,rely=ent_geo_y)
                 self._unit_informations_dimensions.append(lab)
             self._unit_informations_dimensions.append(self._lab_shell_ring_stiffener)
+            if self._new_shell_exclude_ring_stf.get():
+                self._shell_exclude_ring_stf.place(relx=0.005, rely=ent_geo_y + delta_y*1.2, relwidth=0.18)
+                self._unit_informations_dimensions.append(self._shell_exclude_ring_stf)
 
         if ring_frame:
             ent_geo_y += 2.5*delta_y
             self._lab_shell_ring_frame.place(relx=types_start, rely=ent_geo_y-delta_y*y_red)
 
             for idx, entry in enumerate(self._shell_ring_frame_gui_items[1:]):
-                sx = 1.2 if idx != len(self._shell_ring_frame_gui_items[1:]) - 1 else 1.3
+                sx = 1.1 if idx != len(self._shell_ring_frame_gui_items[1:]) - 1 else 1.1
                 entry.place(relx=types_start + sx*idx * geo_dx, rely=ent_geo_y + delta_y, relwidth=geo_ent_width)
 
 
             tmp_unit_info = list()
-            for lab in ['Web, hw', 'Web, tw', 'Flange, b', 'Flange, tw', 'tr. br. dist', 'L between Gird.', 'Stf. type']:
+            for lab in ['Web, hw', 'Web, tw', 'Flange, b', 'Flange, tw', 'tr. br. dist', 'L bet. Gird.',
+                        'Stf. type', 'Exclude']:
                 tmp_unit_info.append(tk.Label(self._main_fr, text=lab, bg=self._general_color))
 
             for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
-                sx = 1.2 if idx != len(tmp_unit_info)-1 else 1.3
+                sx = 1.1 if idx != len(tmp_unit_info)-1 else 1.1
                 lab.place(relx=types_start + idx * geo_dx*sx,rely=ent_geo_y)
                 self._unit_informations_dimensions.append(lab)
+
             self._unit_informations_dimensions.append(self._lab_shell_ring_frame)
+            if self._new_shell_exclude_ring_frame.get():
+                self._shell_exclude_ring_frame.place(relx=0.005, rely=ent_geo_y + delta_y*1.2, relwidth=0.18)
+                self._unit_informations_dimensions.append(self._shell_exclude_ring_frame)
+
 
         if not flat_panel:
             # Load data
             ent_geo_y += 3.3 * delta_y
             self._lab_shell_loads.place(relx=types_start, rely=ent_geo_y - delta_y*1.5)
-            self._ent_shell_force_input.place(relx=types_start, rely=ent_geo_y)
-            self._ent_shell_stress_input.place(relx=types_start + 2 * geo_dx, rely=ent_geo_y)
+            self._ent_shell_stress_input.place(relx=types_start, rely=ent_geo_y)
+            if 'shell' in self._new_calculation_domain.get():
+                self._ent_shell_force_input.place(relx=types_start + 2 * geo_dx, rely=ent_geo_y)
+            else:
+                self._new_shell_stress_or_force.set(2)
+
             lab_force = ['Axial', 'Bending', 'Torsional','Shear', 'Lateral']
             lab_force_unit = ['kN', 'kNm', 'kNm', 'kN', 'N/mm2']
             lab_stress = ['Axial', 'Bending', 'Torsional', 'Shear',
@@ -1664,6 +1695,10 @@ class Application():
                      self._unit_informations_dimensions
         for item in to_process:
             item.place_forget()
+
+        if event is not None:
+            self._new_shell_exclude_ring_stf.set(False)
+            self._new_shell_exclude_ring_frame.set(False)
         '''
             geomeries = {1:'Unstiffened shell (Force input)', 
                     2:'Unstiffened panel (Stress input)',
@@ -1684,41 +1719,42 @@ class Application():
             self.gui_structural_properties(flat_panel=False, shell=True, long_stf=True, ring_stf=False, ring_frame=False)
         elif self._new_calculation_domain.get() in ['Ring Stiffened shell (Force input)',
                                                     'Ring Stiffened panel (Stress input)']:
-            self.gui_structural_properties(flat_panel=False, shell=True, long_stf=True, ring_stf=True, ring_frame=False)
+            self.gui_structural_properties(flat_panel=False, shell=True, long_stf=False, ring_stf=True, ring_frame=True)
         elif self._new_calculation_domain.get() in ['Orthogonally Stiffened shell (Force input)',
                                                     'Orthogonally Stiffened panel (Stress input)']:
             self.gui_structural_properties(flat_panel=False, shell=True, long_stf=True, ring_stf=True, ring_frame=True)
 
-        if event == None and self._line_to_struc[self._active_line][5] is not None:
-            mapper ={1: 'Force', 2: 'Stress'}
-            load = mapper[self._new_shell_stress_or_force.get()]
-            struc_obj = self._line_to_struc[self._active_line][5]
-            if self._new_shell_stress_or_force.get() == 1:
-                forces = [self._new_shell_Nsd.get(), self._new_shell_Msd.get(), \
-                          self._new_shell_Tsd.get(), self._new_shell_Qsd.get()]
-                sasd, smsd, tTsd, tQsd, shsd = hlp.helper_cylinder_stress_to_force_to_stress(
-                    stresses=None, forces=forces, geometry=struc_obj.geometry, shell_t=self._new_shell_thk.get(),
-                    shell_radius=self._new_shell_radius.get(), shell_spacing=self._new_stf_spacing.get(),
-                    hw=self._new_stf_web_h.get(), tw=self._new_stf_web_t.get(), b=self._new_stf_fl_w.get(),
-                    tf=self._new_stf_fl_t.get(), CylinderAndCurvedPlate=CylinderAndCurvedPlate)
-                self._new_shell_sasd.set(sasd)
-                self._new_shell_smsd.set(smsd)
-                self._new_shell_tTsd.set(tTsd)
-                self._new_shell_tQsd.set(tQsd)
-                # self._new_shell_shsd.set(0)
-            else:
-                stresses = [self._new_shell_sasd.get(), self._new_shell_smsd.get(), self._new_shell_tTsd.get(),
-                            self._new_shell_tQsd.get(), self._new_shell_shsd.get()]
-                sasd, smsd, tTsd, tQsd, shsd = stresses
-                Nsd, Msd, Tsd, Qsd, shsd = hlp.helper_cylinder_stress_to_force_to_stress(
-                    stresses=stresses, geometry=struc_obj.geometry, shell_t=self._new_shell_thk.get(),
-                    shell_radius=self._new_shell_radius.get(), shell_spacing=self._new_stf_spacing.get(),
-                    hw=self._new_stf_web_h.get(), tw=self._new_stf_web_t.get(), b=self._new_stf_fl_w.get(),
-                    tf=self._new_stf_fl_t.get(), CylinderAndCurvedPlate=CylinderAndCurvedPlate)
-                self._new_shell_Nsd.set(Nsd)
-                self._new_shell_Msd.set(Msd)
-                self._new_shell_Tsd.set(Tsd)
-                self._new_shell_Qsd.set(Qsd)
+        if self._line_is_active:
+            if event == None and self._line_to_struc[self._active_line][5] is not None:
+                mapper ={1: 'Force', 2: 'Stress'}
+                load = mapper[self._new_shell_stress_or_force.get()]
+                struc_obj = self._line_to_struc[self._active_line][5]
+                if self._new_shell_stress_or_force.get() == 1:
+                    forces = [self._new_shell_Nsd.get(), self._new_shell_Msd.get(), \
+                              self._new_shell_Tsd.get(), self._new_shell_Qsd.get()]
+                    sasd, smsd, tTsd, tQsd, shsd = hlp.helper_cylinder_stress_to_force_to_stress(
+                        stresses=None, forces=forces, geometry=struc_obj.geometry, shell_t=self._new_shell_thk.get(),
+                        shell_radius=self._new_shell_radius.get(), shell_spacing=self._new_stf_spacing.get(),
+                        hw=self._new_stf_web_h.get(), tw=self._new_stf_web_t.get(), b=self._new_stf_fl_w.get(),
+                        tf=self._new_stf_fl_t.get(), CylinderAndCurvedPlate=CylinderAndCurvedPlate)
+                    self._new_shell_sasd.set(sasd)
+                    self._new_shell_smsd.set(smsd)
+                    self._new_shell_tTsd.set(tTsd)
+                    self._new_shell_tQsd.set(tQsd)
+                    # self._new_shell_shsd.set(0)
+                else:
+                    stresses = [self._new_shell_sasd.get(), self._new_shell_smsd.get(), self._new_shell_tTsd.get(),
+                                self._new_shell_tQsd.get(), self._new_shell_shsd.get()]
+                    sasd, smsd, tTsd, tQsd, shsd = stresses
+                    Nsd, Msd, Tsd, Qsd, shsd = hlp.helper_cylinder_stress_to_force_to_stress(
+                        stresses=stresses, geometry=struc_obj.geometry, shell_t=self._new_shell_thk.get(),
+                        shell_radius=self._new_shell_radius.get(), shell_spacing=self._new_stf_spacing.get(),
+                        hw=self._new_stf_web_h.get(), tw=self._new_stf_web_t.get(), b=self._new_stf_fl_w.get(),
+                        tf=self._new_stf_fl_t.get(), CylinderAndCurvedPlate=CylinderAndCurvedPlate)
+                    self._new_shell_Nsd.set(Nsd)
+                    self._new_shell_Msd.set(Msd)
+                    self._new_shell_Tsd.set(Tsd)
+                    self._new_shell_Qsd.set(Qsd)
 
         self._current_calculation_domain = self._new_calculation_domain.get()
 
@@ -3341,7 +3377,7 @@ class Application():
         if self._active_line in self._line_to_struc:
 
             # printing the properties to the active line
-            if self._line_is_active:
+            if self._line_is_active and self._line_to_struc[self._active_line][5] is None:
                 self._prop_canvas.create_text([canvas_width*0.239726027, canvas_height*0.446096654],
                                              text=self._line_to_struc[self._active_line][0],
                                              font = self._text_size["Text 9"])
@@ -3404,10 +3440,70 @@ class Application():
                         self._prop_canvas.create_text([stt_x+deltax, stt_y+count], text = 'Compartment ' + str(comp),
                                                      font=self._text_size["Text 7"])
                         count += 10
-            else:
-                self._prop_canvas.create_text([canvas_width*0.4, height*0.185873606],
-                                             text='No line is selected. Click on a line to show properies',
-                                             font=self._text_size['Text 9 bold'])
+            elif self._line_is_active and self._line_to_struc[self._active_line][5] is not None:
+                self._prop_canvas.create_text([canvas_width*0.239726027, canvas_height*0.446096654],
+                                             text=self._line_to_struc[self._active_line][5],
+                                             font = self._text_size["Text 9"])
+                # setting the input field to active line properties
+                self.set_selected_variables(self._active_line)
+
+                height = 150
+                radius = 150
+                offset_oval = 30
+                start_x_cyl = 500
+                start_y_cyl = 20
+                coord1 = start_x_cyl, start_y_cyl, start_x_cyl + radius, offset_oval
+                coord2 = start_x_cyl, start_y_cyl + height, start_x_cyl + radius, offset_oval + height
+
+                arc_1 = self._prop_canvas.create_oval(coord1, width=5, fill='grey90')
+                arc_2 = self._prop_canvas.create_arc(coord2, extent=180, start=180, style=tk.ARC, width=3)
+
+                line1 = self._prop_canvas.create_line(coord1[0], coord1[1] + offset_oval / 4,
+                                      coord1[0], coord1[1] + height + offset_oval / 4,
+                                      width=3)
+                line2 = self._prop_canvas.create_line(coord1[0] + radius, coord1[1] + offset_oval / 4,
+                                      coord1[0] + radius, coord1[1] + height + offset_oval / 4,
+                                      width=3)
+                if self._line_to_struc[self._active_line][5].LongStfObj is not None:
+                    long_obj = self._line_to_struc[self._active_line][5].LongStfObj
+                    num_stf = int(1000 * self._line_to_struc[self._active_line][5].ShellObj.radius / long_obj.s)
+                    for line_num in range(1, num_stf, 1):
+                        angle = 180 - 180 / (num_stf) * line_num
+                        arc_x, arc_y = 1 * math.cos(math.radians(angle)), 0.5 * math.sin(math.radians(angle))
+                        arc_x = (arc_x + 1) / 2
+
+                        line1 = self._prop_canvas.create_line(coord1[0] + radius * arc_x,
+                                              coord1[1] + 2 * arc_y * offset_oval / 3,
+                                              coord1[0] + radius * arc_x,
+                                              coord1[1] + height + 2 * arc_y * offset_oval / 3, fill='blue')
+
+                if self._line_to_struc[self._active_line][5].RingStfObj is not None:
+                    num_ring_stiff = self._line_to_struc[self._active_line][5].ShellObj.length_of_shell/ \
+                                     self._line_to_struc[self._active_line][5].ShellObj._dist_between_rings
+                    num_ring_stiff = int(num_ring_stiff)
+
+                    for ring_stf in range(1, num_ring_stiff + 1, 1):
+                        coord3 = coord1[0], coord1[1] + (height / (num_ring_stiff + 1)) * ring_stf, \
+                                 start_x_cyl + radius, coord1[3] + (height / (num_ring_stiff + 1)) * ring_stf,
+                        arc_2 = self._prop_canvas.create_arc(coord3, extent=180, start=180, style=tk.ARC, width=2,
+                                                             fill='orange',
+                                             outline='orange')
+                if self._line_to_struc[self._active_line][5].RingFrameObj is not None:
+                    num_ring_girder = self._line_to_struc[self._active_line][5].ShellObj.length_of_shell/\
+                                      self._line_to_struc[self._active_line][5].length_between_girders
+                    num_ring_girder = int(num_ring_girder)
+                    for ring_girder in range(1, num_ring_girder + 1, 1):
+                        coord3 = coord1[0], coord1[1] + (height / (num_ring_girder + 1)) * ring_girder, \
+                                 start_x_cyl + radius, coord1[3] + (height / (num_ring_girder + 1)) * ring_girder,
+                        arc_2 = self._prop_canvas.create_arc(coord3, extent=180, start=180, style=tk.ARC, width=4,
+                                                             fill='grey', outline='grey')
+            #
+            #
+            # else:
+            #     self._prop_canvas.create_text([canvas_width*0.4, height*0.185873606],
+            #                                  text='No line is selected. Click on a line to show properies',
+            #                                  font=self._text_size['Text 9 bold'])
+                    
         else:
             pass
 
@@ -4116,7 +4212,13 @@ class Application():
                                  'fab method ring girder':  [self._new_shell_ring_frame_fab_method.get(), ''],
                                  'E-module':  [self._new_shell_e_module.get(), 'Pa'],
                                  'poisson':  [self._new_shell_poisson.get(), ''],
-                                 'mat_yield': [self._new_shell_yield.get() *1e6, 'Pa']}
+                                 'mat_yield': [self._new_shell_yield.get() *1e6, 'Pa'],
+                                 'length between girders': [self._new_shell_ring_frame_length_between_girders.get()/1000, 'm'],
+                                 'panel spacing, s': [self._new_shell_panel_spacing.get()/1000, 'm'],
+                                 'ring stf excluded': [self._new_shell_exclude_ring_stf.get(), ''],
+                                 'ring frame excluded': [self._new_shell_exclude_ring_frame.get(), '']
+                    }
+
 
                     for key, value in dummy_data.items():
                         if key not in long_dict.keys():
@@ -4126,9 +4228,15 @@ class Application():
                         if key not in ring_frame_dict.keys():
                             ring_frame_dict[key] = value
 
-                    CylinderObj = CylinderAndCurvedPlate(main_dict_cyl, Shell(shell_dict), long_stf=Structure(long_dict),
-                                                          ring_stf=Structure(ring_stf_dict),
-                                                          ring_frame=Structure(ring_frame_dict))
+                    CylinderObj = CylinderAndCurvedPlate(main_dict_cyl, Shell(shell_dict),
+                                                         long_stf=None if geometry in [1,2,5,6]
+                                                         else Structure(long_dict),
+                                                          ring_stf=None if any([geometry in [1,2,3,4],
+                                                                                self._new_shell_exclude_ring_stf.get()])
+                                                          else Structure(ring_stf_dict),
+                                                          ring_frame=None if any([geometry in [1,2,3,4],
+                                                                                  self._new_shell_exclude_ring_frame.get()])
+                                                          else Structure(ring_frame_dict))
 
             else:
                 obj_dict = pasted_structure.get_structure_prop()
@@ -4146,11 +4254,13 @@ class Application():
                     self._compartments_listbox.delete(0, 'end')
                 if self._new_calculation_domain.get() != 'Stiffened panel, flat':
                     CylinderObj = CylinderAndCurvedPlate(main_dict_cyl, Shell(shell_dict),
-                                                         long_stf=None if geometry in [1,2]
+                                                         long_stf=None if geometry in [1,2,5,6]
                                                          else Structure(long_dict),
-                                                          ring_stf=None if geometry in [1,2,3,4]
+                                                          ring_stf=None if any([geometry in [1,2,3,4],
+                                                                                self._new_shell_exclude_ring_stf.get()])
                                                           else Structure(ring_stf_dict),
-                                                          ring_frame=None if geometry in [1,2]
+                                                          ring_frame=None if any([geometry in [1,2,3,4],
+                                                                                  self._new_shell_exclude_ring_frame.get()])
                                                           else Structure(ring_frame_dict))
 
                     self._line_to_struc[self._active_line][5] = CylinderObj
@@ -4193,11 +4303,13 @@ class Application():
                     self._line_to_struc[self._active_line][5] = None
                 elif self._line_to_struc[self._active_line][5] is None and CylinderObj is not None:
                     CylinderObj = CylinderAndCurvedPlate(main_dict_cyl, Shell(shell_dict),
-                                                         long_stf=None if geometry in [1,2]
+                                                         long_stf=None if geometry in [1,2,5,6]
                                                          else Structure(long_dict),
-                                                          ring_stf=None if geometry in [1,2,3,4]
+                                                          ring_stf=None if any([geometry in [1,2,3,4],
+                                                                                self._new_shell_exclude_ring_stf.get()])
                                                           else Structure(ring_stf_dict),
-                                                          ring_frame=None if geometry in [1,2]
+                                                          ring_frame=None if any([geometry in [1,2,3,4],
+                                                                                  self._new_shell_exclude_ring_frame.get()])
                                                           else Structure(ring_frame_dict))
 
                     self._line_to_struc[self._active_line][5] = CylinderObj
@@ -5080,6 +5192,8 @@ class Application():
             if self._line_to_struc[self._active_line][5] is not None:
                 self._new_calculation_domain.set(CylinderAndCurvedPlate
                                                  .geomeries[self._line_to_struc[self._active_line][5].geometry])
+                self._new_shell_exclude_ring_stf.set(self._line_to_struc[self._active_line][5]._ring_stiffener_excluded)
+                self._new_shell_exclude_ring_frame.set(self._line_to_struc[self._active_line][5]._ring_frame_excluded)
                 self.calculation_domain_selected()
             else:
                 self._new_calculation_domain.set('Stiffened panel, flat')
@@ -5313,10 +5427,10 @@ class Application():
                                 'Ring frame': self._RingFrame.get_structure_prop()}
                     '''
                     self._line_to_struc[line][5] = CylinderAndCurvedPlate(imported_dict['Main class'],
-                                                                          shell=Shell(imported_dict['Shell']),
-                                                                          long_stf=Structure(imported_dict['Long. stf.']),
-                                                                          ring_stf=Structure(imported_dict['Ring stf.']),
-                                                                          ring_frame=Structure(imported_dict['Ring frame']))
+                                                                          shell=None if imported_dict['Shell'] is None else Shell(imported_dict['Shell']),
+                                                                          long_stf=None if imported_dict['Long. stf.'] is None else Structure(imported_dict['Long. stf.']),
+                                                                          ring_stf=None if imported_dict['Ring stf.'] is None else Structure(imported_dict['Ring stf.']),
+                                                                          ring_frame=None if imported_dict['Ring frame'] is None else Structure(imported_dict['Ring frame']))
             #  Recording sections.
             self._sections = add_new_section(self._sections, struc.Section(lines_prop))
 
