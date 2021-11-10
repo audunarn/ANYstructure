@@ -1493,8 +1493,50 @@ class CylinderAndCurvedPlate():
             '\n Design shear stress/force:     ' + str(self._tQsd/1e6)+' MPa'+
             '\n Design lateral pressure        ' + str(self._psd/1e6)+' MPa'+
             '\n Additional hoop stress         ' + str(self._shsd/1e6)+' MPa')
-
-
+    
+    @property
+    def sasd(self):
+        return self._sasd
+    @sasd.setter
+    def sasd(self, val):
+        self._sasd = val
+    @property
+    def smsd(self):
+        return self._smsd
+    @smsd.setter
+    def smsd(self, val):
+        self._smsd = val
+    @property
+    def tTsd(self):
+        return self._tTsd
+    @tTsd.setter
+    def tTsd(self, val):
+        self._tTsd = val
+    @property
+    def tQsd(self):
+        return self._tQsd
+    @tQsd.setter
+    def tQsd(self, val):
+        self._tQsd = val
+    @property
+    def psd(self):
+        return self._psd
+    @psd.setter
+    def psd(self, val):
+        self._psd = val
+    @property
+    def shsd(self):
+        return self._shsd
+    @shsd.setter
+    def shsd(self, val):
+        self._shsd = val
+    @property
+    def panel_spacing(self):
+        return self._panel_spacing
+    @panel_spacing.setter
+    def panel_spacing(self, val):
+        self._panel_spacing = val
+        
     @property
     def ShellObj(self):
         return self._Shell
@@ -2662,6 +2704,14 @@ class CylinderAndCurvedPlate():
         self._panel_spacing = main_dict['panel spacing, s'][0]
         self.__ring_stiffener_excluded = main_dict['ring stf excluded'][0]
         self.__ring_frame_excluded = main_dict['ring frame excluded'][0]
+        
+    def set_stresses_and_pressure(self, val):
+        self._sasd = val['sasd']
+        self._smsd = val['smsd']
+        self._tTsd = val['tTsd']
+        self._tQsd= val['tQsd']
+        self._psd = val['psd']
+        self._shsd = val['shsd']
 
 class CalcFatigue(Structure):
     '''

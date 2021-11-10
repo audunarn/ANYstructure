@@ -238,7 +238,8 @@ shell_dict = {'plate_thk': [20 / 1000, 'm'],
               'length of shell, L': [5000 / 1000, 'm'],
               'tot cyl length, Lc': [5000 / 1000, 'm'],
               'eff. buckling lenght factor': [1, ''],
-              'mat_yield': [355 * 1e6, 'Pa']}
+              'mat_yield': [355 * 1e6, 'Pa'],
+              }
 
 shell_main_dict = {'sasd': [-100 * 1e6, 'Pa'],
              'smsd': [-100* 1e6, 'Pa'],
@@ -253,7 +254,18 @@ shell_main_dict = {'sasd': [-100 * 1e6, 'Pa'],
              'fab method ring girder': [2, ''],
              'E-module': [2.1e11, 'Pa'],
              'poisson': [0.3, '-'],
-             'mat_yield': [355 * 1e6, 'Pa']}
+             'mat_yield': [355 * 1e6, 'Pa'],
+                   'length between girders' : [2.5, 'm'],
+                   'panel spacing, s' : [2, 'm'],
+                   'ring stf excluded' : [False, ''],
+                   'ring frame excluded' : [False, '']}
+
+
+'''
+        self._length_between_girders = main_dict['length between girders'][0]
+        self._panel_spacing = main_dict['panel spacing, s'][0]
+        self.__ring_stiffener_excluded = main_dict['ring stf excluded'][0]
+        self.__ring_frame_excluded = main_dict['ring frame excluded'][0]'''
 shell_main_dict2 = {'sasd': [2.09 * 1e6, 'Pa'],
              'smsd': [1.82* 1e6, 'Pa'],
              'tTsd': [0.64* 1e6, 'Pa'],
@@ -267,7 +279,12 @@ shell_main_dict2 = {'sasd': [2.09 * 1e6, 'Pa'],
              'fab method ring girder': [2, ''],
              'E-module': [2.1e11, 'Pa'],
              'poisson': [0.3, '-'],
-             'mat_yield': [355 * 1e6, 'Pa']}
+             'mat_yield': [355 * 1e6, 'Pa'],
+                    'length between girders': [2.5, 'm'],
+                    'panel spacing, s': [2, 'm'],
+                    'ring stf excluded': [False, ''],
+                    'ring frame excluded': [False, '']
+                    }
 def get_slamming_pressure():
     return 1000000
 

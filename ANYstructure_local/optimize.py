@@ -27,7 +27,7 @@ def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lat
                      min_max_span = (2,6), tot_len = None, frame_height = 2.5, frame_distance = None,
                      slamming_press = 0, predefined_stiffener_iter = None, processes = None, use_weight_filter = True,
                      load_pre = False, opt_girder_prop = None, puls_sheet = None, puls_acceptance = 0.87,
-                     fdwn = 1, fup = 0.5, ml_algo = None):
+                     fdwn = 1, fup = 0.5, ml_algo = None, cylinder = False):
     '''
     The optimazation is initiated here. It is called from optimize_window.
     :param initial_structure_obj:
@@ -65,8 +65,10 @@ def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lat
                                                     predefined_stiffener_iter = predefined_stiffener_iter,
                                                     slamming_press=slamming_press, fdwn = fdwn, fup = fup,
                                                     ml_algo = ml_algo)
-
-    if algorithm == 'anysmart' and not is_geometric:
+    if cylinder:
+        to_return = any_smart_loop_cylinder(min_var=min_var, max_var=max_var, deltas=deltas,
+                                            initial_structure_obj=initial_structure_obj)
+    elif algorithm == 'anysmart' and not is_geometric:
         to_return = any_smart_loop(min_var, max_var, deltas, initial_structure_obj, lateral_pressure,
                                    init_filter_weight, side=side, const_chk=const_chk, fat_dict=fat_dict,
                                    fat_press=fat_press_ext_int,slamming_press=slamming_press,
@@ -199,6 +201,36 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
     new_calc_obj = create_new_calc_obj(initial_structure_obj,ass_var, fdwn = fdwn, fup = fup)[0]
 
     return new_struc_obj, new_calc_obj, fat_dict, True, main_fail
+
+def any_smart_loop_cylinder(min_var,max_var,deltas,initial_structure_obj,lateral_pressure = None, init_filter = float('inf'),
+                   side='p',const_chk=(True,True,True,True,True,True,True, False, False,False), fat_dict = None,
+                   fat_press = None,
+                   slamming_press = 0, predefiened_stiffener_iter = None, processes = None,
+                   puls_sheet = None, puls_acceptance = 0.87, fdwn = 1, fup = 0.5, ml_algo = None):
+
+    combs = list()
+
+    # Creating the individual combinations for Shell, LongStf, RingStf and RingFrame
+    for idx, str_type in enumerate(range(len(min_var))):
+
+        if predefiened_stiffener_iter is None:
+            structure_to_check = any_get_all_combs(min_var[idx], max_var[idx], deltas[idx])
+
+        else:
+            structure_to_check = any_get_all_combs(min_var[idx], max_var[idx], deltas[idx],
+                                                   predef_stiffeners= [item.get_tuple() for item in predefiened_stiffener_iter])
+        combs.append(structure_to_check)
+
+    # Combining the individual components.
+
+    final_comb = list()
+    for shell in combs[0]:
+        for long in combs[1]:
+            for ring_stf in combs[2]:
+                for ring_frame in combs[3]:
+                    final_comb.append([shell, long, ring_stf, ring_frame])
+    print(final_comb[0])
+
 
 def any_smart_loop_geometric(min_var,max_var,deltas,initial_structure_obj,lateral_pressure, init_filter = float('inf'),
                              side='p',const_chk=(True,True,True,True,True,True), fat_obj = None, fat_press = None,
@@ -502,6 +534,41 @@ def any_find_min_weight_var(var):
 
     return min(map(calc_weight))
 
+def any_constraints_cylinder(x,obj,lat_press,init_weight,side='p',chk=(True,True,True,True, True, True, True, False,
+                                                                  False, False),
+                        fat_dict = None, fat_press = None, slamming_press = 0, PULSrun: calc.PULSpanel = None,
+                        print_result = False, fdwn = 1, fup = 0.5, ml_results = None):
+    '''
+    Checking all constraints defined.
+
+        iter_var = ((item,init_stuc_obj,lat_press,init_filter_weight,side,chk,fat_dict,fat_press,slamming_press, PULSrun)
+                for item in iterable_all)
+    :param x:
+    :return:
+    '''
+
+    all_checks = [0,0,0,0,0,0,0,0,0,0,0]
+    print_result = False
+
+    calc_object = create_new_calc_obj(obj, x, fat_dict, fdwn = fdwn, fup = fup)
+
+    # PULS buckling check
+    if chk[7] and PULSrun is not None:
+        x_id = x_to_string(x)
+        if calc_object[0].get_puls_method() == 'buckling':
+            puls_uf = PULSrun.get_puls_line_results(x_id)["Buckling strength"]["Actual usage Factor"][0]
+        elif calc_object[0].get_puls_method() == 'ultimate':
+            puls_uf = PULSrun.get_puls_line_results(x_id)["Ultimate capacity"]["Actual usage Factor"][0]
+        if type(puls_uf) == str:
+            return False, 'PULS', x, all_checks
+        all_checks[8] = puls_uf/PULSrun.puls_acceptance
+        if puls_uf/PULSrun.puls_acceptance >= 1:
+            if print_result:
+                print('PULS', calc_object[0].get_one_line_string(), False)
+            return False, 'PULS', x, all_checks
+
+    return True, 'Check OK', x, all_checks
+
 
 def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True,True, True, True, True, False,
                                                                   False, False),
@@ -698,6 +765,51 @@ def pso_constraint_geometric(x,*args):
     ''' The sum of the fractions must be 1.'''
     return 1-sum(x)
 
+def create_new_cylinder_obj(init_obj, x_new):
+    '''
+    shell       (0.02, 2.5, 5, 5, 10, nan, nan, nan),
+    long        (0.875, nan, 0.3, 0.01, 0.1, 0.01, nan, nan),
+    ring        (nan, nan, 0.3, 0.01, 0.1, 0.01, nan, nan),
+    ring        (nan, nan, 0.7, 0.02, 0.2, 0.02, nan, nan)]
+    '''
+    stress_press = [init_obj.sasd, init_obj.smsd, init_obj.tTsd, init_obj.tQsd, init_obj.shsd]
+    shell_obj = init_obj.ShellObj
+    long_obj = init_obj.LongStfObj
+    '''
+    r1, t1, s1, hw1, tw1, b1, tf1 = x1
+    r2, t2, s2, hw2, tw2, b2, tf2 = x2
+    '''
+    x_old = shell_obj.radius, shell_obj.thk,  \
+            init_obj.panel_spacing if long_obj is None else long_obj.s/1000, \
+            0 if long_obj is None else long_obj.hw/1000, \
+            0 if long_obj is None else long_obj.tw/1000,\
+            0 if long_obj is None else long_obj.b/1000,\
+            0 if long_obj is None else long_obj.tf/1000,
+
+    x_new = x_new[0][1], x_new[0][0],             \
+            x_new[0][5] if long_obj is None else x_new[1][0], \
+            0 if long_obj is None else x_new[1][2], \
+            0 if long_obj is None else x_new[1][3],\
+            0 if long_obj is None else x_new[1][4],\
+            0 if long_obj is None else x_new[1][5],
+
+    new_stresses = stress_scaling_cylinder(x_old, x_new, stress_press)
+    new_obj = copy.deepcopy(init_obj)
+    new_obj.sasd, new_obj.smsd, new_obj.tTsd, new_obj.tQsd, new_obj.shsd = new_stresses
+
+    new_obj.ShellObj.radius = x_new[0][1]
+    new_obj.ShellObj.thk = x_new[0][0]
+    if long_obj is None:
+        new_obj.panel_spacing = x_new[0][5]
+    else:
+        long_obj.s = x_new[1][0]
+        long_obj.hw = x_new[1][2]
+        long_obj.tw = x_new[1][3]
+        long_obj.b = x_new[1][4]
+        long_obj.tf = x_new[1][5]
+
+    return new_obj
+
 def create_new_calc_obj(init_obj,x, fat_dict=None, fdwn = 1, fup = 0.5):
     '''
     Returns a new calculation object to be used in optimization
@@ -848,6 +960,40 @@ def calc_weight_pso_section(x,*args):
         tot_weight += stru_object.get_weight_width_lg()
 
     return tot_weight
+
+def stress_scaling_cylinder(x1, x2, stress1):
+    '''
+    Scale stresses of a stiffened cylinder.
+
+    To scale:
+
+    Design axial stress,          sa,sd =
+    Design bending stress,   sm,sd =
+    Design torsional stress,   tT,sd=
+    Design shear stress,        tQ,sd=
+    Additional hoop stress, sh,sd =
+
+    '''
+
+    r1, t1, s1, hw1, tw1, b1, tf1 = x1
+    r2, t2, s2, hw2, tw2, b2, tf2 = x2
+    
+    sasd1, smsd1, tTsd1, tQsd1, shsd1 = stress1
+
+    A1 = hw1 * tw1 + b1 * tf1
+    A2 = hw2 * tw2 + b2 * tf2
+    # Axial stress changes by equivalent thickness
+
+    thk_eq1 = t1 + A1 / s1
+    thk_eq2 = t2 + A2 / s2
+
+    # Moment stress changes by difference in moment of inertia
+    Itot1 = CylinderAndCurvedPlate.get_Itot(hw=hw1, tw=tw1, b=b1, tf=tf1, r=r1, s=s1, t=t1)
+    Itot2 = CylinderAndCurvedPlate.get_Itot(hw=hw2, tw=tw2, b=b2, tf=tf2, r=r2, s=s2, t=t2)
+
+    # Torsional, shear and hoop changes by cylinder thickness.
+
+    return sasd1*(thk_eq2/thk_eq1), smsd1*(Itot2/Itot1), tTsd1*(t2/t1), tQsd1*(t2/t1), shsd1*(t2/t1)
 
 def stress_scaling(sigma_old,t_old,t_new, fdwn = 1, fup = 0.5):
 
@@ -1021,21 +1167,43 @@ def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight
 
     return check_ok, check_not_ok
 
-def any_get_all_combs(min_var, max_var,deltas, init_weight = float('inf'), predef_stiffeners = None):
+def any_get_all_combs(min_var, max_var,deltas, init_weight = float('inf'), predef_stiffeners = None, cylinder = False):
     '''
     Calulating initial values.
     :param min:
     :param max:
     :return:
     '''
+    '''
+    shell_upper_bounds = np.array( [0.03, 2.5, 5, 0.8, 6, 6])
+    shell_deltas = np.array(       [0.01, 2.5, 1, 0.1, 1, 1])
+    shell_lower_bounds = np.array( [0.02, 2.5, 5, 0.6, 4, 4])
 
-    spacing_array = (np.arange(min_var[0], max_var[0]+ deltas[0], deltas[0])) if min_var[0] != max_var[0] \
-        else np.array([min_var[0]])
-    spacing_array = spacing_array[spacing_array <= max_var[0]]
+    long_upper_bounds = np.array(   [0.875, None, 0.5, 0.018, 0.2, 0.03])
+    long_deltas = np.array(         [0.025, None, 0.1, 0.004, 0.05, 0.005])
+    long_lower_bounds = np.array(   [0.875, None, 0.3,  0.010, 0.1, 0.010])
 
-    pl_thk_array = (np.arange(min_var[1], max_var[1]+ deltas[1], deltas[1])) if min_var[1] != max_var[1] \
-        else np.array([min_var[1]])
-    pl_thk_array = pl_thk_array[pl_thk_array <= max_var[1]]
+    ring_stf_upper_bounds = np.array(   [None, None, 0.5, 0.018, 0.2, 0.03])
+    ring_stf_deltas = np.array(         [None, None, 0.1, 0.004, 0.05, 0.005])
+    ring_stf_lower_bounds = np.array(   [None, None, 0.3,  0.010, 0.1, 0.010])
+
+    ring_frame_upper_bounds = np.array( [None, None, 0.9, 0.04, 0.3, 0.04])
+    ring_frame_deltas = np.array(       [None, None, 0.2, 0.01, 0.1, 0.01])
+    ring_frame_lower_bounds = np.array( [None, None, 0.5,  0.02, 0.2, 0.020])
+    '''
+    if min_var[0] is not None:
+        spacing_array = (np.arange(min_var[0], max_var[0]+ deltas[0], deltas[0])) if min_var[0] != max_var[0] \
+            else np.array([min_var[0]])
+        spacing_array = spacing_array[spacing_array <= max_var[0]]
+    else:
+        spacing_array = np.array([np.nan])
+
+    if min_var[1] is not None:
+        pl_thk_array = (np.arange(min_var[1], max_var[1]+ deltas[1], deltas[1])) if min_var[1] != max_var[1] \
+            else np.array([min_var[1]])
+        pl_thk_array = pl_thk_array[pl_thk_array <= max_var[1]]
+    else:
+        pl_thk_array = np.array([np.nan])
 
     if predef_stiffeners is not None:
         predef_iterable = list()
@@ -1061,21 +1229,27 @@ def any_get_all_combs(min_var, max_var,deltas, init_weight = float('inf'), prede
         else np.array([min_var[4]])
     flange_w_array = flange_w_array[flange_w_array <= max_var[4]]
 
-    flange_thk_array = (np.arange(min_var[5], max_var[5]+ deltas[5], deltas[5])) if min_var[5] != max_var[5] \
-        else np.array([min_var[5]])
-    flange_thk_array = flange_thk_array[flange_thk_array <= max_var[5]]
+    if min_var[5] is not None:
+        flange_thk_array = (np.arange(min_var[5], max_var[5]+ deltas[5], deltas[5])) if min_var[5] != max_var[5] \
+            else np.array([min_var[5]])
+        flange_thk_array = flange_thk_array[flange_thk_array <= max_var[5]]
+    else:
+        flange_thk_array = np.array([np.nan])
 
-    span_array = (np.arange(min_var[6], max_var[6], deltas[4])) if min_var[6] != max_var[6] \
-        else np.array([min_var[6]])
+    if min_var[6] is not None:
+        span_array = (np.arange(min_var[6], max_var[6], deltas[4])) if min_var[6] != max_var[6] \
+            else np.array([min_var[6]])
+    else:
+        span_array = np.array([np.nan])
 
-    girder_array = (np.arange(min_var[7], max_var[7], deltas[7])) if min_var[7] != max_var[7] \
-        else np.array([min_var[7]])
+    if min_var[7] is not None:
+        girder_array = (np.arange(min_var[7], max_var[7], deltas[7])) if min_var[7] != max_var[7] \
+            else np.array([min_var[7]])
+    else:
+        girder_array = np.array([np.nan])
 
     comb = it.product(spacing_array, pl_thk_array, web_h_array, web_thk_array, flange_w_array, flange_thk_array,
                       span_array,girder_array)
-
-    # comb = product_any(spacing_array, pl_thk_array, web_h_array, web_thk_array, flange_w_array, flange_thk_array,
-    #                   span_array,girder_array,weight=init_weight)
 
     return list(comb)
 
@@ -1215,30 +1389,65 @@ def plot_optimization_results(results, multiple = False):
 
 if __name__ == '__main__':
     import ANYstructure_local.example_data as ex
-    obj_dict = ex.obj_dict_sec_error
-    fat_obj = ex.get_fatigue_object_problematic()
-    fp = ex.get_fatigue_pressures_problematic()
-    fat_press = ((fp['p_ext']['loaded'],fp['p_ext']['ballast'],fp['p_ext']['part']),
-                 (fp['p_int']['loaded'],fp['p_int']['ballast'],fp['p_int']['part']))
-    x0 = [obj_dict['spacing'][0], obj_dict['plate_thk'][0], obj_dict['stf_web_height'][0], obj_dict['stf_web_thk'][0],
-          obj_dict['stf_flange_width'][0], obj_dict['stf_flange_thk'][0], obj_dict['span'][0], 10]
+    from calc_structure import CylinderAndCurvedPlate, Structure, Shell
 
-    obj = calc.Structure(obj_dict)
-    lat_press = 427.235
-    calc_object = calc.CalcScantlings(obj_dict)
-    lower_bounds = np.array([0.875, 0.012, 0.3, 0.012, 0.1, 0.012, 3.5, 10])
-    upper_bounds = np.array([0.875, 0.025, 0.5, 0.018, 0.2, 0.03, 3.5, 10])
-    deltas = np.array([0.025, 0.001, 0.01, 0.001, 0.01, 0.001])
+    shell_main_dict = ex.shell_main_dict
+    shell_main_dict['geometry'] = [7, '']
+    #Structure(ex.obj_dict_cyl_ring)
+    #Structure(ex.obj_dict_cyl_heavy_ring)
+    my_cyl = CylinderAndCurvedPlate(main_dict = ex.shell_main_dict2, shell= Shell(ex.shell_dict),
+                                    long_stf= Structure(ex.obj_dict_cyl_long2),
+                                    ring_stf = Structure(ex.obj_dict_cyl_ring2),
+                                    ring_frame= Structure(ex.obj_dict_cyl_heavy_ring2))
+
+    # Shell [thickness, radius, dist. bet. rings., length of shell, tot cyl length, panel_spacing] # TODO panel spacing must have a value at all times
+    shell_upper_bounds = np.array( [0.03, 3, 5, 5, 10, None, None, None])
+    shell_deltas = np.array(       [0.005, 0.5, 1, 0.1,1, None, None, None])
+    shell_lower_bounds = np.array( [0.02, 2.5, 5, 5, 10, None, None, None])
+
+    long_upper_bounds = np.array(   [0.875, None, 0.5, 0.02, 0.2, 0.03, None, None])
+    long_deltas = np.array(         [0.025, None, 0.1, 0.01, 0.1, 0.01, None, None])
+    long_lower_bounds = np.array(   [0.875, None, 0.3,  0.01, 0.1, 0.01, None, None])
+
+    ring_stf_upper_bounds = np.array(   [None, None, 0.5, 0.018, 0.2, 0.03, None, None])
+    ring_stf_deltas = np.array(         [None, None, 0.1, 0.004, 0.1, 0.01, None, None])
+    ring_stf_lower_bounds = np.array(   [None, None, 0.3,  0.010, 0.1, 0.010, None, None])
+
+    ring_frame_upper_bounds = np.array( [None, None, 0.9, 0.04, 0.3, 0.04, None, None])
+    ring_frame_deltas = np.array(       [None, None, 0.2, 0.01, 0.1, 0.01, None, None])
+    ring_frame_lower_bounds = np.array( [None, None, 0.7,  0.02, 0.2, 0.02, None, None])
+
+    max_var = [shell_upper_bounds, long_upper_bounds, ring_stf_upper_bounds, ring_frame_upper_bounds]
+    deltas = [shell_deltas, long_deltas, ring_stf_deltas, ring_frame_deltas]
+    min_var = [shell_lower_bounds, long_lower_bounds, ring_stf_lower_bounds, ring_frame_lower_bounds]
+
+    results = run_optmizataion(initial_structure_obj=my_cyl, min_var=min_var, max_var=max_var, deltas=deltas, cylinder=True, use_weight_filter=False)
 
 
-    t1 = time.time()
+    # obj_dict = ex.obj_dict_sec_error
+    # fat_obj = ex.get_fatigue_object_problematic()
+    # fp = ex.get_fatigue_pressures_problematic()
+    # fat_press = ((fp['p_ext']['loaded'],fp['p_ext']['ballast'],fp['p_ext']['part']),
+    #              (fp['p_int']['loaded'],fp['p_int']['ballast'],fp['p_int']['part']))
+    # x0 = [obj_dict['spacing'][0], obj_dict['plate_thk'][0], obj_dict['stf_web_height'][0], obj_dict['stf_web_thk'][0],
+    #       obj_dict['stf_flange_width'][0], obj_dict['stf_flange_thk'][0], obj_dict['span'][0], 10]
     #
-    results = run_optmizataion(obj, lower_bounds,upper_bounds, lat_press, deltas, algorithm='anysmart',
-                               fatigue_obj=fat_obj, fat_press_ext_int=fat_press, use_weight_filter=True)
-
-    print(results[1])
-    print(results[1].get_dnv_min_section_modulus(lat_press))
-    print(min([round(results[1].get_section_modulus()[0], 5), round(results[1].get_section_modulus()[1], 5)]))
+    # obj = calc.Structure(obj_dict)
+    # lat_press = 427.235
+    # calc_object = calc.CalcScantlings(obj_dict)
+    # lower_bounds = np.array([0.875, 0.012, 0.3, 0.012, 0.1, 0.012, 3.5, 10])
+    # upper_bounds = np.array([0.875, 0.025, 0.5, 0.018, 0.2, 0.03, 3.5, 10])
+    # deltas = np.array([0.025, 0.001, 0.01, 0.001, 0.01, 0.001])
+    #
+    #
+    # t1 = time.time()
+    # #
+    # results = run_optmizataion(obj, lower_bounds,upper_bounds, lat_press, deltas, algorithm='anysmart',
+    #                            fatigue_obj=fat_obj, fat_press_ext_int=fat_press, use_weight_filter=True)
+    #
+    # print(results[1])
+    # print(results[1].get_dnv_min_section_modulus(lat_press))
+    # print(min([round(results[1].get_section_modulus()[0], 5), round(results[1].get_section_modulus()[1], 5)]))
 
     # t1 = time.time()
     # check_ok_array, check_array, section_array = list(), list(), list()
