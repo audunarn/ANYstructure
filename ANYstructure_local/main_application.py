@@ -4239,6 +4239,7 @@ class Application():
                                                           else Structure(ring_frame_dict))
 
             else:
+                # TODO pasting of cylinders
                 obj_dict = pasted_structure.get_structure_prop()
 
             if self._active_line not in self._line_to_struc.keys() :
@@ -4281,7 +4282,9 @@ class Application():
                     self._line_to_struc[self._active_line][1] = \
                         op.create_new_calc_obj(prev_calc_obj,self._line_to_struc[self._active_line][1].get_tuple(),
                                                fup=self._new_fup.get(), fdwn=self._new_fdwn.get())[0]
+
                 self._line_to_struc[self._active_line][1].need_recalc = True
+
                 if self._line_to_struc[self._active_line][2] is not None:
                     self._line_to_struc[self._active_line][2].set_main_properties(obj_dict)
                 if prev_type in self._structure_types['non-wt'] and obj_dict['structure_type'][0] in \
@@ -4290,31 +4293,26 @@ class Application():
                     self._tank_dict = {}
                     self._main_grid.clear()
                     self._compartments_listbox.delete(0, 'end')
-                if self._line_to_struc[self._active_line][5] is not None and CylinderObj is not None:
-                    self._line_to_struc[self._active_line][5].ShellObj.set_main_properties(shell_dict)
-                    if self._line_to_struc[self._active_line][5].LongStfObj is not None:
-                        self._line_to_struc[self._active_line][5].LongStfObj.set_main_properties(long_dict)
-                    if self._line_to_struc[self._active_line][5].RingStfObj is not None:
-                        self._line_to_struc[self._active_line][5].RingStfObj.set_main_properties(ring_stf_dict)
-                    if self._line_to_struc[self._active_line][5].RingFrameObj is not None:
-                        self._line_to_struc[self._active_line][5].RingFrameObj.set_main_properties(ring_frame_dict)
-                    self._line_to_struc[self._active_line][5].set_main_properties(main_dict_cyl )
-                elif self._line_to_struc[self._active_line][5] is not None and CylinderObj is  None:
+
+                # Cylinder specific.
+                # if self._line_to_struc[self._active_line][5] is not None and CylinderObj is not None:
+                #
+                #     self._line_to_struc[self._active_line][5].ShellObj.set_main_properties(shell_dict)
+                #     if self._line_to_struc[self._active_line][5].LongStfObj is not None:
+                #         self._line_to_struc[self._active_line][5].LongStfObj.set_main_properties(long_dict)
+                #     if self._line_to_struc[self._active_line][5].RingStfObj is not None:
+                #         self._line_to_struc[self._active_line][5].RingStfObj.set_main_properties(ring_stf_dict)
+                #     if self._line_to_struc[self._active_line][5].RingFrameObj is not None:
+                #         self._line_to_struc[self._active_line][5].RingFrameObj.set_main_properties(ring_frame_dict)
+                #     self._line_to_struc[self._active_line][5].set_main_properties(main_dict_cyl )
+                if self._line_to_struc[self._active_line][5] is not None and CylinderObj is None:
                     self._line_to_struc[self._active_line][5] = None
-                elif self._line_to_struc[self._active_line][5] is None and CylinderObj is not None:
-                    CylinderObj = CylinderAndCurvedPlate(main_dict_cyl, Shell(shell_dict),
-                                                         long_stf=None if geometry in [1,2,5,6]
-                                                         else Structure(long_dict),
-                                                          ring_stf=None if any([geometry in [1,2,3,4],
-                                                                                self._new_shell_exclude_ring_stf.get()])
-                                                          else Structure(ring_stf_dict),
-                                                          ring_frame=None if any([geometry in [1,2,3,4],
-                                                                                  self._new_shell_exclude_ring_frame.get()])
-                                                          else Structure(ring_frame_dict))
+                elif CylinderObj is not None:
+                    if self._line_to_struc[self._active_line][5] is not None and self._new_scale_stresses:
+                        CylinderObj = op.create_new_cylinder_obj(self._line_to_struc[self._active_line][5],
+                                                                    CylinderObj.get_x_opt())
 
                     self._line_to_struc[self._active_line][5] = CylinderObj
-
-
             try:
                 self.calculate_all_load_combinations_for_line_all_lines()
             except (KeyError, AttributeError):
