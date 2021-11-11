@@ -1540,15 +1540,28 @@ class CylinderAndCurvedPlate():
     @property
     def ShellObj(self):
         return self._Shell
+    @ShellObj.setter
+    def ShellObj(self, val):
+        self._Shell = val
     @property
     def LongStfObj(self):
         return self._LongStf
+    @LongStfObj.setter
+    def LongStfObj(self, val):
+        self._LongStf = val
     @property
     def RingStfObj(self):
         return self._RingStf
+    @RingStfObj.setter
+    def RingStfObj(self, val):
+        self._RingStf = val
     @property
     def RingFrameObj(self):
         return self._RingFrame
+    @RingFrameObj.setter
+    def RingFrameObj(self, val):
+        self._RingFrame = val
+
     @property
     def geometry(self):
         return self._geometry
