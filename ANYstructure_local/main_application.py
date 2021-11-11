@@ -4308,9 +4308,16 @@ class Application():
                 if self._line_to_struc[self._active_line][5] is not None and CylinderObj is None:
                     self._line_to_struc[self._active_line][5] = None
                 elif CylinderObj is not None:
-                    if self._line_to_struc[self._active_line][5] is not None and self._new_scale_stresses:
-                        CylinderObj = op.create_new_cylinder_obj(self._line_to_struc[self._active_line][5],
-                                                                    CylinderObj.get_x_opt())
+                    if self._line_to_struc[self._active_line][5] is not None and self._new_scale_stresses.get():
+                        NewCylinderObj = op.create_new_cylinder_obj(self._line_to_struc[self._active_line][5],
+                                                                 CylinderObj.get_x_opt())
+                        NewCylinderObj.LongStfObj = None if CylinderObj.LongStfObj is None \
+                            else NewCylinderObj.LongStfObj
+                        NewCylinderObj.RingStfObj = None if CylinderObj.RingStfObj is None \
+                            else NewCylinderObj.RingStfObj
+                        NewCylinderObj.RingFrameObj = None if CylinderObj.RingFrameObj is None \
+                            else NewCylinderObj.RingFrameObj
+
 
                     self._line_to_struc[self._active_line][5] = CylinderObj
             try:

@@ -1022,8 +1022,8 @@ def stress_scaling_cylinder(x1, x2, stress1):
     A2 = hw2 * tw2 + b2 * tf2
     # Axial stress changes by equivalent thickness
 
-    thk_eq1 = t1 + A1 / s1
-    thk_eq2 = t2 + A2 / s2
+    thk_eq1 = t1 + 0 if s1 == 0 else A1 / s1
+    thk_eq2 = t2 + 0 if s2 == 0 else A2 / s2
 
     # Moment stress changes by difference in moment of inertia
     Itot1 = calc.CylinderAndCurvedPlate.get_Itot(hw=hw1, tw=tw1, b=b1, tf=tf1, r=r1, s=s1, t=t1)
