@@ -1461,7 +1461,9 @@ if __name__ == '__main__':
 
     results = run_optmizataion(initial_structure_obj=my_cyl, min_var=min_var, max_var=max_var, deltas=deltas,
                                cylinder=True, use_weight_filter=False)
-
+    shell = ['Shell thk. [mm]', 'Shell radius [mm]' , 'l rings [mm]', 'L shell [mm]', 'L tot. [mm]', 'N/A - future', 'N/A - future', 'N/A - future']
+    stf_long = ['Spacing [mm]', 'Plate thk. [mm]', 'Web height [mm]', 'Web thk. [mm]', 'Flange width [mm]', 'Flange thk. [mm]', 'N/A - future', 'N/A - future']
+    stf_ring = ['N/A', 'Plate thk. [mm]', 'Web height [mm]', 'Web thk. [mm]', 'Flange width [mm]', 'Flange thk. [mm]', 'N/A - future', 'N/A - future']
 
     # obj_dict = ex.obj_dict_sec_error
     # fat_obj = ex.get_fatigue_object_problematic()

@@ -12,6 +12,7 @@ from ANYstructure_local.helper import *
 import math, decimal
 import ANYstructure_local.optimize as op
 import ANYstructure_local.optimize_window as opw
+import ANYstructure_local.optimize_cylinder as opc
 import ANYstructure_local.optimize_multiple_window as opwmult
 import ANYstructure_local.optimize_geometry as optgeo
 import ANYstructure_local.pl_stf_window as struc
@@ -1363,7 +1364,7 @@ class Application():
             self._opt_button.image = photo
             self._opt_button.place(relx=lc_x, rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.098)
         except TclError:
-            self._opt_button =Button(self._main_fr, text='Optimize', command=self.on_optimize_multiple,
+            self._opt_button =Button(self._main_fr, text='Optimize', command=self.on_optimize,
                       bg = self._button_bg_color, fg = self._button_fg_color)
             self._opt_button.place(relx=lc_x, rely=lc_y - 6 * lc_y_delta)
         try:
@@ -1389,12 +1390,12 @@ class Application():
             else:
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
-            self._opt_cylinder = tk.Button(self._main_fr,image=photo, command = self.on_optimize,
+            self._opt_cylinder = tk.Button(self._main_fr,image=photo, command = self.on_optimize_cylinder,
                                         bg = 'white', fg = 'white')
             self._opt_cylinder.image = photo
         except TclError:
             self._opt_cylinder = tk.Button(self._main_fr, text='Cylinder optimization',
-                                           command=self.on_optimize_multiple,
+                                           command=self.on_optimize_cylinder,
                       bg = self._button_bg_color, fg = self._button_fg_color)
 
 
@@ -5807,6 +5808,27 @@ class Application():
             else:
                 top_opt = tk.Toplevel(self._parent, background=self._general_color)
                 opw.CreateOptimizeWindow(top_opt, self)
+        else:
+            messagebox.showinfo(title='Select line',message='You must select a line')
+
+    def on_optimize_cylinder(self):
+        '''
+        User open window to optimize current structure
+        :return:
+        '''
+
+        # if [self.get_highest_pressure(line)['normal'] for line in self._line_to_struc.keys()] == []:
+        #     # messagebox.showinfo(title='Missing something', message='Missing properties/loads etc.')
+        #     # return
+
+        if self._line_is_active:
+            if self._active_line not in self._line_to_struc:
+                messagebox.showinfo(title='Missing properties', message='Specify properties for line')
+            elif self._line_to_struc[self._active_line][5] == None:
+                messagebox.showinfo(title='Missing cylinder', message='Make a shell or panel')
+            else:
+                top_opt = tk.Toplevel(self._parent, background=self._general_color)
+                opc.CreateOptimizeCylinderWindow(top_opt, self)
         else:
             messagebox.showinfo(title='Select line',message='You must select a line')
 
