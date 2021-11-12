@@ -1318,13 +1318,13 @@ class Application():
             .place(relx=lc_x, rely=lc_y + 2.5*delta_y)
 
         lc_y += 0.148148148
-        self._combination_slider = tk.Scale(self._main_fr, from_=1, to=3, command=self.gui_load_combinations,length=400,
+        self._combination_slider = tk.Scale(self._main_fr, from_=1, to=4, command=self.gui_load_combinations,length=400,
                                            orient = 'horizontal', background=self._general_color,
-                                            label='OS-C101 Table 1    1: DNV a)    2: DNV b)    3: TankTest',
+                                            label='OS-C101 Table 1    1: DNV a)    2: DNV b)    3: TankTest    4: Cylinder',
                                             relief='groove')
 
         self._combination_slider.place(relx=lc_x +0*lc_x_delta, rely=lc_y - 3*lc_y_delta)
-        self._combination_slider_map = {1:'dnva',2:'dnvb',3:'tanktest'}
+        self._combination_slider_map = {1:'dnva',2:'dnvb',3:'tanktest', 4: 'Cylinder'}
         tk.Label(self._main_fr, text='Name:', font = self._text_size['Text 7'], bg = self._general_color)\
             .place(relx=lc_x + 0 * lc_x_delta, rely=lc_y)
         tk.Label(self._main_fr, text='Stat LF', font = self._text_size['Text 7'], bg = self._general_color)\
@@ -1342,10 +1342,10 @@ class Application():
         self._result_label_manual = tk.Label(self._main_fr, text='Manual [Pa]: ',font=self._text_size["Text 8"],
                                              bg = self._general_color)
         self.results_gui_start = 0.6
-        tk.Label(self._main_fr, text = 'Pressures for this line: \n(DNV a/b [loaded/ballast], tank test, manual)\n'
+        self._lab_pressure = tk.Label(self._main_fr, text = 'Pressures for this line: \n(DNV a/b [loaded/ballast], tank test, manual)\n'
                                'Note that ch. 4.3.7 and 4.3.8 is accounted for.',font=self._text_size["Text 10"],
-                 bg = self._general_color)\
-            .place(relx= lc_x, rely= self.results_gui_start)
+                 bg = self._general_color)
+        self._lab_pressure.place(relx= 0.786458333, rely= self.results_gui_start)
 
         # --- optimize button ---
         tk.Label(self._main_fr,text='Optimize selected line/structure (right click line):',
@@ -1358,14 +1358,14 @@ class Application():
             else:
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
-            opt_button = tk.Button(self._main_fr,image=photo, command = self.on_optimize,
+            self._opt_button = tk.Button(self._main_fr,image=photo, command = self.on_optimize,
                                    bg = 'white', fg = self._button_fg_color)
-            opt_button.image = photo
-            opt_button.place(relx=lc_x, rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.098)
+            self._opt_button.image = photo
+            self._opt_button.place(relx=lc_x, rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.098)
         except TclError:
-            tk.Button(self._main_fr, text='Optimize', command=self.on_optimize_multiple,
-                      bg = self._button_bg_color, fg = self._button_fg_color)\
-                .place(relx=lc_x, rely=lc_y - 6 * lc_y_delta)
+            self._opt_button =Button(self._main_fr, text='Optimize', command=self.on_optimize_multiple,
+                      bg = self._button_bg_color, fg = self._button_fg_color)
+            self._opt_button.place(relx=lc_x, rely=lc_y - 6 * lc_y_delta)
         try:
             img_file_name = 'img_multi_opt.gif'
             if os.path.isfile('images/' + img_file_name):
@@ -1373,19 +1373,41 @@ class Application():
             else:
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
-            opt_button_mult = tk.Button(self._main_fr,image=photo, command = self.on_optimize_multiple,
+            self._opt_button_mult = tk.Button(self._main_fr,image=photo, command = self.on_optimize_multiple,
                                         bg = self._button_bg_color, fg = self._button_fg_color)
-            opt_button_mult.image = photo
-            opt_button_mult.place(relx=lc_x+delta_x*3.8, rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.065)
+            self._opt_button_mult.image = photo
+            self._opt_button_mult.place(relx=lc_x+delta_x*3.8, rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.065)
         except TclError:
-            tk.Button(self._main_fr, text='MultiOpt', command=self.on_optimize_multiple,
-                      bg = self._button_bg_color, fg = self._button_fg_color).place(relx=lc_x + delta_x*7,
-                                                                                               rely=lc_y - 6 * lc_y_delta)
+            self._opt_button_mult= tk.Button(self._main_fr, text='MultiOpt', command=self.on_optimize_multiple,
+                      bg = self._button_bg_color, fg = self._button_fg_color)
+            self._opt_button_mult.place(relx=lc_x + delta_x*7,rely=lc_y - 6 * lc_y_delta)
 
-        tk.Button(self._main_fr, text='SPAN', command=self.on_geometry_optimize,
-                 font = self._text_size['Text 14 bold'],
-                  bg = self._button_bg_color, fg = self._button_fg_color)\
-           .place(relx=lc_x + delta_x * 6.4,rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.04)
+        try:
+            img_file_name = 'cylinder_opt.png'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
+            self._opt_cylinder = tk.Button(self._main_fr,image=photo, command = self.on_optimize,
+                                        bg = 'white', fg = 'white')
+            self._opt_cylinder.image = photo
+        except TclError:
+            self._opt_cylinder = tk.Button(self._main_fr, text='Cylinder optimization',
+                                           command=self.on_optimize_multiple,
+                      bg = self._button_bg_color, fg = self._button_fg_color)
+
+
+        self._opt_button_span = tk.Button(self._main_fr, text='SPAN', command=self.on_geometry_optimize,
+                 font = self._text_size['Text 14 bold'], bg = self._button_bg_color, fg = self._button_fg_color)
+        self._opt_button_span.place(relx=lc_x + delta_x * 6.4,rely=lc_y - 6 * lc_y_delta, relheight = 0.04,
+                                    relwidth = 0.04)
+        self._optimization_buttons = {'panel': [self._opt_button, self._opt_button_mult, self._opt_button_span],
+                                   'panel place': [[lc_x, lc_y - 6 * lc_y_delta, 0.04, 0.098],
+                                                   [lc_x+delta_x*3.8, lc_y - 6 * lc_y_delta, 0.04, 0.065],
+                                                   [lc_x + delta_x * 6.4, lc_y - 6 * lc_y_delta, 0.04, 0.04]],
+                                   'cylinder': [self._opt_cylinder],
+                                   'cylinder place' : [[lc_x, lc_y - 6 * lc_y_delta, 0.04, 0.175]]}
 
         # Load information button
         tk.Button(self._main_fr, text='Load info', command=self.button_load_info_click,
@@ -1981,8 +2003,9 @@ class Application():
                 self._info_created.append(tk.Label(self._main_fr, text='No structure type selected',
                                                font=self._text_size["Text 10 bold"], bg = self._general_color))
                 self._info_created[0].place(relx=lc_x , y = lc_y + 3*lc_y_delta)
-
-            else:
+            elif self._line_to_struc[self._active_line][5] is not None:
+                pass
+            elif combination != 'Cylinder':
                 # creating new label, checkbox and entry. creating new list of created items.
                 # finding loads applied to lines
                 counter = 0
@@ -2058,29 +2081,30 @@ class Application():
                     self._manual_created[2].place(relx=lc_x + 6 * lc_x_delta, rely=lc_y)
                     self._manual_created[3].place(relx=lc_x + 7 * lc_x_delta, rely=lc_y)
 
-            #printing the results
+            if self._line_to_struc[self._active_line][5] is None:
+                results = self.calculate_all_load_combinations_for_line(self._active_line)
 
-            #try:
-            # TODO the reason manual does not show is because it others do noe exist in line_comb_dict. FIX.
-            results = self.calculate_all_load_combinations_for_line(self._active_line)
-
-            self._result_label_dnva.config(text = 'DNV a [Pa]: ' + str(results['dnva']),
-                                          font = self._text_size['Text 8'])
-            self._result_label_dnvb.config(text = 'DNV b [Pa]: ' + str(results['dnvb']),
-                                          font = self._text_size['Text 8'])
-            self._result_label_tanktest.config(text = 'TT [Pa]: ' + str(results['tanktest']),
+                self._result_label_dnva.config(text = 'DNV a [Pa]: ' + str(results['dnva']),
                                               font = self._text_size['Text 8'])
+                self._result_label_dnvb.config(text = 'DNV b [Pa]: ' + str(results['dnvb']),
+                                              font = self._text_size['Text 8'])
+                self._result_label_tanktest.config(text = 'TT [Pa]: ' + str(results['tanktest']),
+                                                  font = self._text_size['Text 8'])
 
-            self._result_label_manual.config(text = 'Manual [Pa]: ' + str(results['manual']))
+                self._result_label_manual.config(text = 'Manual [Pa]: ' + str(results['manual']))
 
-            lc_y = self.results_gui_start+0.018518519
-            self._result_label_dnva.place(relx = lc_x+0*lc_x_delta, rely = lc_y+lc_y_delta*1.5)
-            self._result_label_dnvb.place(relx=lc_x+4*lc_x_delta, rely=lc_y+lc_y_delta*1.5)
-            self._result_label_tanktest.place(relx=lc_x+0*lc_x_delta, rely=lc_y+2.4*lc_y_delta)
+                lc_y = self.results_gui_start+0.018518519
+                self._result_label_dnva.place(relx = lc_x+0*lc_x_delta, rely = lc_y+lc_y_delta*1.5)
+                self._result_label_dnvb.place(relx=lc_x+4*lc_x_delta, rely=lc_y+lc_y_delta*1.5)
+                self._result_label_tanktest.place(relx=lc_x+0*lc_x_delta, rely=lc_y+2.4*lc_y_delta)
 
-            self._result_label_manual.place(relx=lc_x+4*lc_x_delta, rely=lc_y+2.4*lc_y_delta)
-            # except KeyError:
-            #     pass
+                self._result_label_manual.place(relx=lc_x+4*lc_x_delta, rely=lc_y+2.4*lc_y_delta)
+                self._lab_pressure.place(relx=0.786458333, rely=self.results_gui_start)
+            else:
+                for item in [self._result_label_dnva,self._result_label_dnvb,
+                             self._result_label_tanktest,self._result_label_manual,self._lab_pressure ]:
+                    item.place_forget()
+                    self._combination_slider.set(4)
 
     def slider_used(self, event):
         '''
@@ -2307,8 +2331,6 @@ class Application():
                         slamming_pressure = slamming_dict['slamming']
                         slamming_red_fac_pl = slamming_dict['slamming plate reduction factor']
                         slamming_red_fac_stf = slamming_dict['slamming stf reduction factor']
-
-
                 except KeyError:
                     design_pressure = 0
 
@@ -2383,6 +2405,20 @@ class Application():
                 return_dict['colors'][current_line] = {'buckling': color_buckling, 'fatigue': color_fatigue,
                                                        'section': color_sec, 'shear': color_shear,
                                                        'thickness': color_thk}
+                '''
+                Cylinder calculations
+                    'cylinder' = {'Unstiffened shell': uf_unstf_shell,
+                               'Longitudinal stiffened shell': uf_long_stf,
+                               'Ring stiffened shell': uf_ring_stf,
+                               'Heavy ring frame': uf_ring_frame,
+                               'Column stability check': column_stability,
+                               'Stiffener check': stiffener_check}
+                '''
+                if self._line_to_struc[current_line][5] is not None:
+                    cylinder_results = self._line_to_struc[current_line][5].get_utilization_factors()
+                    return_dict['cylinder'] = cylinder_results
+
+
                 '''
                 PULS calculations
                 '''
@@ -2574,12 +2610,6 @@ class Application():
         sec_in_model['length'] = len(recorded_sections)
 
         if self._line_to_struc != {}:
-            for line in self._line_to_struc.keys():
-                if self._line_to_struc[line][5] is not None:
-                    if self._line_to_struc[line][5] is None:
-                        return_dict['cylinder'] = None
-                    else:
-                        return_dict['cylinder'] = self._line_to_struc[line][5].get_utilization_factors()
             sec_mod_map = np.arange(0,1.1,0.1)
             fat_map = np.arange(0,1.1,0.1)
             all_thicknesses = [round(objs[0].get_pl_thk(), 5) for objs in self._line_to_struc.values()]
@@ -3441,71 +3471,71 @@ class Application():
                                                      font=self._text_size["Text 7"])
                         count += 10
             elif self._line_is_active and self._line_to_struc[self._active_line][5] is not None:
-                self._prop_canvas.create_text([canvas_width*0.239726027, canvas_height*0.446096654],
-                                             text=self._line_to_struc[self._active_line][5],
-                                             font = self._text_size["Text 9"])
-                # setting the input field to active line properties
-                self.set_selected_variables(self._active_line)
+                self.draw_cylinder(canvas = self._prop_canvas,CylObj = self._line_to_struc[self._active_line][5],
+                                   height = 200, radius = 150, start_x_cyl = 500,start_y_cyl = 20)
 
-                height = 150
-                radius = 150
-                offset_oval = 30
-                start_x_cyl = 500
-                start_y_cyl = 20
-                coord1 = start_x_cyl, start_y_cyl, start_x_cyl + radius, offset_oval
-                coord2 = start_x_cyl, start_y_cyl + height, start_x_cyl + radius, offset_oval + height
-
-                arc_1 = self._prop_canvas.create_oval(coord1, width=5, fill='grey90')
-                arc_2 = self._prop_canvas.create_arc(coord2, extent=180, start=180, style=tk.ARC, width=3)
-
-                line1 = self._prop_canvas.create_line(coord1[0], coord1[1] + offset_oval / 4,
-                                      coord1[0], coord1[1] + height + offset_oval / 4,
-                                      width=3)
-                line2 = self._prop_canvas.create_line(coord1[0] + radius, coord1[1] + offset_oval / 4,
-                                      coord1[0] + radius, coord1[1] + height + offset_oval / 4,
-                                      width=3)
-                if self._line_to_struc[self._active_line][5].LongStfObj is not None:
-                    long_obj = self._line_to_struc[self._active_line][5].LongStfObj
-                    num_stf = int(1000 * self._line_to_struc[self._active_line][5].ShellObj.radius / long_obj.s)
-                    for line_num in range(1, num_stf, 1):
-                        angle = 180 - 180 / (num_stf) * line_num
-                        arc_x, arc_y = 1 * math.cos(math.radians(angle)), 0.5 * math.sin(math.radians(angle))
-                        arc_x = (arc_x + 1) / 2
-
-                        line1 = self._prop_canvas.create_line(coord1[0] + radius * arc_x,
-                                              coord1[1] + 2 * arc_y * offset_oval / 3,
-                                              coord1[0] + radius * arc_x,
-                                              coord1[1] + height + 2 * arc_y * offset_oval / 3, fill='blue')
-
-                if self._line_to_struc[self._active_line][5].RingStfObj is not None:
-                    num_ring_stiff = self._line_to_struc[self._active_line][5].ShellObj.length_of_shell/ \
-                                     self._line_to_struc[self._active_line][5].ShellObj._dist_between_rings
-                    num_ring_stiff = int(num_ring_stiff)
-
-                    for ring_stf in range(1, num_ring_stiff + 1, 1):
-                        coord3 = coord1[0], coord1[1] + (height / (num_ring_stiff + 1)) * ring_stf, \
-                                 start_x_cyl + radius, coord1[3] + (height / (num_ring_stiff + 1)) * ring_stf,
-                        arc_2 = self._prop_canvas.create_arc(coord3, extent=180, start=180, style=tk.ARC, width=2,
-                                                             fill='orange',
-                                             outline='orange')
-                if self._line_to_struc[self._active_line][5].RingFrameObj is not None:
-                    num_ring_girder = self._line_to_struc[self._active_line][5].ShellObj.length_of_shell/\
-                                      self._line_to_struc[self._active_line][5].length_between_girders
-                    num_ring_girder = int(num_ring_girder)
-                    for ring_girder in range(1, num_ring_girder + 1, 1):
-                        coord3 = coord1[0], coord1[1] + (height / (num_ring_girder + 1)) * ring_girder, \
-                                 start_x_cyl + radius, coord1[3] + (height / (num_ring_girder + 1)) * ring_girder,
-                        arc_2 = self._prop_canvas.create_arc(coord3, extent=180, start=180, style=tk.ARC, width=4,
-                                                             fill='grey', outline='grey')
-            #
-            #
-            # else:
-            #     self._prop_canvas.create_text([canvas_width*0.4, height*0.185873606],
-            #                                  text='No line is selected. Click on a line to show properies',
-            #                                  font=self._text_size['Text 9 bold'])
-                    
         else:
             pass
+
+    def draw_cylinder(self, canvas = None, CylObj: CylinderAndCurvedPlate = None, height = 150, radius = 150,
+                      start_x_cyl = 500,start_y_cyl = 20, acceptance_color = False):
+
+        canvas_width = canvas.winfo_width()
+        canvas_height = canvas.winfo_height()
+        canvas.create_text([canvas_width * 0.239726027, canvas_height * 0.446096654],
+                                      text=CylObj,
+                                      font=self._text_size["Text 9"])
+        # setting the input field to active line properties
+        #self.set_selected_variables(self._active_line)
+
+        offset_oval = 30
+
+        coord1 = start_x_cyl, start_y_cyl, start_x_cyl + radius, offset_oval
+        coord2 = start_x_cyl, start_y_cyl + height, start_x_cyl + radius, offset_oval + height
+
+        arc_1 = canvas.create_oval(coord1, width=5, fill='grey90')
+        arc_2 = canvas.create_arc(coord2, extent=180, start=180, style=tk.ARC, width=3)
+
+        line1 = canvas.create_line(coord1[0], coord1[1] + offset_oval / 4,
+                                              coord1[0], coord1[1] + height + offset_oval / 4,
+                                              width=3)
+        line2 = canvas.create_line(coord1[0] + radius, coord1[1] + offset_oval / 4,
+                                              coord1[0] + radius, coord1[1] + height + offset_oval / 4,
+                                              width=3)
+        if CylObj.LongStfObj is not None:
+            long_obj = CylObj.LongStfObj
+            num_stf = int(1000 * CylObj.ShellObj.radius / long_obj.s)
+            for line_num in range(1, num_stf, 1):
+                angle = 180 - 180 / (num_stf) * line_num
+                arc_x, arc_y = 1 * math.cos(math.radians(angle)), 0.5 * math.sin(math.radians(angle))
+                arc_x = (arc_x + 1) / 2
+
+                line1 = canvas.create_line(coord1[0] + radius * arc_x,
+                                                      coord1[1] + 2 * arc_y * offset_oval / 3,
+                                                      coord1[0] + radius * arc_x,
+                                                      coord1[1] + height + 2 * arc_y * offset_oval / 3,
+                                                      fill='blue')
+
+        if CylObj.RingStfObj is not None:
+            num_ring_stiff = CylObj.ShellObj.length_of_shell / \
+                             CylObj.ShellObj._dist_between_rings
+            num_ring_stiff = int(num_ring_stiff)
+
+            for ring_stf in range(1, num_ring_stiff + 1, 1):
+                coord3 = coord1[0], coord1[1] + (height / (num_ring_stiff + 1)) * ring_stf, \
+                         start_x_cyl + radius, coord1[3] + (height / (num_ring_stiff + 1)) * ring_stf,
+                arc_2 = canvas.create_arc(coord3, extent=180, start=180, style=tk.ARC, width=2,
+                                                     fill='orange',
+                                                     outline='orange')
+        if CylObj.RingFrameObj is not None:
+            num_ring_girder = CylObj.ShellObj.length_of_shell / \
+                              CylObj.length_between_girders
+            num_ring_girder = int(num_ring_girder)
+            for ring_girder in range(1, num_ring_girder + 1, 1):
+                coord3 = coord1[0], coord1[1] + (height / (num_ring_girder + 1)) * ring_girder, \
+                         start_x_cyl + radius, coord1[3] + (height / (num_ring_girder + 1)) * ring_girder,
+                arc_2 = canvas.create_arc(coord3, extent=180, start=180, style=tk.ARC, width=4,
+                                                     fill='grey', outline='grey')
 
     def draw_results(self, state = None):
         '''
@@ -3764,6 +3794,16 @@ class Application():
                                                     anchor='nw')
 
             elif self._active_line in self._line_to_struc and self._line_to_struc[self._active_line][5] is not None:
+
+                '''
+                Cylinder calculations
+                    'cylinder' = {'Unstiffened shell': uf_unstf_shell,
+                               'Longitudinal stiffened shell': uf_long_stf,
+                               'Ring stiffened shell': uf_ring_stf,
+                               'Heavy ring frame': uf_ring_frame,
+                               'Column stability check': column_stability,
+                               'Stiffener check': stiffener_check}
+                '''
                 cyl_obj = self._line_to_struc[self._active_line][5]
 
                 text = 'Results for cylinders and curved plates/panels:'
@@ -3777,34 +3817,43 @@ class Application():
                             text_value = 'N/A' if value is None else 'OK' if value else 'Not ok'
                         else:
                             text_value = 'N/A' if value is None else str(round(value, 2))
+
+                        if value is None:
+                            uf_col = 'grey'
+                        else:
+                            uf_col = 'red' if any([value > 1, value == False]) else 'green'
+
                         self._result_canvas.create_text([x*1, y*y_location],
                                                        text=text_key,font=self._text_size['Text 10 bold'],anchor='nw',
                                                         fill='black')
                         self._result_canvas.create_text([dx*20, y*y_location],
                                                        text=text_value,font=self._text_size['Text 10 bold'],anchor='nw',
-                                                        fill='blue')
+                                                        fill=uf_col)
                     else:
                         if value is not None:
                             y_location +=1
                             self._result_canvas.create_text([x, y * y_location],
-                                                            text='Stiffener requirement checks:', font=self._text_size['Text 10 bold'],
+                                                            text='Stiffener requirement checks:', 
+                                                            font=self._text_size['Text 10 bold'],
                                                             anchor='nw',
-                                                            fill='blue')
+                                                            fill='black')
                             y_location += 1
                             idx_y = 0
                             for stf_type, chk_bool in value.items():
                                 stf_text = stf_type
-                                chk_text = 'OK' if chk_bool else 'Not OK'
+
+                                chk_text = 'OK' if chk_bool == True else 'Not OK' if chk_bool == False else 'N/A'
 
                                 self._result_canvas.create_text([10*dx*idx_y, y * y_location],
                                                                 text=stf_text, font=self._text_size['Text 10 bold'],
                                                                 anchor='nw',
-                                                                fill='blue')
+                                                                fill='black' if not value else 'green')
 
                                 self._result_canvas.create_text([10*dx*idx_y, y * (y_location+1)],
                                                                 text=chk_text, font=self._text_size['Text 10 bold'],
                                                                 anchor='nw',
-                                                                fill='blue')
+                                                                fill='green' if chk_bool == True else 'red' if
+                                                                chk_bool == False else 'grey')
                                 idx_y += 1
 
                     y_location += 1
@@ -5194,15 +5243,33 @@ class Application():
                 pass
 
         if self._active_line in self._line_to_struc.keys():
+
             if self._line_to_struc[self._active_line][5] is not None:
                 self._new_calculation_domain.set(CylinderAndCurvedPlate
                                                  .geomeries[self._line_to_struc[self._active_line][5].geometry])
                 self._new_shell_exclude_ring_stf.set(self._line_to_struc[self._active_line][5]._ring_stiffener_excluded)
                 self._new_shell_exclude_ring_frame.set(self._line_to_struc[self._active_line][5]._ring_frame_excluded)
                 self.calculation_domain_selected()
+                # Setting the correct optmization buttons
+                for btn, placement in zip(self._optimization_buttons['panel'],
+                                          self._optimization_buttons['panel place']):
+                    btn.place_forget()
+                for btn, placement in zip(self._optimization_buttons['cylinder'],
+                                          self._optimization_buttons['cylinder place']):
+
+                    btn.place(relx = placement[0], rely= placement[1],relheight = placement[2], relwidth = placement[3] )
+
             else:
                 self._new_calculation_domain.set('Stiffened panel, flat')
                 self.calculation_domain_selected()
+
+                for btn, placement in zip(self._optimization_buttons['cylinder'],
+                                          self._optimization_buttons['cylinder place']):
+                    btn.place_forget()
+                for btn, placement in zip(self._optimization_buttons['panel'],
+                                          self._optimization_buttons['panel place']):
+                    btn.place(relx = placement[0], rely= placement[1],relheight = placement[2], relwidth = placement[3] )
+
 
     def button_1_click_comp_box(self,event):
         '''
