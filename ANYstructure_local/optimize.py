@@ -48,7 +48,7 @@ def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lat
     else:
         fat_dict = None if fatigue_obj is None else fatigue_obj.get_fatigue_properties()
 
-    if use_weight_filter:
+    if use_weight_filter and not cylinder:
 
         if is_geometric or algorithm == 'pso':
             init_filter_weight = float('inf')
@@ -66,9 +66,13 @@ def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lat
                                                     predefined_stiffener_iter = predefined_stiffener_iter,
                                                     slamming_press=slamming_press, fdwn = fdwn, fup = fup,
                                                     ml_algo = ml_algo)
+    else:
+        # TODO add weight filter for cylinder.
+        init_filter_weight = float('inf')
     if cylinder:
         to_return = any_smart_loop_cylinder(min_var=min_var, max_var=max_var, deltas=deltas,
                                             initial_structure_obj=initial_structure_obj)
+
     elif algorithm == 'anysmart' and not is_geometric:
         to_return = any_smart_loop(min_var, max_var, deltas, initial_structure_obj, lateral_pressure,
                                    init_filter_weight, side=side, const_chk=const_chk, fat_dict=fat_dict,
@@ -212,6 +216,7 @@ def any_smart_loop_cylinder(min_var,max_var,deltas,initial_structure_obj,lateral
     combs = list()
 
     # Creating the individual combinations for Shell, LongStf, RingStf and RingFrame
+    print(min_var)
     for idx, str_type in enumerate(range(len(min_var))):
 
         if predefiened_stiffener_iter is None:

@@ -8,6 +8,7 @@ import time, os, datetime
 from tkinter import messagebox
 import ANYstructure_local.example_data as test
 import ANYstructure_local.helper as hlp
+import ANYstructure_local.calc_structure as calc
 from tkinter.filedialog import askopenfilenames
 from multiprocessing import cpu_count
 
@@ -29,6 +30,12 @@ class CreateOptimizeCylinderWindow():
             image_dir = os.path.dirname(__file__)+'\\images\\'
             self._PULS_object = None
             self._puls_acceptance = 0.87
+
+            self._initial_cylinder_obj = calc.CylinderAndCurvedPlate(main_dict=test.shell_main_dict,
+                                                                     shell=calc.Shell(test.shell_dict),
+                                            long_stf=calc.Structure(test.obj_dict_cyl_long2),
+                                            ring_stf=calc.Structure(test.obj_dict_cyl_ring2),
+                                            ring_frame=calc.Structure(test.obj_dict_cyl_heavy_ring2))
 
             self._ML_buckling = dict()  # Buckling machine learning algorithm
             for name, file_base in zip(['cl SP buc int predictor', 'cl SP buc int scaler',
@@ -81,6 +88,7 @@ class CreateOptimizeCylinderWindow():
             self.app = app
             self._initial_structure_obj = app._line_to_struc[app._active_line][0]
             self._initial_calc_obj = app._line_to_struc[app._active_line][1]
+            self._initial_cylinder_obj = app._line_to_struc[app._active_line][5]
             self._fatigue_object = app._line_to_struc[app._active_line][2]
             try:
                 self._fatigue_pressure = app.get_fatigue_pressures(app._active_line,
@@ -130,6 +138,28 @@ class CreateOptimizeCylinderWindow():
         '''
         ent_w = 10
 
+        default_shell_upper_bounds = np.array([0.03, 3, 5, 5, 10, None, None, None])
+        default_shell_deltas = np.array([0.005, 0.5, 1, 0.1, 1, None, None, None])
+        default_shell_lower_bounds = np.array([0.02, 2.5, 5, 5, 10, None, None, None])
+
+        default_long_upper_bounds = np.array([0.8, None, 0.5, 0.02, 0.2, 0.03, None, None])
+        default_long_deltas = np.array([0.1, None, 0.1, 0.01, 0.1, 0.01, None, None])
+        default_long_lower_bounds = np.array([0.7, None, 0.3, 0.01, 0.1, 0.01, None, None])
+
+        default_ring_stf_upper_bounds = np.array([None, None, 0.5, 0.018, 0.2, 0.03, None, None])
+        default_ring_stf_deltas = np.array([None, None, 0.1, 0.004, 0.1, 0.01, None, None])
+        default_ring_stf_lower_bounds = np.array([None, None, 0.3, 0.010, 0.1, 0.010, None, None])
+
+        default_ring_frame_upper_bounds = np.array([None, None, 0.9, 0.04, 0.3, 0.04, None, None])
+        default_ring_frame_deltas = np.array([None, None, 0.2, 0.01, 0.1, 0.01, None, None])
+        default_ring_frame_lower_bounds = np.array([None, None, 0.7, 0.02, 0.2, 0.02, None, None])
+        
+        self._default_data =  [[default_shell_upper_bounds,default_shell_deltas, default_shell_lower_bounds],
+                              [default_long_upper_bounds, default_long_deltas, default_long_lower_bounds],
+                              [default_ring_stf_upper_bounds, default_ring_stf_deltas, default_ring_stf_lower_bounds],
+                              [default_ring_frame_upper_bounds, default_ring_frame_deltas,
+                               default_ring_frame_lower_bounds]]
+
         shell_example = [0.03, 3, 5, 5, 10, None, None, None]
         long_example = ring_stf_example = ring_frame_example =  [0.8, None, 0.5, 0.02, 0.2, 0.03, None, None]
 
@@ -164,6 +194,8 @@ class CreateOptimizeCylinderWindow():
                     self._new_geo_data[idx_1][idx_2][idx_3].trace('w', self.update_running_time)
                     these_ents.append(tk.Entry(self._frame,
                                                textvariable = self._new_geo_data[idx_1][idx_2][idx_3], width = ent_w))
+                    self._new_geo_data[idx_1][idx_2][idx_3].set(0 if self._default_data[idx_1][idx_2][idx_3] is None
+                                                                else self._default_data[idx_1][idx_2][idx_3])
                 all_geos.append(these_ents)
             self._new_entries.append(all_geos)
         
@@ -404,7 +436,7 @@ class CreateOptimizeCylinderWindow():
         # self.run_results = tk.Button(self._frame,text='show calculated', command=self.plot_results, bg='white',
         #                             font='Verdana 10',fg='black')
         # self.run_results.place(x=start_x+dx*8, y=start_y+dy*1.5)
-        self._opt_actual_running_time.place(x=start_x+dx*9.5, y=start_y-dy)
+        self._opt_actual_running_time.place(x=start_x+dx*11, y=start_y)
 
         self.close_and_save =tk.Button(self._frame,text='Return and replace initial structure with optimized',
                                        command=self.save_and_close,bg='green',font='Verdana 10',fg='yellow')
@@ -413,30 +445,6 @@ class CreateOptimizeCylinderWindow():
         tk.Button(self._frame, text='Open predefined stiffeners example',
                   command=self.open_example_file, bg='white', font='Verdana 10')\
             .place(x=start_x+dx*10,y=10)
-
-        # Selection of constraints
-        self._new_check_sec_mod = tk.BooleanVar()
-        self._new_check_min_pl_thk = tk.BooleanVar()
-        self._new_check_shear_area = tk.BooleanVar()
-        self._new_check_buckling = tk.BooleanVar()
-        self._new_check_buckling_puls = tk.BooleanVar()
-        self._new_check_buckling_ml_cl = tk.BooleanVar()
-        self._new_check_fatigue = tk.BooleanVar()
-        self._new_check_slamming = tk.BooleanVar()
-        self._new_check_local_buckling = tk.BooleanVar()
-        self._new_use_weight_filter = tk.BooleanVar()
-        self._new_check_sec_mod.set(True)
-        self._new_check_min_pl_thk.set(True)
-        self._new_check_shear_area.set(True)
-        self._new_check_buckling.set(True)
-        self._new_check_fatigue.set(True)
-        self._new_check_slamming.set(False)
-        self._new_check_local_buckling.set(True)
-        self._new_use_weight_filter.set(True)
-        self._new_check_buckling_puls.set(False)
-        self._new_check_buckling_ml_cl.set(False)
-        self._new_check_buckling_puls.trace('w', self.update_running_time)
-        self._new_check_buckling_ml_cl.trace('w', self.update_running_time)
 
 
         # Stress scaling
@@ -545,34 +553,11 @@ class CreateOptimizeCylinderWindow():
         self._opt_actual_running_time.update()
         t_start = time.time()
         self._opt_results, self._opt_runned = (), False
-        if self._PULS_object is not None:
-            puls_sheet_location = self._PULS_object.puls_sheet_location
-            puls_acceptance = self._puls_acceptance
-            if self._new_check_buckling_puls.get() == True:
-                if puls_sheet_location is None or not os.path.isfile(
-                        puls_sheet_location):
-                    tk.messagebox.showerror('No PULS excel sheet located', 'Set location of PULS excel sheet.\n'
-                                                                           'Note that PULS excel may require 32 bit '
-                                                                           'office.\n\n'
-                                                                           'A sheet may be provided but does not exist'
-                                                                           ' in :\n'
-                                            + self._PULS_results.puls_sheet_location +
-                                            '\n\n Return to main window an run one or more lines in PULS.')
-        else:
-            puls_sheet_location = None
-            puls_acceptance =0.87
-
 
         self.pso_parameters = (self._new_swarm_size.get(),self._new_omega.get(),self._new_phip.get(),
                                self._new_phig.get(),
                                self._new_maxiter.get(),self._new_minstep.get(),self._new_minfunc.get())
 
-        contraints = (self._new_check_sec_mod.get(),self._new_check_min_pl_thk.get(),
-                      self._new_check_shear_area.get(), self._new_check_buckling.get(),
-                      self._new_check_fatigue.get(), self._new_check_slamming.get(),
-                      self._new_check_local_buckling.get(), self._new_check_buckling_puls.get(),
-                      self._new_check_buckling_ml_cl.get(), False)
-        self._initial_structure_obj.set_span(self._new_span.get())
 
         if self._fatigue_pressure is not None:
 
@@ -583,22 +568,20 @@ class CreateOptimizeCylinderWindow():
         else:
             fat_press = None
 
-        self._opt_results= op.run_optmizataion(self._initial_structure_obj,self.get_lower_bounds(),
-                                               self.get_upper_bounds(),self._new_design_pressure.get(),
-                                               self.get_deltas(),algorithm=self._new_algorithm.get(),
+        self._opt_results= op.run_optmizataion(initial_structure_obj= self._initial_cylinder_obj,
+                                               min_var= self.get_lower_bounds(),
+                                               max_var=self.get_upper_bounds(),lateral_pressure=
+                                               self._new_design_pressure.get(),
+                                               deltas= self.get_deltas(),algorithm=self._new_algorithm.get(),
                                                trials=self._new_algorithm_random_trials.get(),
-                                               side=self._new_pressure_side.get(),
-                                               const_chk=contraints,pso_options = self.pso_parameters,
                                                fatigue_obj=self._fatigue_object,
                                                fat_press_ext_int=fat_press,
                                                slamming_press = self._new_slamming_pressure.get(),
                                                predefined_stiffener_iter=self._predefined_stiffener_iter,
                                                processes=self._new_processes.get(),
-                                               use_weight_filter = False if self._new_check_buckling_puls.get()
-                                               else self._new_use_weight_filter.get(),
-                                               puls_sheet = puls_sheet_location, puls_acceptance = puls_acceptance,
+                                               use_weight_filter = True,
                                                fdwn = self._new_fdwn.get(), fup = self._new_fdwn.get(),
-                                               ml_algo= self._ML_buckling)
+                                               cylinder = True)
 
         if self._opt_results is not None and self._opt_results[0] is not None:
             self._opt_actual_running_time.config(text='Actual running time: \n'
@@ -613,12 +596,6 @@ class CreateOptimizeCylinderWindow():
                                           '+'+str(round(self._opt_results[0].get_fl_w()*1000,10))+'x'
                                           +str(round(self._opt_results[0].get_fl_thk()*1000,10)))
 
-            self._new_opt_spacing.set(round(self._opt_results[0].get_s(),5))
-            self._new_opt_pl_thk.set(round(self._opt_results[0].get_plate_thk(),5))
-            self._new_opt_web_h.set(round(self._opt_results[0].get_web_h(),5))
-            self._new_opt_web_thk.set(round(self._opt_results[0].get_web_thk(),5))
-            self._new_opt_fl_w.set(round(self._opt_results[0].get_fl_w(),5))
-            self._new_opt_fl_thk.set(round(self._opt_results[0].get_fl_thk(),5))
             self.draw_properties()
         else:
             messagebox.showinfo(title='Nothing found', message='No better alternatives found. Modify input.\n'
@@ -642,7 +619,13 @@ class CreateOptimizeCylinderWindow():
         Return a numpy array of the deltas.
         :return:
         '''
-        return None
+        all_deltas = list()
+        for idx_1, geo_i in enumerate(self._new_geo_data):
+            these_deltas = list()
+            for idx_3, val in enumerate(geo_i[1]):
+                these_deltas.append(val.get())
+            all_deltas.append(these_deltas)
+        return all_deltas
 
     def update_running_time(self,*args):
         '''
@@ -657,28 +640,36 @@ class CreateOptimizeCylinderWindow():
         Return an numpy array of upper bounds.
         :return: 
         '''
-        return np.array([self._new_spacing_upper.get()/1000,self._new_pl_thk_upper.get()/1000,
-                         self._new_web_h_upper.get()/1000,self._new_web_thk_upper.get()/1000,
-                         self._new_fl_w_upper.get()/1000,self._new_fl_thk_upper.get()/1000,
-                         self._new_span.get(),self._new_width_lg.get()])
+        all_upper = list()
+        for idx_1, geo_i in enumerate(self._new_geo_data):
+            these_upper = list()
+            for idx_3, val in enumerate(geo_i[0]):
+                these_upper.append(val.get())
+            all_upper.append(these_upper)
+        return all_upper
+
         
     def get_lower_bounds(self):
         '''
         Return an numpy array of lower bounds.
         :return: 
         '''
-        return np.array([self._new_spacing_lower.get()/1000,self._new_pl_thk_lower.get()/1000,
-                         self._new_web_h_lower.get()/1000,self._new_web_thk_lower.get()/1000,
-                         self._new_fl_w_lower.get()/1000,self._new_fl_thk_lower.get()/1000,
-                         self._new_span.get(), self._new_width_lg.get()])
+        all_lower = list()
+        for idx_1, geo_i in enumerate(self._new_geo_data):
+            these_lower = list()
+            for idx_3, val in enumerate(geo_i[2]):
+                these_lower.append(val.get())
+            all_lower.append(these_lower)
+        return all_lower
 
     def get_sigmas(self):
         '''
         Returns the stressess.
         :return:
         '''
-        return np.array([self._new_trans_stress_high.get(),self._new_trans_stress_low.get(),
-                         self._new_axial_stress.get(),self._new_shear_stress.get()])
+        return np.array([self._new_sasd.get(),self._new_smsd.get(),
+                         self._new_tTsd.get(),self._new_tQsd.get(),
+                         self._new_design_pressure.get(),self._new_shsd.get()])
 
     def checkered(self,line_distance):
         # vertical lines at an interval of "line_distance" pixel
@@ -802,20 +793,13 @@ class CreateOptimizeCylinderWindow():
         if self._toggle_btn.config('relief')[-1] == 'sunken':
             self._toggle_btn.config(relief="raised")
             self._toggle_btn.config(bg = 'salmon')
-            self._ent_spacing_upper.config(bg = 'white')
-            self._ent_spacing_lower.config(bg = 'white')
-            self._ent_delta_spacing.config(bg = 'white')
+
             predefined_stiffener_iter  = []
         else:
             self._toggle_btn.config(relief="sunken")
             self._toggle_btn.config(bg = 'salmon')
             self._toggle_btn.config(bg='lightgreen')
-            self._ent_spacing_upper.config(bg = 'lightgreen')
-            self._ent_spacing_lower.config(bg = 'lightgreen')
-            self._ent_delta_spacing.config(bg = 'lightgreen')
-            self._ent_pl_thk_upper.config(bg = 'lightgreen')
-            self._ent_pl_thk_lower.config(bg = 'lightgreen')
-            self._ent_delta_pl_thk.config(bg = 'lightgreen')
+
 
             open_files = askopenfilenames(parent=self._frame, title='Choose files to open')
             predefined_stiffener_iter = hlp.helper_read_section_file(files=list(open_files),
@@ -826,12 +810,7 @@ class CreateOptimizeCylinderWindow():
         if predefined_stiffener_iter == []:
             self._toggle_btn.config(relief="raised")
             self._toggle_btn.config(bg = 'salmon')
-            self._ent_spacing_upper.config(bg = 'white')
-            self._ent_spacing_lower.config(bg = 'white')
-            self._ent_delta_spacing.config(bg = 'white')
-            self._ent_pl_thk_upper.config(bg = 'white')
-            self._ent_pl_thk_lower.config(bg = 'white')
-            self._ent_delta_pl_thk.config(bg = 'white')
+
             self._predefined_stiffener_iter  = None
         else:
             self._predefined_stiffener_iter = predefined_stiffener_iter
