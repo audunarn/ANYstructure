@@ -1587,15 +1587,24 @@ class CylinderAndCurvedPlate():
     def _ring_frame_excluded(self, val):
         self.__ring_frame_excluded = val
 
-    def get_utilization_factors(self, optimizing = False):
+    def get_utilization_factors(self, optimizing = False, empty_result_dict = False):
         '''
         If optimizing running time must be reduced.
         '''
         # Local buckling of stiffeners
 
+        results = {'Unstiffened shell': None,
+                   'Longitudinal stiffened shell': None,
+                   'Ring stiffened shell': None,
+                   'Heavy ring frame': None,
+                   'Column stability check': None,
+                   'Stiffener check': None,
+                   'Weight': None}
 
-        unstiffend_shell, uf_long_stf, uf_ring_stf, uf_ring_frame, data_shell_buckling, stiffener_check,\
-        column_stability, column_buckling_data = None,None, None, None, None, None, None, None
+        if empty_result_dict:
+            return results
+
+        unstiffend_shell, column_buckling_data, data_shell_buckling = None, None, None
         # UF for unstiffened shell
         unstiffend_shell = self.unstiffened_shell()
 
@@ -1603,12 +1612,14 @@ class CylinderAndCurvedPlate():
 
         if any([self._geometry in [1, 5], s > self._Shell.dist_between_rings*1000]):
             uf_unstf_shell = unstiffend_shell['UF unstiffened circular cylinder']
+            results['Unstiffened shell'] = uf_unstf_shell
         else:
             uf_unstf_shell = unstiffend_shell['UF unstiffened curved panel']
+            results['Unstiffened shell'] = uf_unstf_shell
 
         if optimizing:
             if uf_unstf_shell > 1:
-                return False, 'UF unstiffened', None
+                return False, 'UF unstiffened', results
 
         # UF for longitudinal stiffened shell
 
@@ -1619,18 +1630,21 @@ class CylinderAndCurvedPlate():
                                                           shell_bukcling_data=data_shell_buckling)
                 long_stf_shell = self.longitudinally_stiffened_shell(column_buckling_data=column_buckling_data,
                                                                      unstiffened_shell=unstiffend_shell)
-                stiffener_check = column_buckling_data['stiffener check']
-                column_stability = column_buckling_data['Column stability check']
+
+                results['Column stability check'] = column_buckling_data['Column stability check']
+                results['Stiffener check'] = column_buckling_data['stiffener check']
                 if self._geometry in [3,4,7,8] and long_stf_shell['fksd'] > 0:
-                    uf_long_stf = long_stf_shell['sjsd_used']/long_stf_shell['fksd'] if self._geometry in [3,4,7,8]\
-                        else 0
+                    results['Longitudinal stiffened shell'] = long_stf_shell['sjsd_used']/long_stf_shell['fksd']\
+                        if self._geometry in [3,4,7,8] else 0
+
                 if optimizing:
-                    if not column_stability:
-                        return False, 'Column stability', None
-                    elif uf_long_stf > 1:
-                        return False, 'UF longitudinal stiffeners', None
-                    elif False in stiffener_check.values():
-                        return False, 'Stiffener check', None
+                    if not results['Column stability check']:
+                        return False, 'Column stability', results
+                    elif False in results['Stiffener check'].values():
+                        return False, 'Stiffener check', results
+                    elif results['Longitudinal stiffened shell'] > 1:
+                        return False, 'UF longitudinal stiffeners', results
+
 
         if self._geometry in [5,6,7,8]:
             # UF for panel ring buckling
@@ -1643,18 +1657,17 @@ class CylinderAndCurvedPlate():
                                                shell_bukcling_data=data_shell_buckling)
                 ring_stf_shell = self.ring_stiffened_shell(data_shell_buckling=data_shell_buckling,
                                                            column_buckling_data=column_buckling_data)
-                stiffener_check = column_buckling_data['stiffener check']
-                column_stability = column_buckling_data['Column stability check']
-                if self._geometry > 4:
-                    uf_ring_stf = ring_stf_shell[0]
+                results['Column stability check'] = column_buckling_data['Column stability check']
+                results['Stiffener check'] = column_buckling_data['stiffener check']
+                results['Ring stiffened shell'] = ring_stf_shell[0]
 
                 if optimizing:
-                    if not column_stability:
-                        return False, 'Column stability', None
-                    elif uf_ring_stf > 1:
-                        return False, 'UF ring stiffeners', None
-                    elif False in stiffener_check.values():
-                        return False, 'Stiffener check', None
+                    if not results['Column stability check']:
+                        return False, 'Column stability', results
+                    elif False in results['Stiffener check'].values():
+                        return False, 'Stiffener check', results
+                    elif results['Ring stiffened shell'] > 1:
+                        return False, 'UF ring stiffeners', results
 
         # UF for ring frame
         if self._geometry in [5, 6, 7, 8]:
@@ -1667,31 +1680,25 @@ class CylinderAndCurvedPlate():
                 ring_stf_shell = ring_stf_shell if ring_stf_shell is not None else\
                     self.ring_stiffened_shell(data_shell_buckling=data_shell_buckling,
                                               column_buckling_data=column_buckling_data)
-                stiffener_check = column_buckling_data['stiffener check']
-                column_stability = column_buckling_data['Column stability check']
-                if self._geometry > 4:
-                    uf_ring_frame = ring_stf_shell[1]
-                if optimizing:
-                    if not column_stability:
-                        return False, 'Column stability', None, None
-                    elif uf_ring_frame > 1:
-                        return False, 'UF ring frame'
-                    elif False in stiffener_check.values():
-                        return False, 'Stiffener check', None
+                results['Column stability check'] = column_buckling_data['Column stability check']
+                results['Stiffener check'] = column_buckling_data['stiffener check']
+                results['Heavy ring frame'] = ring_stf_shell[1]
 
-        results = {'Unstiffened shell': uf_unstf_shell,
-                   'Longitudinal stiffened shell': uf_long_stf,
-                   'Ring stiffened shell': uf_ring_stf,
-                   'Heavy ring frame': uf_ring_frame,
-                   'Column stability check': column_stability,
-                   'Stiffener check': stiffener_check}
+                if optimizing:
+                    if not results['Column stability check']:
+                        return False, 'Column stability', results
+                    elif False in results['Stiffener check'].values():
+                        return False, 'Stiffener check', results
+                    elif results['Heavy ring frame'] > 1:
+                        return False, 'UF ring frame', results
+
         if optimizing:
             return True, 'Check OK', results
 
         # print('Results for geometry', self._geometry)
         # print('UF',uf_unstf_shell, uf_long_stf, uf_ring_stf, uf_ring_frame)
         # print('Stiffeners', stiffener_check)
-        return  results
+        return results
 
     def set_main_properties(self, main_dict):
         self._sasd = main_dict['sasd']
@@ -2425,6 +2432,7 @@ class CylinderAndCurvedPlate():
         h = t+hw+tf
         As = hw*tw + b*tf  # checked
         if As != 0:
+
             num_stf = math.floor(2*math.pi*r/s)
             e= (hw*tw*(hw/2) + b*tf*(hw+tf/2)) / (hw*tw+b*tw)
             Istf = h*math.pow(tw,3)/12 + tf*math.pow(b, 3)/12
@@ -2702,8 +2710,8 @@ class CylinderAndCurvedPlate():
         chk4 = [np.nan if np.isnan(val) else chk4[idx] for idx, val in enumerate(ef_div_tw_req)]
 
         provide_data['stiffener check'] = {'longitudinal':all([chk1[0], chk2[0]]),
-                                           'ring stiffener': all([chk1[1],chk2[1],chk3[0],chk4[0]]),
-                                           'ring frame': all([chk1[2],chk2[2],chk3[1],chk4[1]])}
+                                           'ring stiffener': None if self._RingStf is None else all([chk1[1],chk2[1],chk3[0],chk4[0]]),
+                                           'ring frame': None if self._RingStf is None else all([chk1[2],chk2[2],chk3[1],chk4[1]])}
         provide_data['Column stability check'] = stab_chk
 
         return provide_data
@@ -3371,6 +3379,6 @@ if __name__ == '__main__':
     #Structure(ex.obj_dict_cyl_heavy_ring)
     my_cyl = CylinderAndCurvedPlate(main_dict = ex.shell_main_dict2, shell= Shell(ex.shell_dict),
                                     long_stf= Structure(ex.obj_dict_cyl_long),
-                                    ring_stf = Structure(ex.obj_dict_cyl_ring2),
-                                    ring_frame= Structure(ex.obj_dict_cyl_heavy_ring2))
+                                    ring_stf = None,# Structure(ex.obj_dict_cyl_ring2),
+                                    ring_frame= None)#Structure(ex.obj_dict_cyl_heavy_ring2))
     print(my_cyl.get_utilization_factors())
