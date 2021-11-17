@@ -3,6 +3,13 @@ import tkinter as tk
 from _tkinter import TclError
 import ANYstructure_local.example_data as test
 import os
+import numpy as np
+
+from matplotlib.backends.backend_tkagg import (
+    FigureCanvasTkAgg, NavigationToolbar2Tk)
+# Implement the default Matplotlib key bindings.
+from matplotlib.backend_bases import key_press_handler
+from matplotlib.figure import Figure
 
 class CreateStructureWindow():
     '''
@@ -32,11 +39,33 @@ class CreateStructureWindow():
         self._opt_resutls = ()
         self._draw_scale = 0.5
         self._canvas_dim = (500, 450)
+        ent_w = 10
+        start_x, start_y, dx, dy = 20, 70, 60, 33
         self._canvas_struc = tk.Canvas(self._frame, width=self._canvas_dim[0], height=self._canvas_dim[1],
                                        background='azure', relief='groove', borderwidth=2)
         self.structure_types = ['T','L', 'L-bulb','FB']
         self._canvas_struc.place(x=10, y=300)
         tk.Label(self._frame, text='-- Define structure properties here --', font='Verdana 15 bold').place(x=10, y=10)
+        #
+        # ### Adding matplotlib
+        # fig = Figure(figsize=(4, 4), dpi=100)
+        # t = np.arange(0, 3, .01)
+        # fig.add_subplot(111).plot(t, 2 * np.sin(2 * np.pi * t))
+        #
+        # canvas = FigureCanvasTkAgg(fig, master=master)  # A tk.DrawingArea.
+        # canvas.draw()
+        # canvas.get_tk_widget().place(x=start_x+17*dx, y=start_y+dy  )
+        #
+        # toolbar = NavigationToolbar2Tk(canvas, master)
+        # toolbar.update()
+        # canvas.get_tk_widget().place(x=start_x+17*dx, y=start_y+dy  )
+        #
+        # def on_key_press(event):
+        #     print("you pressed {}".format(event.key))
+        #     key_press_handler(event, canvas, toolbar)
+        #
+        # canvas.mpl_connect("key_press_event", on_key_press)
+
         
         self._new_spacing = tk.DoubleVar()
         self._new_pl_thk = tk.DoubleVar()
@@ -53,7 +82,7 @@ class CreateStructureWindow():
                                                *['',] if self._section_list == [] else self._section_list)
         self._ent_structure_options = tk.OptionMenu(self._frame,self._new_stiffener_type,
                                                    command=self.option_choose,*self.structure_types)
-        ent_w = 10
+
         self._ent_spacing = tk.Entry(self._frame, textvariable=self._new_spacing, width=ent_w)
         self._ent_pl_thk = tk.Entry(self._frame, textvariable=self._new_pl_thk, width=ent_w)
         self._ent_web_h = tk.Entry(self._frame, textvariable=self._new_web_h, width=ent_w)
@@ -62,12 +91,13 @@ class CreateStructureWindow():
         self._ent_fl_thk = tk.Entry(self._frame, textvariable=self._new_fl_thk, width=ent_w)
         self._ent_girder_length = tk.Entry(self._frame, textvariable=self._new_girder_length, width=ent_w)
 
-        start_x,start_y,dx,dy = 20,70,60,33
+
 
         tk.Label(self._frame, text='Stiffener type:', font='Verdana 9 bold').place(x=start_x, y=start_y )
-        tk.Label(self._frame, text='Girder length (Lg)', font='Verdana 9 bold').place(x=start_x+11*dx,
+        tk.Label(self._frame, text='Girder length (Lg)', font='Verdana 9 bold').place(x=start_x+9*dx,
                                                                                      y=start_y + 16 * dy)
-        tk.Label(self._frame, text='[m]', font='Verdana 9 bold').place(x=start_x + 17 * dx,y=start_y + 16 * dy)
+        tk.Label(self._frame, text='[m]', font='Verdana 9 bold').place(x=start_x + 14 * dx,y=start_y + 16 * dy)
+        self._ent_girder_length.place(x=start_x + 12 * dx, y=start_y + 16 * dy)
 
         tk.Label(self._frame, text='[mm]', font='Verdana 9 bold').place(x=start_x+3*dx, y=start_y+dy  )
         tk.Label(self._frame, text='[mm]', font='Verdana 9 bold').place(x=start_x+3*dx, y=start_y + 2*dy)
@@ -125,7 +155,7 @@ class CreateStructureWindow():
             tk.Label(self._frame, text='Flange thk.', font='Verdana 9').place(x=start_x, y=start_y + 6 * dy)
             self._ent_fl_thk.place(x=start_x + dx * 2, y=start_y+6*dy)
 
-        self._ent_girder_length.place(x=start_x+15*dx, y=start_y + 16 * dy)
+
 
         self._new_spacing.trace('w',self.draw_trace)
         self._new_pl_thk.trace('w',self.draw_trace)
