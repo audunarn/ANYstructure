@@ -481,14 +481,16 @@ def plot_weights(time_stamp = None, cog = None, structure = None, weight = None)
     plt.tight_layout()
     plt.show()
 
-def helper_cylinder_stress_to_force_to_stress(stresses = None, forces = None, geometry = None, shell_t = 0, shell_radius = 0, shell_spacing = 0, 
-                                              hw = 0, tw = 0, b = 0, tf = 0, CylinderAndCurvedPlate = None):
+def helper_cylinder_stress_to_force_to_stress(stresses = None, forces = None, geometry = None, shell_t = 0,
+                                              shell_radius = 0, shell_spacing = 0,
+                                              hw = 0, tw = 0, b = 0, tf = 0, CylinderAndCurvedPlate = None,
+                                              conical = False, psd = 0, cone_r1 = 0, cone_r2 = 0, cone_alpha = 0,
+                                              shell_lenght_l = 0):
     
     
-    A = 0 if geometry in [1, 2] else hw * tw + \
-                                     b * tf
-    eq_thk = shell_t if geometry in [1, 2] else shell_t + A \
-                                                                  / shell_spacing
+    A = 0 if geometry in [1, 2] else hw * tw + b * tf
+    eq_thk = shell_t if geometry in [1, 2] else shell_t + A/shell_spacing
+
     Itot = CylinderAndCurvedPlate.get_Itot(hw=0 if geometry in [1, 2] else hw,
                                            tw=0 if geometry in [1, 2] else tw,
                                            b=0 if geometry in [1, 2] else b,
@@ -498,22 +500,52 @@ def helper_cylinder_stress_to_force_to_stress(stresses = None, forces = None, ge
                                            t=shell_t)
 
     if forces is not None and stresses is None:
-        Nsd, Msd, Tsd, Qsd = forces
-        sasd = (Nsd / 2) / (math.pi * shell_radius * eq_thk) * 1000
-        smsd = (Msd/ Itot) * \
-               (shell_radius + shell_t / 2) * 1000000
-        tTsd = (Tsd* 10 ** 6) / (2 * math.pi * shell_t
-                                                        * math.pow(shell_radius, 2))
-        tQsd = Qsd / (math.pi * shell_radius
-                                            * shell_t) * 1000
-        shsd = 0
-        return sasd, smsd, tTsd, tQsd, shsd
+        if not conical:
+            Nsd, Msd, Tsd, Qsd = forces
+            sasd = (Nsd / 2) / (math.pi * shell_radius * eq_thk) * 1000
+            smsd = (Msd/ Itot) * \
+                   (shell_radius + shell_t / 2) * 1000000
+            tTsd = (Tsd* 10 ** 6) / (2 * math.pi * shell_t * math.pow(shell_radius, 2))
+            tQsd = Qsd / (math.pi * shell_radius * shell_t) * 1000
+            shsd = 0
+            return sasd, smsd, tTsd, tQsd, shsd
+        else:
+            Nsd, M1sd, M2sd, Tsd, Q1sd, Q2sd = forces
+            re = (cone_r1+cone_r2) / (2*math.cos(math.radians(cone_alpha)))
+            le = shell_lenght_l / math.cos(math.radians(cone_alpha))
+            te = shell_t *math.cos(math.radians(cone_alpha))
+            sasd = psd*re/2*te + Nsd/(2*math.pi*re*te) * 1000
+            smsd = ((M1sd*math.sin(math.radians(cone_alpha)) / (math.pi*math.pow(re,2)*te)) + \
+                   (M2sd*math.cos(math.radians(cone_alpha)) / (math.pi*math.pow(re,2)*te))) * 1000000
+            shsd = psd*re/te
+            tTsd = Tsd/(2*math.pi*math.pow(re,2)*te)
+            tQsd = -(Q1sd*math.cos(math.radians(cone_alpha)) / (math.pi*re*te)) + \
+                   (Q2sd*math.sin(math.radians(cone_alpha)) / (math.pi*re*te))
+            return sasd, smsd, tTsd, tQsd, shsd
+
     else:
-        sasd, smsd, tTsd, tQsd, shsd = stresses
-        Nsd = (sasd * 2 * math.pi * shell_radius * eq_thk) / 1000
-        Msd = (smsd / (shell_radius * shell_t / 2)) * Itot / 1000000
-        Tsd = tTsd * 2 * math.pi * shell_t * math.pow(shell_radius, 2) / 1000000
-        Qsd = tQsd * math.pi * shell_radius * shell_t / 1000
+        if not conical:
+            sasd, smsd, tTsd, tQsd, shsd = stresses
+            Nsd = (sasd * 2 * math.pi * shell_radius * eq_thk) / 1000
+            Msd = (smsd / (shell_radius * shell_t / 2)) * Itot / 1000000
+            Tsd = tTsd * 2 * math.pi * shell_t * math.pow(shell_radius, 2) / 1000000
+            Qsd = tQsd * math.pi * shell_radius * shell_t / 1000
+        else:
+            re = (cone_r1+cone_r2) / (2*math.cos(math.radians(cone_alpha)))
+            le = shell_lenght_l / math.cos(math.radians(cone_alpha))
+            te = shell_t *math.cos(math.radians(cone_alpha))
+            Itot = CylinderAndCurvedPlate.get_Itot(hw=0,
+                                                   tw=0 ,
+                                                   b=0 ,
+                                                   tf=0,
+                                                   r=re,
+                                                   s=shell_spacing,
+                                                   t=te)
+            sasd, smsd, tTsd, tQsd, shsd = stresses
+            Nsd = (sasd * 2 * math.pi * re * te) / 1000
+            Msd = (smsd / (re * te / 2)) * Itot / 1000000
+            Tsd = tTsd * 2 * math.pi * te * math.pow(re, 2) / 1000000
+            Qsd = tQsd * math.pi * re * te/ 1000
 
         return Nsd, Msd, Tsd, Qsd, shsd
 

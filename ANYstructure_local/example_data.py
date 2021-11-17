@@ -33,11 +33,11 @@ obj_dict_cyl_long = {'mat_yield': [355e6, 'Pa'], 'mat_factor': [1.15, ''],'span'
 
 obj_dict_cyl_ring = {'mat_yield': [355e6, 'Pa'], 'mat_factor': [1.15, ''],'span': [5, 'm'], 'spacing': [0.6, 'm'],
                     'plate_thk': [0.015, 'm'],
-                    'stf_web_height': [0.38, 'm'], 'stf_web_thk': [0.012, 'm'], 'stf_flange_width': [0.15, 'm'],
-                    'stf_flange_thk': [0.02, 'm'], 'structure_type': ['BOTTOM', ''], 'plate_kpp': [1, ''],
+                    'stf_web_height': [0.4, 'm'], 'stf_web_thk': [0.012, 'm'], 'stf_flange_width': [0.046, 'm'],
+                    'stf_flange_thk': [0.024957, 'm'], 'structure_type': ['BOTTOM', ''], 'plate_kpp': [1, ''],
                     'stf_kps': [1, ''], 'stf_km1': [12, ''], 'stf_km2': [24, ''], 'stf_km3': [12, ''],
                     'sigma_y1': [80, 'MPa'], 'sigma_y2': [80, 'MPa'], 'sigma_x': [80, 'MPa'], 'tau_xy': [5, 'MPa'],
-                    'stf_type': ['T', ''], 'structure_types': [structure_types, ''], 'zstar_optimization': [True, ''],
+                    'stf_type': ['HP-bulb', ''], 'structure_types': [structure_types, ''], 'zstar_optimization': [True, ''],
                     'puls buckling method':[2,''], 'puls boundary':['Int',''], 'puls stiffener end':['C',''],
                     'puls sp or up':['SP',''], 'puls up boundary' :['SSSS',''] , 'panel or shell': ['shell', ''] }
 
@@ -47,17 +47,17 @@ obj_dict_cyl_heavy_ring = {'mat_yield': [355e6, 'Pa'], 'mat_factor': [1.15, ''],
                     'stf_flange_thk': [0.03, 'm'], 'structure_type': ['BOTTOM', ''], 'plate_kpp': [1, ''],
                     'stf_kps': [1, ''], 'stf_km1': [12, ''], 'stf_km2': [24, ''], 'stf_km3': [12, ''],
                     'sigma_y1': [80, 'MPa'], 'sigma_y2': [80, 'MPa'], 'sigma_x': [80, 'MPa'], 'tau_xy': [5, 'MPa'],
-                    'stf_type': ['T', ''], 'structure_types': [structure_types, ''], 'zstar_optimization': [True, ''],
+                    'stf_type': ['L-bulb', ''], 'structure_types': [structure_types, ''], 'zstar_optimization': [True, ''],
                     'puls buckling method':[2,''], 'puls boundary':['Int',''], 'puls stiffener end':['C',''],
                     'puls sp or up':['SP',''], 'puls up boundary' :['SSSS',''] , 'panel or shell': ['shell', ''] }
 
 obj_dict_cyl_long2 = {'mat_yield': [355e6, 'Pa'], 'mat_factor': [1.15, ''],'span': [5, 'm'], 'spacing': [0.6, 'm'],
                     'plate_thk': [0.015, 'm'],
-                    'stf_web_height': [0.400, 'm'], 'stf_web_thk': [0.012, 'm'], 'stf_flange_width': [0.25, 'm'],
-                    'stf_flange_thk': [0.020, 'm'], 'structure_type': ['BOTTOM', ''], 'plate_kpp': [1, ''],
+                    'stf_web_height': [0.24-0.024957, 'm'], 'stf_web_thk': [0.012, 'm'], 'stf_flange_width': [0.046, 'm'],
+                    'stf_flange_thk': [0.024957, 'm'], 'structure_type': ['BOTTOM', ''], 'plate_kpp': [1, ''],
                     'stf_kps': [1, ''], 'stf_km1': [12, ''], 'stf_km2': [24, ''], 'stf_km3': [12, ''],
                     'sigma_y1': [80, 'MPa'], 'sigma_y2': [80, 'MPa'], 'sigma_x': [80, 'MPa'], 'tau_xy': [5, 'MPa'],
-                    'stf_type': ['T', ''], 'structure_types': [structure_types, ''], 'zstar_optimization': [True, ''],
+                    'stf_type': ['HP-bulb', ''], 'structure_types': [structure_types, ''], 'zstar_optimization': [True, ''],
                     'puls buckling method':[2,''], 'puls boundary':['Int',''], 'puls stiffener end':['C',''],
                     'puls sp or up':['SP',''], 'puls up boundary' :['SSSS',''] , 'panel or shell': ['shell', ''] }
 
@@ -258,7 +258,9 @@ shell_main_dict = {'sasd': [-10e6, 'Pa'],
                    'length between girders' : [2.5, 'm'],
                    'panel spacing, s' : [2, 'm'],
                    'ring stf excluded' : [False, ''],
-                   'ring frame excluded' : [False, '']}
+                   'ring frame excluded' : [False, ''],
+                   'end cap pressure': ['not included in axial stresses', ''],
+                   'ULS or ALS': ['ULS', '']}
 
 
 '''
@@ -266,13 +268,13 @@ shell_main_dict = {'sasd': [-10e6, 'Pa'],
         self._panel_spacing = main_dict['panel spacing, s'][0]
         self.__ring_stiffener_excluded = main_dict['ring stf excluded'][0]
         self.__ring_frame_excluded = main_dict['ring frame excluded'][0]'''
-shell_main_dict2 = {'sasd': [30 * 1e6, 'Pa'],
-             'smsd': [30* 1e6, 'Pa'],
+shell_main_dict2 = {'sasd': [-30 * 1e6, 'Pa'],
+             'smsd': [-30* 1e6, 'Pa'],
              'tTsd': [10* 1e6, 'Pa'],
              'tQsd': [10* 1e6, 'Pa'],
              'psd': [-0.1* 1e6, 'Pa'],
              'shsd': [0, 'Pa'],
-             'geometry': [3, '-'],
+             'geometry': [4, '-'],
              'material factor': [1.15, ''],
              'delta0': [0.005, ''],
              'fab method ring stf': [1, ''],
@@ -281,9 +283,12 @@ shell_main_dict2 = {'sasd': [30 * 1e6, 'Pa'],
              'poisson': [0.3, '-'],
              'mat_yield': [355 * 1e6, 'Pa'],
                     'length between girders': [2.5, 'm'],
-                    'panel spacing, s': [2, 'm'],
+                    'panel spacing, s': [None, 'm'],
                     'ring stf excluded': [False, ''],
-                    'ring frame excluded': [False, '']
+                    'ring frame excluded': [False, ''],
+                    'end cap pressure': ['not included in axial stresses', ''],
+                   'ULS or ALS': ['ULS', '']
+
                     }
 def get_slamming_pressure():
     return 1000000

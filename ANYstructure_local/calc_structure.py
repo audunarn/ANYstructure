@@ -381,6 +381,7 @@ class Structure():
         Iz2 = tf2 * math.pow(b2, 3)
         ht = h - tf1 / 2 - tf2 / 2
         return (Iz1 * ht) / (Iz1 + Iz2) + tf2 / 2 - ez
+
     def get_moment_of_intertia(self, efficent_se=None, only_stf = False, tf1 = None):
         '''
         Returning moment of intertia.
@@ -392,8 +393,7 @@ class Structure():
         else:
             tf1 = self._plate_th if tf1 == None else tf1
             b1 = self._spacing if efficent_se==None else efficent_se
-        h = self._flange_th+self._web_height+self._plate_th
-
+        h = self._flange_th+self._web_height+tf1
         tw = self._web_th
         hw = self._web_height
         tf2 = self._flange_th
@@ -420,6 +420,27 @@ class Structure():
         else:
             Iz = (Af*math.pow(b2,2)/12) + math.pow(self.get_flange_eccentricity(),2) * (Af/(1+Af/Aw))
         return Iz
+
+    def get_moment_of_interia_iacs(self, efficent_se=None, only_stf = False, tf1 = None):
+        if only_stf:
+            tf1 = 0
+            b1 = 0
+        else:
+            tf1 = self._plate_th if tf1 == None else tf1
+            b1 = self._spacing if efficent_se==None else efficent_se
+        h = self._flange_th+self._web_height+tf1
+        tw = self._web_th
+        hw = self._web_height
+        tf2 = self._flange_th
+        b2 = self._flange_width
+
+        Af = b2*tf2
+        Aw = hw*tw
+
+        ef = hw + tf2/2
+
+        Iy = (Af*math.pow(ef,2)*math.pow(b2,2)/12) * ( (Af+2.6*Aw) / (Af+Aw))
+        return Iy
 
     def get_torsional_moment_venant(self):
         ef = self.get_ef_iacs()*1000
@@ -460,7 +481,7 @@ class Structure():
             ef = self._web_height
         # elif self._stiffener_type == 'L-bulb':
         #     ef = self._web_height-0.5*self._flange_th
-        elif self._stiffener_type in ['L', 'T', 'L-bulb']:
+        elif self._stiffener_type in ['L', 'T', 'L-bulb', 'HP-profile', 'HP', 'HP-bulb']:
             ef = self._web_height + 0.5*self._flange_th
         return ef
 
@@ -1340,6 +1361,12 @@ class Shell():
         self._tot_cyl_length = main_dict['tot cyl length, Lc'][0]
         self._k_factor = main_dict['eff. buckling lenght factor'][0]
 
+        # For conical
+        self._cone_r1 = None
+        self._cone_r2 = None
+        self._cone_alpha = None
+
+
     @property
     def Lc(self):
         return self._tot_cyl_length
@@ -1466,6 +1493,9 @@ class CylinderAndCurvedPlate():
         self._panel_spacing = main_dict['panel spacing, s'][0]
         self.__ring_stiffener_excluded = main_dict['ring stf excluded'][0]
         self.__ring_frame_excluded = main_dict['ring frame excluded'][0]
+
+        self._end_cap_pressure_included = main_dict['end cap pressure'][0]
+        self._uls_or_als =  main_dict['ULS or ALS'][0]
 
     def __str__(self):
         '''
@@ -1827,7 +1857,7 @@ class CylinderAndCurvedPlate():
 
         return {'sjsd': sjsd, 'parameters': parameters, 'cross section data': cross_sec_data, 'shRsd': shRsd}
 
-    def unstiffened_shell(self):
+    def unstiffened_shell(self, conical = False):
 
         E = self._E/1e6
         t = self._Shell.thk*1000
@@ -1846,6 +1876,7 @@ class CylinderAndCurvedPlate():
         tsd = self._tTsd/1e6+self._tQsd/1e6
         psd = self._psd/1e6
         shsd = psd*r/t
+
 
         provide_data = dict()
 
@@ -1919,7 +1950,9 @@ class CylinderAndCurvedPlate():
                 gammaM = 1.45
             else:
                 gammaM = 0.85+0.6*lambda_s
-
+        if self._uls_or_als == 'ALS':
+            gammaM = gammaM/1.15
+        provide_data['gammaM Unstifffed panel'] = gammaM
         fksd = fks/gammaM
         provide_data['fksd - Unstifffed curved panel'] = fksd
         uf = sjsd/fksd
@@ -2001,7 +2034,7 @@ class CylinderAndCurvedPlate():
             #print(chk, 'C', C, 'psi', psi,'epsilon', epsilon,'rho' ,rho, 'fE', fE)
             vals.append(fE)
 
-        axial_due_to_hydrostatic = False
+
 
         fEax, fEbend,  fEtors, fElat, fEhyd = vals
 
@@ -2019,7 +2052,7 @@ class CylinderAndCurvedPlate():
         if l / r > test2:
             fEh_used = 0.25 * E * math.pow(t / r, 2)
         else:
-            fEh_used = fElat if not axial_due_to_hydrostatic else fEhyd
+            fEh_used = fElat if not self._end_cap_pressure_included else fEhyd
         #
         # if geometry in [2,6]:
         #     sxsd = self._sasd+smsd
@@ -2059,7 +2092,8 @@ class CylinderAndCurvedPlate():
                 gammaM = 1.45
             else:
                 gammaM = 0.85+0.6*lambda_s
-        # TODO possibly correct gammaM with factor, seee sheet
+        if self._uls_or_als == 'ALS':
+            gammaM = gammaM/1.15
 
         fksd = fks/gammaM
         provide_data['fksd - Unstifffed circular cylinders'] = fksd
@@ -2297,7 +2331,7 @@ class CylinderAndCurvedPlate():
         tsd = self._tTsd/1e6 + self._tQsd/1e6
         psd = self._psd/1e6
         shsd = psd * r / t
-        #print(h, hw, tw, b, tf, E, t, s, v, r, l, fy, L, LH, sasd, smsd, tsd, psd, shsd)
+
         lightly_stf = s/t > math.sqrt(r/t)
         provide_data = dict()
 
@@ -2347,8 +2381,8 @@ class CylinderAndCurvedPlate():
         # Ishell = (math.pi/4) * ( math.pow(r+t/2,4) - math.pow(r-t/2,4))
         # Itot = Ishell + Istf_tot # Checked
 
-        Iy = self._LongStf.get_moment_of_intertia(only_stf=True)*1000**4 # TODO small difference here.
-        #print(Iy)
+        Iy = self._LongStf.get_moment_of_intertia(efficent_se=Se/1000, tf1=self._Shell.thk)*1000**4 # TODO small difference here.
+
         alpha = 12*(1-math.pow(v,2))*Iy/(s*math.pow(t,3))
         Zl = (math.pow(l, 2)/(r*t)) * math.sqrt(1-math.pow(v,2))
 
@@ -2418,11 +2452,13 @@ class CylinderAndCurvedPlate():
                 gammaM = 1.45
             else:
                 gammaM = 0.85+0.6*lambda_s
+        if self._uls_or_als == 'ALS':
+            gammaM = gammaM/1.15
 
         # Design buckling strength:
         fksd = fks/gammaM
         provide_data['fksd'] = fksd
-        #print('fksd', fksd, 'fks', fks, 'gammaM', gammaM, 'lambda_s', lambda_s, 'lambda_s^2 panel', lambda_s2_panel)
+        #print('fksd', fksd, 'fks', fks, 'gammaM', gammaM, 'lambda_s', lambda_s, 'lambda_s^2 panel', lambda_s2_panel, 'sjsd', sjsd_used, '')
 
         return provide_data
 
@@ -2497,7 +2533,7 @@ class CylinderAndCurvedPlate():
                 continue
             gammaM = data['gammaM circular cylinder'] if self._geometry > 2 else \
                 data['gammaM curved panel']
-            sjsd = shell_buckling_data['sjsd'][idx] # TODO wrong magnitude
+            sjsd = shell_buckling_data['sjsd'][idx]
 
             this_s = 0 if self._LongStf is None else self._LongStf.s
             if any([self._geometry in [1, 5], this_s > (self._Shell.dist_between_rings * 1000)]):
@@ -2605,7 +2641,19 @@ class CylinderAndCurvedPlate():
         Lambda_ = math.sqrt(fak/fE)
 
         fkc = (1-0-28*math.pow(Lambda_,2))*fak if Lambda_ <= 1.34 else fak/math.pow(Lambda_,2)
-        gammaM = self._mat_factor  # Check TODO
+        gammaM = data['gammaM curved panel'] #self._mat_factor  # Check TODO need to fix this
+
+        # if lambda_s < 0.5:
+        #     gammaM = self._mat_factor
+        # else:
+        #     if lambda_s > 1:
+        #         gammaM = 1.45
+        #     else:
+        #         gammaM = 0.85+0.6*lambda_s
+        # if self._uls_or_als == 'ALS':
+        #     gammaM = gammaM/1.15
+
+
         fakd = fak/gammaM
         fkcd = fkc/gammaM
 
@@ -3378,7 +3426,7 @@ if __name__ == '__main__':
     #Structure(ex.obj_dict_cyl_ring)
     #Structure(ex.obj_dict_cyl_heavy_ring)
     my_cyl = CylinderAndCurvedPlate(main_dict = ex.shell_main_dict2, shell= Shell(ex.shell_dict),
-                                    long_stf= Structure(ex.obj_dict_cyl_long),
+                                    long_stf= Structure(ex.obj_dict_cyl_long2),
                                     ring_stf = None,# Structure(ex.obj_dict_cyl_ring2),
                                     ring_frame= None)#Structure(ex.obj_dict_cyl_heavy_ring2))
     print(my_cyl.get_utilization_factors())

@@ -115,7 +115,9 @@ class Application():
 
         sub_help = tk.Menu(menu)
         menu.add_cascade(label='Help', menu = sub_help)
-        sub_help.add_command(label = 'Open documentation', command = self.open_documentation)
+        sub_help.add_command(label = 'Open website (documentation etc.)', command = self.open_documentation)
+        sub_help.add_command(label='Open documentation pdf', command=self.open_documentation_pdf)
+        sub_help.add_command(label='Donate!', command=self.open_donate)
         sub_help.add_command(label = 'Open example file', command = self.open_example)
         sub_help.add_command(label='About ANYstructure', command=self.open_about)
         #base_mult = 1.2
@@ -904,6 +906,7 @@ class Application():
         self._new_shell_exclude_ring_stf = tk.BooleanVar()
         self._new_shell_exclude_ring_frame = tk.BooleanVar()
 
+
         self._new_shell_panel_spacing = tk.DoubleVar()
         self._new_shell_thk.set(20)
         self._new_shell_radius.set(5000)
@@ -920,6 +923,7 @@ class Application():
         self._new_shell_panel_spacing.set(2000)
         self._new_shell_exclude_ring_stf.set(False)
         self._new_shell_exclude_ring_frame.set(False)
+
 
         self._shell_gui_items = list()
         self._lab_shell =  tk.Label(self._main_fr, text='Shell and curved plate input [mm]',
@@ -1072,11 +1076,42 @@ class Application():
         self._new_shell_Qsd.set(1500)
         self._new_shell_psd.set(-0.2)
 
+        self._new_shell_uls_or_als = tk.StringVar()
+        self._new_shell_end_cap_pressure_included = tk.StringVar()
+        self._new_shell_fab_ring_stf = tk.StringVar()
+        self._new_shell_fab_ring_frame = tk.StringVar()
+        self._new_shell_uls_or_als.set('ULS')
+        self._new_shell_end_cap_pressure_included.set('not included in axial force')
+
+        self._new_shell_fab_ring_stf.set('Fabricated')
+        self._new_shell_fab_ring_frame.set('Cold formed')
+
+        self._lab_shell_limit_state =  tk.Label(self._main_fr, text='Limit state:', font=self._text_size['Text 9 bold'],
+                                                bg = self._general_color)
+        self._lab_shell_en_cap_pressure =  tk.Label(self._main_fr, text='End cap pressure is', font=self._text_size['Text 8'],
+                                                bg = self._general_color)
+        self._lab_shell_fab_stf =  tk.Label(self._main_fr, text='Fab. method ring stf.:', font=self._text_size['Text 8'],
+                                                bg = self._general_color)
+        self._lab_shell_fab_frame =  tk.Label(self._main_fr, text='Fab. method ring gird.:', font=self._text_size['Text 8'],
+                                                bg = self._general_color)
+
         self._new_shell_sasd = tk.DoubleVar()
         self._new_shell_smsd = tk.DoubleVar()
         self._new_shell_tTsd = tk.DoubleVar()
         self._new_shell_tQsd = tk.DoubleVar()
         self._new_shell_shsd = tk.DoubleVar()
+
+        self._ent_shell_uls_or_als = tk.OptionMenu(self._main_fr, self._new_shell_uls_or_als, *['ULS', 'ALS'])
+        self._ent_shell_end_cap_pressure_included = tk.OptionMenu(self._main_fr,
+                                                                  self._new_shell_end_cap_pressure_included,
+                                                                  *['not included in axial force',
+                                                                    'included in axial force'])
+        self._ent_shell_fab_ring_stf = tk.OptionMenu(self._main_fr, self._new_shell_fab_ring_stf,
+                                                     *['Fabricated', 'Cold formed'])
+        self._ent_shell_fab_ring_frame = tk.OptionMenu(self._main_fr, self._new_shell_fab_ring_frame,
+                                                       *['Fabricated', 'Cold formed'])
+        self._ent_shell_yield = tk.Entry(self._main_fr, textvariable=self._new_shell_yield,
+                                               bg=self._entry_color, fg=self._entry_text_color)
 
         self._ent_shell_Nsd = tk.Entry(self._main_fr, textvariable=self._new_shell_Nsd,
                                                width=int(5 * 1), bg=self._entry_color, fg=self._entry_text_color)
@@ -1107,6 +1142,11 @@ class Application():
                                               self._ent_shell_Tsd, self._ent_shell_Qsd, self._ent_shell_psd]
         self._shell_loads_stress_gui_items = [self._ent_shell_sasd, self._ent_shell_smsd,self._ent_shell_tTsd,
                                               self._ent_shell_tQsd, self._ent_shell_psd,self._ent_shell_shsd]
+        self._shell_other_gui_items = [self._ent_shell_end_cap_pressure_included, self._ent_shell_uls_or_als,
+                                       self._ent_shell_fab_ring_stf, self._ent_shell_fab_ring_frame,
+                                       self._lab_shell_limit_state,
+                                       self._lab_shell_en_cap_pressure,self._lab_shell_fab_stf,
+                                       self._lab_shell_fab_frame,self._ent_shell_yield,self._lab_yield]
 
         self._shell_exclude_ring_stf = tk.Frame(self._main_fr, height=10, bg="black", colormap="new", )
         self._shell_exclude_ring_frame = tk.Frame(self._main_fr, height=10, bg="black", colormap="new")
@@ -1644,11 +1684,52 @@ class Application():
                 self._shell_exclude_ring_frame.place(relx=0.005, rely=ent_geo_y + delta_y*1.2, relwidth=0.18)
                 self._unit_informations_dimensions.append(self._shell_exclude_ring_frame)
 
-
         if not flat_panel:
+            # Other data
+            '''
+                self._shell_other_gui_items = [self._ent_shell_end_cap_pressure_included, self._ent_shell_uls_or_als,
+                                   self._ent_shell_fab_ring_stf, self._ent_shell_fab_ring_frame]
+            '''
+            other_count = 2
+            other_dy = 1.25
+            other_x = 5.8
+            other_text_shift = 2.5
+            self._lab_shell_limit_state.place(relx=types_start,
+                                             rely=ent_geo_y + delta_y*2.2)
+            self._ent_shell_uls_or_als.place(relx=types_start+ 1.6  * geo_dx,
+                                             rely=ent_geo_y + delta_y*2.2,
+                                             relwidth=0.05, relheight = 0.025)
+
+            self._lab_yield.place(relx=types_start + 4  * geo_dx,
+                                             rely=ent_geo_y + delta_y*2.2)
+            self._ent_shell_yield.place(relx=types_start+ 5.5  * geo_dx,
+                                             rely=ent_geo_y + delta_y*2.2, relwidth=0.02)
+            other_count+= 1
+            if ring_stf:
+                self._lab_shell_fab_stf.place(relx=types_start+ 6.4  * geo_dx - geo_dx*other_text_shift,
+                                                   rely=ent_geo_y + delta_y*other_count*other_dy)
+                self._ent_shell_fab_ring_stf.place(relx=types_start+ 6.5  * geo_dx,
+                                                   rely=ent_geo_y + delta_y*other_count*other_dy, relwidth=0.07)
+                other_count += 1
+            if ring_frame:
+                self._lab_shell_fab_frame.place(relx=types_start+ 6.4  * geo_dx - geo_dx*other_text_shift,
+                                                   rely=ent_geo_y + delta_y*other_count*other_dy)
+                self._ent_shell_fab_ring_frame.place(relx=types_start+ 6.5  * geo_dx,
+                                                     rely=ent_geo_y + delta_y*other_count*other_dy, relwidth=0.07)
+                other_count += 1
+
+            if self._shell_geometries_map[self._new_calculation_domain.get()] in [1,2]:
+                other_count += 1
+                self._lab_shell_en_cap_pressure.place(relx=types_start+ 5.5  * geo_dx- geo_dx*other_text_shift,
+                                                                rely= ent_geo_y + delta_y*other_count*other_dy,
+                                                                relwidth=0.09)
+                self._ent_shell_end_cap_pressure_included.place(relx=types_start+ other_x  * geo_dx,
+                                                                rely= ent_geo_y + delta_y*other_count*other_dy,
+                                                                relwidth=0.09)
+
             # Load data
             ent_geo_y += 3.3 * delta_y
-            self._lab_shell_loads.place(relx=types_start, rely=ent_geo_y - delta_y*1.5)
+            #self._lab_shell_loads.place(relx=types_start, rely=ent_geo_y - delta_y*1.5)
             self._ent_shell_stress_input.place(relx=types_start, rely=ent_geo_y)
             if 'shell' in self._new_calculation_domain.get():
                 self._ent_shell_force_input.place(relx=types_start + 2 * geo_dx, rely=ent_geo_y)
@@ -1715,7 +1796,7 @@ class Application():
         to_process = to_process+self._shell_gui_items+self._shell_long_stf_gui_items+self._shell_ring_stf_gui_items+\
                      self._shell_ring_frame_gui_items+self._shell_loads_other_gui_items+\
                      self._shell_loads_forces_gui_items+self._shell_loads_stress_gui_items+\
-                     self._unit_informations_dimensions
+                     self._unit_informations_dimensions + self._shell_other_gui_items
         for item in to_process:
             item.place_forget()
 
@@ -4266,7 +4347,9 @@ class Application():
                                  'length between girders': [self._new_shell_ring_frame_length_between_girders.get()/1000, 'm'],
                                  'panel spacing, s': [self._new_shell_panel_spacing.get()/1000, 'm'],
                                  'ring stf excluded': [self._new_shell_exclude_ring_stf.get(), ''],
-                                 'ring frame excluded': [self._new_shell_exclude_ring_frame.get(), '']
+                                 'ring frame excluded': [self._new_shell_exclude_ring_frame.get(), '',],
+                                     'ULS or ALS': [self._new_shell_uls_or_als.get(), '',],
+                                     'end cap pressure': [self._new_shell_end_cap_pressure_included.get(), '']
                     }
 
 
@@ -6155,12 +6238,22 @@ class Application():
             elif 'line' in current[0]:
                 self.new_line(redo=['point'+str(num) for num in current[1]])
 
-    def open_documentation(self):
+    def open_documentation_pdf(self):
         ''' Open the documentation pdf. '''
         if os.path.isfile('ANYstructure_documentation.pdf'):
             os.startfile('ANYstructure_documentation.pdf')
         else:
             os.startfile(self._root_dir + '/' + 'ANYstructure_documentation.pdf')
+
+    def open_documentation(self):
+        ''' Open the documentation webpage. '''
+        import webbrowser
+        webbrowser.open('https://sites.google.com/view/anystructure/start', new=0, autoraise=True)
+
+    def open_donate(self):
+        ''' Open the documentation webpage. '''
+        import webbrowser
+        webbrowser.open('https://sites.google.com/view/anystructure/donate', new=0, autoraise=True)
 
     def open_about(self):
         '''
