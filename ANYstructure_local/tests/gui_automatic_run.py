@@ -8,12 +8,12 @@ errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
 root = tk.Tk()
 my_app = main_application.Application(root)
 my_dict = my_app.__dict__
-print(my_dict)
+
 my_dict["_new_field_len"].set(4)
 my_dict["_new_stf_spacing"].set(700)
 my_dict["_new_plate_thk"].set(20)
 my_dict["_new_stf_web_h"].set(400)
-my_dict["_new_sft_web_t"].set(20)
+my_dict["_new_stf_web_t"].set(20)
 my_dict["_new_stf_fl_w"].set(150)
 my_dict["_new_stf_fl_t"].set(15)
 #my_dict['_new_stucture_type'].set('FRAME')
@@ -37,40 +37,40 @@ def run_cc_chks():
 my_dict['_ML_buckling'] = dict()
 
 for name, file_base in zip(['cl SP buc int predictor', 'cl SP buc int scaler',
-                            'cl SP ult int predictor', 'cl SP ult int scaler',
-                            'cl SP buc GLGT predictor', 'cl SP buc GLGT scaler',
-                            'cl SP ult GLGT predictor', 'cl SP ult GLGT scaler',
-                            'cl UP buc int predictor', 'cl UP buc int scaler',
-                            'cl UP ult int predictor', 'cl UP ult int scaler',
-                            'cl UP buc GLGT predictor', 'cl UP buc GLGT scaler',
-                            'cl UP ult GLGT predictor', 'cl UP ult GLGT scaler',
-                            'CSR predictor UP', 'CSR scaler UP',
-                            'CSR predictor SP', 'CSR scaler SP'
-                            ],
-                           ["CL ['output cl buc'] predictor In-plane support cl 1 SP",
-                            "CL ['output cl buc'] scaler In-plane support cl 1 SP",
-                            "CL ['output cl ult'] predictor In-plane support cl 1 SP",
-                            "CL ['output cl ult'] scaler In-plane support cl 1 SP",
-                            "CL ['output cl buc'] predictor In-plane support cl [2, 3] SP",
-                            "CL ['output cl buc'] scaler In-plane support cl [2, 3] SP",
-                            "CL ['output cl ult'] predictor In-plane support cl [2, 3] SP",
-                            "CL ['output cl ult'] scaler In-plane support cl [2, 3] SP",
-                            "CL ['output cl buc'] predictor In-plane support cl 1 UP",
-                            "CL ['output cl buc'] scaler In-plane support cl 1 UP",
-                            "CL ['output cl ult'] predictor In-plane support cl 1 UP",
-                            "CL ['output cl ult'] scaler In-plane support cl 1 UP",
-                            "CL ['output cl buc'] predictor In-plane support cl [2, 3] UP",
-                            "CL ['output cl buc'] scaler In-plane support cl [2, 3] UP",
-                            "CL ['output cl ult'] predictor In-plane support cl [2, 3] UP",
-                            "CL ['output cl ult'] scaler In-plane support cl [2, 3] UP",
-                            "CL ['CSR-Tank req cl'] predictor",
-                            "CL ['CSR-Tank req cl'] UP scaler",
-                            "CL ['CSR plate cl', 'CSR web cl', 'CSR web flange cl', 'CSR flange cl'] predictor",
-                            "CL ['CSR plate cl', 'CSR web cl', 'CSR web flange cl', 'CSR flange cl'] SP scaler"
-
-                            ]):
+                                    'cl SP ult int predictor', 'cl SP ult int scaler',
+                                    'cl SP buc GLGT predictor', 'cl SP buc GLGT scaler',
+                                    'cl SP ult GLGT predictor', 'cl SP ult GLGT scaler',
+                                    'cl UP buc int predictor', 'cl UP buc int scaler',
+                                    'cl UP ult int predictor', 'cl UP ult int scaler',
+                                    'cl UP buc GLGT predictor', 'cl UP buc GLGT scaler',
+                                    'cl UP ult GLGT predictor', 'cl UP ult GLGT scaler',
+                                    'CSR predictor UP', 'CSR scaler UP',
+                                    'CSR predictor SP', 'CSR scaler SP'
+                                    ],
+                                   ["CL_output_cl_buc_predictor_In-plane_support_cl_1_SP",
+                                    "CL_output_cl_buc_scaler_In-plane_support_cl_1_SP",
+                                    "CL_output_cl_ult_predictor_In-plane_support_cl_1_SP",
+                                    "CL_output_cl_ult_scaler_In-plane_support_cl_1_SP",
+                                    "CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_SP",
+                                    "CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_SP",
+                                    "CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_SP",
+                                    "CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_SP",
+                                    "CL_output_cl_buc_predictor_In-plane_support_cl_1_UP",
+                                    "CL_output_cl_buc_scaler_In-plane_support_cl_1_UP",
+                                    "CL_output_cl_ult_predictor_In-plane_support_cl_1_UP",
+                                    "CL_output_cl_ult_scaler_In-plane_support_cl_1_UP",
+                                    "CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_UP",
+                                    "CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_UP",
+                                    "CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_UP",
+                                    "CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_UP",
+                                    "CL_CSR-Tank_req_cl_predictor",
+                                    "CL_CSR-Tank_req_cl_UP_scaler",
+                                    "CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_predictor",
+                                    "CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_SP_scaler"]):
     my_dict['_ML_buckling'][name] = None
+
     if os.path.isfile('C:\\Github\\ANYstructure\\ANYstructure_local\\'+file_base + '.pickle'):
+
         file = open('C:\\Github\\ANYstructure\\ANYstructure_local\\'+file_base + '.pickle', 'rb')
         from sklearn.neural_network import MLPClassifier
         from sklearn.preprocessing import StandardScaler

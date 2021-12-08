@@ -2498,7 +2498,7 @@ class Application():
                 '''
                 if self._line_to_struc[current_line][5] is not None:
                     cylinder_results = self._line_to_struc[current_line][5].get_utilization_factors()
-                    return_dict['cylinder'] = cylinder_results
+                    return_dict['cylinder'][current_line] = cylinder_results
 
 
                 '''
@@ -2613,6 +2613,7 @@ class Application():
                             y_pred_ult = 0
 
                     x_csr = obj_scnt_calc.get_buckling_ml_input(design_lat_press=design_pressure, csr = True)
+
                     x_csr = self._ML_buckling['CSR scaler SP'].transform(x_csr)
                     csr_pl, csr_web, csr_web_fl, csr_fl = self._ML_buckling['CSR predictor SP'].predict(x_csr)[0]
 
@@ -3056,7 +3057,21 @@ class Application():
                 coord2 = self.get_point_canvas_coord('point' + str(value[1]))
                 if not chk_box_active and state != None:
                     try:
-                        if self._new_buckling_slider.get() == 2:
+                        if self._line_to_struc[line][5] is not None: # Cylinder
+                            cylinder_results = state['cylinder'][line]
+                            all_cyl_chks = list()
+                            for key, val in cylinder_results.items():
+                                if key in ['Unstiffened shell', 'Longitudinal stiffened shell',
+                                           'Ring stiffened shell', 'Heavy ring frame']:
+
+                                    all_cyl_chks.append(True if val is None else val < 1)
+                                elif key == 'Stiffener check' and val is not None:
+                                    for stf_key, stf_val in val.items():
+                                        if stf_val is not None:
+                                            all_cyl_chks.append(stf_val)
+                            color = 'green' if all(all_cyl_chks) else 'red'
+
+                        elif self._new_buckling_slider.get() == 2:
                             if 'black' in state['PULS colors'][line].values():
                                 color = 'black'
                             else:
