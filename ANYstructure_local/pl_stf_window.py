@@ -19,7 +19,7 @@ class CreateStructureWindow():
         super(CreateStructureWindow, self).__init__()
         self._frame = master
         self._frame.wm_title("Define structure properties")
-        self._frame.geometry('1000x800')
+        self._frame.geometry('1800x900')
         self._frame.grab_set()
         if __name__ == '__main__':
             self._initial_structure_obj = test.get_structure_calc_object()
@@ -48,9 +48,9 @@ class CreateStructureWindow():
         tk.Label(self._frame, text='-- Define structure properties here --', font='Verdana 15 bold').place(x=10, y=10)
         #
         # ### Adding matplotlib
-        # fig = Figure(figsize=(4, 4), dpi=100)
+        # fig, ax =  run_section_properties()# Figure(figsize=(4, 4), dpi=100)
         # t = np.arange(0, 3, .01)
-        # fig.add_subplot(111).plot(t, 2 * np.sin(2 * np.pi * t))
+        # #fig.add_subplot(111).plot(t, 2 * np.sin(2 * np.pi * t))
         #
         # canvas = FigureCanvasTkAgg(fig, master=master)  # A tk.DrawingArea.
         # canvas.draw()
@@ -58,14 +58,13 @@ class CreateStructureWindow():
         #
         # toolbar = NavigationToolbar2Tk(canvas, master)
         # toolbar.update()
-        # canvas.get_tk_widget().place(x=start_x+17*dx, y=start_y+dy  )
+        # canvas.get_tk_widget().place(x=start_x+17*dx, y=start_y+10*dy  )
         #
         # def on_key_press(event):
         #     print("you pressed {}".format(event.key))
         #     key_press_handler(event, canvas, toolbar)
         #
         # canvas.mpl_connect("key_press_event", on_key_press)
-
         
         self._new_spacing = tk.DoubleVar()
         self._new_pl_thk = tk.DoubleVar()
@@ -429,6 +428,45 @@ class Section:
                    'Web thick.': self.stf_web_thk*1000, 'Flange width': self.stf_flange_width*1000,
                           'Flange thick.': self.stf_flange_thk*1000}
 
+# def run_section_properties(pl_s = 0.75, pl_t = 0.015, hw = 0.4, tw = 0.018, bf = 0.15, tf = 0.02):
+#     import sectionproperties.pre.sections as sections
+#     from sectionproperties.analysis.cross_section import CrossSection
+#     from matplotlib import pyplot as plt
+#
+#     # create a 50 diameter circle discretised by 64 points
+#     geometry = sections.MonoISection(
+#         d=(pl_t+hw+tf)*1000, b_t=bf*1000, b_b=pl_s*1000, t_ft=tf*1000, t_fb=pl_t*1000, t_w=tw*1000, r=8, n_r=16
+#     )
+#     mesh = geometry.create_mesh(mesh_sizes=[3.0])
+#     section = CrossSection(geometry, mesh)  # create a CrossSection object
+#     mesh_nodes = section.mesh_nodes
+#     mesh_elements = section.mesh_elements
+#     # plot the mesh
+#     (fig, ax) = plt.subplots(figsize=(4, 4), dpi=100)
+#     ax.triplot(mesh_nodes[:, 0], mesh_nodes[:, 1], mesh_elements[:, 0:3], lw=0.5)
+#     # #section.display_mesh_info()  # display the mesh information
+#     # ax = section.plot_mesh(pause=True)  # plot the generated mesh
+#     #
+#     # # perform a geometric, warping and plastic analysis, displaying the time info
+#     # section.calculate_geometric_properties(time_info=True)
+#     # section.calculate_warping_properties(time_info=True)
+#     # section.calculate_plastic_properties(time_info=True)
+#     #
+#     # # print the results to the terminal
+#     # section.display_results()
+#     #
+#     # # get the second moments of area and the torsion constant
+#     # (ixx_c, iyy_c, ixy_c) = section.get_ic()
+#     # j = section.get_j()
+#     #
+#     # # print the sum of the second moments of area and the torsion constant
+#     # print("Ixx + Iyy = {0:.3f}".format(ixx_c + iyy_c))
+#     # print("J = {0:.3f}".format(j))
+#     return fig, ax
+#
+#
+
+
 
 if __name__ == '__main__':
 
@@ -440,7 +478,7 @@ if __name__ == '__main__':
     #                                                     'stf_flange_width': 0.15, 'stf_flange_thk': 0.02})]
     #
     # hlp.add_new_section(sec_list, sec1)
-
+    # run_section_properties()
     root = tk.Tk()
     my_app = CreateStructureWindow(root, app=None)
     root.mainloop()

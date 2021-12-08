@@ -393,6 +393,7 @@ class Structure():
         else:
             tf1 = self._plate_th if tf1 == None else tf1
             b1 = self._spacing if efficent_se==None else efficent_se
+
         h = self._flange_th+self._web_height+tf1
         tw = self._web_th
         hw = self._web_height
@@ -2381,12 +2382,12 @@ class CylinderAndCurvedPlate():
         # Ishell = (math.pi/4) * ( math.pow(r+t/2,4) - math.pow(r-t/2,4))
         # Itot = Ishell + Istf_tot # Checked
 
-        Iy = self._LongStf.get_moment_of_intertia(efficent_se=Se/1000, tf1=self._Shell.thk)*1000**4 # TODO small difference here.
+        Iy = self._LongStf.get_moment_of_intertia(efficent_se=Se/1000, tf1=self._Shell.thk)*1000**4 # TODO small difference here (Hp-bulb).
 
         alpha = 12*(1-math.pow(v,2))*Iy/(s*math.pow(t,3))
         Zl = (math.pow(l, 2)/(r*t)) * math.sqrt(1-math.pow(v,2))
 
-        #print('Zl', Zl, 'alpha', alpha, 'Isef', Iy, 'Se', Se, 'sjsd', sjsd, 'sxsd', sxSd, 'fks', fks)
+        #print('Zl', Zl, 'alpha', alpha, 'Isef', Iy, 'Se', Se, 'sjsd', sjsd, 'sxsd', sxSd, 'fks', fks, 'As', As)
         # Table 3-3
 
         def table_3_3(chk):
@@ -2458,7 +2459,7 @@ class CylinderAndCurvedPlate():
         # Design buckling strength:
         fksd = fks/gammaM
         provide_data['fksd'] = fksd
-        #print('fksd', fksd, 'fks', fks, 'gammaM', gammaM, 'lambda_s', lambda_s, 'lambda_s^2 panel', lambda_s2_panel, 'sjsd', sjsd_used, '')
+        #print('fksd', fksd, 'fks', fks, 'gammaM', gammaM, 'lambda_s', lambda_s, 'lambda_s^2 panel', lambda_s2_panel, 'sjsd', sjsd_used, 'worst_axial_comb',worst_axial_comb, 'sm0sd',sm0sd)
 
         return provide_data
 
@@ -3428,5 +3429,5 @@ if __name__ == '__main__':
     my_cyl = CylinderAndCurvedPlate(main_dict = ex.shell_main_dict2, shell= Shell(ex.shell_dict),
                                     long_stf= Structure(ex.obj_dict_cyl_long2),
                                     ring_stf = None,# Structure(ex.obj_dict_cyl_ring2),
-                                    ring_frame= None)#Structure(ex.obj_dict_cyl_heavy_ring2))
+                                    ring_frame= Structure(ex.obj_dict_cyl_heavy_ring2))
     print(my_cyl.get_utilization_factors())

@@ -1828,7 +1828,7 @@ class Application():
                                                     'Orthogonally Stiffened panel (Stress input)']:
             self.gui_structural_properties(flat_panel=False, shell=True, long_stf=True, ring_stf=True, ring_frame=True)
 
-        if self._line_is_active:
+        if self._line_is_active and self._active_line in self._line_to_struc.keys():
             if event == None and self._line_to_struc[self._active_line][5] is not None:
                 mapper ={1: 'Force', 2: 'Stress'}
                 load = mapper[self._new_shell_stress_or_force.get()]
@@ -3351,43 +3351,74 @@ class Application():
         if line not in state['color code']['lines'].keys():
             return 'black'
         if self._new_colorcode_beams.get() == True and line in list(self._line_to_struc.keys()):
-            color = state['color code']['lines'][line]['section']
+            if self._line_to_struc[line][5] is not None:
+                color = 'grey'
+                this_text = 'N/A'
+            else:
+                color = state['color code']['lines'][line]['section']
+                this_text = self._line_to_struc[line][1].get_beam_string()
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                              text=self._line_to_struc[line][1].get_beam_string() ,
+                                              text=this_text ,
                                               font=self._text_size["Text 7"])
 
         elif self._new_colorcode_plates.get() == True and line in list(self._line_to_struc.keys()):
-            color = state['color code']['lines'][line]['plate']
+            if self._line_to_struc[line][5] is not None:
+                color = 'grey'
+                this_text = 'N/A'
+            else:
+                color = state['color code']['lines'][line]['plate']
+                this_text = str(self._line_to_struc[line][1].get_pl_thk()*1000)
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                              text=str(self._line_to_struc[line][1].get_pl_thk()*1000))
+                                              text=this_text)
+
         elif self._new_colorcode_spacing.get() == True and line in list(self._line_to_struc.keys()):
-            color = state['color code']['lines'][line]['spacing']
+            if self._line_to_struc[line][5] is not None:
+                color = 'grey'
+                this_text = 'N/A'
+            else:
+                color = state['color code']['lines'][line]['spacing']
+                this_text = str(self._line_to_struc[line][1].get_s()*1000)
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                              text=str(self._line_to_struc[line][1].get_s()*1000))
+                                              text=this_text)
+
 
         elif self._new_colorcode_pressure.get() == True and line in list(self._line_to_struc.keys()):
-            if cc_state['all pressures'] == [0, 1]:
-                color = 'black'
+            if self._line_to_struc[line][5] is not None:
+                color = 'grey'
+                this_text = 'N/A'
             else:
-                color = state['color code']['lines'][line]['pressure color']
+                if cc_state['all pressures'] == [0, 1]:
+                    color = 'black'
+                else:
+                    color = state['color code']['lines'][line]['pressure color']
+                this_text = str(state['color code']['lines'][line]['pressure'])
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                              text=str(state['color code']['lines'][line]['pressure']))
+                                              text=this_text)
 
         elif self._new_colorcode_utilization.get() == True and self._new_buckling_slider.get() == 1:
-            color = state['color code']['lines'][line]['rp uf color']
+            if self._line_to_struc[line][5] is not None:
+                color = 'grey'
+                this_text = 'N/A'
+            else:
+                color = state['color code']['lines'][line]['rp uf color']
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                               text=round(state['color code']['lines'][line]['rp uf'],2))
 
         elif self._new_colorcode_utilization.get() == True and self._new_buckling_slider.get() == 2:
-            color = state['color code']['lines'][line]['PULS uf color']
+            if self._line_to_struc[line][5] is not None:
+                color = 'grey'
+                this_text = 'N/A'
+            else:
+                color = state['color code']['lines'][line]['PULS uf color']
+                this_text = round(state['color code']['lines'][line]['PULS uf'],2)
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                              text=round(state['color code']['lines'][line]['PULS uf'],2))
+                                              text=this_text)
         elif self._new_colorcode_utilization.get() == True and self._new_buckling_slider.get() == 3:
             color = 'black'
             if self._new_label_color_coding.get():
@@ -3395,50 +3426,100 @@ class Application():
                                               text='N/A')
 
         elif self._new_colorcode_sigmax.get() == True:
-            color = state['color code']['lines'][line]['sigma x']
+            if self._line_to_struc[line][5] is not None:
+                color = 'grey'
+                this_text = 'N/A'
+            else:
+                color = state['color code']['lines'][line]['sigma x']
+                this_text = str(self._line_to_struc[line][1].get_sigma_x())
+
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                              text=str(self._line_to_struc[line][1].get_sigma_x()))
+                                              text=this_text)
 
         elif self._new_colorcode_sigmay1.get() == True:
-            color = state['color code']['lines'][line]['sigma y1']
+            if self._line_to_struc[line][5] is not None:
+                color = 'grey'
+                this_text = 'N/A'
+            else:
+                color = state['color code']['lines'][line]['sigma y1']
+                this_text = str(self._line_to_struc[line][1].get_sigma_y2())
+
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                              text=str(self._line_to_struc[line][1].get_sigma_y2()))
+                                              text=this_text)
 
         elif self._new_colorcode_sigmay2.get() == True:
-            color = state['color code']['lines'][line]['sigma y2']
+            if self._line_to_struc[line][5] is not None:
+                color = 'grey'
+                this_text = 'N/A'
+            else:
+                color = state['color code']['lines'][line]['sigma y2']
+                this_text = str(self._line_to_struc[line][1].get_sigma_y2())
+
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                              text=str(self._line_to_struc[line][1].get_sigma_y2()))
+                                              text=this_text)
 
         elif self._new_colorcode_tauxy.get() == True:
-            color = state['color code']['lines'][line]['tau xy']
+            if self._line_to_struc[line][5] is not None:
+                color = 'grey'
+                this_text = 'N/A'
+            else:
+                color = state['color code']['lines'][line]['tau xy']
+                this_text =round(self._line_to_struc[line][1].get_tau_xy(),2)
+
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                              text=round(self._line_to_struc[line][1].get_tau_xy(),2))
+                                              text=this_text)
 
         elif self._new_colorcode_structure_type.get() == True:
-            color = state['color code']['lines'][line]['structure type']
+            if self._line_to_struc[line][5] is not None:
+                color = 'grey'
+                this_text = 'N/A'
+            else:
+                color = state['color code']['lines'][line]['structure type']
+                this_text =self._line_to_struc[line][1].get_structure_type()
+
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                              text=self._line_to_struc[line][1].get_structure_type(),
+                                              text=this_text,
                                               font=self._text_size["Text 7"])
 
         elif self._new_colorcode_section_modulus.get() == True:
-            color = state['color code']['lines'][line]['section modulus color']
+            if self._line_to_struc[line][5] is not None:
+                color = 'grey'
+                this_text = 'N/A'
+            else:
+                color = state['color code']['lines'][line]['section modulus color']
+                this_text = round(state['color code']['lines'][line]['section uf'],2)
+
             if self._new_label_color_coding.get():
                     self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                                  text=round(state['color code']['lines'][line]['section uf'],2))
+                                                  text=this_text)
 
         elif self._new_colorcode_fatigue.get() == True:
-            color = state['color code']['lines'][line]['fatigue color']
+
+
+            if self._line_to_struc[line][5] is not None:
+                color = 'grey'
+                this_text = 'N/A'
+            else:
+                color = state['color code']['lines'][line]['fatigue color']
+                this_text = round(state['color code']['lines'][line]['fatigue uf'],2)
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                              text=round(state['color code']['lines'][line]['fatigue uf'],2))
+                                              text=this_text)
 
         elif self._new_colorcode_total.get() == True:
-            if self._new_buckling_slider.get() == 2:
+            if self._line_to_struc[line][5] is not None:
+                color = 'grey'
+                this_text = 'N/A'
+                if self._new_label_color_coding.get():
+                    self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                                  text=this_text)
+
+            elif self._new_buckling_slider.get() == 2:
                 color = state['color code']['lines'][line]['Total uf color rp']
                 if self._new_label_color_coding.get():
                     self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
@@ -3893,6 +3974,9 @@ class Application():
                                                 text=text, font=self._text_size['Text 12 bold'], anchor='nw')
                 y_location = 3
                 for key, value in cyl_obj.get_utilization_factors().items():
+                    if key == 'Weight':
+                        continue
+
                     if key != 'Stiffener check':
                         text_key = key
                         if key == 'Column stability check':
@@ -3912,6 +3996,7 @@ class Application():
                                                        text=text_value,font=self._text_size['Text 10 bold'],anchor='nw',
                                                         fill=uf_col)
                     else:
+
                         if value is not None:
                             y_location +=1
                             self._result_canvas.create_text([x, y * y_location],
@@ -3920,23 +4005,26 @@ class Application():
                                                             anchor='nw',
                                                             fill='black')
                             y_location += 1
-                            idx_y = 0
+                            idx_y, idx_x = 0, 0
+
                             for stf_type, chk_bool in value.items():
                                 stf_text = stf_type
 
                                 chk_text = 'OK' if chk_bool == True else 'Not OK' if chk_bool == False else 'N/A'
 
-                                self._result_canvas.create_text([10*dx*idx_y, y * y_location],
+                                self._result_canvas.create_text([10*dx*idx_x, y * y_location],
                                                                 text=stf_text, font=self._text_size['Text 10 bold'],
                                                                 anchor='nw',
                                                                 fill='black' if not value else 'green')
 
-                                self._result_canvas.create_text([10*dx*idx_y, y * (y_location+1)],
+                                self._result_canvas.create_text([10*dx*idx_x, y * (y_location+1)],
                                                                 text=chk_text, font=self._text_size['Text 10 bold'],
                                                                 anchor='nw',
                                                                 fill='green' if chk_bool == True else 'red' if
                                                                 chk_bool == False else 'grey')
                                 idx_y += 1
+                                idx_x += 1
+
 
                     y_location += 1
 
@@ -4167,7 +4255,7 @@ class Application():
             messagebox.showinfo(title='Input error', message='Input must be a line number.')
 
     def new_structure(self, event = None, pasted_structure = None, multi_return = None, toggle_multi = None,
-                      suspend_recalc = False):
+                      suspend_recalc = False, cylinder_return = None):
         '''
         This method maps the structure to the line when clicking "add structure to line" button.
         The result is put in a dictionary. Key is line name and value is the structure object.
@@ -4229,7 +4317,7 @@ class Application():
                             'puls sp or up':  [self._new_puls_sp_or_up.get(), ''],
                             'puls up boundary': [self._new_puls_up_boundary.get(), ''],
                             'panel or shell': [self._new_panel_or_shell.get(), '']}
-                if self._new_calculation_domain.get() != 'Stiffened panel, flat':
+                if self._new_calculation_domain.get() != 'Stiffened panel, flat' and cylinder_return is None:
                     '''
                     Shell structure.
                      0:'Stiffened panel, flat', 1:'Unstiffened shell (Force input)', 2:'Unstiffened panel (Stress input)',
@@ -4370,6 +4458,8 @@ class Application():
                                                           ring_frame=None if any([geometry in [1,2,3,4],
                                                                                   self._new_shell_exclude_ring_frame.get()])
                                                           else Structure(ring_frame_dict))
+                elif cylinder_return is not None:
+                    main_dict_cyl, shell_dict, long_dict, ring_stf_dict, ring_frame_dict = cylinder_return
 
             else:
                 # TODO pasting of cylinders
@@ -4420,6 +4510,7 @@ class Application():
 
                 if self._line_to_struc[self._active_line][2] is not None:
                     self._line_to_struc[self._active_line][2].set_main_properties(obj_dict)
+
                 if prev_type in self._structure_types['non-wt'] and obj_dict['structure_type'][0] in \
                                         self._structure_types['internals'] + self._structure_types['horizontal'] + \
                                 self._structure_types['vertical']:
@@ -4427,17 +4518,6 @@ class Application():
                     self._main_grid.clear()
                     self._compartments_listbox.delete(0, 'end')
 
-                # Cylinder specific.
-                # if self._line_to_struc[self._active_line][5] is not None and CylinderObj is not None:
-                #
-                #     self._line_to_struc[self._active_line][5].ShellObj.set_main_properties(shell_dict)
-                #     if self._line_to_struc[self._active_line][5].LongStfObj is not None:
-                #         self._line_to_struc[self._active_line][5].LongStfObj.set_main_properties(long_dict)
-                #     if self._line_to_struc[self._active_line][5].RingStfObj is not None:
-                #         self._line_to_struc[self._active_line][5].RingStfObj.set_main_properties(ring_stf_dict)
-                #     if self._line_to_struc[self._active_line][5].RingFrameObj is not None:
-                #         self._line_to_struc[self._active_line][5].RingFrameObj.set_main_properties(ring_frame_dict)
-                #     self._line_to_struc[self._active_line][5].set_main_properties(main_dict_cyl )
                 if self._line_to_struc[self._active_line][5] is not None and CylinderObj is None:
                     self._line_to_struc[self._active_line][5] = None
                 elif CylinderObj is not None:

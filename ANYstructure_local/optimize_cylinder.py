@@ -2,6 +2,7 @@
 import tkinter as tk
 from _tkinter import TclError
 
+import ANYstructure_local.main_application
 import ANYstructure_local.optimize as op
 import numpy as np
 import time, os, datetime
@@ -23,7 +24,7 @@ class CreateOptimizeCylinderWindow():
             import pickle
             self._initial_structure_obj = test.get_structure_calc_object(heavy=True)
             self._initial_calc_obj = test.get_structure_calc_object(heavy=True)
-            self._lateral_pressure = 200
+            self._lateral_pressure = -0.2e6
             self._fatigue_object = test.get_fatigue_object()
             self._fatigue_pressure = test.get_fatigue_pressures()
             self._slamming_pressure = test.get_slamming_pressure()
@@ -34,8 +35,8 @@ class CreateOptimizeCylinderWindow():
             self._initial_cylinder_obj = calc.CylinderAndCurvedPlate(main_dict=test.shell_main_dict,
                                                                      shell=calc.Shell(test.shell_dict),
                                             long_stf=calc.Structure(test.obj_dict_cyl_long2),
-                                            ring_stf=calc.Structure(test.obj_dict_cyl_ring2),
-                                            ring_frame=calc.Structure(test.obj_dict_cyl_heavy_ring2))
+                                            ring_stf=None,#calc.Structure(test.obj_dict_cyl_ring2),
+                                            ring_frame=None)#calc.Structure(test.obj_dict_cyl_heavy_ring2))
 
             self._ML_buckling = dict()  # Buckling machine learning algorithm
             for name, file_base in zip(['cl SP buc int predictor', 'cl SP buc int scaler',
@@ -195,7 +196,7 @@ class CreateOptimizeCylinderWindow():
                     these_ents.append(tk.Entry(self._frame,
                                                textvariable = self._new_geo_data[idx_1][idx_2][idx_3], width = ent_w))
                     self._new_geo_data[idx_1][idx_2][idx_3].set(0 if self._default_data[idx_1][idx_2][idx_3] is None
-                                                                else self._default_data[idx_1][idx_2][idx_3])
+                                                                else self._default_data[idx_1][idx_2][idx_3]*1000)
                 all_geos.append(these_ents)
             self._new_entries.append(all_geos)
         
@@ -588,15 +589,12 @@ class CreateOptimizeCylinderWindow():
                                                      +str(round((time.time()-t_start)/60,4))+' min')
             self._opt_actual_running_time.update()
             self._opt_runned = True
-            self._result_label.config(text='Optimization result | Spacing: '+
-                                           str(round(self._opt_results[0].get_s(),10)*1000)+
-                                          ' Plate thickness: '+str(round(self._opt_results[0].get_plate_thk()*1000,10))+
-                                          ' Stiffener - T'+str(round(self._opt_results[0].get_web_h()*1000,10))+'x'
-                                          +str(round(self._opt_results[0].get_web_thk()*1000,10))+
-                                          '+'+str(round(self._opt_results[0].get_fl_w()*1000,10))+'x'
-                                          +str(round(self._opt_results[0].get_fl_thk()*1000,10)))
-
-            self.draw_properties()
+            #self._result_label.config(text=self._opt_results[0].__str__)
+            ANYstructure_local.main_application.Application.draw_cylinder(canvas = self._canvas_opt,
+                                                                          CylObj=self._opt_results[0],
+                                                                          text_size= ANYstructure_local.main_application.Application._text_size,
+                                                                          start_x_cyl=300)
+            #self.draw_properties()
         else:
             messagebox.showinfo(title='Nothing found', message='No better alternatives found. Modify input.\n'
                                                                'There may be no alternative that is acceptable.\n')
@@ -623,7 +621,7 @@ class CreateOptimizeCylinderWindow():
         for idx_1, geo_i in enumerate(self._new_geo_data):
             these_deltas = list()
             for idx_3, val in enumerate(geo_i[1]):
-                these_deltas.append(val.get())
+                these_deltas.append(val.get()/1000)
             all_deltas.append(these_deltas)
         return all_deltas
 
@@ -644,7 +642,7 @@ class CreateOptimizeCylinderWindow():
         for idx_1, geo_i in enumerate(self._new_geo_data):
             these_upper = list()
             for idx_3, val in enumerate(geo_i[0]):
-                these_upper.append(val.get())
+                these_upper.append(val.get()/1000)
             all_upper.append(these_upper)
         return all_upper
 
@@ -658,7 +656,7 @@ class CreateOptimizeCylinderWindow():
         for idx_1, geo_i in enumerate(self._new_geo_data):
             these_lower = list()
             for idx_3, val in enumerate(geo_i[2]):
-                these_lower.append(val.get())
+                these_lower.append(val.get()/1000)
             all_lower.append(these_lower)
         return all_lower
 

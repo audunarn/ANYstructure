@@ -70,6 +70,7 @@ def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lat
         to_return = any_smart_loop_cylinder(min_var=min_var, max_var=max_var, deltas=deltas,
                                             initial_structure_obj=initial_structure_obj,
                                             use_weight_filter = use_weight_filter)
+        return to_return
 
     elif algorithm == 'anysmart' and not is_geometric:
         to_return = any_smart_loop(min_var, max_var, deltas, initial_structure_obj, lateral_pressure,
@@ -279,9 +280,9 @@ def any_smart_loop_cylinder(min_var,max_var,deltas,initial_structure_obj,lateral
         return None, None, None, False, main_fail
 
     new_cylinder_obj = create_new_cylinder_obj(initial_structure_obj, ass_var)
-    print(initial_structure_obj)
-    print(new_cylinder_obj)
+
     #return new_struc_obj, new_calc_obj, fat_dict, True, main_fail
+    return new_cylinder_obj, main_fail
 
 
 def any_smart_loop_geometric(min_var,max_var,deltas,initial_structure_obj,lateral_pressure, init_filter = float('inf'),
@@ -615,7 +616,6 @@ def any_constraints_cylinder(x,obj: calc.CylinderAndCurvedPlate,init_weight, lat
 
     if chk[0]:
         results = calc_obj.get_utilization_factors(optimizing = True)
-
         if results[0]:
             all_checks[check_map[results[1]]] += 1
             return True, results[1], x, all_checks, calc_obj
