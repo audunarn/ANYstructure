@@ -115,6 +115,8 @@ class CreateOptimizeCylinderWindow():
 
             self._ML_buckling = app._ML_buckling
 
+
+
         self._frame = master
         self._frame.wm_title("Optimize structure")
         self._frame.geometry('1600x900')
@@ -179,16 +181,23 @@ class CreateOptimizeCylinderWindow():
         ring_frame_upper_bounds = [tk.DoubleVar() for dummy in ring_frame_example]
         ring_frame_deltas = [tk.DoubleVar() for dummy in ring_frame_example]
         ring_frame_lower_bounds = [tk.DoubleVar() for dummy in ring_frame_example]
-        
+        self._new_geo_data = list()
+
         self._new_geo_data =  [[shell_upper_bounds,shell_deltas, shell_lower_bounds],
                               [long_upper_bounds, long_deltas, long_lower_bounds],
                               [ring_stf_upper_bounds, ring_stf_deltas, ring_stf_lower_bounds],
                               [ring_frame_upper_bounds, ring_frame_deltas, ring_frame_lower_bounds]]
 
         self._new_entries = list()
+        map_type = {'shell':0, 'long':1, 'ring stf': 2, 'ring heavy':3}
+        map_type_idx = {0: True, 1: self._initial_cylinder_obj.LongStfObj is not None,
+                        2: self._initial_cylinder_obj.RingStfObj is not None,
+                        3: self._initial_cylinder_obj.RingFrameObj is not None}
 
         for idx_1, geo_i in enumerate(self._new_geo_data):
             all_geos = list()
+            if map_type_idx[idx_1] == False:
+                continue
             for idx_2, entries in enumerate(geo_i):
                 these_ents = list()
                 for idx_3, ent_i in enumerate(entries):
@@ -211,6 +220,7 @@ class CreateOptimizeCylinderWindow():
         self._canvas_dim = (550, 500)
         self._canvas_opt = tk.Canvas(self._frame,width=self._canvas_dim[0], height=self._canvas_dim[1], 
                                      background='azure',relief = 'groove', borderwidth=2)
+
 
         # tk.Frame(self._frame,width=770,height=5, bg="grey", colormap="new").place(x=20,y=127)
         # tk.Frame(self._frame, width=770, height=5, bg="grey", colormap="new").place(x=20, y=167)
@@ -297,14 +307,16 @@ class CreateOptimizeCylinderWindow():
         '''
         shell = ['Shell thk. [mm]', 'Shell radius [mm]', 'l rings [mm]', 'L shell [mm]', 'L tot. [mm]', 'N/A - future',
                  'N/A - future', 'N/A - future']
-        stf_long = ['Spacing [mm]', 'Plate thk. [mm]', 'Web height [mm]', 'Web thk. [mm]', 'Flange width [mm]',
+        stf_long = ['Spacing [mm]', 'N/A', 'Web height [mm]', 'Web thk. [mm]', 'Flange width [mm]',
                     'Flange thk. [mm]', 'N/A - future', 'N/A - future']
-        stf_ring = ['N/A', 'Plate thk. [mm]', 'Web height [mm]', 'Web thk. [mm]', 'Flange width [mm]',
+        stf_ring = ['N/A', 'N/A', 'Web height [mm]', 'Web thk. [mm]', 'Flange width [mm]',
                     'Flange thk. [mm]', 'N/A - future', 'N/A - future']
         all_label = [shell, stf_long, stf_ring, stf_ring]
         text_i = ['Upper bounds [mm]', 'Iteration delta [mm]','Lower bounds [mm]']
         kind = ['Shell or panel', 'Longitudinal stiffener', 'Ring stiffener', 'Ring frame/girder']
         for idx_1, member in enumerate(self._new_entries):
+            if map_type_idx[idx_1] == False:
+                continue
             for idx_2, bounds in enumerate(member):
                 tk.Label(self._frame, text=text_i[idx_2], font='Verdana 9').place(x=start_x,
                                                                                   y=start_y + dy * idx_1 * 4 + dy * idx_2)
@@ -317,6 +329,8 @@ class CreateOptimizeCylinderWindow():
                             .place(x = start_x+dx*2 + idx_3*dx, y = start_y+dy*idx_1*4 + dy*idx_2 -dy*0.5)
 
                     entry_i.place(x = start_x+dx*2 + idx_3*dx, y = start_y+dy*idx_1*4 + dy*idx_2)
+                    if 'N/A' in all_label[idx_1][idx_3]:
+                        entry_i.configure(bg = 'grey')
 
 
         
@@ -472,6 +486,12 @@ class CreateOptimizeCylinderWindow():
         self.draw_properties()
         self.update_running_time()
 
+        ANYstructure_local.main_application.Application.draw_cylinder(text_size='Verdana 8 bold',
+                                                                      canvas = self._canvas_opt,
+                                                                      CylObj=self._initial_cylinder_obj,
+                                                                      start_x_cyl=350, start_y_cyl=300, text_x=230,
+                                                                      text_y=120)
+
     def selected_algorithm(self,event):
         '''
         Action when selecting an algorithm.
@@ -590,10 +610,12 @@ class CreateOptimizeCylinderWindow():
             self._opt_actual_running_time.update()
             self._opt_runned = True
             #self._result_label.config(text=self._opt_results[0].__str__)
-            ANYstructure_local.main_application.Application.draw_cylinder(canvas = self._canvas_opt,
+            self._canvas_opt.delete('all')
+            ANYstructure_local.main_application.Application.draw_cylinder(text_size='Verdana 8 bold',
+                                                                          canvas = self._canvas_opt,
                                                                           CylObj=self._opt_results[0],
-                                                                          text_size= ANYstructure_local.main_application.Application._text_size,
-                                                                          start_x_cyl=300)
+                                                                          start_x_cyl=350, start_y_cyl=300, text_x=230,
+                                                                          text_y=120)
             #self.draw_properties()
         else:
             messagebox.showinfo(title='Nothing found', message='No better alternatives found. Modify input.\n'
@@ -683,14 +705,14 @@ class CreateOptimizeCylinderWindow():
         :return:
         '''
         self._canvas_opt.delete('all')
-        self.checkered(10)
+        #self.checkered(10)
         ctr_x = self._canvas_dim[0]/2
         ctr_y = self._canvas_dim[1]/2+200
         m = self._draw_scale
         init_color,init_stipple = 'blue','gray12'
         opt_color,opt_stippe = 'red','gray12'
-        self._canvas_opt.create_rectangle(0,0,self._canvas_dim[0]+10,80,fill='white')
-        self._canvas_opt.create_line(10,10,30,10,fill = init_color,width=5)
+        # self._canvas_opt.create_rectangle(0,0,self._canvas_dim[0]+10,80,fill='white')
+        # self._canvas_opt.create_line(10,10,30,10,fill = init_color,width=5)
 
 
         if self._opt_runned:

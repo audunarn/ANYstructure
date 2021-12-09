@@ -3655,30 +3655,33 @@ class Application():
         else:
             pass
 
-    def draw_cylinder(self, canvas = None, CylObj: CylinderAndCurvedPlate = None, height = 150, radius = 150,
-                      start_x_cyl = 500,start_y_cyl = 20, acceptance_color = False):
+    @staticmethod
+    def draw_cylinder(text_size = None, canvas = None, CylObj: CylinderAndCurvedPlate = None,
+                      height = 150, radius = 150,
+                      start_x_cyl = 500,start_y_cyl = 20, acceptance_color = False, text_x = 180, text_y = 130):
 
         canvas_width = canvas.winfo_width()
         canvas_height = canvas.winfo_height()
-        canvas.create_text([canvas_width * 0.239726027, canvas_height * 0.446096654],
-                                      text=CylObj,
-                                      font=self._text_size["Text 9"])
+        if text_size == None:
+            text_size = 'Verdana 8'
+
+        canvas.create_text([text_x, text_y], text=CylObj, font=text_size)
         # setting the input field to active line properties
         #self.set_selected_variables(self._active_line)
 
         offset_oval = 30
 
-        coord1 = start_x_cyl, start_y_cyl, start_x_cyl + radius, offset_oval
-        coord2 = start_x_cyl, start_y_cyl + height, start_x_cyl + radius, offset_oval + height
+        coord1 = start_x_cyl, start_y_cyl, start_x_cyl + radius, start_y_cyl+offset_oval
+        coord2 = start_x_cyl, start_y_cyl + height, start_x_cyl + radius,start_y_cyl+ offset_oval + height
 
         arc_1 = canvas.create_oval(coord1, width=5, fill='grey90')
         arc_2 = canvas.create_arc(coord2, extent=180, start=180, style=tk.ARC, width=3)
 
-        line1 = canvas.create_line(coord1[0], coord1[1] + offset_oval / 4,
-                                              coord1[0], coord1[1] + height + offset_oval / 4,
+        line1 = canvas.create_line(coord1[0], coord1[1] + offset_oval / 2,
+                                              coord1[0], coord1[1] + height + offset_oval / 2,
                                               width=3)
-        line2 = canvas.create_line(coord1[0] + radius, coord1[1] + offset_oval / 4,
-                                              coord1[0] + radius, coord1[1] + height + offset_oval / 4,
+        line2 = canvas.create_line(coord1[0] + radius, coord1[1] + offset_oval / 2,
+                                              coord1[0] + radius, coord1[1] + height + offset_oval / 2,
                                               width=3)
         if CylObj.LongStfObj is not None:
             long_obj = CylObj.LongStfObj
@@ -3689,9 +3692,9 @@ class Application():
                 arc_x = (arc_x + 1) / 2
 
                 line1 = canvas.create_line(coord1[0] + radius * arc_x,
-                                                      coord1[1] + 2 * arc_y * offset_oval / 3,
+                                                      coord1[1] + 2 * arc_y * offset_oval,
                                                       coord1[0] + radius * arc_x,
-                                                      coord1[1] + height + 2 * arc_y * offset_oval / 3,
+                                                      coord1[1] + height + 2 * arc_y * offset_oval,
                                                       fill='blue')
 
         if CylObj.RingStfObj is not None:

@@ -1676,7 +1676,6 @@ class CylinderAndCurvedPlate():
                     elif results['Longitudinal stiffened shell'] > 1:
                         return False, 'UF longitudinal stiffeners', results
 
-
         if self._geometry in [5,6,7,8]:
             # UF for panel ring buckling
             ring_stf_shell = None
