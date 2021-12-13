@@ -2672,7 +2672,7 @@ class Application():
                 buc_util = 1 if float('inf') in buckling else max(buckling[0:5])
                 rec_for_color[current_line]['rp buckling'] = max(buckling[0:5])
                 return_dict['utilization'][current_line] = {'buckling': buc_util,
-                                                            'PULS buckling': buc_util, # TODO double check
+                                                            'PULS buckling': buc_util,
                                                             'fatigue': fat_util,
                                                             'section': sec_util,
                                                             'shear': shear_util,
@@ -4176,7 +4176,7 @@ class Application():
                 self._point_dict[current_point] = [x_coord, y_coord]
                 self._active_point = current_point
                 if move:
-                    self.logger(point=current_point, move_coords=(current_coords,[x_coord, y_coord])) #TODO
+                    self.logger(point=current_point, move_coords=(current_coords,[x_coord, y_coord]))
                 else:
                     self.logger(point=current_point, move_coords=None)
 
@@ -4483,7 +4483,6 @@ class Application():
                     main_dict_cyl, shell_dict, long_dict, ring_stf_dict, ring_frame_dict = \
                         cylinder_return.get_all_properties()
             else:
-                # TODO pasting of cylinders
                 obj_dict = pasted_structure.get_structure_prop()
 
             if self._active_line not in self._line_to_struc.keys() :
@@ -4860,15 +4859,19 @@ class Application():
     def paste_property(self, event = None):
         ''' Paste property to line '''
         if self._active_line not in self._line_to_struc.keys():
-            self.new_structure(pasted_structure=self._line_to_struc[self.__copied_line_prop][0])
-
-        if self._line_to_struc[self._active_line][0].get_structure_type() !=\
+            if self._line_to_struc[self.__copied_line_prop][5] is not None:
+                self.new_structure(cylinder_return=self._line_to_struc[self.__copied_line_prop][5])
+            else:
+                self.new_structure(pasted_structure=self._line_to_struc[self.__copied_line_prop][0])
+        elif self._line_to_struc[self.__copied_line_prop][5] is not None:
+            self.new_structure(cylinder_return=self._line_to_struc[self.__copied_line_prop][5])
+        elif self._line_to_struc[self._active_line][0].get_structure_type() !=\
                 self._line_to_struc[self.__copied_line_prop][0].get_structure_type():
             tk.messagebox.showerror('Paste error', 'Can only paste to same structure type. This is to avoid problems '
                                                    'with compartments not detecting changes to watertightness.')
             return
         else:
-            self.new_structure(pasted_structure= self._line_to_struc[self.__copied_line_prop][0])
+            self.new_structure(pasted_structure = self._line_to_struc[self.__copied_line_prop][0])
 
         self.update_frame()
 
@@ -6119,7 +6122,6 @@ class Application():
                             if load_obj.__str__() != temp_load[load_obj.get_name()][0].__str__() and main_line in \
                                     load_line+temp_load[load_obj.get_name()][1]:
                                 # The load has changed for this line.
-                                # TODO double check this.
                                 if self._PULS_results is not None:
                                     self._PULS_results.result_changed(main_line)
                     if main_line in load_line and main_line in self._line_to_struc.keys():
