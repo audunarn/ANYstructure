@@ -3993,13 +3993,16 @@ class Application():
                 self._result_canvas.create_text([x * 1, y * 1],
                                                 text=text, font=self._text_size['Text 12 bold'], anchor='nw')
                 y_location = 3
-                for key, value in cyl_obj.get_utilization_factors().items():
-                    if key == 'Weight':
+                results = cyl_obj.get_utilization_factors()
+                for key, value in results.items():
+                    if key in ['Weight', 'Need to check column buckling']:
                         continue
 
                     if key != 'Stiffener check':
                         text_key = key
                         if key == 'Column stability check':
+                            if results['Need to check column buckling'] == False:
+                                continue
                             text_value = 'N/A' if value is None else 'OK' if value else 'Not ok'
                         else:
                             text_value = 'N/A' if value is None else str(round(value, 2))
@@ -4008,7 +4011,6 @@ class Application():
                             uf_col = 'grey'
                         else:
                             uf_col = 'red' if any([value > 1, value == False]) else 'green'
-
                         self._result_canvas.create_text([x*1, y*y_location],
                                                        text=text_key,font=self._text_size['Text 10 bold'],anchor='nw',
                                                         fill='black')

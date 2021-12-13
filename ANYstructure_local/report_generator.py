@@ -170,149 +170,198 @@ class LetterMaker(object):
         for line in sorted(self.data._line_dict.keys()):
             vpos -= delta
             if line in self.data._line_to_struc.keys():
-                struc_obj = self.data._line_to_struc[line][1]
-                fo = self.data._line_to_struc[line][2]
-                pressure = self.data.get_highest_pressure(line)['normal']/1000
-                textobject = self.c.beginText()
-                textobject.setTextOrigin(30,vpos)
-                textobject.setFont("Helvetica-Oblique", 10)
-                textobject.textLine('*********** '+line+' ***********')
-                textobject.textLine('Plate thickness: '+ str(struc_obj.get_pl_thk()*1000)+ ' [mm]          '
-                                                                                           'Stiffener spacing: '+
-                                    str(struc_obj.get_s()*1000)+' [mm]'+ '          Span: '+
-                                    str(round(struc_obj.get_span(),4))
-                                    + ' [m]')
-                textobject.textLine('Stiffener: '+ str(struc_obj.get_web_h()*1000)+ 'x' + str(struc_obj.get_web_thk()*1000)
-                                    + ' + ' + str(struc_obj.get_fl_w()*1000)+ 'x' + str(struc_obj.get_fl_thk()*1000))
+                if self.data._line_to_struc[line][5] is None:
+                    struc_obj = self.data._line_to_struc[line][1]
+                    fo = self.data._line_to_struc[line][2]
+                    pressure = self.data.get_highest_pressure(line)['normal']/1000
+                    textobject = self.c.beginText()
+                    textobject.setTextOrigin(30,vpos)
+                    textobject.setFont("Helvetica-Oblique", 10)
+                    textobject.textLine('*********** '+line+' ***********')
+                    textobject.textLine('Plate thickness: '+ str(struc_obj.get_pl_thk()*1000)+ ' [mm]          '
+                                                                                               'Stiffener spacing: '+
+                                        str(struc_obj.get_s()*1000)+' [mm]'+ '          Span: '+
+                                        str(round(struc_obj.get_span(),4))
+                                        + ' [m]')
+                    textobject.textLine('Stiffener: '+ str(struc_obj.get_web_h()*1000)+ 'x' + str(struc_obj.get_web_thk()*1000)
+                                        + ' + ' + str(struc_obj.get_fl_w()*1000)+ 'x' + str(struc_obj.get_fl_thk()*1000))
 
-                textobject.textLine('Fixation paramters: kps: = '+str(struc_obj.get_kps())+ '  kpp = '
-                                    + str(struc_obj.get_kpp())+
-                                    ', Bending moment factors km1/km2/km3 (support/field/support)' + ' = '+
-                                    str(int(struc_obj.get_km1()))+'/'+
-                                    str(int(struc_obj.get_km2()))+'/'+
-                                    str(int(struc_obj.get_km3())))
-                textobject.textLine('Defined stresses [MPa]:  sigma_x = '+str(struc_obj.get_sigma_x())+
-                                    '  sigma_y1 = '+ str(struc_obj.get_sigma_y1()) +
-                                    '  sigma_y2 = '+ str(struc_obj.get_sigma_y2()) +
-                                    '  tau_xy = ' + str(struc_obj.get_tau_xy()))
-                textobject.textLine('ULS max pressure for line: '+ str(round(pressure,2)*1000)
-                                    + ' [kPa]'+'      Pressure applied at: '+'plate side' if struc_obj.get_side()=='p'
-                                    else 'stiffener side')
+                    textobject.textLine('Fixation paramters: kps: = '+str(struc_obj.get_kps())+ '  kpp = '
+                                        + str(struc_obj.get_kpp())+
+                                        ', Bending moment factors km1/km2/km3 (support/field/support)' + ' = '+
+                                        str(int(struc_obj.get_km1()))+'/'+
+                                        str(int(struc_obj.get_km2()))+'/'+
+                                        str(int(struc_obj.get_km3())))
+                    textobject.textLine('Defined stresses [MPa]:  sigma_x = '+str(struc_obj.get_sigma_x())+
+                                        '  sigma_y1 = '+ str(struc_obj.get_sigma_y1()) +
+                                        '  sigma_y2 = '+ str(struc_obj.get_sigma_y2()) +
+                                        '  tau_xy = ' + str(struc_obj.get_tau_xy()))
+                    textobject.textLine('ULS max pressure for line: '+ str(round(pressure,2)*1000)
+                                        + ' [kPa]'+'      Pressure applied at: '+'plate side' if struc_obj.get_side()=='p'
+                                        else 'stiffener side')
 
-                if fo is not None:
-                    textobject.textLine('Fatigue pressure [Pa]: '+' p_int:'+' loaded/ballast/part = '
-                                        + str(round(self.data.get_color_and_calc_state()['pressure_fls'][line]['p_int']['loaded'],0))
-                                        +'/'+str(round(self.data.get_color_and_calc_state()['pressure_fls'][line]['p_int']['ballast'],0))
-                                        +'/'+str(round(self.data.get_color_and_calc_state()['pressure_fls'][line]['p_int']['part'],0))
-                                        + ' p_ext:'+' loaded/ballast/part = '+
-                                        str(round(self.data.get_color_and_calc_state()['pressure_fls'][line]['p_ext']['loaded'],0))
-                                        +'/'+str(round(self.data.get_color_and_calc_state()['pressure_fls'][line]['p_ext']['ballast'],0))
-                                        +'/'+str(round(self.data.get_color_and_calc_state()['pressure_fls'][line]['p_ext']['part'],0)))
-                else:
-                    textobject.textLine(' Fatigue pressure: No pressures defined')
+                    if fo is not None:
+                        textobject.textLine('Fatigue pressure [Pa]: '+' p_int:'+' loaded/ballast/part = '
+                                            + str(round(self.data.get_color_and_calc_state()['pressure_fls'][line]['p_int']['loaded'],0))
+                                            +'/'+str(round(self.data.get_color_and_calc_state()['pressure_fls'][line]['p_int']['ballast'],0))
+                                            +'/'+str(round(self.data.get_color_and_calc_state()['pressure_fls'][line]['p_int']['part'],0))
+                                            + ' p_ext:'+' loaded/ballast/part = '+
+                                            str(round(self.data.get_color_and_calc_state()['pressure_fls'][line]['p_ext']['loaded'],0))
+                                            +'/'+str(round(self.data.get_color_and_calc_state()['pressure_fls'][line]['p_ext']['ballast'],0))
+                                            +'/'+str(round(self.data.get_color_and_calc_state()['pressure_fls'][line]['p_ext']['part'],0)))
+                    else:
+                        textobject.textLine(' Fatigue pressure: No pressures defined')
 
-                textobject.setFillColor('red') if self.data.get_color_and_calc_state()['colors'][line]['section'] == 'red' \
-                    else textobject.setFillColor('black')
-
-                textobject.textLine('Section modulus: '+str(int(min(self.data.get_color_and_calc_state()['section_modulus'][line]['sec_mod'])
-                                                                *1000**3))+ ' [mm3]'+'  Min. section modulus: '+
-                                    str(int(self.data.get_color_and_calc_state()['section_modulus'][line]['min_sec_mod']*1000**3))+' [mm3]'+
-                                    ' -> ' + 'OK' if int(min(self.data.get_color_and_calc_state()['section_modulus'][line]['sec_mod'])*1000**3) >=
-                                                     int(self.data.get_color_and_calc_state()['section_modulus'][line]['min_sec_mod']*1000**3)
-                                    else 'Section modulus: '+str(int(min(self.data.get_color_and_calc_state()['section_modulus'][line]['sec_mod'])
-                                                                     *1000**3))+ ' [mm3]'+ '  Min. section modulus: '+
-                                    str(int(self.data.get_color_and_calc_state()['section_modulus'][line]['min_sec_mod']*1000**3))+' [mm3]'+
-                                    ' -> ' + 'NOT OK')
-                textobject.setFillColor('black')
-                textobject.setFillColor('red') if self.data.get_color_and_calc_state()['colors'][line]['thickness'] == 'red' \
-                    else textobject.setFillColor('black')
-                textobject.textLine('Min plate thickness:  '+
-                                    str(round(self.data.get_color_and_calc_state()['thickness'][line]['min_thk'],2)) + ' [mm] '
-                                    ' -> ' +
-                                    'OK' if struc_obj.get_pl_thk()*1000 >=
-                                            self.data.get_color_and_calc_state()['thickness'][line]['min_thk'] else
-                                    'Min plate thickness:  '+ str(round(
-                                        self.data.get_color_and_calc_state()['thickness'][line]['min_thk'],2)) + ' [mm] '
-                                    ' -> '+'NOT OK')
-                textobject.setFillColor('black')
-                textobject.setFillColor('red') if self.data.get_color_and_calc_state()['colors'][line]['shear'] == 'red' \
-                    else textobject.setFillColor('black')
-                textobject.textLine('Shear area: '+str(int(self.data.get_color_and_calc_state()['shear_area'][line]['shear_area']*1000**2))+' [mm2] '+
-                                    '   Min shear area: '+str(int(self.data.get_color_and_calc_state()['shear_area'][line]['min_shear_area']*1000**2))
-                                    + ' [mm2] ' +
-                                    ' -> ' + 'OK' if self.data.get_color_and_calc_state()['shear_area'][line]['shear_area'] >=
-                                                     self.data.get_color_and_calc_state()['shear_area'][line]['min_shear_area']
-                                    else 'Shear area: '+str(int(self.data.get_color_and_calc_state()['shear_area'][line]['shear_area']*1000**2))+
-                                         ' [mm2] ' +
-                                         '   Min shear area: '+str(int(self.data.get_color_and_calc_state()['shear_area'][line]['min_shear_area']*1000**2))
-                                         + ' [mm2] ' + ' -> ' + 'NOT OK')
-                textobject.setFillColor('black')
-                if self.data._new_buckling_slider.get() == 1:
-                    textobject.setFillColor('red') if self.data.get_color_and_calc_state()['colors'][line]['buckling'] == 'red' \
+                    textobject.setFillColor('red') if self.data.get_color_and_calc_state()['colors'][line]['section'] == 'red' \
                         else textobject.setFillColor('black')
-                    textobject.textLine('Highest buckling utilization DNV-RP-C203: '+
-                                        str(round(max(self.data.get_color_and_calc_state()['buckling'][line]),2))+
-                                        ' -> '+'OK' if max(self.data.get_color_and_calc_state()['buckling'][line]) < 1 else
-                                        'Highest buckling utilization DNV-RP-C203: '+
-                                        str(round(max(self.data.get_color_and_calc_state()['buckling'][line]),2))+' -> '+'NOT OK')
-                elif self.data._new_buckling_slider.get() == 2:
-                    if self.data._PULS_results is not None:
+
+                    textobject.textLine('Section modulus: '+str(int(min(self.data.get_color_and_calc_state()['section_modulus'][line]['sec_mod'])
+                                                                    *1000**3))+ ' [mm3]'+'  Min. section modulus: '+
+                                        str(int(self.data.get_color_and_calc_state()['section_modulus'][line]['min_sec_mod']*1000**3))+' [mm3]'+
+                                        ' -> ' + 'OK' if int(min(self.data.get_color_and_calc_state()['section_modulus'][line]['sec_mod'])*1000**3) >=
+                                                         int(self.data.get_color_and_calc_state()['section_modulus'][line]['min_sec_mod']*1000**3)
+                                        else 'Section modulus: '+str(int(min(self.data.get_color_and_calc_state()['section_modulus'][line]['sec_mod'])
+                                                                         *1000**3))+ ' [mm3]'+ '  Min. section modulus: '+
+                                        str(int(self.data.get_color_and_calc_state()['section_modulus'][line]['min_sec_mod']*1000**3))+' [mm3]'+
+                                        ' -> ' + 'NOT OK')
+                    textobject.setFillColor('black')
+                    textobject.setFillColor('red') if self.data.get_color_and_calc_state()['colors'][line]['thickness'] == 'red' \
+                        else textobject.setFillColor('black')
+                    textobject.textLine('Min plate thickness:  '+
+                                        str(round(self.data.get_color_and_calc_state()['thickness'][line]['min_thk'],2)) + ' [mm] '
+                                        ' -> ' +
+                                        'OK' if struc_obj.get_pl_thk()*1000 >=
+                                                self.data.get_color_and_calc_state()['thickness'][line]['min_thk'] else
+                                        'Min plate thickness:  '+ str(round(
+                                            self.data.get_color_and_calc_state()['thickness'][line]['min_thk'],2)) + ' [mm] '
+                                        ' -> '+'NOT OK')
+                    textobject.setFillColor('black')
+                    textobject.setFillColor('red') if self.data.get_color_and_calc_state()['colors'][line]['shear'] == 'red' \
+                        else textobject.setFillColor('black')
+                    textobject.textLine('Shear area: '+str(int(self.data.get_color_and_calc_state()['shear_area'][line]['shear_area']*1000**2))+' [mm2] '+
+                                        '   Min shear area: '+str(int(self.data.get_color_and_calc_state()['shear_area'][line]['min_shear_area']*1000**2))
+                                        + ' [mm2] ' +
+                                        ' -> ' + 'OK' if self.data.get_color_and_calc_state()['shear_area'][line]['shear_area'] >=
+                                                         self.data.get_color_and_calc_state()['shear_area'][line]['min_shear_area']
+                                        else 'Shear area: '+str(int(self.data.get_color_and_calc_state()['shear_area'][line]['shear_area']*1000**2))+
+                                             ' [mm2] ' +
+                                             '   Min shear area: '+str(int(self.data.get_color_and_calc_state()['shear_area'][line]['min_shear_area']*1000**2))
+                                             + ' [mm2] ' + ' -> ' + 'NOT OK')
+                    textobject.setFillColor('black')
+                    if self.data._new_buckling_slider.get() == 1:
+                        textobject.setFillColor('red') if self.data.get_color_and_calc_state()['colors'][line]['buckling'] == 'red' \
+                            else textobject.setFillColor('black')
+                        textobject.textLine('Highest buckling utilization DNV-RP-C203: '+
+                                            str(round(max(self.data.get_color_and_calc_state()['buckling'][line]),2))+
+                                            ' -> '+'OK' if max(self.data.get_color_and_calc_state()['buckling'][line]) < 1 else
+                                            'Highest buckling utilization DNV-RP-C203: '+
+                                            str(round(max(self.data.get_color_and_calc_state()['buckling'][line]),2))+' -> '+'NOT OK')
+                    elif self.data._new_buckling_slider.get() == 2:
+                        if self.data._PULS_results is not None:
+                            puls_method = self.data._line_to_struc[line][1].get_puls_method()
+                            textobject.textLine('PULS results using '+str(puls_method) + 'utilization with acceptance '+
+                                                str(self.data._PULS_results.puls_acceptance))
+                            if line in self.data._PULS_results.get_run_results().keys():
+                                puls_buckling = self.data._PULS_results.get_run_results()[line]['Buckling strength']['Actual usage Factor'][0]
+                                puls_ultimate = self.data._PULS_results.get_run_results()[line]['Ultimate capacity']['Actual usage Factor'][0]
+
+                                if puls_method == 'buckling' and puls_buckling/self.data._PULS_results.puls_acceptance > 1:
+                                    textobject.setFillColor('red')
+                                textobject.textLine('PULS buckling utilization = ' + str(puls_buckling))
+                                textobject.setFillColor('black')
+                                if puls_method == 'ultimate'  and puls_ultimate/self.data._PULS_results.puls_acceptance > 1:
+                                    textobject.setFillColor('red')
+                                textobject.textLine('PULS ultimate utilization = ' + str(puls_ultimate))
+                                textobject.setFillColor('black')
+                    else:
                         puls_method = self.data._line_to_struc[line][1].get_puls_method()
-                        textobject.textLine('PULS results using '+str(puls_method) + 'utilization with acceptance '+
-                                            str(self.data._PULS_results.puls_acceptance))
+                        textobject.textLine('ML-CL results using '+str(puls_method) + 'utilization with acceptance 0.87')
                         if line in self.data._PULS_results.get_run_results().keys():
-                            puls_buckling = self.data._PULS_results.get_run_results()[line]['Buckling strength']['Actual usage Factor'][0]
-                            puls_ultimate = self.data._PULS_results.get_run_results()[line]['Ultimate capacity']['Actual usage Factor'][0]
+                            ml_buckling = self.data.get_color_and_calc_state()['ML buckling class'][line]['buckling']
+                            ml_ultimate = self.data.get_color_and_calc_state()['ML buckling class'][line]['ultimate']
+                            color_ml_buc = self.data.get_color_and_calc_state()['ML buckling colors'][line]['buckling']
+                            color_ml_ult = self.data.get_color_and_calc_state()['ML buckling colors'][line]['ultimate']
+                            color_csr = self.data.get_color_and_calc_state()['ML buckling colors'][line]['CSR requirement']
 
-                            if puls_method == 'buckling' and puls_buckling/self.data._PULS_results.puls_acceptance > 1:
-                                textobject.setFillColor('red')
-                            textobject.textLine('PULS buckling utilization = ' + str(puls_buckling))
+                            if puls_method == 'buckling':
+                                textobject.setFillColor('red' if color_ml_buc == 'red' else 'black')
+                            textobject.textLine('Buckling ML-CL results: ' + self.data._ML_classes[ml_buckling])
                             textobject.setFillColor('black')
-                            if puls_method == 'ultimate'  and puls_ultimate/self.data._PULS_results.puls_acceptance > 1:
-                                textobject.setFillColor('red')
-                            textobject.textLine('PULS ultimate utilization = ' + str(puls_ultimate))
+                            if puls_method == 'ultimate':
+                                textobject.setFillColor('red' if color_ml_ult == 'red' else 'black')
+                            textobject.textLine('Ultimate ML-CL result: ' + self.data._ML_classes[ml_ultimate])
+                            textobject.setFillColor('red' if color_csr == 'red' else 'black')
+                            textobject.textLine('CSR tank requirement (stiffener): ' + 'OK' if color_csr == 'green'
+                                                else 'red')
                             textobject.setFillColor('black')
+
+                    textobject.setFillColor('black')
+                    textobject.setFillColor('red') if self.data.get_color_and_calc_state()['colors'][line]['fatigue'] == 'red' \
+                        else textobject.setFillColor('black')
+                    if self.data.get_color_and_calc_state()['fatigue'][line]['damage'] is not None:
+                        textobject.textLine('Fatigue (plate/stiffeners) utilization: '+
+                                            str(round(self.data.get_color_and_calc_state()['fatigue'][line]['damage'],2))+ ' * DFF('+
+                                            str(self.data.get_color_and_calc_state()['fatigue'][line]['dff']) + ') = ' +
+                                            str(round(self.data.get_color_and_calc_state()['fatigue'][line]['damage']*
+                                                      self.data.get_color_and_calc_state()['fatigue'][line]['dff'],2)) + ' (SN-curve = '+
+                                            self.data.get_color_and_calc_state()['fatigue'][line]['curve']+')')
+
+                    else:
+                        textobject.textLine('No fatigue results')
+
+                    # textobject.textLine('Utilization percentage (highest calculated): '+
+                    #                     str(int(max(self.data.get_color_and_calc_state()['utilization'][line].values())*100))+ '%')
+
+                    textobject.setFillColor('black')
+                    self.c.drawText(textobject)
                 else:
-                    puls_method = self.data._line_to_struc[line][1].get_puls_method()
-                    textobject.textLine('ML-CL results using '+str(puls_method) + 'utilization with acceptance 0.87')
-                    if line in self.data._PULS_results.get_run_results().keys():
-                        ml_buckling = self.data.get_color_and_calc_state()['ML buckling class'][line]['buckling']
-                        ml_ultimate = self.data.get_color_and_calc_state()['ML buckling class'][line]['ultimate']
-                        color_ml_buc = self.data.get_color_and_calc_state()['ML buckling colors'][line]['buckling']
-                        color_ml_ult = self.data.get_color_and_calc_state()['ML buckling colors'][line]['ultimate']
-                        color_csr = self.data.get_color_and_calc_state()['ML buckling colors'][line]['CSR requirement']
+                    cyl_obj = self.data._line_to_struc[line][5]
+                    textobject = self.c.beginText()
+                    textobject.setTextOrigin(30, vpos)
+                    textobject.setFont("Helvetica-Oblique", 10)
+                    textobject.textLine('*********** ' + line + ' ***********')
+                    textobject.textLine('Cylinder radius: ' + str(round(cyl_obj.ShellObj.radius*1000,2)) +
+                                        ' mm , thickness: ' +str(round(cyl_obj.ShellObj.thk*1000,2)) + ' mm')
+                    textobject.textLine('Longitudinal stiffener: ' + cyl_obj.LongStfObj.get_beam_string())
+                    textobject.textLine('Ring stiffener: ' + cyl_obj.LongStfObj.get_beam_string())
+                    textobject.textLine('Heavy ring girder: ' + cyl_obj.LongStfObj.get_beam_string())
+                    textobject.textLine(
+                        'Dist. between rings/length, l: ' + str(round(cyl_obj.ShellObj.dist_between_rings, 1)))
+                    textobject.textLine(
+                        'Lenght of shell, L: ' + str(round(cyl_obj.ShellObj.length_of_shell, 1)) + ' '
+                        +'Total cyl. lenght, Lc: ' + str(round(cyl_obj.ShellObj.tot_cyl_length, 1)))
 
-                        if puls_method == 'buckling':
-                            textobject.setFillColor('red' if color_ml_buc == 'red' else 'black')
-                        textobject.textLine('Buckling ML-CL results: ' + self.data._ML_classes[ml_buckling])
-                        textobject.setFillColor('black')
-                        if puls_method == 'ultimate':
-                            textobject.setFillColor('red' if color_ml_ult == 'red' else 'black')
-                        textobject.textLine('Ultimate ML-CL result: ' + self.data._ML_classes[ml_ultimate])
-                        textobject.setFillColor('red' if color_csr == 'red' else 'black')
-                        textobject.textLine('CSR tank requirement (stiffener): ' + 'OK' if color_csr == 'green'
-                                            else 'red')
-                        textobject.setFillColor('black')
+                    results = cyl_obj.get_utilization_factors()
+                    for key, value in results.items():
+                        if key in ['Weight', 'Need to check column buckling']:
+                            continue
+                        if key != 'Stiffener check':
+                            text_key = key
+                            if key == 'Column stability check':
+                                if results['Need to check column buckling'] == False:
+                                    continue
+                                uf_text = 'N/A' if value is None else 'OK' if value else 'Not ok'
+                            else:
+                                uf_text = 'N/A' if value is None else str(round(value, 2))
+                            if value is None:
+                                uf_col = 'grey'
+                            else:
+                                uf_col = 'red' if any([value > 1, value == False]) else 'green'
+                            textobject.setFillColor(uf_col)
+                            textobject.textLine(text_key + ' : UF = ' + uf_text)
+                            textobject.setFillColor('black')
+                        else:
+                            if value is not None:
 
-                textobject.setFillColor('black')
-                textobject.setFillColor('red') if self.data.get_color_and_calc_state()['colors'][line]['fatigue'] == 'red' \
-                    else textobject.setFillColor('black')
-                if self.data.get_color_and_calc_state()['fatigue'][line]['damage'] is not None:
-                    textobject.textLine('Fatigue (plate/stiffeners) utilization: '+
-                                        str(round(self.data.get_color_and_calc_state()['fatigue'][line]['damage'],2))+ ' * DFF('+
-                                        str(self.data.get_color_and_calc_state()['fatigue'][line]['dff']) + ') = ' +
-                                        str(round(self.data.get_color_and_calc_state()['fatigue'][line]['damage']*
-                                                  self.data.get_color_and_calc_state()['fatigue'][line]['dff'],2)) + ' (SN-curve = '+
-                                        self.data.get_color_and_calc_state()['fatigue'][line]['curve']+')')
+                                textobject.textLine('Stiffener requirement checks:')
+                                stf_type_all = ''
+                                for stf_type, chk_bool in value.items():
+                                    chk_text = 'OK' if chk_bool == True else 'Not OK' if chk_bool == False else 'N/A'
+                                    stf_type_all += stf_type + ' : ' + chk_text + '     '
+                                textobject.textLine(stf_type_all)
 
-                else:
-                    textobject.textLine('No fatigue results')
 
-                # textobject.textLine('Utilization percentage (highest calculated): '+
-                #                     str(int(max(self.data.get_color_and_calc_state()['utilization'][line].values())*100))+ '%')
-
-                textobject.setFillColor('black')
-                self.c.drawText(textobject)
+                    self.c.drawText(textobject)
             else:
                 textobject.setFont("Helvetica-Oblique", 10)
                 textobject.textLine('*********** '+line+' ***********')
@@ -708,12 +757,13 @@ class LetterMaker(object):
 
             if self.data._PULS_results is not None:
                 puls_method = self.data._line_to_struc[line][1].get_puls_method()
-                if puls_method == 'buckling':
-                    buckling_uf = \
-                    self.data._PULS_results.get_run_results()[line]['Buckling strength']['Actual usage Factor'][0]
-                else:
-                    buckling_uf = \
-                    self.data._PULS_results.get_run_results()[line]['Ultimate capacity']['Actual usage Factor'][0]
+                if line in self.data._PULS_results.get_run_results().keys():
+                    if puls_method == 'buckling':
+                        buckling_uf = \
+                        self.data._PULS_results.get_run_results()[line]['Buckling strength']['Actual usage Factor'][0]
+                    else:
+                        buckling_uf = \
+                        self.data._PULS_results.get_run_results()[line]['Ultimate capacity']['Actual usage Factor'][0]
             else:
                 buckling_uf = str(round(max(self.data.get_color_and_calc_state()['buckling'][line]), 2))
 
@@ -761,8 +811,8 @@ if __name__ == '__main__':
     my_app = app.Application(root)
     ship_example = r'C:\Github\ANYstructure\ANYstructure_local\ship_section_example.txt'
     my_app.openfile(ship_example)
-    my_app.table_generate()
-    #my_app.report_generate(autosave=True)
+    #my_app.table_generate()
+    my_app.report_generate(autosave=True)
     # doc = LetterMaker("example.pdf", "The MVP", 10, to_report_gen)
     # doc.createDocument()
     # doc.savePDF()

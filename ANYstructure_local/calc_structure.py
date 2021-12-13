@@ -1667,6 +1667,7 @@ class CylinderAndCurvedPlate():
                                                                      unstiffened_shell=unstiffend_shell)
 
                 results['Column stability check'] = column_buckling_data['Column stability check']
+                results['Need to check column buckling'] = column_buckling_data['Need to check column buckling']
                 results['Stiffener check'] = column_buckling_data['stiffener check']
                 if self._geometry in [3,4,7,8] and long_stf_shell['fksd'] > 0:
                     results['Longitudinal stiffened shell'] = long_stf_shell['sjsd_used']/long_stf_shell['fksd']\
@@ -1692,6 +1693,7 @@ class CylinderAndCurvedPlate():
                 ring_stf_shell = self.ring_stiffened_shell(data_shell_buckling=data_shell_buckling,
                                                            column_buckling_data=column_buckling_data)
                 results['Column stability check'] = column_buckling_data['Column stability check']
+                results['Need to check column buckling'] = column_buckling_data['Need to check column buckling']
                 results['Stiffener check'] = column_buckling_data['stiffener check']
                 results['Ring stiffened shell'] = ring_stf_shell[0]
 
@@ -1715,6 +1717,7 @@ class CylinderAndCurvedPlate():
                     self.ring_stiffened_shell(data_shell_buckling=data_shell_buckling,
                                               column_buckling_data=column_buckling_data)
                 results['Column stability check'] = column_buckling_data['Column stability check']
+                results['Need to check column buckling'] = column_buckling_data['Need to check column buckling']
                 results['Stiffener check'] = column_buckling_data['stiffener check']
                 results['Heavy ring frame'] = ring_stf_shell[1]
 
@@ -2619,6 +2622,8 @@ class CylinderAndCurvedPlate():
 
         k_factor = self._Shell.k_factor
         col_test =math.pow(k_factor*Lc/math.sqrt(Itot/Atot),2) >= 2.5*E/fy
+
+        provide_data['Need to check column buckling'] = col_test
         # print("Column buckling should be assessed") if col_test else \
         #     print("Column buckling does not need to be checked")
 
