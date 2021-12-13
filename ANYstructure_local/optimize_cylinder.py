@@ -491,6 +491,9 @@ class CreateOptimizeCylinderWindow():
                                                                       CylObj=self._initial_cylinder_obj,
                                                                       start_x_cyl=350, start_y_cyl=300, text_x=230,
                                                                       text_y=120)
+        print(self.get_lower_bounds())
+        print(self.get_deltas())
+        print(self.get_upper_bounds())
 
     def selected_algorithm(self,event):
         '''
@@ -667,7 +670,6 @@ class CreateOptimizeCylinderWindow():
                 these_upper.append(val.get()/1000)
             all_upper.append(these_upper)
         return all_upper
-
         
     def get_lower_bounds(self):
         '''
@@ -751,7 +753,6 @@ class CreateOptimizeCylinderWindow():
                                                     'x'+str(round(self._opt_results[0].get_fl_thk()*1000,1)),
                                         font = 'Verdana 8',fill = opt_color)
 
-
     def save_and_close(self):
         '''
         Save and close
@@ -763,7 +764,7 @@ class CreateOptimizeCylinderWindow():
             return
 
         try:
-            self.app.on_close_opt_window(self._opt_results)
+            self.app.on_close_opt_cyl_window(self._opt_results)
         except (IndexError, TypeError):
             messagebox.showinfo(title='Nothing to return',message='No results to return.')
             return

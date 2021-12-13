@@ -1404,7 +1404,7 @@ class Application():
             self._opt_button.image = photo
             self._opt_button.place(relx=lc_x, rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.098)
         except TclError:
-            self._opt_button =Button(self._main_fr, text='Optimize', command=self.on_optimize,
+            self._opt_button =tk.Button(self._main_fr, text='Optimize', command=self.on_optimize,
                       bg = self._button_bg_color, fg = self._button_fg_color)
             self._opt_button.place(relx=lc_x, rely=lc_y - 6 * lc_y_delta)
         try:
@@ -1861,6 +1861,7 @@ class Application():
                     self._new_shell_Qsd.set(Qsd)
 
         self._current_calculation_domain = self._new_calculation_domain.get()
+        # Setting the correct optmization buttons
 
     def toggle_puls_run(self):
         if self._toggle_btn_puls.config('relief')[-1] == 'sunken':
@@ -3685,16 +3686,17 @@ class Application():
                                               width=3)
         if CylObj.LongStfObj is not None:
             long_obj = CylObj.LongStfObj
-            num_stf = int(1000 * CylObj.ShellObj.radius / long_obj.s)
+
+            num_stf = int(1000 * 2*math.pi*CylObj.ShellObj.radius / long_obj.s / 2)
             for line_num in range(1, num_stf, 1):
                 angle = 180 - 180 / (num_stf) * line_num
                 arc_x, arc_y = 1 * math.cos(math.radians(angle)), 0.5 * math.sin(math.radians(angle))
                 arc_x = (arc_x + 1) / 2
 
                 line1 = canvas.create_line(coord1[0] + radius * arc_x,
-                                                      coord1[1] + 2 * arc_y * offset_oval,
+                                                      coord1[1] + 1 * arc_y * offset_oval+offset_oval/2,
                                                       coord1[0] + radius * arc_x,
-                                                      coord1[1] + height + 2 * arc_y * offset_oval,
+                                                      coord1[1] + height + 1 * arc_y * offset_oval+offset_oval/2,
                                                       fill='blue')
 
         if CylObj.RingStfObj is not None:
@@ -4305,7 +4307,8 @@ class Application():
                 obj_dict = multi_return[1].get_structure_prop()
             elif toggle_multi is not None:
                 obj_dict = toggle_multi
-            elif pasted_structure == None:
+            elif pasted_structure is None:
+
                 obj_dict = {'mat_yield': [self._new_material.get()*1e6, 'Pa'],
                             'mat_factor': [self._new_material_factor.get(), ''],
                             'span': [self._new_field_len.get(), 'm'],
@@ -4458,7 +4461,6 @@ class Application():
                                      'end cap pressure': [self._new_shell_end_cap_pressure_included.get(), '']
                     }
 
-
                     for key, value in dummy_data.items():
                         if key not in long_dict.keys():
                             long_dict[key] = value
@@ -4477,8 +4479,9 @@ class Application():
                                                                                   self._new_shell_exclude_ring_frame.get()])
                                                           else Structure(ring_frame_dict))
                 elif cylinder_return is not None:
-                    main_dict_cyl, shell_dict, long_dict, ring_stf_dict, ring_frame_dict = cylinder_return
 
+                    main_dict_cyl, shell_dict, long_dict, ring_stf_dict, ring_frame_dict = \
+                        cylinder_return.get_all_properties()
             else:
                 # TODO pasting of cylinders
                 obj_dict = pasted_structure.get_structure_prop()
@@ -4536,7 +4539,8 @@ class Application():
                     self._main_grid.clear()
                     self._compartments_listbox.delete(0, 'end')
 
-                if self._line_to_struc[self._active_line][5] is not None and CylinderObj is None:
+                if  None and all([CylinderObj is None, cylinder_return is None,
+                                  self._line_to_struc[self._active_line][5] is not None]):
                     self._line_to_struc[self._active_line][5] = None
                 elif CylinderObj is not None:
                     if self._line_to_struc[self._active_line][5] is not None and self._new_scale_stresses.get():
@@ -4548,9 +4552,9 @@ class Application():
                             else NewCylinderObj.RingStfObj
                         NewCylinderObj.RingFrameObj = None if CylinderObj.RingFrameObj is None \
                             else NewCylinderObj.RingFrameObj
-
-
                     self._line_to_struc[self._active_line][5] = CylinderObj
+                elif cylinder_return is not None:
+                    self._line_to_struc[self._active_line][5] = cylinder_return
             try:
                 self.calculate_all_load_combinations_for_line_all_lines()
             except (KeyError, AttributeError):
@@ -4571,6 +4575,8 @@ class Application():
                 self._weight_logger['new structure']['COG'].append(self.get_color_and_calc_state()['COG'])
                 self._weight_logger['new structure']['weight'].append(self.get_color_and_calc_state()['Total weight'])
                 self._weight_logger['new structure']['time'].append(time.time())
+            self.cylinder_gui_mods()
+
         self.get_unique_plates_and_beams()
 
     def option_meny_structure_type_trace(self, event):
@@ -5365,6 +5371,7 @@ class Application():
         When clicking the right button, this method is called.
         method is referenced in
         '''
+
         self._previous_drag_mouse = [event.x, event.y]
         click_x = self._main_canvas.winfo_pointerx() - self._main_canvas.winfo_rootx()
         click_y = self._main_canvas.winfo_pointery() - self._main_canvas.winfo_rooty()
@@ -5424,6 +5431,9 @@ class Application():
             except (KeyError, AttributeError):
                 pass
 
+        self.cylinder_gui_mods()
+
+    def cylinder_gui_mods(self):
         if self._active_line in self._line_to_struc.keys():
 
             if self._line_to_struc[self._active_line][5] is not None:
@@ -5439,7 +5449,7 @@ class Application():
                 for btn, placement in zip(self._optimization_buttons['cylinder'],
                                           self._optimization_buttons['cylinder place']):
 
-                    btn.place(relx = placement[0], rely= placement[1],relheight = placement[2], relwidth = placement[3] )
+                    btn.place(relx = placement[0], rely= placement[1],relheight = placement[2], relwidth = placement[3])
 
             else:
                 self._new_calculation_domain.set('Stiffened panel, flat')
@@ -5451,7 +5461,6 @@ class Application():
                 for btn, placement in zip(self._optimization_buttons['panel'],
                                           self._optimization_buttons['panel place']):
                     btn.place(relx = placement[0], rely= placement[1],relheight = placement[2], relwidth = placement[3] )
-
 
     def button_1_click_comp_box(self,event):
         '''
@@ -6132,6 +6141,25 @@ class Application():
         '''
 
         self.new_structure(multi_return = returned_object[0:3])
+        # self._line_to_struc[self._active_line][0]=returned_objects[0]
+        # self._line_to_struc[self._active_line][1]=returned_objects[1]
+        # self._line_to_struc[self._active_line][1].need_recalc = True
+        # self.set_selected_variables(self._active_line)
+        # if returned_objects[2] is not None:
+        #     self._line_to_struc[self._active_line][2] = CalcFatigue(returned_objects[0].get_structure_prop(),
+        #                                                             returned_objects[2])
+        # self.new_structure()
+        self.update_frame()
+
+    def on_close_opt_cyl_window(self,returned_object):
+        '''
+        Sets the returned properties.
+        :param returned_structure:
+        :return:
+        '''
+
+        self.new_structure(cylinder_return = returned_object[0])
+
         # self._line_to_struc[self._active_line][0]=returned_objects[0]
         # self._line_to_struc[self._active_line][1]=returned_objects[1]
         # self._line_to_struc[self._active_line][1].need_recalc = True

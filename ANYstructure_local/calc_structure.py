@@ -1506,6 +1506,9 @@ class CylinderAndCurvedPlate():
         long_string = 'N/A' if self._LongStf is None else self._LongStf.get_beam_string()
         ring_string = 'N/A' if self._RingStf is None else self._RingStf.get_beam_string()
         frame_string = 'N/A' if self._RingFrame is None else self._RingFrame.get_beam_string()
+        s = max([self._Shell.dist_between_rings, 2*math.pi*self._Shell.radius])*1000 if self._LongStf == None else \
+            self._LongStf.s
+
         return \
             str(
             '\n Cylinder radius:               ' + str(round(self._Shell.radius,3)) + ' meters' +
@@ -1515,6 +1518,7 @@ class CylinderAndCurvedPlate():
             '\n Total cylinder lenght:         ' + str(self._Shell.tot_cyl_length*1000)+' mm'+
             '\n Eff. Buckling length factor:   ' + str(self._Shell.k_factor)+
             '\n Material yield:                ' + str(self._yield/1e6)+' MPa'+
+            '\n Spacing/panel circ., s:        ' + str(s) + ' mm' +
             '\n Longitudinal stiffeners:       ' + long_string+
             '\n Ring stiffeners                ' + ring_string+
             '\n Ring frames/girders:           ' + frame_string+
@@ -1731,20 +1735,26 @@ class CylinderAndCurvedPlate():
         return results
 
     def set_main_properties(self, main_dict):
-        self._sasd = main_dict['sasd']
-        self._smsd = main_dict['smsd']
-        self._tTsd = main_dict['tTsd']
-        self._tQsd = main_dict['tQsd']
-        self._psd = main_dict['psd']
-        self._shsd = main_dict['shsd']
-        self._geometry = main_dict['geometry']
-        self._mat_factor = main_dict['material factor']
-        self._delta0 = main_dict['delta0']
-        self._fab_method_ring_stf = main_dict['fab method ring stf']
-        self._fab_method_ring_girder = main_dict['fab method ring girder']
-        self._E = main_dict['E-module']
-        self._v = main_dict['poisson']
-        self._yield = main_dict['mat_yield']
+        self._sasd = main_dict['sasd'][0]
+        self._smsd = main_dict['smsd'][0]
+        self._tTsd = main_dict['tTsd'][0]
+        self._tQsd= main_dict['tQsd'][0]
+        self._psd = main_dict['psd'][0]
+        self._shsd = main_dict['shsd'][0]
+        self._geometry = main_dict['geometry'][0]
+        self._mat_factor = main_dict['material factor'][0]
+        self._delta0 = main_dict['delta0'][0]
+        self._fab_method_ring_stf = main_dict['fab method ring stf'][0]
+        self._fab_method_ring_girder = main_dict['fab method ring girder'][0]
+        self._E = main_dict['E-module'][0]
+        self._v = main_dict['poisson'][0]
+        self._yield = main_dict['mat_yield'][0]
+        self._length_between_girders = main_dict['length between girders'][0]
+        self._panel_spacing = main_dict['panel spacing, s'][0]
+        self.__ring_stiffener_excluded = main_dict['ring stf excluded'][0]
+        self.__ring_frame_excluded = main_dict['ring frame excluded'][0]
+        self._end_cap_pressure_included = main_dict['end cap pressure'][0]
+        self._uls_or_als =  main_dict['ULS or ALS'][0]
 
     def shell_buckling(self,unstiffened_cylinder = None):
         '''
@@ -2790,7 +2800,9 @@ class CylinderAndCurvedPlate():
                      'length between girders': [self._length_between_girders, 'm'],
                      'panel spacing, s':  [self._panel_spacing, 'm'],
                      'ring stf excluded': [self.__ring_stiffener_excluded, ''],
-                     'ring frame excluded': [self.__ring_frame_excluded, '']}
+                     'ring frame excluded': [self.__ring_frame_excluded, ''],
+                     'end cap pressure': [self._end_cap_pressure_included, ''],
+                     'ULS or ALS':[self._uls_or_als, '']}
         return main_dict
 
     def set_main_properties(self, main_dict):
