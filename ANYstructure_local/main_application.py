@@ -3,6 +3,7 @@ import time, datetime
 import tkinter as tk
 from tkinter import filedialog
 from tkinter import messagebox
+from tkinter import ttk
 from ANYstructure_local.calc_loads import *
 from ANYstructure_local.calc_structure import *
 import ANYstructure_local.load_window as load_window
@@ -345,19 +346,19 @@ class Application():
         tk.Entry(self._main_fr, textvariable=self._new_point_y, width = int(ent_width * 1.5),
                  bg = self._entry_color, fg = self._entry_text_color)\
             .place(relx=ent_x, rely=point_start + delta_y)
-        tk.Button(self._main_fr, text='Add point (coords)', command=self.new_point,
+        ttk.Button(self._main_fr, text='Add point (coords)', command=self.new_point,
                   bg = self._button_bg_color, fg = self._button_fg_color,
                   font = self._text_size['Text 9 bold']).place(relx=ent_x + 2 * delta_x, rely=point_start-1*delta_y,
                                                                relwidth = 0.08)
-        tk.Button(self._main_fr, text='Copy point (relative)', command=self.copy_point,
+        ttk.Button(self._main_fr, text='Copy point (relative)', command=self.copy_point,
                   bg = self._button_bg_color, fg = self._button_fg_color,
                   font = self._text_size['Text 9 bold']).place(relx=ent_x + 2 * delta_x, rely=point_start+0.1*delta_y,
                                                                relwidth = 0.08)
-        tk.Button(self._main_fr, text='Move point', command=self.move_point,
+        ttk.Button(self._main_fr, text='Move point', command=self.move_point,
                   bg = self._button_bg_color, fg = self._button_fg_color,
                   font = self._text_size['Text 9 bold']).place(relx=ent_x + 2 * delta_x, rely=point_start+1.2*delta_y,
                                                                relwidth = 0.04)
-        tk.Button(self._main_fr, text='Move line', command=self.move_line,
+        ttk.Button(self._main_fr, text='Move line', command=self.move_line,
                   bg = self._button_bg_color, fg = self._button_fg_color,
                   font = self._text_size['Text 9 bold']).place(relx=ent_x + 3.55 * delta_x, rely=point_start+1.2*delta_y,
                                                                relwidth = 0.04)
@@ -473,7 +474,7 @@ class Application():
         tk.Entry(self._main_fr, textvariable=self._new_line_p2, width=int(ent_width * 1),
                  bg = self._entry_color, fg = self._entry_text_color)\
             .place(relx=ent_x, rely=line_start + delta_y)
-        tk.Button(self._main_fr, text='Add line', command=self.new_line,
+        ttk.Button(self._main_fr, text='Add line', command=self.new_line,
                   bg = self._button_bg_color, fg = self._button_fg_color,
                   font = self._text_size['Text 9 bold']).place(relx=ent_x+2*delta_x, rely=line_start-delta_y*0.05,
                                                                relwidth = 0.05)
@@ -500,16 +501,16 @@ class Application():
         tk.Label(self._main_fr, text='Point number (right click):',font="Text 9", bg = self._general_color)\
             .place(relx=del_x, rely=del_start+ delta_y)
 
-        tk.Button(self._main_fr, text='Delete line',bg = self._button_bg_color, fg = self._button_fg_color,
+        ttk.Button(self._main_fr, text='Delete line',bg = self._button_bg_color, fg = self._button_fg_color,
                                          font=self._text_size['Text 9 bold'],command=self.delete_line,
                                          ).place(relx=ent_x+delta_x*2, rely=del_start-0.002,
                                                                                     relwidth = 0.05)
-        tk.Button(self._main_fr, text='Delete prop.',bg = self._button_bg_color, fg = self._button_fg_color,
+        ttk.Button(self._main_fr, text='Delete prop.',bg = self._button_bg_color, fg = self._button_fg_color,
                                          font=self._text_size['Text 9 bold'],command=self.delete_properties_pressed,
                                          ).place(relx=ent_x+delta_x*4, rely=del_start-0.002,
                                                                                     relwidth = 0.05)
 
-        tk.Button(self._main_fr, text='Delete point',bg = self._button_bg_color, fg = self._button_fg_color,
+        ttk.Button(self._main_fr, text='Delete point',bg = self._button_bg_color, fg = self._button_fg_color,
                                           font=self._text_size['Text 9 bold'],command=self.delete_point,
                                           ).place(relx=ent_x+2*delta_x, rely=del_start + delta_y +0.004-0.002,
                                                                                      relwidth = 0.05)
@@ -568,7 +569,7 @@ class Application():
 
 
 
-        self.add_stucture = tk.Button(self._main_fr, text='Add structure/properties to line \n'
+        self.add_stucture = ttk.Button(self._main_fr, text='Add structure/properties to line \n'
                                                           '-- new or replace existing --', command=self.new_structure,
                                       font = self._text_size['Text 10 bold'],
                                       bg = self._button_bg_color, fg = self._button_fg_color)
@@ -594,9 +595,9 @@ class Application():
                                          bg = self._entry_color, fg = self._entry_text_color)
         ent_fdwn.place(relx = types_start+ delta_x*9.1, rely=prop_vert_start+17*delta_y, relwidth = 0.01)
         # Toggle buttons
-        self._toggle_btn = tk.Button(self._main_fr, text="Toggle select\nmultiple", relief="raised",
+        self._toggle_btn = ttk.Button(self._main_fr, text="Toggle select\nmultiple", relief="raised",
                                      command=self.toggle_select_multiple, bg = self._button_bg_color)
-        self._toggle_change_param = tk.Button(self._main_fr, text="Change multi.\nparameter", relief="raised",
+        self._toggle_change_param = ttk.Button(self._main_fr, text="Change multi.\nparameter", relief="raised",
                                      command=self.toggle_set_variable, bg = self._button_bg_color)
         self._toggle_param_to_change = None
         self._toggle_btn.place(relx=types_start+ delta_x*4.2, rely=prop_vert_start+15*delta_y, relwidth = 0.045,
@@ -610,10 +611,10 @@ class Application():
                                 relheight = 0.035)
 
         # PULS interface
-        self._toggle_btn_puls = tk.Button(self._main_fr, text="Use PULS\n"
+        self._toggle_btn_puls = ttk.Button(self._main_fr, text="Use PULS\n"
                                                               "results", relief="raised",
                                      command=self.toggle_puls_run, bg = self._button_bg_color)
-        self._puls_run_all = tk.Button(self._main_fr, text='Run PULS\nupdate results', relief="raised",
+        self._puls_run_all = ttk.Button(self._main_fr, text='Run PULS\nupdate results', relief="raised",
                                      command=self.puls_run_all_lines, bg = self._button_bg_color)
         self._ent_puls_uf = tk.Entry(self._main_fr, textvariable=self._new_puls_uf,
                                         width=int(ent_width * 1),
@@ -770,7 +771,7 @@ class Application():
 
         self._lab_structure_type = tk.Label(self._main_fr, text='Select structure type:', font=self._text_size['Text 9 bold'],
                  bg = self._general_color)
-        self._button_str_type = tk.Button(self._main_fr,text='Show structure types',command=show_message,
+        self._button_str_type = ttk.Button(self._main_fr,text='Show structure types',command=show_message,
                                           bg = self._button_bg_color, fg = self._button_fg_color,
                                           font=self._text_size['Text 8'])
         self._structure_types_label =  tk.Label(textvariable = self._new_stucture_type_label,
@@ -844,12 +845,12 @@ class Application():
             else:
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
-            self._stf_button = tk.Button(self._main_fr, image=photo, command=self.on_open_structure_window,
+            self._stf_button = ttk.Button(self._main_fr, image=photo, command=self.on_open_structure_window,
                                          bg='white', fg=self._button_fg_color, )
             self._stf_button.image = photo
 
         except TclError:
-            self._stf_button = tk.Button(self._main_fr, text='STF.', command=self.on_open_structure_window,
+            self._stf_button = ttk.Button(self._main_fr, text='STF.', command=self.on_open_structure_window,
                                          bg=self._button_bg_color, fg=self._button_fg_color)
 
         try:
@@ -859,12 +860,12 @@ class Application():
             else:
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
-            self._stress_button = tk.Button(self._main_fr, image=photo, command=self.on_open_stresses_window,
+            self._stress_button = ttk.Button(self._main_fr, image=photo, command=self.on_open_stresses_window,
                                             fg=self._button_fg_color, bg='white')
             self._stress_button.image = photo
 
         except TclError:
-            self._stress_button = tk.Button(self._main_fr, text='STRESS', command=self.on_open_stresses_window,
+            self._stress_button = ttk.Button(self._main_fr, text='STRESS', command=self.on_open_stresses_window,
                                       bg=self._button_bg_color, fg=self._button_fg_color)
 
         try:
@@ -874,12 +875,12 @@ class Application():
             else:
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
-            self._fls_button = tk.Button(self._main_fr, image=photo, command=self.on_open_fatigue_window,
+            self._fls_button = ttk.Button(self._main_fr, image=photo, command=self.on_open_fatigue_window,
                                          bg=self._button_bg_color)
             self._fls_button.image = photo
 
         except TclError:
-            self._fls_button = tk.Button(self._main_fr, text='FLS', command=self.on_open_fatigue_window,
+            self._fls_button = ttk.Button(self._main_fr, text='FLS', command=self.on_open_fatigue_window,
                                          bg=self._button_bg_color, fg=self._button_fg_color, )
 
         self._lab_press_side = tk.Label(self._main_fr, text='Pressure side (p-plate, s-stf.):',
@@ -1197,12 +1198,12 @@ class Application():
         self._compartments_listbox.bind('<<ListboxSelect>>', self.button_1_click_comp_box)
 
 
-        tk.Button(self._main_fr, text="Set compartment\n""properties.",command = self.update_tank,
+        ttk.Button(self._main_fr, text="Set compartment\n""properties.",command = self.update_tank,
                                             font=self._text_size['Text 9 bold'],
                   bg = self._button_bg_color, fg = self._button_fg_color)\
             .place(relx=ent_x+delta_x*3, rely=load_vert_start + delta_y * 6.5, relwidth = 0.08)
 
-        tk.Button(self._main_fr, text="Delete all tanks", command=self.delete_all_tanks,
+        ttk.Button(self._main_fr, text="Delete all tanks", command=self.delete_all_tanks,
                   font=self._text_size['Text 9 bold'],bg = self._button_bg_color, fg = self._button_fg_color
                   ).place(relx=ent_x+delta_x*3, rely=load_vert_start + delta_y * 8.5, relwidth = 0.08)
 
@@ -1280,17 +1281,17 @@ class Application():
             else:
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
-            self._int_button = tk.Button(self._main_fr,image = photo,command=self.grid_find_tanks, bg = 'white')
+            self._int_button = ttk.Button(self._main_fr,image = photo,command=self.grid_find_tanks, bg = 'white')
             self._int_button.image = photo
             self._int_button.place(relx=types_start, rely=load_vert_start+1.5*delta_y,
                                    relheight = 0.044, relwidth = 0.12)
         except TclError:
-            tk.Button(self._main_fr, text='New tanks - start search \n'
+            ttk.Button(self._main_fr, text='New tanks - start search \n'
                                   'to find compartments', command=self.grid_find_tanks,
                       bg = self._button_bg_color, fg = self._button_fg_color, font=self._text_size['Text 8 bold']) \
                 .place(relx=types_start, rely=load_vert_start + 0 * delta_y, relheight = 0.044, relwidth = 0.12)
 
-        show_compartment = tk.Button(self._main_fr, text='Display current\n compartments', command=self.grid_display_tanks,
+        show_compartment = ttk.Button(self._main_fr, text='Display current\n compartments', command=self.grid_display_tanks,
                                   bg = self._button_bg_color, fg = self._button_fg_color,
                                      font=self._text_size['Text 9 bold'])
         show_compartment.place(relx=ent_x+delta_x*3, rely=load_vert_start + delta_y * 4.5, relwidth = 0.08)
@@ -1303,13 +1304,13 @@ class Application():
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
 
-            self._ext_button = tk.Button(self._main_fr,image=photo, command = self.on_show_loads,
+            self._ext_button = ttk.Button(self._main_fr,image=photo, command = self.on_show_loads,
                                          bg = 'white')
             self._ext_button.image = photo
             self._ext_button.place(relx=ent_x+delta_x*1.5, rely=load_vert_start+1.5*delta_y,
                                    relheight = 0.044, relwidth = 0.11)
         except TclError:
-            tk.Button(self._main_fr, text='New external load window \nsea - static/dynamic',
+            ttk.Button(self._main_fr, text='New external load window \nsea - static/dynamic',
                       command=self.on_show_loads, bg = self._button_bg_color, fg = self._button_fg_color,
                       font=self._text_size['Text 8 bold'])\
                 .place(relx=ent_x+delta_x*2, rely=load_vert_start+0*delta_y, relheight = 0.044, relwidth = 0.11)
@@ -1342,7 +1343,7 @@ class Application():
         tk.Entry(self._main_fr, textvariable = self._new_dyn_acc_ballast,width = 10,
                  bg = self._entry_color, fg = self._entry_text_color)\
             .place(relx=lc_x + delta_x*4.2, rely=lc_y - 2 * lc_y_delta)
-        tk.Button(self._main_fr, text = 'Set\naccelerations', command = self.create_accelerations,
+        ttk.Button(self._main_fr, text = 'Set\naccelerations', command = self.create_accelerations,
                   font = self._text_size['Text 8 bold'],
                   bg = self._button_bg_color, fg = self._button_fg_color)\
             .place(relx=lc_x + delta_x*6, rely=lc_y - 3 * lc_y_delta)
@@ -1399,12 +1400,12 @@ class Application():
             else:
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
-            self._opt_button = tk.Button(self._main_fr,image=photo, command = self.on_optimize,
+            self._opt_button = ttk.Button(self._main_fr,image=photo, command = self.on_optimize,
                                    bg = 'white', fg = self._button_fg_color)
             self._opt_button.image = photo
             self._opt_button.place(relx=lc_x, rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.098)
         except TclError:
-            self._opt_button =tk.Button(self._main_fr, text='Optimize', command=self.on_optimize,
+            self._opt_button =ttk.Button(self._main_fr, text='Optimize', command=self.on_optimize,
                       bg = self._button_bg_color, fg = self._button_fg_color)
             self._opt_button.place(relx=lc_x, rely=lc_y - 6 * lc_y_delta)
         try:
@@ -1414,12 +1415,12 @@ class Application():
             else:
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
-            self._opt_button_mult = tk.Button(self._main_fr,image=photo, command = self.on_optimize_multiple,
+            self._opt_button_mult = ttk.Button(self._main_fr,image=photo, command = self.on_optimize_multiple,
                                         bg = self._button_bg_color, fg = self._button_fg_color)
             self._opt_button_mult.image = photo
             self._opt_button_mult.place(relx=lc_x+delta_x*3.8, rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.065)
         except TclError:
-            self._opt_button_mult= tk.Button(self._main_fr, text='MultiOpt', command=self.on_optimize_multiple,
+            self._opt_button_mult= ttk.Button(self._main_fr, text='MultiOpt', command=self.on_optimize_multiple,
                       bg = self._button_bg_color, fg = self._button_fg_color)
             self._opt_button_mult.place(relx=lc_x + delta_x*7,rely=lc_y - 6 * lc_y_delta)
 
@@ -1430,16 +1431,16 @@ class Application():
             else:
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
-            self._opt_cylinder = tk.Button(self._main_fr,image=photo, command = self.on_optimize_cylinder,
+            self._opt_cylinder = ttk.Button(self._main_fr,image=photo, command = self.on_optimize_cylinder,
                                         bg = 'white', fg = 'white')
             self._opt_cylinder.image = photo
         except TclError:
-            self._opt_cylinder = tk.Button(self._main_fr, text='Cylinder optimization',
+            self._opt_cylinder = ttk.Button(self._main_fr, text='Cylinder optimization',
                                            command=self.on_optimize_cylinder,
                       bg = self._button_bg_color, fg = self._button_fg_color)
 
 
-        self._opt_button_span = tk.Button(self._main_fr, text='SPAN', command=self.on_geometry_optimize,
+        self._opt_button_span = ttk.Button(self._main_fr, text='SPAN', command=self.on_geometry_optimize,
                  font = self._text_size['Text 14 bold'], bg = self._button_bg_color, fg = self._button_fg_color)
         self._opt_button_span.place(relx=lc_x + delta_x * 6.4,rely=lc_y - 6 * lc_y_delta, relheight = 0.04,
                                     relwidth = 0.04)
@@ -1451,26 +1452,26 @@ class Application():
                                    'cylinder place' : [[lc_x, lc_y - 6 * lc_y_delta, 0.04, 0.175]]}
 
         # Load information button
-        tk.Button(self._main_fr, text='Load info', command=self.button_load_info_click,
+        ttk.Button(self._main_fr, text='Load info', command=self.button_load_info_click,
                  font = self._text_size['Text 9 bold'], height = 1,
                   bg = self._button_bg_color, fg = self._button_fg_color)\
            .place(relx=lc_x + delta_x * 6.4,rely=lc_y + delta_y*19.5, relwidth = 0.04)
 
         # Load information button
-        tk.Button(self._main_fr, text='Load factors', command=self.on_open_load_factor_window,
+        ttk.Button(self._main_fr, text='Load factors', command=self.on_open_load_factor_window,
                  font = self._text_size['Text 9 bold'], height = 1,
                   bg = self._button_bg_color, fg = self._button_fg_color)\
            .place(relx=lc_x + delta_x * 4.4,rely=lc_y + delta_y*19.5, relwidth = 0.05)
 
         # PULS result information
-        self._puls_information_button = tk.Button(self._main_fr, text='PULS results for line',
+        self._puls_information_button = ttk.Button(self._main_fr, text='PULS results for line',
                                                   command=self.on_puls_results_for_line,
                  font = self._text_size['Text 9 bold'], height = 1,
                   bg = self._button_bg_color, fg = self._button_fg_color)
         self._puls_information_button.place(relx=lc_x + delta_x * 0,rely=lc_y + delta_y*19.5, relwidth = 0.075)
 
         # Wight developement plot
-        self._weight_button = tk.Button(self._main_fr, text='Weights',
+        self._weight_button = ttk.Button(self._main_fr, text='Weights',
                                                   command=self.on_plot_cog_dev,
                  font = self._text_size['Text 9 bold'], height = 1,
                   bg = self._button_bg_color, fg = self._button_fg_color)

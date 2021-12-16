@@ -41,7 +41,7 @@ class CreateStructureWindow():
                 self._initial_structure_obj =  self.app._line_to_struc[app._active_line][0]
             except KeyError:
                 self._initial_structure_obj = None
-            self._section_list = [section.__str__() for section in app._sections] # TODO getting an error hhere
+            self._section_list = [section.__str__() for section in app._sections]
             self._section_objects = app._sections
         image_dir = os.path.dirname(__file__) + '\\images\\'
         self._opt_runned = False
