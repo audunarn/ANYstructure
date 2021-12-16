@@ -1,9 +1,11 @@
 
 import tkinter as tk
 from _tkinter import TclError
+from tkinter.ttk import Combobox
 import ANYstructure_local.example_data as test
 import os
 import numpy as np
+import ANYstructure_local.helper as hlp
 
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk)
@@ -24,15 +26,22 @@ class CreateStructureWindow():
         if __name__ == '__main__':
             self._initial_structure_obj = test.get_structure_calc_object()
             self._initial_calc_obj = test.get_structure_calc_object()
-            self._section_objects = test.get_section_list()
-            self._section_list = [section.__str__() for section in test.get_section_list()]
+
+            self._section_list = []
+            self._section_objects = []
+            for section in hlp.helper_read_section_file('bulb_anglebar_tbar_flatbar.csv'):
+                SecObj = Section(section)
+                self._section_list = hlp.add_new_section(self._section_list, SecObj)
+                self._section_objects.append(SecObj)
+                # m = self._ent_section_list.children['menu']
+                # m.add_command(label=SecObj.__str__(), command=self.section_choose)
         else:
             self.app = app
             try:
                 self._initial_structure_obj =  self.app._line_to_struc[app._active_line][0]
             except KeyError:
                 self._initial_structure_obj = None
-            self._section_list = [section.__str__() for section in app._sections]
+            self._section_list = [section.__str__() for section in app._sections] # TODO getting an error hhere
             self._section_objects = app._sections
         image_dir = os.path.dirname(__file__) + '\\images\\'
         self._opt_runned = False
@@ -44,7 +53,7 @@ class CreateStructureWindow():
         self._canvas_struc = tk.Canvas(self._frame, width=self._canvas_dim[0], height=self._canvas_dim[1],
                                        background='azure', relief='groove', borderwidth=2)
         self.structure_types = ['T','L', 'L-bulb','FB']
-        self._canvas_struc.place(x=10, y=300)
+        self._canvas_struc.place(x=10, y=440)
         tk.Label(self._frame, text='-- Define structure properties here --', font='Verdana 15 bold').place(x=10, y=10)
         #
         # ### Adding matplotlib
@@ -73,14 +82,20 @@ class CreateStructureWindow():
         self._new_fl_w = tk.DoubleVar()
         self._new_fl_thk = tk.DoubleVar()
         self._new_stiffener_type = tk.StringVar()
+        self._new_stiffener_filter = tk.StringVar()
         self._new_girder_length = tk.DoubleVar()
         self._new_section = tk.StringVar()
 
         # TODO this may cause error when there is no list.
-        self._ent_section_list = tk.OptionMenu(self._frame, self._new_section, command=self.section_choose,
-                                               *['',] if self._section_list == [] else self._section_list)
+        self._ent_section_list = Combobox(self._frame, values = self._section_list, textvariable = self._new_section,
+                                          width = 40)
+        self._ent_section_list.bind("<<ComboboxSelected>>", self.section_choose)
+        # self._ent_section_list = tk.OptionMenu(self._frame, self._new_section, command=self.section_choose,
+        #                                        *['',] if self._section_list == [] else self._section_list)
         self._ent_structure_options = tk.OptionMenu(self._frame,self._new_stiffener_type,
                                                    command=self.option_choose,*self.structure_types)
+        self._ent_filter_stf = tk.OptionMenu(self._frame,self._new_stiffener_filter,
+                                                   command=self.regen_option_menu,*['No filter applied','L-bulb', 'L', 'FB', 'T'])
 
         self._ent_spacing = tk.Entry(self._frame, textvariable=self._new_spacing, width=ent_w)
         self._ent_pl_thk = tk.Entry(self._frame, textvariable=self._new_pl_thk, width=ent_w)
@@ -94,9 +109,9 @@ class CreateStructureWindow():
 
         tk.Label(self._frame, text='Stiffener type:', font='Verdana 9 bold').place(x=start_x, y=start_y )
         tk.Label(self._frame, text='Girder length (Lg)', font='Verdana 9 bold').place(x=start_x+9*dx,
-                                                                                     y=start_y + 16 * dy)
-        tk.Label(self._frame, text='[m]', font='Verdana 9 bold').place(x=start_x + 14 * dx,y=start_y + 16 * dy)
-        self._ent_girder_length.place(x=start_x + 12 * dx, y=start_y + 16 * dy)
+                                                                                     y=start_y + 15 * dy)
+        tk.Label(self._frame, text='[m]', font='Verdana 9 bold').place(x=start_x + 14 * dx,y=start_y + 15 * dy)
+        self._ent_girder_length.place(x=start_x + 12 * dx, y=start_y + 15 * dy)
 
         tk.Label(self._frame, text='[mm]', font='Verdana 9 bold').place(x=start_x+3*dx, y=start_y+dy  )
         tk.Label(self._frame, text='[mm]', font='Verdana 9 bold').place(x=start_x+3*dx, y=start_y + 2*dy)
@@ -106,11 +121,16 @@ class CreateStructureWindow():
         tk.Label(self._frame, text='[mm]', font='Verdana 9 bold').place(x=start_x+3*dx, y=start_y + 6*dy)
 
         tk.Label(self._frame, text='Existing sections:', font='Verdana 9 bold').place(x=start_x+4*dx, y=start_y + 6*dy)
+        tk.Label(self._frame, text='filter ->', font='Verdana 9 bold').place(x=start_x + 4 * dx,
+                                                                                      y=start_y + 7 * dy)
 
         self._ent_section_list.place(x=start_x+7*dx, y=start_y + 6*dy)
+        self._ent_filter_stf.place(x=start_x+5*dx, y=start_y + 7*dy)
 
-        tk.Button(self._frame, text='Read section list', command=self.read_sections, font='Verdana 10 bold',
+        tk.Button(self._frame, text='Read section list from file', command=self.read_sections, font='Verdana 10 bold',
                   bg = 'blue', fg = 'yellow').place(x=start_x+12*dx, y=start_y + 6*dy)
+        tk.Button(self._frame, text='Load built in sections', command=self.read_sections_built_in, font='Verdana 10 bold',
+                  bg = 'azure', fg = 'black').place(x=start_x+12*dx, y=start_y + 7*dy)
         # setting default values
         init_dim,init_thk = 0.05,0.002
 
@@ -135,6 +155,7 @@ class CreateStructureWindow():
         self._new_girder_length.set(10)
 
         self._ent_structure_options.place(x=start_x + dx * 3, y=start_y)
+
         if self._new_spacing.get() != 0:
             tk.Label(self._frame, text='Spacing', font='Verdana 9').place(x=start_x, y=start_y + dy)
             self._ent_spacing.place(x=start_x + dx * 2, y=start_y+dy)
@@ -171,7 +192,7 @@ class CreateStructureWindow():
             photo = tk.PhotoImage(file=file_path)
             label = tk.Label(self._frame, image=photo)
             label.image = photo  # keep a reference!
-            label.place(x=550, y=300)
+            label.place(x=550, y=610)
         except TclError:
             pass
         try:
@@ -189,11 +210,31 @@ class CreateStructureWindow():
 
         self.close_and_save = tk.Button(self._frame, text='Save and return structure',
                                         command=self.save_and_close, bg='green', font='Verdana 10 bold', fg='yellow')
-        self.close_and_save.place(x=start_x + dx * 12, y=start_y + dy * 20)
+        self.close_and_save.place(x=start_x + dx * 12, y=start_y + dy * 12)
 
 
 
         self.draw_properties()
+
+    def regen_option_menu(self, event = None):
+        self._ent_section_list.destroy()
+        sections =  []
+        if self._section_list == []:
+            sections = ['',]
+        elif self._new_stiffener_filter.get() == 'No filter applied':
+            sections = self._section_list
+        else:
+            for sec_obj in self._section_objects:
+                if sec_obj.stf_type == self._new_stiffener_filter.get():
+                    sections.append(sec_obj.__str__())
+        start_x, start_y, dx, dy = 20, 70, 60, 33
+        # self._ent_section_list = tk.OptionMenu(self._frame, self._new_section, command=self.section_choose,
+        #                                        *sections)
+        self._ent_section_list = Combobox(self._frame, values=sections, textvariable=self._new_section, width = 40)
+        self._ent_section_list.bind("<<ComboboxSelected>>", self.section_choose)
+        self._ent_section_list.place(x=start_x + 7 * dx, y=start_y + 6 * dy)
+
+        pass
 
     def option_choose(self, event):
         '''
@@ -312,8 +353,8 @@ class CreateStructureWindow():
 
     def section_choose(self, event = None):
         ''' Choosing a section. '''
-        chosen_section = self._new_section.get()
-
+        #chosen_section = self._new_section.get()
+        chosen_section = event.widget.get()
         for section in self._section_objects:
             if chosen_section == section.__str__():
                 self._new_web_h.set(section.stf_web_height*1000)
@@ -333,13 +374,27 @@ class CreateStructureWindow():
 
         file = filedialog.askopenfile('r')
         file = Path(file.name)
-        m = self._ent_section_list.children['menu']
+        #m = self._ent_section_list.children['menu']
 
         for section in hlp.helper_read_section_file(file.name):
             SecObj = Section(section)
             self._section_list = hlp.add_new_section(self._section_list, SecObj)
             self._section_objects.append(SecObj)
-            m.add_command(label=SecObj.__str__(), command=self.section_choose)
+            #m.add_command(label=SecObj.__str__(), command=self.section_choose)
+
+    def read_sections_built_in(self):
+        '''
+        Read a list.
+        '''
+        import ANYstructure_local.helper as hlp
+
+        for section in hlp.helper_read_section_file('bulb_anglebar_tbar_flatbar.csv'):
+            SecObj = Section(section)
+            self._section_list = hlp.add_new_section(self._section_list, SecObj)
+            self._section_objects.append(SecObj)
+            #m.add_command(label=SecObj.__str__(), command=self.section_choose)
+
+        self.regen_option_menu()
 
 class Section:
     '''
