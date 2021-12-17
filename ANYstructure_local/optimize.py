@@ -308,7 +308,7 @@ def any_smart_loop_geometric(min_var,max_var,deltas,initial_structure_obj,latera
                                  slamming_press = 0 if slam_press is None else slam_press,
                                  predefiened_stiffener_iter=this_predefiened_objects, processes=processes,
                                  ml_algo=ml_algo)
-        # TODO-any set check if not solution acceptable.
+
         all_obj.append(opt_obj)
         idx += 1
 
@@ -371,7 +371,7 @@ def particle_search_geometric(min_var=None,max_var=None,deltas = None, initial_s
         opt_obj = particle_search(min_var=min_var, max_var=max_var,initial_structure_obj=struc_obj,
                                   lateral_pressure=lat_press,
                                   side=side, const_chk=const_chk, pso_options=pso_options, deltas=deltas)
-        # TODO-any set check if not solution acceptable.
+
         all_obj.append(opt_obj)
 
     return all_obj
@@ -521,7 +521,7 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                                                            fat_press=working_fatigue_press[no_of_fractions],
                                                            predefiened_stiffener_iter = predefiened_stiffener_iter,
                                                            ml_algo=ml_algo)
-                # TODO fatigue and slamming implemetation
+
 
             # Finding weight of this solution.
 
@@ -684,7 +684,7 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
     if chk[0]:
         section_modulus = min(calc_object[0].get_section_modulus())
         min_section_modulus = calc_object[0].get_dnv_min_section_modulus(lat_press)
-        section_frac = section_modulus / min_section_modulus # TODO is this correct
+        section_frac = section_modulus / min_section_modulus
         all_checks[1] = section_frac
         if not section_modulus > min_section_modulus :
             if print_result:
@@ -1293,7 +1293,7 @@ def any_get_all_combs(min_var, max_var,deltas, init_weight = float('inf'), prede
     if predef_stiffeners is not None:
         predef_iterable = list()
         for pre_str in predef_stiffeners:
-            for spacing in spacing_array: #TODO not getting the stiffener types
+            for spacing in spacing_array:
                 for pl_thk in pl_thk_array:
                     new_field = list(pre_str)
                     new_field[0] = spacing
@@ -1488,7 +1488,7 @@ if __name__ == '__main__':
                                     long_stf= Structure(ex.obj_dict_cyl_long2),
                                     ring_stf = None,# Structure(ex.obj_dict_cyl_ring2),
                                     ring_frame= None)#Structure(ex.obj_dict_cyl_heavy_ring2))
-    # Shell [thickness, radius, dist. bet. rings., length of shell, tot cyl length, panel_spacing] # TODO panel spacing must have a value at all times
+
     shell_upper_bounds = np.array( [0.03, 5, 5, 5, 10, None, None, None])
     shell_deltas = np.array(       [0.005, 0.5, 1, 0.1,1, None, None, None])
     shell_lower_bounds = np.array( [0.02, 5, 5, 5, 10, None, None, None])

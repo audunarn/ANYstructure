@@ -90,7 +90,7 @@ class CreateStructureWindow():
         self._new_girder_length = tk.DoubleVar()
         self._new_section = tk.StringVar()
 
-        # TODO this may cause error when there is no list.
+
         self._ent_section_list = Combobox(self._frame, values = self._section_list, textvariable = self._new_section,
                                           width = 40)
         self._ent_section_list.bind("<<ComboboxSelected>>", self.section_choose)

@@ -64,7 +64,7 @@ class CreateGridWindow():
         FULL = red
         :return:
         '''
-        # TODO make a better plot of the tanks
+
 
         def discrete_matshow(data):
             if self._bfs_search_data is not None:

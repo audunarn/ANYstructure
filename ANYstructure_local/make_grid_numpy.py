@@ -337,7 +337,7 @@ class Grid:
         :param value:
         :return:
         '''
-        # TODO this is not very numpy-like
+
         highest = (self.get_grid_height(),0)
         for row in range(self.get_grid_height()):
             for col in range(self.get_grid_width()):
@@ -351,7 +351,7 @@ class Grid:
         :param value:
         :return:
         '''
-        # TODO this is not very numpy-like
+
         lowest = (0,0)
 
         for row in range(self.get_grid_height()):
@@ -366,7 +366,7 @@ class Grid:
         :param value:
         :return:
         '''
-        # TODO this is not very numpy-like
+
         counter = 0
         for row in range(self.get_grid_height()):
             for col in range(self.get_grid_width()):
@@ -429,7 +429,7 @@ class Grid:
                 if save_list[row_idx+1] != save_list[row_idx]:
                     save_vertical.append([save_list[row_idx+1], 1])
                 if save_vertical[0][-1] != self.cells.shape[0]:
-                    save_vertical[0][-1] += 1 # TODO this is a dirty fix. See the assertion below.
+                    save_vertical[0][-1] += 1
                 # assert this_counter == self.cells.shape[0], 'Error. Shape of compressed grid is not equal to input grid. ' \
                 #                                             'The counter has skipped a step. The saved is '\
                 #                                             +str(save_vertical) + ' and the shape is ' + \
