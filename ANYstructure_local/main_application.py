@@ -84,6 +84,17 @@ class Application():
                               'Arrows left/right - previous/next line\n' \
                               'Arrows up/down - previous/next point'
 
+        ''' Setting the style of ttk'''
+
+        self._style = ttk.Style()
+        self._style.configure("Bold.TButton", font=('Sans', '10', 'bold'))
+        self._style.theme_use('vista')
+
+        self._style.configure('TLabel', background=self._general_color)
+        self._style.configure('TButton', background=self._general_color, foreground='black')
+        self._style.configure('Bold.TButton', background=self._general_color, foreground='black')
+
+        ''' END style setting'''
 
         undo_redo = tk.Menu(menu)
         menu.add_cascade(label='Geometry', menu=undo_redo)
@@ -329,8 +340,7 @@ class Application():
 
         ent_width = 6  # width of entries
 
-        tk.Entry(self._main_fr, textvariable=self._new_project_infomation,
-                 bg = self._button_bg_color, fg = self._entry_text_color)\
+        ttk.Entry(self._main_fr, textvariable=self._new_project_infomation)\
             .place(relx=0.005, rely=0.005, relwidth = 0.25)
 
         tk.Label(self._main_fr, text='Input point coordinates [mm]', font=self._text_size['Text 9 bold'],
@@ -341,28 +351,29 @@ class Application():
         tk.Label(self._main_fr, text='Point y (vertical)   [mm]:',font="Text 9", bg = self._general_color)\
             .place(relx=point_x_start, rely=point_start + delta_y)
 
-        tk.Entry(self._main_fr, textvariable=self._new_point_x, width = int(ent_width * 1.5),
-                 bg = self._entry_color, fg = self._entry_text_color)\
+        ttk.Entry(self._main_fr, textvariable=self._new_point_x, width = int(ent_width * 1.5))\
             .place(relx=ent_x, rely=point_start)
-        tk.Entry(self._main_fr, textvariable=self._new_point_y, width = int(ent_width * 1.5),
-                 bg = self._entry_color, fg = self._entry_text_color)\
+        ttk.Entry(self._main_fr, textvariable=self._new_point_y, width = int(ent_width * 1.5))\
             .place(relx=ent_x, rely=point_start + delta_y)
-        tk.Button(self._main_fr, text='Add point (coords)', command=self.new_point,
-                  bg = self._button_bg_color, fg = self._button_fg_color,
-                  font = self._text_size['Text 9 bold']).place(relx=ent_x + 2 * delta_x, rely=point_start-1*delta_y,
-                                                               relwidth = 0.08)
-        tk.Button(self._main_fr, text='Copy point (relative)', command=self.copy_point,
-                  bg = self._button_bg_color, fg = self._button_fg_color,
-                  font = self._text_size['Text 9 bold']).place(relx=ent_x + 2 * delta_x, rely=point_start+0.1*delta_y,
-                                                               relwidth = 0.08)
-        tk.Button(self._main_fr, text='Move point', command=self.move_point,
-                  bg = self._button_bg_color, fg = self._button_fg_color,
-                  font = self._text_size['Text 9 bold']).place(relx=ent_x + 2 * delta_x, rely=point_start+1.2*delta_y,
-                                                               relwidth = 0.04)
-        tk.Button(self._main_fr, text='Move line', command=self.move_line,
-                  bg = self._button_bg_color, fg = self._button_fg_color,
-                  font = self._text_size['Text 9 bold']).place(relx=ent_x + 3.55 * delta_x, rely=point_start+1.2*delta_y,
-                                                               relwidth = 0.04)
+
+
+        ttk.Button(self._main_fr, text='Add point (coords)', command=self.new_point,style = "Bold.TButton")\
+            .place(relx=ent_x + 2 * delta_x,
+                                                                                           rely=point_start-1.1*delta_y,
+                                                               relwidth = 0.1)
+        ttk.Button(self._main_fr, text='Copy point (relative)', command=self.copy_point,style = "Bold.TButton")\
+            .place(relx=ent_x + 2 * delta_x,
+                                                                                               rely=point_start+0*delta_y,
+                                                               relwidth = 0.1)
+        ttk.Button(self._main_fr, text='Move point', command=self.move_point,style = "Bold.TButton")\
+            .place(relx=ent_x + 2 * delta_x,
+                                                                                    rely=point_start+1.1*delta_y,
+                                                               relwidth = 0.05)
+        ttk.Button(self._main_fr, text='Move line', command=self.move_line,style = "Bold.TButton")\
+            .place(relx=ent_x + 3.91 * delta_x,
+                                                                                  rely=point_start+1.1*delta_y,
+                                                               relwidth = 0.05)
+
 
         # --- line input/output ---
         self._new_line_p1 = tk.IntVar()
@@ -408,6 +419,7 @@ class Application():
         self._new_colorcode_spacing= tk.BooleanVar()
         self._new_colorcode_spacing.set(False)
         self._new_toggle_var = tk.StringVar()
+        self._new_toggle_select_multiple = tk.BooleanVar()
         self._new_toggle_puls = tk.BooleanVar()
         self._new_toggle_puls.set(False)
         self._new_puls_uf = tk.DoubleVar()
@@ -438,26 +450,26 @@ class Application():
         tk.Label(self._main_fr, text='To point number:',font="Text 9", bg = self._general_color)\
             .place(relx=line_x, rely=line_start + delta_y)
 
-        tk.Checkbutton(self._main_fr, variable = self._new_shortcut_backdrop, command = self.update_frame)\
+        ttk.Checkbutton(self._main_fr, variable = self._new_shortcut_backdrop, command = self.update_frame)\
             .place(relx = 0.26, y=0)
         tk.Label(self._main_fr, text='Color coding',font="Text 9", bg = self._general_color)\
             .place(relx = 0.26, y=20)
-        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_beams, command = self.on_color_code_check)\
+        ttk.Checkbutton(self._main_fr, variable = self._new_colorcode_beams, command = self.on_color_code_check)\
             .place(relx = 0.26, y=40)
-        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_plates, command = self.on_color_code_check)\
+        ttk.Checkbutton(self._main_fr, variable = self._new_colorcode_plates, command = self.on_color_code_check)\
             .place(relx = 0.26, y=60)
-        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_pressure, command = self.on_color_code_check)\
+        ttk.Checkbutton(self._main_fr, variable = self._new_colorcode_pressure, command = self.on_color_code_check)\
             .place(relx = 0.26, y=80)
-        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_utilization, command = self.on_color_code_check)\
+        ttk.Checkbutton(self._main_fr, variable = self._new_colorcode_utilization, command = self.on_color_code_check)\
             .place(relx = 0.26, y=100)
-        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_section_modulus, command = self.on_color_code_check)\
+        ttk.Checkbutton(self._main_fr, variable = self._new_colorcode_section_modulus, command = self.on_color_code_check)\
             .place(relx = 0.26, y=120)
-        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_fatigue, command = self.on_color_code_check)\
+        ttk.Checkbutton(self._main_fr, variable = self._new_colorcode_fatigue, command = self.on_color_code_check)\
             .place(relx = 0.26, y=140)
-        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_total, command = self.on_color_code_check)\
+        ttk.Checkbutton(self._main_fr, variable = self._new_colorcode_total, command = self.on_color_code_check)\
             .place(relx = 0.26, y=160)
 
-        self._chk_cc_spacing = tk.Checkbutton(self._main_fr, variable = self._new_colorcode_spacing,
+        self._chk_cc_spacing = ttk.Checkbutton(self._main_fr, variable = self._new_colorcode_spacing,
                                               command = self.on_color_code_check)
 
         tk.Label(self._main_fr, text='Check to see avaliable shortcuts', font="Text 9").place(relx = 0.27, y=0)
@@ -469,15 +481,12 @@ class Application():
         tk.Label(self._main_fr, text='Fatigue UF', font="Text 9").place(relx=0.27, y=140)
         tk.Label(self._main_fr, text='Total UF', font="Text 9").place(relx=0.27, y=160)
 
-        tk.Entry(self._main_fr, textvariable=self._new_line_p1, width=int(ent_width * 1),
-                 bg = self._entry_color, fg = self._entry_text_color)\
+        ttk.Entry(self._main_fr, textvariable=self._new_line_p1, width=int(ent_width * 1))\
             .place(relx=ent_x, rely=line_start)
-        tk.Entry(self._main_fr, textvariable=self._new_line_p2, width=int(ent_width * 1),
-                 bg = self._entry_color, fg = self._entry_text_color)\
+        ttk.Entry(self._main_fr, textvariable=self._new_line_p2, width=int(ent_width * 1))\
             .place(relx=ent_x, rely=line_start + delta_y)
-        tk.Button(self._main_fr, text='Add line', command=self.new_line,
-                  bg = self._button_bg_color, fg = self._button_fg_color,
-                  font = self._text_size['Text 9 bold']).place(relx=ent_x+2*delta_x, rely=line_start-delta_y*0.05,
+        ttk.Button(self._main_fr, text='Add line', command=self.new_line,style = "Bold.TButton")\
+            .place(relx=ent_x+2*delta_x, rely=line_start-delta_y*0.05,
                                                                relwidth = 0.05)
 
         # --- delete points and lines ---
@@ -487,32 +496,27 @@ class Application():
         tk.Label(self._main_fr, text='Delete lines and points (or left/right click and use "Delete key")',
                  font=self._text_size['Text 9 bold'], bg = self._general_color)\
             .place(rely=del_start - 0.025,relx=del_x, anchor = tk.NW)
-        self._ent_delete_line = tk.Entry(self._main_fr, textvariable=self._new_delete_line,
-                                        width=int(ent_width * 1),
-                                         bg = self._entry_color, fg = self._entry_text_color)
+        self._ent_delete_line = ttk.Entry(self._main_fr, textvariable=self._new_delete_line,
+                                        width=int(ent_width * 1))
         self._ent_delete_line.place(relx=ent_x, rely=del_start)
 
-        self._ent_delete_point = tk.Entry(self._main_fr, textvariable=self._new_delete_point,
-                                         width=int(ent_width * 1),
-                                          bg = self._entry_color, fg = self._entry_text_color)
+        self._ent_delete_point = ttk.Entry(self._main_fr, textvariable=self._new_delete_point,
+                                         width=int(ent_width * 1))
         self._ent_delete_point.place(relx=ent_x, rely=del_start + delta_y)
 
-        tk.Label(self._main_fr, text='Line number (left click):',font="Text 9", bg = self._general_color)\
+        ttk.Label(self._main_fr, text='Line number (left click):',font="Text 9")\
             .place(relx=del_x, rely=del_start)
         tk.Label(self._main_fr, text='Point number (right click):',font="Text 9", bg = self._general_color)\
             .place(relx=del_x, rely=del_start+ delta_y)
 
-        tk.Button(self._main_fr, text='Delete line',bg = self._button_bg_color, fg = self._button_fg_color,
-                                         font=self._text_size['Text 9 bold'],command=self.delete_line,
+        ttk.Button(self._main_fr, text='Delete line',command=self.delete_line,style = "Bold.TButton"
                                          ).place(relx=ent_x+delta_x*2, rely=del_start-0.002,
                                                                                     relwidth = 0.05)
-        tk.Button(self._main_fr, text='Delete prop.',bg = self._button_bg_color, fg = self._button_fg_color,
-                                         font=self._text_size['Text 9 bold'],command=self.delete_properties_pressed,
+        ttk.Button(self._main_fr, text='Delete prop.',command=self.delete_properties_pressed,style = "Bold.TButton"
                                          ).place(relx=ent_x+delta_x*4, rely=del_start-0.002,
                                                                                     relwidth = 0.05)
 
-        tk.Button(self._main_fr, text='Delete point',bg = self._button_bg_color, fg = self._button_fg_color,
-                                          font=self._text_size['Text 9 bold'],command=self.delete_point,
+        ttk.Button(self._main_fr, text='Delete point',command=self.delete_point,style = "Bold.TButton"
                                           ).place(relx=ent_x+2*delta_x, rely=del_start + delta_y +0.004-0.002,
                                                                                      relwidth = 0.05)
 
@@ -557,28 +561,28 @@ class Application():
             .place(relx=0.635, rely=0)
         tk.Label(self._main_fr, text='Show COG/COB', font="Text 9")\
             .place(relx=0.733, rely=0)
-        tk.Checkbutton(self._main_fr, variable = self._new_line_name, command = self.on_color_code_check)\
+        ttk.Checkbutton(self._main_fr, variable = self._new_line_name, command = self.on_color_code_check)\
             .place(relx=0.366, rely=0)
-        tk.Checkbutton(self._main_fr, variable = self._new_draw_point_name, command = self.on_color_code_check)\
+        ttk.Checkbutton(self._main_fr, variable = self._new_draw_point_name, command = self.on_color_code_check)\
             .place(relx=0.455, rely=0)
-        tk.Checkbutton(self._main_fr, variable = self._new_label_color_coding, command = self.on_color_code_check)\
+        ttk.Checkbutton(self._main_fr, variable = self._new_label_color_coding, command = self.on_color_code_check)\
             .place(relx=0.55, rely=0)
-        tk.Checkbutton(self._main_fr, variable = self._new_shifted_coords, command = self.update_frame)\
+        ttk.Checkbutton(self._main_fr, variable = self._new_shifted_coords, command = self.update_frame)\
             .place(relx=0.62, rely=0)
-        tk.Checkbutton(self._main_fr, variable = self._new_show_cog, command = self.update_frame)\
+        ttk.Checkbutton(self._main_fr, variable = self._new_show_cog, command = self.update_frame)\
             .place(relx=0.72, rely=0)
 
 
 
-        self.add_stucture = tk.Button(self._main_fr, text='Add structure/properties to line \n'
+        self.add_stucture = ttk.Button(self._main_fr, text='Add structure/properties to line \n'
                                                           '-- new or replace existing --', command=self.new_structure,
-                                      font = self._text_size['Text 10 bold'],
-                                      bg = self._button_bg_color, fg = self._button_fg_color)
-        self.add_stucture.place(relx=types_start+ delta_x*4.2, rely=prop_vert_start+18*delta_y, relwidth = 0.14,
+                                       style = "Bold.TButton")
+
+        self.add_stucture.place(relx=types_start+ delta_x*4.5, rely=prop_vert_start+18*delta_y, relwidth = 0.12,
                                 relheight = 0.04)
 
 
-        tk.Checkbutton(self._main_fr, variable = self._new_scale_stresses, command = self.on_color_code_check)\
+        ttk.Checkbutton(self._main_fr, variable = self._new_scale_stresses, command = self.on_color_code_check)\
             .place(relx = types_start+ delta_x*4.3, rely=prop_vert_start+16.9*delta_y)
         tk.Label(self._main_fr, text='Scale stresses when\n changing prop.', font=self._text_size['Text 9'],
                  bg = self._general_color)\
@@ -598,8 +602,8 @@ class Application():
         # Toggle buttons
         self._toggle_btn = tk.Button(self._main_fr, text="Toggle select\nmultiple", relief="raised",
                                      command=self.toggle_select_multiple, bg = self._button_bg_color)
-        self._toggle_change_param = tk.Button(self._main_fr, text="Change multi.\nparameter", relief="raised",
-                                     command=self.toggle_set_variable, bg = self._button_bg_color)
+        self._toggle_change_param = ttk.Button(self._main_fr, text="Change multi.\nparameter",
+                                     command=self.toggle_set_variable)
         self._toggle_param_to_change = None
         self._toggle_btn.place(relx=types_start+ delta_x*4.2, rely=prop_vert_start+15*delta_y, relwidth = 0.045,
                                 relheight = 0.035)
@@ -615,8 +619,8 @@ class Application():
         self._toggle_btn_puls = tk.Button(self._main_fr, text="Use PULS\n"
                                                               "results", relief="raised",
                                      command=self.toggle_puls_run, bg = self._button_bg_color)
-        self._puls_run_all = tk.Button(self._main_fr, text='Run PULS\nupdate results', relief="raised",
-                                     command=self.puls_run_all_lines, bg = self._button_bg_color)
+        self._puls_run_all = ttk.Button(self._main_fr, text='Run PULS -\nupdate results',
+                                     command=self.puls_run_all_lines)
         self._ent_puls_uf = tk.Entry(self._main_fr, textvariable=self._new_puls_uf,
                                         width=int(ent_width * 1),
                                          bg = self._entry_color, fg = self._entry_text_color)
@@ -772,9 +776,7 @@ class Application():
 
         self._lab_structure_type = tk.Label(self._main_fr, text='Select structure type:', font=self._text_size['Text 9 bold'],
                  bg = self._general_color)
-        self._button_str_type = tk.Button(self._main_fr,text='Show structure types',command=show_message,
-                                          bg = self._button_bg_color, fg = self._button_fg_color,
-                                          font=self._text_size['Text 8'])
+        self._button_str_type = ttk.Button(self._main_fr, text='Show structure types', command=show_message)
         self._structure_types_label =  tk.Label(textvariable = self._new_stucture_type_label,
                                                 font = self._text_size['Text 8'], bg = self._general_color)
 
@@ -789,7 +791,7 @@ class Application():
         self._lab_tau_y1 = tk.Label(self._main_fr, text='tau_y1', bg=self._general_color)
         self._lab_stf_type = tk.Label(self._main_fr, text='stiffener type', bg=self._general_color)
 
-        self._zstar_chk = tk.Checkbutton(self._main_fr, variable=self._new_zstar_optimization)
+        self._zstar_chk = ttk.Checkbutton(self._main_fr, variable=self._new_zstar_optimization)
         self._zstar_label = tk.Label(self._main_fr, text='z* optimization (RP-C201)\n'
                                      'for buckling \ncalculations', font=self._text_size['Text 8'],
                  bg = self._general_color)
@@ -818,20 +820,20 @@ class Application():
         self._lab_fl_w= tk.Label(self._main_fr, text='fl_w', bg = self._general_color)
         self._lab_fl_thk = tk.Label(self._main_fr, text='fl_thk', bg = self._general_color)
 
-        self._chk_button_sigmax = tk.Checkbutton(self._main_fr, variable = self._new_colorcode_sigmax,
+        self._chk_button_sigmax = ttk.Checkbutton(self._main_fr, variable = self._new_colorcode_sigmax,
                                                  command = self.on_color_code_check)
-        self._chk_button_sigmay1 = tk.Checkbutton(self._main_fr, variable = self._new_colorcode_sigmay1,
+        self._chk_button_sigmay1 = ttk.Checkbutton(self._main_fr, variable = self._new_colorcode_sigmay1,
                                                   command = self.on_color_code_check)
-        self._chk_button_sigmay2 = tk.Checkbutton(self._main_fr, variable = self._new_colorcode_sigmay2,
+        self._chk_button_sigmay2 = ttk.Checkbutton(self._main_fr, variable = self._new_colorcode_sigmay2,
                                                   command = self.on_color_code_check)
-        self._chk_button_tauxy = tk.Checkbutton(self._main_fr, variable = self._new_colorcode_tauxy,
+        self._chk_button_tauxy = ttk.Checkbutton(self._main_fr, variable = self._new_colorcode_tauxy,
                                                 command = self.on_color_code_check)
-        self._chk_button_structure_type = tk.Checkbutton(self._main_fr, variable = self._new_colorcode_structure_type,
+        self._chk_button_structure_type = ttk.Checkbutton(self._main_fr, variable = self._new_colorcode_structure_type,
                                                          command = self.on_color_code_check)
         self._chk_button_cc = tk.Label(text='<-- Color coding', font=self._text_size['Text 9'],bg=self._general_color)
-        self._chk_button_puls_spup = tk.Checkbutton(self._main_fr, variable=self._new_colorcode_puls_sp_or_up,
+        self._chk_button_puls_spup = ttk.Checkbutton(self._main_fr, variable=self._new_colorcode_puls_sp_or_up,
                                                     command=self.on_color_code_check)
-        self._chk_button_puls_acceptance =tk.Checkbutton(self._main_fr, variable=self._new_colorcode_puls_acceptance,
+        self._chk_button_puls_acceptance =ttk.Checkbutton(self._main_fr, variable=self._new_colorcode_puls_acceptance,
                                                          command=self.on_color_code_check)
 
         self._lab_yield = tk.Label(self._main_fr, text='Yield [MPa]:', font = self._text_size['Text 9'],
@@ -847,8 +849,7 @@ class Application():
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
             self._stf_button = tk.Button(self._main_fr, image=photo,
-                                         command= lambda id= "flat long stf": self.on_open_structure_window(id),
-                                         bg='white', fg=self._button_fg_color, )
+                                         command= lambda id= "flat long stf": self.on_open_structure_window(id))
             self._stf_button.image = photo
 
         except TclError:
@@ -999,7 +1000,7 @@ class Application():
         self._ent_shell_ring_stf_type = tk.OptionMenu(self._main_fr, self._new_shell_ring_stf_type,
                                                       *['T', 'FB', 'L', 'L-bulb'])
 
-        self._chk_shell_ring_frame_exclude = tk.Checkbutton(self._main_fr,
+        self._chk_shell_ring_frame_exclude = ttk.Checkbutton(self._main_fr,
                                                             variable = self._new_shell_exclude_ring_stf,
                                                             command = self.calculation_domain_selected)
         self._btn_shell_stf_section_ring_stf = ttk.Button(self._main_fr,text = 'STF',command= lambda id= "ring stf": self.on_open_structure_window(id))
@@ -1045,7 +1046,7 @@ class Application():
                                                               bg=self._entry_color, fg=self._entry_text_color)
         self._ent_shell_ring_stf_type = tk.OptionMenu(self._main_fr, self._new_shell_ring_frame_type,
                                                       *['T', 'FB', 'L', 'L-bulb'])
-        self._chk_shell_ring_frame_exclude = tk.Checkbutton(self._main_fr,
+        self._chk_shell_ring_frame_exclude = ttk.Checkbutton(self._main_fr,
                                                             variable = self._new_shell_exclude_ring_frame,
                                                             command = self.calculation_domain_selected)
         self._btn_shell_stf_section_ring_frame = ttk.Button(self._main_fr, text='STF',command= lambda id= "ring frame": self.on_open_structure_window(id))
@@ -1205,14 +1206,13 @@ class Application():
         self._compartments_listbox.bind('<<ListboxSelect>>', self.button_1_click_comp_box)
 
 
-        tk.Button(self._main_fr, text="Set compartment\n""properties.",command = self.update_tank,
-                                            font=self._text_size['Text 9 bold'],
-                  bg = self._button_bg_color, fg = self._button_fg_color)\
+        ttk.Button(self._main_fr, text="Set compartment\n""properties.",command = self.update_tank,
+                  style = "Bold.TButton")\
             .place(relx=ent_x+delta_x*3, rely=load_vert_start + delta_y * 6.5, relwidth = 0.08)
 
-        tk.Button(self._main_fr, text="Delete all tanks", command=self.delete_all_tanks,
-                  font=self._text_size['Text 9 bold'],bg = self._button_bg_color, fg = self._button_fg_color
-                  ).place(relx=ent_x+delta_x*3, rely=load_vert_start + delta_y * 8.5, relwidth = 0.08)
+        ttk.Button(self._main_fr, text="Delete all tanks", command=self.delete_all_tanks,
+                  style = "Bold.TButton").place(relx=ent_x+delta_x*3, rely=load_vert_start + delta_y * 8.5,
+                                                relwidth = 0.08)
 
 
         self._ent_content_type = tk.OptionMenu(self._main_fr, self._new_content_type, *list(self._tank_options.keys()),
@@ -1298,9 +1298,9 @@ class Application():
                       bg = self._button_bg_color, fg = self._button_fg_color, font=self._text_size['Text 8 bold']) \
                 .place(relx=types_start, rely=load_vert_start + 0 * delta_y, relheight = 0.044, relwidth = 0.12)
 
-        show_compartment = tk.Button(self._main_fr, text='Display current\n compartments', command=self.grid_display_tanks,
-                                  bg = self._button_bg_color, fg = self._button_fg_color,
-                                     font=self._text_size['Text 9 bold'])
+        show_compartment = ttk.Button(self._main_fr, text='Display current\n compartments',
+                                     command=self.grid_display_tanks,
+                                  style = "Bold.TButton")
         show_compartment.place(relx=ent_x+delta_x*3, rely=load_vert_start + delta_y * 4.5, relwidth = 0.08)
 
         try:
@@ -1350,9 +1350,8 @@ class Application():
         tk.Entry(self._main_fr, textvariable = self._new_dyn_acc_ballast,width = 10,
                  bg = self._entry_color, fg = self._entry_text_color)\
             .place(relx=lc_x + delta_x*4.2, rely=lc_y - 2 * lc_y_delta)
-        tk.Button(self._main_fr, text = 'Set\naccelerations', command = self.create_accelerations,
-                  font = self._text_size['Text 8 bold'],
-                  bg = self._button_bg_color, fg = self._button_fg_color)\
+        ttk.Button(self._main_fr, text = 'Set\naccelerations', command = self.create_accelerations,
+                   style = "Bold.TButton")\
             .place(relx=lc_x + delta_x*6, rely=lc_y - 3 * lc_y_delta)
 
         # --- checkbuttons and labels ---
@@ -1447,8 +1446,8 @@ class Application():
                       bg = self._button_bg_color, fg = self._button_fg_color)
 
 
-        self._opt_button_span = tk.Button(self._main_fr, text='SPAN', command=self.on_geometry_optimize,
-                 font = self._text_size['Text 14 bold'], bg = self._button_bg_color, fg = self._button_fg_color)
+        self._opt_button_span = ttk.Button(self._main_fr, text='SPAN', command=self.on_geometry_optimize,
+                                           style = "Bold.TButton")
         self._opt_button_span.place(relx=lc_x + delta_x * 6.4,rely=lc_y - 6 * lc_y_delta, relheight = 0.04,
                                     relwidth = 0.04)
         self._optimization_buttons = {'panel': [self._opt_button, self._opt_button_mult, self._opt_button_span],
@@ -1459,29 +1458,21 @@ class Application():
                                    'cylinder place' : [[lc_x, lc_y - 6 * lc_y_delta, 0.04, 0.175]]}
 
         # Load information button
-        tk.Button(self._main_fr, text='Load info', command=self.button_load_info_click,
-                 font = self._text_size['Text 9 bold'], height = 1,
-                  bg = self._button_bg_color, fg = self._button_fg_color)\
+        ttk.Button(self._main_fr, text='Load info', command=self.button_load_info_click,style = "Bold.TButton")\
            .place(relx=lc_x + delta_x * 6.4,rely=lc_y + delta_y*19.5, relwidth = 0.04)
 
         # Load information button
-        tk.Button(self._main_fr, text='Load factors', command=self.on_open_load_factor_window,
-                 font = self._text_size['Text 9 bold'], height = 1,
-                  bg = self._button_bg_color, fg = self._button_fg_color)\
+        ttk.Button(self._main_fr, text='Load factors', command=self.on_open_load_factor_window,style = "Bold.TButton")\
            .place(relx=lc_x + delta_x * 4.4,rely=lc_y + delta_y*19.5, relwidth = 0.05)
 
         # PULS result information
-        self._puls_information_button = tk.Button(self._main_fr, text='PULS results for line',
-                                                  command=self.on_puls_results_for_line,
-                 font = self._text_size['Text 9 bold'], height = 1,
-                  bg = self._button_bg_color, fg = self._button_fg_color)
+        self._puls_information_button = ttk.Button(self._main_fr, text='PULS results for line',
+                                                  command=self.on_puls_results_for_line,style = "Bold.TButton")
         self._puls_information_button.place(relx=lc_x + delta_x * 0,rely=lc_y + delta_y*19.5, relwidth = 0.075)
 
         # Wight developement plot
-        self._weight_button = tk.Button(self._main_fr, text='Weights',
-                                                  command=self.on_plot_cog_dev,
-                 font = self._text_size['Text 9 bold'], height = 1,
-                  bg = self._button_bg_color, fg = self._button_fg_color)
+        self._weight_button = ttk.Button(self._main_fr, text='Weights',
+                                                  command=self.on_plot_cog_dev,style = "Bold.TButton")
         self._weight_button.place(relx=lc_x + delta_x * 2.9,rely=lc_y + delta_y*19.5, relwidth = 0.038)
 
         self.update_frame()
@@ -1502,8 +1493,8 @@ class Application():
         if flat_panel:
             if any([shell, long_stf, ring_stf, ring_frame, force_input, stress_input]):
                 return
-            self._puls_run_all.place(relx=types_start + 0.065, rely=prop_vert_start + 18 * delta_y, relwidth=0.045,
-                                     relheight=0.035)
+            self._puls_run_all.place(relx=types_start + 0.07, rely=prop_vert_start + 18 * delta_y, relwidth=0.045,
+                                     relheight=0.04)
             self._chk_cc_spacing.place(relx=0.095, rely=0.29)
             self._zstar_chk.place(relx=types_start + delta_x * 9, rely=prop_vert_start + 11.5 * delta_y)
             self._buckling_slider.place(relx=types_start, rely=prop_vert_start + 17.5 * delta_y, relwidth=0.065,
@@ -2116,7 +2107,7 @@ class Application():
                                                                  textvariable=self._new_load_comb_dict[name][1],
                                                                  width=5, bg = self._entry_color,
                                                                   fg = self._entry_text_color))
-                            self._lc_comb_created.append(tk.Checkbutton(self._main_fr,
+                            self._lc_comb_created.append(ttk.Checkbutton(self._main_fr,
                                                                        variable =self._new_load_comb_dict[name][2]))
 
                     for load_no in range(int(len(self._lc_comb_created)/4)):
@@ -2142,7 +2133,7 @@ class Application():
                                                                textvariable=self._new_load_comb_dict[name][1],
                                                                 width=5, bg = self._entry_color,
                                                                 fg = self._entry_text_color))
-                        self._comp_comb_created.append(tk.Checkbutton(self._main_fr,
+                        self._comp_comb_created.append(ttk.Checkbutton(self._main_fr,
                                                                      variable = self._new_load_comb_dict[name][2]))
 
                     for comp_no in range(int(len(self._comp_comb_created)/4)):
@@ -2166,7 +2157,7 @@ class Application():
                     self._manual_created.append(
                         tk.Entry(self._main_fr, textvariable=self._new_load_comb_dict[name][1], width=6,
                                  bg = self._entry_color, fg = self._entry_text_color))
-                    self._manual_created.append(tk.Checkbutton(self._main_fr, variable=self._new_load_comb_dict[name][2]))
+                    self._manual_created.append(ttk.Checkbutton(self._main_fr, variable=self._new_load_comb_dict[name][2]))
                     self._manual_created[0].place(relx=lc_x, rely=lc_y)
                     self._manual_created[1].place(relx=lc_x + 4 * lc_x_delta, rely=lc_y)
                     self._manual_created[2].place(relx=lc_x + 6 * lc_x_delta, rely=lc_y)
