@@ -84,14 +84,14 @@ class Application():
                               'Arrows up/down - previous/next point'
 
         ''' Setting the style of ttk'''
-
+        #
         self._style = ttk.Style()
-        self._style.configure("Bold.TButton", font=('Sans', '10', 'bold'))
-        self._style.theme_use('vista')
-        self._style.configure('TFrame', background=self._general_color)
-        self._style.configure('TLabel', background=self._general_color)
-        self._style.configure('TButton', background=self._general_color, foreground='black')
-        self._style.configure('Bold.TButton', background=self._general_color, foreground='black')
+        # self._style.configure("Bold.TButton", font=('Sans', '10', 'bold'))
+        # self._style.theme_use('vista')
+        # self._style.configure('TFrame', background=self._general_color)
+        # self._style.configure('TLabel', background=self._general_color)
+        # self._style.configure('TButton', background=self._general_color, foreground='black')
+        # self._style.configure('Bold.TButton', background=self._general_color, foreground='black')
 
         ''' END style setting'''
 
@@ -164,11 +164,11 @@ class Application():
 
         # Creating the various canvas next.
         self._main_canvas = tk.Canvas(self._main_fr,
-                                      background=self._general_color, bd=0, highlightthickness=0, relief='ridge')
+                                      background=self._style.lookup('TFrame', 'background'), bd=0, highlightthickness=0, relief='ridge')
         self._prop_canvas = tk.Canvas(self._main_fr,
-                                     background=self._general_color, bd=0, highlightthickness=0, relief='ridge')
+                                     background=self._style.lookup('TFrame', 'background'), bd=0, highlightthickness=0, relief='ridge')
         self._result_canvas = tk.Canvas(self._main_fr,
-                                       background=self._general_color, bd=0, highlightthickness=0, relief='ridge')
+                                       background=self._style.lookup('TFrame', 'background'), bd=0, highlightthickness=0, relief='ridge')
         x_canvas_place = 0.26
         self._main_canvas.place(relx=x_canvas_place, rely=0,relwidth=0.523, relheight = 0.73)
         self._prop_canvas.place(relx=x_canvas_place, rely=0.73, relwidth=0.38, relheight = 0.27)
@@ -431,8 +431,6 @@ class Application():
         self._new_fdwn.set(1)
         self._new_shifted_coords = tk.BooleanVar()
         self._new_shifted_coords.set(False)
-        self._new_buckling_slider = tk.IntVar()
-        self._new_buckling_slider.set(1)
         self._new_show_cog = tk.BooleanVar()
         self._new_show_cog.set(False)
         self._new_content_type = tk.StringVar()
@@ -611,7 +609,7 @@ class Application():
         self._toggle_change_param.place(relx=types_start+ delta_x*6, rely=prop_vert_start+15*delta_y, relwidth = 0.045,
                                 relheight = 0.035)
 
-        self._toggle_choose = tk.OptionMenu(self._main_fr, self._new_toggle_var, *self._stuctural_definition,
+        self._toggle_choose = ttk.OptionMenu(self._main_fr, self._new_toggle_var, *self._stuctural_definition,
                                             command = self.update_frame)
         self._toggle_choose.place(relx=types_start+ delta_x*7.8, rely=prop_vert_start+15*delta_y, relwidth = 0.047,
                                 relheight = 0.035)
@@ -628,11 +626,14 @@ class Application():
         self._new_puls_uf.trace('w', self.trace_acceptance_change)
 
         # Buckling slider
-        self._buckling_slider = tk.Scale(self._main_fr, from_=1, to=3, command=self.slider_buckling_used,length=200,
-                                           orient = 'horizontal', background=self._general_color,
-                                            label='RP-C201 | PULS | ML', #font=self._text_size['Text 7 bold'],
-                                            relief='groove')
-
+        # self._buckling_slider = ttk.Scale(self._main_fr, from_=1, to=3, command=self.slider_buckling_used,length=200,
+        #                                    orient = 'horizontal',)
+        # self._buckling_slider_text = ttk.Label(self._main_fr, text= 'RP-C201 | PULS | ML')
+        #                                     #relief='groove')
+        self._new_buckling_method = tk.StringVar()
+        options = ['RP-C201','PULS','ML']
+        self._buckling_method = ttk.OptionMenu(self._main_fr, self._new_buckling_method, options[0], *options,
+                                               command=self.update_frame)
 
         # --- main variable to define the structural properties ---
         self._new_material = tk.DoubleVar()
@@ -750,7 +751,7 @@ class Application():
                                      width = int(5*1), 
                                      )
 
-        self._ent_pressure_side = tk.OptionMenu(self._main_fr, self._new_pressure_side, *('p', 's'))
+        self._ent_pressure_side = ttk.OptionMenu(self._main_fr, self._new_pressure_side, *('p', 's'))
         self._ent_sigma_y1= ttk.Entry(self._main_fr, textvariable=self._new_sigma_y1, width = int(7*1),
                                      )
         self._ent_sigma_y2 = ttk.Entry(self._main_fr, textvariable=self._new_sigma_y2, width=int(7*1),
@@ -761,15 +762,15 @@ class Application():
                                    )
         # self._ent_stf_type = ttk.Entry(self._main_fr, textvariable=self._new_stf_type, width=int(7*1),
         #                               )
-        self._ent_stf_type = tk.OptionMenu(self._main_fr, self._new_stf_type, *['T', 'FB', 'L', 'L-bulb'])
-        self._ent_structure_type = tk.OptionMenu(self._main_fr, self._new_stucture_type,
+        self._ent_stf_type = ttk.OptionMenu(self._main_fr, self._new_stf_type, *['T', 'FB', 'L', 'L-bulb'])
+        self._ent_structure_type = ttk.OptionMenu(self._main_fr, self._new_stucture_type,
                                                  command = self.option_meny_structure_type_trace, *self._options_type)
-        self._ent_puls_sp_or_up= tk.OptionMenu(self._main_fr, self._new_puls_sp_or_up,
+        self._ent_puls_sp_or_up= ttk.OptionMenu(self._main_fr, self._new_puls_sp_or_up,
                                                command = self.trace_puls_up_or_sp, *['SP', 'UP'])
-        self._ent_puls_method = tk.OptionMenu(self._main_fr, self._new_puls_method, *['buckling', 'ultimate'])
-        self._ent_puls_panel_boundary = tk.OptionMenu(self._main_fr, self._new_puls_panel_boundary,
+        self._ent_puls_method = ttk.OptionMenu(self._main_fr, self._new_puls_method, *['buckling', 'ultimate'])
+        self._ent_puls_panel_boundary = ttk.OptionMenu(self._main_fr, self._new_puls_panel_boundary,
                                                       *['Int', 'GL', 'GT'])
-        self._ent_puls_stf_end_type = tk.OptionMenu(self._main_fr, self._new_puls_stf_end_type,
+        self._ent_puls_stf_end_type = ttk.OptionMenu(self._main_fr, self._new_puls_stf_end_type,
                                                       *['C', 'S'])
         self._ent_puls_up_boundary = ttk.Entry(self._main_fr, textvariable=self._new_puls_up_boundary, width=int(7*1),
                                    )
@@ -997,7 +998,7 @@ class Application():
                                                               textvariable=self._new_shell_ring_stf_tripping_brackets,
                                                )
 
-        self._ent_shell_ring_stf_type = tk.OptionMenu(self._main_fr, self._new_shell_ring_stf_type,
+        self._ent_shell_ring_stf_type = ttk.OptionMenu(self._main_fr, self._new_shell_ring_stf_type,
                                                       *['T', 'FB', 'L', 'L-bulb'])
 
         self._chk_shell_ring_frame_exclude = ttk.Checkbutton(self._main_fr,
@@ -1046,7 +1047,7 @@ class Application():
         self._ent_shell_ring_frame_l_between_girders = ttk.Entry(self._main_fr,
                                                               textvariable=self._new_shell_ring_frame_length_between_girders,
                                                               )
-        self._ent_shell_ring_stf_type = tk.OptionMenu(self._main_fr, self._new_shell_ring_frame_type,
+        self._ent_shell_ring_stf_type = ttk.OptionMenu(self._main_fr, self._new_shell_ring_frame_type,
                                                       *['T', 'FB', 'L', 'L-bulb'])
         self._chk_shell_ring_frame_exclude = ttk.Checkbutton(self._main_fr,
                                                             variable = self._new_shell_exclude_ring_frame,
@@ -1112,14 +1113,14 @@ class Application():
         self._new_shell_tQsd = tk.DoubleVar()
         self._new_shell_shsd = tk.DoubleVar()
 
-        self._ent_shell_uls_or_als = tk.OptionMenu(self._main_fr, self._new_shell_uls_or_als, *['ULS', 'ALS'])
-        self._ent_shell_end_cap_pressure_included = tk.OptionMenu(self._main_fr,
+        self._ent_shell_uls_or_als = ttk.OptionMenu(self._main_fr, self._new_shell_uls_or_als, *['ULS', 'ALS'])
+        self._ent_shell_end_cap_pressure_included = ttk.OptionMenu(self._main_fr,
                                                                   self._new_shell_end_cap_pressure_included,
                                                                   *['not included in axial force',
                                                                     'included in axial force'])
-        self._ent_shell_fab_ring_stf = tk.OptionMenu(self._main_fr, self._new_shell_fab_ring_stf,
+        self._ent_shell_fab_ring_stf = ttk.OptionMenu(self._main_fr, self._new_shell_fab_ring_stf,
                                                      *['Fabricated', 'Cold formed'])
-        self._ent_shell_fab_ring_frame = tk.OptionMenu(self._main_fr, self._new_shell_fab_ring_frame,
+        self._ent_shell_fab_ring_frame = ttk.OptionMenu(self._main_fr, self._new_shell_fab_ring_frame,
                                                        *['Fabricated', 'Cold formed'])
         self._ent_shell_yield = ttk.Entry(self._main_fr, textvariable=self._new_shell_yield,
                                                )
@@ -1175,7 +1176,7 @@ class Application():
         self._current_calculation_domain = 'Stiffened panel, flat'
         self._unit_informations_dimensions = list()
 
-        self._ent_calculation_domain = tk.OptionMenu(self._main_fr, self._new_calculation_domain, *options,
+        self._ent_calculation_domain = ttk.OptionMenu(self._main_fr, self._new_calculation_domain, *options,
                                                      command=self.calculation_domain_selected)
 
         ttk.Label(self._main_fr, text='Structural and calculation properties input below:',
@@ -1217,7 +1218,7 @@ class Application():
                                                 relwidth = 0.08)
 
 
-        self._ent_content_type = tk.OptionMenu(self._main_fr, self._new_content_type, *list(self._tank_options.keys()),
+        self._ent_content_type = ttk.OptionMenu(self._main_fr, self._new_content_type, *list(self._tank_options.keys()),
                                                command=self.tank_density_trace)
         ent_width = 10
 
@@ -1368,10 +1369,11 @@ class Application():
             .place(relx=lc_x, rely=lc_y + 2.5*delta_y)
 
         lc_y += 0.148148148
-        self._combination_slider = tk.Scale(self._main_fr, from_=1, to=4, command=self.gui_load_combinations,length=400,
-                                           orient = 'horizontal', background=self._general_color,
-                                            label='OS-C101 Table 1    1: DNV a)    2: DNV b)    3: TankTest    4: Cylinder',
-                                            relief='groove')
+        self._combination_slider = ttk.Scale(self._main_fr, from_=1, to=4, command=self.gui_load_combinations,length=400,
+                                           orient = 'horizontal')
+        ttk.Label(self._main_fr, text='1: DNV a)                    2: DNV b)                    3: TankTest        '
+                                      '            4: Cylinder')\
+            .place(relx=lc_x +0*lc_x_delta, rely=lc_y - 2*lc_y_delta)
 
         self._combination_slider.place(relx=lc_x +0*lc_x_delta, rely=lc_y - 3*lc_y_delta)
         self._combination_slider_map = {1:'dnva',2:'dnvb',3:'tanktest', 4: 'Cylinder'}
@@ -1499,8 +1501,7 @@ class Application():
                                      relheight=0.04)
             self._chk_cc_spacing.place(relx=0.095, rely=0.29)
             self._zstar_chk.place(relx=types_start + delta_x * 9, rely=prop_vert_start + 11.5 * delta_y)
-            self._buckling_slider.place(relx=types_start, rely=prop_vert_start + 17.5 * delta_y, relwidth=0.065,
-                                        relheight=0.055)
+            self._buckling_method.place(relx=types_start, rely=prop_vert_start + 18 * delta_y, relwidth=0.065)
             self._lab_yield.place(relx=0.185, rely=prop_vert_start + 2.6 * delta_y)
             self._lab_mat_fac.place(relx=0.221, rely=prop_vert_start + 2.6 * delta_y)
 
@@ -1784,7 +1785,7 @@ class Application():
         'Orthogonally Stiffened shell (Force input)', 'Orthogonally Stiffened panel (Stress input)']
         '''
 
-        to_process = [self._puls_run_all, self._chk_cc_spacing, self._zstar_chk, self._buckling_slider, self._lab_yield,
+        to_process = [self._puls_run_all, self._chk_cc_spacing, self._zstar_chk, self._buckling_method, self._lab_yield,
                       self._lab_mat_fac,self._structure_types_label, self._button_str_type, self._ent_structure_type,
                       self._lab_structure_type, self._lab_kpp, self._lab_kps, self._lab_km1, self._lab_km2,
                       self._lab_k3, self._lab_sig_y1, self._lab_sig_y2, self._lab_sig_x, self._lab_tau_y1,
@@ -2058,20 +2059,26 @@ class Application():
 
                 self.new_structure(toggle_multi=dict, suspend_recalc=True if (idx+1) != no_of_lines else False)
 
-    def slider_buckling_used(self, event):
-
-        if self._buckling_slider.get() == 1:
-            self._new_buckling_slider.set(1)
-            self._ent_puls_uf.config(bg = 'white')
-        elif self._buckling_slider.get() == 2:
-            self._new_buckling_slider.set(2)
-            self._ent_puls_uf.config(bg='white')
-        elif self._buckling_slider.get() == 3:
-            self._new_buckling_slider.set(3)
-            self._ent_puls_uf.config(bg = 'red')
-        else:
-            pass
-        self.update_frame()
+    # def slider_buckling_used(self, event):
+    #     if self._new_buckling_method.get() == 'RP-C201':
+    #         self._buckling_slider.set(1)
+    #     elif self._new_buckling_method.get() == 'PULS':
+    #         self._buckling_slider.set(2)
+    #     elif self._new_buckling_method.get() == 'ML':
+    #         self._buckling_slider.set(3)
+    #
+    #     if self._buckling_slider.get() == 1:
+    #         self._new_buckling_slider.set(1)
+    #         #self._ent_puls_uf.config(bg = 'white')
+    #     elif self._buckling_slider.get() == 2:
+    #         self._new_buckling_slider.set(2)
+    #         #self._ent_puls_uf.config(bg='white')
+    #     elif self._buckling_slider.get() == 3:
+    #         self._new_buckling_slider.set(3)
+    #         #self._ent_puls_uf.config(bg = 'red')
+    #     else:
+    #         pass
+    #     self.update_frame()
 
     def gui_load_combinations(self,event):
         '''
@@ -3081,7 +3088,7 @@ class Application():
                                             all_cyl_chks.append(stf_val)
                             color = 'green' if all(all_cyl_chks) else 'red'
 
-                        elif self._new_buckling_slider.get() == 2:
+                        elif self._new_buckling_method == 'PULS':
                             if 'black' in state['PULS colors'][line].values():
                                 color = 'black'
                             else:
@@ -3096,9 +3103,9 @@ class Application():
                                 if color == 'green':
                                     color = 'green' if all([state['colors'][line][key] == 'green' for key in
                                                             ['fatigue', 'section', 'shear','thickness']]) else 'red'
-                        elif self._new_buckling_slider.get() == 1:
+                        elif self._new_buckling_method == 'RP-C201':
                             color = 'red' if 'red' in state['colors'][line].values() else 'green'
-                        elif self._new_buckling_slider.get() == 3:
+                        elif self._new_buckling_method == 'ML':
                             if 'black' in state['ML buckling colors'][line].values():
                                 color = 'black'
                             else:
@@ -3243,7 +3250,7 @@ class Application():
                                                                                            else press/highest_pressure)),
                                               anchor="nw")
         elif all([self._new_colorcode_utilization.get() == True,
-                  self._line_to_struc != {}, self._new_buckling_slider.get() != 2]):
+                  self._line_to_struc != {}, self._new_buckling_method.get() != 'PULS']):
             all_utils = cc_state['utilization map']
             for idx, uf in enumerate(cc_state['utilization map']):
                 self._main_canvas.create_text(11, start_text_shift + 20 * idx, text=str('UF = ' +str(round(uf,1))),
@@ -3255,7 +3262,7 @@ class Application():
                                               fill=matplotlib.colors.rgb2hex(cmap_sections(uf/max(all_utils))),
                                               anchor="nw")
         elif all([self._new_colorcode_utilization.get() == True,
-                  self._line_to_struc != {}, self._new_buckling_slider.get() == 2]):
+                  self._line_to_struc != {}, self._new_buckling_method == 'PULS']):
             all_utils = cc_state['PULS utilization map']
             for idx, uf in enumerate(cc_state['utilization map']):
                 self._main_canvas.create_text(11, start_text_shift + 20 * idx, text=str('UF = ' +str(round(uf,1))),
@@ -3424,7 +3431,7 @@ class Application():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                               text=this_text)
 
-        elif self._new_colorcode_utilization.get() == True and self._new_buckling_slider.get() == 1:
+        elif self._new_colorcode_utilization.get() == True and self._new_buckling_method == 'RP-C201':
             if self._line_to_struc[line][5] is not None:
                 color = 'grey'
                 this_text = 'N/A'
@@ -3434,7 +3441,7 @@ class Application():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                               text=round(state['color code']['lines'][line]['rp uf'],2))
 
-        elif self._new_colorcode_utilization.get() == True and self._new_buckling_slider.get() == 2:
+        elif self._new_colorcode_utilization.get() == True and self._new_buckling_method == 'PULS':
             if self._line_to_struc[line][5] is not None:
                 color = 'grey'
                 this_text = 'N/A'
@@ -3444,7 +3451,7 @@ class Application():
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                               text=this_text)
-        elif self._new_colorcode_utilization.get() == True and self._new_buckling_slider.get() == 3:
+        elif self._new_colorcode_utilization.get() == True and self._new_buckling_method == 'ML':
             color = 'black'
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
@@ -3544,17 +3551,17 @@ class Application():
                     self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                                   text=this_text)
 
-            elif self._new_buckling_slider.get() == 2:
+            elif self._new_buckling_method == 'PULS':
                 color = state['color code']['lines'][line]['Total uf color rp']
                 if self._new_label_color_coding.get():
                     self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                                   text=round(state['color code']['lines'][line]['Total uf puls'],2))
-            elif self._new_buckling_slider.get() == 1:
+            elif self._new_buckling_method == 'RP-C201':
                 color = state['color code']['lines'][line]['Total uf color puls']
                 if self._new_label_color_coding.get():
                     self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                                   text=round(state['color code']['lines'][line]['Total uf rp'],2))
-            elif self._new_buckling_slider.get() == 3:
+            elif self._new_buckling_method == 'ML':
                 color = 'black'
                 if self._new_label_color_coding.get():
                     self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
@@ -3834,7 +3841,7 @@ class Application():
 
                 # buckling results
 
-                if self._PULS_results != None and self._new_buckling_slider.get() == 2:
+                if self._PULS_results != None and self._new_buckling_method == 'PULS':
                     line_results = state['PULS colors'][self._active_line]
                     puls_res = self._PULS_results.get_puls_line_results(self._active_line)
                     if puls_res != None:
@@ -3898,7 +3905,7 @@ class Application():
                                                         font=self._text_size['Text 9 bold'],
                                                         anchor='nw',
                                                         fill='Orange')
-                elif self._new_buckling_slider.get() == 1:
+                elif self._new_buckling_method == 'RP-C201':
                     self._result_canvas.create_text([x * 1, (y+9*dy) * 1],
                                                    text='Buckling results DNV-RP-C201:',
                                                    font=self._text_size["Text 9 bold"], anchor='nw')
@@ -3923,7 +3930,7 @@ class Application():
                         self._result_canvas.create_text([x * 1, (y+10*dy) * 1],
                                                    text=res_text,font=self._text_size["Text 9 bold"],
                                                    anchor='nw',fill=color_buckling)
-                elif self._new_buckling_slider.get() == 3:
+                elif self._new_buckling_method == 'ML':
 
                     self._result_canvas.create_text([x * 1, (y + 9 * dy) * 1],
                                                     text='Buckling results ANYstructure ML algorithm:',
@@ -5542,7 +5549,7 @@ class Application():
 
     def draw_point_frame(self):
         ''' Frame to define brackets on selected point. '''
-        pt_canvas = tk.Canvas(self._pt_frame,height=100,width=100,background='gray60')
+        pt_canvas = tk.Canvas(self._pt_frame,height=100,width=100,background=self._style.lookup('TFrame', 'background'))
         pt_canvas.place(relx=0, rely=0)
         pt_canvas.create_oval(45,45,55,55,fill='red')
         new_left_br = tk.IntVar()
@@ -5614,7 +5621,7 @@ class Application():
         export_all['load_combinations'] = load_combiantions
         export_all['tank_properties'] = tank_properties
         export_all['fatigue_properties'] = fatigue_properties
-        export_all['buckling type'] = self._new_buckling_slider.get()
+        #export_all['buckling type'] = self._new_buckling_slider.get()
 
         if self._PULS_results is not None:
             export_all['PULS results'] = self._PULS_results.get_run_results()
@@ -5799,15 +5806,12 @@ class Application():
         highest_x = max([coord[0] for coord in points.values()])
         self._canvas_scale = min(800 / highest_y, 800 / highest_x, 15)
 
-        if 'buckling type' in imported.keys():
-            self._new_buckling_slider.set(imported['buckling type'])
-            self._buckling_slider.set(imported['buckling type'])
+        # if 'buckling type' in imported.keys():
+        #     self._new_buckling_slider.set(imported['buckling type'])
+        #     self._buckling_slider.set(imported['buckling type'])
 
         if 'Weight and COG' in imported.keys():
             self._weight_logger = imported['Weight and COG']
-
-
-
 
         self.get_cob()
         imp_file.close()
@@ -5833,7 +5837,7 @@ class Application():
             # Create the text widget
             text_widget = tk.Text(text_m, height=60, width=80)
             # Create a scrollbar
-            scroll_bar = tk.Scrollbar(text_m)
+            scroll_bar = ttk.Scrollbar(text_m)
             # Pack the scroll bar
             # Place it to the right side, using tk.RIGHT
             scroll_bar.pack(side=tk.RIGHT)
@@ -5951,7 +5955,7 @@ class Application():
         # Create the text widget
         text_widget = tk.Text(text_m , height=60, width=100)
         # Create a scrollbar
-        scroll_bar = tk.Scrollbar(text_m)
+        scroll_bar = ttk.Scrollbar(text_m)
         # Pack the scroll bar
         # Place it to the right side, using tk.RIGHT
         scroll_bar.pack(side=tk.RIGHT)
