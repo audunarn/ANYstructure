@@ -87,7 +87,7 @@ class Application():
         ''' Setting the style of ttk'''
         #
         self._style = ThemedStyle(root)
-        self._style.theme_use('arc')
+        self._style.theme_use('blue')
         # self._style.configure("Bold.TButton", font=('Sans', '10', 'bold'))
         # self._style.theme_use('vista')
         # self._style.configure('TFrame', background=self._general_color)
@@ -1072,10 +1072,10 @@ class Application():
         self._new_shell_stress_or_force = tk.IntVar()
         self._new_shell_stress_or_force.set(1)
 
-        self._ent_shell_force_input = tk.Radiobutton(self._main_fr, text="Force input",
+        self._ent_shell_force_input = ttk.Radiobutton(self._main_fr, text="Force input",
                                                      variable=self._new_shell_stress_or_force, value=1,
                                                      command = self.calculation_domain_selected)
-        self._ent_shell_stress_input = tk.Radiobutton(self._main_fr, text="Stress input",
+        self._ent_shell_stress_input = ttk.Radiobutton(self._main_fr, text="Stress input",
                                                       variable=self._new_shell_stress_or_force, value=2,
                                                       command = self.calculation_domain_selected)
 
