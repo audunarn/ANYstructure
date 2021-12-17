@@ -45,7 +45,7 @@ class CreateStructureWindow():
                 self._initial_structure_obj = None
             self._section_list = [section.__str__() for section in app._sections]
             self._section_objects = app._sections
-            self._clicked_button = app._clicked_section_create
+            self._clicked_button = app._clicked_section_create if app._line_is_active else None
 
         image_dir = os.path.dirname(__file__) + '\\images\\'
         self._opt_runned = False
@@ -212,9 +212,11 @@ class CreateStructureWindow():
 
         # Close and save depending on input
         # "long stf", "ring stf", "ring frame", "flat long stf"
-        self.close_and_save = tk.Button(self._frame, text='Click treturn section data to ' + self._clicked_button,
-                                        command=self.save_and_close, bg='green', font='Verdana 10 bold', fg='yellow')
-        self.close_and_save.place(x=start_x + dx * 9, y=start_y + dy * 12)
+        if self._clicked_button is not None:
+            self.close_and_save = tk.Button(self._frame, text='Click to return section data to ' + self._clicked_button,
+                                            command=self.save_and_close, bg='green',
+                                            font='Verdana 10 bold', fg='yellow')
+            self.close_and_save.place(x=start_x + dx * 9, y=start_y + dy * 12)
 
 
 
