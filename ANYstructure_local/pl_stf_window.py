@@ -35,6 +35,8 @@ class CreateStructureWindow():
                 self._section_objects.append(SecObj)
                 # m = self._ent_section_list.children['menu']
                 # m.add_command(label=SecObj.__str__(), command=self.section_choose)
+
+            self._clicked_button = ["long stf", "ring stf", "ring frame", "flat long stf"][0]
         else:
             self.app = app
             try:
@@ -43,6 +45,8 @@ class CreateStructureWindow():
                 self._initial_structure_obj = None
             self._section_list = [section.__str__() for section in app._sections]
             self._section_objects = app._sections
+            self._clicked_button = app._clicked_section_create
+
         image_dir = os.path.dirname(__file__) + '\\images\\'
         self._opt_runned = False
         self._opt_resutls = ()
@@ -175,8 +179,6 @@ class CreateStructureWindow():
             tk.Label(self._frame, text='Flange thk.', font='Verdana 9').place(x=start_x, y=start_y + 6 * dy)
             self._ent_fl_thk.place(x=start_x + dx * 2, y=start_y+6*dy)
 
-
-
         self._new_spacing.trace('w',self.draw_trace)
         self._new_pl_thk.trace('w',self.draw_trace)
         self._new_web_h.trace('w',self.draw_trace)
@@ -208,9 +210,11 @@ class CreateStructureWindow():
         except TclError:
             pass
 
-        self.close_and_save = tk.Button(self._frame, text='Save and return structure',
+        # Close and save depending on input
+        # "long stf", "ring stf", "ring frame", "flat long stf"
+        self.close_and_save = tk.Button(self._frame, text='Click treturn section data to ' + self._clicked_button,
                                         command=self.save_and_close, bg='green', font='Verdana 10 bold', fg='yellow')
-        self.close_and_save.place(x=start_x + dx * 12, y=start_y + dy * 12)
+        self.close_and_save.place(x=start_x + dx * 9, y=start_y + dy * 12)
 
 
 
@@ -348,7 +352,7 @@ class CreateStructureWindow():
         self.app.on_close_structure_window([float(num) for num in [self._new_spacing.get(),self._new_pl_thk.get(),
                                                                    self._new_web_h.get(),self._new_web_thk.get(),
                                                                    self._new_fl_w.get(),self._new_fl_thk.get()]] +
-                                           [self._new_stiffener_type.get()])
+                                           [self._new_stiffener_type.get(), self._clicked_button])
         self._frame.destroy()
 
     def section_choose(self, event = None):
