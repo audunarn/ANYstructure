@@ -309,7 +309,7 @@ class Application():
         self._main_grid  = grid.Grid(self._grid_dimensions[0], self._grid_dimensions[1])
         self._grid_calc = None
         self.text_widget = None
-        self._clicked_section_create= None
+        self._clicked_section_create= None # Identifiation of the button clicked. Sections.
 
         # These sets the location where entries are placed.
         ent_x = 0.09375
@@ -5874,12 +5874,10 @@ class Application():
         Opens the window to create structure.
         :return:
         '''
-        self._clicked_section_create = clicked_button # TODO, have a plan for this now-.
-        if self._line_is_active:
-            top_opt = tk.Toplevel(self._parent, background=self._general_color)
-            struc.CreateStructureWindow(top_opt, self)
-        else:
-            messagebox.showinfo(title='Select line',message='You must select a line')
+        self._clicked_section_create = clicked_button  # Identifying the clicked button
+
+        top_opt = tk.Toplevel(self._parent, background=self._general_color)
+        struc.CreateStructureWindow(top_opt, self)
 
     def on_open_stresses_window(self):
         '''
@@ -6199,14 +6197,35 @@ class Application():
         Setting the input field to specified properties
         :param returned_structure:
         :return:
+
+
+                self._shell_ring_stf_gui_items = [self._lab_shell_ring_stiffener,self._ent_shell_ring_stf_hw,
+                                          self._ent_shell_ring_stf_tw,self._ent_shell_ring_stf_b,
+                                          self._ent_shell_ring_stf_tf, self._ent_shell_ring_stf_tripping_brackets,
+                                          self._ent_shell_ring_stf_type, self._chk_shell_ring_frame_exclude,
+                                          self._btn_shell_stf_section_ring_stf]
         '''
-        self._new_stf_spacing.set(returned_structure[0])
-        self._new_plate_thk.set(returned_structure[1])
-        self._new_stf_web_h.set(returned_structure[2])
-        self._new_stf_web_t.set(returned_structure[3])
-        self._new_stf_fl_w.set(returned_structure[4])
-        self._new_stf_fl_t.set(returned_structure[5])
-        self._new_stf_type.set(returned_structure[6])
+        clicked_button = returned_structure[7] #["long stf", "ring stf", "ring frame", "flat long stf"]
+
+
+        if clicked_button in ["long stf", "flat long stf"]:
+            self._new_stf_spacing.set(returned_structure[0])
+            self._new_plate_thk.set(returned_structure[1])
+            self._new_stf_web_h.set(returned_structure[2])
+            self._new_stf_web_t.set(returned_structure[3])
+            self._new_stf_fl_w.set(returned_structure[4])
+            self._new_stf_fl_t.set(returned_structure[5])
+            self._new_stf_type.set(returned_structure[6])
+        elif clicked_button == "ring stf":
+            self._new_shell_ring_stf_hw.set(returned_structure[2])
+            self._new_shell_ring_stf_tw.set(returned_structure[3])
+            self._new_shell_ring_stf_b.set(returned_structure[4])
+            self._new_shell_ring_stf_tf.set(returned_structure[5])
+        elif clicked_button == "ring frame":
+            self._new_shell_ring_frame_hw.set(returned_structure[2])
+            self._new_shell_ring_frame_tw.set(returned_structure[3])
+            self._new_shell_ring_frame_b.set(returned_structure[4])
+            self._new_shell_ring_frame_tf.set(returned_structure[5])
 
         section = struc.Section({'stf_type': returned_structure[6],
                                  'stf_web_height': returned_structure[2]/1000,
