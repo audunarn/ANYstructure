@@ -2,6 +2,7 @@
 import time, datetime
 import tkinter as tk
 from tkinter import ttk
+from ttkthemes import ThemedStyle
 from tkinter import filedialog
 from tkinter import messagebox
 from ANYstructure_local.calc_loads import *
@@ -85,7 +86,8 @@ class Application():
 
         ''' Setting the style of ttk'''
         #
-        self._style = ttk.Style()
+        self._style = ThemedStyle(root)
+        self._style.theme_use('arc')
         # self._style.configure("Bold.TButton", font=('Sans', '10', 'bold'))
         # self._style.theme_use('vista')
         # self._style.configure('TFrame', background=self._general_color)
@@ -600,7 +602,7 @@ class Application():
         ent_fdwn.place(relx = types_start+ delta_x*9.1, rely=prop_vert_start+17*delta_y, relwidth = 0.01)
         # Toggle buttons
         self._toggle_btn = tk.Button(self._main_fr, text="Toggle select\nmultiple", relief="raised",
-                                     command=self.toggle_select_multiple, bg = self._button_bg_color)
+                                     command=self.toggle_select_multiple, bg = self._style.lookup('TButton', 'background'))
         self._toggle_change_param = ttk.Button(self._main_fr, text="Change multi.\nparameter",
                                      command=self.toggle_set_variable)
         self._toggle_param_to_change = None
@@ -1204,7 +1206,8 @@ class Application():
         self._compartments_listbox = tk.Listbox(self._main_fr, height = int(10 * 1),
                                                width = int(5 * 1),
                                                font=self._text_size["Text 10 bold"]
-                                               ,background=self._general_color, selectmode = 'extended' )
+                                               ,background=self._style.lookup('TFrame', 'background'),
+                                                selectmode = 'extended' )
         self._compartments_listbox.place(relx=types_start, rely=load_vert_start + 4.2*delta_y)
         self._compartments_listbox.bind('<<ListboxSelect>>', self.button_1_click_comp_box)
 
@@ -1988,13 +1991,13 @@ class Application():
     def toggle_select_multiple(self, event = None):
         if self._toggle_btn.config('relief')[-1] == 'sunken':
             self._toggle_btn.config(relief="raised")
-            self._toggle_btn.config(bg=self._button_bg_color)
+            self._toggle_btn.config(bg=self._style.lookup('TButton', 'background'))
             self._multiselect_lines = []
             self._toggle_btn.config(text='Toggle select\n'
                                          'multiple')
         else:
             self._toggle_btn.config(relief="sunken")
-            self._toggle_btn.config(bg='orange')
+            self._toggle_btn.config(bg='green')
             self._toggle_btn.config(text = 'select lines')
         self.update_frame()
 
@@ -2090,8 +2093,8 @@ class Application():
         if self._line_is_active and self._active_line in self._line_to_struc.keys():
             lc_x, lc_x_delta, lc_y, lc_y_delta = 0.791666667, 0.026041667, 0.287037037, 0.023148148
 
-            self._active_label.config(text=self._active_line)
-            combination = self._combination_slider_map[self._combination_slider.get()]
+            #self._active_label.config(text=self._active_line)
+            combination = self._combination_slider_map[int(self._combination_slider.get())]
 
             # removing label, checkbox and entry. setting created items to empty list.
             [[item.destroy() for item in items] for items in
