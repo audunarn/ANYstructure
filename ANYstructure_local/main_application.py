@@ -56,8 +56,7 @@ class Application():
 
         self._root_dir = os.path.dirname(os.path.abspath(__file__))
         # Main frame for the application
-        self._main_fr = tk.Frame(parent,
-                                 background=self._general_color)
+        self._main_fr = ttk.Frame(parent)
         self._main_fr.place(in_=parent, relwidth=1, relheight = 0.99)
         # Top open/save/new
         menu = tk.Menu(parent)
@@ -89,7 +88,7 @@ class Application():
         self._style = ttk.Style()
         self._style.configure("Bold.TButton", font=('Sans', '10', 'bold'))
         self._style.theme_use('vista')
-
+        self._style.configure('TFrame', background=self._general_color)
         self._style.configure('TLabel', background=self._general_color)
         self._style.configure('TButton', background=self._general_color, foreground='black')
         self._style.configure('Bold.TButton', background=self._general_color, foreground='black')
@@ -481,10 +480,10 @@ class Application():
         ttk.Label(self._main_fr, text='Fatigue UF', font="Text 9").place(relx=0.27, y=140)
         ttk.Label(self._main_fr, text='Total UF', font="Text 9").place(relx=0.27, y=160)
 
-        ttk.Entry(self._main_fr, textvariable=self._new_line_p1, width=int(ent_width * 1))\
-            .place(relx=ent_x, rely=line_start)
-        ttk.Entry(self._main_fr, textvariable=self._new_line_p2, width=int(ent_width * 1))\
-            .place(relx=ent_x, rely=line_start + delta_y)
+        ttk.Spinbox(self._main_fr, textvariable=self._new_line_p1, width=int(ent_width * 1), from_ = 0,
+                    to = float('inf')).place(relx=ent_x, rely=line_start)
+        ttk.Spinbox(self._main_fr, textvariable=self._new_line_p2, width=int(ent_width * 1),
+                    from_ = 0, to = float('inf')).place(relx=ent_x, rely=line_start + delta_y)
         ttk.Button(self._main_fr, text='Add line', command=self.new_line,style = "Bold.TButton")\
             .place(relx=ent_x+2*delta_x, rely=line_start-delta_y*0.05,
                                                                relwidth = 0.05)
@@ -496,11 +495,13 @@ class Application():
         ttk.Label(self._main_fr, text='Delete lines and points (or left/right click and use "Delete key")',
                  font=self._text_size['Text 9 bold'], )\
             .place(rely=del_start - 0.025,relx=del_x, anchor = tk.NW)
-        self._ent_delete_line = ttk.Entry(self._main_fr, textvariable=self._new_delete_line,
+        self._ent_delete_line = ttk.Spinbox(self._main_fr, textvariable=self._new_delete_line,
+                                            from_ = 0, to = float('inf'),
                                         width=int(ent_width * 1))
         self._ent_delete_line.place(relx=ent_x, rely=del_start)
 
-        self._ent_delete_point = ttk.Entry(self._main_fr, textvariable=self._new_delete_point,
+        self._ent_delete_point = ttk.Spinbox(self._main_fr, textvariable=self._new_delete_point,
+                                             from_ = 0, to = float('inf'),
                                          width=int(ent_width * 1))
         self._ent_delete_point.place(relx=ent_x, rely=del_start + delta_y)
 
@@ -801,9 +802,8 @@ class Application():
         self._lab_puls_spup =  ttk.Label(self._main_fr, text='Siffened: SP Unstf. pl.: UP',
                                         )
         self._lab_puls_up_supp =  ttk.Label(self._main_fr, text='UP sup.left,right,upper,lower',
-                                           )
-        self._lab_puls_acceptance=  ttk.Label(self._main_fr, text='PULS acceptance',
-                                             font = self._text_size['Text 7'])
+                                           font = self._text_size['Text 7'])
+        self._lab_puls_acceptance=  ttk.Label(self._main_fr, text='PULS acceptance')
         self._lab_puls_uf =  ttk.Label(self._main_fr, text='PULS utilization factor:', 
                                       )
         self._lab_puls_int_gt =  ttk.Label(self._main_fr, text='Int-integrated GL-free left\n/right GT-free top/bottom',
@@ -1528,7 +1528,7 @@ class Application():
 
             self._lab_puls_input.place(relx=types_start, rely=prop_vert_start + 10.4 * delta_y)
             self._lab_puls_spup.place(relx=types_start, rely=prop_vert_start + 11.2 * delta_y)
-            self._lab_puls_up_supp.place(relx=types_start, rely=prop_vert_start + 11.8 * delta_y)
+            self._lab_puls_up_supp.place(relx=types_start, rely=prop_vert_start + 11.9 * delta_y)
             self._lab_puls_acceptance.place(relx=types_start, rely=prop_vert_start + 13 * delta_y)
             self._lab_puls_uf.place(relx=types_start, rely=prop_vert_start + 14 * delta_y)
             self._lab_puls_int_gt.place(relx=types_start, rely=prop_vert_start + 15 * delta_y)
@@ -1555,7 +1555,7 @@ class Application():
             for lab, idx in zip(['[m]', '[mm]', '[mm]', '[mm]', '[mm]', '[mm]', '[mm]'], np.arange(2, 9.9, 1.1)):
                 tmp_units.append(ttk.Label(self._main_fr, text=lab))
             for lab, idx  in zip(tmp_units, np.arange(2, 9.9, 1.1)):
-                lab.place(relx=types_start + idx * delta_x,rely=ent_geo_y + delta_y*0.8)
+                lab.place(relx=types_start + idx * delta_x,rely=ent_geo_y + delta_y)
                 self._unit_informations_dimensions.append(lab)
 
             self._ent_mat.place(relx=0.195, rely=ent_rely, relwidth=0.025)
@@ -1641,6 +1641,7 @@ class Application():
                 lab.place(relx=types_start + idx * geo_dx*1.3,rely=ent_geo_y)
                 self._unit_informations_dimensions.append(lab)
             self._unit_informations_dimensions.append(self._lab_shell_long_stiffener)
+            ent_geo_y += 0.3 * delta_y
 
         if ring_stf:
             ent_geo_y += 2.5*delta_y
@@ -1660,6 +1661,8 @@ class Application():
             if self._new_shell_exclude_ring_stf.get():
                 self._shell_exclude_ring_stf.place(relx=0.005, rely=ent_geo_y + delta_y*1.2, relwidth=0.18)
                 self._unit_informations_dimensions.append(self._shell_exclude_ring_stf)
+
+            ent_geo_y += 0.3 * delta_y
 
         if ring_frame:
             ent_geo_y += 2.5*delta_y
@@ -1685,6 +1688,8 @@ class Application():
                 self._shell_exclude_ring_frame.place(relx=0.005, rely=ent_geo_y + delta_y*1.2, relwidth=0.18)
                 self._unit_informations_dimensions.append(self._shell_exclude_ring_frame)
 
+            ent_geo_y += 0.3 * delta_y
+
         if not flat_panel:
             # Other data
             '''
@@ -1707,19 +1712,22 @@ class Application():
                                              rely=ent_geo_y + delta_y*2.2, relwidth=0.02)
             other_count+= 1
             if ring_stf:
+
+                deduct = delta_y if all([long_stf, ring_stf, ring_frame]) else 0
                 self._lab_shell_fab_stf.place(relx=types_start+ 6.4  * geo_dx - geo_dx*other_text_shift,
-                                                   rely=ent_geo_y + delta_y*other_count*other_dy)
+                                                   rely=ent_geo_y + delta_y*other_count*other_dy-deduct*0.6)
                 self._ent_shell_fab_ring_stf.place(relx=types_start+ 6.5  * geo_dx,
-                                                   rely=ent_geo_y + delta_y*other_count*other_dy, relwidth=0.07)
+                                                   rely=ent_geo_y + delta_y*other_count*other_dy-deduct, relwidth=0.07)
                 other_count += 1
             if ring_frame:
+                deduct = delta_y if all([long_stf, ring_stf, ring_frame]) else 0
                 self._lab_shell_fab_frame.place(relx=types_start+ 6.4  * geo_dx - geo_dx*other_text_shift,
-                                                   rely=ent_geo_y + delta_y*other_count*other_dy)
+                                                   rely=ent_geo_y + delta_y*other_count*other_dy-deduct*0.6)
                 self._ent_shell_fab_ring_frame.place(relx=types_start+ 6.5  * geo_dx,
-                                                     rely=ent_geo_y + delta_y*other_count*other_dy, relwidth=0.07)
+                                                     rely=ent_geo_y + delta_y*other_count*other_dy-deduct, relwidth=0.07)
                 other_count += 1
 
-            if self._shell_geometries_map[self._new_calculation_domain.get()] in [1,2]:
+            if self._shell_geometries_map[self._new_calculation_domain.get()] in [1,2]: # TODO check end cap pressure
                 other_count += 1
                 self._lab_shell_en_cap_pressure.place(relx=types_start+ 5.5  * geo_dx- geo_dx*other_text_shift,
                                                                 rely= ent_geo_y + delta_y*other_count*other_dy,

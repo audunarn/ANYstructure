@@ -1797,7 +1797,7 @@ class CylinderAndCurvedPlate():
                 if idx == 'Long Stiff.':
                     zp = obj.get_cross_section_centroid_with_effective_plate(include_plate=False) * 1000
                     h_tot = obj.hw + obj.tf
-                    zt = h_tot -zp # TODO NOT 100# correct
+                    zt = h_tot -zp
                 else:
                     se = self._Shell.get_effective_width_shell_plate()
                     zp = obj.get_cross_section_centroid_with_effective_plate(se=se, tf1=self._Shell.thk) * 1000 # ch7.5.1 page 19
@@ -2656,7 +2656,7 @@ class CylinderAndCurvedPlate():
         Lambda_ = math.sqrt(fak/fE)
 
         fkc = (1-0-28*math.pow(Lambda_,2))*fak if Lambda_ <= 1.34 else fak/math.pow(Lambda_,2)
-        gammaM = data['gammaM curved panel'] #self._mat_factor  # Check TODO need to fix this
+        gammaM = data['gammaM curved panel'] #self._mat_factor  # Check
 
         # if lambda_s < 0.5:
         #     gammaM = self._mat_factor
@@ -3055,7 +3055,7 @@ class PULSpanel():
         self._run_results = val
         for key in self._run_results.keys():
             if any([key == 'sheet location',type(self._run_results[key]['Buckling strength']) != dict,
-                    type(self._run_results[key]['Ultimate capacity']) != dict]): # TODO CHECK
+                    type(self._run_results[key]['Ultimate capacity']) != dict]):
                 continue
 
             if all([type(self._run_results[key]['Buckling strength']['Actual usage Factor'][0]) == float,
