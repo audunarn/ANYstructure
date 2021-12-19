@@ -88,7 +88,7 @@ class Application():
         #
         # self._style = ThemedStyle(root)
         # self._style.theme_use('arc')
-        self._style = ttk.Style(root)
+        self._style = ttk.Style(parent)
         self._style.theme_use('vista')
         self._style.configure("Bold.TButton", font=('Sans', '10', 'bold'))
         self._style.configure('TCheckbutton', background=self._general_color)
@@ -601,16 +601,16 @@ class Application():
             .place(relx = types_start+ delta_x*4.7, rely=prop_vert_start+16.6*delta_y, relwidth = 0.065)
         ttk.Label(self._main_fr, text='fup', font=self._text_size['Text 8'],
                  )\
-            .place(relx = types_start+ delta_x*7.3, rely=prop_vert_start+17*delta_y)
+            .place(relx = types_start+ delta_x*7.1, rely=prop_vert_start+17*delta_y)
         ent_fup = ttk.Entry(self._main_fr, textvariable=self._new_fup,
                                          )
-        ent_fup.place(relx = types_start+ delta_x*7.8, rely=prop_vert_start+16.8*delta_y, relwidth = 0.01)
+        ent_fup.place(relx = types_start+ delta_x*7.6, rely=prop_vert_start+16.8*delta_y, relwidth = 0.015)
         ttk.Label(self._main_fr, text='fdown', font=self._text_size['Text 8'],
                  )\
             .place(relx = types_start+ delta_x*8.3, rely=prop_vert_start+17*delta_y)
         ent_fdwn = ttk.Entry(self._main_fr, textvariable=self._new_fdwn,
                                          )
-        ent_fdwn.place(relx = types_start+ delta_x*9.1, rely=prop_vert_start+16.8*delta_y, relwidth = 0.01)
+        ent_fdwn.place(relx = types_start+ delta_x*9.1, rely=prop_vert_start+16.8*delta_y, relwidth = 0.015)
         # Toggle buttons
         bg = self._style.lookup('TButton', 'background')
         self._toggle_btn = tk.Button(self._main_fr, text="Toggle select\nmultiple", relief="raised",
