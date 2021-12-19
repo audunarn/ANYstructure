@@ -2,7 +2,6 @@
 import time, datetime
 import tkinter as tk
 from tkinter import ttk
-from ttkthemes import ThemedStyle
 from tkinter import filedialog
 from tkinter import messagebox
 from ANYstructure_local.calc_loads import *
@@ -48,12 +47,7 @@ class Application():
         parent.protocol("WM_DELETE_WINDOW", self.close_main_window)
         parent.bind("<Configure>", self.resize)
 
-        # Definng general colors
-        self._general_color = 'azure2'  # Color for backgrounds.
-        self._entry_color = 'white'  # Entry fields color.
-        self._entry_text_color = 'black'  # Entry field tex color
-        self._button_bg_color = 'LightBlue1'
-        self._button_fg_color = 'black'
+
 
         self._root_dir = os.path.dirname(os.path.abspath(__file__))
         # Main frame for the application
@@ -84,16 +78,25 @@ class Application():
                               'Arrows left/right - previous/next line\n' \
                               'Arrows up/down - previous/next point'
 
+        # Definng general colors
+        self._general_color = 'azure2'#"'azure2'  # Color for backgrounds.
+        self._entry_color = 'white'  # Entry fields color.
+        self._entry_text_color = 'black'  # Entry field tex color
+        self._button_bg_color = 'LightBlue1'
+        self._button_fg_color = 'black'
         ''' Setting the style of ttk'''
         #
-        self._style = ThemedStyle(root)
-        self._style.theme_use('arc')
-        # self._style.configure("Bold.TButton", font=('Sans', '10', 'bold'))
-        # self._style.theme_use('vista')
-        # self._style.configure('TFrame', background=self._general_color)
-        # self._style.configure('TLabel', background=self._general_color)
-        # self._style.configure('TButton', background=self._general_color, foreground='black')
-        # self._style.configure('Bold.TButton', background=self._general_color, foreground='black')
+        # self._style = ThemedStyle(root)
+        # self._style.theme_use('arc')
+        self._style = ttk.Style(root)
+        self._style.theme_use('vista')
+        self._style.configure("Bold.TButton", font=('Sans', '10', 'bold'))
+        self._style.configure('TCheckbutton', background=self._general_color)
+        self._style.configure('TFrame', background=self._general_color)
+        self._style.configure('TLabel', background=self._general_color)
+        self._style.configure('TScale', background=self._general_color)
+        self._style.configure('TButton', background=self._general_color, foreground='black')
+        self._style.configure('Bold.TButton', background=self._general_color, foreground='black')
 
         ''' END style setting'''
 
@@ -164,13 +167,20 @@ class Application():
         self._canvas_scale = 20 # Used for slider and can change
         self._base_scale_factor = 10 # Used for grid and will not change, 10 is default
 
-        # Creating the various canvas next.
+        # # Creating the various canvas next.
         self._main_canvas = tk.Canvas(self._main_fr,
                                       background=self._style.lookup('TFrame', 'background'), bd=0, highlightthickness=0, relief='ridge')
         self._prop_canvas = tk.Canvas(self._main_fr,
                                      background=self._style.lookup('TFrame', 'background'), bd=0, highlightthickness=0, relief='ridge')
         self._result_canvas = tk.Canvas(self._main_fr,
                                        background=self._style.lookup('TFrame', 'background'), bd=0, highlightthickness=0, relief='ridge')
+        # # Creating the various canvas next.
+        # self._main_canvas = tk.Canvas(self._main_fr,
+        #                               bd=0, highlightthickness=0, relief='ridge')
+        # self._prop_canvas = tk.Canvas(self._main_fr,
+        #                               bd=0, highlightthickness=0, relief='ridge')
+        # self._result_canvas = tk.Canvas(self._main_fr,
+        #                                bd=0, highlightthickness=0, relief='ridge')
         x_canvas_place = 0.26
         self._main_canvas.place(relx=x_canvas_place, rely=0,relwidth=0.523, relheight = 0.73)
         self._prop_canvas.place(relx=x_canvas_place, rely=0.73, relwidth=0.38, relheight = 0.27)
@@ -216,7 +226,7 @@ class Application():
         self._load_factors_dict = {'dnva':[1.3,1.2,0.7], 'dnvb':[1,1,1.2], 'tanktest':[1,1,0]} # DNV  loads factors
         self._accelerations_dict = {'static':9.81, 'dyn_loaded':0, 'dyn_ballast':0} # Vertical acclerations
         self._load_conditions = ['loaded','ballast','tanktest', 'part','slamming'] # Should not be modified. Load conditions.
-        self._tank_options = {'crude_oil': 900, 'diesel': 850 , 'slop': 1050, 'ballast': 1025, 'fresh water': 1000} # Should not be modified.
+        self._tank_options = {'ballast': 1025, 'crude_oil': 900, 'diesel': 850 , 'slop': 1050, 'fresh water': 1000} # Should not be modified.
         self._default_stresses = {'BOTTOM':(100,100,50,5), 'BBS':(70,70,30,3), 'BBT':(80,80,30,3), 'HOPPER':(70,70,50,3),
                                  'SIDE_SHELL':(100,100,40,3),'INNER_SIDE':(80,80,40,5), 'FRAME':(70,70,60,10),
                                  'FRAME_WT':(70,70,60,10),'SSS':(100,100,50,20), 'MD':(70,70,40,3),
@@ -602,8 +612,9 @@ class Application():
                                          )
         ent_fdwn.place(relx = types_start+ delta_x*9.1, rely=prop_vert_start+16.8*delta_y, relwidth = 0.01)
         # Toggle buttons
+        bg = self._style.lookup('TButton', 'background')
         self._toggle_btn = tk.Button(self._main_fr, text="Toggle select\nmultiple", relief="raised",
-                                     command=self.toggle_select_multiple, bg = self._style.lookup('TButton', 'background'))
+                                     command=self.toggle_select_multiple, )
         self._toggle_change_param = ttk.Button(self._main_fr, text="Change\nparameters",
                                      command=self.toggle_set_variable)
         self._toggle_param_to_change = None
@@ -636,6 +647,7 @@ class Application():
         #                                     #relief='groove')
         self._new_buckling_method = tk.StringVar()
         options = ['RP-C201','PULS','ML']
+        self._lab_buckling_method = ttk.Label(self._main_fr, text='Set buckling method')
         self._buckling_method = ttk.OptionMenu(self._main_fr, self._new_buckling_method, options[0], *options,
                                                command=self.update_frame)
 
@@ -1207,11 +1219,11 @@ class Application():
         self._selected_tank = ttk.Label(self._main_fr,text='',
                                        )
         self._selected_tank.place(relx=0.0625, rely=load_vert_start + 3.5*delta_y)
-
+        background=self._style.lookup('TFrame', 'background')
         self._compartments_listbox = tk.Listbox(self._main_fr, height = int(10 * 1),
                                                width = int(5 * 1),
                                                font=self._text_size["Text 10 bold"]
-                                               ,background=self._style.lookup('TFrame', 'background'),
+                                               ,
                                                 selectmode = 'extended' )
         self._compartments_listbox.place(relx=types_start, rely=load_vert_start + 4.2*delta_y)
         self._compartments_listbox.bind('<<ListboxSelect>>', self.button_1_click_comp_box)
@@ -1226,7 +1238,7 @@ class Application():
                                                 relwidth = 0.08)
 
 
-        self._ent_content_type = ttk.OptionMenu(self._main_fr, self._new_content_type, *list(self._tank_options.keys())[0],*list(self._tank_options.keys()),
+        self._ent_content_type = ttk.OptionMenu(self._main_fr, self._new_content_type, list(self._tank_options.keys())[0],*list(self._tank_options.keys()),
                                                command=self.tank_density_trace)
         ent_width = 10
 
@@ -1301,13 +1313,14 @@ class Application():
             photo = tk.PhotoImage(file=file_path)
             self._int_button = tk.Button(self._main_fr,image = photo,command=self.grid_find_tanks, bg = 'white')
             self._int_button.image = photo
-            self._int_button.place(relx=types_start, rely=load_vert_start+1.5*delta_y,
+            self._int_button.place(relx=types_start, rely=load_vert_start+1.55*delta_y,
                                    relheight = 0.044, relwidth = 0.12)
         except TclError:
             tk.Button(self._main_fr, text='New tanks - start search \n'
                                   'to find compartments', command=self.grid_find_tanks,
                       bg = self._button_bg_color, fg = self._button_fg_color, ) \
-                .place(relx=types_start, rely=load_vert_start + 0 * delta_y, relheight = 0.044, relwidth = 0.12)
+                .place(relx=types_start, rely=load_vert_start + 1.55 * delta_y,
+                       relheight=0.044, relwidth=0.12)
 
         show_compartment = ttk.Button(self._main_fr, text='Display current\n compartments',
                                      command=self.grid_display_tanks,
@@ -1325,13 +1338,14 @@ class Application():
             self._ext_button = tk.Button(self._main_fr,image=photo, command = self.on_show_loads,
                                          bg = 'white')
             self._ext_button.image = photo
-            self._ext_button.place(relx=ent_x+delta_x*1.5, rely=load_vert_start+1.5*delta_y,
+            self._ext_button.place(relx=ent_x+delta_x*1.5, rely=load_vert_start+1.55*delta_y,
                                    relheight = 0.044, relwidth = 0.11)
         except TclError:
             tk.Button(self._main_fr, text='New external load window \nsea - static/dynamic',
                       command=self.on_show_loads
                       )\
-                .place(relx=ent_x+delta_x*2, rely=load_vert_start+0*delta_y, relheight = 0.044, relwidth = 0.11)
+                .place(relx=ent_x+delta_x*1.5, rely=load_vert_start+1.55*delta_y,
+                                   relheight = 0.044, relwidth = 0.11)
 
         lc_x, lc_x_delta, lc_y, lc_y_delta = 0.786458333, 0.015625, 0.12037037, 0.023148148
 
@@ -1509,7 +1523,8 @@ class Application():
                                      relheight=0.04)
             self._chk_cc_spacing.place(relx=0.095, rely=0.29)
             self._zstar_chk.place(relx=types_start + delta_x * 9, rely=prop_vert_start + 11.5 * delta_y)
-            self._buckling_method.place(relx=types_start, rely=prop_vert_start + 18 * delta_y, relwidth=0.065)
+            self._lab_buckling_method.place(relx=types_start, rely=prop_vert_start + 17.5 * delta_y, relwidth=0.065)
+            self._buckling_method.place(relx=types_start, rely=prop_vert_start + 18.5 * delta_y, relwidth=0.065)
 
             dy_red = 0.8
             self._lab_yield.place(relx=0.22, rely=ent_rely - delta_y*dy_red)
@@ -1803,7 +1818,8 @@ class Application():
         'Orthogonally Stiffened shell (Force input)', 'Orthogonally Stiffened panel (Stress input)']
         '''
 
-        to_process = [self._puls_run_all, self._chk_cc_spacing, self._zstar_chk, self._buckling_method, self._lab_yield,
+        to_process = [self._puls_run_all, self._chk_cc_spacing, self._zstar_chk, self._lab_buckling_method,
+                      self._buckling_method, self._lab_yield,
                       self._lab_mat_fac,self._structure_types_label, self._button_str_type, self._ent_structure_type,
                       self._lab_structure_type, self._lab_kpp, self._lab_kps, self._lab_km1, self._lab_km2,
                       self._lab_k3, self._lab_sig_y1, self._lab_sig_y2, self._lab_sig_x, self._lab_tau_y1,
@@ -2074,7 +2090,6 @@ class Application():
             if self._active_line in self._line_to_struc.keys():
                 dict = self._line_to_struc[self._active_line][1].get_structure_prop()
                 dict[var_to_set][0] = set_var
-
                 self.new_structure(toggle_multi=dict, suspend_recalc=True if (idx+1) != no_of_lines else False)
 
     # def slider_buckling_used(self, event):
@@ -2221,7 +2236,7 @@ class Application():
                 for item in [self._result_label_dnva,self._result_label_dnvb,
                              self._result_label_tanktest,self._result_label_manual,self._lab_pressure ]:
                     item.place_forget()
-                    self._combination_slider.set(4)
+                    #self._combination_slider.set(4)
 
     def slider_used(self, event):
         '''
@@ -3106,7 +3121,7 @@ class Application():
                                             all_cyl_chks.append(stf_val)
                             color = 'green' if all(all_cyl_chks) else 'red'
 
-                        elif self._new_buckling_method == 'PULS':
+                        elif self._new_buckling_method.get() == 'PULS':
                             if 'black' in state['PULS colors'][line].values():
                                 color = 'black'
                             else:
@@ -3121,9 +3136,9 @@ class Application():
                                 if color == 'green':
                                     color = 'green' if all([state['colors'][line][key] == 'green' for key in
                                                             ['fatigue', 'section', 'shear','thickness']]) else 'red'
-                        elif self._new_buckling_method == 'RP-C201':
+                        elif self._new_buckling_method.get() == 'RP-C201':
                             color = 'red' if 'red' in state['colors'][line].values() else 'green'
-                        elif self._new_buckling_method == 'ML':
+                        elif self._new_buckling_method.get() == 'ML':
                             if 'black' in state['ML buckling colors'][line].values():
                                 color = 'black'
                             else:
@@ -3449,7 +3464,7 @@ class Application():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                               text=this_text)
 
-        elif self._new_colorcode_utilization.get() == True and self._new_buckling_method == 'RP-C201':
+        elif self._new_colorcode_utilization.get() == True and self._new_buckling_method.get() == 'RP-C201':
             if self._line_to_struc[line][5] is not None:
                 color = 'grey'
                 this_text = 'N/A'
@@ -3459,7 +3474,7 @@ class Application():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                               text=round(state['color code']['lines'][line]['rp uf'],2))
 
-        elif self._new_colorcode_utilization.get() == True and self._new_buckling_method == 'PULS':
+        elif self._new_colorcode_utilization.get() == True and self._new_buckling_method.get() == 'PULS':
             if self._line_to_struc[line][5] is not None:
                 color = 'grey'
                 this_text = 'N/A'
@@ -3469,7 +3484,7 @@ class Application():
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                               text=this_text)
-        elif self._new_colorcode_utilization.get() == True and self._new_buckling_method == 'ML':
+        elif self._new_colorcode_utilization.get() == True and self._new_buckling_method.get() == 'ML':
             color = 'black'
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
@@ -3569,17 +3584,17 @@ class Application():
                     self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                                   text=this_text)
 
-            elif self._new_buckling_method == 'PULS':
+            elif self._new_buckling_method.get() == 'PULS':
                 color = state['color code']['lines'][line]['Total uf color rp']
                 if self._new_label_color_coding.get():
                     self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                                   text=round(state['color code']['lines'][line]['Total uf puls'],2))
-            elif self._new_buckling_method == 'RP-C201':
+            elif self._new_buckling_method.get() == 'RP-C201':
                 color = state['color code']['lines'][line]['Total uf color puls']
                 if self._new_label_color_coding.get():
                     self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                                   text=round(state['color code']['lines'][line]['Total uf rp'],2))
-            elif self._new_buckling_method == 'ML':
+            elif self._new_buckling_method.get() == 'ML':
                 color = 'black'
                 if self._new_label_color_coding.get():
                     self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
@@ -3859,7 +3874,7 @@ class Application():
 
                 # buckling results
 
-                if self._PULS_results != None and self._new_buckling_method == 'PULS':
+                if self._PULS_results != None and self._new_buckling_method.get() == 'PULS':
                     line_results = state['PULS colors'][self._active_line]
                     puls_res = self._PULS_results.get_puls_line_results(self._active_line)
                     if puls_res != None:
@@ -3923,7 +3938,7 @@ class Application():
                                                         font=self._text_size['Text 9 bold'],
                                                         anchor='nw',
                                                         fill='Orange')
-                elif self._new_buckling_method == 'RP-C201':
+                elif self._new_buckling_method.get() == 'RP-C201':
                     self._result_canvas.create_text([x * 1, (y+9*dy) * 1],
                                                    text='Buckling results DNV-RP-C201:',
                                                    font=self._text_size["Text 9 bold"], anchor='nw')
@@ -3948,7 +3963,7 @@ class Application():
                         self._result_canvas.create_text([x * 1, (y+10*dy) * 1],
                                                    text=res_text,font=self._text_size["Text 9 bold"],
                                                    anchor='nw',fill=color_buckling)
-                elif self._new_buckling_method == 'ML':
+                elif self._new_buckling_method.get() == 'ML':
 
                     self._result_canvas.create_text([x * 1, (y + 9 * dy) * 1],
                                                     text='Buckling results ANYstructure ML algorithm:',
@@ -6472,6 +6487,8 @@ if __name__ == '__main__':
     multiprocessing.freeze_support()
     errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
     root = tk.Tk()
+    # root.tk.call("source", "sun-valley.tcl")
+    # root.tk.call("set_theme", "light")
     width = int(root.winfo_screenwidth()*1)
     height = int(root.winfo_screenheight()*1)
     root.geometry(f'{width}x{height}')
