@@ -95,8 +95,9 @@ class Application():
         self._style.configure('TFrame', background=self._general_color)
         self._style.configure('TLabel', background=self._general_color)
         self._style.configure('TScale', background=self._general_color)
-        self._style.configure('TButton', background=self._general_color, foreground='black')
-        self._style.configure('Bold.TButton', background=self._general_color, foreground='black')
+        self._style.configure('TScale', background=self._general_color)
+        self._style.configure("TMenubutton", background='White')
+        self._style.configure('TRadiobutton', background=self._general_color, foreground='black')
 
         ''' END style setting'''
 
@@ -614,7 +615,7 @@ class Application():
         # Toggle buttons
         bg = self._style.lookup('TButton', 'background')
         self._toggle_btn = tk.Button(self._main_fr, text="Toggle select\nmultiple", relief="raised",
-                                     command=self.toggle_select_multiple, )
+                                     command=self.toggle_select_multiple, bg = '#E1E1E1', activebackground = '#E5F1FB' )
         self._toggle_change_param = ttk.Button(self._main_fr, text="Change\nparameters",
                                      command=self.toggle_set_variable)
         self._toggle_param_to_change = None
@@ -2022,13 +2023,13 @@ class Application():
     def toggle_select_multiple(self, event = None):
         if self._toggle_btn.config('relief')[-1] == 'sunken':
             self._toggle_btn.config(relief="raised")
-            self._toggle_btn.config(bg=self._style.lookup('TButton', 'background'))
+            self._toggle_btn.config(bg='#E1E1E1')
             self._multiselect_lines = []
             self._toggle_btn.config(text='Toggle select\n'
                                          'multiple')
         else:
             self._toggle_btn.config(relief="sunken")
-            self._toggle_btn.config(bg='green')
+            self._toggle_btn.config(bg=self._general_color)
             self._toggle_btn.config(text = 'select lines')
         self.update_frame()
 
@@ -6207,14 +6208,6 @@ class Application():
 
         self.new_structure(cylinder_return = returned_object[0])
 
-        # self._line_to_struc[self._active_line][0]=returned_objects[0]
-        # self._line_to_struc[self._active_line][1]=returned_objects[1]
-        # self._line_to_struc[self._active_line][1].need_recalc = True
-        # self.set_selected_variables(self._active_line)
-        # if returned_objects[2] is not None:
-        #     self._line_to_struc[self._active_line][2] = CalcFatigue(returned_objects[0].get_structure_prop(),
-        #                                                             returned_objects[2])
-        # self.new_structure()
         self.update_frame()
 
     def on_close_opt_multiple_window(self, returned_objects):
