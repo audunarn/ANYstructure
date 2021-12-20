@@ -956,8 +956,7 @@ class Application():
         '''
         Shell, ring stiffener
         '''
-        self._lab_shell_ring_stiffener =  ttk.Label(self._main_fr, text='Ring stiffener properties [mm]',
-                                                   )
+        self._lab_shell_ring_stiffener =  ttk.Label(self._tab2, text='Ring stiffener properties [mm]')
         self._new_shell_ring_stf_hw = tk.DoubleVar()
         self._new_shell_ring_stf_tw = tk.DoubleVar()
         self._new_shell_ring_stf_b = tk.DoubleVar()
@@ -1224,30 +1223,35 @@ class Application():
         self._ent_min_el = ttk.Entry(self._main_fr, textvariable=self._new_min_el,
                                    width=int(ent_width * 1),
                                     )
+        
+        comp_dx = 0.03
+        comp_dy = 0.025
+        comp_ent_x = 0.15
+        comp_ent_y = 0.8
         ttk.Label(self._main_fr, text = '',  )\
-            .place(relx=0.052083333, rely=load_vert_start + 3.4*delta_y)
+            .place(relx=0.052083333, rely=load_vert_start + 3.4*comp_dy)
         ttk.Label(self._main_fr, text='Tank content :', font = self._text_size['Text 8'], )\
-            .place(relx=ent_x-2*delta_x, rely=load_vert_start + delta_y * 4.5)
-        self._ent_content_type.place(relx= ent_x+0.35*delta_x, rely=load_vert_start + delta_y * 4.5)
+            .place(relx=comp_ent_x-2*comp_dx, rely=load_vert_start + comp_dy * 4.5)
+        self._ent_content_type.place(relx= comp_ent_x+0.35*comp_dx, rely=load_vert_start + comp_dy * 4.5)
         ttk.Label(self._main_fr, text='Tank density :', font = self._text_size['Text 8'], )\
-            .place(relx=ent_x-2*delta_x, rely=load_vert_start + delta_y * 6)
-        self._ent_density.place(relx=ent_x+0.4*delta_x, rely=load_vert_start + delta_y * 6)
+            .place(relx=comp_ent_x-2*comp_dx, rely=load_vert_start + comp_dy * 6)
+        self._ent_density.place(relx=comp_ent_x+0.4*comp_dx, rely=load_vert_start + comp_dy * 6)
         ttk.Label(self._main_fr,text='[kg/m^3]', font = self._text_size['Text 8'], )\
-            .place(relx= ent_x+delta_x*1.8, rely=load_vert_start + delta_y * 6)
+            .place(relx= comp_ent_x+comp_dx*1.8, rely=load_vert_start + comp_dy * 6)
         ttk.Label(self._main_fr, text='Overpressure :', font = self._text_size['Text 8'], )\
-            .place(relx=ent_x-2*delta_x, rely=load_vert_start + delta_y * 7)
-        self._ent_overpressure.place(relx=ent_x+0.4*delta_x, rely=load_vert_start + delta_y * 7)
+            .place(relx=comp_ent_x-2*comp_dx, rely=load_vert_start + comp_dy * 7)
+        self._ent_overpressure.place(relx=comp_ent_x+0.4*comp_dx, rely=load_vert_start + comp_dy * 7)
         ttk.Label(self._main_fr,text='[Pa]', font = self._text_size['Text 8'], )\
-            .place(relx= ent_x+delta_x*1.8, rely=load_vert_start + delta_y * 7)
+            .place(relx= comp_ent_x+comp_dx*1.8, rely=load_vert_start + comp_dy * 7)
         ttk.Label(self._main_fr, text='Max elevation :', font = self._text_size['Text 8'], )\
-            .place(relx=ent_x-2*delta_x, rely=load_vert_start + delta_y * 8)
-        self._ent_max_el.place(relx=ent_x+0.4*delta_x, rely=load_vert_start + delta_y * 8)
+            .place(relx=comp_ent_x-2*comp_dx, rely=load_vert_start + comp_dy * 8)
+        self._ent_max_el.place(relx=comp_ent_x+0.4*comp_dx, rely=load_vert_start + comp_dy * 8)
         ttk.Label(self._main_fr, text='Min elevation :', font = self._text_size['Text 8'], )\
-            .place(relx=ent_x-2*delta_x, rely=load_vert_start + delta_y * 9)
-        self._ent_min_el.place(relx=ent_x+0.4*delta_x, rely=load_vert_start + delta_y * 9)
+            .place(relx=comp_ent_x-2*comp_dx, rely=load_vert_start + comp_dy * 9)
+        self._ent_min_el.place(relx=comp_ent_x+0.4*comp_dx, rely=load_vert_start + comp_dy * 9)
         self._tank_acc_label = ttk.Label(self._main_fr, text = 'Acceleration [m/s^2]: ',
                                         font = self._text_size['Text 8'], )
-        self._tank_acc_label.place(relx=ent_x-2*delta_x, rely=load_vert_start + delta_y * 10)
+        self._tank_acc_label.place(relx=comp_ent_x-2*comp_dx, rely=load_vert_start + comp_dy * 10)
 
         # Shifing of coordinate display
         ttk.Label(self._main_fr, text='Shift coordinate labeling [mm]:', font = self._text_size['Text 8'],
@@ -1480,7 +1484,7 @@ class Application():
         
         ent_relx = hor_start + 6*delta_x
 
-        geo_ent_width = 0.05
+        geo_ent_width = 0.1
         ent_geo_y = vert_start
 
         opt_width = 0.2
@@ -1622,84 +1626,97 @@ class Application():
                                      self._ent_shell_dist_rings,
                                      self._ent_shell_length,self._ent_shell_tot_length,self._ent_shell_k_factor]
             '''
-            self._lab_shell.place(relx=hor_start, rely=ent_geo_y-delta_y)
-
-            for idx, entry in enumerate(self._shell_gui_items[1:]):
-
-                entry.place(relx=hor_start + 1.4*idx * delta_x, rely=ent_geo_y + delta_y, relwidth=geo_ent_width)
-
+            ent_geo_y -= delta_y
+            self._lab_shell.place(relx=hor_start, rely=ent_geo_y+ delta_y)
 
             tmp_unit_info = list()
             for lab in ['Thickness, t', 'Radius, r', 'Length, l', 'Shell len., L', 'Tot len., Lc', 'k-factor, k [-]']:
                 tmp_unit_info.append(ttk.Label(self._tab2, text=lab))
 
             for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
-                lab.place(relx=hor_start + idx * delta_x,rely=ent_geo_y)
+                lab.place(relx=hor_start + idx * delta_x,rely=ent_geo_y+ delta_y*2)
                 self._unit_informations_dimensions.append(lab)
-            ent_geo_y += delta_y
+
+            for idx, entry in enumerate(self._shell_gui_items[1:]):
+
+                entry.place(relx=hor_start + idx * delta_x, rely=ent_geo_y + delta_y*3, relwidth=geo_ent_width)
+
+            ent_geo_y += delta_y*3
 
         if long_stf:
-            ent_geo_y += delta_y
-            self._lab_shell_long_stiffener.place(relx=hor_start, rely=ent_geo_y-delta_y)
+
+            self._lab_shell_long_stiffener.place(relx=hor_start, rely=ent_geo_y+ delta_y)
+
+            tmp_unit_info = list()
+            for lab in ['Web, hw', 'Web, tw', 'Flange b', 'Flange, tw', 'Spacing, s', 'Stf. type', 'Load section']:
+                tmp_unit_info.append(ttk.Label(self._tab2, text=lab))
+
+            for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
+                lab.place(relx=hor_start + idx * delta_x,rely=ent_geo_y+ delta_y*2)
+                self._unit_informations_dimensions.append(lab)
 
             for idx, entry in enumerate(self._shell_long_stf_gui_items[1:]):
-                entry.place(relx=hor_start + idx * delta_x, rely=ent_geo_y + delta_y, relwidth=geo_ent_width)
+                entry.place(relx=hor_start + idx * delta_x, rely=ent_geo_y+ delta_y*3, relwidth=geo_ent_width)
 
-
-            tmp_unit_info = list()
-            for lab in ['Web, hw', 'Web, tw', 'Flange b', 'Flange, tw', 'Spacing, s', 'Stf. type', 'STF']:
-                tmp_unit_info.append(ttk.Label(self._tab2, text=lab))
-
-            for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
-                lab.place(relx=hor_start + idx * delta_x*1.3,rely=ent_geo_y)
-                self._unit_informations_dimensions.append(lab)
             self._unit_informations_dimensions.append(self._lab_shell_long_stiffener)
-            ent_geo_y +=  delta_y
+            ent_geo_y += delta_y*3
 
         if ring_stf:
-            ent_geo_y += delta_y
-            self._lab_shell_ring_stiffener.place(relx=hor_start, rely=ent_geo_y-delta_y)
-
-            for idx, entry in enumerate(self._shell_ring_stf_gui_items[1:]):
-                entry.place(relx=hor_start + idx * delta_x, rely=ent_geo_y + delta_y, relwidth=geo_ent_width)
-
+            self._lab_shell_ring_stiffener.place(relx=hor_start, rely=ent_geo_y+ delta_y*1)
             tmp_unit_info = list()
-            for lab in ['Web, hw', 'Web, tw', 'Flange, b', 'Flange, tw','tr. br. dist', 'Stf. type', 'Exclude', 'STF']:
+            for lab in ['Web, hw', 'Web, tw', 'Flange, b', 'Flange, tw','tr. br. dist', 'Stf. type',
+                        'Exclude', 'Load section prop.']:
                 tmp_unit_info.append(ttk.Label(self._tab2, text=lab))
 
             for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
-                lab.place(relx=hor_start + idx * delta_x,rely=ent_geo_y)
+
+                if idx in [6,7]:
+                    lab.place(relx=hor_start + (idx-6) * delta_x*3, rely=ent_geo_y + delta_y * 4)
+                else:
+                    lab.place(relx=hor_start + idx * delta_x,rely=ent_geo_y+ delta_y*2)
                 self._unit_informations_dimensions.append(lab)
             self._unit_informations_dimensions.append(self._lab_shell_ring_stiffener)
+
+            for idx, entry in enumerate(self._shell_ring_stf_gui_items[1:]):
+                if idx in [6,7]:
+                    entry.place(relx=hor_start + (idx-6) * delta_x*4 + delta_x, rely=ent_geo_y+ delta_y*4, relwidth=geo_ent_width)
+                else:
+                    entry.place(relx=hor_start + idx * delta_x, rely=ent_geo_y+ delta_y*3, relwidth=geo_ent_width)
+
             if self._new_shell_exclude_ring_stf.get():
-                self._shell_exclude_ring_stf.place(relx=0.005, rely=ent_geo_y + delta_y, relwidth=0.18)
+                self._shell_exclude_ring_stf.place(relx=0.005, rely=ent_geo_y+ delta_y*3.15, relwidth=0.9)
                 self._unit_informations_dimensions.append(self._shell_exclude_ring_stf)
 
-            ent_geo_y += delta_y
+            ent_geo_y += delta_y*4
 
         if ring_frame:
-            ent_geo_y += delta_y
-            self._lab_shell_ring_frame.place(relx=hor_start, rely=ent_geo_y-delta_y)
+            self._lab_shell_ring_frame.place(relx=hor_start, rely=ent_geo_y+ delta_y*1)
 
             for idx, entry in enumerate(self._shell_ring_frame_gui_items[1:]):
-                entry.place(relx=hor_start + idx * delta_x, rely=ent_geo_y + delta_y, relwidth=geo_ent_width)
-
+                if idx in [7, 8]:
+                    entry.place(relx=hor_start + (idx - 7) * delta_x * 4 + delta_x, rely=ent_geo_y + delta_y * 4,
+                                relwidth=geo_ent_width)
+                else:
+                    entry.place(relx=hor_start + idx * delta_x, rely=ent_geo_y + delta_y * 3, relwidth=geo_ent_width)
 
             tmp_unit_info = list()
             for lab in ['Web, hw', 'Web, tw', 'Flange, b', 'Flange, tw', 'tr. br. dist', 'L bet. Gird.',
-                        'Stf. type', 'Exclude', 'STF']:
+                        'Stf. type', 'Exclude', 'Load section prop.']:
                 tmp_unit_info.append(ttk.Label(self._tab2, text=lab))
 
             for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
-                lab.place(relx=hor_start + idx * delta_x, rely=ent_geo_y)
-                self._unit_informations_dimensions.append(lab)
+                if idx in [7,8]:
+                    lab.place(relx=hor_start + (idx-7) * delta_x*3, rely=ent_geo_y + delta_y * 4)
+                else:
+                    lab.place(relx=hor_start + idx * delta_x,rely=ent_geo_y+ delta_y*2)
 
+                self._unit_informations_dimensions.append(lab)
             self._unit_informations_dimensions.append(self._lab_shell_ring_frame)
             if self._new_shell_exclude_ring_frame.get():
-                self._shell_exclude_ring_frame.place(relx=0.005, rely=ent_geo_y + delta_y, relwidth=0.18)
+                self._shell_exclude_ring_frame.place(relx=0.005, rely=ent_geo_y+ delta_y*3.15, relwidth=0.9)
                 self._unit_informations_dimensions.append(self._shell_exclude_ring_frame)
 
-            ent_geo_y += delta_y
+            ent_geo_y += delta_y*3
 
         if not flat_panel:
             # Other data
@@ -1715,27 +1732,24 @@ class Application():
                                              rely=ent_geo_y + delta_y*2.2)
             self._ent_shell_uls_or_als.place(relx=hor_start+ 1.6  * delta_x,
                                              rely=ent_geo_y + delta_y*2.2,
-                                             relwidth=0.05, relheight = 0.025)
+                                             relwidth=geo_ent_width*2)
 
             self._lab_yield.place(relx=hor_start + 4  * delta_x,
-                                             rely=ent_geo_y + delta_y*2.2)
-            self._ent_shell_yield.place(relx=hor_start+ 5.5  * delta_x,
-                                             rely=ent_geo_y + delta_y*2.2, relwidth=0.02)
+                                             rely=ent_geo_y + delta_y*3)
+            self._ent_shell_yield.place(relx=hor_start+ 6  * delta_x,
+                                             rely=ent_geo_y + delta_y*3, relwidth=geo_ent_width)
             other_count+= 1
             if ring_stf:
-
-                deduct = delta_y if all([long_stf, ring_stf, ring_frame]) else 0
-                self._lab_shell_fab_stf.place(relx=hor_start+ 6.4  * delta_x - delta_x*other_text_shift,
-                                                   rely=ent_geo_y + delta_y*other_count*other_dy-deduct*0.6)
-                self._ent_shell_fab_ring_stf.place(relx=hor_start+ 6.5  * delta_x,
-                                                   rely=ent_geo_y + delta_y*other_count*other_dy-deduct, relwidth=0.07)
+                self._lab_shell_fab_stf.place(relx=hor_start + 4  * delta_x,
+                                                   rely=ent_geo_y + delta_y*4)
+                self._ent_shell_fab_ring_stf.place(relx = hor_start + 6  * delta_x,
+                                                   rely=ent_geo_y + delta_y*4, relwidth=geo_ent_width*1.9)
                 other_count += 1
             if ring_frame:
-                deduct = delta_y if all([long_stf, ring_stf, ring_frame]) else 0
-                self._lab_shell_fab_frame.place(relx=hor_start+ 6.4  * delta_x - delta_x*other_text_shift,
-                                                   rely=ent_geo_y + delta_y*other_count*other_dy-deduct*0.6)
-                self._ent_shell_fab_ring_frame.place(relx=hor_start+ 6.5  * delta_x,
-                                                     rely=ent_geo_y + delta_y*other_count*other_dy-deduct, relwidth=0.07)
+                self._lab_shell_fab_frame.place(relx=hor_start + 4  * delta_x,
+                                                   rely=ent_geo_y + delta_y*5)
+                self._ent_shell_fab_ring_frame.place(relx=hor_start + 6  * delta_x,
+                                                   rely=ent_geo_y + delta_y*5, relwidth=geo_ent_width*1.9)
                 other_count += 1
 
             if self._shell_geometries_map[self._new_calculation_domain.get()] in [1,2]: # TODO check end cap pressure
