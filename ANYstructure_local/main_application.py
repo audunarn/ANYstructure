@@ -591,7 +591,7 @@ class Application():
                                                           '-- new or replace existing --', command=self.new_structure,
                                        style = "Bold.TButton")
 
-        self.add_stucture.place(relx=types_start+ delta_x*4.5, rely=prop_vert_start+18*delta_y, relwidth = 0.12,
+        self.add_stucture.place(relx=types_start+ delta_x*5, rely=prop_vert_start+18*delta_y, relwidth = 0.12,
                                 relheight = 0.04)
 
 
@@ -621,7 +621,8 @@ class Application():
         self._toggle_param_to_change = None
         self._toggle_btn.place(relx=types_start+ delta_x*4.2, rely=prop_vert_start+14.8*delta_y, relwidth = 0.045,
                                 relheight = 0.039)
-        self._toggle_change_param.place(relx=types_start+ delta_x*6, rely=prop_vert_start+14.8*delta_y, relwidth = 0.045,
+        self._toggle_change_param.place(relx=types_start+ delta_x*6, rely=prop_vert_start+14.8*delta_y, 
+                                        relwidth = 0.045,
                                         relheight = 0.039)
 
         self._toggle_choose = ttk.OptionMenu(self._main_fr, self._new_toggle_var,self._stuctural_definition[0],
@@ -647,7 +648,7 @@ class Application():
         # self._buckling_slider_text = ttk.Label(self._main_fr, text= 'RP-C201 | PULS | ML')
         #                                     #relief='groove')
         self._new_buckling_method = tk.StringVar()
-        options = ['RP-C201','PULS','ML']
+        options = ['DNV-RP-C201 - prescriptive','DNV PULS','ML-CL (PULS based)']
         self._lab_buckling_method = ttk.Label(self._main_fr, text='Set buckling method')
         self._buckling_method = ttk.OptionMenu(self._main_fr, self._new_buckling_method, options[0], *options,
                                                command=self.update_frame)
@@ -795,7 +796,7 @@ class Application():
                                    )
 
 
-        self._lab_structure_type = ttk.Label(self._main_fr, text='Select structure type:', font=self._text_size['Text 9 bold'],
+        self._lab_structure_type = ttk.Label(self._main_fr, text='Select structure type:', font=self._text_size['Text 9'],
                  )
         self._button_str_type = ttk.Button(self._main_fr, text='Show structure types', command=show_message)
         self._structure_types_label =  ttk.Label(textvariable = self._new_stucture_type_label,
@@ -1520,12 +1521,12 @@ class Application():
         if flat_panel:
             if any([shell, long_stf, ring_stf, ring_frame, force_input, stress_input]):
                 return
-            self._puls_run_all.place(relx=types_start + 0.07, rely=prop_vert_start + 18 * delta_y, relwidth=0.045,
+            self._puls_run_all.place(relx=types_start + 0.085, rely=prop_vert_start + 18 * delta_y, relwidth=0.045,
                                      relheight=0.04)
             self._chk_cc_spacing.place(relx=0.095, rely=0.29)
             self._zstar_chk.place(relx=types_start + delta_x * 9, rely=prop_vert_start + 11.5 * delta_y)
             self._lab_buckling_method.place(relx=types_start, rely=prop_vert_start + 17.5 * delta_y, relwidth=0.065)
-            self._buckling_method.place(relx=types_start, rely=prop_vert_start + 18.5 * delta_y, relwidth=0.065)
+            self._buckling_method.place(relx=types_start, rely=prop_vert_start + 18.5 * delta_y, relwidth=0.08)
 
             dy_red = 0.8
             self._lab_yield.place(relx=0.22, rely=ent_rely - delta_y*dy_red)
@@ -1536,7 +1537,7 @@ class Application():
             self._button_str_type.place(relx=types_start + 3 * delta_x + 0.1, rely=ent_rely + 2.3 * drely,
                                         relwidth=0.07)
             self._ent_structure_type.place(relx=types_start + 3 * delta_x, rely=ent_rely + 2.3 * drely, relwidth=0.10)
-            self._lab_structure_type.place(relx=types_start, rely=ent_rely + 2.5 * drely)
+            self._lab_structure_type.place(relx=types_start, rely=ent_rely + 2.4 * drely)
             dy_red = 0.8
             self._lab_kpp.place(relx=ent_relx + 0 * geo_dx, rely=ent_rely - delta_y*dy_red)
             self._lab_kps.place(relx=ent_relx + 1 * geo_dx, rely=ent_rely - delta_y*dy_red)
@@ -2094,11 +2095,11 @@ class Application():
                 self.new_structure(toggle_multi=dict, suspend_recalc=True if (idx+1) != no_of_lines else False)
 
     # def slider_buckling_used(self, event):
-    #     if self._new_buckling_method.get() == 'RP-C201':
+    #     if self._new_buckling_method.get() == 'DNV-RP-C201 - prescriptive':
     #         self._buckling_slider.set(1)
-    #     elif self._new_buckling_method.get() == 'PULS':
+    #     elif self._new_buckling_method.get() == 'DNV PULS':
     #         self._buckling_slider.set(2)
-    #     elif self._new_buckling_method.get() == 'ML':
+    #     elif self._new_buckling_method.get() == 'ML-CL (PULS based)':
     #         self._buckling_slider.set(3)
     #
     #     if self._buckling_slider.get() == 1:
@@ -3122,7 +3123,7 @@ class Application():
                                             all_cyl_chks.append(stf_val)
                             color = 'green' if all(all_cyl_chks) else 'red'
 
-                        elif self._new_buckling_method.get() == 'PULS':
+                        elif self._new_buckling_method.get() == 'DNV PULS':
                             if 'black' in state['PULS colors'][line].values():
                                 color = 'black'
                             else:
@@ -3137,9 +3138,9 @@ class Application():
                                 if color == 'green':
                                     color = 'green' if all([state['colors'][line][key] == 'green' for key in
                                                             ['fatigue', 'section', 'shear','thickness']]) else 'red'
-                        elif self._new_buckling_method.get() == 'RP-C201':
+                        elif self._new_buckling_method.get() == 'DNV-RP-C201 - prescriptive':
                             color = 'red' if 'red' in state['colors'][line].values() else 'green'
-                        elif self._new_buckling_method.get() == 'ML':
+                        elif self._new_buckling_method.get() == 'ML-CL (PULS based)':
                             if 'black' in state['ML buckling colors'][line].values():
                                 color = 'black'
                             else:
@@ -3284,7 +3285,7 @@ class Application():
                                                                                            else press/highest_pressure)),
                                               anchor="nw")
         elif all([self._new_colorcode_utilization.get() == True,
-                  self._line_to_struc != {}, self._new_buckling_method.get() != 'PULS']):
+                  self._line_to_struc != {}, self._new_buckling_method.get() != 'DNV PULS']):
             all_utils = cc_state['utilization map']
             for idx, uf in enumerate(cc_state['utilization map']):
                 self._main_canvas.create_text(11, start_text_shift + 20 * idx, text=str('UF = ' +str(round(uf,1))),
@@ -3296,7 +3297,7 @@ class Application():
                                               fill=matplotlib.colors.rgb2hex(cmap_sections(uf/max(all_utils))),
                                               anchor="nw")
         elif all([self._new_colorcode_utilization.get() == True,
-                  self._line_to_struc != {}, self._new_buckling_method == 'PULS']):
+                  self._line_to_struc != {}, self._new_buckling_method == 'DNV PULS']):
             all_utils = cc_state['PULS utilization map']
             for idx, uf in enumerate(cc_state['utilization map']):
                 self._main_canvas.create_text(11, start_text_shift + 20 * idx, text=str('UF = ' +str(round(uf,1))),
@@ -3465,7 +3466,7 @@ class Application():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                               text=this_text)
 
-        elif self._new_colorcode_utilization.get() == True and self._new_buckling_method.get() == 'RP-C201':
+        elif self._new_colorcode_utilization.get() == True and self._new_buckling_method.get() == 'DNV-RP-C201 - prescriptive':
             if self._line_to_struc[line][5] is not None:
                 color = 'grey'
                 this_text = 'N/A'
@@ -3475,7 +3476,7 @@ class Application():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                               text=round(state['color code']['lines'][line]['rp uf'],2))
 
-        elif self._new_colorcode_utilization.get() == True and self._new_buckling_method.get() == 'PULS':
+        elif self._new_colorcode_utilization.get() == True and self._new_buckling_method.get() == 'DNV PULS':
             if self._line_to_struc[line][5] is not None:
                 color = 'grey'
                 this_text = 'N/A'
@@ -3485,7 +3486,7 @@ class Application():
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                               text=this_text)
-        elif self._new_colorcode_utilization.get() == True and self._new_buckling_method.get() == 'ML':
+        elif self._new_colorcode_utilization.get() == True and self._new_buckling_method.get() == 'ML-CL (PULS based)':
             color = 'black'
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
@@ -3585,17 +3586,17 @@ class Application():
                     self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                                   text=this_text)
 
-            elif self._new_buckling_method.get() == 'PULS':
+            elif self._new_buckling_method.get() == 'DNV PULS':
                 color = state['color code']['lines'][line]['Total uf color rp']
                 if self._new_label_color_coding.get():
                     self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                                   text=round(state['color code']['lines'][line]['Total uf puls'],2))
-            elif self._new_buckling_method.get() == 'RP-C201':
+            elif self._new_buckling_method.get() == 'DNV-RP-C201 - prescriptive':
                 color = state['color code']['lines'][line]['Total uf color puls']
                 if self._new_label_color_coding.get():
                     self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                                   text=round(state['color code']['lines'][line]['Total uf rp'],2))
-            elif self._new_buckling_method.get() == 'ML':
+            elif self._new_buckling_method.get() == 'ML-CL (PULS based)':
                 color = 'black'
                 if self._new_label_color_coding.get():
                     self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
@@ -3875,7 +3876,7 @@ class Application():
 
                 # buckling results
 
-                if self._PULS_results != None and self._new_buckling_method.get() == 'PULS':
+                if self._PULS_results != None and self._new_buckling_method.get() == 'DNV PULS':
                     line_results = state['PULS colors'][self._active_line]
                     puls_res = self._PULS_results.get_puls_line_results(self._active_line)
                     if puls_res != None:
@@ -3939,7 +3940,7 @@ class Application():
                                                         font=self._text_size['Text 9 bold'],
                                                         anchor='nw',
                                                         fill='Orange')
-                elif self._new_buckling_method.get() == 'RP-C201':
+                elif self._new_buckling_method.get() == 'DNV-RP-C201 - prescriptive':
                     self._result_canvas.create_text([x * 1, (y+9*dy) * 1],
                                                    text='Buckling results DNV-RP-C201:',
                                                    font=self._text_size["Text 9 bold"], anchor='nw')
@@ -3964,7 +3965,7 @@ class Application():
                         self._result_canvas.create_text([x * 1, (y+10*dy) * 1],
                                                    text=res_text,font=self._text_size["Text 9 bold"],
                                                    anchor='nw',fill=color_buckling)
-                elif self._new_buckling_method.get() == 'ML':
+                elif self._new_buckling_method.get() == 'ML-CL (PULS based)':
 
                     self._result_canvas.create_text([x * 1, (y + 9 * dy) * 1],
                                                     text='Buckling results ANYstructure ML algorithm:',
