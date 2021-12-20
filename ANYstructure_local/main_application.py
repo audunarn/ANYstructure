@@ -1179,19 +1179,19 @@ class Application():
         # --- tank load input and information ---
         load_vert_start = 0.673#frame_horizontal -0.03
 
-        ttk.Label(self._main_fr,text = 'Comp. no.:',  )\
-            .place(relx=types_start, rely=load_vert_start + 3.5*delta_y)
+        ttk.Label(self._main_fr,text = 'Selected compartment from box below:',  )\
+            .place(relx=types_start, rely=load_vert_start + 3*delta_y)
 
         self._selected_tank = ttk.Label(self._main_fr,text='',
                                        )
-        self._selected_tank.place(relx=0.0625, rely=load_vert_start + 3.5*delta_y)
+        self._selected_tank.place(relx=0.15, rely=load_vert_start + 3*delta_y)
         background=self._style.lookup('TFrame', 'background')
         self._compartments_listbox = tk.Listbox(self._main_fr, height = int(10 * 1),
                                                width = int(5 * 1),
                                                font=self._text_size["Text 10 bold"]
                                                ,
                                                 selectmode = 'extended' )
-        self._compartments_listbox.place(relx=types_start, rely=load_vert_start + 4.2*delta_y)
+        self._compartments_listbox.place(relx=types_start, rely=load_vert_start + 3.5*delta_y)
         self._compartments_listbox.bind('<<ListboxSelect>>', self.button_1_click_comp_box)
 
 
@@ -1225,33 +1225,33 @@ class Application():
                                     )
         
         comp_dx = 0.03
-        comp_dy = 0.027
-        comp_ent_x = 0.15
-        comp_ent_y = 0.8
+        comp_dy = 0.025
+        comp_ent_x = 0.12
+        comp_ent_y = 0.7
         ttk.Label(self._main_fr, text = '',  )\
-            .place(relx=0.052083333, rely=load_vert_start + 3.4*comp_dy)
+            .place(relx=0.052083333, rely=comp_ent_y + 3.4*comp_dy)
         ttk.Label(self._main_fr, text='Tank content :', font = self._text_size['Text 8'], )\
-            .place(relx=comp_ent_x-2*comp_dx, rely=load_vert_start + comp_dy * 4.5)
-        self._ent_content_type.place(relx= comp_ent_x+0.35*comp_dx, rely=load_vert_start + comp_dy * 4.5)
+            .place(relx=comp_ent_x-2*comp_dx, rely=comp_ent_y + comp_dy * 4.5)
+        self._ent_content_type.place(relx= comp_ent_x+0.35*comp_dx, rely=comp_ent_y + comp_dy * 4.5)
         ttk.Label(self._main_fr, text='Tank density :', font = self._text_size['Text 8'], )\
-            .place(relx=comp_ent_x-2*comp_dx, rely=load_vert_start + comp_dy * 6)
-        self._ent_density.place(relx=comp_ent_x+0.4*comp_dx, rely=load_vert_start + comp_dy * 6)
+            .place(relx=comp_ent_x-2*comp_dx, rely=comp_ent_y + comp_dy * 6)
+        self._ent_density.place(relx=comp_ent_x+0.4*comp_dx, rely=comp_ent_y + comp_dy * 6)
         ttk.Label(self._main_fr,text='[kg/m^3]', font = self._text_size['Text 8'], )\
-            .place(relx= comp_ent_x+comp_dx*1.8, rely=load_vert_start + comp_dy * 6)
+            .place(relx= comp_ent_x+comp_dx*1.8, rely=comp_ent_y + comp_dy * 6)
         ttk.Label(self._main_fr, text='Overpressure :', font = self._text_size['Text 8'], )\
-            .place(relx=comp_ent_x-2*comp_dx, rely=load_vert_start + comp_dy * 7)
-        self._ent_overpressure.place(relx=comp_ent_x+0.4*comp_dx, rely=load_vert_start + comp_dy * 7)
+            .place(relx=comp_ent_x-2*comp_dx, rely=comp_ent_y + comp_dy * 7)
+        self._ent_overpressure.place(relx=comp_ent_x+0.4*comp_dx, rely=comp_ent_y + comp_dy * 7)
         ttk.Label(self._main_fr,text='[Pa]', font = self._text_size['Text 8'], )\
-            .place(relx= comp_ent_x+comp_dx*1.8, rely=load_vert_start + comp_dy * 7)
+            .place(relx= comp_ent_x+comp_dx*1.8, rely=comp_ent_y + comp_dy * 7)
         ttk.Label(self._main_fr, text='Max elevation :', font = self._text_size['Text 8'], )\
-            .place(relx=comp_ent_x-2*comp_dx, rely=load_vert_start + comp_dy * 8)
-        self._ent_max_el.place(relx=comp_ent_x+0.4*comp_dx, rely=load_vert_start + comp_dy * 8)
+            .place(relx=comp_ent_x-2*comp_dx, rely=comp_ent_y + comp_dy * 8)
+        self._ent_max_el.place(relx=comp_ent_x+0.4*comp_dx, rely=comp_ent_y + comp_dy * 8)
         ttk.Label(self._main_fr, text='Min elevation :', font = self._text_size['Text 8'], )\
-            .place(relx=comp_ent_x-2*comp_dx, rely=load_vert_start + comp_dy * 9)
-        self._ent_min_el.place(relx=comp_ent_x+0.4*comp_dx, rely=load_vert_start + comp_dy * 9)
+            .place(relx=comp_ent_x-2*comp_dx, rely=comp_ent_y + comp_dy * 9)
+        self._ent_min_el.place(relx=comp_ent_x+0.4*comp_dx, rely=comp_ent_y + comp_dy * 9)
         self._tank_acc_label = ttk.Label(self._main_fr, text = 'Acceleration [m/s^2]: ',
                                         font = self._text_size['Text 8'], )
-        self._tank_acc_label.place(relx=comp_ent_x-2*comp_dx, rely=load_vert_start + comp_dy * 10)
+        self._tank_acc_label.place(relx=comp_ent_x-2*comp_dx, rely=comp_ent_y + comp_dy * 10)
 
         # Shifing of coordinate display
         ttk.Label(self._main_fr, text='Shift coordinate labeling [mm]:', font = self._text_size['Text 8'],
@@ -1284,7 +1284,7 @@ class Application():
             photo = tk.PhotoImage(file=file_path)
             self._int_button = tk.Button(self._main_fr,image = photo,command=self.grid_find_tanks, bg = 'white')
             self._int_button.image = photo
-            self._int_button.place(relx=types_start, rely=load_vert_start+1.55*delta_y,
+            self._int_button.place(relx=0.005, rely=load_vert_start+1.55*delta_y,
                                    relheight = 0.044, relwidth = 0.12)
         except TclError:
             tk.Button(self._main_fr, text='New tanks - start search \n'
@@ -1309,7 +1309,7 @@ class Application():
             self._ext_button = tk.Button(self._main_fr,image=photo, command = self.on_show_loads,
                                          bg = 'white')
             self._ext_button.image = photo
-            self._ext_button.place(relx=ent_x+delta_x*1.5, rely=load_vert_start+1.55*delta_y,
+            self._ext_button.place(relx=0.13, rely=load_vert_start+1.55*delta_y,
                                    relheight = 0.044, relwidth = 0.11)
         except TclError:
             tk.Button(self._main_fr, text='New external load window \nsea - static/dynamic',
