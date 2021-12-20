@@ -583,7 +583,7 @@ class Application():
 
         vert_start = 0.1
         hor_start = 0.02
-        delta_y = 0.035
+        delta_y = 0.034
         delta_x = 0.13
         # ent_relx = hor_start + 6 * delta_x
         # geo_ent_width = 0.05
@@ -594,7 +594,7 @@ class Application():
                                                           '-- new or replace existing --', command=self.new_structure,
                                        style = "Bold.TButton")
 
-        self.add_stucture.place(relx=0.5, rely=0.94, relwidth = 0.5, relheight = 0.06)
+        self.add_stucture.place(relx=0.495, rely=0.93, relwidth = 0.5, relheight = 0.06)
 
 
         ttk.Label(self._tab2, text='Scale stresses when changing properties', font=self._text_size['Text 9'])\
@@ -604,7 +604,7 @@ class Application():
 
         ttk.Label(self._tab2, text='scale up, fup', font=self._text_size['Text 8']).place(relx =hor_start,
                                                                                           rely=vert_start+23*delta_y)
-        ttk.Label(self._tab2, text='fdown', font=self._text_size['Text 8']).place(relx =hor_start + delta_x*4,
+        ttk.Label(self._tab2, text='fdown', font=self._text_size['Text 8']).place(relx =hor_start + delta_x*3,
                                                                                   rely=vert_start+23*delta_y)
 
         ent_fup = ttk.Entry(self._tab2, textvariable=self._new_fup)
@@ -617,20 +617,17 @@ class Application():
         bg = self._style.lookup('TButton', 'background')
         self._toggle_btn = tk.Button(self._tab2, text="Toggle select\nmultiple", relief="raised",
                                      command=self.toggle_select_multiple, bg = '#E1E1E1', activebackground = '#E5F1FB' )
-        self._toggle_change_param = ttk.Button(self._tab2, text="Change\nparameters",
+        self._toggle_change_param = ttk.Button(self._tab2, text="Change parameters",
                                      command=self.toggle_set_variable)
         self._toggle_param_to_change = None
-        self._toggle_btn.place(relx=0.3, rely=0.94, relwidth = 0.2, relheight = 0.06)
+        self._toggle_btn.place(relx=0.29, rely=0.93, relwidth = 0.2, relheight = 0.06)
 
-        self._toggle_change_param.place(relx=types_start+ delta_x*6, rely=prop_vert_start+14.8*delta_y, 
-                                        relwidth = 0.045,
-                                        relheight = 0.039)
+        self._toggle_change_param.place(relx=0.02, rely=0.915, relwidth = 0.25)
 
         self._toggle_choose = ttk.OptionMenu(self._tab2, self._new_toggle_var,self._stuctural_definition[0],
                                              *self._stuctural_definition,
                                             command = self.update_frame)
-        self._toggle_choose.place(relx=types_start+ delta_x*7.8, rely=prop_vert_start+14.8*delta_y, relwidth = 0.047,
-                                relheight = 0.039)
+        self._toggle_choose.place(relx=0.02, rely=0.96, relwidth = 0.25)
 
         # PULS interface
         self._toggle_btn_puls = tk.Button(self._tab2, text="Use PULS\n"
@@ -1478,7 +1475,7 @@ class Application():
         vert_start = 0.1
         hor_start = 0.02
 
-        delta_y = 0.035
+        delta_y = 0.034
         delta_x = 0.13
         
         ent_relx = hor_start + 6*delta_x
@@ -1496,9 +1493,7 @@ class Application():
             self._stf_button.place(relx=hor_start, rely=vert_start)
             self._stress_button.place(relx=hor_start + delta_x*2, rely=vert_start)
             self._fls_button.place(relx=hor_start + delta_x*4, rely=vert_start)
-
-            self._puls_run_all.place(relx=hor_start + 0.085, rely=vert_start + 18 * delta_y, relwidth=0.045,
-                                     relheight=0.04)
+            self._puls_run_all.place(relx=hor_start + delta_x*6, rely=vert_start)
 
             # self._structure_types_label.place(relx=hor_start + 2.8 * delta_x, rely=vert_start + 2.8 * delta_y,
             #                                   relwidth=0.11, relheight=0.02)
