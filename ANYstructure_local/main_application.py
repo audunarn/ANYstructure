@@ -1177,7 +1177,7 @@ class Application():
         self.gui_structural_properties() # Initiating the flat panel structural properties
 
         # --- tank load input and information ---
-        load_vert_start = frame_horizontal -0.03
+        load_vert_start = 0.673#frame_horizontal -0.03
 
         ttk.Label(self._main_fr,text = 'Comp. no.:',  )\
             .place(relx=types_start, rely=load_vert_start + 3.5*delta_y)
@@ -1225,7 +1225,7 @@ class Application():
                                     )
         
         comp_dx = 0.03
-        comp_dy = 0.025
+        comp_dy = 0.027
         comp_ent_x = 0.15
         comp_ent_y = 0.8
         ttk.Label(self._main_fr, text = '',  )\
