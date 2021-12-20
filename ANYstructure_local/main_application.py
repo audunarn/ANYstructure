@@ -477,7 +477,7 @@ class Application():
         ttk.Checkbutton(self._main_fr, variable = self._new_colorcode_total, command = self.on_color_code_check)\
             .place(relx = 0.26, y=160)
 
-        self._chk_cc_spacing = ttk.Checkbutton(self._main_fr, variable = self._new_colorcode_spacing,
+        self._chk_cc_spacing = ttk.Checkbutton(self._tab2, variable = self._new_colorcode_spacing,
                                               command = self.on_color_code_check)
 
         ttk.Label(self._main_fr, text='Check to see avaliable shortcuts', font="Text 9").place(relx = 0.27, y=0)
@@ -560,7 +560,6 @@ class Application():
                                                                'INTERNAL_LOW_STRESS_WT ')
 
 
-
         ttk.Label(self._main_fr, text='Show line names in GUI', font="Text 9")\
             .place(relx=0.38, rely=0)
         ttk.Label(self._main_fr, text='Show point names in GUI', font="Text 9")\
@@ -582,33 +581,38 @@ class Application():
         ttk.Checkbutton(self._main_fr, variable = self._new_show_cog, command = self.update_frame)\
             .place(relx=0.72, rely=0)
 
+        vert_start = 0.1
+        hor_start = 0.02
+        delta_y = 0.035
+        delta_x = 0.13
+        # ent_relx = hor_start + 6 * delta_x
+        # geo_ent_width = 0.05
+        # ent_geo_y = vert_start
+        # opt_width = 0.2
 
-        
-        self.add_stucture = ttk.Button(self._main_fr, text='Add structure/properties to line \n'
+        self.add_stucture = ttk.Button(self._tab2, text='Add structure/properties to line \n'
                                                           '-- new or replace existing --', command=self.new_structure,
                                        style = "Bold.TButton")
 
-        self.add_stucture.place(relx=types_start+ delta_x*5, rely=prop_vert_start+18*delta_y, relwidth = 0.12,
-                                relheight = 0.04)
+        self.add_stucture.place(relx=0.5, rely=0.94, relwidth = 0.5, relheight = 0.06)
 
 
+        ttk.Label(self._tab2, text='Scale stresses when changing properties', font=self._text_size['Text 9'])\
+            .place(relx = hor_start, rely=vert_start+22*delta_y)
         ttk.Checkbutton(self._tab2, variable = self._new_scale_stresses, command = self.on_color_code_check)\
-            .place(relx = types_start+ delta_x*4.3, rely=prop_vert_start+16.9*delta_y)
-        ttk.Label(self._tab2, text='Scale stresses when\n changing prop.', font=self._text_size['Text 9'],
-                 )\
-            .place(relx = types_start+ delta_x*4.7, rely=prop_vert_start+16.6*delta_y, relwidth = 0.065)
-        ttk.Label(self._tab2, text='fup', font=self._text_size['Text 8'],
-                 )\
-            .place(relx = types_start+ delta_x*7.1, rely=prop_vert_start+17*delta_y)
-        ent_fup = ttk.Entry(self._tab2, textvariable=self._new_fup,
-                                         )
-        ent_fup.place(relx = types_start+ delta_x*7.6, rely=prop_vert_start+16.8*delta_y, relwidth = 0.015)
-        ttk.Label(self._tab2, text='fdown', font=self._text_size['Text 8'],
-                 )\
-            .place(relx = types_start+ delta_x*8.3, rely=prop_vert_start+17*delta_y)
-        ent_fdwn = ttk.Entry(self._tab2, textvariable=self._new_fdwn,
-                                         )
-        ent_fdwn.place(relx = types_start+ delta_x*9.1, rely=prop_vert_start+16.8*delta_y, relwidth = 0.015)
+            .place(relx = hor_start+ delta_x*4, rely=vert_start+22*delta_y)
+
+        ttk.Label(self._tab2, text='scale up, fup', font=self._text_size['Text 8']).place(relx =hor_start,
+                                                                                          rely=vert_start+23*delta_y)
+        ttk.Label(self._tab2, text='fdown', font=self._text_size['Text 8']).place(relx =hor_start + delta_x*4,
+                                                                                  rely=vert_start+23*delta_y)
+
+        ent_fup = ttk.Entry(self._tab2, textvariable=self._new_fup)
+        ent_fup.place(relx =hor_start + delta_x*2, rely=vert_start+23*delta_y, relwidth = 0.05)
+
+        ent_fdwn = ttk.Entry(self._tab2, textvariable=self._new_fdwn)
+        ent_fdwn.place(relx =hor_start + delta_x*4, rely=vert_start+23*delta_y, relwidth = 0.05)
+
         # Toggle buttons
         bg = self._style.lookup('TButton', 'background')
         self._toggle_btn = tk.Button(self._tab2, text="Toggle select\nmultiple", relief="raised",
@@ -616,8 +620,8 @@ class Application():
         self._toggle_change_param = ttk.Button(self._tab2, text="Change\nparameters",
                                      command=self.toggle_set_variable)
         self._toggle_param_to_change = None
-        self._toggle_btn.place(relx=types_start+ delta_x*4.2, rely=prop_vert_start+14.8*delta_y, relwidth = 0.045,
-                                relheight = 0.039)
+        self._toggle_btn.place(relx=0.3, rely=0.94, relwidth = 0.2, relheight = 0.06)
+
         self._toggle_change_param.place(relx=types_start+ delta_x*6, rely=prop_vert_start+14.8*delta_y, 
                                         relwidth = 0.045,
                                         relheight = 0.039)
@@ -769,20 +773,20 @@ class Application():
         self._structure_types_label =  ttk.Label(textvariable = self._new_stucture_type_label,
                                                 font = self._text_size['Text 8'], )
 
-        self._lab_kpp = ttk.Label(self._main_fr,text='kpp', )
-        self._lab_kps = ttk.Label(self._main_fr, text='kps', )
-        self._lab_km1 = ttk.Label(self._main_fr, text='km1', )
-        self._lab_km2 = ttk.Label(self._main_fr, text='km2', )
-        self._lab_k3 = ttk.Label(self._main_fr, text='k3', )
-        self._lab_sig_y1 = ttk.Label(self._main_fr, text='sig_y1')
-        self._lab_sig_y2 = ttk.Label(self._main_fr, text='sig_y2')
-        self._lab_sig_x = ttk.Label(self._main_fr, text='sig_x')
-        self._lab_tau_y1 = ttk.Label(self._main_fr, text='tau_y1')
-        self._lab_stf_type = ttk.Label(self._main_fr, text='stiffener type')
+        self._lab_kpp = ttk.Label(self._tab2,text='kpp', )
+        self._lab_kps = ttk.Label(self._tab2, text='kps', )
+        self._lab_km1 = ttk.Label(self._tab2, text='km1', )
+        self._lab_km2 = ttk.Label(self._tab2, text='km2', )
+        self._lab_k3 = ttk.Label(self._tab2, text='k3', )
+        self._lab_sig_y1 = ttk.Label(self._tab2, text='sig_y1')
+        self._lab_sig_y2 = ttk.Label(self._tab2, text='sig_y2')
+        self._lab_sig_x = ttk.Label(self._tab2, text='sig_x')
+        self._lab_tau_y1 = ttk.Label(self._tab2, text='tau_y1')
+        self._lab_stf_type = ttk.Label(self._tab2, text='Stf. type')
 
-        self._zstar_chk = ttk.Checkbutton(self._main_fr, variable=self._new_zstar_optimization)
-        self._zstar_label = ttk.Label(self._main_fr, text='z* optimization (RP-C201)\n'
-                                     'for buckling \ncalculations', font=self._text_size['Text 8'],
+        self._zstar_chk = ttk.Checkbutton(self._tab2, variable=self._new_zstar_optimization)
+        self._zstar_label = ttk.Label(self._tab2, text='z* optimization (buckling RP-C201)',
+                                      font=self._text_size['Text 8'],
                  )
 
         self._lab_puls_input =  ttk.Label(self._tab2, text='PULS input',
@@ -792,10 +796,10 @@ class Application():
                                            font = self._text_size['Text 7'])
         self._lab_puls_acceptance=  ttk.Label(self._tab2, text='PULS acceptance')
         self._lab_puls_uf =  ttk.Label(self._tab2, text='PULS utilization factor:')
-        self._lab_puls_int_gt =  ttk.Label(self._tab2, text='Int-integrated GL-free left\n/right GT-free top/bottom')
+        self._lab_puls_int_gt =  ttk.Label(self._tab2, text='Int-integrated GL-free left/right GT-free top/bottom')
 
         self._lab_puls_cont_sniped =  ttk.Label(self._tab2, text='Continous or Sniped',
-                 font = self._text_size['Text 7'])
+                 font = self._text_size['Text 8'])
 
         self._lab_span = ttk.Label(self._tab2, text='span', )
         self._lab_s = ttk.Label(self._tab2, text='s', )
@@ -1471,138 +1475,151 @@ class Application():
 
     def gui_structural_properties(self, flat_panel = True, shell = False, long_stf = False, ring_stf = False,
                                   ring_frame = False, force_input = False, stress_input = False):
-        prop_vert_start = 0.1
-        ent_rely, ent_relx, drelx = prop_vert_start + 0.2, 0.059, 0.05
-        ent_geo_y, loc_y = ent_rely - 0.07, 0.0007
-        geo_ent_width, geo_dx = 0.08, 0.12
-        drely = 0.05
-        delta_y = 0.04
-        delta_x = 0.1
-        types_start = 0.02
-        shift_x = 2.9
-        y_red = 0.7
+        vert_start = 0.1
+        hor_start = 0.02
+
+        delta_y = 0.035
+        delta_x = 0.13
+        
+        ent_relx = hor_start + 6*delta_x
+
+        geo_ent_width = 0.05
+        ent_geo_y = vert_start
+
+        opt_width = 0.2
+
         self._unit_informations_dimensions = list()
         if flat_panel:
             if any([shell, long_stf, ring_stf, ring_frame, force_input, stress_input]):
                 return
 
-            self._stf_button.place(relx=types_start, rely=prop_vert_start)
-            self._stress_button.place(relx=types_start + delta_x*2, rely=prop_vert_start)
-            self._fls_button.place(relx=types_start + delta_x*4, rely=prop_vert_start)
+            self._stf_button.place(relx=hor_start, rely=vert_start)
+            self._stress_button.place(relx=hor_start + delta_x*2, rely=vert_start)
+            self._fls_button.place(relx=hor_start + delta_x*4, rely=vert_start)
 
-
-            self._puls_run_all.place(relx=types_start + 0.085, rely=prop_vert_start + 18 * delta_y, relwidth=0.045,
+            self._puls_run_all.place(relx=hor_start + 0.085, rely=vert_start + 18 * delta_y, relwidth=0.045,
                                      relheight=0.04)
-            self._chk_cc_spacing.place(relx=0.095, rely=0.29)
-            self._zstar_chk.place(relx=types_start + delta_x * 9, rely=prop_vert_start + 11.5 * delta_y)
-            self._lab_buckling_method.place(relx=types_start, rely=prop_vert_start + 17.5 * delta_y, relwidth=0.065)
-            self._buckling_method.place(relx=types_start, rely=prop_vert_start + 18.5 * delta_y, relwidth=0.08)
 
-            dy_red = 0.8
-            self._lab_yield.place(relx=0.22, rely=ent_rely - delta_y*dy_red)
+            # self._structure_types_label.place(relx=hor_start + 2.8 * delta_x, rely=vert_start + 2.8 * delta_y,
+            #                                   relwidth=0.11, relheight=0.02)
+            
+            self._ent_structure_type.place(relx=hor_start + 2 * delta_x, rely=vert_start + 3 * delta_y, relwidth=0.44)
+            self._lab_structure_type.place(relx=hor_start, rely=vert_start + 3 * delta_y)
+            self._button_str_type.place(relx=hor_start + 5.5 * delta_x, rely=vert_start + 3 * delta_y, relwidth=0.26)
 
+            lab_place = delta_y * 4
+            self._lab_span.place(relx=hor_start + 0 * delta_x, rely=vert_start + lab_place)
 
-            self._structure_types_label.place(relx=types_start + 2.8 * delta_x, rely=ent_rely + 2.8 * drely,
-                                              relwidth=0.11, relheight=0.02)
-            self._button_str_type.place(relx=types_start + 3 * delta_x + 0.1, rely=ent_rely + 2.3 * drely,
-                                        relwidth=0.07)
-            self._ent_structure_type.place(relx=types_start + 3 * delta_x, rely=ent_rely + 2.3 * drely, relwidth=0.10)
-            self._lab_structure_type.place(relx=types_start, rely=ent_rely + 2.4 * drely)
-            dy_red = 0.8
-            self._lab_kpp.place(relx=ent_relx + 0 * geo_dx, rely=ent_rely + delta_y)
-            self._lab_kps.place(relx=ent_relx + 1 * geo_dx, rely=ent_rely  + delta_y)
-            self._lab_km1.place(relx=ent_relx + 2 * geo_dx, rely=ent_rely  + delta_y)
-            self._lab_km2.place(relx=ent_relx + 3 * geo_dx, rely=ent_rely  + delta_y)
-            self._lab_k3.place(relx=ent_relx + 4 * geo_dx, rely=ent_rely  + delta_y)
+            self._lab_s.place(relx=hor_start + 1 * delta_x, rely=vert_start + lab_place)
+            self._chk_cc_spacing.place(relx=hor_start + 1.2 * delta_x, rely=vert_start + lab_place)
 
-            dy_red = 1.2
+            self._lab_pl_thk.place(relx=hor_start + 2 * delta_x, rely=vert_start + lab_place)
+            self._lab_web_h.place(relx=hor_start + 3 * delta_x, rely=vert_start + lab_place)
+            self._lab_web_thk.place(relx=hor_start + 4 * delta_x, rely=vert_start + lab_place)
+            self._lab_fl_w.place(relx=hor_start + 5 * delta_x, rely=vert_start + lab_place)
+            self._lab_fl_thk.place(relx=hor_start + 6 * delta_x, rely=vert_start + lab_place)
 
-            self._lab_sig_y1.place(relx=ent_relx + 0 * geo_dx, rely=ent_rely + delta_y*dy_red)
-            self._lab_sig_y2.place(relx=ent_relx + 1 * geo_dx, rely=ent_rely + delta_y*dy_red)
-            self._lab_sig_x.place(relx=ent_relx + 2 * geo_dx, rely=ent_rely + delta_y*dy_red)
-            self._lab_tau_y1.place(relx=ent_relx + 3 * geo_dx, rely=ent_rely + delta_y*dy_red)
-            self._lab_stf_type.place(relx=ent_relx + 4 * geo_dx, rely=ent_rely + delta_y*dy_red)
-            self._lab_mat_fac.place(relx=0.22, rely=ent_rely + delta_y * dy_red)
-
-            self._zstar_label.place(relx=types_start + 5.9 * delta_x, rely=prop_vert_start + 11.3 * delta_y)
-            self._lab_press_side.place(relx=types_start + 5.4 * delta_x, rely=prop_vert_start + 13.2 * delta_y,
-                                       relheight=0.025)
-            self._ent_pressure_side.place(relx=types_start + delta_x * 8.5, rely=prop_vert_start + 13.2 * delta_y)
-
-            self._lab_puls_input.place(relx=types_start, rely=prop_vert_start + 10.4 * delta_y)
-            self._lab_puls_spup.place(relx=types_start, rely=prop_vert_start + 11.2 * delta_y)
-            self._lab_puls_up_supp.place(relx=types_start, rely=prop_vert_start + 11.9 * delta_y)
-            self._lab_puls_acceptance.place(relx=types_start, rely=prop_vert_start + 13 * delta_y)
-            self._lab_puls_uf.place(relx=types_start, rely=prop_vert_start + 14 * delta_y)
-            self._lab_puls_int_gt.place(relx=types_start, rely=prop_vert_start + 15 * delta_y)
-            self._lab_puls_cont_sniped.place(relx=types_start, rely=prop_vert_start + 16.5 * delta_y)
-            ent_geo_y += delta_y*0.5
-            self._lab_span.place(relx=ent_relx + 0 * geo_dx, rely=ent_geo_y - delta_y)
-            self._lab_s.place(relx=ent_relx + 1 * geo_dx, rely=ent_geo_y - delta_y)
-            self._lab_pl_thk.place(relx=ent_relx + 2 * geo_dx, rely=ent_geo_y - delta_y)
-            self._lab_web_h.place(relx=ent_relx + 3 * geo_dx, rely=ent_geo_y - delta_y)
-            self._lab_web_thk.place(relx=ent_relx + 4 * geo_dx, rely=ent_geo_y - delta_y)
-            self._lab_fl_w.place(relx=ent_relx + 5 * geo_dx, rely=ent_geo_y - delta_y)
-            self._lab_fl_thk.place(relx=ent_relx + 6 * geo_dx, rely=ent_geo_y - delta_y)
-
-            self._ent_field_len.place(relx=ent_relx + 0 * geo_dx, rely=ent_geo_y, relwidth=geo_ent_width)
-            self._ent_stf_spacing.place(relx=ent_relx + 1 * geo_dx, rely=ent_geo_y, relwidth=geo_ent_width)
-            self._ent_plate_thk.place(relx=ent_relx + 2 * geo_dx, rely=ent_geo_y, relwidth=geo_ent_width)
-            self._ent_stf_web_h.place(relx=ent_relx + 3 * geo_dx, rely=ent_geo_y, relwidth=geo_ent_width)
-            self._ent_stf_web_t.place(relx=ent_relx + 4 * geo_dx, rely=ent_geo_y, relwidth=geo_ent_width)
-            self._ent_stf_fl_w.place(relx=ent_relx + 5 * geo_dx, rely=ent_geo_y, relwidth=geo_ent_width)
-            self._ent_str_fl_t.place(relx=ent_relx + 6 * geo_dx, rely=ent_geo_y, relwidth=geo_ent_width)
+            self._ent_field_len.place(relx=hor_start + 0 * delta_x, rely=vert_start + lab_place + delta_y,
+                                      relwidth=geo_ent_width)
+            self._ent_stf_spacing.place(relx=hor_start + 1 * delta_x, rely=vert_start + lab_place + delta_y,
+                                        relwidth=geo_ent_width)
+            self._ent_plate_thk.place(relx=hor_start + 2 * delta_x, rely=vert_start + lab_place + delta_y,
+                                      relwidth=geo_ent_width)
+            self._ent_stf_web_h.place(relx=hor_start + 3 * delta_x, rely=vert_start + lab_place + delta_y,
+                                      relwidth=geo_ent_width)
+            self._ent_stf_web_t.place(relx=hor_start + 4 * delta_x, rely=vert_start + lab_place + delta_y,
+                                      relwidth=geo_ent_width)
+            self._ent_stf_fl_w.place(relx=hor_start + 5 * delta_x, rely=vert_start + lab_place + delta_y,
+                                     relwidth=geo_ent_width)
+            self._ent_str_fl_t.place(relx=hor_start + 6 * delta_x, rely=vert_start + lab_place + delta_y,
+                                     relwidth=geo_ent_width)
 
             tmp_units = list()
 
             for lab, idx in zip(['[m]', '[mm]', '[mm]', '[mm]', '[mm]', '[mm]', '[mm]'], np.arange(2, 9.9, 1.1)):
                 tmp_units.append(ttk.Label(self._tab2, text=lab))
-            for lab, idx  in zip(tmp_units, np.arange(2, 9.9, 1.1)):
-                lab.place(relx=types_start + idx * delta_x,rely=ent_geo_y + delta_y*1.05)
+            for idx,lab  in enumerate(tmp_units):
+                lab.place(relx=hor_start + idx * delta_x,rely=vert_start + lab_place + delta_y*2)
                 self._unit_informations_dimensions.append(lab)
 
-            self._ent_mat.place(relx=0.22, rely=ent_rely, relwidth=0.025)
+            lab_place = delta_y*7
+            self._lab_kpp.place(relx=hor_start + 0 * delta_x, rely=vert_start + lab_place)
+            self._lab_kps.place(relx=hor_start + 1 * delta_x, rely=vert_start + lab_place)
+            self._lab_km1.place(relx=hor_start + 2 * delta_x, rely=vert_start + lab_place)
+            self._lab_km2.place(relx=hor_start + 3 * delta_x, rely=vert_start + lab_place)
+            self._lab_k3.place(relx=hor_start + 4 * delta_x, rely=vert_start + lab_place)
+            self._lab_yield.place(relx=hor_start + 5 * delta_x, rely=vert_start + lab_place)
+            
+            lab_place = delta_y * 8
 
-            self._ent_plate_kpp.place(relx=ent_relx, rely=ent_rely)
-            self._ent_plate_kps.place(relx=ent_relx + geo_dx, rely=ent_rely)
-            self._ent_stf_km1.place(relx=ent_relx + 2 * geo_dx, rely=ent_rely)
-            self._ent_stf_km2.place(relx=ent_relx + 3 * geo_dx, rely=ent_rely)
-            self._ent_stf_km3.place(relx=ent_relx + 4 * geo_dx, rely=ent_rely)
+            self._ent_plate_kpp.place(relx=hor_start + 0 * delta_x, rely=vert_start + lab_place)
+            self._ent_plate_kps.place(relx=hor_start + 1 * delta_x, rely=vert_start + lab_place)
+            self._ent_stf_km1.place(relx=hor_start + 2 * delta_x, rely=vert_start + lab_place)
+            self._ent_stf_km2.place(relx=hor_start + 3 * delta_x, rely=vert_start + lab_place)
+            self._ent_stf_km3.place(relx=hor_start + 4 * delta_x, rely=vert_start + lab_place)
+            self._ent_mat.place(relx=hor_start + 5 * delta_x, rely=vert_start + lab_place, relwidth=0.1)
 
-            self._ent_sigma_y1.place(relx=ent_relx, rely=ent_rely + drely)
-            self._ent_sigma_y2.place(relx=ent_relx + geo_dx, rely=ent_rely + drely)
-            self._ent_sigma_x.place(relx=ent_relx + 2 * geo_dx, rely=ent_rely + drely)
-            self._ent_tauxy.place(relx=ent_relx + 3 * geo_dx, rely=ent_rely + drely)
-            self._ent_stf_type.place(relx=ent_relx + 4 * geo_dx, rely=ent_rely + drely)
-            self._ent_mat_factor.place(relx=0.22, rely=ent_rely + drely, relwidth=0.025)
+            lab_place = delta_y * 9
+            self._lab_sig_y1.place(relx=hor_start + 0 * delta_x, rely=vert_start + lab_place)
+            self._lab_sig_y2.place(relx=hor_start + 1 * delta_x, rely=vert_start + lab_place)
+            self._lab_sig_x.place(relx=hor_start + 2 * delta_x, rely=vert_start + lab_place)
+            self._lab_tau_y1.place(relx=hor_start + 3 * delta_x, rely=vert_start + lab_place)
+            self._lab_stf_type.place(relx=hor_start + 4 * delta_x, rely=vert_start + lab_place)
+            self._lab_mat_fac.place(relx=hor_start + 5 * delta_x, rely=vert_start + lab_place)
 
-            self._chk_button_sigmax.place(relx=ent_relx + 2 * geo_dx, rely=ent_rely + 1.7 * drely)
-            self._chk_button_sigmay1.place(relx=ent_relx + 0 * geo_dx, rely=ent_rely + 1.7 * drely)
-            self._chk_button_sigmay2.place(relx=ent_relx + 1 * geo_dx, rely=ent_rely + 1.7 * drely)
-            self._chk_button_tauxy.place(relx=ent_relx + 3 * geo_dx, rely=ent_rely + 1.7 * drely)
-            self._chk_button_structure_type.place(relx=ent_relx + 4 * geo_dx, rely=ent_rely + 1.7 * drely)
-            self._chk_button_cc.place(relx=ent_relx + 4.5 * geo_dx, rely=ent_rely + 1.48 * drely, relwidth=0.06,
-                                      relheight=0.03)
+            lab_place = delta_y * 10
+            self._ent_sigma_y1.place(relx=hor_start + 0 * delta_x, rely=vert_start + lab_place)
+            self._ent_sigma_y2.place(relx=hor_start + 1 * delta_x, rely=vert_start + lab_place)
+            self._ent_sigma_x.place(relx=hor_start + 2 * delta_x, rely=vert_start + lab_place)
+            self._ent_tauxy.place(relx=hor_start + 3 * delta_x, rely=vert_start + lab_place)
+            self._ent_stf_type.place(relx=hor_start + 4 * delta_x, rely=vert_start + lab_place)
+            self._ent_mat_factor.place(relx=hor_start + 5 * delta_x, rely=vert_start + lab_place, relwidth=0.1)
 
+            
+            lab_place = delta_y * 11
+            self._chk_button_sigmay1.place(relx=hor_start + 0 * delta_x, rely=vert_start + lab_place)
+            self._chk_button_sigmay2.place(relx=hor_start + 1 * delta_x, rely=vert_start + lab_place)
+            self._chk_button_sigmax.place(relx=hor_start + 2 * delta_x, rely=vert_start + lab_place)
+            self._chk_button_tauxy.place(relx=hor_start + 3 * delta_x, rely=vert_start + lab_place)
+            self._chk_button_structure_type.place(relx=hor_start + 4 * delta_x, rely=vert_start + lab_place)
+            self._chk_button_cc.place(relx=hor_start + 5* delta_x, rely=vert_start + lab_place)
+            shift_x = delta_x * 5
+            self._zstar_label.place(relx=hor_start, rely=vert_start + 12 * delta_y)
+            self._zstar_chk.place(relx=hor_start + shift_x, rely=vert_start + 12 * delta_y)
+            self._lab_press_side.place(relx=hor_start, rely=vert_start + 13 * delta_y,
+                                       relheight=0.025)
+            self._ent_pressure_side.place(relx=hor_start + shift_x, rely=vert_start + 13 * delta_y,relwidth=opt_width)
+
+            lab_place = delta_y * 14
+            self._lab_puls_input.place(relx=hor_start, rely=vert_start + lab_place+ 0*delta_y)
+            self._lab_puls_spup.place(relx=hor_start, rely=vert_start + lab_place+ 1*delta_y)
+            self._lab_puls_up_supp.place(relx=hor_start, rely=vert_start + lab_place+ 2*delta_y)
+            self._lab_puls_acceptance.place(relx=hor_start, rely=vert_start + lab_place+ 3*delta_y)
+            self._lab_puls_uf.place(relx=hor_start, rely=vert_start + lab_place+ 4*delta_y)
+            self._lab_puls_int_gt.place(relx=hor_start, rely=vert_start + lab_place+ 5*delta_y)
+            self._lab_puls_cont_sniped.place(relx=hor_start, rely=vert_start + lab_place+ 6*delta_y)
 
             # Entries below goemetry and stress input.
-            self._ent_puls_sp_or_up.place(relx=types_start + shift_x * delta_x, rely=prop_vert_start + 11.2 * delta_y,
-                                          relwidth=0.041)
-            self._ent_puls_method.place(relx=types_start + shift_x * delta_x, rely=prop_vert_start + 12.5 * delta_y,
-                                        relwidth=0.041)
-            self._ent_puls_uf.place(relx=types_start + shift_x * delta_x, rely=prop_vert_start + 13.9 * delta_y,
-                                    relwidth=0.02,
-                                    relheight=0.025)
-            self._ent_puls_panel_boundary.place(relx=types_start + shift_x * delta_x,
-                                                rely=prop_vert_start + 15.2 * delta_y, relwidth=0.025)
-            self._ent_puls_stf_end_type.place(relx=types_start + shift_x * delta_x,
-                                              rely=prop_vert_start + 16.5 * delta_y, relwidth=0.025)
 
-            self._chk_button_puls_acceptance.place(relx=types_start + shift_x * delta_x + 0.041,
-                                                   rely=prop_vert_start + 12.5 * delta_y)
-            self._chk_button_puls_spup.place(relx=types_start + shift_x * delta_x + 0.041,
-                                             rely=prop_vert_start + 11.2 * delta_y)
+            self._ent_puls_sp_or_up.place(relx=hor_start + shift_x, rely=vert_start + lab_place+ 1*delta_y
+                                          ,relwidth=opt_width)
+            self._chk_button_puls_spup.place(relx=hor_start + shift_x+delta_x*2, rely=vert_start + lab_place+ 1*delta_y)
+            self._ent_puls_method.place(relx=hor_start + shift_x, rely=vert_start + lab_place+ 3*delta_y,
+                                        relwidth=opt_width)
+            self._chk_button_puls_acceptance.place(relx=hor_start + shift_x+delta_x*2, rely=vert_start +
+                                                                                            lab_place+ 3*delta_y)
 
+            self._ent_puls_uf.place(relx=hor_start + shift_x, rely=vert_start + lab_place+ 4*delta_y,
+                                    relwidth=0.2)
+            self._ent_puls_panel_boundary.place(relx=hor_start + shift_x,rely=vert_start + lab_place+ 5*delta_y,
+                                                relwidth=opt_width)
+            self._ent_puls_stf_end_type.place(relx=hor_start + shift_x,rely=vert_start + lab_place+ 6*delta_y,
+                                              relwidth=opt_width)
+
+
+            self._lab_buckling_method.place(relx=hor_start, rely=vert_start + lab_place+ 7*delta_y)
+            self._buckling_method.place(relx=hor_start + shift_x-delta_x, rely=vert_start + lab_place+ 7*delta_y,
+                                        relwidth=opt_width+0.2)
 
         if shell:
             '''
@@ -1610,11 +1627,11 @@ class Application():
                                      self._ent_shell_dist_rings,
                                      self._ent_shell_length,self._ent_shell_tot_length,self._ent_shell_k_factor]
             '''
-            self._lab_shell.place(relx=types_start, rely=ent_geo_y-delta_y*y_red)
+            self._lab_shell.place(relx=hor_start, rely=ent_geo_y-delta_y)
 
             for idx, entry in enumerate(self._shell_gui_items[1:]):
 
-                entry.place(relx=types_start + 1.4*idx * geo_dx, rely=ent_geo_y + delta_y, relwidth=geo_ent_width)
+                entry.place(relx=hor_start + 1.4*idx * delta_x, rely=ent_geo_y + delta_y, relwidth=geo_ent_width)
 
 
             tmp_unit_info = list()
@@ -1622,16 +1639,16 @@ class Application():
                 tmp_unit_info.append(ttk.Label(self._tab2, text=lab))
 
             for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
-                lab.place(relx=types_start + idx * geo_dx*1.4,rely=ent_geo_y)
+                lab.place(relx=hor_start + idx * delta_x,rely=ent_geo_y)
                 self._unit_informations_dimensions.append(lab)
-            ent_geo_y += delta_y*0.25
+            ent_geo_y += delta_y
 
         if long_stf:
-            ent_geo_y += 2.5*delta_y
-            self._lab_shell_long_stiffener.place(relx=types_start, rely=ent_geo_y-delta_y*y_red)
+            ent_geo_y += delta_y
+            self._lab_shell_long_stiffener.place(relx=hor_start, rely=ent_geo_y-delta_y)
 
             for idx, entry in enumerate(self._shell_long_stf_gui_items[1:]):
-                entry.place(relx=types_start + 1.3*idx * geo_dx, rely=ent_geo_y + delta_y, relwidth=geo_ent_width)
+                entry.place(relx=hor_start + idx * delta_x, rely=ent_geo_y + delta_y, relwidth=geo_ent_width)
 
 
             tmp_unit_info = list()
@@ -1639,39 +1656,38 @@ class Application():
                 tmp_unit_info.append(ttk.Label(self._tab2, text=lab))
 
             for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
-                lab.place(relx=types_start + idx * geo_dx*1.3,rely=ent_geo_y)
+                lab.place(relx=hor_start + idx * delta_x*1.3,rely=ent_geo_y)
                 self._unit_informations_dimensions.append(lab)
             self._unit_informations_dimensions.append(self._lab_shell_long_stiffener)
-            ent_geo_y += 0.3 * delta_y
+            ent_geo_y +=  delta_y
 
         if ring_stf:
-            ent_geo_y += 2.5*delta_y
-            self._lab_shell_ring_stiffener.place(relx=types_start, rely=ent_geo_y-delta_y*y_red)
+            ent_geo_y += delta_y
+            self._lab_shell_ring_stiffener.place(relx=hor_start, rely=ent_geo_y-delta_y)
 
             for idx, entry in enumerate(self._shell_ring_stf_gui_items[1:]):
-                entry.place(relx=types_start + 1.05*idx * geo_dx, rely=ent_geo_y + delta_y, relwidth=geo_ent_width)
+                entry.place(relx=hor_start + idx * delta_x, rely=ent_geo_y + delta_y, relwidth=geo_ent_width)
 
             tmp_unit_info = list()
             for lab in ['Web, hw', 'Web, tw', 'Flange, b', 'Flange, tw','tr. br. dist', 'Stf. type', 'Exclude', 'STF']:
                 tmp_unit_info.append(ttk.Label(self._tab2, text=lab))
 
             for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
-                lab.place(relx=types_start + idx * geo_dx*1.05,rely=ent_geo_y)
+                lab.place(relx=hor_start + idx * delta_x,rely=ent_geo_y)
                 self._unit_informations_dimensions.append(lab)
             self._unit_informations_dimensions.append(self._lab_shell_ring_stiffener)
             if self._new_shell_exclude_ring_stf.get():
-                self._shell_exclude_ring_stf.place(relx=0.005, rely=ent_geo_y + delta_y*1.2, relwidth=0.18)
+                self._shell_exclude_ring_stf.place(relx=0.005, rely=ent_geo_y + delta_y, relwidth=0.18)
                 self._unit_informations_dimensions.append(self._shell_exclude_ring_stf)
 
-            ent_geo_y += 0.3 * delta_y
+            ent_geo_y += delta_y
 
         if ring_frame:
-            ent_geo_y += 2.5*delta_y
-            self._lab_shell_ring_frame.place(relx=types_start, rely=ent_geo_y-delta_y*y_red)
+            ent_geo_y += delta_y
+            self._lab_shell_ring_frame.place(relx=hor_start, rely=ent_geo_y-delta_y)
 
             for idx, entry in enumerate(self._shell_ring_frame_gui_items[1:]):
-                sx = 1.05 if idx != len(self._shell_ring_frame_gui_items[1:]) - 1 else 1.01
-                entry.place(relx=types_start + sx*idx * geo_dx, rely=ent_geo_y + delta_y, relwidth=geo_ent_width)
+                entry.place(relx=hor_start + idx * delta_x, rely=ent_geo_y + delta_y, relwidth=geo_ent_width)
 
 
             tmp_unit_info = list()
@@ -1680,16 +1696,15 @@ class Application():
                 tmp_unit_info.append(ttk.Label(self._tab2, text=lab))
 
             for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
-                sx = 1.05 if idx != len(tmp_unit_info)-1 else 1.02
-                lab.place(relx=types_start + idx * geo_dx*sx,rely=ent_geo_y)
+                lab.place(relx=hor_start + idx * delta_x, rely=ent_geo_y)
                 self._unit_informations_dimensions.append(lab)
 
             self._unit_informations_dimensions.append(self._lab_shell_ring_frame)
             if self._new_shell_exclude_ring_frame.get():
-                self._shell_exclude_ring_frame.place(relx=0.005, rely=ent_geo_y + delta_y*1.2, relwidth=0.18)
+                self._shell_exclude_ring_frame.place(relx=0.005, rely=ent_geo_y + delta_y, relwidth=0.18)
                 self._unit_informations_dimensions.append(self._shell_exclude_ring_frame)
 
-            ent_geo_y += 0.3 * delta_y
+            ent_geo_y += delta_y
 
         if not flat_panel:
             # Other data
@@ -1701,48 +1716,48 @@ class Application():
             other_dy = 1.25
             other_x = 5.8
             other_text_shift = 2.5
-            self._lab_shell_limit_state.place(relx=types_start,
+            self._lab_shell_limit_state.place(relx=hor_start,
                                              rely=ent_geo_y + delta_y*2.2)
-            self._ent_shell_uls_or_als.place(relx=types_start+ 1.6  * geo_dx,
+            self._ent_shell_uls_or_als.place(relx=hor_start+ 1.6  * delta_x,
                                              rely=ent_geo_y + delta_y*2.2,
                                              relwidth=0.05, relheight = 0.025)
 
-            self._lab_yield.place(relx=types_start + 4  * geo_dx,
+            self._lab_yield.place(relx=hor_start + 4  * delta_x,
                                              rely=ent_geo_y + delta_y*2.2)
-            self._ent_shell_yield.place(relx=types_start+ 5.5  * geo_dx,
+            self._ent_shell_yield.place(relx=hor_start+ 5.5  * delta_x,
                                              rely=ent_geo_y + delta_y*2.2, relwidth=0.02)
             other_count+= 1
             if ring_stf:
 
                 deduct = delta_y if all([long_stf, ring_stf, ring_frame]) else 0
-                self._lab_shell_fab_stf.place(relx=types_start+ 6.4  * geo_dx - geo_dx*other_text_shift,
+                self._lab_shell_fab_stf.place(relx=hor_start+ 6.4  * delta_x - delta_x*other_text_shift,
                                                    rely=ent_geo_y + delta_y*other_count*other_dy-deduct*0.6)
-                self._ent_shell_fab_ring_stf.place(relx=types_start+ 6.5  * geo_dx,
+                self._ent_shell_fab_ring_stf.place(relx=hor_start+ 6.5  * delta_x,
                                                    rely=ent_geo_y + delta_y*other_count*other_dy-deduct, relwidth=0.07)
                 other_count += 1
             if ring_frame:
                 deduct = delta_y if all([long_stf, ring_stf, ring_frame]) else 0
-                self._lab_shell_fab_frame.place(relx=types_start+ 6.4  * geo_dx - geo_dx*other_text_shift,
+                self._lab_shell_fab_frame.place(relx=hor_start+ 6.4  * delta_x - delta_x*other_text_shift,
                                                    rely=ent_geo_y + delta_y*other_count*other_dy-deduct*0.6)
-                self._ent_shell_fab_ring_frame.place(relx=types_start+ 6.5  * geo_dx,
+                self._ent_shell_fab_ring_frame.place(relx=hor_start+ 6.5  * delta_x,
                                                      rely=ent_geo_y + delta_y*other_count*other_dy-deduct, relwidth=0.07)
                 other_count += 1
 
             if self._shell_geometries_map[self._new_calculation_domain.get()] in [1,2]: # TODO check end cap pressure
                 other_count += 1
-                self._lab_shell_en_cap_pressure.place(relx=types_start+ 5.5  * geo_dx- geo_dx*other_text_shift,
+                self._lab_shell_en_cap_pressure.place(relx=hor_start+ 5.5  * delta_x- delta_x*other_text_shift,
                                                                 rely= ent_geo_y + delta_y*other_count*other_dy,
                                                                 relwidth=0.09)
-                self._ent_shell_end_cap_pressure_included.place(relx=types_start+ other_x  * geo_dx,
+                self._ent_shell_end_cap_pressure_included.place(relx=hor_start+ other_x  * delta_x,
                                                                 rely= ent_geo_y + delta_y*other_count*other_dy,
                                                                 relwidth=0.09)
 
             # Load data
             ent_geo_y += 3.3 * delta_y
-            #self._lab_shell_loads.place(relx=types_start, rely=ent_geo_y - delta_y*1.5)
-            self._ent_shell_stress_input.place(relx=types_start, rely=ent_geo_y)
+            #self._lab_shell_loads.place(relx=hor_start, rely=ent_geo_y - delta_y*1.5)
+            self._ent_shell_stress_input.place(relx=hor_start, rely=ent_geo_y)
             if 'shell' in self._new_calculation_domain.get():
-                self._ent_shell_force_input.place(relx=types_start + 2 * geo_dx, rely=ent_geo_y)
+                self._ent_shell_force_input.place(relx=hor_start + 2 * delta_x, rely=ent_geo_y)
             else:
                 self._new_shell_stress_or_force.set(2)
 
@@ -1765,15 +1780,15 @@ class Application():
              for val in lab_to_use[1]]
 
             for idx,lab in enumerate(tmp_unit_info):
-                lab.place(relx=types_start, rely=ent_geo_y + (idx+1)*delta_y)
+                lab.place(relx=hor_start, rely=ent_geo_y + (idx+1)*delta_y)
                 self._unit_informations_dimensions.append(lab)
 
             for idx, entry in enumerate(to_use):
-                entry.place(relx=types_start + 1.5*delta_x,
+                entry.place(relx=hor_start + 1.5*delta_x,
                             rely=ent_geo_y + (idx+1)*delta_y, relwidth=geo_ent_width)
 
             for idx, lab in enumerate(tmp_unit_info_unit):
-                lab.place(relx=types_start + 2.5*delta_x,
+                lab.place(relx=hor_start + 2.5*delta_x,
                           rely=ent_geo_y + (idx+1)*delta_y)
                 self._unit_informations_dimensions.append(lab)
 
@@ -1957,12 +1972,19 @@ class Application():
 
     def trace_puls_up_or_sp(self, event = None):
         if self._new_puls_sp_or_up.get() == 'UP':
-            delta_y = 0.022
-            delta_x = 0.026041667
-            prop_vert_start = 0.29
-            types_start = 0.005208333
-            self._ent_puls_up_boundary.place(relx=types_start + 5.05 * delta_x, rely=prop_vert_start + 11.4 * delta_y,
-                                         relwidth=0.02)
+            vert_start = 0.1
+            hor_start = 0.02
+            delta_y = 0.04
+            delta_x = 0.13
+            ent_relx = hor_start + 6 * delta_x
+            geo_ent_width = 0.05
+            ent_geo_y = vert_start
+            opt_width = 0.2
+            shift_x = delta_x * 4
+            lab_place = delta_y * 13
+
+            self._ent_puls_up_boundary.place(relx=hor_start + shift_x, rely=vert_start + lab_place+ 2*delta_y,
+                                        relwidth=opt_width)
         else:
             self._ent_puls_up_boundary.place_forget()
 
