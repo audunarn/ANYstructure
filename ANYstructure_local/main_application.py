@@ -1197,7 +1197,7 @@ class Application():
 
         ttk.Button(self._main_fr, text="Set compartment\n""properties.",command = self.update_tank,
                   style = "Bold.TButton")\
-            .place(relx=ent_x+delta_x*3, rely=load_vert_start + delta_y * 6.5, relwidth = 0.08)
+            .place(relx=0.175, rely=load_vert_start + delta_y * 3.3, relwidth = 0.08)
 
         ttk.Button(self._main_fr, text="Delete all tanks", command=self.delete_all_tanks,
                   style = "Bold.TButton").place(relx=ent_x+delta_x*3, rely=load_vert_start + delta_y * 8.5,
@@ -1224,7 +1224,7 @@ class Application():
                                    width=int(ent_width * 1),
                                     )
         
-        comp_dx = 0.03
+        comp_dx = 0.032
         comp_dy = 0.025
         comp_ent_x = 0.12
         comp_ent_y = 0.7
@@ -1233,20 +1233,16 @@ class Application():
         ttk.Label(self._main_fr, text='Tank content :', font = self._text_size['Text 8'], )\
             .place(relx=comp_ent_x-2*comp_dx, rely=comp_ent_y + comp_dy * 4.5)
         self._ent_content_type.place(relx= comp_ent_x+0.35*comp_dx, rely=comp_ent_y + comp_dy * 4.5)
-        ttk.Label(self._main_fr, text='Tank density :', font = self._text_size['Text 8'], )\
+        ttk.Label(self._main_fr, text='Tank density [kg/m^3]:', font = self._text_size['Text 8'], )\
             .place(relx=comp_ent_x-2*comp_dx, rely=comp_ent_y + comp_dy * 6)
         self._ent_density.place(relx=comp_ent_x+0.4*comp_dx, rely=comp_ent_y + comp_dy * 6)
-        ttk.Label(self._main_fr,text='[kg/m^3]', font = self._text_size['Text 8'], )\
-            .place(relx= comp_ent_x+comp_dx*1.8, rely=comp_ent_y + comp_dy * 6)
-        ttk.Label(self._main_fr, text='Overpressure :', font = self._text_size['Text 8'], )\
+        ttk.Label(self._main_fr, text='Overpressure [Pa]:', font = self._text_size['Text 8'], )\
             .place(relx=comp_ent_x-2*comp_dx, rely=comp_ent_y + comp_dy * 7)
         self._ent_overpressure.place(relx=comp_ent_x+0.4*comp_dx, rely=comp_ent_y + comp_dy * 7)
-        ttk.Label(self._main_fr,text='[Pa]', font = self._text_size['Text 8'], )\
-            .place(relx= comp_ent_x+comp_dx*1.8, rely=comp_ent_y + comp_dy * 7)
-        ttk.Label(self._main_fr, text='Max elevation :', font = self._text_size['Text 8'], )\
+        ttk.Label(self._main_fr, text='Max elevation [m]:', font = self._text_size['Text 8'], )\
             .place(relx=comp_ent_x-2*comp_dx, rely=comp_ent_y + comp_dy * 8)
         self._ent_max_el.place(relx=comp_ent_x+0.4*comp_dx, rely=comp_ent_y + comp_dy * 8)
-        ttk.Label(self._main_fr, text='Min elevation :', font = self._text_size['Text 8'], )\
+        ttk.Label(self._main_fr, text='Min elevation [m]:', font = self._text_size['Text 8'], )\
             .place(relx=comp_ent_x-2*comp_dx, rely=comp_ent_y + comp_dy * 9)
         self._ent_min_el.place(relx=comp_ent_x+0.4*comp_dx, rely=comp_ent_y + comp_dy * 9)
         self._tank_acc_label = ttk.Label(self._main_fr, text = 'Acceleration [m/s^2]: ',
@@ -1266,7 +1262,7 @@ class Application():
 
         self._ent_shift_hor.bind('<FocusOut>', self.trace_shift_change)
         self._ent_shift_ver = ttk.Entry(self._main_fr, textvariable = self._new_shift_viz_coord_ver,
-                                       width = int(ent_width * 0.6), 
+                                       width = int(ent_width * 0.6),
                                        )
         self._ent_shift_ver.bind('<FocusOut>', self.trace_shift_change)
         #self._ent_shift_ver.trace('w', self.trace_shift_change)
@@ -1296,7 +1292,7 @@ class Application():
         show_compartment = ttk.Button(self._main_fr, text='Display current\n compartments',
                                      command=self.grid_display_tanks,
                                   style = "Bold.TButton")
-        show_compartment.place(relx=ent_x+delta_x*3, rely=load_vert_start + delta_y * 4.5, relwidth = 0.08)
+        show_compartment.place(relx=0.175, rely=load_vert_start + delta_y * 4.5, relwidth = 0.08)
 
         try:
             img_file_name = 'img_ext_pressure_button.gif'
