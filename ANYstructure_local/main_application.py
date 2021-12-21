@@ -47,8 +47,6 @@ class Application():
         parent.protocol("WM_DELETE_WINDOW", self.close_main_window)
         parent.bind("<Configure>", self.resize)
 
-
-
         self._root_dir = os.path.dirname(os.path.abspath(__file__))
         # Main frame for the application
         self._main_fr = ttk.Frame(parent)
@@ -98,8 +96,6 @@ class Application():
         self._button_fg_color = 'black'
         ''' Setting the style of ttk'''
         #
-        # self._style = ThemedStyle(root)
-        # self._style.theme_use('arc')
         self._style = ttk.Style(parent)
         self._style.theme_use('vista')
         self._style.configure("Bold.TButton", font=('Sans', '10', 'bold'))
