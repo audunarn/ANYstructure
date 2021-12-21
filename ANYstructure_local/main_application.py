@@ -384,6 +384,12 @@ class Application():
         ttk.Button(self._tab1, text='Move line', command=self.move_line,style = "Bold.TButton")\
             .place(relx=ent_x + 2 * delta_x,rely=point_start+4*delta_y, relwidth = 0.3)
 
+        self._new_draw_point_name = tk.BooleanVar()
+        self._new_draw_point_name.set(False)
+        ttk.Label(self._tab1, text='Show point names in GUI', font="Text 9")\
+            .place(relx=point_x_start, rely=point_start+3*delta_y)
+        ttk.Checkbutton(self._tab1, variable = self._new_draw_point_name, command = self.on_color_code_check)\
+            .place(relx=ent_x, rely=point_start+3*delta_y)
 
         # --- line input/output ---
         self._new_line_p1 = tk.IntVar()
@@ -400,8 +406,6 @@ class Application():
         self._new_colorcode_plates.set(False)
         self._new_colorcode_utilization = tk.BooleanVar()
         self._new_colorcode_utilization.set(False)
-        self._new_draw_point_name = tk.BooleanVar()
-        self._new_draw_point_name.set(False)
         self._new_label_color_coding = tk.BooleanVar()
         self._new_label_color_coding.set(False)
         self._new_line_name = tk.BooleanVar()
@@ -448,6 +452,10 @@ class Application():
         self._new_content_type.set('ballast')
         self._new_panel_or_shell = tk.StringVar()
         self._new_panel_or_shell.set('panel')
+        self._new_shift_viz_coord_ver = tk.DoubleVar()
+        self._new_shift_viz_coord_ver.set(0)
+        self._new_shift_viz_coord_hor = tk.DoubleVar()
+        self._new_shift_viz_coord_hor.set(0)
 
         line_start, line_x = point_start+0.22, 0.0055
         ttk.Label(self._tab1, text='Input line from "point number" to "point number"',
@@ -458,8 +466,13 @@ class Application():
         ttk.Label(self._tab1, text='Line to point:',font="Text 9", )\
             .place(relx=line_x, rely=line_start+2*delta_y)
 
+        ttk.Label(self._tab1, text='Show line names in GUI', font="Text 9")\
+            .place(relx=line_x, rely=line_start+3*delta_y)
+        ttk.Checkbutton(self._tab1, variable = self._new_line_name, command = self.on_color_code_check)\
+            .place(relx=ent_x, rely=line_start+3*delta_y)
+
         ttk.Checkbutton(self._main_fr, variable = self._new_shortcut_backdrop, command = self.update_frame)\
-            .place(relx = 0.26, y=0)
+            .place(relx = 0.66, y=0)
         ttk.Label(self._main_fr, text='Color coding',font="Text 9", )\
             .place(relx = 0.26, y=20)
         ttk.Checkbutton(self._main_fr, variable = self._new_colorcode_beams, command = self.on_color_code_check)\
@@ -480,7 +493,7 @@ class Application():
         self._chk_cc_spacing = ttk.Checkbutton(self._tab2, variable = self._new_colorcode_spacing,
                                               command = self.on_color_code_check)
 
-        ttk.Label(self._main_fr, text='Check to see avaliable shortcuts', font="Text 9").place(relx = 0.27, y=0)
+        ttk.Label(self._main_fr, text='Check to see avaliable shortcuts', font="Text 9").place(relx = 0.67, y=0)
         ttk.Label(self._main_fr, text='Beam prop.', font="Text 9").place(relx = 0.27, y=40)
         ttk.Label(self._main_fr, text='Plate thk.', font="Text 9").place(relx = 0.27, y=60)
         ttk.Label(self._main_fr, text='Pressure', font="Text 9").place(relx = 0.27, y=80)
@@ -500,7 +513,7 @@ class Application():
         # --- delete points and lines ---
         self._new_delete_line = tk.IntVar()
         self._new_delete_point = tk.IntVar()
-        del_start, del_x = line_start + 0.15,0.005208333
+        del_start, del_x = line_start + 0.2,0.005208333
         ttk.Label(self._tab1, text='Delete lines and points (or left/right click and use "Delete key")',
                  font=self._text_size['Text 9 bold'], )\
             .place(rely=del_start - 0.02,relx=del_x, anchor = tk.NW)
@@ -529,6 +542,37 @@ class Application():
         ttk.Button(self._tab1, text='Delete point',command=self.delete_point,style = "Bold.TButton"
                                           ).place(relx=ent_x+2*delta_x, rely=del_start + delta_y*3,
                                                                                      relwidth = 0.3)
+        
+        # Shifing of coordinate display
+        shift_x = del_x
+        shift_y = del_start+0.2
+        ttk.Label(self._tab1, text='Shift coordinate labeling [mm]: ', font = self._text_size['Text 8 bold'])\
+            .place(relx=shift_x, rely=shift_y + delta_y*0)
+        ttk.Label(self._tab1, text='Used if you want a different origin of the repoted coordinates. \n'
+                                   'Does not affect loads.', font = self._text_size['Text 8'])\
+            .place(relx=shift_x, rely=shift_y + delta_y*0.5)
+
+        ttk.Label(self._tab1, text='y shift', font = self._text_size['Text 8'],
+                 ).place(relx=shift_x, rely=shift_y + delta_y * 2)
+        ttk.Label(self._tab1, text='x shift ', font = self._text_size['Text 8'],
+                 ).place(relx=shift_x, rely=shift_y + delta_y * 3)
+
+        self._ent_shift_hor = ttk.Entry(self._tab1, textvariable = self._new_shift_viz_coord_hor,
+                                       width = ent_width )
+
+        self._ent_shift_hor.bind('<FocusOut>', self.trace_shift_change)
+        self._ent_shift_ver = ttk.Entry(self._tab1, textvariable = self._new_shift_viz_coord_ver,
+                                       width = ent_width,
+                                       )
+        self._ent_shift_ver.bind('<FocusOut>', self.trace_shift_change)
+        #self._ent_shift_ver.trace('w', self.trace_shift_change)
+        self._ent_shift_hor.place(relx=ent_x, rely=shift_y + delta_y * 2)
+        self._ent_shift_ver.place(relx=ent_x, rely=shift_y + delta_y * 3)
+
+        ttk.Label(self._tab1, text='Use shifted coordinates', font="Text 9")\
+            .place(relx=shift_x, rely=shift_y + delta_y * 4)
+        ttk.Checkbutton(self._tab1, variable = self._new_shifted_coords, command = self.update_frame)\
+            .place(relx=ent_x, rely=shift_y + delta_y * 4)
 
         # --- structure type information ---
         prop_vert_start = 0.29
@@ -560,26 +604,18 @@ class Application():
                                                                'INTERNAL_LOW_STRESS_WT ')
 
 
-        ttk.Label(self._main_fr, text='Show line names in GUI', font="Text 9")\
-            .place(relx=0.38, rely=0)
-        ttk.Label(self._main_fr, text='Show point names in GUI', font="Text 9")\
-            .place(relx=0.47, rely=0)
+
+
         ttk.Label(self._main_fr, text='Label color code', font="Text 9")\
-            .place(relx=0.565, rely=0)
-        ttk.Label(self._main_fr, text='Use shifted coordinates', font="Text 9")\
-            .place(relx=0.635, rely=0)
+            .place(relx=0.28, rely=0)
         ttk.Label(self._main_fr, text='Show COG/COB', font="Text 9")\
-            .place(relx=0.733, rely=0)
-        ttk.Checkbutton(self._main_fr, variable = self._new_line_name, command = self.on_color_code_check)\
-            .place(relx=0.366, rely=0)
-        ttk.Checkbutton(self._main_fr, variable = self._new_draw_point_name, command = self.on_color_code_check)\
-            .place(relx=0.455, rely=0)
+            .place(relx=0.175, rely=0.91)
+
         ttk.Checkbutton(self._main_fr, variable = self._new_label_color_coding, command = self.on_color_code_check)\
-            .place(relx=0.55, rely=0)
-        ttk.Checkbutton(self._main_fr, variable = self._new_shifted_coords, command = self.update_frame)\
-            .place(relx=0.62, rely=0)
+            .place(relx=0.26, rely=0)
+
         ttk.Checkbutton(self._main_fr, variable = self._new_show_cog, command = self.update_frame)\
-            .place(relx=0.72, rely=0)
+            .place(relx=0.24, rely=0.91)
 
         vert_start = 0.1
         hor_start = 0.02
@@ -674,8 +710,7 @@ class Application():
         self._new_puls_stf_end_type = tk.StringVar()
         self._new_puls_sp_or_up = tk.StringVar()
         self._new_puls_up_boundary = tk.StringVar()
-        self._new_shift_viz_coord_hor = tk.DoubleVar()
-        self._new_shift_viz_coord_ver = tk.DoubleVar()
+
 
         # Setting default values to tkinter variables
         self._new_material.set(355)
@@ -695,8 +730,8 @@ class Application():
         self._new_stf_kps.set(1)
         self._new_plate_kpp.set(1)
         self._new_material_factor.set(1.15)
-        self._new_shift_viz_coord_hor.set(0)
-        self._new_shift_viz_coord_ver.set(0)
+
+
 
         self._new_overpresure = tk.DoubleVar()
         self._new_overpresure.set(25000)
@@ -1249,25 +1284,6 @@ class Application():
                                         font = self._text_size['Text 8'], )
         self._tank_acc_label.place(relx=comp_ent_x-2*comp_dx, rely=comp_ent_y + comp_dy * 10)
 
-        # Shifing of coordinate display
-        ttk.Label(self._main_fr, text='Shift coordinate labeling [mm]:', font = self._text_size['Text 8'],
-                 ).place(relx=types_start, rely=load_vert_start + delta_y * 12.5)
-        ttk.Label(self._main_fr, text='y - ', font = self._text_size['Text 8'],
-                 ).place(relx=types_start+ delta_x*5.5, rely=load_vert_start + delta_y * 12.5)
-        ttk.Label(self._main_fr, text='x - ', font = self._text_size['Text 8'],
-                 ).place(relx=types_start+ delta_x*4, rely=load_vert_start + delta_y * 12.5)
-
-        self._ent_shift_hor = ttk.Entry(self._main_fr, textvariable = self._new_shift_viz_coord_hor,
-                                       width = int(ent_width * 0.6), )
-
-        self._ent_shift_hor.bind('<FocusOut>', self.trace_shift_change)
-        self._ent_shift_ver = ttk.Entry(self._main_fr, textvariable = self._new_shift_viz_coord_ver,
-                                       width = int(ent_width * 0.6),
-                                       )
-        self._ent_shift_ver.bind('<FocusOut>', self.trace_shift_change)
-        #self._ent_shift_ver.trace('w', self.trace_shift_change)
-        self._ent_shift_hor.place(relx=types_start+delta_x*4.5, rely=load_vert_start + delta_y * 12.5)
-        self._ent_shift_ver.place(relx=types_start+ delta_x*6, rely=load_vert_start + delta_y * 12.5)
 
         # --- button to create compartments and define external pressures ---
 
@@ -1333,18 +1349,19 @@ class Application():
         self._new_dyn_acc_ballast = tk.DoubleVar()
         self._new_static_acc = tk.DoubleVar()
         self._new_static_acc.set(9.81), self._new_dyn_acc_loaded.set(0), self._new_dyn_acc_ballast.set(0)
+        shift_x_acc = 0.08
         ttk.Entry(self._main_fr, textvariable = self._new_static_acc,width = 10,
                  )\
-            .place(relx=lc_x + delta_x*4.2, rely=lc_y - 4 * lc_y_delta)
+            .place(relx=lc_x+shift_x_acc, rely=lc_y - 4 * lc_y_delta)
         ttk.Entry(self._main_fr, textvariable = self._new_dyn_acc_loaded,width = 10,
                  )\
-            .place(relx=lc_x + delta_x*4.2, rely=lc_y - 3 * lc_y_delta)
+            .place(relx=lc_x+shift_x_acc , rely=lc_y - 3 * lc_y_delta)
         ttk.Entry(self._main_fr, textvariable = self._new_dyn_acc_ballast,width = 10,
                  )\
-            .place(relx=lc_x + delta_x*4.2, rely=lc_y - 2 * lc_y_delta)
+            .place(relx=lc_x+shift_x_acc , rely=lc_y - 2 * lc_y_delta)
         ttk.Button(self._main_fr, text = 'Set\naccelerations', command = self.create_accelerations,
                    style = "Bold.TButton")\
-            .place(relx=lc_x + delta_x*6, rely=lc_y - 3 * lc_y_delta)
+            .place(relx=lc_x +shift_x_acc*1.5, rely=lc_y - 4 * lc_y_delta)
 
         # --- checkbuttons and labels ---
         self._dnv_a_chk,self._dnv_b_chk  = tk.IntVar(),tk.IntVar()
@@ -1417,7 +1434,7 @@ class Application():
             self._opt_button_mult = tk.Button(self._main_fr,image=photo, command = self.on_optimize_multiple,
                                         bg = self._button_bg_color, fg = self._button_fg_color)
             self._opt_button_mult.image = photo
-            self._opt_button_mult.place(relx=lc_x+delta_x*3.8, rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.065)
+            self._opt_button_mult.place(relx=lc_x+0.1, rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.065)
         except TclError:
             self._opt_button_mult= tk.Button(self._main_fr, text='MultiOpt', command=self.on_optimize_multiple,
                       bg = self._button_bg_color, fg = self._button_fg_color)
@@ -1441,7 +1458,7 @@ class Application():
 
         self._opt_button_span = ttk.Button(self._main_fr, text='SPAN', command=self.on_geometry_optimize,
                                            style = "Bold.TButton")
-        self._opt_button_span.place(relx=lc_x + delta_x * 6.4,rely=lc_y - 6 * lc_y_delta, relheight = 0.04,
+        self._opt_button_span.place(relx=lc_x + 0.167,rely=lc_y - 6 * lc_y_delta, relheight = 0.04,
                                     relwidth = 0.04)
         self._optimization_buttons = {'panel': [self._opt_button, self._opt_button_mult, self._opt_button_span],
                                    'panel place': [[lc_x, lc_y - 6 * lc_y_delta, 0.04, 0.098],
@@ -1452,21 +1469,21 @@ class Application():
 
         # Load information button
         ttk.Button(self._main_fr, text='Load info', command=self.button_load_info_click,style = "Bold.TButton")\
-           .place(relx=lc_x + delta_x * 6.4,rely=lc_y + delta_y*19.5, relwidth = 0.04)
+           .place(relx=0.78,rely=0.7, relwidth = 0.04)
 
         # Load information button
         ttk.Button(self._main_fr, text='Load factors', command=self.on_open_load_factor_window,style = "Bold.TButton")\
-           .place(relx=lc_x + delta_x * 4.4,rely=lc_y + delta_y*19.5, relwidth = 0.05)
+           .place(relx=0.8225,rely=0.7, relwidth = 0.05)
 
         # PULS result information
         self._puls_information_button = ttk.Button(self._main_fr, text='PULS results for line',
                                                   command=self.on_puls_results_for_line,style = "Bold.TButton")
-        self._puls_information_button.place(relx=lc_x + delta_x * 0,rely=lc_y + delta_y*19.5, relwidth = 0.075)
+        self._puls_information_button.place(relx=0.875,rely=0.7, relwidth = 0.075)
 
         # Wight developement plot
         self._weight_button = ttk.Button(self._main_fr, text='Weights',
                                                   command=self.on_plot_cog_dev,style = "Bold.TButton")
-        self._weight_button.place(relx=lc_x + delta_x * 2.9,rely=lc_y + delta_y*19.5, relwidth = 0.038)
+        self._weight_button.place(relx=0.9525,rely=0.7, relwidth = 0.038)
 
         self.update_frame()
 
