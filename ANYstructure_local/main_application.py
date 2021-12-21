@@ -71,9 +71,11 @@ class Application():
         self._tabControl = ttk.Notebook(root)
         self._tab1 = ttk.Frame(self._tabControl, relief = 'flat')
         self._tab2 = ttk.Frame(self._tabControl, relief = 'flat')
+        self._tab3 = ttk.Frame(self._tabControl, relief='flat')
 
         self._tabControl.add(self._tab1, text='Model points and lines')
         self._tabControl.add(self._tab2, text='Assign geometry to lines')
+        self._tabControl.add(self._tab2, text='Information')
         self._tabControl.place(relwidth=0.2585, relheight = 0.7225)
         self._tabControl.select(self._tab2)
 
@@ -150,6 +152,7 @@ class Application():
         sub_colors.add_command(label = 'Light', command = lambda id = "light": self.set_colors(id))
         sub_colors.add_command(label='Grey', command = lambda id = "grey": self.set_colors(id))
         sub_colors.add_command(label='Dark', command = lambda id = "dark": self.set_colors(id))
+        sub_colors.add_command(label='Pink', command=lambda id="pink": self.set_colors(id))
 
         #base_mult = 1.2
         #base_canvas_dim = [int(1000 * base_mult),int(720*base_mult)]  #do not modify this, sets the "orignal" canvas dimensions.
@@ -1506,6 +1509,11 @@ class Application():
             self._general_color = '#F0F0F0'
             self._color_text = 'black'
             ent_bg = '#FFFFFF'
+        elif theme == 'pink':
+            self._general_color = '#FFD3F6'
+            self._color_text = 'black'
+            ent_bg = 'white'
+
 
         self._style.configure("Bold.TButton", font=('Sans', '10', 'bold'))
         self._style.configure('TCheckbutton', background=self._general_color)
@@ -1525,7 +1533,6 @@ class Application():
         self._frame_viz_ver.configure(bg=self._color_text)
 
         self.update_frame()
-
 
     def gui_structural_properties(self, flat_panel = True, shell = False, long_stf = False, ring_stf = False,
                                   ring_frame = False, force_input = False, stress_input = False):
