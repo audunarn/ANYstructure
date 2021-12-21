@@ -959,28 +959,23 @@ class Application():
 
 
         self._shell_gui_items = list()
-        self._lab_shell =  ttk.Label(self._tab2, text='Shell and curved plate input [mm]',
-                                     )
-        self._ent_shell_plate_thk = ttk.Entry(self._tab2, textvariable=self._new_shell_thk, 
-                                       )
+        self._lab_shell =  ttk.Label(self._tab2, text='Shell and curved plate input [mm]')
+        self._ent_shell_plate_thk = ttk.Entry(self._tab2, textvariable=self._new_shell_thk)
 
-        self._ent_shell_radius = ttk.Entry(self._tab2, textvariable=self._new_shell_radius, 
-                                       )
-        self._ent_shell_dist_rings = ttk.Entry(self._tab2, textvariable=self._new_shell_dist_rings,
-                                              
-                                         )
-        self._ent_shell_length = ttk.Entry(self._tab2, textvariable=self._new_shell_length,
-                                      width = int(5*1), 
-                                       )
+        self._ent_shell_radius = ttk.Entry(self._tab2, textvariable=self._new_shell_radius)
+        self._ent_shell_dist_rings = ttk.Entry(self._tab2, textvariable=self._new_shell_dist_rings)
+        self._ent_shell_length = ttk.Entry(self._tab2, textvariable=self._new_shell_length,width = int(5*1))
         self._ent_shell_tot_length = ttk.Entry(self._tab2, textvariable=self._new_shell_tot_length,
                                               
                                        )
         self._ent_shell_k_factor= ttk.Entry(self._tab2, textvariable=self._new_shell_k_factor, 
                                       )
+        self._ent_shell_material_factor= ttk.Entry(self._tab2, textvariable=self._new_shell_mat_factor)
 
         self._shell_gui_items = [self._lab_shell, self._ent_shell_plate_thk, self._ent_shell_radius,
                                  self._ent_shell_dist_rings,
-                                 self._ent_shell_length,self._ent_shell_tot_length,self._ent_shell_k_factor]
+                                 self._ent_shell_length,self._ent_shell_tot_length,self._ent_shell_k_factor,
+                                 self._ent_shell_material_factor]
 
         '''
         Shell, lognitudinal stiffeners
@@ -1494,8 +1489,6 @@ class Application():
 
         self.set_colors('default')  # Setting colors theme
 
-
-
     def set_colors(self, theme):
         if theme == 'light':
             self._general_color = 'alice blue'
@@ -1532,8 +1525,6 @@ class Application():
         self._frame_viz_ver.configure(bg=self._color_text)
 
         self.update_frame()
-
-
 
 
     def gui_structural_properties(self, flat_panel = True, shell = False, long_stf = False, ring_stf = False,
@@ -1692,7 +1683,8 @@ class Application():
             self._lab_shell.place(relx=hor_start, rely=ent_geo_y+ delta_y)
 
             tmp_unit_info = list()
-            for lab in ['Thickness, t', 'Radius, r', 'Length, l', 'Shell len., L', 'Tot len., Lc', 'k-factor, k [-]']:
+            for lab in ['Thickness, t', 'Radius, r', 'Length, l', 'Shell len., L', 'Tot len., Lc', 'k-factor, k',
+                        'Material factor']:
                 tmp_unit_info.append(ttk.Label(self._tab2, text=lab))
 
             for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
@@ -2151,27 +2143,6 @@ class Application():
                 dict = self._line_to_struc[self._active_line][1].get_structure_prop()
                 dict[var_to_set][0] = set_var
                 self.new_structure(toggle_multi=dict, suspend_recalc=True if (idx+1) != no_of_lines else False)
-
-    # def slider_buckling_used(self, event):
-    #     if self._new_buckling_method.get() == 'DNV-RP-C201 - prescriptive':
-    #         self._buckling_slider.set(1)
-    #     elif self._new_buckling_method.get() == 'DNV PULS':
-    #         self._buckling_slider.set(2)
-    #     elif self._new_buckling_method.get() == 'ML-CL (PULS based)':
-    #         self._buckling_slider.set(3)
-    #
-    #     if self._buckling_slider.get() == 1:
-    #         self._new_buckling_slider.set(1)
-    #         #self._ent_puls_uf.config(bg = 'white')
-    #     elif self._buckling_slider.get() == 2:
-    #         self._new_buckling_slider.set(2)
-    #         #self._ent_puls_uf.config(bg='white')
-    #     elif self._buckling_slider.get() == 3:
-    #         self._new_buckling_slider.set(3)
-    #         #self._ent_puls_uf.config(bg = 'red')
-    #     else:
-    #         pass
-    #     self.update_frame()
 
     def gui_load_combinations(self,event):
         '''
@@ -3744,8 +3715,7 @@ class Application():
                 count = 0
                 for load, data in self._load_dict.items():
                     if self._active_line in data[1]:
-                        self._prop_canvas.create_text([stl_x+deltax, stl_y+count], text = load,fill = self._color_text
-                                                     )
+                        self._prop_canvas.create_text([stl_x+deltax, stl_y+count], text = load,fill = self._color_text)
                         count += 10
 
                 # printing the tanks applied to this line
@@ -3762,7 +3732,8 @@ class Application():
                         count += 10
             elif self._line_is_active and self._line_to_struc[self._active_line][5] is not None:
                 self.draw_cylinder(canvas = self._prop_canvas,CylObj = self._line_to_struc[self._active_line][5],
-                                   height = 200, radius = 150, start_x_cyl = 500,start_y_cyl = 20)
+                                   height = 200, radius = 150, start_x_cyl = 500,start_y_cyl = 20,
+                                   text_color= self._color_text)
 
         else:
             pass
@@ -3770,14 +3741,15 @@ class Application():
     @staticmethod
     def draw_cylinder(text_size = None, canvas = None, CylObj: CylinderAndCurvedPlate = None,
                       height = 150, radius = 150,
-                      start_x_cyl = 500,start_y_cyl = 20, acceptance_color = False, text_x = 180, text_y = 130):
+                      start_x_cyl = 500,start_y_cyl = 20, acceptance_color = False, text_x = 180, text_y = 130,
+                      text_color = 'black'):
 
         canvas_width = canvas.winfo_width()
         canvas_height = canvas.winfo_height()
         if text_size == None:
             text_size = 'Verdana 8'
 
-        canvas.create_text([text_x, text_y], text=CylObj, font=text_size)
+        canvas.create_text([text_x, text_y], text=CylObj, font=text_size,fill = text_color)
         # setting the input field to active line properties
         #self.set_selected_variables(self._active_line)
 

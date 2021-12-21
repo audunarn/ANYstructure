@@ -1466,7 +1466,7 @@ class CylinderAndCurvedPlate():
         super(CylinderAndCurvedPlate, self).__init__()
 
         # main_dict = {'sasd': 100, 'smsd': 100, 'tTsd': 50, 'tQsd':10, 'psd': -0.3, 'shsd': 0, 'geometry': 7,
-        #              'material factor': 1.15, 'lT': 0, 'delta0': 0.005, 'fab method ring stf': 1,
+        #              'material factor': self._mat_factor, 'lT': 0, 'delta0': 0.005, 'fab method ring stf': 1,
         #              'fab method ring girder': 2, 'E-module':2.1e11, 'poisson': 0.3, 'yield': 355e6}
 
         #if main_dict['geometry'][0] in [1,3,5,7]: # Need to convert from forces to stresses.
@@ -1964,7 +1964,7 @@ class CylinderAndCurvedPlate():
             else:
                 gammaM = 0.85+0.6*lambda_s
         if self._uls_or_als == 'ALS':
-            gammaM = gammaM/1.15
+            gammaM = gammaM/self._mat_factor
         provide_data['gammaM Unstifffed panel'] = gammaM
         fksd = fks/gammaM
         provide_data['fksd - Unstifffed curved panel'] = fksd
@@ -2106,7 +2106,7 @@ class CylinderAndCurvedPlate():
             else:
                 gammaM = 0.85+0.6*lambda_s
         if self._uls_or_als == 'ALS':
-            gammaM = gammaM/1.15
+            gammaM = gammaM/self._mat_factor
 
         fksd = fks/gammaM
         provide_data['fksd - Unstifffed circular cylinders'] = fksd
@@ -2311,7 +2311,7 @@ class CylinderAndCurvedPlate():
         fk = [0 if lambda_2[idx] == 0 else fr[idx]*(1+my[idx]+lambda_2[idx]-math.sqrt(math.pow(1+my[idx]+lambda_2[idx],2)-
                                                                                  4*lambda_2[idx]))/(2*lambda_2[idx])
               for idx in [0,1]]
-        gammaM = 1.15 # LRFD
+        gammaM = self._mat_factor # LRFD
         fkd = [fk[idx]/gammaM for idx in [0,1]]
         psd = np.array([0.75*fk[idx]*t*rf[idx]*(1+betta[idx])/(gammaM*math.pow(r,2)*(1-0.3/2)) for idx in [0,1]])
 
@@ -2466,7 +2466,7 @@ class CylinderAndCurvedPlate():
             else:
                 gammaM = 0.85+0.6*lambda_s
         if self._uls_or_als == 'ALS':
-            gammaM = gammaM/1.15
+            gammaM = gammaM/self._mat_factor
 
         # Design buckling strength:
         fksd = fks/gammaM
@@ -2666,7 +2666,7 @@ class CylinderAndCurvedPlate():
         #     else:
         #         gammaM = 0.85+0.6*lambda_s
         # if self._uls_or_als == 'ALS':
-        #     gammaM = gammaM/1.15
+        #     gammaM = gammaM/self._mat_factor
 
 
         fakd = fak/gammaM
