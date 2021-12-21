@@ -52,10 +52,25 @@ class Application():
         self._main_fr = ttk.Frame(parent)
         self._main_fr.place(in_=parent, relwidth=1, relheight = 0.99)
 
+        # Definng general colors
+        self._general_color = 'alice blue'#"'azure2'  # Color for backgrounds.
+        self._entry_color = 'white'  # Entry fields color.
+        self._entry_text_color = 'black'  # Entry field tex color
+        self._button_bg_color = 'LightBlue1'
+        self._button_fg_color = 'black'
+        self._color_text = 'white'
+
+        ''' Setting the style of ttk'''
+        #
+        self._style = ttk.Style(parent)
+        self._style.theme_use('vista')
+        self._style.layout("TNotebook", [])
+        self._style.configure("TNotebook", tabmargins=0)
+
         # tabbed frames
         self._tabControl = ttk.Notebook(root)
-        self._tab1 = ttk.Frame(self._tabControl, relief = 'flat', padding = 0, height = 0)
-        self._tab2 = ttk.Frame(self._tabControl, relief = 'flat', padding = 0, height = 0)
+        self._tab1 = ttk.Frame(self._tabControl, relief = 'flat')
+        self._tab2 = ttk.Frame(self._tabControl, relief = 'flat')
 
         self._tabControl.add(self._tab1, text='Model points and lines')
         self._tabControl.add(self._tab2, text='Assign geometry to lines')
@@ -88,16 +103,7 @@ class Application():
                               'Arrows left/right - previous/next line\n' \
                               'Arrows up/down - previous/next point'
 
-        # Definng general colors
-        self._general_color = 'alice blue'#"'azure2'  # Color for backgrounds.
-        self._entry_color = 'white'  # Entry fields color.
-        self._entry_text_color = 'black'  # Entry field tex color
-        self._button_bg_color = 'LightBlue1'
-        self._button_fg_color = 'black'
-        ''' Setting the style of ttk'''
-        #
-        self._style = ttk.Style(parent)
-        self._style.theme_use('vista')
+
 
         ''' END style setting'''
 
@@ -178,25 +184,28 @@ class Application():
 
         # # Creating the various canvas next.
         self._main_canvas = tk.Canvas(self._main_fr,
-                                      background=self._style.lookup('TFrame', 'background'), bd=0, highlightthickness=0, relief='ridge')
+                                      background=self._style.lookup('TFrame', 'background'), bd=0,
+                                      highlightthickness=0, relief='ridge')
         self._prop_canvas = tk.Canvas(self._main_fr,
-                                     background=self._style.lookup('TFrame', 'background'), bd=0, highlightthickness=0, relief='ridge')
+                                     background=self._style.lookup('TFrame', 'background'), bd=0,
+                                      highlightthickness=0, relief='ridge')
         self._result_canvas = tk.Canvas(self._main_fr,
-                                       background=self._style.lookup('TFrame', 'background'), bd=0, highlightthickness=0, relief='ridge')
+                                       background=self._style.lookup('TFrame', 'background'), bd=0,
+                                        highlightthickness=0, relief='ridge')
 
-        self.set_colors('default') # Setting colors theme
+        # These frames are just visual separations in the GUI.
+        frame_horizontal, frame_vertical = 0.73, 0.258
+        self._frame_viz_hor = tk.Frame(self._main_fr, height=3, bg="black", colormap="new")
+        self._frame_viz_hor.place(relx=0, rely=frame_horizontal, relwidth=1)
+        self._frame_viz_ver = tk.Frame(self._main_fr, width=3, bg="black", colormap="new")
+        self._frame_viz_ver.place(relx=frame_vertical,rely=0 * 1, relheight=1)
 
         x_canvas_place = 0.26
         self._main_canvas.place(relx=x_canvas_place, rely=0,relwidth=0.523, relheight = 0.73)
         self._prop_canvas.place(relx=x_canvas_place, rely=0.73, relwidth=0.38, relheight = 0.27)
         self._result_canvas.place(relx=x_canvas_place+0.38, rely=0.73, relwidth=0.36, relheight = 0.27)
 
-        # These frames are just visual separations in the GUI.
-        frame_horizontal, frame_vertical = 0.73, 0.258
-        tk.Frame(self._main_fr, height=3, bg="black", colormap="new")\
-            .place(relx=0, rely=frame_horizontal, relwidth=1)
-        tk.Frame(self._main_fr, width=3, bg="black", colormap="new")\
-            .place(relx=frame_vertical,rely=0 * 1, relheight=1)
+
 
         # Point frame
         self._pt_frame = tk.Frame(self._main_canvas, width=100, height=100, bg="black", relief='raised')
@@ -1483,40 +1492,48 @@ class Application():
                                                   command=self.on_plot_cog_dev,style = "Bold.TButton")
         self._weight_button.place(relx=0.9525,rely=0.7, relwidth = 0.038)
 
-        self.update_frame()
+        self.set_colors('default')  # Setting colors theme
+
+
 
     def set_colors(self, theme):
         if theme == 'light':
             self._general_color = 'alice blue'
-            text_color = 'white'
-            ent_bg = self._general_color
+            self._color_text = 'black'
+            ent_bg = '#FFFFFF'
         elif theme == 'grey':
             self._general_color = 'light grey'
-            text_color = 'white'
-            ent_bg = self._general_color
+            self._color_text = 'black'
+            ent_bg = '#FFFFFF'
         elif theme == 'dark':
-            self._general_color = 'grey'
-            text_color = 'light grey'
-            ent_bg = 'light grey'
+            self._general_color = '#2B2B2B'
+            self._color_text = 'light grey'
+            ent_bg = '#FFFFFF'
         elif theme == 'default':
             self._general_color = '#F0F0F0'
-            text_color = 'white'
-            ent_bg = self._general_color
-
+            self._color_text = 'black'
+            ent_bg = '#FFFFFF'
 
         self._style.configure("Bold.TButton", font=('Sans', '10', 'bold'))
         self._style.configure('TCheckbutton', background=self._general_color)
         self._style.configure('TFrame', background=self._general_color)
-        self._style.configure('TLabel', background=self._general_color)
+        self._style.configure('TLabel', background=self._general_color, foreground = self._color_text)
         self._style.configure('TScale', background=self._general_color)
         self._style.configure('TEntry', background=ent_bg)
         self._style.configure('TOptionMenu', background=ent_bg)
-        self._style.configure("TMenubutton", background=text_color)
+        self._style.configure("TMenubutton", background=ent_bg)
         self._style.configure('TRadiobutton', background=self._general_color, foreground='black')
 
         self._prop_canvas.configure(bg = self._general_color)
         self._main_canvas.configure(bg = self._general_color)
         self._result_canvas.configure(bg = self._general_color)
+
+        self._frame_viz_hor.configure(bg =self._color_text)
+        self._frame_viz_ver.configure(bg=self._color_text)
+
+        self.update_frame()
+
+
 
 
     def gui_structural_properties(self, flat_panel = True, shell = False, long_stf = False, ring_stf = False,
@@ -3021,12 +3038,12 @@ class Application():
         else:
             # Drawing lines at (0, 0)
             self._main_canvas.create_line(self._canvas_draw_origo[0], 0, self._canvas_draw_origo[0], self._canvas_dim[1]+500,
-                                         stipple= 'gray50')
+                                         stipple= 'gray50', fill=self._color_text)
             self._main_canvas.create_line(0, self._canvas_draw_origo[1], self._canvas_dim[0] +500, self._canvas_draw_origo[1],
-                                         stipple='gray50')
+                                         stipple='gray50', fill=self._color_text)
             self._main_canvas.create_text(self._canvas_draw_origo[0] - 30 * 1,
                                           self._canvas_draw_origo[1] + 12 * 1, text='(0,0)',
-                                          font='Text 10')
+                                          font='Text 10', fill = self._color_text)
 
         # Drawing COG and COB
         if self._new_show_cog.get():
@@ -3051,7 +3068,7 @@ class Application():
                 self._main_canvas.create_text(point_coord_x  + 5,
                                               point_coord_y - 14, text='steel COG: x=' + str(round(state['COG'][0], 2)) +
                                                                        ' y=' +str(round(state['COG'][1],2)),
-                                               fill='black')
+                                            fill = self._color_text)
 
             if self._center_of_buoyancy != {}:
                 for draft, cob in self._center_of_buoyancy.items():
@@ -3094,7 +3111,7 @@ class Application():
             self._main_canvas.create_text(self._main_canvas.winfo_width()*0.87, self._main_canvas.winfo_height()*0.16,
                                           text = self._shortcut_text,
                                           font=self._text_size["Text 8"],
-                                          fill = 'black')
+                                          fill = self._color_text)
 
         # drawing the point dictionary
         pt_size = 3
@@ -3106,7 +3123,7 @@ class Application():
             else:
                 x_coord = round(self.get_point_actual_coord(key)[0], 3)
                 y_coord = round(self.get_point_actual_coord(key)[1], 3)
-                coord_color = 'black'
+                coord_color = self._color_text
 
             if self._point_is_active and key == self._active_point :
                 self._main_canvas.create_oval(self.get_point_canvas_coord(key)[0] - pt_size+2,
@@ -3135,7 +3152,7 @@ class Application():
                     #printing 'pt.#'
                     self._main_canvas.create_text(self.get_point_canvas_coord(key)[0] + 15,
                                                  self.get_point_canvas_coord(key)[1] - 10, text='pt.'+str(get_num(key)),
-                                                  font="Text 10")
+                                                  font="Text 10", fill = self._color_text)
                     #printing the coordinates of the point
                     self._main_canvas.create_text(self.get_point_canvas_coord(key)[0]+35,
                                                   self.get_point_canvas_coord(key)[1]+10 ,
@@ -3209,7 +3226,7 @@ class Application():
 
                 if all([line == self._active_line, self._line_is_active]):
                     if line not in self._line_to_struc.keys():
-                        self._main_canvas.create_line(coord1, coord2, width=6, fill='black')
+                        self._main_canvas.create_line(coord1, coord2, width=6, fill=self._color_text)
                     elif self._line_to_struc[line][5] is not None:
                         self._main_canvas.create_line(coord1, coord2, width=10, fill = color, stipple = 'gray50')
                     else:
@@ -3221,14 +3238,15 @@ class Application():
                                                      fill = 'red')
                 else:
                     if line not in self._line_to_struc.keys():
-                        self._main_canvas.create_line(coord1, coord2, width=3, fill = 'black')
+                        self._main_canvas.create_line(coord1, coord2, width=3, ill=self._color_text)
                     elif self._line_to_struc[line][5] is not None:
                         self._main_canvas.create_line(coord1, coord2, width=6, fill = color, stipple = 'gray50')
                     else:
                         self._main_canvas.create_line(coord1, coord2, width=3, fill = color)
                     if self._new_line_name.get():
                         self._main_canvas.create_text(coord1[0]-20 + vector[0] / 2 + 5, coord1[1] + vector[1] / 2+10,
-                                                     text='l.' + str(get_num(line)), font="Text 8", fill = 'black')
+                                                     text='l.' + str(get_num(line)), font="Text 8",
+                                                      fill = self._color_text)
                 if line in self._multiselect_lines:
                     self._main_canvas.create_text(coord1[0] + vector[0] / 2 +5, coord1[1] + vector[1] / 2 -10,
                                                   text=self._new_toggle_var.get(),
@@ -3681,7 +3699,7 @@ class Application():
             if self._line_is_active and self._line_to_struc[self._active_line][5] is None:
                 self._prop_canvas.create_text([canvas_width*0.239726027, canvas_height*0.446096654],
                                              text=self._line_to_struc[self._active_line][0],
-                                             font = self._text_size["Text 9"])
+                                             font = self._text_size["Text 9"], fill = self._color_text)
 
                 # setting the input field to active line properties
                 self.set_selected_variables(self._active_line)
@@ -3703,17 +3721,18 @@ class Application():
                 stf_web_thk = structure_obj.get_web_thk()*thk_mult
                 stf_flange_thk = structure_obj.get_fl_thk()*thk_mult
 
-                self._prop_canvas.create_line(startx,starty,startx+spacing,starty, width = plate_thk)
+                self._prop_canvas.create_line(startx,starty,startx+spacing,starty, width = plate_thk,
+                                              fill = self._color_text)
                 self._prop_canvas.create_line(startx+spacing*0.5,starty,startx+spacing*0.5,starty-stf_web_height,
-                                             width=stf_web_thk )
+                                             width=stf_web_thk, fill = self._color_text )
                 if structure_obj.get_stiffener_type() not in ['L', 'L-bulb']:
                     self._prop_canvas.create_line(startx+spacing*0.5-stf_flange_width/2,starty-stf_web_height,
                                              startx + spacing * 0.5 + stf_flange_width / 2, starty - stf_web_height,
-                                             width=stf_flange_thk)
+                                             width=stf_flange_thk, fill = self._color_text)
                 else:
                     self._prop_canvas.create_line(startx+spacing*0.5-stf_web_thk/2,starty-stf_web_height,
                                              startx + spacing * 0.5 + stf_flange_width , starty - stf_web_height,
-                                             width=stf_flange_thk)
+                                             width=stf_flange_thk, fill = self._color_text)
 
                 # load applied to this line
                 deltax = 160*1
@@ -3721,11 +3740,11 @@ class Application():
                 stl_y = canvas_height*0.63197026
 
                 self._prop_canvas.create_text([stl_x,stl_y], text='Applied static/dynamic loads:',
-                                             font=self._text_size["Text 7 bold"])
+                                             font=self._text_size["Text 7 bold"], fill = self._color_text)
                 count = 0
                 for load, data in self._load_dict.items():
                     if self._active_line in data[1]:
-                        self._prop_canvas.create_text([stl_x+deltax, stl_y+count], text = load,
+                        self._prop_canvas.create_text([stl_x+deltax, stl_y+count], text = load,fill = self._color_text
                                                      )
                         count += 10
 
@@ -3735,11 +3754,11 @@ class Application():
 
                 if len(self._tank_dict) != 0:
                     self._prop_canvas.create_text([stt_x, stt_y], text='Applied compartments: ',
-                                                 font=self._text_size["Text 7 bold"])
+                                                 font=self._text_size["Text 7 bold"], fill = self._color_text)
                     count = 0
                     for comp in self.get_compartments_for_line(self._active_line):
                         self._prop_canvas.create_text([stt_x+deltax, stt_y+count], text = 'Compartment ' + str(comp),
-                                                     font=self._text_size["Text 7"])
+                                                     font=self._text_size["Text 7"], fill = self._color_text)
                         count += 10
             elif self._line_is_active and self._line_to_struc[self._active_line][5] is not None:
                 self.draw_cylinder(canvas = self._prop_canvas,CylObj = self._line_to_struc[self._active_line][5],
@@ -3880,7 +3899,8 @@ class Application():
                            ' Wey2: ' + str('%.4E' % decimal.Decimal(sec_mod[0]*m3_to_mm3)) + ' [mm^3] ' \
                         if not slm_text_min_zpl else 'Net effective plastic section modulus: ' +str(slm_zpl)+' [cm^3]'
                 self._result_canvas.create_text([x*1, y*1],
-                                               text=text,font=self._text_size['Text 9 bold'],anchor='nw')
+                                               text=text,font=self._text_size['Text 9 bold'],anchor='nw',
+                                                fill = self._color_text)
                 #printing the minimum section modulus
                 if state['slamming'][current_line]['state'] and slm_text_min_zpl is False:
                     text = '(shear issue, change thickness or web height)'
@@ -3895,7 +3915,7 @@ class Application():
                     if not slm_text_min_web_thk else 'Stiffener web thickness: '+str(obj_structure.get_web_thk()*1000)+' [mm]'
                 self._result_canvas.create_text([x*1, (y+3*dy)*1],
                                                text= text,
-                                               font=self._text_size["Text 9 bold"],anchor='nw')
+                                               font=self._text_size["Text 9 bold"],anchor='nw', fill = self._color_text)
                 text = 'Minimum shear area: '+str('%.4E' % decimal.Decimal(min_shear * m2_to_mm2))+' [mm^2] ' \
                     if not slm_text_min_web_thk else 'Minimum stiffener web thickness due to SLAMMING: '+\
                                                      str(round(slm_min_web_thk,1))+' [mm]'
@@ -3908,7 +3928,7 @@ class Application():
                 self._result_canvas.create_text([x*1, (y+6*dy)*1],
                                                text='Plate thickness: '
                                                     +str(obj_structure.get_pl_thk()*1000)+' [mm] ',
-                                               font=self._text_size["Text 9 bold"],anchor='nw')
+                                               font=self._text_size["Text 9 bold"],anchor='nw', fill = self._color_text)
                 text = 'Minimum plate thickness: '+str(round(min_thk,1)) + ' [mm]' if not slm_text_pl_thk \
                     else 'Minimum plate thickness due to SLAMMING'+str(slm_min_pl_thk)+' [mm]'
                 self._result_canvas.create_text([x*1, (y+7*dy)*1],
@@ -3957,7 +3977,7 @@ class Application():
                         self._result_canvas.create_text([x * 1, y + 8.5 * dy], text='PULS results',
                                                         font=self._text_size['Text 9 bold'],
                                                         anchor='nw',
-                                                        fill='black')
+                                                        fill = self._color_text)
                         self._result_canvas.create_text([x * 1, y + 9.5 * dy], text=buc_text,
                                                         font=self._text_size['Text 9 bold'],
                                                         anchor='nw',
@@ -3984,7 +4004,8 @@ class Application():
                 elif self._new_buckling_method.get() == 'DNV-RP-C201 - prescriptive':
                     self._result_canvas.create_text([x * 1, (y+9*dy) * 1],
                                                    text='Buckling results DNV-RP-C201:',
-                                                   font=self._text_size["Text 9 bold"], anchor='nw')
+                                                   font=self._text_size["Text 9 bold"], anchor='nw',
+                                                    fill = self._color_text)
                     if sum(buckling)==0:
                         self._result_canvas.create_text([x * 1, (y+10*dy) * 1],
                                                        text='No buckling results', font=self._text_size["Text 9 bold"],
@@ -4010,7 +4031,8 @@ class Application():
 
                     self._result_canvas.create_text([x * 1, (y + 9 * dy) * 1],
                                                     text='Buckling results ANYstructure ML algorithm:',
-                                                    font=self._text_size["Text 9 bold"], anchor='nw')
+                                                    font=self._text_size["Text 9 bold"], anchor='nw',
+                                                    fill = self._color_text)
                     self._result_canvas.create_text([x * 1, (y + 10 * dy) * 1],
                                                     text='Buckling: ' + self._ML_classes[state['ML buckling class'][current_line]['buckling']],
                                                     font=self._text_size["Text 9 bold"],
@@ -4045,7 +4067,7 @@ class Application():
 
                 self._result_canvas.create_text([x * 1, (y+14*dy) * 1],
                                                 text='Fatigue results (DNVGL-RP-C203): ',
-                                                font=self._text_size["Text 9 bold"], anchor='nw')
+                                                font=self._text_size["Text 9 bold"], anchor='nw', fill = self._color_text)
 
                 if self._line_to_struc[current_line][2] != None:
                     if state['fatigue'][current_line]['damage'] is not None:
@@ -4061,12 +4083,12 @@ class Application():
                         self._result_canvas.create_text([x * 1, (y + 15 * dy) * 1],
                                                         text='Total damage: NO RESULTS ',
                                                         font=self._text_size["Text 9 bold"],
-                                                        anchor='nw')
+                                                        anchor='nw', fill = self._color_text)
                 else:
                     self._result_canvas.create_text([x * 1, (y + 15 * dy) * 1],
                                                     text='Total damage: NO RESULTS ',
                                                     font=self._text_size["Text 9 bold"],
-                                                    anchor='nw')
+                                                    anchor='nw', fill = self._color_text)
 
             elif self._active_line in self._line_to_struc and self._line_to_struc[self._active_line][5] is not None:
 
@@ -4083,7 +4105,8 @@ class Application():
 
                 text = 'Results for cylinders and curved plates/panels:'
                 self._result_canvas.create_text([x * 1, y * 1],
-                                                text=text, font=self._text_size['Text 12 bold'], anchor='nw')
+                                                text=text, font=self._text_size['Text 12 bold'], anchor='nw',
+                                                fill = self._color_text)
                 y_location = 3
                 results = cyl_obj.get_utilization_factors()
                 for key, value in results.items():
@@ -4105,7 +4128,7 @@ class Application():
                             uf_col = 'red' if any([value > 1, value == False]) else 'green'
                         self._result_canvas.create_text([x*1, y*y_location],
                                                        text=text_key,font=self._text_size['Text 10 bold'],anchor='nw',
-                                                        fill='black')
+                                                    fill = self._color_text)
                         self._result_canvas.create_text([dx*20, y*y_location],
                                                        text=text_value,font=self._text_size['Text 10 bold'],anchor='nw',
                                                         fill=uf_col)
@@ -4117,7 +4140,7 @@ class Application():
                                                             text='Stiffener requirement checks:', 
                                                             font=self._text_size['Text 10 bold'],
                                                             anchor='nw',
-                                                            fill='black')
+                                                            fill = self._color_text)
                             y_location += 1
                             idx_y, idx_x = 0, 0
 
@@ -4129,13 +4152,13 @@ class Application():
                                 self._result_canvas.create_text([10*dx*idx_x, y * y_location],
                                                                 text=stf_text, font=self._text_size['Text 10 bold'],
                                                                 anchor='nw',
-                                                                fill='black' if not value else 'green')
+                                                                fill=self._color_text if not value else 'green')
 
                                 self._result_canvas.create_text([10*dx*idx_x, y * (y_location+1)],
                                                                 text=chk_text, font=self._text_size['Text 10 bold'],
                                                                 anchor='nw',
                                                                 fill='green' if chk_bool == True else 'red' if
-                                                                chk_bool == False else 'grey')
+                                                                chk_bool == False else self._color_text)
                                 idx_y += 1
                                 idx_x += 1
 
