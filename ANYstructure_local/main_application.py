@@ -89,7 +89,7 @@ class Application():
                               'Arrows up/down - previous/next point'
 
         # Definng general colors
-        self._general_color = 'azure2'#"'azure2'  # Color for backgrounds.
+        self._general_color = 'alice blue'#"'azure2'  # Color for backgrounds.
         self._entry_color = 'white'  # Entry fields color.
         self._entry_text_color = 'black'  # Entry field tex color
         self._button_bg_color = 'LightBlue1'
@@ -98,14 +98,6 @@ class Application():
         #
         self._style = ttk.Style(parent)
         self._style.theme_use('vista')
-        self._style.configure("Bold.TButton", font=('Sans', '10', 'bold'))
-        self._style.configure('TCheckbutton', background=self._general_color)
-        self._style.configure('TFrame', background=self._general_color)
-        self._style.configure('TLabel', background=self._general_color)
-        self._style.configure('TScale', background=self._general_color)
-        self._style.configure('TScale', background=self._general_color)
-        self._style.configure("TMenubutton", background='White')
-        self._style.configure('TRadiobutton', background=self._general_color, foreground='black')
 
         ''' END style setting'''
 
@@ -145,6 +137,14 @@ class Application():
         sub_help.add_command(label='Donate!', command=self.open_donate)
         sub_help.add_command(label = 'Open example file', command = self.open_example)
         sub_help.add_command(label='About ANYstructure', command=self.open_about)
+
+        sub_colors = tk.Menu(menu)
+        menu.add_cascade(label='GUI', menu = sub_colors)
+        sub_colors.add_command(label='Default', command=lambda id="default": self.set_colors(id))
+        sub_colors.add_command(label = 'Light', command = lambda id = "light": self.set_colors(id))
+        sub_colors.add_command(label='Grey', command = lambda id = "grey": self.set_colors(id))
+        sub_colors.add_command(label='Dark', command = lambda id = "dark": self.set_colors(id))
+
         #base_mult = 1.2
         #base_canvas_dim = [int(1000 * base_mult),int(720*base_mult)]  #do not modify this, sets the "orignal" canvas dimensions.
         base_canvas_dim = [1000,720]  #do not modify this, sets the "orignal" canvas dimensions.
@@ -183,6 +183,8 @@ class Application():
                                      background=self._style.lookup('TFrame', 'background'), bd=0, highlightthickness=0, relief='ridge')
         self._result_canvas = tk.Canvas(self._main_fr,
                                        background=self._style.lookup('TFrame', 'background'), bd=0, highlightthickness=0, relief='ridge')
+
+        self.set_colors('default') # Setting colors theme
 
         x_canvas_place = 0.26
         self._main_canvas.place(relx=x_canvas_place, rely=0,relwidth=0.523, relheight = 0.73)
@@ -646,7 +648,7 @@ class Application():
         ent_fdwn.place(relx =hor_start + delta_x*4, rely=vert_start+23*delta_y, relwidth = 0.05)
 
         # Toggle buttons
-        bg = self._style.lookup('TButton', 'background')
+
         self._toggle_btn = tk.Button(self._tab2, text="Toggle select\nmultiple", relief="raised",
                                      command=self.toggle_select_multiple, bg = '#E1E1E1', activebackground = '#E5F1FB' )
         self._toggle_change_param = ttk.Button(self._tab2, text="Change parameters",
@@ -1216,7 +1218,7 @@ class Application():
         self._selected_tank = ttk.Label(self._main_fr,text='',
                                        )
         self._selected_tank.place(relx=0.15, rely=load_vert_start + 3*delta_y)
-        background=self._style.lookup('TFrame', 'background')
+
         self._compartments_listbox = tk.Listbox(self._main_fr, height = int(10 * 1),
                                                width = int(5 * 1),
                                                font=self._text_size["Text 10 bold"]
@@ -1482,6 +1484,40 @@ class Application():
         self._weight_button.place(relx=0.9525,rely=0.7, relwidth = 0.038)
 
         self.update_frame()
+
+    def set_colors(self, theme):
+        if theme == 'light':
+            self._general_color = 'alice blue'
+            text_color = 'white'
+            ent_bg = self._general_color
+        elif theme == 'grey':
+            self._general_color = 'light grey'
+            text_color = 'white'
+            ent_bg = self._general_color
+        elif theme == 'dark':
+            self._general_color = 'grey'
+            text_color = 'light grey'
+            ent_bg = 'light grey'
+        elif theme == 'default':
+            self._general_color = '#F0F0F0'
+            text_color = 'white'
+            ent_bg = self._general_color
+
+
+        self._style.configure("Bold.TButton", font=('Sans', '10', 'bold'))
+        self._style.configure('TCheckbutton', background=self._general_color)
+        self._style.configure('TFrame', background=self._general_color)
+        self._style.configure('TLabel', background=self._general_color)
+        self._style.configure('TScale', background=self._general_color)
+        self._style.configure('TEntry', background=ent_bg)
+        self._style.configure('TOptionMenu', background=ent_bg)
+        self._style.configure("TMenubutton", background=text_color)
+        self._style.configure('TRadiobutton', background=self._general_color, foreground='black')
+
+        self._prop_canvas.configure(bg = self._general_color)
+        self._main_canvas.configure(bg = self._general_color)
+        self._result_canvas.configure(bg = self._general_color)
+
 
     def gui_structural_properties(self, flat_panel = True, shell = False, long_stf = False, ring_stf = False,
                                   ring_frame = False, force_input = False, stress_input = False):
@@ -4347,7 +4383,7 @@ class Application():
             [5] Cylinder buckling data (under development)
         :return:
         '''
-
+        self.set_colors()
         if all([pasted_structure == None, multi_return == None]):
             if any([self._new_stf_spacing.get()==0, self._new_plate_thk.get()==0, self._new_stf_web_h.get()==0,
                     self._new_stf_web_t.get()==0]):
@@ -4628,7 +4664,7 @@ class Application():
             for line, obj in self._line_to_struc.items():
                 obj[1].need_recalc = True
             state = self.update_frame()
-            if state != None:
+            if state != None and self._line_is_active:
                 self._weight_logger['new structure']['COG'].append(self.get_color_and_calc_state()['COG'])
                 self._weight_logger['new structure']['weight'].append(self.get_color_and_calc_state()['Total weight'])
                 self._weight_logger['new structure']['time'].append(time.time())
