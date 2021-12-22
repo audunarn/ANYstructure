@@ -72,10 +72,12 @@ class Application():
         self._tab1 = ttk.Frame(self._tabControl, relief = 'flat')
         self._tab2 = ttk.Frame(self._tabControl, relief = 'flat')
         self._tab3 = ttk.Frame(self._tabControl, relief='flat')
+        self._tab4 = ttk.Frame(self._tabControl, relief='flat')
 
-        self._tabControl.add(self._tab1, text='Model points and lines')
-        self._tabControl.add(self._tab2, text='Assign geometry to lines')
-        self._tabControl.add(self._tab2, text='Information')
+        self._tabControl.add(self._tab1, text='Geometry')
+        self._tabControl.add(self._tab2, text='Line properties')
+        self._tabControl.add(self._tab3, text='Buckling')
+        self._tabControl.add(self._tab4, text='Information')
         self._tabControl.place(relwidth=0.2585, relheight = 0.7225)
         self._tabControl.select(self._tab2)
 
@@ -1690,7 +1692,7 @@ class Application():
             self._lab_shell.place(relx=hor_start, rely=ent_geo_y+ delta_y)
 
             tmp_unit_info = list()
-            for lab in ['Thickness, t', 'Radius, r', 'Length, l', 'Shell len., L', 'Tot len., Lc', 'k-factor, k',
+            for lab in ['Thickness, t', 'Radius, r', 'Ring dist., l', 'Shell len., L', 'Tot len., Lc', 'k-factor, k',
                         'Material factor']:
                 tmp_unit_info.append(ttk.Label(self._tab2, text=lab))
 
@@ -4385,7 +4387,7 @@ class Application():
             [5] Cylinder buckling data (under development)
         :return:
         '''
-        self.set_colors()
+
         if all([pasted_structure == None, multi_return == None]):
             if any([self._new_stf_spacing.get()==0, self._new_plate_thk.get()==0, self._new_stf_web_h.get()==0,
                     self._new_stf_web_t.get()==0]):
