@@ -1339,6 +1339,48 @@ class CalcScantlings(Structure):
         '''
         return self.get_dnv_min_thickness(design_pressure) <= self._plate_th*1000
 
+class PrescriptiveBuckling():
+    '''
+
+    Calculation of buckling
+    '''
+    def __init__(self, Plate: Structure = None, Stiffener: Structure = None, Girder: Structure = None,
+                 lat_press = None):
+        super(PrescriptiveBuckling, self).__init__()
+        self._Plate = Plate  # This contain the stresses
+        self._Stiffener = Stiffener
+        self._Girder = Girder
+        self._lat_press = lat_press
+        self._v = 0.3
+        self._yield = 355e6
+        self._E = 2.1e11
+
+    def plate_buckling(self):
+        '''
+        Summary
+        '''
+        pass
+
+    def unstiffened_plate_buckling(self):
+
+        E = self._E/1e6
+        v = self._v
+        y = self._yield / 1e6
+        gammaM = self._Plate.get_mat_factor()
+        t = self._Plate.t
+        s = self._Plate.s
+        l = self._Plate.get_span()*1000
+
+        sxsd = self.sxsd/1e6
+        tsd = self._tTsd/1e6+self._tQsd/1e6
+        psd = self._psd/1e6
+        shear_ratio_long = 1
+        shear_ratio_trans = 1
+
+        #Pnt. 5  Lateral loaded plates
+        #sjsd =math.sqrt(O2^2+I4^2-O2*I4+3*I5^2)
+
+
 class Shell():
     '''
     Small class to contain shell properties.
@@ -3409,41 +3451,52 @@ if __name__ == '__main__':
     # print(my_buc.get_net_effective_plastic_section_modulus())
 
     #my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0))
-    import ANYstructure_local.example_data as ex
-    for example in [CalcScantlings(ex.obj_dict)]:#, CalcScantlings(ex.obj_dict2), CalcScantlings(ex.obj_dict_L)]:
-        my_test = example
-        #my_test = CalcScantlings(example)
-        #my_test = CalcFatigue(example, ex.fat_obj_dict2)
-        #my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0))
-        #print('Total damage: ', my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0)))
-        #print(my_test.get_fatigue_properties())
-        pressure = 200
-        # print(my_test.buckling_local_stiffener())
-        # print('SHEAR CENTER: ',my_test.get_shear_center())
-        # print('SECTION MOD: ',my_test.get_section_modulus())
-        # print('SECTION MOD FLANGE: ', my_test.get_section_modulus()[0])
-        # print('SHEAR AREA: ', my_test.get_shear_area())
-        # print('PLASTIC SECTION MOD: ',my_test.get_plasic_section_modulus())
-        # print('MOMENT OF INTERTIA: ',my_test.get_moment_of_intertia())
-        # print('WEIGHT', my_test.get_weight())
-        # print('PROPERTIES', my_test.get_structure_prop())
-        # print('CROSS AREA', my_test.get_cross_section_area())
-        # print()
-        #
-        # print('EFFICIENT MOMENT OF INTERTIA: ',my_test.get_moment_of_intertia(efficent_se=my_test.get_plate_efficent_b(
-        #     design_lat_press=pressure)))
-        # print('Se: ',my_test.calculate_buckling_all(design_lat_press=pressure,checked_side='s'))
-        # print('Se: ', my_test.calculate_buckling_all(design_lat_press=pressure, checked_side='p'))
-        # print('MINIMUM PLATE THICKNESS',my_test.get_dnv_min_thickness(pressure))
-        # print('MINIMUM SECTION MOD.', my_test.get_dnv_min_section_modulus(pressure))
-        print()
-        #my_test.cyl_buckling_long_sft_shell()
 
+    # for example in [CalcScantlings(ex.obj_dict)]:#, CalcScantlings(ex.obj_dict2), CalcScantlings(ex.obj_dict_L)]:
+    #     my_test = example
+    #     #my_test = CalcScantlings(example)
+    #     #my_test = CalcFatigue(example, ex.fat_obj_dict2)
+    #     #my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0))
+    #     #print('Total damage: ', my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0)))
+    #     #print(my_test.get_fatigue_properties())
+    #     pressure = 200
+    #     # print(my_test.buckling_local_stiffener())
+    #     # print('SHEAR CENTER: ',my_test.get_shear_center())
+    #     # print('SECTION MOD: ',my_test.get_section_modulus())
+    #     # print('SECTION MOD FLANGE: ', my_test.get_section_modulus()[0])
+    #     # print('SHEAR AREA: ', my_test.get_shear_area())
+    #     # print('PLASTIC SECTION MOD: ',my_test.get_plasic_section_modulus())
+    #     # print('MOMENT OF INTERTIA: ',my_test.get_moment_of_intertia())
+    #     # print('WEIGHT', my_test.get_weight())
+    #     # print('PROPERTIES', my_test.get_structure_prop())
+    #     # print('CROSS AREA', my_test.get_cross_section_area())
+    #     # print()
+    #     #
+    #     # print('EFFICIENT MOMENT OF INTERTIA: ',my_test.get_moment_of_intertia(efficent_se=my_test.get_plate_efficent_b(
+    #     #     design_lat_press=pressure)))
+    #     # print('Se: ',my_test.calculate_buckling_all(design_lat_press=pressure,checked_side='s'))
+    #     # print('Se: ', my_test.calculate_buckling_all(design_lat_press=pressure, checked_side='p'))
+    #     # print('MINIMUM PLATE THICKNESS',my_test.get_dnv_min_thickness(pressure))
+    #     # print('MINIMUM SECTION MOD.', my_test.get_dnv_min_section_modulus(pressure))
+    #     print()
+    #     #my_test.cyl_buckling_long_sft_shell()
+    #
+    #
+    # #Structure(ex.obj_dict_cyl_ring)
+    # #Structure(ex.obj_dict_cyl_heavy_ring)
+    # my_cyl = CylinderAndCurvedPlate(main_dict = ex.shell_main_dict2, shell= Shell(ex.shell_dict),
+    #                                 long_stf= Structure(ex.obj_dict_cyl_long2),
+    #                                 ring_stf = None,# Structure(ex.obj_dict_cyl_ring2),
+    #                                 ring_frame= Structure(ex.obj_dict_cyl_heavy_ring2))
+    # print(my_cyl.get_utilization_factors())
 
-    #Structure(ex.obj_dict_cyl_ring)
-    #Structure(ex.obj_dict_cyl_heavy_ring)
-    my_cyl = CylinderAndCurvedPlate(main_dict = ex.shell_main_dict2, shell= Shell(ex.shell_dict),
-                                    long_stf= Structure(ex.obj_dict_cyl_long2),
-                                    ring_stf = None,# Structure(ex.obj_dict_cyl_ring2),
-                                    ring_frame= Structure(ex.obj_dict_cyl_heavy_ring2))
-    print(my_cyl.get_utilization_factors())
+    # Prescriptive buckling UPDATED
+    Plate = Structure(ex.obj_dict)
+    Stiffener = Structure(ex.obj_dict)
+    Girder = Structure(ex.obj_dict_heavy)
+
+    PreBuc = PrescriptiveBuckling(Plate = Plate, Stiffener = Stiffener, Girder = Girder, lat_press=0.4)
+    print(Plate)
+    print(Stiffener)
+    print(Girder)
+
