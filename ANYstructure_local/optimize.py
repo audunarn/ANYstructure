@@ -872,13 +872,16 @@ def create_new_calc_obj(init_obj,x, fat_dict=None, fdwn = 1, fup = 0.5):
     :return:
     '''
 
-    x_old = [init_obj.get_s(), init_obj.get_plate_thk(), init_obj.get_web_h() , init_obj.get_web_thk(),
+    x_old = [init_obj.get_s(), init_obj.get_pl_thk(), init_obj.get_web_h() , init_obj.get_web_thk(),
              init_obj.get_fl_w(),init_obj.get_fl_thk(), init_obj.get_span(), init_obj.get_lg()]
 
-    sigma_y1_new = stress_scaling(init_obj.get_sigma_y1(), init_obj.get_plate_thk(), x[1], fdwn = fdwn, fup = fup)
-    sigma_y2_new = stress_scaling(init_obj.get_sigma_y2(), init_obj.get_plate_thk(), x[1], fdwn = fdwn, fup = fup)
-    tau_xy_new = stress_scaling(init_obj.get_tau_xy(), init_obj.get_plate_thk(), x[1], fdwn = fdwn, fup = fup)
-    sigma_x_new = stress_scaling_area(init_obj.get_sigma_x(),
+    sigma_y1_new = stress_scaling(init_obj.get_sigma_y1(), init_obj.get_pl_thk(), x[1], fdwn = fdwn, fup = fup)
+    sigma_y2_new = stress_scaling(init_obj.get_sigma_y2(), init_obj.get_pl_thk(), x[1], fdwn = fdwn, fup = fup)
+    tau_xy_new = stress_scaling(init_obj.get_tau_xy(), init_obj.get_pl_thk(), x[1], fdwn = fdwn, fup = fup)
+    sigma_x1_new = stress_scaling_area(init_obj.get_sigma_x1(),
+                                      sum(get_field_tot_area(x_old)),
+                                      sum(get_field_tot_area(x)), fdwn = fdwn, fup = fup)
+    sigma_x2_new = stress_scaling_area(init_obj.get_sigma_x2(),
                                       sum(get_field_tot_area(x_old)),
                                       sum(get_field_tot_area(x)), fdwn = fdwn, fup = fup)
 
@@ -893,7 +896,7 @@ def create_new_calc_obj(init_obj,x, fat_dict=None, fdwn = 1, fup = 0.5):
                  'stf_web_thk': [x[3], 'm'],'stf_flange_width': [x[4], 'm'],
                  'stf_flange_thk': [x[5], 'm'],'structure_type': [init_obj.get_structure_type(), ''],
                  'stf_type': [stf_type, ''],'sigma_y1': [sigma_y1_new, 'MPa'],
-                 'sigma_y2': [sigma_y2_new, 'MPa'],'sigma_x': [sigma_x_new, 'MPa'],
+                 'sigma_y2': [sigma_y2_new, 'MPa'],'sigma_x1': [sigma_x1_new, 'MPa'],'sigma_x2': [sigma_x2_new, 'MPa'],
                  'tau_xy': [tau_xy_new, 'MPa'],'plate_kpp': [init_obj.get_kpp(), ''],
                  'stf_kps': [init_obj.get_kps(), ''],'stf_km1': [init_obj.get_km1(), ''],
                  'stf_km2': [init_obj.get_km2(), ''],'stf_km3': [init_obj.get_km3(), ''],
@@ -915,13 +918,15 @@ def create_new_structure_obj(init_obj, x, fat_dict=None, fdwn = 1, fup = 0.5):
     :param init_obj:
     :return:
     '''
-    x_old = [init_obj.get_s(), init_obj.get_plate_thk(), init_obj.get_web_h() , init_obj.get_web_thk(),
+    x_old = [init_obj.get_s(), init_obj.get_pl_thk(), init_obj.get_web_h() , init_obj.get_web_thk(),
              init_obj.get_fl_w() ,init_obj.get_fl_thk(), init_obj.get_span(), init_obj.get_lg()]
 
-    sigma_y1_new = stress_scaling(init_obj.get_sigma_y1(), init_obj.get_plate_thk(), x[1], fdwn = fdwn, fup = fup)
-    sigma_y2_new = stress_scaling(init_obj.get_sigma_y2(), init_obj.get_plate_thk(), x[1], fdwn = fdwn, fup = fup)
-    tau_xy_new = stress_scaling(init_obj.get_tau_xy(), init_obj.get_plate_thk(), x[1],fdwn = fdwn, fup = fup)
-    sigma_x_new = stress_scaling_area(init_obj.get_sigma_x(),sum(get_field_tot_area(x_old)),sum(get_field_tot_area(x)),
+    sigma_y1_new = stress_scaling(init_obj.get_sigma_y1(), init_obj.get_pl_thk(), x[1], fdwn = fdwn, fup = fup)
+    sigma_y2_new = stress_scaling(init_obj.get_sigma_y2(), init_obj.get_pl_thk(), x[1], fdwn = fdwn, fup = fup)
+    tau_xy_new = stress_scaling(init_obj.get_tau_xy(), init_obj.get_pl_thk(), x[1],fdwn = fdwn, fup = fup)
+    sigma_x1_new = stress_scaling_area(init_obj.get_sigma_x1(),sum(get_field_tot_area(x_old)),sum(get_field_tot_area(x)),
+                                      fdwn = fdwn, fup = fup)
+    sigma_x2_new = stress_scaling_area(init_obj.get_sigma_x2(),sum(get_field_tot_area(x_old)),sum(get_field_tot_area(x)),
                                       fdwn = fdwn, fup = fup)
 
     try:
@@ -935,7 +940,7 @@ def create_new_structure_obj(init_obj, x, fat_dict=None, fdwn = 1, fup = 0.5):
                    'stf_web_thk': [x[3], 'm'], 'stf_flange_width': [x[4], 'm'],
                    'stf_flange_thk': [x[5], 'm'], 'structure_type': [init_obj.get_structure_type(), ''],
                    'stf_type': [stf_type, ''], 'sigma_y1': [sigma_y1_new, 'MPa'],
-                   'sigma_y2': [sigma_y2_new, 'MPa'], 'sigma_x': [sigma_x_new, 'MPa'],
+                   'sigma_y2': [sigma_y2_new, 'MPa'], 'sigma_x1': [sigma_x1_new, 'MPa'],'sigma_x2': [sigma_x2_new, 'MPa'],
                    'tau_xy': [tau_xy_new, 'MPa'], 'plate_kpp': [init_obj.get_kpp(), ''],
                    'stf_kps': [init_obj.get_kps(), ''], 'stf_km1': [init_obj.get_km1(), ''],
                    'stf_km2': [init_obj.get_km2(), ''], 'stf_km3': [init_obj.get_km3(), ''],

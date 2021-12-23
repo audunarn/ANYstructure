@@ -415,7 +415,7 @@ class CreateOptimizeWindow():
         self._new_delta_fl_thk.set(init_thk)
         self._new_trans_stress_high.set(self._initial_structure_obj.get_sigma_y1())
         self._new_trans_stress_low.set(self._initial_structure_obj.get_sigma_y2())
-        self._new_axial_stress.set(self._initial_structure_obj.get_sigma_x())
+        self._new_axial_stress.set(self._initial_structure_obj.get_sigma_x1())
         self._new_shear_stress.set(self._initial_structure_obj.get_tau_xy())
 
         self._new_design_pressure.set(self._lateral_pressure)
@@ -738,14 +738,14 @@ class CreateOptimizeWindow():
             self._opt_runned = True
             self._result_label.config(text='Optimization result | Spacing: '+
                                            str(round(self._opt_results[0].get_s(),10)*1000)+
-                                          ' Plate thickness: '+str(round(self._opt_results[0].get_plate_thk()*1000,10))+
+                                          ' Plate thickness: '+str(round(self._opt_results[0].get_pl_thk()*1000,10))+
                                           ' Stiffener - T'+str(round(self._opt_results[0].get_web_h()*1000,10))+'x'
                                           +str(round(self._opt_results[0].get_web_thk()*1000,10))+
                                           '+'+str(round(self._opt_results[0].get_fl_w()*1000,10))+'x'
                                           +str(round(self._opt_results[0].get_fl_thk()*1000,10)))
 
             self._new_opt_spacing.set(round(self._opt_results[0].get_s(),5))
-            self._new_opt_pl_thk.set(round(self._opt_results[0].get_plate_thk(),5))
+            self._new_opt_pl_thk.set(round(self._opt_results[0].get_pl_thk(),5))
             self._new_opt_web_h.set(round(self._opt_results[0].get_web_h(),5))
             self._new_opt_web_thk.set(round(self._opt_results[0].get_web_thk(),5))
             self._new_opt_fl_w.set(round(self._opt_results[0].get_fl_w(),5))
