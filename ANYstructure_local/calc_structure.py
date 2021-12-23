@@ -28,7 +28,8 @@ class Structure():
         self._structure_type = main_dict['structure_type'][0]
         self._sigma_y1=main_dict['sigma_y1'][0]
         self._sigma_y2=main_dict['sigma_y2'][0]
-        self._sigma_x=main_dict['sigma_x'][0]
+        self._sigma_x1 = main_dict['sigma_x1'][0]
+        self._sigma_x2 = main_dict['sigma_x2'][0]
         self._tauxy=main_dict['tau_xy'][0]
         self._plate_kpp = main_dict['plate_kpp'][0]
         self._stf_kps = main_dict['stf_kps'][0]
@@ -121,7 +122,7 @@ class Structure():
             '\n Plate fixation paramter,kpp:   ' + str(self._plate_kpp) + ' ' +
             '\n Stf. fixation paramter,kps:    ' + str(self._stf_kps) + ' ' +
             '\n Global stress, sig_y1/sig_y2:  ' + str(round(self._sigma_y1,3))+'/'+str(round(self._sigma_y2,3))+ ' MPa' +
-            '\n Global stress, sig_x:          ' + str(round(self._sigma_x,3)) + ' MPa' +
+            '\n Global stress, sig_x1/sig_x2:   ' + str(round(self._sigma_x1,3))+'/'+str(round(self._sigma_x2,3))+ ' MPa' +
             '\n Global shear, tau_xy:          ' + str(round(self._tauxy,3)) + ' MPa' +
             '\n km1,km2,km3:                   ' + str(self._km1)+'/'+str(self._km2)+'/'+str(self._km3)+
             '\n Pressure side (p-plate/s-stf): ' + str(self._pressure_side) + ' ')
@@ -171,7 +172,8 @@ class Structure():
     def get_report_stresses(self):
         'Return the stresses to the report'
         return 'sigma_y1: '+str(round(self._sigma_y1,1))+' sigma_y2: '+str(round(self._sigma_y2,1))+ \
-               ' sigma_x: ' + str(round(self._sigma_x,1))+' tauxy: '+ str(round(self._tauxy,1))
+               ' sigma_x1: ' + str(round(self._sigma_x1,1)) +' sigma_x2: ' + str(round(self._sigma_x2,1))+\
+               ' tauxy: '+ str(round(self._tauxy,1))
 
     def get_extended_string(self):
         ''' Some more information returned. '''
@@ -190,12 +192,18 @@ class Structure():
         :return:
         '''
         return self._sigma_y2
-    def get_sigma_x(self):
+    def get_sigma_x1(self):
         '''
         Return sigma_x
         :return:
         '''
-        return self._sigma_x
+        return self._sigma_x1
+    def get_sigma_x2(self):
+        '''
+        Return sigma_x
+        :return:
+        '''
+        return self._sigma_x2
     def get_tau_xy(self):
         '''
         Return tau_xy
@@ -527,7 +535,8 @@ class Structure():
         self._structure_type = main_dict['structure_type'][0]
         self._sigma_y1=main_dict['sigma_y1'][0]
         self._sigma_y2=main_dict['sigma_y2'][0]
-        self._sigma_x=main_dict['sigma_x'][0]
+        self._sigma_x1 = main_dict['sigma_x1'][0]
+        self._sigma_x2 = main_dict['sigma_x2'][0]
         self._tauxy=main_dict['tau_xy'][0]
         self._plate_kpp = main_dict['plate_kpp'][0]
         self._stf_kps = main_dict['stf_kps'][0]
@@ -551,7 +560,7 @@ class Structure():
         self._puls_up_boundary = main_dict['puls up boundary'][0]
         self._panel_or_shell = main_dict['panel or shell'][0]
 
-    def set_stresses(self,sigy1,sigy2,sigx,tauxy):
+    def set_stresses(self,sigy1,sigy2,sigx1,sigx2,tauxy):
         '''
         Setting the global stresses.
         :param sigy1:
@@ -566,8 +575,11 @@ class Structure():
         self._main_dict['sigma_y2'][0]= sigy2
         self._sigma_y2  = sigy2
 
-        self._main_dict['sigma_x'][0]= sigx
-        self._sigma_x = sigx
+        self._main_dict['sigma_x1'][0]= sigx1
+        self._sigma_x1 = sigx1
+
+        self._main_dict['sigma_x2'][0]= sigx2
+        self._sigma_x2 = sigx2
 
         self._main_dict['tau_xy'][0]= tauxy
         self._tauxy  = tauxy
@@ -650,7 +662,7 @@ class Structure():
                             'Flange thick.': self._flange_th*1000, 'Tilt angle': 0,
                           'Number of sec. stiffeners': 0, 'Modulus of elasticity': 2.1e11/1e6, "Poisson's ratio": 0.3,
                           'Yield stress plate': self._mat_yield/1e6, 'Yield stress stiffener': self._mat_yield/1e6,
-                            'Axial stress': 0 if self._puls_boundary == 'GT' else self._sigma_x,
+                            'Axial stress': 0 if self._puls_boundary == 'GT' else self._sigma_x1,
                            'Trans. stress 1': 0 if self._puls_boundary == 'GL' else self._sigma_y1,
                           'Trans. stress 2': 0 if self._puls_boundary == 'GL' else self._sigma_y2,
                            'Shear stress': self._tauxy,
@@ -674,8 +686,8 @@ class Structure():
                            'Plate thickness': self._plate_th*1000,
                          'Modulus of elasticity': 2.1e11/1e6, "Poisson's ratio": 0.3,
                           'Yield stress plate': self._mat_yield/1e6,
-                         'Axial stress 1': 0 if self._puls_boundary == 'GT' else self._sigma_x,
-                           'Axial stress 2': 0 if self._puls_boundary == 'GT' else self._sigma_x,
+                         'Axial stress 1': 0 if self._puls_boundary == 'GT' else self._sigma_x1,
+                           'Axial stress 2': 0 if self._puls_boundary == 'GT' else self._sigma_x1,
                            'Trans. stress 1': 0 if self._puls_boundary == 'GL' else self._sigma_y1,
                          'Trans. stress 2': 0 if self._puls_boundary == 'GL' else self._sigma_y2,
                            'Shear stress': self._tauxy, 'Pressure (fixed)': None, 'In-plane support': self._puls_boundary,
@@ -700,12 +712,12 @@ class Structure():
             if csr == False:
                 this_field =  [self._span * 1000, self._spacing * 1000, self._plate_th * 1000, self._web_height * 1000,
                                self._web_th * 1000, self._flange_width * 1000, self._flange_th * 1000, self._mat_yield / 1e6,
-                               self._mat_yield / 1e6,  self._sigma_x, self._sigma_y1, self._sigma_y2, self._tauxy,
+                               self._mat_yield / 1e6,  self._sigma_x1, self._sigma_y1, self._sigma_y2, self._tauxy,
                                design_lat_press/1000, stf_type[self._stiffener_type], stf_end[self._puls_stf_end]]
             else:
                 this_field =  [self._span * 1000, self._spacing * 1000, self._plate_th * 1000, self._web_height * 1000,
                                self._web_th * 1000, self._flange_width * 1000, self._flange_th * 1000, self._mat_yield / 1e6,
-                               self._mat_yield / 1e6,  self._sigma_x, self._sigma_y1, self._sigma_y2, self._tauxy,
+                               self._mat_yield / 1e6,  self._sigma_x1, self._sigma_y1, self._sigma_y2, self._tauxy,
                                design_lat_press/1000, stf_type[self._stiffener_type], stf_end[self._puls_stf_end],
                                field_type[self._puls_boundary]]
         else:
@@ -718,11 +730,11 @@ class Structure():
             b1, b2, b3, b4 = ss_cl_list
             if csr == False:
                 this_field =  [self._span * 1000, self._spacing * 1000, self._plate_th * 1000, self._mat_yield / 1e6,
-                               self._sigma_x, self._sigma_y1, self._sigma_y2, self._tauxy, design_lat_press/1000,
+                               self._sigma_x1, self._sigma_y1, self._sigma_y2, self._tauxy, design_lat_press/1000,
                                b1, b2, b3, b4]
             else:
                 this_field =  [self._span * 1000, self._spacing * 1000, self._plate_th * 1000, self._mat_yield / 1e6,
-                               self._sigma_x, self._sigma_y1, self._sigma_y2, self._tauxy, design_lat_press/1000,
+                               self._sigma_x1, self._sigma_y1, self._sigma_y2, self._tauxy, design_lat_press/1000,
                                field_type[self._puls_boundary], b1, b2, b3, b4]
         if alone:
             return [this_field,]
@@ -735,6 +747,7 @@ class CalcScantlings(Structure):
     Input is a structure object, same as for the structure class.
     The class inherits from Structure class.
     '''
+    # TODO only sigma_x here at the moment
     def __init__(self, main_dict, lat_press = True, category = 'secondary'):
         super(CalcScantlings,self).__init__(main_dict=main_dict)
         self.lat_press = lat_press
@@ -857,8 +870,8 @@ class CalcScantlings(Structure):
         sigma_y = self._sigma_y2 + (self._sigma_y1-self._sigma_y2)\
                                        *(min(0.25*self._span,0.5*self._spacing)/self._span)
 
-        sigma_jd = math.sqrt(math.pow(self._sigma_x,2)+math.pow(sigma_y,2)-
-                             self._sigma_x*sigma_y+3*math.pow(self._tauxy,2))
+        sigma_jd = math.sqrt(math.pow(self._sigma_x1,2)+math.pow(sigma_y,2)-
+                             self._sigma_x1*sigma_y+3*math.pow(self._tauxy,2))
 
         sigma_pd2 = fyd-sigma_jd  # design_bending_stress_mpa
 
@@ -869,7 +882,7 @@ class CalcScantlings(Structure):
         Zs = ((math.pow(self._span, 2) * self._spacing * design_pressure) /
               (min(km_middle, km_sides) * (sigma_pd2) * kps)) * math.pow(10, 6)
         if printit:
-            print('Sigma y1', self._sigma_y1, 'Sigma y2', self._sigma_y2, 'Sigma x', self._sigma_x, 'Pressure', design_pressure)
+            print('Sigma y1', self._sigma_y1, 'Sigma y2', self._sigma_y2, 'Sigma x', self._sigma_x1, 'Pressure', design_pressure)
         return max(math.pow(15, 3) / math.pow(1000, 3), Zs / math.pow(1000, 3))
 
     def get_dnv_min_thickness(self, design_pressure_kpa):
@@ -880,11 +893,11 @@ class CalcScantlings(Structure):
         '''
 
         design_pressure = design_pressure_kpa
-        #print(self._sigma_x)
+        #print(self._sigma_x1)
         sigma_y = self._sigma_y2 + (self._sigma_y1-self._sigma_y2)\
                                        *(min(0.25*self._span,0.5*self._spacing)/self._span)
-        sigma_jd = math.sqrt(math.pow(self._sigma_x,2)+math.pow(sigma_y,2)-
-                             self._sigma_x*sigma_y+3*math.pow(self._tauxy,2))
+        sigma_jd = math.sqrt(math.pow(self._sigma_x1,2)+math.pow(sigma_y,2)-
+                             self._sigma_x1*sigma_y+3*math.pow(self._tauxy,2))
         fy = self._mat_yield / 1000000
         fyd = fy/self._mat_factor
         sigma_pd1 = min(1.3*(fyd-sigma_jd), fyd)
@@ -920,13 +933,13 @@ class CalcScantlings(Structure):
         Return [m^2]
         :return:
         '''
-        #print('SIGMA_X ', self._sigma_x)
+        #print('SIGMA_X ', self._sigma_x1)
         l = self._span
         s = self._spacing
         fy = self._mat_yield
 
         fyd = (fy/self._mat_factor)/1e6 #yield strength
-        sigxd = self._sigma_x #design membrane stresses, x-dir
+        sigxd = self._sigma_x1 #design membrane stresses, x-dir
 
         taupds = 0.577*math.sqrt(math.pow(fyd, 2) - math.pow(sigxd, 2))
 
@@ -1034,7 +1047,7 @@ class CalcScantlings(Structure):
         tauSd = self._tauxy*1e6
         sigy1Sd =self._sigma_y1*1e6
         sigy2Sd =self._sigma_y2*1e6
-        sigxSd = self._sigma_x*1e6
+        sigxSd = self._sigma_x1*1e6
 
 
         #7.3 Effective plate width

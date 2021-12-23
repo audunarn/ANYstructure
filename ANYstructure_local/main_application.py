@@ -73,13 +73,15 @@ class Application():
         self._tab2 = ttk.Frame(self._tabControl, relief = 'flat')
         self._tab3 = ttk.Frame(self._tabControl, relief='flat')
         self._tab4 = ttk.Frame(self._tabControl, relief='flat')
+        self._tab5 = ttk.Frame(self._tabControl, relief='flat')
 
         self._tabControl.add(self._tab1, text='Geometry')
         self._tabControl.add(self._tab2, text='Line properties')
-        self._tabControl.add(self._tab3, text='Buckling')
-        self._tabControl.add(self._tab4, text='Information')
-        self._tabControl.place(relwidth=0.2585, relheight = 0.7225)
-        self._tabControl.select(self._tab2)
+        self._tabControl.add(self._tab3, text='Compartments')
+        self._tabControl.add(self._tab4, text='Buckling')
+        self._tabControl.add(self._tab5, text='Information')
+        self._tabControl.place(relwidth=0.2585, relheight = 0.99)
+        #self._tabControl.select(self._tab2)
 
 
         # Top open/save/new
@@ -198,12 +200,12 @@ class Application():
                                        background=self._style.lookup('TFrame', 'background'), bd=0,
                                         highlightthickness=0, relief='ridge')
 
-        # These frames are just visual separations in the GUI.
-        frame_horizontal, frame_vertical = 0.73, 0.258
-        self._frame_viz_hor = tk.Frame(self._main_fr, height=3, bg="black", colormap="new")
-        self._frame_viz_hor.place(relx=0, rely=frame_horizontal, relwidth=1)
-        self._frame_viz_ver = tk.Frame(self._main_fr, width=3, bg="black", colormap="new")
-        self._frame_viz_ver.place(relx=frame_vertical,rely=0 * 1, relheight=1)
+        # # These frames are just visual separations in the GUI.
+        # frame_horizontal, frame_vertical = 0.73, 0.258
+        # self._frame_viz_hor = tk.Frame(self._main_fr, height=3, bg="black", colormap="new")
+        # self._frame_viz_hor.place(relx=0, rely=frame_horizontal, relwidth=1)
+        # self._frame_viz_ver = tk.Frame(self._main_fr, width=3, bg="black", colormap="new")
+        # self._frame_viz_ver.place(relx=frame_vertical,rely=0 * 1, relheight=1)
 
         x_canvas_place = 0.26
         self._main_canvas.place(relx=x_canvas_place, rely=0,relwidth=0.523, relheight = 0.73)
@@ -246,11 +248,11 @@ class Application():
         self._accelerations_dict = {'static':9.81, 'dyn_loaded':0, 'dyn_ballast':0} # Vertical acclerations
         self._load_conditions = ['loaded','ballast','tanktest', 'part','slamming'] # Should not be modified. Load conditions.
         self._tank_options = {'ballast': 1025, 'crude_oil': 900, 'diesel': 850 , 'slop': 1050, 'fresh water': 1000} # Should not be modified.
-        self._default_stresses = {'BOTTOM':(100,100,50,5), 'BBS':(70,70,30,3), 'BBT':(80,80,30,3), 'HOPPER':(70,70,50,3),
-                                 'SIDE_SHELL':(100,100,40,3),'INNER_SIDE':(80,80,40,5), 'FRAME':(70,70,60,10),
-                                 'FRAME_WT':(70,70,60,10),'SSS':(100,100,50,20), 'MD':(70,70,40,3),
-                                 'GENERAL_INTERNAL_WT':(90,90,40,5),'GENERAL_INTERNAL_NONWT':(70,70,30,3),
-                                  'INTERNAL_1_MPA':(1,1,1,1), 'INTERNAL_LOW_STRESS_WT':(40,40,20,5)}
+        self._default_stresses = {'BOTTOM':(100,100,50,50,5), 'BBS':(70,70,30,30,3), 'BBT':(80,80,30,3), 'HOPPER':(70,70,50,50,3),
+                                 'SIDE_SHELL':(100,100,40,40,3),'INNER_SIDE':(80,80,40,40,5), 'FRAME':(70,70,60,0,10),
+                                 'FRAME_WT':(70,70,60,0,10),'SSS':(100,100,50,50,20), 'MD':(70,70,4,40,3),
+                                 'GENERAL_INTERNAL_WT':(90,90,40,40,5),'GENERAL_INTERNAL_NONWT':(70,70,30,30,3),
+                                  'INTERNAL_1_MPA':(1,1,1,1,1), 'INTERNAL_LOW_STRESS_WT':(40,40,20,20,5)}
                                 # The default stresses are used for buckling calculations.
         self._structure_types = {'vertical':['BBS', 'SIDE_SHELL', 'SSS'],
                                  'horizontal': ['BOTTOM', 'BBT', 'HOPPER', 'MD'],
@@ -328,7 +330,7 @@ class Application():
         self._stuctural_definition = ['mat_yield','mat_factor', 'span', 'spacing', 'plate_thk', 'stf_web_height',
                                       'stf_web_thk',
                                        'stf_flange_width', 'stf_flange_thk', 'structure_type', 'stf_type',
-                                       'sigma_y1', 'sigma_y2', 'sigma_x', 'tau_xy', 'plate_kpp', 'stf_kps','stf_km1',
+                                       'sigma_y1', 'sigma_y2', 'sigma_x1','sigma_x2', 'tau_xy', 'plate_kpp', 'stf_kps','stf_km1',
                                        'stf_km2', 'stf_km3', 'press_side', 'zstar_optimization',
                                       'puls buckling method', 'puls boundary', 'puls stiffener end', 'puls sp or up',
                                       'puls up boundary']
@@ -354,7 +356,7 @@ class Application():
 
         # These sets the location where entries are placed.
         ent_x = 0.4
-        delta_y = 0.04
+        delta_y = 0.025
         delta_x = 0.1
         point_x_start, point_start = 0.005208333, 0.1
 
@@ -587,8 +589,6 @@ class Application():
             .place(relx=ent_x, rely=shift_y + delta_y * 4)
 
         # --- structure type information ---
-        prop_vert_start = 0.29
-        types_start = 0.005208333
 
         def show_message():
             messagebox.showinfo(title='Structure type',message='Types - sets default stresses (sigy1/sigy2/sigx/tauxy)'
@@ -631,35 +631,29 @@ class Application():
 
         vert_start = 0.1
         hor_start = 0.02
-        delta_y = 0.034
-        delta_x = 0.13
-        # ent_relx = hor_start + 6 * delta_x
-        # geo_ent_width = 0.05
-        # ent_geo_y = vert_start
-        # opt_width = 0.2
 
         self.add_stucture = ttk.Button(self._tab2, text='Add structure/properties to line \n'
                                                           '-- new or replace existing --', command=self.new_structure,
                                        style = "Bold.TButton")
 
-        self.add_stucture.place(relx=0.495, rely=0.93, relwidth = 0.5, relheight = 0.06)
+        self.add_stucture.place(relx=0.495, rely=0.87, relwidth = 0.5, relheight = 0.06)
 
 
         ttk.Label(self._tab2, text='Scale stresses when changing properties', font=self._text_size['Text 9'])\
-            .place(relx = hor_start, rely=vert_start+22*delta_y)
+            .place(relx = hor_start, rely=vert_start+26*delta_y)
         ttk.Checkbutton(self._tab2, variable = self._new_scale_stresses, command = self.on_color_code_check)\
-            .place(relx = hor_start+ delta_x*4, rely=vert_start+22*delta_y)
+            .place(relx = delta_x * 6, rely=vert_start+26*delta_y)
 
         ttk.Label(self._tab2, text='scale up, fup', font=self._text_size['Text 8']).place(relx =hor_start,
-                                                                                          rely=vert_start+23*delta_y)
+                                                                                          rely=vert_start+27*delta_y)
         ttk.Label(self._tab2, text='fdown', font=self._text_size['Text 8']).place(relx =hor_start + delta_x*3,
-                                                                                  rely=vert_start+23*delta_y)
+                                                                                  rely=vert_start+27*delta_y)
 
         ent_fup = ttk.Entry(self._tab2, textvariable=self._new_fup)
-        ent_fup.place(relx =hor_start + delta_x*2, rely=vert_start+23*delta_y, relwidth = 0.05)
+        ent_fup.place(relx =hor_start + delta_x*2, rely=vert_start+27*delta_y, relwidth = 0.05)
 
         ent_fdwn = ttk.Entry(self._tab2, textvariable=self._new_fdwn)
-        ent_fdwn.place(relx =hor_start + delta_x*4, rely=vert_start+23*delta_y, relwidth = 0.05)
+        ent_fdwn.place(relx =hor_start + delta_x*4, rely=vert_start+27*delta_y, relwidth = 0.05)
 
         # Toggle buttons
 
@@ -668,14 +662,14 @@ class Application():
         self._toggle_change_param = ttk.Button(self._tab2, text="Change parameters",
                                      command=self.toggle_set_variable)
         self._toggle_param_to_change = None
-        self._toggle_btn.place(relx=0.29, rely=0.93, relwidth = 0.2, relheight = 0.06)
+        self._toggle_btn.place(relx=hor_start, rely=vert_start+29*delta_y, relwidth = 0.2, relheight = 0.06)
 
-        self._toggle_change_param.place(relx=0.02, rely=0.915, relwidth = 0.25)
+        self._toggle_change_param.place(relx=hor_start+ delta_x*6, rely=vert_start+29*delta_y, relwidth = 0.25)
 
         self._toggle_choose = ttk.OptionMenu(self._tab2, self._new_toggle_var,self._stuctural_definition[0],
                                              *self._stuctural_definition,
                                             command = self.update_frame)
-        self._toggle_choose.place(relx=0.02, rely=0.96, relwidth = 0.25)
+        self._toggle_choose.place(relx=hor_start+ delta_x*3, rely=vert_start+29*delta_y, relwidth = 0.25)
 
         # PULS interface
         self._toggle_btn_puls = tk.Button(self._tab2, text="Use PULS\n"
@@ -708,7 +702,8 @@ class Application():
         self._new_stucture_type_label = tk.StringVar()
         self._new_sigma_y1 = tk.DoubleVar()
         self._new_sigma_y2 = tk.DoubleVar()
-        self._new_sigma_x = tk.DoubleVar()
+        self._new_sigma_x1 = tk.DoubleVar()
+        self._new_sigma_x2 = tk.DoubleVar()
         self._new_tauxy = tk.DoubleVar()
         self._new_stf_km1 = tk.DoubleVar()
         self._new_stf_km2 = tk.DoubleVar()
@@ -735,7 +730,8 @@ class Application():
         self._new_stf_fl_t.set(20)
         self._new_sigma_y1.set(80)
         self._new_sigma_y2.set(80)
-        self._new_sigma_x.set(50)
+        self._new_sigma_x1.set(50)
+        self._new_sigma_x2.set(50)
         self._new_stf_km1.set(12)
         self._new_stf_km2.set(24)
         self._new_stf_km3.set(12)
@@ -792,7 +788,8 @@ class Application():
         self._ent_pressure_side = ttk.OptionMenu(self._tab2, self._new_pressure_side,('p', 's')[0], *('p', 's'))
         self._ent_sigma_y1= ttk.Entry(self._tab2, textvariable=self._new_sigma_y1, width = int(7*1))
         self._ent_sigma_y2 = ttk.Entry(self._tab2, textvariable=self._new_sigma_y2, width=int(7*1))
-        self._ent_sigma_x = ttk.Entry(self._tab2, textvariable=self._new_sigma_x, width=int(7*1))
+        self._ent_sigma_x1 = ttk.Entry(self._tab2, textvariable=self._new_sigma_x1, width=int(7*1))
+        self._ent_sigma_x2 = ttk.Entry(self._tab2, textvariable=self._new_sigma_x2, width=int(7 * 1))
         self._ent_tauxy = ttk.Entry(self._tab2, textvariable=self._new_tauxy, width=int(7*1),
                                    )
         # self._ent_stf_type = ttk.Entry(self._main_fr, textvariable=self._new_stf_type, width=int(7*1),
@@ -811,8 +808,7 @@ class Application():
         self._ent_puls_up_boundary = ttk.Entry(self._tab2, textvariable=self._new_puls_up_boundary, width=int(7*1))
 
 
-        self._lab_structure_type = ttk.Label(self._tab2, text='Select structure type:', font=self._text_size['Text 9'],
-                 )
+        self._lab_structure_type = ttk.Label(self._tab2, text='Select structure type:', font=self._text_size['Text 9'])
         self._button_str_type = ttk.Button(self._tab2, text='Show structure types', command=show_message)
         self._structure_types_label =  ttk.Label(textvariable = self._new_stucture_type_label,
                                                 font = self._text_size['Text 8'], )
@@ -824,7 +820,8 @@ class Application():
         self._lab_k3 = ttk.Label(self._tab2, text='k3', )
         self._lab_sig_y1 = ttk.Label(self._tab2, text='sig_y1')
         self._lab_sig_y2 = ttk.Label(self._tab2, text='sig_y2')
-        self._lab_sig_x = ttk.Label(self._tab2, text='sig_x')
+        self._lab_sig_x1 = ttk.Label(self._tab2, text='sig_x1')
+        self._lab_sig_x2 = ttk.Label(self._tab2, text='sig_x2')
         self._lab_tau_y1 = ttk.Label(self._tab2, text='tau_y1')
         self._lab_stf_type = ttk.Label(self._tab2, text='Stf. type')
 
@@ -853,7 +850,7 @@ class Application():
         self._lab_fl_w= ttk.Label(self._tab2, text='fl_w', )
         self._lab_fl_thk = ttk.Label(self._tab2, text='fl_thk', )
 
-        self._chk_button_sigmax = ttk.Checkbutton(self._tab2, variable = self._new_colorcode_sigmax,
+        self._chk_button_sigmax1 = ttk.Checkbutton(self._tab2, variable = self._new_colorcode_sigmax,
                                                  command = self.on_color_code_check)
         self._chk_button_sigmay1 = ttk.Checkbutton(self._tab2, variable = self._new_colorcode_sigmay1,
                                                   command = self.on_color_code_check)
@@ -1192,10 +1189,10 @@ class Application():
 
         ''' END shell input '''
 
-        ent_x = 0.4
-        delta_y = 0.04
-        delta_x = 0.1
-        prop_vert_start = 0.1
+        # ent_x = 0.4
+        # delta_y = 0.04
+        # delta_x = 0.1
+        prop_vert_start = 0
         types_start = 0.005208333
 
         options = list(CylinderAndCurvedPlate.geomeries.values()) # Shell geometry selection [string]
@@ -1218,78 +1215,77 @@ class Application():
 
         self.gui_structural_properties() # Initiating the flat panel structural properties
 
-        # --- tank load input and information ---
-        load_vert_start = 0.673#frame_horizontal -0.03
+        # --- Compartment/tank load input and information ---
+        load_vert_start = 0.05#frame_horizontal -0.03
 
-        ttk.Label(self._main_fr,text = 'Selected compartment from box below:',  )\
-            .place(relx=types_start, rely=load_vert_start + 3*delta_y)
+        ttk.Label(self._tab3,text = 'Selected compartment from box below:',  )\
+            .place(relx=types_start, rely=load_vert_start + 8*delta_y)
 
-        self._selected_tank = ttk.Label(self._main_fr,text='',
-                                       )
-        self._selected_tank.place(relx=0.15, rely=load_vert_start + 3*delta_y)
+        self._selected_tank = ttk.Label(self._tab3,text='', font = 'Verdana 20 bold')
+        self._selected_tank.place(relx=0.3, rely=load_vert_start + 10*delta_y)
 
-        self._compartments_listbox = tk.Listbox(self._main_fr, height = int(10 * 1),
+        self._compartments_listbox = tk.Listbox(self._tab3, height = int(10 * 1),
                                                width = int(5 * 1),
                                                font=self._text_size["Text 10 bold"]
                                                ,
                                                 selectmode = 'extended' )
-        self._compartments_listbox.place(relx=types_start, rely=load_vert_start + 3.5*delta_y)
+        self._compartments_listbox.place(relx=types_start, rely=load_vert_start + 10*delta_y)
         self._compartments_listbox.bind('<<ListboxSelect>>', self.button_1_click_comp_box)
 
 
-        ttk.Button(self._main_fr, text="Set compartment\n""properties.",command = self.update_tank,
+        ttk.Button(self._tab3, text="Set compartment\n""properties.",command = self.update_tank,
                   style = "Bold.TButton")\
-            .place(relx=0.175, rely=load_vert_start + delta_y * 3.3, relwidth = 0.08)
+            .place(relx=types_start + delta_x*4, rely=load_vert_start + delta_y * 10, relwidth = 0.3)
 
-        ttk.Button(self._main_fr, text="Delete all tanks", command=self.delete_all_tanks,
-                  style = "Bold.TButton").place(relx=ent_x+delta_x*3, rely=load_vert_start + delta_y * 8.5,
-                                                relwidth = 0.08)
+        ttk.Button(self._tab3, text="Delete all tanks", command=self.delete_all_tanks,
+                  style = "Bold.TButton").place(relx=types_start + delta_x*4, rely=load_vert_start + delta_y * 12,
+                                                relwidth = 0.3)
 
 
-        self._ent_content_type = ttk.OptionMenu(self._main_fr, self._new_content_type, list(self._tank_options.keys())[0],*list(self._tank_options.keys()),
+        self._ent_content_type = ttk.OptionMenu(self._tab3, self._new_content_type, list(self._tank_options.keys())[0],*list(self._tank_options.keys()),
                                                command=self.tank_density_trace)
         ent_width = 10
 
-        self._ent_overpressure = ttk.Entry(self._main_fr, textvariable = self._new_overpresure,
+        self._ent_overpressure = ttk.Entry(self._tab3, textvariable = self._new_overpresure,
                                          width = int(ent_width * 1),
                                           )
 
-        self._ent_density = ttk.Entry(self._main_fr, textvariable = self._new_density,
+        self._ent_density = ttk.Entry(self._tab3, textvariable = self._new_density,
                                     width = int(ent_width * 1),
                                      )
 
-        self._ent_max_el = ttk.Entry(self._main_fr, textvariable=self._new_max_el,
+        self._ent_max_el = ttk.Entry(self._tab3, textvariable=self._new_max_el,
                                    width=int(ent_width * 1),
                                     )
 
-        self._ent_min_el = ttk.Entry(self._main_fr, textvariable=self._new_min_el,
+        self._ent_min_el = ttk.Entry(self._tab3, textvariable=self._new_min_el,
                                    width=int(ent_width * 1),
                                     )
         
-        comp_dx = 0.032
-        comp_dy = 0.025
-        comp_ent_x = 0.12
-        comp_ent_y = 0.7
-        ttk.Label(self._main_fr, text = '',  )\
+        comp_dx = delta_x
+        comp_dy = delta_y
+        comp_ent_x = ent_x
+        comp_ent_y = 0.4
+        ttk.Label(self._tab3, text = '',  )\
             .place(relx=0.052083333, rely=comp_ent_y + 3.4*comp_dy)
-        ttk.Label(self._main_fr, text='Tank content :', font = self._text_size['Text 8'], )\
-            .place(relx=comp_ent_x-2*comp_dx, rely=comp_ent_y + comp_dy * 4.5)
+        ttk.Label(self._tab3, text='Tank content :', font = self._text_size['Text 8'], )\
+            .place(relx=hor_start, rely=comp_ent_y + comp_dy * 4.5)
         self._ent_content_type.place(relx= comp_ent_x+0.35*comp_dx, rely=comp_ent_y + comp_dy * 4.5)
-        ttk.Label(self._main_fr, text='Tank density [kg/m^3]:', font = self._text_size['Text 8'], )\
-            .place(relx=comp_ent_x-2*comp_dx, rely=comp_ent_y + comp_dy * 6)
+        ttk.Label(self._tab3, text='Tank density [kg/m^3]:', font = self._text_size['Text 8'], )\
+            .place(relx=hor_start, rely=comp_ent_y + comp_dy * 6)
         self._ent_density.place(relx=comp_ent_x+0.4*comp_dx, rely=comp_ent_y + comp_dy * 6)
-        ttk.Label(self._main_fr, text='Overpressure [Pa]:', font = self._text_size['Text 8'], )\
-            .place(relx=comp_ent_x-2*comp_dx, rely=comp_ent_y + comp_dy * 7)
+        ttk.Label(self._tab3, text='Overpressure [Pa]:', font = self._text_size['Text 8'], )\
+            .place(relx=hor_start, rely=comp_ent_y + comp_dy * 7)
         self._ent_overpressure.place(relx=comp_ent_x+0.4*comp_dx, rely=comp_ent_y + comp_dy * 7)
-        ttk.Label(self._main_fr, text='Max elevation [m]:', font = self._text_size['Text 8'], )\
-            .place(relx=comp_ent_x-2*comp_dx, rely=comp_ent_y + comp_dy * 8)
+        ttk.Label(self._tab3, text='Max elevation [m]:', font = self._text_size['Text 8'], )\
+            .place(relx=hor_start, rely=comp_ent_y + comp_dy * 8)
         self._ent_max_el.place(relx=comp_ent_x+0.4*comp_dx, rely=comp_ent_y + comp_dy * 8)
-        ttk.Label(self._main_fr, text='Min elevation [m]:', font = self._text_size['Text 8'], )\
-            .place(relx=comp_ent_x-2*comp_dx, rely=comp_ent_y + comp_dy * 9)
+        ttk.Label(self._tab3, text='Min elevation [m]:', font = self._text_size['Text 8'], )\
+            .place(relx=hor_start, rely=comp_ent_y + comp_dy * 9)
         self._ent_min_el.place(relx=comp_ent_x+0.4*comp_dx, rely=comp_ent_y + comp_dy * 9)
-        self._tank_acc_label = ttk.Label(self._main_fr, text = 'Acceleration [m/s^2]: ',
+        self._tank_acc_label = ttk.Label(self._tab3, text = 'Acceleration [m/s^2]: ',
                                         font = self._text_size['Text 8'], )
-        self._tank_acc_label.place(relx=comp_ent_x-2*comp_dx, rely=comp_ent_y + comp_dy * 10)
+        self._tank_acc_label.place(relx=hor_start, rely=comp_ent_y + comp_dy * 10)
 
 
         # --- button to create compartments and define external pressures ---
@@ -1301,21 +1297,21 @@ class Application():
             else:
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
-            self._int_button = tk.Button(self._main_fr,image = photo,command=self.grid_find_tanks, bg = 'white')
+            self._int_button = tk.Button(self._tab3,image = photo,command=self.grid_find_tanks, bg = 'white')
             self._int_button.image = photo
-            self._int_button.place(relx=0.005, rely=load_vert_start+1.55*delta_y,
-                                   relheight = 0.044, relwidth = 0.12)
+            self._int_button.place(relx=types_start  +delta_x, rely=load_vert_start + delta_y*3,
+                                   relheight = 0.07, relwidth = 0.6)
         except TclError:
-            tk.Button(self._main_fr, text='New tanks - start search \n'
+            tk.Button(self._tab3, text='New tanks - start search \n'
                                   'to find compartments', command=self.grid_find_tanks,
                       bg = self._button_bg_color, fg = self._button_fg_color, ) \
                 .place(relx=types_start, rely=load_vert_start + 1.55 * delta_y,
-                       relheight=0.044, relwidth=0.12)
+                       relheight=0.044, relwidth=0.3)
 
-        show_compartment = ttk.Button(self._main_fr, text='Display current\n compartments',
+        show_compartment = ttk.Button(self._tab3, text='Display current\n compartments',
                                      command=self.grid_display_tanks,
                                   style = "Bold.TButton")
-        show_compartment.place(relx=0.175, rely=load_vert_start + delta_y * 4.5, relwidth = 0.08)
+        show_compartment.place(relx=types_start + delta_x*4, rely=load_vert_start + delta_y * 14, relwidth = 0.3)
 
         try:
             img_file_name = 'img_ext_pressure_button.gif'
@@ -1325,13 +1321,13 @@ class Application():
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
 
-            self._ext_button = tk.Button(self._main_fr,image=photo, command = self.on_show_loads,
+            self._ext_button = tk.Button(self._tab3,image=photo, command = self.on_show_loads,
                                          bg = 'white')
             self._ext_button.image = photo
-            self._ext_button.place(relx=0.13, rely=load_vert_start+1.55*delta_y,
-                                   relheight = 0.044, relwidth = 0.11)
+            self._ext_button.place(relx=types_start + delta_x, rely=load_vert_start,
+                                   relheight = 0.07, relwidth = 0.6)
         except TclError:
-            tk.Button(self._main_fr, text='New external load window \nsea - static/dynamic',
+            tk.Button(self._tab3, text='New external load window \nsea - static/dynamic',
                       command=self.on_show_loads
                       )\
                 .place(relx=ent_x+delta_x*1.5, rely=load_vert_start+1.55*delta_y,
@@ -1531,17 +1527,17 @@ class Application():
         self._main_canvas.configure(bg = self._general_color)
         self._result_canvas.configure(bg = self._general_color)
 
-        self._frame_viz_hor.configure(bg =self._color_text)
-        self._frame_viz_ver.configure(bg=self._color_text)
+        # self._frame_viz_hor.configure(bg =self._color_text)
+        # self._frame_viz_ver.configure(bg=self._color_text)
 
         self.update_frame()
 
     def gui_structural_properties(self, flat_panel = True, shell = False, long_stf = False, ring_stf = False,
                                   ring_frame = False, force_input = False, stress_input = False):
-        vert_start = 0.1
+        vert_start = 0.02
         hor_start = 0.02
 
-        delta_y = 0.034
+        delta_y = 0.03
         delta_x = 0.13
         
         ent_relx = hor_start + 6*delta_x
@@ -1623,27 +1619,29 @@ class Application():
             lab_place = delta_y * 9
             self._lab_sig_y1.place(relx=hor_start + 0 * delta_x, rely=vert_start + lab_place)
             self._lab_sig_y2.place(relx=hor_start + 1 * delta_x, rely=vert_start + lab_place)
-            self._lab_sig_x.place(relx=hor_start + 2 * delta_x, rely=vert_start + lab_place)
-            self._lab_tau_y1.place(relx=hor_start + 3 * delta_x, rely=vert_start + lab_place)
-            self._lab_stf_type.place(relx=hor_start + 4 * delta_x, rely=vert_start + lab_place)
-            self._lab_mat_fac.place(relx=hor_start + 5 * delta_x, rely=vert_start + lab_place)
+            self._lab_sig_x1.place(relx=hor_start + 2 * delta_x, rely=vert_start + lab_place)
+            self._lab_sig_x2.place(relx=hor_start + 3 * delta_x, rely=vert_start + lab_place)
+            self._lab_tau_y1.place(relx=hor_start + 4 * delta_x, rely=vert_start + lab_place)
+            self._lab_stf_type.place(relx=hor_start + 5 * delta_x, rely=vert_start + lab_place)
+            self._lab_mat_fac.place(relx=hor_start + 6 * delta_x, rely=vert_start + lab_place)
 
             lab_place = delta_y * 10
             self._ent_sigma_y1.place(relx=hor_start + 0 * delta_x, rely=vert_start + lab_place)
             self._ent_sigma_y2.place(relx=hor_start + 1 * delta_x, rely=vert_start + lab_place)
-            self._ent_sigma_x.place(relx=hor_start + 2 * delta_x, rely=vert_start + lab_place)
-            self._ent_tauxy.place(relx=hor_start + 3 * delta_x, rely=vert_start + lab_place)
-            self._ent_stf_type.place(relx=hor_start + 4 * delta_x, rely=vert_start + lab_place)
-            self._ent_mat_factor.place(relx=hor_start + 5 * delta_x, rely=vert_start + lab_place, relwidth=0.1)
+            self._ent_sigma_x1.place(relx=hor_start + 2 * delta_x, rely=vert_start + lab_place)
+            self._ent_sigma_x2.place(relx=hor_start + 3 * delta_x, rely=vert_start + lab_place)
+            self._ent_tauxy.place(relx=hor_start + 4 * delta_x, rely=vert_start + lab_place)
+            self._ent_stf_type.place(relx=hor_start + 5 * delta_x, rely=vert_start + lab_place)
+            self._ent_mat_factor.place(relx=hor_start + 6 * delta_x, rely=vert_start + lab_place, relwidth=0.1)
 
             
             lab_place = delta_y * 11
             self._chk_button_sigmay1.place(relx=hor_start + 0 * delta_x, rely=vert_start + lab_place)
             self._chk_button_sigmay2.place(relx=hor_start + 1 * delta_x, rely=vert_start + lab_place)
-            self._chk_button_sigmax.place(relx=hor_start + 2 * delta_x, rely=vert_start + lab_place)
-            self._chk_button_tauxy.place(relx=hor_start + 3 * delta_x, rely=vert_start + lab_place)
-            self._chk_button_structure_type.place(relx=hor_start + 4 * delta_x, rely=vert_start + lab_place)
-            self._chk_button_cc.place(relx=hor_start + 5* delta_x, rely=vert_start + lab_place)
+            self._chk_button_sigmax1.place(relx=hor_start + 2 * delta_x, rely=vert_start + lab_place)
+            self._chk_button_tauxy.place(relx=hor_start + 4 * delta_x, rely=vert_start + lab_place)
+            self._chk_button_structure_type.place(relx=hor_start + 5 * delta_x, rely=vert_start + lab_place)
+            #self._chk_button_cc.place(relx=hor_start + 7* delta_x, rely=vert_start + lab_place)
             shift_x = delta_x * 5
             self._zstar_label.place(relx=hor_start, rely=vert_start + 12 * delta_y)
             self._zstar_chk.place(relx=hor_start + shift_x, rely=vert_start + 12 * delta_y)
@@ -1876,7 +1874,7 @@ class Application():
                       self._buckling_method, self._lab_yield,
                       self._lab_mat_fac,self._structure_types_label, self._button_str_type, self._ent_structure_type,
                       self._lab_structure_type, self._lab_kpp, self._lab_kps, self._lab_km1, self._lab_km2,
-                      self._lab_k3, self._lab_sig_y1, self._lab_sig_y2, self._lab_sig_x, self._lab_tau_y1,
+                      self._lab_k3, self._lab_sig_y1, self._lab_sig_y2, self._lab_sig_x1, self._lab_sig_x2, self._lab_tau_y1,
                       self._lab_stf_type, self._zstar_label, self._lab_press_side, self._ent_pressure_side,
                       self._lab_puls_input, self._lab_puls_spup, self._lab_puls_up_supp, self._lab_puls_acceptance,
                       self._lab_puls_uf, self._lab_puls_int_gt, self._lab_puls_cont_sniped, self._lab_span, self._lab_s,
@@ -1884,8 +1882,8 @@ class Application():
                       self._ent_field_len, self._ent_stf_spacing, self._ent_plate_thk, self._ent_stf_web_h,
                       self._ent_stf_web_t, self._ent_stf_fl_w, self._ent_str_fl_t, self._ent_mat, self._ent_mat_factor,
                       self._ent_plate_kpp, self._ent_plate_kps, self._ent_stf_km1, self._ent_stf_km2, self._ent_stf_km3,
-                      self._ent_sigma_y1, self._ent_sigma_y2, self._ent_sigma_x, self._ent_tauxy, self._ent_stf_type,
-                      self._chk_button_sigmax, self._chk_button_sigmay1, self._chk_button_sigmay2,
+                      self._ent_sigma_y1, self._ent_sigma_y2, self._ent_sigma_x1, self._ent_sigma_x2, self._ent_tauxy, self._ent_stf_type,
+                      self._chk_button_sigmax1, self._chk_button_sigmay1, self._chk_button_sigmay2,
                       self._chk_button_tauxy, self._chk_button_structure_type, self._chk_button_cc,
                       self._ent_puls_sp_or_up, self._ent_puls_method, self._ent_puls_uf, self._ent_puls_panel_boundary,
                       self._ent_puls_stf_end_type, self._chk_button_puls_acceptance, self._chk_button_puls_spup,
@@ -2121,7 +2119,8 @@ class Application():
                     'stf_type': self._new_stf_type.get,
                     'sigma_y1': self._new_sigma_y1.get,
                     'sigma_y2': self._new_sigma_y2.get,
-                    'sigma_x': self._new_sigma_x.get,
+                    'sigma_x1': self._new_sigma_x1.get,
+                    'sigma_x2': self._new_sigma_x2.get,
                     'tau_xy': self._new_tauxy.get,
                     'plate_kpp': self._new_plate_kpp,
                     'stf_kps': self._new_stf_kps.get,
@@ -2835,9 +2834,9 @@ class Application():
             else:
                 puls_util_map = None
 
-            sig_x = np.unique([self._line_to_struc[line][1].get_sigma_x() for line in
+            sig_x = np.unique([self._line_to_struc[line][1].get_sigma_x1() for line in
                                self._line_to_struc.keys()]).tolist()
-            if len(sig_x) > 1:
+            if len(sig_x) > 1: # TODO color coding when using sig_x1 and sig_x2 (23.12.2021)
                 sig_x_map = np.arange(min(sig_x), max(sig_x) + (max(sig_x) - min(sig_x)) / 10,
                                       (max(sig_x) - min(sig_x)) / 10)
             else:
@@ -2926,7 +2925,7 @@ class Application():
 
                 res = list()
                 for stress_list, this_stress in zip([sig_x, sig_y1, sig_y2, tau_xy],
-                                                     [line_data[1].get_sigma_x(), line_data[1].get_sigma_y1(),
+                                                     [line_data[1].get_sigma_x1(), line_data[1].get_sigma_y1(),
                                                       line_data[1].get_sigma_y2(), line_data[1].get_tau_xy()]):
                     if len(stress_list) == 1:
                         res.append(1)
@@ -3537,7 +3536,7 @@ class Application():
                 this_text = 'N/A'
             else:
                 color = state['color code']['lines'][line]['sigma x']
-                this_text = str(self._line_to_struc[line][1].get_sigma_x())
+                this_text = str(self._line_to_struc[line][1].get_sigma_x1())
 
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
@@ -4420,7 +4419,8 @@ class Application():
                             'stf_type': [self._new_stf_type.get(), ''],
                             'sigma_y1': [self._new_sigma_y1.get(), 'MPa'],
                             'sigma_y2': [self._new_sigma_y2.get(), 'MPa'],
-                            'sigma_x': [self._new_sigma_x.get(), 'MPa'],
+                            'sigma_x1': [self._new_sigma_x1.get(), 'MPa'],
+                            'sigma_x2': [self._new_sigma_x2.get(), 'MPa'],
                             'tau_xy': [self._new_tauxy.get(), 'MPa'],
                             'plate_kpp': [self._new_plate_kpp.get(), ''],
                             'stf_kps': [self._new_stf_kps.get(), ''],
@@ -4452,7 +4452,8 @@ class Application():
                                   'structure_type': [self._new_stucture_type.get(), ''],
                                   'sigma_y1': [self._new_sigma_y1.get(), 'MPa'],
                                   'sigma_y2': [self._new_sigma_y2.get(), 'MPa'],
-                                  'sigma_x': [self._new_sigma_x.get(), 'MPa'],
+                                  'sigma_x1': [self._new_sigma_x1.get(), 'MPa'],
+                                  'sigma_x2': [self._new_sigma_x2.get(), 'MPa'],
                                   'tau_xy': [self._new_tauxy.get(), 'MPa'],
                                   'plate_kpp': [self._new_plate_kpp.get(), ''],
                                   'stf_kps': [self._new_stf_kps.get(), ''],
@@ -4681,8 +4682,9 @@ class Application():
 
         self._new_sigma_y1.set(self._default_stresses[self._new_stucture_type.get()][0])
         self._new_sigma_y2.set(self._default_stresses[self._new_stucture_type.get()][1])
-        self._new_sigma_x.set(self._default_stresses[self._new_stucture_type.get()][2])
-        self._new_tauxy.set(self._default_stresses[self._new_stucture_type.get()][3])
+        self._new_sigma_x1.set(self._default_stresses[self._new_stucture_type.get()][2])
+        self._new_sigma_x2.set(self._default_stresses[self._new_stucture_type.get()][3])
+        self._new_tauxy.set(self._default_stresses[self._new_stucture_type.get()][4])
 
         if self._new_stucture_type.get() in self._structure_types['vertical']:
             text = '(Vertical pressure calc.)'
@@ -5027,7 +5029,8 @@ class Application():
             self._new_stf_kps.set(properties['stf_kps'][0])
             self._new_sigma_y1.set(round(properties['sigma_y1'][0],1))
             self._new_sigma_y2.set(round(properties['sigma_y2'][0],1))
-            self._new_sigma_x.set(round(properties['sigma_x'][0],1))
+            self._new_sigma_x1.set(round(properties['sigma_x1'][0],1))
+            self._new_sigma_x2.set(round(properties['sigma_x2'][0], 1))
             self._new_tauxy.set(round(properties['tau_xy'][0],1))
             self._new_stucture_type.set(properties['structure_type'][0])
             self._new_stf_type.set(properties['stf_type'][0])
@@ -5774,6 +5777,12 @@ class Application():
             if 'mat_factor' not in lines_prop.keys():
                 lines_prop['mat_factor'] = [self._new_material_factor.get(), '']
 
+            # Sigma x1/x2 is missing before 3.4
+            if 'sigma_x' in lines_prop.keys():
+                lines_prop['sigma_x1'] = lines_prop['sigma_x']
+                lines_prop['sigma_x2'] = lines_prop['sigma_x']
+                lines_prop.pop('sigma_x')
+
             self._line_to_struc[line][0] = Structure(lines_prop)
             self._line_to_struc[line][1] = CalcScantlings(lines_prop)
             if imported['fatigue_properties'][line] is not None:
@@ -5790,11 +5799,19 @@ class Application():
                                 'Ring stf.': self.RingStfObj.get_structure_prop(),
                                 'Ring frame': self._RingFrame.get_structure_prop()}
                     '''
-                    self._line_to_struc[line][5] = CylinderAndCurvedPlate(imported_dict['Main class'],
-                                                                          shell=None if imported_dict['Shell'] is None else Shell(imported_dict['Shell']),
-                                                                          long_stf=None if imported_dict['Long. stf.'] is None else Structure(imported_dict['Long. stf.']),
-                                                                          ring_stf=None if imported_dict['Ring stf.'] is None else Structure(imported_dict['Ring stf.']),
-                                                                          ring_frame=None if imported_dict['Ring frame'] is None else Structure(imported_dict['Ring frame']))
+                    for stuc_type in ['Long. stf.', 'Ring stf.', 'Ring frame']:
+                        if imported_dict[stuc_type] is not None:
+                            if 'sigma_x' in imported_dict[stuc_type].keys():
+                                imported_dict[stuc_type]['sigma_x1'] = imported_dict[stuc_type]['sigma_x']
+                                imported_dict[stuc_type]['sigma_x2'] = imported_dict[stuc_type]['sigma_x']
+                                imported_dict[stuc_type].pop('sigma_x')
+                    self._line_to_struc[line][5] = \
+                        CylinderAndCurvedPlate(imported_dict['Main class'], shell=None if imported_dict['Shell'] is None
+                        else Shell(imported_dict['Shell']), long_stf=None if imported_dict['Long. stf.'] is None
+                        else Structure(imported_dict['Long. stf.']), ring_stf=None if imported_dict['Ring stf.'] is None
+                        else Structure(imported_dict['Ring stf.']), ring_frame=None if imported_dict['Ring frame']
+                                                                                       is None
+                        else Structure(imported_dict['Ring frame']))
             #  Recording sections.
             self._sections = add_new_section(self._sections, struc.Section(lines_prop))
 
@@ -6321,14 +6338,15 @@ class Application():
         '''
         self._new_sigma_y1.set(returned_stress_and_km[0])
         self._new_sigma_y2.set(returned_stress_and_km[1])
-        self._new_sigma_x.set(returned_stress_and_km[2])
-        self._new_tauxy.set(returned_stress_and_km[3])
-        self._new_stf_km1.set(returned_stress_and_km[4])
+        self._new_sigma_x1.set(returned_stress_and_km[2])
+        self._new_sigma_x2.set(returned_stress_and_km[3])
+        self._new_tauxy.set(returned_stress_and_km[4])
         self._new_stf_km1.set(returned_stress_and_km[5])
         self._new_stf_km1.set(returned_stress_and_km[6])
-        self._new_plate_kpp.set(returned_stress_and_km[7])
-        self._new_stf_kps.set(returned_stress_and_km[8])
-        self._new_stucture_type.set(returned_stress_and_km[9],)
+        self._new_stf_km1.set(returned_stress_and_km[7])
+        self._new_plate_kpp.set(returned_stress_and_km[8])
+        self._new_stf_kps.set(returned_stress_and_km[9])
+        self._new_stucture_type.set(returned_stress_and_km[10],)
 
     def on_close_fatigue_window(self,returned_fatigue_prop: dict):
         '''

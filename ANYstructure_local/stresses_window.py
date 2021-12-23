@@ -26,7 +26,7 @@ class CreateStressesWindow():
 
         self._frame = master
         self._frame.wm_title("Specify strucutre - returned to input field in main window")
-        self._frame.geometry('1500x810')
+        self._frame.geometry('1500x900')
         self._frame.grab_set()
 
         self._opt_runned = False
@@ -44,7 +44,8 @@ class CreateStressesWindow():
         self._new_structure_type = tk.StringVar()
         self._new_trans_stress_high = tk.DoubleVar()
         self._new_trans_stress_low = tk.DoubleVar()
-        self._new_axial_stress = tk.DoubleVar()
+        self._new_axial_stress_1 = tk.DoubleVar()
+        self._new_axial_stress_2 = tk.DoubleVar()
         self._new_shear_stress = tk.DoubleVar()
         self._new_km1 = tk.DoubleVar()
         self._new_km2 = tk.DoubleVar()
@@ -57,7 +58,8 @@ class CreateStressesWindow():
                                                 *self.default_stresses.keys())
         self._ent_trans_stress_high = tk.Entry(self._frame, textvariable=self._new_trans_stress_high, width=ent_w)
         self._ent_trans_stress_low = tk.Entry(self._frame, textvariable=self._new_trans_stress_low, width=ent_w)
-        self._ent_axial_stress = tk.Entry(self._frame, textvariable=self._new_axial_stress, width=ent_w)
+        self._ent_axial_stress_1 = tk.Entry(self._frame, textvariable=self._new_axial_stress_1, width=ent_w)
+        self._ent_axial_stress_2 = tk.Entry(self._frame, textvariable=self._new_axial_stress_2, width=ent_w)
         self._ent_shear_stress = tk.Entry(self._frame, textvariable=self._new_shear_stress, width=ent_w)
         self._ent_km1 = tk.Entry(self._frame, textvariable=self._new_km1, width=ent_w)
         self._ent_km2 = tk.Entry(self._frame, textvariable=self._new_km2, width=ent_w)
@@ -85,30 +87,37 @@ class CreateStressesWindow():
         tk.Label(self._frame, text='[MPa]', font='Verdana 9 bold') \
             .place(x=start_x + dx * 4, y=start_y + 12 * dy)
 
-        tk.Label(self._frame, text='Sigma,x_Sd - axial stress', font='Verdana 9') \
+        tk.Label(self._frame, text='Sigma,x_Sd - axial stress 1', font='Verdana 9') \
             .place(x=start_x, y=start_y + 13 * dy)
+
         tk.Label(self._frame, text='[MPa]', font='Verdana 9 bold') \
             .place(x=start_x + dx * 4, y=start_y + 13 * dy)
 
-        tk.Label(self._frame, text='Tau,xy - shear stress', font='Verdana 9') \
+        tk.Label(self._frame, text='Sigma,x_Sd - axial stress 2', font='Verdana 9') \
             .place(x=start_x, y=start_y + 14 * dy)
+
         tk.Label(self._frame, text='[MPa]', font='Verdana 9 bold') \
             .place(x=start_x + dx * 4, y=start_y + 14 * dy)
 
-        tk.Label(self._frame, text='km1, bending moment factor', font='Verdana 9') \
+        tk.Label(self._frame, text='Tau,xy - shear stress', font='Verdana 9') \
             .place(x=start_x, y=start_y + 15 * dy)
+        tk.Label(self._frame, text='[MPa]', font='Verdana 9 bold') \
+            .place(x=start_x + dx * 4, y=start_y + 15 * dy)
+
+        tk.Label(self._frame, text='km1, bending moment factor', font='Verdana 9') \
+            .place(x=start_x, y=start_y + 16* dy)
 
         tk.Label(self._frame, text='km2, bending moment factor', font='Verdana 9') \
-            .place(x=start_x, y=start_y + 16 * dy)
-
-        tk.Label(self._frame, text='km3, bending moment factor', font='Verdana 9') \
             .place(x=start_x, y=start_y + 17 * dy)
 
-        tk.Label(self._frame, text='kpp, fixation parameter plate', font='Verdana 9') \
+        tk.Label(self._frame, text='km3, bending moment factor', font='Verdana 9') \
             .place(x=start_x, y=start_y + 18 * dy)
 
-        tk.Label(self._frame, text='kps, fixation parameter stiffener', font='Verdana 9') \
+        tk.Label(self._frame, text='kpp, fixation parameter plate', font='Verdana 9') \
             .place(x=start_x, y=start_y + 19 * dy)
+
+        tk.Label(self._frame, text='kps, fixation parameter stiffener', font='Verdana 9') \
+            .place(x=start_x, y=start_y + 20 * dy)
 
         tk.Label(self._frame, text='Max pressure side (plate of stiffener)', font='Verdana 9 bold') \
             .place(x=start_x+5*dx, y=start_y + 8 * dy)
@@ -116,13 +125,14 @@ class CreateStressesWindow():
         self._ent_structure_type.place(x=start_x + dx * 3, y=start_y + 10 * dy)
         self._ent_trans_stress_high.place(x=start_x + dx * 3, y=start_y + 11 * dy)
         self._ent_trans_stress_low.place(x=start_x + dx * 3, y=start_y + 12 * dy)
-        self._ent_axial_stress.place(x=start_x + dx * 3, y=start_y + 13 * dy)
-        self._ent_shear_stress.place(x=start_x + dx * 3, y=start_y + 14 * dy)
-        self._ent_km1.place(x=start_x + dx * 3, y=start_y + 15 * dy)
-        self._ent_km2.place(x=start_x + dx * 3, y=start_y + 16 * dy)
-        self._ent_km3.place(x=start_x + dx * 3, y=start_y + 17 * dy)
-        self._ent_kpp.place(x=start_x + dx * 3, y=start_y + 18 * dy)
-        self._ent_kps.place(x=start_x + dx * 3, y=start_y + 19 * dy)
+        self._ent_axial_stress_1.place(x=start_x + dx * 3, y=start_y + 13 * dy)
+        self._ent_axial_stress_2.place(x=start_x + dx * 3, y=start_y + 14 * dy)
+        self._ent_shear_stress.place(x=start_x + dx * 3, y=start_y + 15 * dy)
+        self._ent_km1.place(x=start_x + dx * 3, y=start_y + 16 * dy)
+        self._ent_km2.place(x=start_x + dx * 3, y=start_y + 17 * dy)
+        self._ent_km3.place(x=start_x + dx * 3, y=start_y + 18 * dy)
+        self._ent_kpp.place(x=start_x + dx * 3, y=start_y + 19 * dy)
+        self._ent_kps.place(x=start_x + dx * 3, y=start_y + 20 * dy)
         self._ent_pressure_side.place(x=start_x+8*dx, y=start_y + 8 * dy)
 
         # setting default values
@@ -132,7 +142,8 @@ class CreateStressesWindow():
         if self._initial_structure_obj != None:
             self._new_trans_stress_high.set(self._initial_structure_obj.get_sigma_y1())
             self._new_trans_stress_low.set(self._initial_structure_obj.get_sigma_y2())
-            self._new_axial_stress.set(self._initial_structure_obj.get_sigma_y2())
+            self._new_axial_stress_1.set(self._initial_structure_obj.get_sigma_x1())
+            self._new_axial_stress_2.set(self._initial_structure_obj.get_sigma_x2())
             self._new_shear_stress.set(self._initial_structure_obj.get_tau_xy())
             self._new_km1.set(self._initial_structure_obj.get_km1())
             self._new_km2.set(self._initial_structure_obj.get_km2())
@@ -145,8 +156,9 @@ class CreateStressesWindow():
             self._new_structure_type.set('GENERAL_INTERNAL_WT')
             self._new_trans_stress_high.set(self.default_stresses[self._new_structure_type.get()][0])
             self._new_trans_stress_low.set(self.default_stresses[self._new_structure_type.get()][1])
-            self._new_axial_stress.set(self.default_stresses[self._new_structure_type.get()][2])
-            self._new_shear_stress.set(self.default_stresses[self._new_structure_type.get()][3])
+            self._new_axial_stress_1.set(self.default_stresses[self._new_structure_type.get()][2])
+            self._new_axial_stress_1.set(self.default_stresses[self._new_structure_type.get()][3])
+            self._new_shear_stress.set(self.default_stresses[self._new_structure_type.get()][4])
             self._new_km1.set(12)
             self._new_km2.set(24)
             self._new_km3.set(12)
@@ -219,8 +231,9 @@ class CreateStressesWindow():
         '''
         self._new_trans_stress_high.set(self.default_stresses[self._new_structure_type.get()][0])
         self._new_trans_stress_low.set(self.default_stresses[self._new_structure_type.get()][1])
-        self._new_axial_stress.set(self.default_stresses[self._new_structure_type.get()][2])
-        self._new_shear_stress.set(self.default_stresses[self._new_structure_type.get()][3])
+        self._new_axial_stress_1.set(self.default_stresses[self._new_structure_type.get()][2])
+        self._new_axial_stress_1.set(self.default_stresses[self._new_structure_type.get()][3])
+        self._new_shear_stress.set(self.default_stresses[self._new_structure_type.get()][4])
 
     def save_and_close(self):
         '''
@@ -233,7 +246,8 @@ class CreateStressesWindow():
 
         self.app.on_close_stresses_window([self._new_trans_stress_high.get(),
                                            self._new_trans_stress_low.get(),
-                                           self._new_axial_stress.get(),
+                                           self._new_axial_stress_1.get(),
+                                           self._new_axial_stress_2.get(),
                                            self._new_shear_stress.get(),
                                            self._new_km1.get(),
                                            self._new_km2.get(),
