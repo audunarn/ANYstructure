@@ -1367,31 +1367,92 @@ class PrescriptiveBuckling():
         self._v = 0.3
         self._yield = 355e6
         self._E = 2.1e11
+        self._stress_load_factor = 1
+
+
 
     def plate_buckling(self):
         '''
         Summary
         '''
-        pass
+
 
     def unstiffened_plate_buckling(self):
 
         E = self._E/1e6
         v = self._v
-        y = self._yield / 1e6
+        fy = self._yield / 1e6
         gammaM = self._Plate.get_mat_factor()
         t = self._Plate.t
         s = self._Plate.s
         l = self._Plate.get_span()*1000
 
-        sxsd = self.sxsd/1e6
-        tsd = self._tTsd/1e6+self._tQsd/1e6
-        psd = self._psd/1e6
+
+        tsd = self._Plate.get_tau_xy()
+        psd = self._lat_press
         shear_ratio_long = 1
         shear_ratio_trans = 1
 
+        sig_x1 = self._Plate.get_sigma_x1()*self._stress_load_factor
+        sig_x2 = self._Plate.get_sigma_x2()*self._stress_load_factor
+
+        sig_y1 = self._Plate.get_sigma_y1() * self._stress_load_factor
+        sig_y2 = self._Plate.get_sigma_y2() * self._stress_load_factor
+        if sig_x1 * sig_x2 >= 0:
+            Use_Smax_x = sxsd = sig_x1 if abs(sig_x1) > abs(sig_x2) else sig_x2
+        else:
+            Use_Smax_x = sxsd =max(sig_x1 , sig_x2)
+
+        if sig_y1 * sig_y2 >= 0:
+            Use_Smax_y = sy1sd = sig_y1 if abs(sig_y1) > abs(sig_y2) else sig_y2
+        else:
+            Use_Smax_y = sy1sd = max(sig_y1 , sig_y2)
+
+        if sig_x1 * sig_x2 >= 0:
+            Use_Smin_x = sig_x2 if abs(sig_x1) > abs(sig_x2) else sig_x1
+        else:
+            Use_Smin_x = min(sig_x1 , sig_x2)
+
+        if sig_y1 * sig_y2 >= 0:
+            Use_Smin_y = sig_y2 if abs(sig_y1) > abs(sig_y2) else sig_y1
+        else:
+            Use_Smin_y = min(sig_y1 , sig_y2)
+
+        Max_vonMises_x = sig_x1 if abs(sig_x1) > abs(sig_x2) else sig_x2
+        sxsd = Use_Smax_x
+
+        l1 = min(l/4, s/2)
+        if l == 0:
+            sig_trans_l1 = Use_Smax_y
+        else:
+            sig_trans_l1 = Use_Smax_y*(shear_ratio_trans+(1-shear_ratio_trans)*(l-l1)/l)
+
+        trans_stress_used = sysd = 0.75*Use_Smax_y if abs(0.75*Use_Smax_y) > abs(Use_Smax_y) else sig_trans_l1
+
         #Pnt. 5  Lateral loaded plates
-        #sjsd =math.sqrt(O2^2+I4^2-O2*I4+3*I5^2)
+        sjsd =math.sqrt(math.pow(Max_vonMises_x,2) + math.pow(Use_Smax_x,2)-Max_vonMises_x*sysd+3*math.pow(tsd,2))
+        uf_lat_load_pl = sjsd/fy
+
+
+
+        psi_x =max([0,(1-math.pow(sjsd/fy,2))/math.sqrt(1-3/4*math.pow(sysd/fy,2)-3*math.pow(tsd/fy,2))])
+        psi_x_chk = (1-3/4*math.pow(sy1sd/fy,2)-3*math.pow(tsd/fy,2))>0
+        psi_y = max([0,(1-math.pow(sjsd/fy,2))/math.sqrt(1-3/4*math.pow(sxsd/fy,2)-3*math.pow(tsd/fy,2))]) \
+            if 1-3/4*math.pow(sxsd/fy,2)-3*math.pow(tsd/fy,2) > 0 else 0
+        psi_x_chk = (1 - 3 / 4 * math.pow(sxsd / fy, 2) - 3 * math.pow(tsd / fy, 2)) > 0
+        if gammaM * s * l == 0:
+            Psd_max_press = 0
+        else:
+            if all([psi_x_chk, psi_x_chk]):
+                Psd_max_press = (4 * fy / gammaM * math.pow(t / s,2) * (psi_y + math.pow(s / l, 2) * psi_x))
+            else:
+                Psd_max_press = -1
+        uf_lat_load_pl_press = 9 if psd < 0 else abs(psd/Psd_max_press)
+        print(sxsd, sy1sd, tsd, sjsd, uf_lat_load_pl, psi_x, psi_y, uf_lat_load_pl_press, psd,Psd_max_press)
+
+
+
+
 
 
 class Shell():
@@ -3508,8 +3569,10 @@ if __name__ == '__main__':
     Stiffener = Structure(ex.obj_dict)
     Girder = Structure(ex.obj_dict_heavy)
 
-    PreBuc = PrescriptiveBuckling(Plate = Plate, Stiffener = Stiffener, Girder = Girder, lat_press=0.4)
+    PreBuc = PrescriptiveBuckling(Plate = Plate, Stiffener = Stiffener, Girder = Girder, lat_press=0.3)
     print(Plate)
     print(Stiffener)
     print(Girder)
+
+    PreBuc.unstiffened_plate_buckling()
 
