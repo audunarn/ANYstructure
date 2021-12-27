@@ -1116,6 +1116,7 @@ class CalcScantlings(Structure):
         #7.7.3 Resistance parameters for stiffeners
 
         se = s * Cxs * Cys # 7.3, eq7.13, checked
+
         zp = self.get_cross_section_centroid_with_effective_plate(se) - t / 2  # ch7.5.1 page 19
         zt = (t / 2 + hw + tf) - zp  # ch 7.5.1 page 19
 
@@ -1357,17 +1358,22 @@ class PrescriptiveBuckling():
 
     Calculation of buckling
     '''
-    def __init__(self, Plate: Structure = None, Stiffener: Structure = None, Girder: Structure = None,
+    def __init__(self, Plate: CalcScantlings = None, Stiffener: CalcScantlings = None, Girder: CalcScantlings = None,
                  lat_press = None):
         super(PrescriptiveBuckling, self).__init__()
         self._Plate = Plate  # This contain the stresses
         self._Stiffener = Stiffener
         self._Girder = Girder
         self._lat_press = lat_press
+        self._min_lat_press_adj_span = None
         self._v = 0.3
         self._yield = 355e6
         self._E = 2.1e11
         self._stress_load_factor = 1
+        self._lat_load_factor = 1
+        self._method = 1
+
+        self._stf_end_support = 'Continuous'
 
 
 
@@ -1376,8 +1382,13 @@ class PrescriptiveBuckling():
         Summary
         '''
 
+        unstf_pl = self.unstiffened_plate_buckling()
+        stf_pla = self.stiffened_panel(unstf_pl_data=unstf_pl)
+
 
     def unstiffened_plate_buckling(self):
+
+        data_to_return = dict()
 
         E = self._E/1e6
         v = self._v
@@ -1387,9 +1398,8 @@ class PrescriptiveBuckling():
         s = self._Plate.s
         l = self._Plate.get_span()*1000
 
-
         tsd = self._Plate.get_tau_xy()
-        psd = self._lat_press
+        psd = self._lat_press * self._lat_load_factor
         shear_ratio_long = 1
         shear_ratio_trans = 1
 
@@ -1419,7 +1429,9 @@ class PrescriptiveBuckling():
             Use_Smin_y = min(sig_y1 , sig_y2)
 
         Max_vonMises_x = sig_x1 if abs(sig_x1) > abs(sig_x2) else sig_x2
-        sxsd = Use_Smax_x
+
+        data_to_return['sxsd'] = sxsd
+        data_to_return['sy1sd'] = sy1sd
 
         l1 = min(l/4, s/2)
         if l == 0:
@@ -1428,7 +1440,7 @@ class PrescriptiveBuckling():
             sig_trans_l1 = Use_Smax_y*(shear_ratio_trans+(1-shear_ratio_trans)*(l-l1)/l)
 
         trans_stress_used = sysd = 0.75*Use_Smax_y if abs(0.75*Use_Smax_y) > abs(Use_Smax_y) else sig_trans_l1
-
+        data_to_return['sysd'] = sysd
         #Pnt. 5  Lateral loaded plates
         sjsd =math.sqrt(math.pow(Max_vonMises_x,2) + math.pow(Use_Smax_x,2)-Max_vonMises_x*sysd+3*math.pow(tsd,2))
         uf_lat_load_pl = sjsd/fy
@@ -1495,7 +1507,9 @@ class PrescriptiveBuckling():
         syRd = syR if not all([sig_y1<0, sig_y2<0]) else fy
         syRd = syRd/gammaM
         uf_unstf_pl_trans_stress = 0 if syRd == 0 else abs(sysd)/syRd
-        print(uf_unstf_pl_trans_stress)
+        #print(uf_unstf_pl_trans_stress)
+        data_to_return['syR'] = syR
+        data_to_return['syRd'] = syRd
 
         #6.4  Shear stress
         if l >= s:
@@ -1544,6 +1558,93 @@ class PrescriptiveBuckling():
         comb_req = math.pow(sxsd_div_sxrd, 2)+math.pow(sysd_div_syrd, 2)-ci*sxsd_div_sxrd*sysd_div_syrd+\
                    math.pow(tausd_div_taurd, 2)
         uf_unstf_pl_comb_stress = comb_req
+
+        return data_to_return
+
+    def stiffened_panel(self, unstf_pl_data = None):
+        E = self._E / 1e6
+        v = self._v
+        fy = self._yield / 1e6
+        gammaM = self._Plate.get_mat_factor()
+        t = self._Plate.t
+        s = self._Plate.s
+        l = self._Plate.get_span() * 1000
+
+        tsd = self._Plate.get_tau_xy() * self._stress_load_factor
+        psd = self._lat_press
+        shear_ratio_long = 1
+        shear_ratio_trans = 1
+
+        sig_x1 = self._Plate.get_sigma_x1() * self._stress_load_factor
+        sig_x2 = self._Plate.get_sigma_x2() * self._stress_load_factor
+
+        sig_y1 = self._Plate.get_sigma_y1() * self._stress_load_factor
+        sig_y2 = self._Plate.get_sigma_y2() * self._stress_load_factor
+
+        Lg = self._Plate.get_lg()*1000
+
+        sxsd = 0 if self._method == 2 else unstf_pl_data['sxsd']
+        sy1sd = unstf_pl_data['sy1sd']
+        sysd = 0 if self._method == 2 else unstf_pl_data['sysd']
+        tsd = self._Plate.get_tau_xy() * self._stress_load_factor
+        psd = self._lat_press * self._lat_load_factor
+        psd_min_adj = psd if self._min_lat_press_adj_span is None else\
+            self._min_lat_press_adj_span*self._lat_load_factor
+        shear_ratio_long = 1
+        shear_ratio_trans = 1
+
+        #Pnt.7:  Buckling of stiffened plates
+        Vsd = psd*s*l/2
+        tw_req = Vsd*gammaM*math.sqrt(3)/(fy*self._Stiffener.hw)
+        Anet = self._Stiffener.hw * self._Stiffener.tw + self._Stiffener.tw*self._Stiffener.tf
+
+        Vrd = Anet*fy/(gammaM*math.sqrt(3))
+
+        Vsd_div_Vrd = Vsd/Vrd
+
+        # 7.2  Forces in idealised stiffened plate
+        Iy = Is = self._Stiffener.get_moment_of_intertia()*1000**4
+        kc = 0 if t*s == 0 else 2*(1+math.sqrt(1+10.9*Is/(math.pow(t,3)*s)))
+        mc = 13.3 if self._stf_end_support == 'Continuous' else 8.9
+
+        # 7.3 Effective plate width
+        syR = unstf_pl_data['syR']
+
+        Cys = 0.5*(math.sqrt(4-3*math.pow(sysd/fy,2))+sysd/fy)
+
+        alphap = 0 if t*E == 0 else 0.525 * (s / t) * math.sqrt(fy / E)  # reduced plate slenderness, checked not calculated with ex
+        Cxs = (alphap - 0.22) / math.pow(alphap, 2) if alphap > 0.673 else 1
+
+        if sysd < 0:
+            Cys = min(Cys, 1)
+        else:
+            if s / t <= 120:
+                ci = 0 if t == 0 else 1-s / 120 / t
+            else:
+                ci = 0
+
+            Cys = math.sqrt(1 - math.pow(sysd / syR, 2) + ci * ((sxsd * sysd) / (Cxs * fy * syR)))
+        se_div_s = Cxs * Cys
+        se = s * se_div_s
+
+        zp = self._Stiffener.get_cross_section_centroid_with_effective_plate(se=se/1000)*1000 - t / 2  # ch7.5.1 page 19
+        zt = (self._Stiffener.hw+self._Stiffener.tf) - zp + t/2
+
+        Iy = self._Stiffener.get_moment_of_intertia(efficent_se=se/1000)*1000**4
+
+        Weff = 0.0001 if zt == 0 else Iy/zt
+        Co= 0 if kc*E*t*s == 0 else Weff*fy*mc/(kc*E*math.pow(t,2)*s)
+        Po = 0 if all([sig_y1 < 0, sig_y2 < 0]) else (0.6+0.4*shear_ratio_trans)*Co*sy1sd \
+            if shear_ratio_trans >-1.5 else 0
+
+        qsd_press = (psd+abs(Po))*s
+        qsd_opposite = abs(Po)*s if psd<Po else 0
+        print(qsd_press, qsd_opposite)
+
+
+
+
+
 
 
 class Shell():
@@ -3656,14 +3757,14 @@ if __name__ == '__main__':
     # print(my_cyl.get_utilization_factors())
 
     # Prescriptive buckling UPDATED
-    Plate = Structure(ex.obj_dict)
-    Stiffener = Structure(ex.obj_dict)
-    Girder = Structure(ex.obj_dict_heavy)
+    Plate = CalcScantlings(ex.obj_dict)
+    Stiffener = CalcScantlings(ex.obj_dict)
+    Girder = CalcScantlings(ex.obj_dict_heavy)
 
     PreBuc = PrescriptiveBuckling(Plate = Plate, Stiffener = Stiffener, Girder = Girder, lat_press=0.3)
     print(Plate)
     print(Stiffener)
     print(Girder)
 
-    PreBuc.unstiffened_plate_buckling()
+    PreBuc.plate_buckling()
 
