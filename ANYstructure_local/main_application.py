@@ -152,11 +152,13 @@ class Application():
 
         sub_colors = tk.Menu(menu)
         menu.add_cascade(label='GUI', menu = sub_colors)
-        sub_colors.add_command(label='Default', command=lambda id="default": self.set_colors(id))
-        sub_colors.add_command(label = 'Light', command = lambda id = "light": self.set_colors(id))
-        sub_colors.add_command(label='Grey', command = lambda id = "grey": self.set_colors(id))
-        sub_colors.add_command(label='Dark', command = lambda id = "dark": self.set_colors(id))
-        sub_colors.add_command(label='Pink', command=lambda id="pink": self.set_colors(id))
+        sub_colors.add_command(label='Colors - Default', command=lambda id="default": self.set_colors(id))
+        sub_colors.add_command(label = 'Colors - Light', command = lambda id = "light": self.set_colors(id))
+        sub_colors.add_command(label='Colors - Grey', command = lambda id = "grey": self.set_colors(id))
+        sub_colors.add_command(label='Colors - Dark', command = lambda id = "dark": self.set_colors(id))
+        sub_colors.add_command(label='Colors - Unicorn', command=lambda id="pink": self.set_colors(id))
+        sub_colors.add_command(label='Functional - All items', command=lambda id="all items": self.set_colors(id))
+        sub_colors.add_command(label='Functional - Modelling', command=lambda id="modelling": self.set_colors(id))
 
         #base_mult = 1.2
         #base_canvas_dim = [int(1000 * base_mult),int(720*base_mult)]  #do not modify this, sets the "orignal" canvas dimensions.
@@ -353,6 +355,7 @@ class Application():
         self._grid_calc = None
         self.text_widget = None
         self._clicked_section_create= None # Identifiation of the button clicked. Sections.
+        self._gui_functional_look = 'all items' # used to change size and location of frames, canvas etc.
 
         # These sets the location where entries are placed.
         ent_x = 0.4
@@ -484,37 +487,40 @@ class Application():
             .place(relx=line_x, rely=line_start+3*delta_y)
         ttk.Checkbutton(self._tab1, variable = self._new_line_name, command = self.on_color_code_check)\
             .place(relx=ent_x, rely=line_start+3*delta_y)
-
-        ttk.Checkbutton(self._main_fr, variable = self._new_shortcut_backdrop, command = self.update_frame)\
-            .place(relx = 0.66, y=0)
-        ttk.Label(self._main_fr, text='Color coding',font="Text 9", )\
-            .place(relx = 0.26, y=20)
-        ttk.Checkbutton(self._main_fr, variable = self._new_colorcode_beams, command = self.on_color_code_check)\
-            .place(relx = 0.26, y=40)
-        ttk.Checkbutton(self._main_fr, variable = self._new_colorcode_plates, command = self.on_color_code_check)\
-            .place(relx = 0.26, y=60)
-        ttk.Checkbutton(self._main_fr, variable = self._new_colorcode_pressure, command = self.on_color_code_check)\
-            .place(relx = 0.26, y=80)
-        ttk.Checkbutton(self._main_fr, variable = self._new_colorcode_utilization, command = self.on_color_code_check)\
-            .place(relx = 0.26, y=100)
-        ttk.Checkbutton(self._main_fr, variable = self._new_colorcode_section_modulus, command = self.on_color_code_check)\
-            .place(relx = 0.26, y=120)
-        ttk.Checkbutton(self._main_fr, variable = self._new_colorcode_fatigue, command = self.on_color_code_check)\
-            .place(relx = 0.26, y=140)
-        ttk.Checkbutton(self._main_fr, variable = self._new_colorcode_total, command = self.on_color_code_check)\
-            .place(relx = 0.26, y=160)
+        
+        chk_x_shift = 0.5
+        lab_x_shift = 0.02
+        ttk.Checkbutton(self._tab5, variable = self._new_shortcut_backdrop, command = self.update_frame)\
+            .place(relx = chk_x_shift, rely=0.05-1*delta_y)
+        ttk.Label(self._tab5, text='Color coding of line properties and utilizations:',font="Text 9", )\
+            .place(relx = lab_x_shift, rely=0.05+3*delta_y)
+        ttk.Checkbutton(self._tab5, variable = self._new_colorcode_beams, command = self.on_color_code_check)\
+            .place(relx = chk_x_shift, rely=0.05+4*delta_y)
+        ttk.Checkbutton(self._tab5, variable = self._new_colorcode_plates, command = self.on_color_code_check)\
+            .place(relx = chk_x_shift, rely=0.05+5*delta_y)
+        ttk.Checkbutton(self._tab5, variable = self._new_colorcode_pressure, command = self.on_color_code_check)\
+            .place(relx = chk_x_shift, rely=0.05+6*delta_y)
+        ttk.Checkbutton(self._tab5, variable = self._new_colorcode_utilization, command = self.on_color_code_check)\
+            .place(relx = chk_x_shift, rely=0.05+7*delta_y)
+        ttk.Checkbutton(self._tab5, variable = self._new_colorcode_section_modulus, command = self.on_color_code_check)\
+            .place(relx = chk_x_shift, rely=0.05+8*delta_y)
+        ttk.Checkbutton(self._tab5, variable = self._new_colorcode_fatigue, command = self.on_color_code_check)\
+            .place(relx = chk_x_shift, rely=0.05+9*delta_y)
+        ttk.Checkbutton(self._tab5, variable = self._new_colorcode_total, command = self.on_color_code_check)\
+            .place(relx = chk_x_shift, rely=0.05+10*delta_y)
 
         self._chk_cc_spacing = ttk.Checkbutton(self._tab2, variable = self._new_colorcode_spacing,
                                               command = self.on_color_code_check)
 
-        ttk.Label(self._main_fr, text='Check to see avaliable shortcuts', font="Text 9").place(relx = 0.67, y=0)
-        ttk.Label(self._main_fr, text='Beam prop.', font="Text 9").place(relx = 0.27, y=40)
-        ttk.Label(self._main_fr, text='Plate thk.', font="Text 9").place(relx = 0.27, y=60)
-        ttk.Label(self._main_fr, text='Pressure', font="Text 9").place(relx = 0.27, y=80)
-        ttk.Label(self._main_fr, text='Buckling UF', font="Text 9").place(relx = 0.27, y=100)
-        ttk.Label(self._main_fr, text='Sec. mod. UF', font="Text 9").place(relx=0.27, y=120)
-        ttk.Label(self._main_fr, text='Fatigue UF', font="Text 9").place(relx=0.27, y=140)
-        ttk.Label(self._main_fr, text='Total UF', font="Text 9").place(relx=0.27, y=160)
+        ttk.Label(self._tab5, text='Check to see avaliable shortcuts', font="Text 9").place(relx = lab_x_shift,
+                                                                                            rely=0.05-1*delta_y)
+        ttk.Label(self._tab5, text='Beam prop.', font="Text 9").place(relx = lab_x_shift, rely=0.05+4*delta_y)
+        ttk.Label(self._tab5, text='Plate thk.', font="Text 9").place(relx = lab_x_shift, rely=0.05+5*delta_y)
+        ttk.Label(self._tab5, text='Pressure', font="Text 9").place(relx = lab_x_shift, rely=0.05+6*delta_y)
+        ttk.Label(self._tab5, text='Buckling UF', font="Text 9").place(relx = lab_x_shift, rely=0.05+7*delta_y)
+        ttk.Label(self._tab5, text='Sec. mod. UF', font="Text 9").place(relx = lab_x_shift, rely=0.05+8*delta_y)
+        ttk.Label(self._tab5, text='Fatigue UF', font="Text 9").place(relx = lab_x_shift, rely=0.05+9*delta_y)
+        ttk.Label(self._tab5, text='Total UF', font="Text 9").place(relx = lab_x_shift, rely=0.05+10*delta_y)
 
         ttk.Spinbox(self._tab1, textvariable=self._new_line_p1, width=int(ent_width * 1), from_ = 0,
                     to = float('inf')).place(relx=ent_x, rely=line_start+1*delta_y)
@@ -618,16 +624,16 @@ class Application():
 
 
 
-        ttk.Label(self._main_fr, text='Label color code', font="Text 9")\
-            .place(relx=0.28, rely=0)
-        ttk.Label(self._main_fr, text='Show COG/COB', font="Text 9")\
-            .place(relx=0.175, rely=0.91)
+        ttk.Label(self._tab5, text='Label color code', font="Text 9")\
+            .place(relx=0.02, rely=0.05)
+        ttk.Label(self._tab5, text='Show COG/COB', font="Text 9")\
+            .place(relx=0.02, rely=0.05+delta_y)
 
-        ttk.Checkbutton(self._main_fr, variable = self._new_label_color_coding, command = self.on_color_code_check)\
-            .place(relx=0.26, rely=0)
+        ttk.Checkbutton(self._tab5, variable = self._new_label_color_coding, command = self.on_color_code_check)\
+            .place(relx=0.5, rely=0.05)
 
-        ttk.Checkbutton(self._main_fr, variable = self._new_show_cog, command = self.update_frame)\
-            .place(relx=0.24, rely=0.91)
+        ttk.Checkbutton(self._tab5, variable = self._new_show_cog, command = self.update_frame)\
+            .place(relx=0.5, rely=0.05+delta_y)
 
         vert_start = 0.1
         hor_start = 0.02
@@ -1426,7 +1432,7 @@ class Application():
         except TclError:
             self._opt_button =tk.Button(self._main_fr, text='Optimize', command=self.on_optimize,
                       bg = self._button_bg_color, fg = self._button_fg_color)
-            self._opt_button.place(relx=lc_x, rely=lc_y - 6 * lc_y_delta)
+            self._opt_button.place(relx=lc_x, rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.098)
         try:
             img_file_name = 'img_multi_opt.gif'
             if os.path.isfile('images/' + img_file_name):
@@ -1441,7 +1447,8 @@ class Application():
         except TclError:
             self._opt_button_mult= tk.Button(self._main_fr, text='MultiOpt', command=self.on_optimize_multiple,
                       bg = self._button_bg_color, fg = self._button_fg_color)
-            self._opt_button_mult.place(relx=lc_x + delta_x*7,rely=lc_y - 6 * lc_y_delta)
+            self._opt_button_mult.place(relx=lc_x+0.1, rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.065)
+
 
         try:
             img_file_name = 'cylinder_opt.png'
@@ -1465,8 +1472,8 @@ class Application():
                                     relwidth = 0.04)
         self._optimization_buttons = {'panel': [self._opt_button, self._opt_button_mult, self._opt_button_span],
                                    'panel place': [[lc_x, lc_y - 6 * lc_y_delta, 0.04, 0.098],
-                                                   [lc_x+delta_x*3.8, lc_y - 6 * lc_y_delta, 0.04, 0.065],
-                                                   [lc_x + delta_x * 6.4, lc_y - 6 * lc_y_delta, 0.04, 0.04]],
+                                                   [lc_x+0.1, lc_y - 6 * lc_y_delta, 0.04, 0.065],
+                                                   [lc_x + 0.167, lc_y - 6 * lc_y_delta, 0.04, 0.04]],
                                    'cylinder': [self._opt_cylinder],
                                    'cylinder place' : [[lc_x, lc_y - 6 * lc_y_delta, 0.04, 0.175]]}
 
@@ -1511,21 +1518,33 @@ class Application():
             self._general_color = '#FFD3F6'
             self._color_text = 'black'
             ent_bg = 'white'
+            #relx=x_canvas_place, rely=0,relwidth=0.523, relheight = 0.73
+        elif theme == 'modelling':
+            self._main_canvas.place_forget()
+            x_canvas_place = 0.26
+            self._main_canvas.place(relx=x_canvas_place, rely=0,relwidth=0.74, relheight = 0.99)
+            tk.Misc.lift(self._main_canvas)
+            self._gui_functional_look = 'modelling'
+        elif theme == 'all items':
+            self._gui_functional_look = 'all items'
+            self._main_canvas.place_forget()
+            x_canvas_place = 0.26
+            self._main_canvas.place(relx=x_canvas_place, rely=0, relwidth=0.523, relheight=0.73)
 
+        if theme not in ['modelling', 'all items']:
+            self._style.configure("Bold.TButton", font=('Sans', '10', 'bold'))
+            self._style.configure('TCheckbutton', background=self._general_color)
+            self._style.configure('TFrame', background=self._general_color)
+            self._style.configure('TLabel', background=self._general_color, foreground = self._color_text)
+            self._style.configure('TScale', background=self._general_color)
+            self._style.configure('TEntry', background=ent_bg)
+            self._style.configure('TOptionMenu', background=ent_bg)
+            self._style.configure("TMenubutton", background=ent_bg)
+            self._style.configure('TRadiobutton', background=self._general_color, foreground='black')
 
-        self._style.configure("Bold.TButton", font=('Sans', '10', 'bold'))
-        self._style.configure('TCheckbutton', background=self._general_color)
-        self._style.configure('TFrame', background=self._general_color)
-        self._style.configure('TLabel', background=self._general_color, foreground = self._color_text)
-        self._style.configure('TScale', background=self._general_color)
-        self._style.configure('TEntry', background=ent_bg)
-        self._style.configure('TOptionMenu', background=ent_bg)
-        self._style.configure("TMenubutton", background=ent_bg)
-        self._style.configure('TRadiobutton', background=self._general_color, foreground='black')
-
-        self._prop_canvas.configure(bg = self._general_color)
-        self._main_canvas.configure(bg = self._general_color)
-        self._result_canvas.configure(bg = self._general_color)
+            self._prop_canvas.configure(bg = self._general_color)
+            self._main_canvas.configure(bg = self._general_color)
+            self._result_canvas.configure(bg = self._general_color)
 
         # self._frame_viz_hor.configure(bg =self._color_text)
         # self._frame_viz_ver.configure(bg=self._color_text)
@@ -2159,7 +2178,8 @@ class Application():
         :return:
         '''
 
-        if self._line_is_active and self._active_line in self._line_to_struc.keys():
+        if all([self._line_is_active,self._active_line in self._line_to_struc.keys(),
+                self._gui_functional_look == 'all items']):
             lc_x, lc_x_delta, lc_y, lc_y_delta = 0.791666667, 0.026041667, 0.287037037, 0.023148148
 
             #self._active_label.config(text=self._active_line)

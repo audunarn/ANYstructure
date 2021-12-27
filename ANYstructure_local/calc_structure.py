@@ -1439,20 +1439,111 @@ class PrescriptiveBuckling():
         psi_x_chk = (1-3/4*math.pow(sy1sd/fy,2)-3*math.pow(tsd/fy,2))>0
         psi_y = max([0,(1-math.pow(sjsd/fy,2))/math.sqrt(1-3/4*math.pow(sxsd/fy,2)-3*math.pow(tsd/fy,2))]) \
             if 1-3/4*math.pow(sxsd/fy,2)-3*math.pow(tsd/fy,2) > 0 else 0
-        psi_x_chk = (1 - 3 / 4 * math.pow(sxsd / fy, 2) - 3 * math.pow(tsd / fy, 2)) > 0
+        psi_y_chk = (1 - 3 / 4 * math.pow(sxsd / fy, 2) - 3 * math.pow(tsd / fy, 2)) > 0
         if gammaM * s * l == 0:
             Psd_max_press = 0
         else:
-            if all([psi_x_chk, psi_x_chk]):
+            if all([psi_x_chk, psi_y_chk]):
                 Psd_max_press = (4 * fy / gammaM * math.pow(t / s,2) * (psi_y + math.pow(s / l, 2) * psi_x))
             else:
                 Psd_max_press = -1
         uf_lat_load_pl_press = 9 if psd < 0 else abs(psd/Psd_max_press)
-        print(sxsd, sy1sd, tsd, sjsd, uf_lat_load_pl, psi_x, psi_y, uf_lat_load_pl_press, psd,Psd_max_press)
 
 
+        #6.2 & 6.6 Longitudinal stress
+        if shear_ratio_long <= -2:
+            ksig = "Unknown"
+        elif 0 <= shear_ratio_long <= 1:
+            ksig = 8.2 / (1.05 + shear_ratio_long)
+        elif shear_ratio_long <= -1:
+            ksig = 7.81 - 6.29 * shear_ratio_long + 9.78 * math.pow(shear_ratio_long, 2)
+        elif -2 < shear_ratio_long < -1:
+            ksig = 5.98 * math.pow(1 - shear_ratio_long, 2)
 
+        #print(sxsd, sy1sd, tsd, sjsd, uf_lat_load_pl, psi_x, psi_y, uf_lat_load_pl_press, psd, Psd_max_press,ksig)
 
+        if t*E == 0:
+            alpha_p = 0
+        elif ksig == "Unknown":
+            alpha_p = 1.05*s/t*math.sqrt(fy/E)
+        else:
+            alpha_p = s/t/(28.4*math.sqrt(ksig*235/fy))
+
+        Cx =(alpha_p-0.055*(3+max([-2,shear_ratio_long])))/math.pow(alpha_p, 2)
+
+        sxRd = Cx*fy/gammaM if not all([sig_x1<0, sig_x2<0]) else 1
+        uf_unstf_pl_long_stress = 0 if sxRd == 0 else abs(sxsd/sxRd)
+        #print(uf_unstf_pl_long_stress)
+
+        #6.3 & 6.8 Transverse stresses:
+        ha = 0 if t == 0 else max([0,0.05*s/t-0.75])
+        kp_1_for_Psd = 0 if s == 0 else 2*math.pow(t/s,2)*fy
+        kp_used = 1-ha*(psd/fy-2*math.pow(t/s,2)) if psd>kp_1_for_Psd else 1
+
+        alpha_c = 0 if t*E == 0 else 1.1*s/t*math.sqrt(fy/E)
+        mu = 0.21*(alpha_c-0.2)
+        if alpha_c <= 0.2:
+            kappa = 1
+        elif 0.2 <- alpha_c < 2:
+            kappa = 0 if alpha_c == 0 else 1/(2*math.pow(alpha_c,2))*(1+mu+math.pow(alpha_c,2)-
+                                                                      math.sqrt((1+mu+math.pow(alpha_c,2))^2-
+                                                                                4*math.pow(alpha_c,2)))
+        elif alpha_c >= 2:
+            kappa = 0 if alpha_c == 0 else 1/(2*math.pow(alpha_c,2))+0.07
+
+        syR = 0 if l*fy == 0 else (1.3*t/l*math.sqrt(E/fy)+kappa*(1-1.3*t/l*math.sqrt(E/fy)))*fy*kp_used
+        syRd = syR if not all([sig_y1<0, sig_y2<0]) else fy
+        syRd = syRd/gammaM
+        uf_unstf_pl_trans_stress = 0 if syRd == 0 else abs(sysd)/syRd
+        print(uf_unstf_pl_trans_stress)
+
+        #6.4  Shear stress
+        if l >= s:
+            kl = 0 if l == 0 else 5.34+4*math.pow(s/l,2)
+        else:
+            kl = 0 if l == 0 else 5.34*math.pow(s/l,2)+4
+
+        alpha_w = 0 if t*E*kl == 0 else 0.795*s/t*math.sqrt(fy/E/kl)
+        if alpha_w <= 0.8:
+            Ctau = 1
+        elif 0.8 < alpha_w < 1.25:
+            Ctau = 1-0.675*(alpha_w-0.8)
+        else:
+            Ctau = 0 if alpha_w == 0 else 0.9/alpha_w
+
+        tauRd = Ctau*fy/gammaM/math.sqrt(3)
+        uf_unstf_pl_shear_stress = 0 if tauRd == 0 else tsd/tauRd
+        #print(uf_unstf_pl_shear_stress)
+
+        #6.5  Combined stresses
+
+        if alpha_w <= 0.8:
+            Ctaue = 1
+        elif 0.8 < alpha_w < 1.25:
+            Ctaue = 1-0.8*(alpha_w-0.8)
+        else:
+            Ctaue = 0 if alpha_w == 0 else 1/math.pow(alpha_w,2)
+
+        tauRd_comb = Ctaue*fy/gammaM/math.sqrt(3)
+        tauRd_comb = tauRd if sysd>0 else tauRd
+
+        if s/t <= 120:
+            ci = 0 if t == 0 else 1-s/120/t
+        elif s/t > 120:
+            ci  = 0
+        else:
+            ci = 1
+
+        sxRd_comb = fy/gammaM if all([sig_x1<0, sig_x2<0]) else sxRd
+        syRd_comb = syRd
+
+        sxsd_div_sxrd = 0 if sxRd_comb == 0 else sxsd/sxRd_comb
+        sysd_div_syrd = 0 if syRd_comb == 0 else sysd / syRd_comb
+        tausd_div_taurd = 0 if tauRd_comb == 0 else tsd/tauRd_comb
+
+        comb_req = math.pow(sxsd_div_sxrd, 2)+math.pow(sysd_div_syrd, 2)-ci*sxsd_div_sxrd*sysd_div_syrd+\
+                   math.pow(tausd_div_taurd, 2)
+        uf_unstf_pl_comb_stress = comb_req
 
 
 class Shell():
