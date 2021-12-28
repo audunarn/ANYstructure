@@ -1737,7 +1737,7 @@ class PrescriptiveBuckling():
         hs = self._Stiffener.hw / 2 if self._Stiffener.get_stiffener_type() == 'FB' else \
             self._Stiffener.hw + self._Stiffener.tf / 2
 
-        for lT in [l, 0.4*l, 0.8*l]:
+        def lt_params(lT):
             if Ipo*lT>0:
                 fET = G*It/Ipo+math.pow(math.pi,2)*E*math.pow(hs,2)*Iz/(Ipo*math.pow(lT,2))
             else:
@@ -1748,6 +1748,7 @@ class PrescriptiveBuckling():
                                                            4*math.pow(alphaT,2)))/(2*math.pow(alphaT,2))
             fT = fy*fT_div_fy if alphaT > 0.6 else fy
             #print(fET, alphaT, mu, fT)
+            return {'fEt': fEt, 'alphaT': alphaT, 'mu': mu, 'fT_div_fy': fT_div_fy, 'fT': fT}
 
 
         zp = self._Stiffener.get_cross_section_centroid_with_effective_plate(se/1000)*1000 - t / 2  # ch7.5.1 page 19
@@ -1787,6 +1788,8 @@ class PrescriptiveBuckling():
         mu = 0 if ie == 0 else (0.34+0.08*zp/ie)*(alpha-0.2)
         fk_div_fr = (1+mu+math.pow(alpha,2)-math.sqrt(math.pow(1+mu+math.pow(alpha,2),2)-4*math.pow(alpha,2)))/(2*math.pow(alpha,2))
         fk = fk_div_fr*fr if alpha > 0.2 else fr
+
+        #Stiffener side
 
 
 
