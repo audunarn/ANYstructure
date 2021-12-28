@@ -416,8 +416,8 @@ class Structure():
 
         return Iy
 
-    def get_Iz_moment_of_inertia(self):
-        tw = self._web_th * 1000
+    def get_Iz_moment_of_inertia(self, reduced_tw = None):
+        tw = self._web_th*1000 if reduced_tw is None else reduced_tw
         hw = self._web_height * 1000
         tf2 = self._flange_th * 1000
         b2 = self._flange_width * 1000
@@ -426,8 +426,26 @@ class Structure():
         Aw = tw*hw
         if self._stiffener_type == 'FB':
             Iz = math.pow(tw,3)*hw/12
+        elif self._stiffener_type == 'T':
+            Iz = hw*math.pow(tw,3)/12 + tf2*math.pow(b2,3)/12
         else:
-            Iz = (Af*math.pow(b2,2)/12) + math.pow(self.get_flange_eccentricity(),2) * (Af/(1+Af/Aw))
+            Czver = tw/2
+            Czhor = b2/2
+            Aver = hw*tw
+            Ahor = b2*tf2
+            Atot = Aver+Ahor
+
+            Czoverall = Aver*Czver/Atot + Ahor*Czhor/Atot
+            dz = Czver - Czoverall
+
+            Iver = (1/12)*hw*math.pow(tw,3) + Aver*math.pow(dz,2)
+
+            dz = Czhor-Czoverall
+            Ihor = (1/12)*tf2*math.pow(b2,3) + Ahor*math.pow(dz,2)
+
+            Iz = Iver + Ihor
+
+
         return Iz
 
     def get_moment_of_interia_iacs(self, efficent_se=None, only_stf = False, tf1 = None):
@@ -451,13 +469,13 @@ class Structure():
         Iy = (Af*math.pow(ef,2)*math.pow(b2,2)/12) * ( (Af+2.6*Aw) / (Af+Aw))
         return Iy
 
-    def get_torsional_moment_venant(self):
+    def get_torsional_moment_venant(self, reduced_tw = None):
         ef = self.get_ef_iacs()*1000
         tf = self._flange_th*1000
-        tw = self._web_th*1000
+        tw = self._web_th*1000 if reduced_tw is None else reduced_tw
         bf = self._flange_width*1000
         hw = self._web_height*1000
-
+        print(ef)
         if self._stiffener_type == 'FB':
             It = ((hw*math.pow(tw,3)/3e4) * (1-0.63*(tw/hw)) )
         else:
@@ -469,15 +487,20 @@ class Structure():
 
         return It * 1e4
 
-    def get_polar_moment(self):
+    def get_polar_moment(self, reduced_tw  = None):
         tf = self._flange_th*1000
-        tw = self._web_th*1000
-        ef = self.get_flange_eccentricity()
+        tw = self._web_th*1000 if reduced_tw is None else reduced_tw
+        ef = self.get_flange_eccentricity()*1000
         hw = self._web_height*1000
         b = self._flange_width*1000
-        
+
         #Ipo = (A|w*(ef-0.5*tf)**2/3+Af*ef**2)*10e-4 #polar moment of interia in cm^4
-        Ipo = (tw/3)*math.pow(hw, 3) + tf*(math.pow(hw+tf/2,2)*b)+(tf/3)*(math.pow(ef+b/2,3)-math.pow(ef-b/2,3))
+        #Ipo = (tw/3)*math.pow(hw, 3) + tf*(math.pow(hw+tf/2,2)*b)+(tf/3)*(math.pow(ef+b/2,3)-math.pow(ef-b/2,3))
+
+        # C24/3*C70^3+C26*((C70+C26/2)^2*C25)+C26/3*((C72+C25/2)^3-(C72-C25/2)^3) + (C25*C26^3)/12 + (C70*C24^3)/12
+        Ipo = tw/3*math.pow(hw, 3)+tf*(math.pow(hw+tf/2,2)*b)+tf/3*(math.pow(ef+b/2,3)-math.pow(ef-b/2,3)) + \
+              (b*math.pow(tf,3))/12 + (hw*math.pow(tw,3))/12
+
         return Ipo
 
     def get_flange_eccentricity(self):
@@ -602,7 +625,8 @@ class Structure():
         #print('Plate: thk', tf1, 's', b1, 'Flange: thk', tf2, 'width', b2, 'Web: thk', tw, 'h', h)
         return tf1 * b1 + tf2 * b2 + h * tw
 
-    def get_cross_section_centroid_with_effective_plate(self, se = None, tf1 = None, include_plate = True):
+    def get_cross_section_centroid_with_effective_plate(self, se = None, tf1 = None, include_plate = True,
+                                                        reduced_tw = None):
         '''
         Returns cross section centroid
         :return:
@@ -616,7 +640,7 @@ class Structure():
             b1 = 0
         tf2 = self._flange_th
         b2 = self._flange_width
-        tw = self._web_th
+        tw = self._web_th if reduced_tw is None else reduced_tw/1000
         hw = self._web_height
         Ax = tf1 * b1 + tf2 * b2 + hw * tw
 
@@ -1374,6 +1398,9 @@ class PrescriptiveBuckling():
         self._method = 1
 
         self._stf_end_support = 'Continuous'
+        self._tension_field_action = 'not allowed'
+
+        self._buckling_length_factor = None
 
 
 
@@ -1516,7 +1543,7 @@ class PrescriptiveBuckling():
             kl = 0 if l == 0 else 5.34+4*math.pow(s/l,2)
         else:
             kl = 0 if l == 0 else 5.34*math.pow(s/l,2)+4
-
+        data_to_return['kl'] = kl
         alpha_w = 0 if t*E*kl == 0 else 0.795*s/t*math.sqrt(fy/E/kl)
         if alpha_w <= 0.8:
             Ctau = 1
@@ -1564,6 +1591,7 @@ class PrescriptiveBuckling():
     def stiffened_panel(self, unstf_pl_data = None):
         E = self._E / 1e6
         v = self._v
+        G = E/(2*(1+v))
         fy = self._yield / 1e6
         gammaM = self._Plate.get_mat_factor()
         t = self._Plate.t
@@ -1639,7 +1667,138 @@ class PrescriptiveBuckling():
 
         qsd_press = (psd+abs(Po))*s
         qsd_opposite = abs(Po)*s if psd<Po else 0
-        print(qsd_press, qsd_opposite)
+
+        kl = unstf_pl_data['kl']
+
+        tcrl = 0 if s == 0 else kl*0.904*E*math.pow(t/s,2)
+
+        if l<= Lg:
+            kg = 0 if Lg == 0 else 5.34+4*math.pow(l/Lg,2)
+        else:
+            kg = 0 if Lg == 0 else 5.34*math.pow(l / Lg, 2)+4
+
+        tcrg = 0 if l == 0 else kg*0.904*E*math.pow(t/l,2)
+
+        if self._tension_field_action == 'allowed' and tsd>(tcrl/gammaM):
+            ttf = tsd-tcrg
+        else:
+            ttf = 0
+
+        As = self._Stiffener.tw*self._Stiffener.hw + self._Stiffener.b*self._Stiffener.tf
+
+        NSd = sxsd*(As+s*t)+ttf*s*t
+
+        #7.4  Resistance of plate between stiffeners
+        ksp = math.sqrt(1-3*math.pow(tsd/fy,2)) if tsd < (fy/math.sqrt(3)) else 0
+        syrd_unstf = unstf_pl_data['syRd'] * ksp
+        tsd_7_4 = fy/(math.sqrt(3)*gammaM)
+        uf_stf_panel_res_bet_plate = max([sysd/syrd_unstf if all([syrd_unstf >0, sysd > 0]) else 0, tsd/tsd_7_4])
+
+        #7.5  Characteristic buckling strength of stiffeners
+
+        fEpx = 0 if s == 0 else 3.62*E*math.pow(t/s,2) # eq 7.42, checked, ok
+        fEpy = 0 if s == 0 else 0.9*E*math.pow(t/s,2) # eq 7.43, checked, ok
+        fEpt = 0 if s == 0 else 5.0*E*math.pow(t/s,2) # eq 7.44, checked, ok
+        c = 0 if l == 0 else 2-(s/l) # eq 7.41, checked, ok
+
+        sjSd = math.sqrt(
+            math.pow(max([sxsd, 0]), 2) + math.pow(max([sysd, 0]), 2) - max([sxsd, 0]) * max([sysd, 0]) +
+            3 * math.pow(tsd, 2))  # eq 7.38, ok
+
+
+        alphae = math.sqrt( (fy/sjSd) * math.pow(math.pow(max([sxsd, 0])/fEpx, c)+
+                                                   math.pow(max([sysd, 0])/fEpy, c)+
+                                                   math.pow(abs(tsd)/fEpt, c), 1/c)) # eq 7.40
+
+
+        fep = fy / math.sqrt(1+math.pow(alphae,4)) # eq 7.39
+        eta = min(sjSd/fep, 1) # eq. 7.377
+
+        C = 0 if self._Stiffener.tw == 0 else (self._Stiffener.hw / s) * math.pow(t / self._Stiffener.tw, 3) * \
+                                              math.sqrt((1 - eta)) # e 7.36, checked ok
+
+        beta = (3*C+0.2)/(C+0.2) # eq 7.35
+        It = 1177600.0 #self._Stiffener.get_torsional_moment_venant() TODO remeber
+        Ipo = self._Stiffener.get_polar_moment()
+        Iz = self._Stiffener.get_Iz_moment_of_inertia()
+
+        def red_prop():
+            tw =max(0,self._Stiffener.tw*(1-Vsd_div_Vrd))
+            Atot = As+se*t-self._Stiffener.hw*(self._Stiffener.tw - tw)
+            It = 1177600.0  # self._Stiffener.get_torsional_moment_venant(reduced_tw=tw) TODO remeber
+            Ipo = self._Stiffener.get_polar_moment(reduced_tw=tw)
+            Iz = self._Stiffener.get_Iz_moment_of_inertia(reduced_tw=tw)
+            zp = self._Stiffener.get_cross_section_centroid_with_effective_plate(se / 1000, reduced_tw=tw) * 1000 - t / 2  # ch7.5.1 page 19
+            zt = (t / 2 + self._Stiffener.hw + self._Stiffener.tf) - zp  # ch 7.5.1 page 19
+            Wes = 0.0001 if zt == 0 else Iy/zt
+            Wep = 0.0001 if zp == 0 else Iy/zp
+            return {'tw':tw, 'Atot': Atot, 'It': It, 'Ipo': Ipo, 'Iz': Iz, 'zp': zp, 'zt': zt, 'Wes': Wes, 'Wep': Wep}
+
+        hs = self._Stiffener.hw / 2 if self._Stiffener.get_stiffener_type() == 'FB' else \
+            self._Stiffener.hw + self._Stiffener.tf / 2
+
+        for lT in [l, 0.4*l, 0.8*l]:
+            if Ipo*lT>0:
+                fET = G*It/Ipo+math.pow(math.pi,2)*E*math.pow(hs,2)*Iz/(Ipo*math.pow(lT,2))
+            else:
+                fEt = 0.001
+            alphaT = 0 if fET == 0 else math.sqrt(fy/fET)
+            mu = 0.35*(alphaT-0.6)
+            fT_div_fy = (1+mu+math.pow(alphaT,2)-math.sqrt(math.pow(1+mu+math.pow(alphaT,2),2)-
+                                                           4*math.pow(alphaT,2)))/(2*math.pow(alphaT,2))
+            fT = fy*fT_div_fy if alphaT > 0.6 else fy
+            #print(fET, alphaT, mu, fT)
+
+
+        zp = self._Stiffener.get_cross_section_centroid_with_effective_plate(se/1000)*1000 - t / 2  # ch7.5.1 page 19
+        zt = (t / 2 + self._Stiffener.hw + self._Stiffener.tf) - zp  # ch 7.5.1 page 19
+        fr = fy
+
+        if Vsd_div_Vrd < 0.5:
+            Wes = 0.0001 if zt == 0 else Iy/zt
+            Wep = 0.0001 if zp == 0 else Iy/zp
+        else:
+            red_param = red_prop()
+            Wes = red_param['Wes']
+            Wep = red_param['Wep']
+
+
+        #7.7.3  Resistance parameters for stiffeners
+        Ae = As + se * t  # ch7.7.3 checked, ok
+        Nrd = 0.0001 if gammaM == 0 else Ae * (fy / gammaM)  # eq7.65, checked ok
+        Wmin = max([Wes, Wep])
+        pf = 0.0001 if l*s*gammaM == 0 else 12*Wmin*fy/(math.pow(l,2)*s*gammaM)
+
+        if self._buckling_length_factor is None:
+            if self._stf_end_support == 'Continuous':
+                lk = l*(1-0.5*abs(psd_min_adj/pf))
+            else:
+                lk = l
+        else:
+            lk = self._buckling_length_factor * l
+        ie = 0.0001 if As+se*t == 0 else math.sqrt(Iy/(As+se*t))
+        fE = 0.0001 if lk == 0 else math.pow(math.pi,2)*E*math.pow(ie/lk,2)
+
+
+
+
+
+
+
+
+
+
+        # ef = 0 if stf_type in ['FB','T'] else self._flange_width/2-self._web_th/2
+        # #Ipo = (Aw*(ef-0.5*tf)**2/3+Af*ef**2)*10e-4 #polar moment of interia in cm^4
+        # #It = (((ef-0.5*tf)*tw**3)/3e4)*(1-0.63*(tw/(ef-0.5*tf)))+( (bf*tf)/3e4*(1-0.63*(tf/bf)))/(100**4) #torsonal moment of interia cm^4
+        #
+        #
+        # Iz = (1/12)*Af*math.pow(bf,2)+math.pow(ef,2)*(Af/(1+(Af/Aw))) #moment of inertia about z-axis, checked
+        #
+        # G = E/(2*(1+0.3)) #rules for ships Pt.8 Ch.1, page 334
+        # lT = self._span # Calculated further down
+
+
 
 
 
