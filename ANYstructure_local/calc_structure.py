@@ -1766,12 +1766,13 @@ class PrescriptiveBuckling():
         #7.7.3  Resistance parameters for stiffeners
         Ae = As + se * t  # ch7.7.3 checked, ok
         Nrd = 0.0001 if gammaM == 0 else Ae * (fy / gammaM)  # eq7.65, checked ok
-        Wmin = max([Wes, Wep])
+        Wmin = min([Wes, Wep])
         pf = 0.0001 if l*s*gammaM == 0 else 12*Wmin*fy/(math.pow(l,2)*s*gammaM)
 
         if self._buckling_length_factor is None:
             if self._stf_end_support == 'Continuous':
                 lk = l*(1-0.5*abs(psd_min_adj/pf))
+
             else:
                 lk = l
         else:
@@ -1779,6 +1780,13 @@ class PrescriptiveBuckling():
         ie = 0.0001 if As+se*t == 0 else math.sqrt(Iy/(As+se*t))
         fE = 0.0001 if lk == 0 else math.pow(math.pi,2)*E*math.pow(ie/lk,2)
 
+        #Plate side
+        zp = zp
+        fr = fy
+        alpha = math.sqrt(fr/fE)
+        mu = 0 if ie == 0 else (0.34+0.08*zp/ie)*(alpha-0.2)
+        fk_div_fr = (1+mu+math.pow(alpha,2)-math.sqrt(math.pow(1+mu+math.pow(alpha,2),2)-4*math.pow(alpha,2)))/(2*math.pow(alpha,2))
+        fk = fk_div_fr*fr if alpha > 0.2 else fr
 
 
 
