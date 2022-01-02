@@ -1401,6 +1401,10 @@ class PrescriptiveBuckling():
         self._tension_field_action = 'not allowed'
 
         self._buckling_length_factor = None
+        self._km3 = 12
+        self._km2 = 24
+
+        self._press_variations_between_spans = None
 
 
 
@@ -1667,6 +1671,8 @@ class PrescriptiveBuckling():
 
         qsd_press = (psd+abs(Po))*s
         qsd_opposite = abs(Po)*s if psd<Po else 0
+        qsd_plate_side = qsd_opposite if self._press_variations_between_spans is None else qsd_press
+        qsd_stf_side = qsd_opposite if self._press_variations_between_spans is not None else qsd_press
 
         kl = unstf_pl_data['kl']
 
@@ -1741,14 +1747,14 @@ class PrescriptiveBuckling():
             if Ipo*lT>0:
                 fET = G*It/Ipo+math.pow(math.pi,2)*E*math.pow(hs,2)*Iz/(Ipo*math.pow(lT,2))
             else:
-                fEt = 0.001
+                fET = 0.001
             alphaT = 0 if fET == 0 else math.sqrt(fy/fET)
             mu = 0.35*(alphaT-0.6)
             fT_div_fy = (1+mu+math.pow(alphaT,2)-math.sqrt(math.pow(1+mu+math.pow(alphaT,2),2)-
                                                            4*math.pow(alphaT,2)))/(2*math.pow(alphaT,2))
             fT = fy*fT_div_fy if alphaT > 0.6 else fy
             #print(fET, alphaT, mu, fT)
-            return {'fEt': fEt, 'alphaT': alphaT, 'mu': mu, 'fT_div_fy': fT_div_fy, 'fT': fT}
+            return {'fEt': fET, 'alphaT': alphaT, 'mu': mu, 'fT_div_fy': fT_div_fy, 'fT': fT}
 
 
         zp = self._Stiffener.get_cross_section_centroid_with_effective_plate(se/1000)*1000 - t / 2  # ch7.5.1 page 19
@@ -1764,9 +1770,7 @@ class PrescriptiveBuckling():
             Wep = red_param['Wep']
 
 
-        #7.7.3  Resistance parameters for stiffeners
-        Ae = As + se * t  # ch7.7.3 checked, ok
-        Nrd = 0.0001 if gammaM == 0 else Ae * (fy / gammaM)  # eq7.65, checked ok
+
         Wmin = min([Wes, Wep])
         pf = 0.0001 if l*s*gammaM == 0 else 12*Wmin*fy/(math.pow(l,2)*s*gammaM)
 
@@ -1781,17 +1785,144 @@ class PrescriptiveBuckling():
         ie = 0.0001 if As+se*t == 0 else math.sqrt(Iy/(As+se*t))
         fE = 0.0001 if lk == 0 else math.pow(math.pi,2)*E*math.pow(ie/lk,2)
 
+
+        fk_dict = dict()
+        fr_dict = dict()
         #Plate side
         zp = zp
         fr = fy
+        fr_dict['plate'] = fr
         alpha = math.sqrt(fr/fE)
         mu = 0 if ie == 0 else (0.34+0.08*zp/ie)*(alpha-0.2)
         fk_div_fr = (1+mu+math.pow(alpha,2)-math.sqrt(math.pow(1+mu+math.pow(alpha,2),2)-4*math.pow(alpha,2)))/(2*math.pow(alpha,2))
         fk = fk_div_fr*fr if alpha > 0.2 else fr
-
+        fk_dict['plate'] = fk
         #Stiffener side
 
+        for lT in [l, 0.4*l, 0.8*l]:
+            params = lt_params(lT)
+            fr = params['fT'] if params['alphaT']>0.6 else fy
+            fr_dict[lT] = fr
+            alpha = math.sqrt(fr / fE)
+            mu = 0 if ie == 0 else (0.34 + 0.08 * zt  / ie) * (alpha - 0.2)
+            fk_div_fr = (1 + mu + math.pow(alpha, 2) - math.sqrt(
+                math.pow(1 + mu + math.pow(alpha, 2), 2) - 4 * math.pow(alpha, 2))) / (2 * math.pow(alpha, 2))
+            fk = fk_div_fr * fr if alpha > 0.2 else fr
+            fk_dict[lT] = fk
 
+        #7.7.3  Resistance parameters for stiffeners
+        Ae = As + se * t  # ch7.7.3 checked, ok
+        NRd = 0.0001 if gammaM == 0 else Ae * (fy / gammaM)  # eq7.65, checked ok
+
+        NksRd = Ae * (fk_dict[l] / gammaM) #eq7.66
+        NkpRd = Ae * (fk_dict['plate'] / gammaM)  # checked ok
+
+        Ms1Rd = Wes * (fr_dict[0.4*l] / gammaM)  # ok
+        Ms2Rd = Wes * (fr_dict[0.8*l] / gammaM)  # eq7.69 checked ok
+
+        MstRd = Wes*(fy/gammaM) #eq7.70 checked ok
+        MpRd = Wep*(fy/gammaM) #eq7.71 checked ok
+
+        Ne = ((math.pow(math.pi,2))*E*Ae)/(math.pow(lk/ie,2))# eq7.72 , checked ok
+
+        #7.6  Resistance of stiffened panels to shear stresses
+        Ip = math.pow(t,3)*s/10.9
+        tcrs = (36 * E / (s * t * math.pow(l, 2))) * ((Ip * math.pow(Is, 3)) ** 0.25)
+        tRdy = fy/math.sqrt(3)/gammaM
+        tRdl = tcrl/gammaM
+        tRds = tcrs/gammaM
+        tRd = min([tRdy,tRdl,tRds])
+
+        u = 0 if all([tsd>(tcrl/gammaM), self._tension_field_action == 'allowed']) else math.pow(tsd/tRd, 2)
+        zstar = zp
+
+        #Lateral pressure on plate side:
+        #7.7.2 Simple supported stiffener (sniped stiffeners)
+
+        #Lateral pressure on plate side:
+        uf_7_58 = NSd/NksRd-2*NSd/NRd +((qsd_plate_side*math.pow(l,2)/8)+NSd*zstar)/(MstRd*(1-NSd/Ne))+u
+        uf_7_59 = NSd/NkpRd+((qsd_plate_side*math.pow(l,2)/8)+NSd*zstar)/(MpRd*(1-NSd/Ne))+u
+        uf_max_simp_pl = max([uf_7_58, uf_7_59])
+
+        print(uf_max_simp_pl)
+        #Lateral pressure on stiffener side:
+
+        uf_7_60 = NSd/NksRd+((qsd_stf_side*math.pow(l,2)/8)-NSd*zstar)/(Ms2Rd*(1-NSd/Ne))+u
+        uf_7_61 = NSd/NkpRd-2*NSd/NRd+((qsd_stf_side*math.pow(l,2)/8)-NSd*zstar)/(MpRd*(1-NSd/Ne))+u
+
+        test_qsd_l = qsd_stf_side*math.pow(l,2)/8 >= NSd*zstar
+        uf_7_62 = NSd/NksRd-2*NSd/NRd+(NSd*zstar-(qsd_stf_side*math.pow(l,2)/8))/(MstRd*(1-NSd/Ne))+u
+        uf_7_63 = NSd/NkpRd+(NSd*zstar-(qsd_stf_side*math.pow(l,2)/8))/(MpRd*(1-NSd/Ne))+u
+
+        uf_max_simp_stf = max([0,uf_7_62,uf_7_63]) if test_qsd_l else max([0,uf_7_60,uf_7_61])
+
+        #7.7.1 Continuous stiffeners
+
+        if True:
+            zstar_range = np.arange(-zt+self._Stiffener.tf/2,zp,0.01)
+        else:
+            zstar_range = [0]
+
+        M1Sd_pl = abs(qsd_plate_side)*math.pow(l,2)/self._km3
+        M2Sd_pl = abs(qsd_plate_side)*math.pow(l,2)/self._km2
+        M1Sd_stf = abs(qsd_stf_side) * math.pow(l, 2) / self._km3
+        M2Sd_stf = abs(qsd_stf_side) * math.pow(l, 2) / self._km2
+        M1Sd_max = max([M1Sd_pl, M1Sd_stf])
+        M2Sd_max = max([M2Sd_pl, M2Sd_stf])
+        # Lateral pressure on plate side:
+
+        max_lfs = []
+        ufs = []
+        # import time
+        # t1 = time.time()
+        # for zstar in zstar_range:
+        #     eq7_50 = NSd/NksRd+(M1Sd_pl-NSd*zstar)/(Ms1Rd*(1-NSd/Ne))+u
+        #     eq7_51 = NSd/NkpRd-2*NSd/NRd +(M1Sd_pl-NSd*zstar)/(MpRd*(1-NSd/Ne))+u
+        #     eq7_52 = NSd/NksRd-2*NSd/NRd+(M2Sd_pl+NSd*zstar)/(MstRd*(1-NSd/Ne))+u
+        #     eq7_53 = NSd/NkpRd+(M2Sd_pl+NSd*zstar)/(MpRd*(1-NSd/Ne))+u
+        #     max_lfs.append(max(eq7_50, eq7_51, eq7_52, eq7_53))
+        #     ufs.append([eq7_50, eq7_51, eq7_52, eq7_53,zstar])
+        #     #print(zstar, eq7_50, eq7_51, eq7_52, eq7_53, 'MAX LF is: ', max(eq7_50, eq7_51, eq7_52, eq7_53))
+        # min_of_max_ufs_idx = max_lfs.index(min(max_lfs))
+        # print('plate side index', min_of_max_ufs_idx, 'uf', min(max_lfs), 'time', time.time()-t1)
+        from scipy.optimize import minimize
+        t2 = time.time()
+        def iteration_min_uf_pl_side(x):
+            eq7_50 = NSd/NksRd+(M1Sd_pl-NSd*x)/(Ms1Rd*(1-NSd/Ne))+u
+            eq7_51 = NSd/NkpRd-2*NSd/NRd +(M1Sd_pl-NSd*x)/(MpRd*(1-NSd/Ne))+u
+            eq7_52 = NSd/NksRd-2*NSd/NRd+(M2Sd_pl+NSd*x)/(MstRd*(1-NSd/Ne))+u
+            eq7_53 = NSd/NkpRd+(M2Sd_pl+NSd*x)/(MpRd*(1-NSd/Ne))+u
+            return max(eq7_50, eq7_51, eq7_52, eq7_53)
+        res_iter_pl = minimize(iteration_min_uf_pl_side, 0)
+
+        from scipy.optimize import minimize
+        # Lateral pressure on stiffener side:
+
+        # max_lfs = []
+        # ufs = []
+
+        def iteration_min_uf_stf_side(x):
+            eq7_54 = NSd/NksRd-2*NSd/NRd +(M1Sd_stf+NSd*x)/(MstRd*(1-NSd/Ne))+u
+            eq7_55 = NSd/NkpRd+(M1Sd_stf+NSd*x)/(MpRd*(1-NSd/Ne))+u
+            eq7_56 = NSd/NksRd+(M2Sd_stf-NSd*x)/(Ms2Rd*(1-NSd/Ne))+u
+            eq7_57 = NSd/NkpRd-2*NSd/NRd+(M2Sd_stf-NSd*x)/(MpRd*(1-NSd/Ne))+u
+            return max(eq7_54, eq7_55, eq7_56, eq7_57)
+
+        res_iter_stf = minimize(iteration_min_uf_stf_side, 0)
+
+        print(res_iter_pl)
+        print(res_iter_stf)
+
+        # for zstar in zstar_range:
+        #     eq7_54 = NSd/NksRd-2*NSd/NRd +(M1Sd_stf+NSd*zstar)/(MstRd*(1-NSd/Ne))+u
+        #     eq7_55 = NSd/NkpRd+(M1Sd_stf+NSd*zstar)/(MpRd*(1-NSd/Ne))+u
+        #     eq7_56 = NSd/NksRd+(M2Sd_stf-NSd*zstar)/(Ms2Rd*(1-NSd/Ne))+u
+        #     eq7_57 = NSd/NkpRd-2*NSd/NRd+(M2Sd_stf-NSd*zstar)/(MpRd*(1-NSd/Ne))+u
+        #     max_lfs.append(max(eq7_54, eq7_55, eq7_56, eq7_57))
+        #     ufs.append([eq7_54, eq7_55, eq7_56, eq7_57, zstar])
+        #     #print(zstar, eq7_54, eq7_55, eq7_56, eq7_57)
+        # min_of_max_ufs_idx = max_lfs.index(min(max_lfs))
+        # print('stf side', min_of_max_ufs_idx, 'uf', min(max_lfs))
 
 
 
