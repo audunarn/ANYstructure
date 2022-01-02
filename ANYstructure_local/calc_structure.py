@@ -1893,7 +1893,7 @@ class PrescriptiveBuckling():
             eq7_52 = NSd/NksRd-2*NSd/NRd+(M2Sd_pl+NSd*x)/(MstRd*(1-NSd/Ne))+u
             eq7_53 = NSd/NkpRd+(M2Sd_pl+NSd*x)/(MpRd*(1-NSd/Ne))+u
             return max(eq7_50, eq7_51, eq7_52, eq7_53)
-        res_iter_pl = minimize(iteration_min_uf_pl_side, 0)
+        res_iter_pl = minimize(iteration_min_uf_pl_side, 0, bounds=[[-zt+self._Stiffener.tf/2,zp]])
 
         from scipy.optimize import minimize
         # Lateral pressure on stiffener side:
@@ -1908,9 +1908,9 @@ class PrescriptiveBuckling():
             eq7_57 = NSd/NkpRd-2*NSd/NRd+(M2Sd_stf-NSd*x)/(MpRd*(1-NSd/Ne))+u
             return max(eq7_54, eq7_55, eq7_56, eq7_57)
 
-        res_iter_stf = minimize(iteration_min_uf_stf_side, 0)
+        res_iter_stf = minimize(iteration_min_uf_stf_side, 0, bounds=[[-zt+self._Stiffener.tf/2,zp]])
 
-        print(res_iter_pl)
+        #print(res_iter_pl)
         print(res_iter_stf)
 
         # for zstar in zstar_range:
