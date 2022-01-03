@@ -475,7 +475,7 @@ class Structure():
         tw = self._web_th*1000 if reduced_tw is None else reduced_tw
         bf = self._flange_width*1000
         hw = self._web_height*1000
-        print(ef)
+
         if self._stiffener_type == 'FB':
             It = ((hw*math.pow(tw,3)/3e4) * (1-0.63*(tw/hw)) )
         else:
@@ -1398,7 +1398,9 @@ class PrescriptiveBuckling():
         self._method = 1
 
         self._stf_end_support = 'Continuous'
+        self._girder_end_support = 'Continuous'
         self._tension_field_action = 'not allowed'
+        self._stiffed_plate_effective_aginst_sigy = True
 
         self._buckling_length_factor = None
         self._km3 = 12
@@ -1406,6 +1408,7 @@ class PrescriptiveBuckling():
 
         self._press_variations_between_spans = None
         self._girder_dist_between_lateral_supp = None
+        self._kgirder = None
 
         self._panel_length_Lp = None
 
@@ -1416,6 +1419,7 @@ class PrescriptiveBuckling():
 
         unstf_pl = self.unstiffened_plate_buckling()
         stf_pla = self.stiffened_panel(unstf_pl_data=unstf_pl)
+        girder = self.girder(unstf_pl_data=unstf_pl, stf_pl_data=stf_pla)
 
     def unstiffened_plate_buckling(self):
 
@@ -1852,7 +1856,6 @@ class PrescriptiveBuckling():
         uf_7_59 = NSd/NkpRd+((qsd_plate_side*math.pow(l,2)/8)+NSd*zstar)/(MpRd*(1-NSd/Ne))+u
         uf_max_simp_pl = max([uf_7_58, uf_7_59])
 
-        print(uf_max_simp_pl)
         #Lateral pressure on stiffener side:
 
         uf_7_60 = NSd/NksRd+((qsd_stf_side*math.pow(l,2)/8)-NSd*zstar)/(Ms2Rd*(1-NSd/Ne))+u
@@ -1866,10 +1869,6 @@ class PrescriptiveBuckling():
 
         #7.7.1 Continuous stiffeners
 
-        if True:
-            zstar_range = np.arange(-zt+self._Stiffener.tf/2,zp,0.01)
-        else:
-            zstar_range = [0]
 
         M1Sd_pl = abs(qsd_plate_side)*math.pow(l,2)/self._km3
         M2Sd_pl = abs(qsd_plate_side)*math.pow(l,2)/self._km2
@@ -1879,20 +1878,6 @@ class PrescriptiveBuckling():
         M2Sd_max = max([M2Sd_pl, M2Sd_stf])
         # Lateral pressure on plate side:
 
-        max_lfs = []
-        ufs = []
-        # import time
-        # t1 = time.time()
-        # for zstar in zstar_range:
-        #     eq7_50 = NSd/NksRd+(M1Sd_pl-NSd*zstar)/(Ms1Rd*(1-NSd/Ne))+u
-        #     eq7_51 = NSd/NkpRd-2*NSd/NRd +(M1Sd_pl-NSd*zstar)/(MpRd*(1-NSd/Ne))+u
-        #     eq7_52 = NSd/NksRd-2*NSd/NRd+(M2Sd_pl+NSd*zstar)/(MstRd*(1-NSd/Ne))+u
-        #     eq7_53 = NSd/NkpRd+(M2Sd_pl+NSd*zstar)/(MpRd*(1-NSd/Ne))+u
-        #     max_lfs.append(max(eq7_50, eq7_51, eq7_52, eq7_53))
-        #     ufs.append([eq7_50, eq7_51, eq7_52, eq7_53,zstar])
-        #     #print(zstar, eq7_50, eq7_51, eq7_52, eq7_53, 'MAX LF is: ', max(eq7_50, eq7_51, eq7_52, eq7_53))
-        # min_of_max_ufs_idx = max_lfs.index(min(max_lfs))
-        # print('plate side index', min_of_max_ufs_idx, 'uf', min(max_lfs), 'time', time.time()-t1)
         from scipy.optimize import minimize
         t2 = time.time()
         def iteration_min_uf_pl_side(x):
@@ -1918,29 +1903,7 @@ class PrescriptiveBuckling():
 
         res_iter_stf = minimize(iteration_min_uf_stf_side, 0, bounds=[[-zt+self._Stiffener.tf/2,zp]])
 
-        #print(res_iter_pl)
-        #print(res_iter_stf)
-
-        # for zstar in zstar_range:
-        #     eq7_54 = NSd/NksRd-2*NSd/NRd +(M1Sd_stf+NSd*zstar)/(MstRd*(1-NSd/Ne))+u
-        #     eq7_55 = NSd/NkpRd+(M1Sd_stf+NSd*zstar)/(MpRd*(1-NSd/Ne))+u
-        #     eq7_56 = NSd/NksRd+(M2Sd_stf-NSd*zstar)/(Ms2Rd*(1-NSd/Ne))+u
-        #     eq7_57 = NSd/NkpRd-2*NSd/NRd+(M2Sd_stf-NSd*zstar)/(MpRd*(1-NSd/Ne))+u
-        #     max_lfs.append(max(eq7_54, eq7_55, eq7_56, eq7_57))
-        #     ufs.append([eq7_54, eq7_55, eq7_56, eq7_57, zstar])
-        #     #print(zstar, eq7_54, eq7_55, eq7_56, eq7_57)
-        # min_of_max_ufs_idx = max_lfs.index(min(max_lfs))
-        # print('stf side', min_of_max_ufs_idx, 'uf', min(max_lfs))
-
-        # ef = 0 if stf_type in ['FB','T'] else self._flange_width/2-self._web_th/2
-        # #Ipo = (Aw*(ef-0.5*tf)**2/3+Af*ef**2)*10e-4 #polar moment of interia in cm^4
-        # #It = (((ef-0.5*tf)*tw**3)/3e4)*(1-0.63*(tw/(ef-0.5*tf)))+( (bf*tf)/3e4*(1-0.63*(tf/bf)))/(100**4) #torsonal moment of interia cm^4
-        #
-        #
-        # Iz = (1/12)*Af*math.pow(bf,2)+math.pow(ef,2)*(Af/(1+(Af/Aw))) #moment of inertia about z-axis, checked
-        #
-        # G = E/(2*(1+0.3)) #rules for ships Pt.8 Ch.1, page 334
-        # lT = self._span # Calculated further down
+        return stf_pl_data
 
     def girder(self, unstf_pl_data = None, stf_pl_data = None):
         '''
@@ -1976,15 +1939,18 @@ class PrescriptiveBuckling():
             self._min_lat_press_adj_span*self._lat_load_factor
 
         Lg = self._Plate.get_lg()*1000
+
         Ltg = Lg if self._girder_dist_between_lateral_supp == None else self._girder_dist_between_lateral_supp
         Lp = l if self._panel_length_Lp is None else self._panel_length_Lp
 
         #Pnt.8:  Buckling of Girders
         #7.8  Check for shear force
-        Vsd = psd*s*l/2
+        Vsd = psd*l*Lg/2
+
         tw_req = Vsd*gammaM*math.sqrt(3)/(fy*self._Girder.hw)
         Anet = self._Girder.hw * self._Girder.tw + self._Girder.tw*self._Girder.tf
         Vrd = Anet*fy/(gammaM*math.sqrt(3))
+
         Vsd_div_Vrd = Vsd/Vrd
         CHK_account_for_interaction = Vsd < 0.5*Vrd
 
@@ -2009,28 +1975,111 @@ class PrescriptiveBuckling():
         tcrg = tcrg if self._stf_end_support == 'Continuous' else 0
 
         #8.4 Effective width of girders
+
+        #Method 1:
         alphap = stf_pl_data['alphap']
         Cxs = stf_pl_data['Cxs']
         fkx = Cxs*fy
         CxG = math.sqrt(1-math.pow(sxsd/fkx,2)) if sxsd<fkx else 0
-        CyG_tens = Lg/(l*math.sqrt(4-math.pow(Lg/l,2))) if Lg > 2*l else 1
-        Cyg_comp  = 0 if l*alphap == 0 else stf_pl_data['Cys_comp']
-        Cyg = min([1,CyG_tens]) if sy1sd<0 else min([1, Cyg_comp])
+
+        CyG_tens = 1 if Lg > 2*l else Lg/(l*math.sqrt(4-math.pow(Lg/l,2)))
+        CyG_comp  = 0 if l*alphap == 0 else stf_pl_data['Cys_comp']
+        CyG = min([1,CyG_tens]) if sy1sd<0 else min([1, CyG_comp])
+        CtG = math.sqrt(1-3*math.pow(tsd/fy,2)) if tsd<fy/math.sqrt(3) else 0
+        le_div_l_method1 = CxG*CyG*CtG
+        le_method1 = l*le_div_l_method1
+
+        lim_sniped_or_cont = 0.3*Lg if self._girder_end_support == 'Continuous' else 0.4*Lg
+        tot_min_lim = min([le_method1, lim_sniped_or_cont])
+
+
+        #Method 2:
+        CxG = math.sqrt(1-math.pow(sxsd/fy,2))
+        alphaG = 0 if E*t == 0 else 0.525*l/t*math.sqrt(fy/E)
+        CyG = (alphaG-0.22)/math.pow(alphaG,2) if alphaG>0.673 else 1
+        CtG = math.sqrt(1-3*math.pow(tsd/fy,2)) if tsd<fy/math.sqrt(3) else 0
+        le_div_l_method2  = CxG*CyG*CtG
+        le_method2 = le_div_l_method2*l
+
+        eff_width_sec_mod = tot_min_lim if self._stiffed_plate_effective_aginst_sigy else le_method2
+        eff_width_other_calc = le_method1 if self._stiffed_plate_effective_aginst_sigy else le_method2
+
+
+
+
+        le = eff_width_other_calc
+        AtotG = Ag + le * t - self._Girder.hw *self._Girder.tw
+        Iy = self._Girder.get_moment_of_intertia(efficent_se=le / 1000) * 1000 ** 4
+        zp = self._Girder.get_cross_section_centroid_with_effective_plate(le / 1000) * 1000 - t / 2  # ch7.5.1 page 19
+        zt = (t / 2 + self._Girder.hw + self._Girder.tf) - zp  # ch 7.5.1 page 19
+
+        def red_prop():
+            twG =max(0,self._Girder.tw*(1-Vsd_div_Vrd))
+            le = eff_width_other_calc
+            AtotG = Ag+le*t-self._Girder.hw*(self._Girder.tw - twG)
+            Ipo = self._Girder.get_polar_moment(reduced_tw=twG)
+            IzG = self._Girder.get_Iz_moment_of_inertia(reduced_tw=twG)
+            Iy = self._Girder.get_moment_of_intertia(efficent_se=le/1000)*1000**4
+            zp = self._Girder.get_cross_section_centroid_with_effective_plate(le / 1000, reduced_tw=twG) * 1000 - t / 2  # ch7.5.1 page 19
+            zt = (t / 2 + self._Girder.hw + self._Girder.tf) - zp  # ch 7.5.1 page 19
+            Wes = 0.0001 if zt == 0 else Iy/zt
+            Wep = 0.0001 if zp == 0 else Iy/zp
+            return {'tw':twG, 'Atot': AtotG, 'Ipo': Ipo, 'IzG': IzG, 'zp': zp, 'zt': zt, 'Wes': Wes, 'Wep': Wep}
+
+        if Vsd_div_Vrd < 0.5:
+            WeG = 0.0001 if zt == 0 else Iy/zt
+            Wep = 0.0001 if zp == 0 else Iy/zp
+        else:
+            red_param = red_prop()
+            WeG = red_param['Wes']
+            Wep = red_param['Wep']
 
         # #from: 7.7.3  Resistance parameters for stiffeners
-        # Wmin = min([Wes, Wep])
-        # pf = 0.0001 if l*s*gammaM == 0 else 12*Wmin*fy/(math.pow(l,2)*s*gammaM)
+        Wmin = min([WeG, Wep])
+        pf = 0.0001 if l*s*gammaM == 0 else 12*Wmin*fy/(math.pow(l,2)*s*gammaM)
+
+        lk = Lg
+        LGk = lk if self._kgirder is None else lk*self._kgirder
+
+        ie = 0 if Vsd_div_Vrd<0.5 else math.sqrt(Iy/(AtotG+le*t))
+
+        fE = 0 if LGk == 0 else math.pow(math.pi,2)*E*math.pow(ie/lk,2)
+        print(ie, Iy, AtotG, le, t)
+        # #Plate side
+        # zp = zp
+        # fr = fy
+        # fr_dict['plate'] = fr
+        # alpha = math.sqrt(fr/fE)
+        # mu = 0 if ie == 0 else (0.34+0.08*zp/ie)*(alpha-0.2)
+        # fk_div_fr = (1+mu+math.pow(alpha,2)-math.sqrt(math.pow(1+mu+math.pow(alpha,2),2)-4*math.pow(alpha,2)))/(2*math.pow(alpha,2))
+        # fk = fk_div_fr*fr if alpha > 0.2 else fr
+        # fk_dict['plate'] = fk
+        # #Stiffener side
         #
-        # if self._buckling_length_factor is None:
-        #     if self._stf_end_support == 'Continuous':
-        #         lk = l*(1-0.5*abs(psd_min_adj/pf))
+        # It = 5.749E+06 #self._Stiffener.get_torsional_moment_venant() TODO remeber
+        # Ipo = self._Stiffener.get_polar_moment()
+        # Iz = self._Stiffener.get_Iz_moment_of_inertia()
+
+        #8.5  Torsional buckling of girders
+        Af = self._Girder.tf*self._Girder.b
+        Aw = self._Girder.hw*self._Girder.tw
+        Iz = self._Girder.get_Iz_moment_of_inertia()
+
+        b = max([self._Girder.b, self._Girder.tw])
+        C = 0.55 if self._Girder.get_stiffener_type() in ['T', 'FB'] else 1.1
+        LGT0 = b*C*math.sqrt(E*Af/(fy*(Af+Aw/3)))
+
         #
-        #     else:
-        #         lk = l
-        # else:
-        #     lk = self._buckling_length_factor * l
-        # ie = 0.0001 if As+se*t == 0 else math.sqrt(Iy/(As+se*t))
-        # fE = 0.0001 if lk == 0 else math.pow(math.pi,2)*E*math.pow(ie/lk,2)
+        def lt_params(LTG):
+            fETG = math.pow(math.pi, 2)*E*Iz/((Af+Aw/3)*math.pow(LTG, 2))
+            alphaTG = math.sqrt(fy/fETG)
+            mu = 0.35*(alphaTG-0.6)
+            fT_div_fy = (1 + mu + math.pow(alphaTG, 2) - math.sqrt(
+                math.pow(1 + mu + math.pow(alphaTG, 2), 2) - 4 * math.pow(alphaTG, 2))) / (2 * math.pow(alphaTG, 2))
+            fT = fT_div_fy*fy if alphaTG>0.6 else fy
+
+            return {'fETG': fETG, 'alphaT': alphaTG, 'mu': mu, 'fT_div_fy': fT_div_fy, 'fT': fT}
+        #
 
         # #7.7.3  Resistance parameters for stiffeners
         # Aeg = Ag + le*t
@@ -2047,6 +2096,22 @@ class PrescriptiveBuckling():
         # MpRd = Wep*(fy/gammaM) #eq7.71 checked ok
         #
         # Ne = ((math.pow(math.pi,2))*E*Ae)/(math.pow(lk/ie,2))# eq7.72 , checked ok
+
+        # fk_dict = dict()
+        # fr_dict = dict()
+        # for lT in [l, 0.4*l, 0.8*l]:
+        #     params = lt_params(lT)
+        #     fr = params['fT'] if params['alphaT']>0.6 else fy
+        #     fr_dict[lT] = fr
+        #     alpha = math.sqrt(fr / fE)
+        #     mu = 0 if ie == 0 else (0.34 + 0.08 * zt  / ie) * (alpha - 0.2)
+        #     fk_div_fr = (1 + mu + math.pow(alpha, 2) - math.sqrt(
+        #         math.pow(1 + mu + math.pow(alpha, 2), 2) - 4 * math.pow(alpha, 2))) / (2 * math.pow(alpha, 2))
+        #     fk = fk_div_fr * fr if alpha > 0.2 else fr
+        #     fk_dict[lT] = fk
+        #
+
+
 
 class Shell():
     '''
@@ -4163,9 +4228,9 @@ if __name__ == '__main__':
     Girder = CalcScantlings(ex.obj_dict_heavy)
 
     PreBuc = PrescriptiveBuckling(Plate = Plate, Stiffener = Stiffener, Girder = Girder, lat_press=0.3)
-    print(Plate)
-    print(Stiffener)
-    print(Girder)
+    # print(Plate)
+    # print(Stiffener)
+    # print(Girder)
 
     PreBuc.plate_buckling()
 
