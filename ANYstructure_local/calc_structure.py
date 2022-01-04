@@ -1426,7 +1426,7 @@ class PrescriptiveBuckling():
 
     def unstiffened_plate_buckling(self):
 
-        data_to_return = dict()
+        unstf_pl_data = dict()
 
         E = self._E/1e6
         v = self._v
@@ -1468,8 +1468,8 @@ class PrescriptiveBuckling():
 
         Max_vonMises_x = sig_x1 if abs(sig_x1) > abs(sig_x2) else sig_x2
 
-        data_to_return['sxsd'] = sxsd
-        data_to_return['sy1sd'] = sy1sd
+        unstf_pl_data['sxsd'] = sxsd
+        unstf_pl_data['sy1sd'] = sy1sd
 
         l1 = min(l/4, s/2)
         if l == 0:
@@ -1478,13 +1478,11 @@ class PrescriptiveBuckling():
             sig_trans_l1 = Use_Smax_y*(shear_ratio_trans+(1-shear_ratio_trans)*(l-l1)/l)
 
         trans_stress_used = sysd = 0.75*Use_Smax_y if abs(0.75*Use_Smax_y) > abs(Use_Smax_y) else sig_trans_l1
-        data_to_return['sysd'] = sysd
+        unstf_pl_data['sysd'] = sysd
         #Pnt. 5  Lateral loaded plates
         sjsd =math.sqrt(math.pow(Max_vonMises_x,2) + math.pow(Use_Smax_x,2)-Max_vonMises_x*sysd+3*math.pow(tsd,2))
-        uf_lat_load_pl = sjsd/fy
-
-
-
+        uf_sjsd = sjsd/fy*gammaM
+        unstf_pl_data['UF sjsd'] = uf_sjsd
         psi_x =max([0,(1-math.pow(sjsd/fy,2))/math.sqrt(1-3/4*math.pow(sysd/fy,2)-3*math.pow(tsd/fy,2))])
         psi_x_chk = (1-3/4*math.pow(sy1sd/fy,2)-3*math.pow(tsd/fy,2))>0
         psi_y = max([0,(1-math.pow(sjsd/fy,2))/math.sqrt(1-3/4*math.pow(sxsd/fy,2)-3*math.pow(tsd/fy,2))]) \
@@ -1499,7 +1497,7 @@ class PrescriptiveBuckling():
                 Psd_max_press = -1
         uf_lat_load_pl_press = 9 if psd < 0 else abs(psd/Psd_max_press)
 
-
+        unstf_pl_data['UF Pnt. 5  Lateral loaded plates'] = uf_lat_load_pl_press
         #6.2 & 6.6 Longitudinal stress
         if shear_ratio_long <= -2:
             ksig = "Unknown"
@@ -1523,6 +1521,7 @@ class PrescriptiveBuckling():
 
         sxRd = Cx*fy/gammaM if not all([sig_x1<0, sig_x2<0]) else 1
         uf_unstf_pl_long_stress = 0 if sxRd == 0 else abs(sxsd/sxRd)
+        unstf_pl_data['UF Longitudinal stress'] = uf_unstf_pl_long_stress
         #print(uf_unstf_pl_long_stress)
 
         #6.3 & 6.8 Transverse stresses:
@@ -1546,15 +1545,15 @@ class PrescriptiveBuckling():
         syRd = syRd/gammaM
         uf_unstf_pl_trans_stress = 0 if syRd == 0 else abs(sysd)/syRd
         #print(uf_unstf_pl_trans_stress)
-        data_to_return['syR'] = syR
-        data_to_return['syRd'] = syRd
-
+        unstf_pl_data['syR'] = syR
+        unstf_pl_data['syRd'] = syRd
+        unstf_pl_data['UF transverse stresses'] = uf_unstf_pl_trans_stress
         #6.4  Shear stress
         if l >= s:
             kl = 0 if l == 0 else 5.34+4*math.pow(s/l,2)
         else:
             kl = 0 if l == 0 else 5.34*math.pow(s/l,2)+4
-        data_to_return['kl'] = kl
+        unstf_pl_data['kl'] = kl
         alpha_w = 0 if t*E*kl == 0 else 0.795*s/t*math.sqrt(fy/E/kl)
         if alpha_w <= 0.8:
             Ctau = 1
@@ -1565,6 +1564,7 @@ class PrescriptiveBuckling():
 
         tauRd = Ctau*fy/gammaM/math.sqrt(3)
         uf_unstf_pl_shear_stress = 0 if tauRd == 0 else tsd/tauRd
+        unstf_pl_data['UF Shear stresses'] = uf_unstf_pl_shear_stress
         #print(uf_unstf_pl_shear_stress)
 
         #6.5  Combined stresses
@@ -1596,8 +1596,9 @@ class PrescriptiveBuckling():
         comb_req = math.pow(sxsd_div_sxrd, 2)+math.pow(sysd_div_syrd, 2)-ci*sxsd_div_sxrd*sysd_div_syrd+\
                    math.pow(tausd_div_taurd, 2)
         uf_unstf_pl_comb_stress = comb_req
+        unstf_pl_data['UF Combined stresses'] = uf_unstf_pl_comb_stress
 
-        return data_to_return
+        return unstf_pl_data
 
     def stiffened_panel(self, unstf_pl_data = None):
         E = self._E / 1e6
@@ -1642,7 +1643,7 @@ class PrescriptiveBuckling():
         Vrd = Anet*fy/(gammaM*math.sqrt(3))
 
         Vsd_div_Vrd = Vsd/Vrd
-
+        unstf_pl_data['UF Shear force'] = Vsd_div_Vrd 
         # 7.2  Forces in idealised stiffened plate
         Iy = Is = self._Stiffener.get_moment_of_intertia()*1000**4
 
@@ -1714,7 +1715,7 @@ class PrescriptiveBuckling():
         syrd_unstf = unstf_pl_data['syRd'] * ksp
         tsd_7_4 = fy/(math.sqrt(3)*gammaM)
         uf_stf_panel_res_bet_plate = max([sysd/syrd_unstf if all([syrd_unstf >0, sysd > 0]) else 0, tsd/tsd_7_4])
-
+        stf_pl_data['UF Plate resistance'] = uf_stf_panel_res_bet_plate
         #7.5  Characteristic buckling strength of stiffeners
 
         fEpx = 0 if s == 0 else 3.62*E*math.pow(t/s,2) # eq 7.42, checked, ok
@@ -1858,6 +1859,7 @@ class PrescriptiveBuckling():
         uf_7_58 = NSd/NksRd-2*NSd/NRd +((qsd_plate_side*math.pow(l,2)/8)+NSd*zstar)/(MstRd*(1-NSd/Ne))+u
         uf_7_59 = NSd/NkpRd+((qsd_plate_side*math.pow(l,2)/8)+NSd*zstar)/(MpRd*(1-NSd/Ne))+u
         uf_max_simp_pl = max([uf_7_58, uf_7_59])
+        stf_pl_data['UF simply supported plate side'] = uf_max_simp_pl
 
         #Lateral pressure on stiffener side:
 
@@ -1869,7 +1871,7 @@ class PrescriptiveBuckling():
         uf_7_63 = NSd/NkpRd+(NSd*zstar-(qsd_stf_side*math.pow(l,2)/8))/(MpRd*(1-NSd/Ne))+u
 
         uf_max_simp_stf = max([0,uf_7_62,uf_7_63]) if test_qsd_l else max([0,uf_7_60,uf_7_61])
-
+        stf_pl_data['UF simply supported stf side'] = uf_max_simp_stf
         #7.7.1 Continuous stiffeners
 
 
@@ -1890,7 +1892,7 @@ class PrescriptiveBuckling():
             eq7_53 = NSd/NkpRd+(M2Sd_pl+NSd*x)/(MpRd*(1-NSd/Ne))+u
             return max(eq7_50, eq7_51, eq7_52, eq7_53)
         res_iter_pl = minimize(iteration_min_uf_pl_side, 0, bounds=[[-zt+self._Stiffener.tf/2,zp]])
-
+        stf_pl_data['UF Plate side'] = res_iter_pl.fun[0]
 
         # Lateral pressure on stiffener side:
 
@@ -1905,6 +1907,7 @@ class PrescriptiveBuckling():
             return max(eq7_54, eq7_55, eq7_56, eq7_57)
 
         res_iter_stf = minimize(iteration_min_uf_stf_side, 0, bounds=[[-zt+self._Stiffener.tf/2,zp]])
+        stf_pl_data['UF Stiffener side'] = res_iter_stf.fun[0]
 
         return stf_pl_data
 
@@ -1912,6 +1915,9 @@ class PrescriptiveBuckling():
         '''
         Buckling of girder.
         '''
+
+        girder_data = dict()
+
         E = self._E / 1e6
         v = self._v
         G = E/(2*(1+v))
@@ -1955,6 +1961,7 @@ class PrescriptiveBuckling():
         Vrd = Anet*fy/(gammaM*math.sqrt(3))
 
         Vsd_div_Vrd = Vsd/Vrd
+        girder_data['UF shear force'] = Vsd_div_Vrd
         CHK_account_for_interaction = Vsd < 0.5*Vrd
 
         #8.2  Girder forces
@@ -1976,8 +1983,6 @@ class PrescriptiveBuckling():
         tcrl = 0.6*fy/math.pow(alpha_t2,2) if alpha_t2 > 1 else 0.6*fy
 
         tcrg = tcrg if self._stf_end_support == 'Continuous' else 0
-
-
 
         #8.4 Effective width of girders
 
@@ -2143,6 +2148,7 @@ class PrescriptiveBuckling():
         uf_7_59 = NySd/NkpRd+((qSd_plate_side*math.pow(Lg, 2)/8)+NySd*zstar)/(MpRd*(1-NySd/NE))+u
 
         max_uf_simp_plate = max([0,uf_7_58,uf_7_59])
+        girder_data['UF Simplified plate side'] = max_uf_simp_plate
 
         #Lateral pressure on girder side:
         uf_7_60 = NySd/NksRd+((qSd_girder_side*math.pow(Lg, 2)/8)-NySd*zstar)/(Ms2Rd*(1-NySd/NE))+u
@@ -2154,7 +2160,7 @@ class PrescriptiveBuckling():
         uf_7_63 = NySd/NkpRd+(NySd*zstar-(qSd_girder_side*math.pow(Lg, 2)/8))/(MpRd*(1-NySd/NE))+u
 
         max_uf_simp_stiffener = max([0,uf_7_60,uf_7_61]) if CHK_qSd_NSd else max([0,uf_7_60,uf_7_61, uf_7_62,uf_7_63])
-
+        girder_data['UF Simplified girder side'] = max_uf_simp_stiffener
         #7.7.1 Continuous stiffeners
         M1Sd_pl = abs(qSd_plate_side)*math.pow(Lg, 2)/12
         M2Sd_pl = abs(qSd_plate_side)*math.pow(Lg, 2)/24
@@ -2171,6 +2177,7 @@ class PrescriptiveBuckling():
 
         res_iter_pl = minimize(iter_plate, 0, bounds=[[-zt + self._Girder.tf / 2, zp]])
 
+        girder_data['UF Cont. plate side'] = res_iter_pl.fun[0]
         #     Lateral pressure on girder side:
         def iter_girder(zstar):
             uf_7_52 = NySd/NksRd-2*NySd/NRd +(M1Sd_stf +NySd*zstar)/(MstRd*(1-NySd/NE))+u
@@ -2180,6 +2187,9 @@ class PrescriptiveBuckling():
             return max([uf_7_52, uf_7_53 ,uf_7_54 ,uf_7_55])
 
         res_iter_girder = minimize(iter_girder, 0, bounds=[[-zt + self._Girder.tf / 2, zp]])
+        girder_data['UF Cont. girder side'] = res_iter_girder.fun[0]
+
+        return girder_data
 
 
 class Shell():

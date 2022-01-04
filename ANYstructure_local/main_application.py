@@ -69,16 +69,16 @@ class Application():
 
         # tabbed frames
         self._tabControl = ttk.Notebook(root)
-        self._tab1 = ttk.Frame(self._tabControl, relief = 'flat')
-        self._tab2 = ttk.Frame(self._tabControl, relief = 'flat')
-        self._tab3 = ttk.Frame(self._tabControl, relief='flat')
-        self._tab4 = ttk.Frame(self._tabControl, relief='flat')
+        self._tab_geo = ttk.Frame(self._tabControl, relief = 'flat')
+        self._tab_prop = ttk.Frame(self._tabControl, relief = 'flat')
+        self._tab_comp = ttk.Frame(self._tabControl, relief='flat')
+        self._tab_prop_tools = ttk.Frame(self._tabControl, relief='flat')
         self._tab5 = ttk.Frame(self._tabControl, relief='flat')
 
-        self._tabControl.add(self._tab1, text='Geometry')
-        self._tabControl.add(self._tab2, text='Line properties')
-        self._tabControl.add(self._tab3, text='Compartments')
-        self._tabControl.add(self._tab4, text='Buckling')
+        self._tabControl.add(self._tab_geo, text='Geometry')
+        self._tabControl.add(self._tab_prop, text='Line properties')
+        self._tabControl.add(self._tab_prop_tools, text='Properties tools')
+        self._tabControl.add(self._tab_comp, text='Compartments')
         self._tabControl.add(self._tab5, text='Information')
         self._tabControl.place(relwidth=0.2585, relheight = 0.99)
         #self._tabControl.select(self._tab2)
@@ -375,37 +375,37 @@ class Application():
 
         ent_width = 6  # width of entries
 
-        ttk.Entry(self._tab1, textvariable=self._new_project_infomation)\
+        ttk.Entry(self._tab_geo, textvariable=self._new_project_infomation)\
             .place(relx=0.005, rely=0.005, relwidth = 0.95, relheight = 0.05)
 
-        ttk.Label(self._tab1, text='Input point coordinates [mm]', font=self._text_size['Text 9 bold'],
+        ttk.Label(self._tab_geo, text='Input point coordinates [mm]', font=self._text_size['Text 9 bold'],
                  )\
             .place(rely=point_start, relx=point_x_start, anchor = tk.NW)
-        ttk.Label(self._tab1, text='Point x (horizontal) [mm]:',font="Text 9", )\
+        ttk.Label(self._tab_geo, text='Point x (horizontal) [mm]:',font="Text 9", )\
             .place(relx=point_x_start, rely=point_start+ delta_y,)
-        ttk.Label(self._tab1, text='Point y (vertical)   [mm]:',font="Text 9", )\
+        ttk.Label(self._tab_geo, text='Point y (vertical)   [mm]:',font="Text 9", )\
             .place(relx=point_x_start, rely=point_start + delta_y*2)
 
-        ttk.Entry(self._tab1, textvariable=self._new_point_x, width = int(ent_width * 1.5))\
+        ttk.Entry(self._tab_geo, textvariable=self._new_point_x, width = int(ent_width * 1.5))\
             .place(relx=ent_x, rely=point_start+ delta_y)
-        ttk.Entry(self._tab1, textvariable=self._new_point_y, width = int(ent_width * 1.5))\
+        ttk.Entry(self._tab_geo, textvariable=self._new_point_y, width = int(ent_width * 1.5))\
             .place(relx=ent_x, rely=point_start + delta_y*2)
 
 
-        ttk.Button(self._tab1, text='Add point (coords)', command=self.new_point,style = "Bold.TButton")\
+        ttk.Button(self._tab_geo, text='Add point (coords)', command=self.new_point,style = "Bold.TButton")\
             .place(relx=ent_x + 2 * delta_x, rely=point_start+1*delta_y, relwidth = 0.3)
-        ttk.Button(self._tab1, text='Copy point (relative)', command=self.copy_point,style = "Bold.TButton")\
+        ttk.Button(self._tab_geo, text='Copy point (relative)', command=self.copy_point,style = "Bold.TButton")\
             .place(relx=ent_x + 2 * delta_x, rely=point_start+2*delta_y,relwidth = 0.3)
-        ttk.Button(self._tab1, text='Move point', command=self.move_point,style = "Bold.TButton")\
+        ttk.Button(self._tab_geo, text='Move point', command=self.move_point,style = "Bold.TButton")\
             .place(relx=ent_x + 2 * delta_x, rely=point_start+3*delta_y, relwidth = 0.3)
-        ttk.Button(self._tab1, text='Move line', command=self.move_line,style = "Bold.TButton")\
+        ttk.Button(self._tab_geo, text='Move line', command=self.move_line,style = "Bold.TButton")\
             .place(relx=ent_x + 2 * delta_x,rely=point_start+4*delta_y, relwidth = 0.3)
 
         self._new_draw_point_name = tk.BooleanVar()
         self._new_draw_point_name.set(False)
-        ttk.Label(self._tab1, text='Show point names in GUI', font="Text 9")\
+        ttk.Label(self._tab_geo, text='Show point names in GUI', font="Text 9")\
             .place(relx=point_x_start, rely=point_start+3*delta_y)
-        ttk.Checkbutton(self._tab1, variable = self._new_draw_point_name, command = self.on_color_code_check)\
+        ttk.Checkbutton(self._tab_geo, variable = self._new_draw_point_name, command = self.on_color_code_check)\
             .place(relx=ent_x, rely=point_start+3*delta_y)
 
         # --- line input/output ---
@@ -475,17 +475,17 @@ class Application():
         self._new_shift_viz_coord_hor.set(0)
 
         line_start, line_x = point_start+0.22, 0.0055
-        ttk.Label(self._tab1, text='Input line from "point number" to "point number"',
+        ttk.Label(self._tab_geo, text='Input line from "point number" to "point number"',
                  font=self._text_size['Text 9 bold'], )\
             .place(rely=line_start, relx=line_x, anchor = tk.NW)
-        ttk.Label(self._tab1, text='Line from point:',font="Text 9", )\
+        ttk.Label(self._tab_geo, text='Line from point:',font="Text 9", )\
             .place(relx=line_x, rely=line_start+delta_y)
-        ttk.Label(self._tab1, text='Line to point:',font="Text 9", )\
+        ttk.Label(self._tab_geo, text='Line to point:',font="Text 9", )\
             .place(relx=line_x, rely=line_start+2*delta_y)
 
-        ttk.Label(self._tab1, text='Show line names in GUI', font="Text 9")\
+        ttk.Label(self._tab_geo, text='Show line names in GUI', font="Text 9")\
             .place(relx=line_x, rely=line_start+3*delta_y)
-        ttk.Checkbutton(self._tab1, variable = self._new_line_name, command = self.on_color_code_check)\
+        ttk.Checkbutton(self._tab_geo, variable = self._new_line_name, command = self.on_color_code_check)\
             .place(relx=ent_x, rely=line_start+3*delta_y)
         
         chk_x_shift = 0.5
@@ -509,7 +509,7 @@ class Application():
         ttk.Checkbutton(self._tab5, variable = self._new_colorcode_total, command = self.on_color_code_check)\
             .place(relx = chk_x_shift, rely=0.05+10*delta_y)
 
-        self._chk_cc_spacing = ttk.Checkbutton(self._tab2, variable = self._new_colorcode_spacing,
+        self._chk_cc_spacing = ttk.Checkbutton(self._tab_prop, variable = self._new_colorcode_spacing,
                                               command = self.on_color_code_check)
 
         ttk.Label(self._tab5, text='Check to see avaliable shortcuts', font="Text 9").place(relx = lab_x_shift,
@@ -522,66 +522,66 @@ class Application():
         ttk.Label(self._tab5, text='Fatigue UF', font="Text 9").place(relx = lab_x_shift, rely=0.05+9*delta_y)
         ttk.Label(self._tab5, text='Total UF', font="Text 9").place(relx = lab_x_shift, rely=0.05+10*delta_y)
 
-        ttk.Spinbox(self._tab1, textvariable=self._new_line_p1, width=int(ent_width * 1), from_ = 0,
+        ttk.Spinbox(self._tab_geo, textvariable=self._new_line_p1, width=int(ent_width * 1), from_ = 0,
                     to = float('inf')).place(relx=ent_x, rely=line_start+1*delta_y)
-        ttk.Spinbox(self._tab1, textvariable=self._new_line_p2, width=int(ent_width * 1),
+        ttk.Spinbox(self._tab_geo, textvariable=self._new_line_p2, width=int(ent_width * 1),
                     from_ = 0, to = float('inf')).place(relx=ent_x, rely=line_start+2*delta_y)
 
-        ttk.Button(self._tab1, text='Add line', command=self.new_line,style = "Bold.TButton")\
+        ttk.Button(self._tab_geo, text='Add line', command=self.new_line,style = "Bold.TButton")\
             .place(relx=ent_x + 2 * delta_x, rely=line_start+delta_y, relwidth = 0.3)
 
         # --- delete points and lines ---
         self._new_delete_line = tk.IntVar()
         self._new_delete_point = tk.IntVar()
         del_start, del_x = line_start + 0.2,0.005208333
-        ttk.Label(self._tab1, text='Delete lines and points (or left/right click and use "Delete key")',
+        ttk.Label(self._tab_geo, text='Delete lines and points (or left/right click and use "Delete key")',
                  font=self._text_size['Text 9 bold'], )\
             .place(rely=del_start - 0.02,relx=del_x, anchor = tk.NW)
-        self._ent_delete_line = ttk.Spinbox(self._tab1, textvariable=self._new_delete_line,
+        self._ent_delete_line = ttk.Spinbox(self._tab_geo, textvariable=self._new_delete_line,
                                             from_ = 0, to = float('inf'),
                                         width=int(ent_width * 1))
         self._ent_delete_line.place(relx=ent_x, rely=del_start + delta_y)
 
-        self._ent_delete_point = ttk.Spinbox(self._tab1, textvariable=self._new_delete_point,
+        self._ent_delete_point = ttk.Spinbox(self._tab_geo, textvariable=self._new_delete_point,
                                              from_ = 0, to = float('inf'),
                                          width=int(ent_width * 1))
         self._ent_delete_point.place(relx=ent_x, rely=del_start + delta_y*2)
 
-        ttk.Label(self._tab1, text='Line number (left click):',font="Text 9")\
+        ttk.Label(self._tab_geo, text='Line number (left click):',font="Text 9")\
             .place(relx=del_x, rely=del_start+ delta_y)
-        ttk.Label(self._tab1, text='Point number (right click):',font="Text 9", )\
+        ttk.Label(self._tab_geo, text='Point number (right click):',font="Text 9", )\
             .place(relx=del_x, rely=del_start+ delta_y*2)
 
-        ttk.Button(self._tab1, text='Delete line',command=self.delete_line,style = "Bold.TButton"
+        ttk.Button(self._tab_geo, text='Delete line',command=self.delete_line,style = "Bold.TButton"
                                          ).place(relx=ent_x+delta_x*2, rely=del_start + delta_y,
                                                                                     relwidth = 0.3)
-        ttk.Button(self._tab1, text='Delete prop.',command=self.delete_properties_pressed,style = "Bold.TButton"
+        ttk.Button(self._tab_geo, text='Delete prop.',command=self.delete_properties_pressed,style = "Bold.TButton"
                                          ).place(relx=ent_x+delta_x*2, rely=del_start + delta_y*2,
                                                                                     relwidth = 0.3)
 
-        ttk.Button(self._tab1, text='Delete point',command=self.delete_point,style = "Bold.TButton"
+        ttk.Button(self._tab_geo, text='Delete point',command=self.delete_point,style = "Bold.TButton"
                                           ).place(relx=ent_x+2*delta_x, rely=del_start + delta_y*3,
                                                                                      relwidth = 0.3)
         
         # Shifing of coordinate display
         shift_x = del_x
         shift_y = del_start+0.2
-        ttk.Label(self._tab1, text='Shift coordinate labeling [mm]: ', font = self._text_size['Text 8 bold'])\
-            .place(relx=shift_x, rely=shift_y + delta_y*0)
-        ttk.Label(self._tab1, text='Used if you want a different origin of the repoted coordinates. \n'
+        ttk.Label(self._tab_geo, text='Shift coordinate labeling [mm]: ', font = self._text_size['Text 8 bold'])\
+            .place(relx=shift_x, rely=shift_y - delta_y*0.5)
+        ttk.Label(self._tab_geo, text='Used if you want a different origin of the repoted coordinates. \n'
                                    'Does not affect loads.', font = self._text_size['Text 8'])\
             .place(relx=shift_x, rely=shift_y + delta_y*0.5)
 
-        ttk.Label(self._tab1, text='y shift', font = self._text_size['Text 8'],
+        ttk.Label(self._tab_geo, text='y shift', font = self._text_size['Text 8'],
                  ).place(relx=shift_x, rely=shift_y + delta_y * 2)
-        ttk.Label(self._tab1, text='x shift ', font = self._text_size['Text 8'],
+        ttk.Label(self._tab_geo, text='x shift ', font = self._text_size['Text 8'],
                  ).place(relx=shift_x, rely=shift_y + delta_y * 3)
 
-        self._ent_shift_hor = ttk.Entry(self._tab1, textvariable = self._new_shift_viz_coord_hor,
+        self._ent_shift_hor = ttk.Entry(self._tab_geo, textvariable = self._new_shift_viz_coord_hor,
                                        width = ent_width )
 
         self._ent_shift_hor.bind('<FocusOut>', self.trace_shift_change)
-        self._ent_shift_ver = ttk.Entry(self._tab1, textvariable = self._new_shift_viz_coord_ver,
+        self._ent_shift_ver = ttk.Entry(self._tab_geo, textvariable = self._new_shift_viz_coord_ver,
                                        width = ent_width,
                                        )
         self._ent_shift_ver.bind('<FocusOut>', self.trace_shift_change)
@@ -589,9 +589,9 @@ class Application():
         self._ent_shift_hor.place(relx=ent_x, rely=shift_y + delta_y * 2)
         self._ent_shift_ver.place(relx=ent_x, rely=shift_y + delta_y * 3)
 
-        ttk.Label(self._tab1, text='Use shifted coordinates', font="Text 9")\
+        ttk.Label(self._tab_geo, text='Use shifted coordinates', font="Text 9")\
             .place(relx=shift_x, rely=shift_y + delta_y * 4)
-        ttk.Checkbutton(self._tab1, variable = self._new_shifted_coords, command = self.update_frame)\
+        ttk.Checkbutton(self._tab_geo, variable = self._new_shifted_coords, command = self.update_frame)\
             .place(relx=ent_x, rely=shift_y + delta_y * 4)
 
         # --- structure type information ---
@@ -638,60 +638,65 @@ class Application():
         vert_start = 0.1
         hor_start = 0.02
 
-        self.add_stucture = ttk.Button(self._tab2, text='Add structure/properties to line \n'
+        self.add_stucture = ttk.Button(self._tab_prop, text='Add structure/properties to line \n'
                                                           '-- new or replace existing --', command=self.new_structure,
                                        style = "Bold.TButton")
 
-        self.add_stucture.place(relx=0.495, rely=0.87, relwidth = 0.5, relheight = 0.06)
+        self.add_stucture.place(relx=0.55, rely=vert_start+32*delta_y, relwidth = 0.45, relheight = 0.06)
 
 
-        ttk.Label(self._tab2, text='Scale stresses when changing properties', font=self._text_size['Text 9'])\
-            .place(relx = hor_start, rely=vert_start+26*delta_y)
-        ttk.Checkbutton(self._tab2, variable = self._new_scale_stresses, command = self.on_color_code_check)\
-            .place(relx = delta_x * 6, rely=vert_start+26*delta_y)
+        ttk.Label(self._tab_prop, text='Scale stresses when\nchanging properties', font=self._text_size['Text 9'])\
+            .place(relx = hor_start, rely=vert_start+32*delta_y)
 
-        ttk.Label(self._tab2, text='scale up, fup', font=self._text_size['Text 8']).place(relx =hor_start,
-                                                                                          rely=vert_start+27*delta_y)
-        ttk.Label(self._tab2, text='fdown', font=self._text_size['Text 8']).place(relx =hor_start + delta_x*3,
-                                                                                  rely=vert_start+27*delta_y)
+        ttk.Checkbutton(self._tab_prop, variable = self._new_scale_stresses, command = self.on_color_code_check)\
+            .place(relx = hor_start + delta_x*3, rely=vert_start+32*delta_y)
 
-        ent_fup = ttk.Entry(self._tab2, textvariable=self._new_fup)
-        ent_fup.place(relx =hor_start + delta_x*2, rely=vert_start+27*delta_y, relwidth = 0.05)
+        ttk.Label(self._tab_prop, text='scale up, fup', font=self._text_size['Text 8']).place(relx =hor_start,
+                                                                                          rely=vert_start+34*delta_y)
+        ttk.Label(self._tab_prop, text='fdown', font=self._text_size['Text 8']).place(relx =hor_start + delta_x*3,
+                                                                                  rely=vert_start+34*delta_y)
 
-        ent_fdwn = ttk.Entry(self._tab2, textvariable=self._new_fdwn)
-        ent_fdwn.place(relx =hor_start + delta_x*4, rely=vert_start+27*delta_y, relwidth = 0.05)
+        ent_fup = ttk.Entry(self._tab_prop, textvariable=self._new_fup)
+        ent_fup.place(relx =hor_start + delta_x*2, rely=vert_start+34*delta_y, relwidth = 0.05)
+
+        ent_fdwn = ttk.Entry(self._tab_prop, textvariable=self._new_fdwn)
+        ent_fdwn.place(relx =hor_start + delta_x*4, rely=vert_start+34*delta_y, relwidth = 0.05)
 
         # Toggle buttons
-
-        self._toggle_btn = tk.Button(self._tab2, text="Toggle select\nmultiple", relief="raised",
+        ttk.Label(self._tab_prop_tools, text='Change one property for multiple lines here. \n'
+                                             '1. Press mulitple select button\n'
+                                             '2. Select parameter in option menu\n'
+                                             '3. Press Change parameters button', font=self._text_size['Text 9'])\
+            .place(relx = hor_start, rely=vert_start-1*delta_y)
+        self._toggle_btn = tk.Button(self._tab_prop_tools, text="Toggle select\nmultiple", relief="raised",
                                      command=self.toggle_select_multiple, bg = '#E1E1E1', activebackground = '#E5F1FB' )
-        self._toggle_change_param = ttk.Button(self._tab2, text="Change parameters",
+        self._toggle_change_param = ttk.Button(self._tab_prop_tools, text="Change parameters",
                                      command=self.toggle_set_variable)
         self._toggle_param_to_change = None
-        self._toggle_btn.place(relx=hor_start, rely=vert_start+29*delta_y, relwidth = 0.2, relheight = 0.06)
+        self._toggle_btn.place(relx=hor_start, rely=vert_start+2*delta_y, relwidth = 0.2, relheight = 0.06)
 
-        self._toggle_change_param.place(relx=hor_start+ delta_x*6, rely=vert_start+29*delta_y, relwidth = 0.25)
+        self._toggle_change_param.place(relx=hor_start+ delta_x*6, rely=vert_start+2*delta_y, relwidth = 0.25)
 
-        self._toggle_choose = ttk.OptionMenu(self._tab2, self._new_toggle_var,self._stuctural_definition[0],
+        self._toggle_choose = ttk.OptionMenu(self._tab_prop_tools, self._new_toggle_var,self._stuctural_definition[0],
                                              *self._stuctural_definition,
                                             command = self.update_frame)
-        self._toggle_choose.place(relx=hor_start+ delta_x*3, rely=vert_start+29*delta_y, relwidth = 0.25)
+        self._toggle_choose.place(relx=hor_start+ delta_x*3, rely=vert_start+2*delta_y, relwidth = 0.25)
 
         # PULS interface
-        self._toggle_btn_puls = tk.Button(self._tab2, text="Use PULS\n"
+        self._toggle_btn_puls = tk.Button(self._tab_prop, text="Use PULS\n"
                                                               "results", relief="raised",
                                      command=self.toggle_puls_run, bg = self._button_bg_color)
-        self._puls_run_all = ttk.Button(self._tab2, text='Run PULS -\nupdate results',
+        self._puls_run_all = ttk.Button(self._tab_prop, text='Run PULS -\nupdate results',
                                      command=self.puls_run_all_lines)
-        self._ent_puls_uf = ttk.Entry(self._tab2, textvariable=self._new_puls_uf,
+        self._ent_puls_uf = ttk.Entry(self._tab_prop, textvariable=self._new_puls_uf,
                                         width=int(ent_width * 1),
                                          )
         self._new_puls_uf.trace('w', self.trace_acceptance_change)
 
         self._new_buckling_method = tk.StringVar()
         options = ['DNV-RP-C201 - prescriptive','DNV PULS','ML-CL (PULS based)']
-        self._lab_buckling_method = ttk.Label(self._tab2, text='Set buckling method')
-        self._buckling_method = ttk.OptionMenu(self._tab2, self._new_buckling_method, options[0], *options,
+        self._lab_buckling_method = ttk.Label(self._tab_prop, text='Set buckling method')
+        self._buckling_method = ttk.OptionMenu(self._tab_prop, self._new_buckling_method, options[0], *options,
                                                command=self.update_frame)
 
         # --- main variable to define the structural properties ---
@@ -770,111 +775,111 @@ class Application():
         # --- main entries and labels to define the structural properties ---
         ent_width = 12 #width of entries
 
-        self._ent_mat = ttk.Entry(self._tab2, textvariable=self._new_material)
-        self._ent_mat_factor = ttk.Entry(self._tab2, textvariable=self._new_material_factor)
+        self._ent_mat = ttk.Entry(self._tab_prop, textvariable=self._new_material)
+        self._ent_mat_factor = ttk.Entry(self._tab_prop, textvariable=self._new_material_factor)
         
         '''
         Flat plate input
         '''
-        self._ent_field_len = ttk.Entry(self._tab2, textvariable=self._new_field_len)
-        self._ent_stf_spacing = ttk.Entry(self._tab2, textvariable=self._new_stf_spacing)
-        self._ent_plate_thk = ttk.Entry(self._tab2, textvariable=self._new_plate_thk)
-        self._ent_stf_web_h = ttk.Entry(self._tab2, textvariable=self._new_stf_web_h, width = int(5*1))
-        self._ent_stf_web_t = ttk.Entry(self._tab2, textvariable=self._new_stf_web_t)
-        self._ent_stf_fl_w = ttk.Entry(self._tab2, textvariable=self._new_stf_fl_w)
-        self._ent_str_fl_t = ttk.Entry(self._tab2, textvariable=self._new_stf_fl_t)
+        self._ent_field_len = ttk.Entry(self._tab_prop, textvariable=self._new_field_len)
+        self._ent_stf_spacing = ttk.Entry(self._tab_prop, textvariable=self._new_stf_spacing)
+        self._ent_plate_thk = ttk.Entry(self._tab_prop, textvariable=self._new_plate_thk)
+        self._ent_stf_web_h = ttk.Entry(self._tab_prop, textvariable=self._new_stf_web_h, width = int(5*1))
+        self._ent_stf_web_t = ttk.Entry(self._tab_prop, textvariable=self._new_stf_web_t)
+        self._ent_stf_fl_w = ttk.Entry(self._tab_prop, textvariable=self._new_stf_fl_w)
+        self._ent_str_fl_t = ttk.Entry(self._tab_prop, textvariable=self._new_stf_fl_t)
 
 
-        self._ent_plate_kpp = ttk.Entry(self._tab2, textvariable=self._new_plate_kpp, width = int(5*1))
-        self._ent_plate_kps = ttk.Entry(self._tab2, textvariable=self._new_stf_kps, width = int(5*1))
-        self._ent_stf_km1 = ttk.Entry(self._tab2, textvariable=self._new_stf_km1, width = int(5*1))
-        self._ent_stf_km2 = ttk.Entry(self._tab2, textvariable=self._new_stf_km2,width = int(5*1))
-        self._ent_stf_km3 = ttk.Entry(self._tab2, textvariable=self._new_stf_km3, width = int(5*1))
+        self._ent_plate_kpp = ttk.Entry(self._tab_prop, textvariable=self._new_plate_kpp, width = int(5*1))
+        self._ent_plate_kps = ttk.Entry(self._tab_prop, textvariable=self._new_stf_kps, width = int(5*1))
+        self._ent_stf_km1 = ttk.Entry(self._tab_prop, textvariable=self._new_stf_km1, width = int(5*1))
+        self._ent_stf_km2 = ttk.Entry(self._tab_prop, textvariable=self._new_stf_km2,width = int(5*1))
+        self._ent_stf_km3 = ttk.Entry(self._tab_prop, textvariable=self._new_stf_km3, width = int(5*1))
 
-        self._ent_pressure_side = ttk.OptionMenu(self._tab2, self._new_pressure_side,('p', 's')[0], *('p', 's'))
-        self._ent_sigma_y1= ttk.Entry(self._tab2, textvariable=self._new_sigma_y1, width = int(7*1))
-        self._ent_sigma_y2 = ttk.Entry(self._tab2, textvariable=self._new_sigma_y2, width=int(7*1))
-        self._ent_sigma_x1 = ttk.Entry(self._tab2, textvariable=self._new_sigma_x1, width=int(7*1))
-        self._ent_sigma_x2 = ttk.Entry(self._tab2, textvariable=self._new_sigma_x2, width=int(7 * 1))
-        self._ent_tauxy = ttk.Entry(self._tab2, textvariable=self._new_tauxy, width=int(7*1),
+        self._ent_pressure_side = ttk.OptionMenu(self._tab_prop, self._new_pressure_side,('p', 's')[0], *('p', 's'))
+        self._ent_sigma_y1= ttk.Entry(self._tab_prop, textvariable=self._new_sigma_y1, width = int(7*1))
+        self._ent_sigma_y2 = ttk.Entry(self._tab_prop, textvariable=self._new_sigma_y2, width=int(7*1))
+        self._ent_sigma_x1 = ttk.Entry(self._tab_prop, textvariable=self._new_sigma_x1, width=int(7*1))
+        self._ent_sigma_x2 = ttk.Entry(self._tab_prop, textvariable=self._new_sigma_x2, width=int(7 * 1))
+        self._ent_tauxy = ttk.Entry(self._tab_prop, textvariable=self._new_tauxy, width=int(7*1),
                                    )
         # self._ent_stf_type = ttk.Entry(self._main_fr, textvariable=self._new_stf_type, width=int(7*1),
         #                               )
-        self._ent_stf_type = ttk.OptionMenu(self._tab2, self._new_stf_type, 'T', *['T', 'FB', 'L', 'L-bulb'])
-        self._ent_structure_type = ttk.OptionMenu(self._tab2, self._new_stucture_type, self._options_type[0],
+        self._ent_stf_type = ttk.OptionMenu(self._tab_prop, self._new_stf_type, 'T', *['T', 'FB', 'L', 'L-bulb'])
+        self._ent_structure_type = ttk.OptionMenu(self._tab_prop, self._new_stucture_type, self._options_type[0],
                                                   *self._options_type,command = self.option_meny_structure_type_trace)
-        self._ent_puls_sp_or_up= ttk.OptionMenu(self._tab2, self._new_puls_sp_or_up, 'SP', *['SP', 'UP'],
+        self._ent_puls_sp_or_up= ttk.OptionMenu(self._tab_prop, self._new_puls_sp_or_up, 'SP', *['SP', 'UP'],
                                                 command = self.trace_puls_up_or_sp,)
-        self._ent_puls_method = ttk.OptionMenu(self._tab2, self._new_puls_method,'buckling',
+        self._ent_puls_method = ttk.OptionMenu(self._tab_prop, self._new_puls_method,'buckling',
                                                *['buckling', 'ultimate'])
-        self._ent_puls_panel_boundary = ttk.OptionMenu(self._tab2, self._new_puls_panel_boundary,'Int',
+        self._ent_puls_panel_boundary = ttk.OptionMenu(self._tab_prop, self._new_puls_panel_boundary,'Int',
                                                       *['Int', 'GL', 'GT'])
-        self._ent_puls_stf_end_type = ttk.OptionMenu(self._tab2, self._new_puls_stf_end_type,'C',
+        self._ent_puls_stf_end_type = ttk.OptionMenu(self._tab_prop, self._new_puls_stf_end_type,'C',
                                                       *['C', 'S'])
-        self._ent_puls_up_boundary = ttk.Entry(self._tab2, textvariable=self._new_puls_up_boundary, width=int(7*1))
+        self._ent_puls_up_boundary = ttk.Entry(self._tab_prop, textvariable=self._new_puls_up_boundary, width=int(7*1))
 
 
-        self._lab_structure_type = ttk.Label(self._tab2, text='Select structure type:', font=self._text_size['Text 9'])
-        self._button_str_type = ttk.Button(self._tab2, text='Show structure types', command=show_message)
+        self._lab_structure_type = ttk.Label(self._tab_prop, text='Select structure type:', font=self._text_size['Text 9'])
+        self._button_str_type = ttk.Button(self._tab_prop, text='Show structure types', command=show_message)
         self._structure_types_label =  ttk.Label(textvariable = self._new_stucture_type_label,
                                                 font = self._text_size['Text 8'], )
 
-        self._lab_kpp = ttk.Label(self._tab2,text='kpp', )
-        self._lab_kps = ttk.Label(self._tab2, text='kps', )
-        self._lab_km1 = ttk.Label(self._tab2, text='km1', )
-        self._lab_km2 = ttk.Label(self._tab2, text='km2', )
-        self._lab_k3 = ttk.Label(self._tab2, text='k3', )
-        self._lab_sig_y1 = ttk.Label(self._tab2, text='sig_y1')
-        self._lab_sig_y2 = ttk.Label(self._tab2, text='sig_y2')
-        self._lab_sig_x1 = ttk.Label(self._tab2, text='sig_x1')
-        self._lab_sig_x2 = ttk.Label(self._tab2, text='sig_x2')
-        self._lab_tau_y1 = ttk.Label(self._tab2, text='tau_y1')
-        self._lab_stf_type = ttk.Label(self._tab2, text='Stf. type')
+        self._lab_kpp = ttk.Label(self._tab_prop,text='kpp', )
+        self._lab_kps = ttk.Label(self._tab_prop, text='kps', )
+        self._lab_km1 = ttk.Label(self._tab_prop, text='km1', )
+        self._lab_km2 = ttk.Label(self._tab_prop, text='km2', )
+        self._lab_k3 = ttk.Label(self._tab_prop, text='k3', )
+        self._lab_sig_y1 = ttk.Label(self._tab_prop, text='sig_y1')
+        self._lab_sig_y2 = ttk.Label(self._tab_prop, text='sig_y2')
+        self._lab_sig_x1 = ttk.Label(self._tab_prop, text='sig_x1')
+        self._lab_sig_x2 = ttk.Label(self._tab_prop, text='sig_x2')
+        self._lab_tau_y1 = ttk.Label(self._tab_prop, text='tau_y1')
+        self._lab_stf_type = ttk.Label(self._tab_prop, text='Stf. type')
 
-        self._zstar_chk = ttk.Checkbutton(self._tab2, variable=self._new_zstar_optimization)
-        self._zstar_label = ttk.Label(self._tab2, text='z* optimization (buckling RP-C201)',
+        self._zstar_chk = ttk.Checkbutton(self._tab_prop, variable=self._new_zstar_optimization)
+        self._zstar_label = ttk.Label(self._tab_prop, text='z* optimization (buckling RP-C201)',
                                       font=self._text_size['Text 8'],
                  )
 
-        self._lab_puls_input =  ttk.Label(self._tab2, text='PULS input',
+        self._lab_puls_input =  ttk.Label(self._tab_prop, text='PULS input',
                                          font=self._text_size['Text 8'])
-        self._lab_puls_spup =  ttk.Label(self._tab2, text='Siffened: SP Unstf. pl.: UP')
-        self._lab_puls_up_supp =  ttk.Label(self._tab2, text='UP sup.left,right,upper,lower',
+        self._lab_puls_spup =  ttk.Label(self._tab_prop, text='Siffened: SP Unstf. pl.: UP')
+        self._lab_puls_up_supp =  ttk.Label(self._tab_prop, text='UP sup.left,right,upper,lower',
                                            font = self._text_size['Text 7'])
-        self._lab_puls_acceptance=  ttk.Label(self._tab2, text='PULS acceptance')
-        self._lab_puls_uf =  ttk.Label(self._tab2, text='PULS utilization factor:')
-        self._lab_puls_int_gt =  ttk.Label(self._tab2, text='Int-integrated GL-free left/right GT-free top/bottom')
+        self._lab_puls_acceptance=  ttk.Label(self._tab_prop, text='PULS acceptance')
+        self._lab_puls_uf =  ttk.Label(self._tab_prop, text='PULS utilization factor:')
+        self._lab_puls_int_gt =  ttk.Label(self._tab_prop, text='Int-integrated GL-free left/right GT-free top/bottom')
 
-        self._lab_puls_cont_sniped =  ttk.Label(self._tab2, text='Continous or Sniped',
+        self._lab_puls_cont_sniped =  ttk.Label(self._tab_prop, text='Continous or Sniped',
                  font = self._text_size['Text 8'])
 
-        self._lab_span = ttk.Label(self._tab2, text='span', )
-        self._lab_s = ttk.Label(self._tab2, text='s', )
-        self._lab_pl_thk = ttk.Label(self._tab2, text='pl_thk', )
-        self._lab_web_h = ttk.Label(self._tab2, text='web_h', )
-        self._lab_web_thk = ttk.Label(self._tab2, text='web_thk', )
-        self._lab_fl_w= ttk.Label(self._tab2, text='fl_w', )
-        self._lab_fl_thk = ttk.Label(self._tab2, text='fl_thk', )
+        self._lab_span = ttk.Label(self._tab_prop, text='span', )
+        self._lab_s = ttk.Label(self._tab_prop, text='s', )
+        self._lab_pl_thk = ttk.Label(self._tab_prop, text='pl_thk', )
+        self._lab_web_h = ttk.Label(self._tab_prop, text='web_h', )
+        self._lab_web_thk = ttk.Label(self._tab_prop, text='web_thk', )
+        self._lab_fl_w= ttk.Label(self._tab_prop, text='fl_w', )
+        self._lab_fl_thk = ttk.Label(self._tab_prop, text='fl_thk', )
 
-        self._chk_button_sigmax1 = ttk.Checkbutton(self._tab2, variable = self._new_colorcode_sigmax,
+        self._chk_button_sigmax1 = ttk.Checkbutton(self._tab_prop, variable = self._new_colorcode_sigmax,
                                                  command = self.on_color_code_check)
-        self._chk_button_sigmay1 = ttk.Checkbutton(self._tab2, variable = self._new_colorcode_sigmay1,
+        self._chk_button_sigmay1 = ttk.Checkbutton(self._tab_prop, variable = self._new_colorcode_sigmay1,
                                                   command = self.on_color_code_check)
-        self._chk_button_sigmay2 = ttk.Checkbutton(self._tab2, variable = self._new_colorcode_sigmay2,
+        self._chk_button_sigmay2 = ttk.Checkbutton(self._tab_prop, variable = self._new_colorcode_sigmay2,
                                                   command = self.on_color_code_check)
-        self._chk_button_tauxy = ttk.Checkbutton(self._tab2, variable = self._new_colorcode_tauxy,
+        self._chk_button_tauxy = ttk.Checkbutton(self._tab_prop, variable = self._new_colorcode_tauxy,
                                                 command = self.on_color_code_check)
-        self._chk_button_structure_type = ttk.Checkbutton(self._tab2, variable = self._new_colorcode_structure_type,
+        self._chk_button_structure_type = ttk.Checkbutton(self._tab_prop, variable = self._new_colorcode_structure_type,
                                                          command = self.on_color_code_check)
-        self._chk_button_cc = ttk.Label(self._tab2, text='<-- Color coding', font=self._text_size['Text 9'],)
-        self._chk_button_puls_spup = ttk.Checkbutton(self._tab2, variable=self._new_colorcode_puls_sp_or_up,
+        self._chk_button_cc = ttk.Label(self._tab_prop, text='<-- Color coding', font=self._text_size['Text 9'],)
+        self._chk_button_puls_spup = ttk.Checkbutton(self._tab_prop, variable=self._new_colorcode_puls_sp_or_up,
                                                     command=self.on_color_code_check)
-        self._chk_button_puls_acceptance =ttk.Checkbutton(self._tab2, variable=self._new_colorcode_puls_acceptance,
+        self._chk_button_puls_acceptance =ttk.Checkbutton(self._tab_prop, variable=self._new_colorcode_puls_acceptance,
                                                          command=self.on_color_code_check)
 
-        self._lab_yield = ttk.Label(self._tab2, text='Yield [MPa]:', font = self._text_size['Text 9'],
+        self._lab_yield = ttk.Label(self._tab_prop, text='Yield [MPa]:', font = self._text_size['Text 9'],
                  )
-        self._lab_mat_fac = ttk.Label(self._tab2, text='Mat. factor', font = self._text_size['Text 9'],
+        self._lab_mat_fac = ttk.Label(self._tab_prop, text='Mat. factor', font = self._text_size['Text 9'],
                  )
 
         try:
@@ -884,12 +889,12 @@ class Application():
             else:
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
-            self._stf_button = tk.Button(self._tab2, image=photo,
+            self._stf_button = tk.Button(self._tab_prop, image=photo,
                                          command= lambda id= "flat long stf": self.on_open_structure_window(id))
             self._stf_button.image = photo
 
         except TclError:
-            self._stf_button = tk.Button(self._tab2, text='STF.',
+            self._stf_button = tk.Button(self._tab_prop, text='STF.',
                                          command= lambda id= "flat long stf": self.on_open_structure_window(id),
                                          bg=self._button_bg_color, fg=self._button_fg_color)
 
@@ -900,12 +905,12 @@ class Application():
             else:
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
-            self._stress_button = tk.Button(self._tab2, image=photo, command=self.on_open_stresses_window,
+            self._stress_button = tk.Button(self._tab_prop, image=photo, command=self.on_open_stresses_window,
                                             fg=self._button_fg_color, bg='white')
             self._stress_button.image = photo
 
         except TclError:
-            self._stress_button = tk.Button(self._tab2, text='STRESS', command=self.on_open_stresses_window,
+            self._stress_button = tk.Button(self._tab_prop, text='STRESS', command=self.on_open_stresses_window,
                                       bg=self._button_bg_color, fg=self._button_fg_color)
 
         try:
@@ -915,15 +920,15 @@ class Application():
             else:
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
-            self._fls_button = tk.Button(self._tab2, image=photo, command=self.on_open_fatigue_window,
+            self._fls_button = tk.Button(self._tab_prop, image=photo, command=self.on_open_fatigue_window,
                                          bg=self._button_bg_color)
             self._fls_button.image = photo
 
         except TclError:
-            self._fls_button = tk.Button(self._tab2, text='FLS', command=self.on_open_fatigue_window,
+            self._fls_button = tk.Button(self._tab_prop, text='FLS', command=self.on_open_fatigue_window,
                                          bg=self._button_bg_color, fg=self._button_fg_color, )
 
-        self._lab_press_side = ttk.Label(self._tab2, text='Pressure side (p-plate, s-stf.):',
+        self._lab_press_side = ttk.Label(self._tab_prop, text='Pressure side (p-plate, s-stf.):',
                                         )
 
         ''' Start shell input '''
@@ -967,18 +972,18 @@ class Application():
 
 
         self._shell_gui_items = list()
-        self._lab_shell =  ttk.Label(self._tab2, text='Shell and curved plate input [mm]')
-        self._ent_shell_plate_thk = ttk.Entry(self._tab2, textvariable=self._new_shell_thk)
+        self._lab_shell =  ttk.Label(self._tab_prop, text='Shell and curved plate input [mm]')
+        self._ent_shell_plate_thk = ttk.Entry(self._tab_prop, textvariable=self._new_shell_thk)
 
-        self._ent_shell_radius = ttk.Entry(self._tab2, textvariable=self._new_shell_radius)
-        self._ent_shell_dist_rings = ttk.Entry(self._tab2, textvariable=self._new_shell_dist_rings)
-        self._ent_shell_length = ttk.Entry(self._tab2, textvariable=self._new_shell_length,width = int(5*1))
-        self._ent_shell_tot_length = ttk.Entry(self._tab2, textvariable=self._new_shell_tot_length,
+        self._ent_shell_radius = ttk.Entry(self._tab_prop, textvariable=self._new_shell_radius)
+        self._ent_shell_dist_rings = ttk.Entry(self._tab_prop, textvariable=self._new_shell_dist_rings)
+        self._ent_shell_length = ttk.Entry(self._tab_prop, textvariable=self._new_shell_length,width = int(5*1))
+        self._ent_shell_tot_length = ttk.Entry(self._tab_prop, textvariable=self._new_shell_tot_length,
                                               
                                        )
-        self._ent_shell_k_factor= ttk.Entry(self._tab2, textvariable=self._new_shell_k_factor, 
+        self._ent_shell_k_factor= ttk.Entry(self._tab_prop, textvariable=self._new_shell_k_factor, 
                                       )
-        self._ent_shell_material_factor= ttk.Entry(self._tab2, textvariable=self._new_shell_mat_factor)
+        self._ent_shell_material_factor= ttk.Entry(self._tab_prop, textvariable=self._new_shell_mat_factor)
 
         self._shell_gui_items = [self._lab_shell, self._ent_shell_plate_thk, self._ent_shell_radius,
                                  self._ent_shell_dist_rings,
@@ -989,10 +994,10 @@ class Application():
         Shell, lognitudinal stiffeners
         '''
         # USING stiffeners for flat plates
-        self._lab_shell_long_stiffener =  ttk.Label(self._tab2, text='Longitudinal stiffener properties [mm]',
+        self._lab_shell_long_stiffener =  ttk.Label(self._tab_prop, text='Longitudinal stiffener properties [mm]',
                                                    
                                       )
-        self._btn_shell_stf_section_long_stf = ttk.Button(self._tab2, text='STF',command= lambda id= "long stf": self.on_open_structure_window(id))
+        self._btn_shell_stf_section_long_stf = ttk.Button(self._tab_prop, text='STF',command= lambda id= "long stf": self.on_open_structure_window(id))
 
         self._shell_long_stf_gui_items = [self._lab_shell_long_stiffener ,self._ent_stf_web_h, self._ent_stf_web_t,
                                           self._ent_stf_fl_w, self._ent_str_fl_t, self._ent_stf_spacing,
@@ -1001,7 +1006,7 @@ class Application():
         '''
         Shell, ring stiffener
         '''
-        self._lab_shell_ring_stiffener =  ttk.Label(self._tab2, text='Ring stiffener properties [mm]')
+        self._lab_shell_ring_stiffener =  ttk.Label(self._tab_prop, text='Ring stiffener properties [mm]')
         self._new_shell_ring_stf_hw = tk.DoubleVar()
         self._new_shell_ring_stf_tw = tk.DoubleVar()
         self._new_shell_ring_stf_b = tk.DoubleVar()
@@ -1015,25 +1020,25 @@ class Application():
         self._new_shell_ring_stf_tripping_brackets.set(0)
         self._new_shell_ring_stf_type.set('T')
 
-        self._ent_shell_ring_stf_hw = ttk.Entry(self._tab2, textvariable=self._new_shell_ring_stf_hw,
+        self._ent_shell_ring_stf_hw = ttk.Entry(self._tab_prop, textvariable=self._new_shell_ring_stf_hw,
                                       width = int(5*1), )
-        self._ent_shell_ring_stf_tw = ttk.Entry(self._tab2, textvariable=self._new_shell_ring_stf_tw,
+        self._ent_shell_ring_stf_tw = ttk.Entry(self._tab_prop, textvariable=self._new_shell_ring_stf_tw,
                                                )
-        self._ent_shell_ring_stf_b = ttk.Entry(self._tab2, textvariable=self._new_shell_ring_stf_b,
+        self._ent_shell_ring_stf_b = ttk.Entry(self._tab_prop, textvariable=self._new_shell_ring_stf_b,
                                               )
-        self._ent_shell_ring_stf_tf = ttk.Entry(self._tab2, textvariable=self._new_shell_ring_stf_tf,
+        self._ent_shell_ring_stf_tf = ttk.Entry(self._tab_prop, textvariable=self._new_shell_ring_stf_tf,
                                                )
-        self._ent_shell_ring_stf_tripping_brackets = ttk.Entry(self._tab2, 
+        self._ent_shell_ring_stf_tripping_brackets = ttk.Entry(self._tab_prop, 
                                                               textvariable=self._new_shell_ring_stf_tripping_brackets,
                                                )
 
-        self._ent_shell_ring_stf_type = ttk.OptionMenu(self._tab2, self._new_shell_ring_stf_type,'T',
+        self._ent_shell_ring_stf_type = ttk.OptionMenu(self._tab_prop, self._new_shell_ring_stf_type,'T',
                                                       *['T', 'FB', 'L', 'L-bulb'])
 
-        self._chk_shell_ring_frame_exclude = ttk.Checkbutton(self._tab2,
+        self._chk_shell_ring_frame_exclude = ttk.Checkbutton(self._tab_prop,
                                                             variable = self._new_shell_exclude_ring_stf,
                                                             command = self.calculation_domain_selected)
-        self._btn_shell_stf_section_ring_stf = ttk.Button(self._tab2,text = 'STF',
+        self._btn_shell_stf_section_ring_stf = ttk.Button(self._tab_prop,text = 'STF',
                                                           command= lambda id= "ring stf":
                                                           self.on_open_structure_window(id))
         self._shell_ring_stf_gui_items = [self._lab_shell_ring_stiffener,self._ent_shell_ring_stf_hw,
@@ -1044,7 +1049,7 @@ class Application():
         '''
         Shell ring girder/frame
         '''
-        self._lab_shell_ring_frame = ttk.Label(self._tab2, text='Ring frame/girder properties [mm]',
+        self._lab_shell_ring_frame = ttk.Label(self._tab_prop, text='Ring frame/girder properties [mm]',
                                                    )
         self._new_shell_ring_frame_hw = tk.DoubleVar()
         self._new_shell_ring_frame_tw = tk.DoubleVar()
@@ -1062,26 +1067,26 @@ class Application():
         self._new_shell_ring_frame_length_between_girders = tk.DoubleVar()
         self._new_shell_ring_frame_length_between_girders.set(2500)
 
-        self._ent_shell_ring_frame_hw = ttk.Entry(self._tab2, textvariable=self._new_shell_ring_frame_hw,
+        self._ent_shell_ring_frame_hw = ttk.Entry(self._tab_prop, textvariable=self._new_shell_ring_frame_hw,
                                                width=int(5 * 1), )
-        self._ent_shell_ring_frame_tw = ttk.Entry(self._tab2, textvariable=self._new_shell_ring_frame_tw,
+        self._ent_shell_ring_frame_tw = ttk.Entry(self._tab_prop, textvariable=self._new_shell_ring_frame_tw,
                                                )
-        self._ent_shell_ring_frame_b = ttk.Entry(self._tab2, textvariable=self._new_shell_ring_frame_b,
+        self._ent_shell_ring_frame_b = ttk.Entry(self._tab_prop, textvariable=self._new_shell_ring_frame_b,
                                               )
-        self._ent_shell_ring_frame_tf = ttk.Entry(self._tab2, textvariable=self._new_shell_ring_frame_tf,
+        self._ent_shell_ring_frame_tf = ttk.Entry(self._tab_prop, textvariable=self._new_shell_ring_frame_tf,
                                                )
-        self._ent_shell_ring_frame_tripping_brackets = ttk.Entry(self._tab2,
+        self._ent_shell_ring_frame_tripping_brackets = ttk.Entry(self._tab_prop,
                                                               textvariable=self._new_shell_ring_frame_tripping_brackets,
                                                               )
-        self._ent_shell_ring_frame_l_between_girders = ttk.Entry(self._tab2,
+        self._ent_shell_ring_frame_l_between_girders = ttk.Entry(self._tab_prop,
                                                               textvariable=self._new_shell_ring_frame_length_between_girders,
                                                               )
-        self._ent_shell_ring_stf_type = ttk.OptionMenu(self._tab2, self._new_shell_ring_frame_type,'T',
+        self._ent_shell_ring_stf_type = ttk.OptionMenu(self._tab_prop, self._new_shell_ring_frame_type,'T',
                                                       *['T', 'FB', 'L', 'L-bulb'])
-        self._chk_shell_ring_frame_exclude = ttk.Checkbutton(self._tab2,
+        self._chk_shell_ring_frame_exclude = ttk.Checkbutton(self._tab_prop,
                                                             variable = self._new_shell_exclude_ring_frame,
                                                             command = self.calculation_domain_selected)
-        self._btn_shell_stf_section_ring_frame = ttk.Button(self._tab2, text='STF',command= lambda id= "ring frame": self.on_open_structure_window(id))
+        self._btn_shell_stf_section_ring_frame = ttk.Button(self._tab_prop, text='STF',command= lambda id= "ring frame": self.on_open_structure_window(id))
         self._shell_ring_frame_gui_items = [self._lab_shell_ring_stiffener, self._ent_shell_ring_frame_hw,
                                           self._ent_shell_ring_frame_tw, self._ent_shell_ring_frame_b,
                                           self._ent_shell_ring_frame_tf, self._ent_shell_ring_frame_tripping_brackets,
@@ -1093,16 +1098,16 @@ class Application():
         Shell/panel load data
         '''
 
-        self._lab_shell_loads =  ttk.Label(self._tab2, text='Load data, compression pressure,\n stresses and '
+        self._lab_shell_loads =  ttk.Label(self._tab_prop, text='Load data, compression pressure,\n stresses and '
                                                               'forces negative.',
                                                    )
         self._new_shell_stress_or_force = tk.IntVar()
         self._new_shell_stress_or_force.set(1)
 
-        self._ent_shell_force_input = ttk.Radiobutton(self._tab2, text="Force input",
+        self._ent_shell_force_input = ttk.Radiobutton(self._tab_prop, text="Force input",
                                                      variable=self._new_shell_stress_or_force, value=1,
                                                      command = self.calculation_domain_selected)
-        self._ent_shell_stress_input = ttk.Radiobutton(self._tab2, text="Stress input",
+        self._ent_shell_stress_input = ttk.Radiobutton(self._tab_prop, text="Stress input",
                                                       variable=self._new_shell_stress_or_force, value=2,
                                                       command = self.calculation_domain_selected)
 
@@ -1127,13 +1132,13 @@ class Application():
         self._new_shell_fab_ring_stf.set('Fabricated')
         self._new_shell_fab_ring_frame.set('Cold formed')
 
-        self._lab_shell_limit_state =  ttk.Label(self._tab2, text='Limit state:', font=self._text_size['Text 9 bold'],
+        self._lab_shell_limit_state =  ttk.Label(self._tab_prop, text='Limit state:', font=self._text_size['Text 9 bold'],
                                                 )
-        self._lab_shell_en_cap_pressure =  ttk.Label(self._tab2, text='End cap pressure is', font=self._text_size['Text 8'],
+        self._lab_shell_en_cap_pressure =  ttk.Label(self._tab_prop, text='End cap pressure is', font=self._text_size['Text 8'],
                                                 )
-        self._lab_shell_fab_stf =  ttk.Label(self._tab2, text='Fab. method ring stf.:', font=self._text_size['Text 8'],
+        self._lab_shell_fab_stf =  ttk.Label(self._tab_prop, text='Fab. method ring stf.:', font=self._text_size['Text 8'],
                                                 )
-        self._lab_shell_fab_frame =  ttk.Label(self._tab2, text='Fab. method ring gird.:', font=self._text_size['Text 8'],
+        self._lab_shell_fab_frame =  ttk.Label(self._tab_prop, text='Fab. method ring gird.:', font=self._text_size['Text 8'],
                                                 )
 
         self._new_shell_sasd = tk.DoubleVar()
@@ -1142,40 +1147,40 @@ class Application():
         self._new_shell_tQsd = tk.DoubleVar()
         self._new_shell_shsd = tk.DoubleVar()
 
-        self._ent_shell_uls_or_als = ttk.OptionMenu(self._tab2, self._new_shell_uls_or_als,'ULS', *['ULS', 'ALS'])
-        self._ent_shell_end_cap_pressure_included = ttk.OptionMenu(self._tab2,
+        self._ent_shell_uls_or_als = ttk.OptionMenu(self._tab_prop, self._new_shell_uls_or_als,'ULS', *['ULS', 'ALS'])
+        self._ent_shell_end_cap_pressure_included = ttk.OptionMenu(self._tab_prop,
                                                                   self._new_shell_end_cap_pressure_included,
                                                                    'included in axial force',
                                                                   *['not included in axial force',
                                                                     'included in axial force'])
-        self._ent_shell_fab_ring_stf = ttk.OptionMenu(self._tab2, self._new_shell_fab_ring_stf,'Fabricated',
+        self._ent_shell_fab_ring_stf = ttk.OptionMenu(self._tab_prop, self._new_shell_fab_ring_stf,'Fabricated',
                                                      *['Fabricated', 'Cold formed'])
-        self._ent_shell_fab_ring_frame = ttk.OptionMenu(self._tab2, self._new_shell_fab_ring_frame,'Fabricated',
+        self._ent_shell_fab_ring_frame = ttk.OptionMenu(self._tab_prop, self._new_shell_fab_ring_frame,'Fabricated',
                                                        *['Fabricated', 'Cold formed'])
-        self._ent_shell_yield = ttk.Entry(self._tab2, textvariable=self._new_shell_yield,
+        self._ent_shell_yield = ttk.Entry(self._tab_prop, textvariable=self._new_shell_yield,
                                                )
 
-        self._ent_shell_Nsd = ttk.Entry(self._tab2, textvariable=self._new_shell_Nsd,
+        self._ent_shell_Nsd = ttk.Entry(self._tab_prop, textvariable=self._new_shell_Nsd,
                                                width=int(5 * 1), )
-        self._ent_shell_Msd = ttk.Entry(self._tab2, textvariable=self._new_shell_Msd,
+        self._ent_shell_Msd = ttk.Entry(self._tab_prop, textvariable=self._new_shell_Msd,
                                                width=int(5 * 1), )
-        self._ent_shell_Tsd  = ttk.Entry(self._tab2, textvariable=self._new_shell_Tsd,
+        self._ent_shell_Tsd  = ttk.Entry(self._tab_prop, textvariable=self._new_shell_Tsd,
                                                width=int(5 * 1), )
-        self._ent_shell_Qsd = ttk.Entry(self._tab2, textvariable=self._new_shell_Qsd,
+        self._ent_shell_Qsd = ttk.Entry(self._tab_prop, textvariable=self._new_shell_Qsd,
                                                width=int(5 * 1), )
-        self._ent_shell_psd = ttk.Entry(self._tab2, textvariable=self._new_shell_psd,
+        self._ent_shell_psd = ttk.Entry(self._tab_prop, textvariable=self._new_shell_psd,
                                                width=int(5 * 1), )
 
-        self._ent_shell_sasd = ttk.Entry(self._tab2, textvariable=self._new_shell_sasd,
+        self._ent_shell_sasd = ttk.Entry(self._tab_prop, textvariable=self._new_shell_sasd,
                                                width=int(5 * 1), )
-        self._ent_shell_smsd = ttk.Entry(self._tab2, textvariable=self._new_shell_smsd,
+        self._ent_shell_smsd = ttk.Entry(self._tab_prop, textvariable=self._new_shell_smsd,
                                                width=int(5 * 1), )
-        self._ent_shell_tTsd  = ttk.Entry(self._tab2, textvariable=self._new_shell_tTsd,
+        self._ent_shell_tTsd  = ttk.Entry(self._tab_prop, textvariable=self._new_shell_tTsd,
                                                width=int(5 * 1), )
-        self._ent_shell_tQsd = ttk.Entry(self._tab2, textvariable=self._new_shell_tQsd,
+        self._ent_shell_tQsd = ttk.Entry(self._tab_prop, textvariable=self._new_shell_tQsd,
                                                width=int(5 * 1), )
         self._new_shell_psd = self._new_shell_psd
-        self._ent_shell_shsd = ttk.Entry(self._tab2, textvariable=self._new_shell_shsd,
+        self._ent_shell_shsd = ttk.Entry(self._tab_prop, textvariable=self._new_shell_shsd,
                                                width=int(5 * 1), )
 
         self._shell_loads_other_gui_items = [self._lab_shell_loads, self._ent_shell_force_input,
@@ -1190,8 +1195,8 @@ class Application():
                                        self._lab_shell_en_cap_pressure,self._lab_shell_fab_stf,
                                        self._lab_shell_fab_frame,self._ent_shell_yield,self._lab_yield]
 
-        self._shell_exclude_ring_stf = tk.Frame(self._tab2, height=10, bg="black", colormap="new", )
-        self._shell_exclude_ring_frame = tk.Frame(self._tab2, height=10, bg="black", colormap="new")
+        self._shell_exclude_ring_stf = tk.Frame(self._tab_prop, height=10, bg="black", colormap="new", )
+        self._shell_exclude_ring_frame = tk.Frame(self._tab_prop, height=10, bg="black", colormap="new")
 
         ''' END shell input '''
 
@@ -1206,14 +1211,14 @@ class Application():
         self._current_calculation_domain = 'Stiffened panel, flat'
         self._unit_informations_dimensions = list()
 
-        self._ent_calculation_domain = ttk.OptionMenu(self._tab2, self._new_calculation_domain,options[0], *options,
+        self._ent_calculation_domain = ttk.OptionMenu(self._tab_prop, self._new_calculation_domain,options[0], *options,
                                                      command=self.calculation_domain_selected)
 
-        ttk.Label(self._tab2, text='Structural and calculation properties input below:',
+        ttk.Label(self._tab_prop, text='Structural and calculation properties input below:',
                  font=self._text_size['Text 9 bold'],
                   ).place(rely=prop_vert_start-delta_y*2.1,relx=types_start,
                                                   anchor = tk.NW)
-        ttk.Label(self._tab2, text='Select calculation domain ->',
+        ttk.Label(self._tab_prop, text='Select calculation domain ->',
                  font=self._text_size['Text 9'],
                  ).place(rely=prop_vert_start - delta_y * 1, relx=types_start,
                                                anchor=tk.NW)
@@ -1224,13 +1229,13 @@ class Application():
         # --- Compartment/tank load input and information ---
         load_vert_start = 0.05#frame_horizontal -0.03
 
-        ttk.Label(self._tab3,text = 'Selected compartment from box below:',  )\
+        ttk.Label(self._tab_comp,text = 'Selected compartment from box below:',  )\
             .place(relx=types_start, rely=load_vert_start + 8*delta_y)
 
-        self._selected_tank = ttk.Label(self._tab3,text='', font = 'Verdana 20 bold')
+        self._selected_tank = ttk.Label(self._tab_comp,text='', font = 'Verdana 20 bold')
         self._selected_tank.place(relx=0.3, rely=load_vert_start + 10*delta_y)
 
-        self._compartments_listbox = tk.Listbox(self._tab3, height = int(10 * 1),
+        self._compartments_listbox = tk.Listbox(self._tab_comp, height = int(10 * 1),
                                                width = int(5 * 1),
                                                font=self._text_size["Text 10 bold"]
                                                ,
@@ -1239,32 +1244,32 @@ class Application():
         self._compartments_listbox.bind('<<ListboxSelect>>', self.button_1_click_comp_box)
 
 
-        ttk.Button(self._tab3, text="Set compartment\n""properties.",command = self.update_tank,
+        ttk.Button(self._tab_comp, text="Set compartment\n""properties.",command = self.update_tank,
                   style = "Bold.TButton")\
             .place(relx=types_start + delta_x*4, rely=load_vert_start + delta_y * 10, relwidth = 0.3)
 
-        ttk.Button(self._tab3, text="Delete all tanks", command=self.delete_all_tanks,
+        ttk.Button(self._tab_comp, text="Delete all tanks", command=self.delete_all_tanks,
                   style = "Bold.TButton").place(relx=types_start + delta_x*4, rely=load_vert_start + delta_y * 12,
                                                 relwidth = 0.3)
 
 
-        self._ent_content_type = ttk.OptionMenu(self._tab3, self._new_content_type, list(self._tank_options.keys())[0],*list(self._tank_options.keys()),
+        self._ent_content_type = ttk.OptionMenu(self._tab_comp, self._new_content_type, list(self._tank_options.keys())[0],*list(self._tank_options.keys()),
                                                command=self.tank_density_trace)
         ent_width = 10
 
-        self._ent_overpressure = ttk.Entry(self._tab3, textvariable = self._new_overpresure,
+        self._ent_overpressure = ttk.Entry(self._tab_comp, textvariable = self._new_overpresure,
                                          width = int(ent_width * 1),
                                           )
 
-        self._ent_density = ttk.Entry(self._tab3, textvariable = self._new_density,
+        self._ent_density = ttk.Entry(self._tab_comp, textvariable = self._new_density,
                                     width = int(ent_width * 1),
                                      )
 
-        self._ent_max_el = ttk.Entry(self._tab3, textvariable=self._new_max_el,
+        self._ent_max_el = ttk.Entry(self._tab_comp, textvariable=self._new_max_el,
                                    width=int(ent_width * 1),
                                     )
 
-        self._ent_min_el = ttk.Entry(self._tab3, textvariable=self._new_min_el,
+        self._ent_min_el = ttk.Entry(self._tab_comp, textvariable=self._new_min_el,
                                    width=int(ent_width * 1),
                                     )
         
@@ -1272,24 +1277,24 @@ class Application():
         comp_dy = delta_y
         comp_ent_x = ent_x
         comp_ent_y = 0.4
-        ttk.Label(self._tab3, text = '',  )\
+        ttk.Label(self._tab_comp, text = '',  )\
             .place(relx=0.052083333, rely=comp_ent_y + 3.4*comp_dy)
-        ttk.Label(self._tab3, text='Tank content :', font = self._text_size['Text 8'], )\
+        ttk.Label(self._tab_comp, text='Tank content :', font = self._text_size['Text 8'], )\
             .place(relx=hor_start, rely=comp_ent_y + comp_dy * 4.5)
         self._ent_content_type.place(relx= comp_ent_x+0.35*comp_dx, rely=comp_ent_y + comp_dy * 4.5)
-        ttk.Label(self._tab3, text='Tank density [kg/m^3]:', font = self._text_size['Text 8'], )\
+        ttk.Label(self._tab_comp, text='Tank density [kg/m^3]:', font = self._text_size['Text 8'], )\
             .place(relx=hor_start, rely=comp_ent_y + comp_dy * 6)
         self._ent_density.place(relx=comp_ent_x+0.4*comp_dx, rely=comp_ent_y + comp_dy * 6)
-        ttk.Label(self._tab3, text='Overpressure [Pa]:', font = self._text_size['Text 8'], )\
+        ttk.Label(self._tab_comp, text='Overpressure [Pa]:', font = self._text_size['Text 8'], )\
             .place(relx=hor_start, rely=comp_ent_y + comp_dy * 7)
         self._ent_overpressure.place(relx=comp_ent_x+0.4*comp_dx, rely=comp_ent_y + comp_dy * 7)
-        ttk.Label(self._tab3, text='Max elevation [m]:', font = self._text_size['Text 8'], )\
+        ttk.Label(self._tab_comp, text='Max elevation [m]:', font = self._text_size['Text 8'], )\
             .place(relx=hor_start, rely=comp_ent_y + comp_dy * 8)
         self._ent_max_el.place(relx=comp_ent_x+0.4*comp_dx, rely=comp_ent_y + comp_dy * 8)
-        ttk.Label(self._tab3, text='Min elevation [m]:', font = self._text_size['Text 8'], )\
+        ttk.Label(self._tab_comp, text='Min elevation [m]:', font = self._text_size['Text 8'], )\
             .place(relx=hor_start, rely=comp_ent_y + comp_dy * 9)
         self._ent_min_el.place(relx=comp_ent_x+0.4*comp_dx, rely=comp_ent_y + comp_dy * 9)
-        self._tank_acc_label = ttk.Label(self._tab3, text = 'Acceleration [m/s^2]: ',
+        self._tank_acc_label = ttk.Label(self._tab_comp, text = 'Acceleration [m/s^2]: ',
                                         font = self._text_size['Text 8'], )
         self._tank_acc_label.place(relx=hor_start, rely=comp_ent_y + comp_dy * 10)
 
@@ -1303,18 +1308,18 @@ class Application():
             else:
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
-            self._int_button = tk.Button(self._tab3,image = photo,command=self.grid_find_tanks, bg = 'white')
+            self._int_button = tk.Button(self._tab_comp,image = photo,command=self.grid_find_tanks, bg = 'white')
             self._int_button.image = photo
             self._int_button.place(relx=types_start  +delta_x, rely=load_vert_start + delta_y*3,
                                    relheight = 0.07, relwidth = 0.6)
         except TclError:
-            tk.Button(self._tab3, text='New tanks - start search \n'
+            tk.Button(self._tab_comp, text='New tanks - start search \n'
                                   'to find compartments', command=self.grid_find_tanks,
                       bg = self._button_bg_color, fg = self._button_fg_color, ) \
                 .place(relx=types_start, rely=load_vert_start + 1.55 * delta_y,
                        relheight=0.044, relwidth=0.3)
 
-        show_compartment = ttk.Button(self._tab3, text='Display current\n compartments',
+        show_compartment = ttk.Button(self._tab_comp, text='Display current\n compartments',
                                      command=self.grid_display_tanks,
                                   style = "Bold.TButton")
         show_compartment.place(relx=types_start + delta_x*4, rely=load_vert_start + delta_y * 14, relwidth = 0.3)
@@ -1327,13 +1332,13 @@ class Application():
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
 
-            self._ext_button = tk.Button(self._tab3,image=photo, command = self.on_show_loads,
+            self._ext_button = tk.Button(self._tab_comp,image=photo, command = self.on_show_loads,
                                          bg = 'white')
             self._ext_button.image = photo
             self._ext_button.place(relx=types_start + delta_x, rely=load_vert_start,
                                    relheight = 0.07, relwidth = 0.6)
         except TclError:
-            tk.Button(self._tab3, text='New external load window \nsea - static/dynamic',
+            tk.Button(self._tab_comp, text='New external load window \nsea - static/dynamic',
                       command=self.on_show_loads
                       )\
                 .place(relx=ent_x+delta_x*1.5, rely=load_vert_start+1.55*delta_y,
@@ -1613,7 +1618,7 @@ class Application():
             tmp_units = list()
 
             for lab, idx in zip(['[m]', '[mm]', '[mm]', '[mm]', '[mm]', '[mm]', '[mm]'], np.arange(2, 9.9, 1.1)):
-                tmp_units.append(ttk.Label(self._tab2, text=lab))
+                tmp_units.append(ttk.Label(self._tab_prop, text=lab))
             for idx,lab  in enumerate(tmp_units):
                 lab.place(relx=hor_start + idx * delta_x,rely=vert_start + lab_place + delta_y*2)
                 self._unit_informations_dimensions.append(lab)
@@ -1711,7 +1716,7 @@ class Application():
             tmp_unit_info = list()
             for lab in ['Thickness, t', 'Radius, r', 'Ring dist., l', 'Shell len., L', 'Tot len., Lc', 'k-factor, k',
                         'Material factor']:
-                tmp_unit_info.append(ttk.Label(self._tab2, text=lab))
+                tmp_unit_info.append(ttk.Label(self._tab_prop, text=lab))
 
             for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
                 lab.place(relx=hor_start + idx * delta_x,rely=ent_geo_y+ delta_y*2)
@@ -1729,7 +1734,7 @@ class Application():
 
             tmp_unit_info = list()
             for lab in ['Web, hw', 'Web, tw', 'Flange b', 'Flange, tw', 'Spacing, s', 'Stf. type', 'Load section']:
-                tmp_unit_info.append(ttk.Label(self._tab2, text=lab))
+                tmp_unit_info.append(ttk.Label(self._tab_prop, text=lab))
 
             for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
                 lab.place(relx=hor_start + idx * delta_x,rely=ent_geo_y+ delta_y*2)
@@ -1746,7 +1751,7 @@ class Application():
             tmp_unit_info = list()
             for lab in ['Web, hw', 'Web, tw', 'Flange, b', 'Flange, tw','tr. br. dist', 'Stf. type',
                         'Exclude', 'Load section prop.']:
-                tmp_unit_info.append(ttk.Label(self._tab2, text=lab))
+                tmp_unit_info.append(ttk.Label(self._tab_prop, text=lab))
 
             for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
 
@@ -1782,7 +1787,7 @@ class Application():
             tmp_unit_info = list()
             for lab in ['Web, hw', 'Web, tw', 'Flange, b', 'Flange, tw', 'tr. br. dist', 'L bet. Gird.',
                         'Stf. type', 'Exclude', 'Load section prop.']:
-                tmp_unit_info.append(ttk.Label(self._tab2, text=lab))
+                tmp_unit_info.append(ttk.Label(self._tab_prop, text=lab))
 
             for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
                 if idx in [7,8]:
@@ -1863,9 +1868,9 @@ class Application():
 
             tmp_unit_info = list()
             tmp_unit_info_unit = list()
-            [tmp_unit_info.append(ttk.Label(self._tab2, text=val))
+            [tmp_unit_info.append(ttk.Label(self._tab_prop, text=val))
              for val in lab_to_use[0]]
-            [tmp_unit_info_unit.append(ttk.Label(self._tab2, text=val))
+            [tmp_unit_info_unit.append(ttk.Label(self._tab_prop, text=val))
              for val in lab_to_use[1]]
 
             for idx,lab in enumerate(tmp_unit_info):
