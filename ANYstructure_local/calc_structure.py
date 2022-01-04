@@ -2185,7 +2185,6 @@ class PrescriptiveBuckling():
 
         return girder_data
 
-
 class Shell():
     '''
     Small class to contain shell properties.
