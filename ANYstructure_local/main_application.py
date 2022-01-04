@@ -732,7 +732,7 @@ class Application():
 
         # Setting default values to tkinter variables
         self._new_material.set(355)
-        self._new_field_len.set(4)
+        self._new_field_len.set(4000)
         self._new_stf_spacing.set(750)
         self._new_plate_thk.set(18)
         self._new_stf_web_h.set(400)
@@ -769,7 +769,8 @@ class Application():
         self._new_puls_stf_end_type.set('C')
         self._new_puls_sp_or_up.set('SP')
         self._new_puls_up_boundary.set('SSSS')
-        self._new_calculation_domain.set('Stiffened panel, flat')
+        #self._new_calculation_domain.set('Stiffened panel, flat')
+        self._new_calculation_domain.set('Flat plate, stiffened')
 
         #self._new_material_factor.trace('w', self.trace_material_factor)
         # --- main entries and labels to define the structural properties ---
@@ -1206,7 +1207,7 @@ class Application():
 
         options = list(CylinderAndCurvedPlate.geomeries.values()) # Shell geometry selection [string]
         self._shell_geometries_map = CylinderAndCurvedPlate.geomeries_map  # Shell geometry selection string : int
-        self._current_calculation_domain = 'Stiffened panel, flat'
+        self._current_calculation_domain = 'Flat plate, stiffened'
         self._unit_informations_dimensions = list()
 
         self._ent_calculation_domain = ttk.OptionMenu(self._tab_prop, self._new_calculation_domain,options[0], *options,
@@ -1615,7 +1616,7 @@ class Application():
 
             tmp_units = list()
 
-            for lab, idx in zip(['[m]', '[mm]', '[mm]', '[mm]', '[mm]', '[mm]', '[mm]'], np.arange(2, 9.9, 1.1)):
+            for lab, idx in zip(['[mm]', '[mm]', '[mm]', '[mm]', '[mm]', '[mm]', '[mm]'], np.arange(2, 9.9, 1.1)):
                 tmp_units.append(ttk.Label(self._tab_prop, text=lab))
             for idx,lab  in enumerate(tmp_units):
                 lab.place(relx=hor_start + idx * delta_x,rely=vert_start + lab_place + delta_y*2)
@@ -1931,7 +1932,9 @@ class Application():
                     7:'Orthogonally Stiffened shell (Force input)',
                     8:'Orthogonally Stiffened panel (Stress input)'}
         '''
-        if self._new_calculation_domain.get() == 'Stiffened panel, flat':
+        if self._new_calculation_domain.get() in ['Flat plate, stiffened','Flat plate, unstiffened',
+                                                  'Flat plate, stiffened with girder']:
+
             self.gui_structural_properties(flat_panel=True)
         elif self._new_calculation_domain.get() in ['Unstiffened shell (Force input)',
                                                     'Unstiffened panel (Stress input)']:
@@ -2163,7 +2166,7 @@ class Application():
         if var_to_set == 'mat_yield':
             set_var = set_var* 1e6
         elif var_to_set in ['spacing','plate_thk','stf_web_height','stf_web_thk',
-                            'stf_flange_width','stf_flange_thk']:
+                            'stf_flange_width','stf_flange_thk', 'span']:
             set_var = set_var/1000
         no_of_lines = len(self._multiselect_lines)
         for idx, line in enumerate(self._multiselect_lines):
@@ -4431,7 +4434,7 @@ class Application():
 
                 obj_dict = {'mat_yield': [self._new_material.get()*1e6, 'Pa'],
                             'mat_factor': [self._new_material_factor.get(), ''],
-                            'span': [self._new_field_len.get(), 'm'],
+                            'span': [self._new_field_len.get()/1000, 'm'],
                             'spacing': [self._new_stf_spacing.get()/1000, 'm'],
                             'plate_thk': [self._new_plate_thk.get()/1000, 'm'],
                             'stf_web_height': [self._new_stf_web_h.get()/1000, 'm'],
@@ -4459,7 +4462,8 @@ class Application():
                             'puls sp or up':  [self._new_puls_sp_or_up.get(), ''],
                             'puls up boundary': [self._new_puls_up_boundary.get(), ''],
                             'panel or shell': [self._new_panel_or_shell.get(), '']}
-                if self._new_calculation_domain.get() != 'Stiffened panel, flat' and cylinder_return is None:
+                if self._new_calculation_domain.get() not in ['Flat plate, stiffened','Flat plate, unstiffened',
+                                                  'Flat plate, stiffened with girder'] and cylinder_return is None:
                     '''
                     Shell structure.
                      0:'Stiffened panel, flat', 1:'Unstiffened shell (Force input)', 2:'Unstiffened panel (Stress input)',
@@ -4470,7 +4474,7 @@ class Application():
                     domain_string = self._new_calculation_domain.get()
                     domain_int = self._shell_geometries_map[domain_string]
 
-                    dummy_data = {'span': [self._new_field_len.get(), 'm'],
+                    dummy_data = {'span': [self._new_field_len.get()/1000, 'm'],
                                   'plate_thk': [self._new_plate_thk.get()/1000, 'm'],
                                   'structure_type': [self._new_stucture_type.get(), ''],
                                   'sigma_y1': [self._new_sigma_y1.get(), 'MPa'],
@@ -4513,7 +4517,7 @@ class Application():
                                  'stf_flange_width': [self._new_stf_fl_w.get() / 1000, 'm'],
                                  'stf_flange_thk': [self._new_stf_fl_t.get() / 1000, 'm'],
                                  'stf_type': [self._new_stf_type.get(), ''],
-                                 'span': [self._new_field_len.get(), 'm'],
+                                 'span': [self._new_field_len.get()/1000, 'm'],
                                  'mat_yield': [self._new_shell_yield.get() * 1e6, 'Pa'],
                                  'panel or shell': ['shell', '']}
                     ring_stf_dict = {'stf_web_height': [self._new_shell_ring_stf_hw.get() / 1000, 'm'],
@@ -4528,7 +4532,7 @@ class Application():
                                        'stf_flange_width': [self._new_shell_ring_frame_b.get() / 1000, 'm'],
                                        'stf_flange_thk': [self._new_shell_ring_frame_tf.get() / 1000, 'm'],
                                        'stf_type': [self._new_shell_ring_frame_type.get(), ''],
-                                       'span': [self._new_field_len.get(), 'm'],
+                                       'span': [self._new_field_len.get()/1000, 'm'],
                                        'mat_yield': [self._new_shell_yield.get() * 1e6, 'Pa'],
                                        'panel or shell': ['shell', '']}
 
@@ -4618,7 +4622,8 @@ class Application():
                     self._tank_dict = {}
                     self._main_grid.clear()
                     self._compartments_listbox.delete(0, 'end')
-                if self._new_calculation_domain.get() != 'Stiffened panel, flat':
+                if self._new_calculation_domain.get() not in ['Flat plate, stiffened','Flat plate, unstiffened',
+                                                  'Flat plate, stiffened with girder']:
                     CylinderObj = CylinderAndCurvedPlate(main_dict_cyl, Shell(shell_dict),
                                                          long_stf=None if geometry in [1,2,5,6]
                                                          else Structure(long_dict),
@@ -5041,7 +5046,7 @@ class Application():
             properties = self._line_to_struc[line][0].get_structure_prop()
             self._new_material.set(round(properties['mat_yield'][0]/1e6,5))
             self._new_material_factor.set(properties['mat_factor'][0])
-            self._new_field_len.set(round(properties['span'][0],5))
+            self._new_field_len.set(round(properties['span'][0]*1000,5))
             self._new_stf_spacing.set(round(properties['spacing'][0]*1000,5))
             self._new_plate_thk.set(round(properties['plate_thk'][0]*1000,5))
             self._new_stf_web_h.set(round(properties['stf_web_height'][0]*1000,5))
@@ -5579,7 +5584,7 @@ class Application():
                     btn.place(relx = placement[0], rely= placement[1],relheight = placement[2], relwidth = placement[3])
 
             else:
-                self._new_calculation_domain.set('Stiffened panel, flat')
+                self._new_calculation_domain.set('Flat plate, stiffened')
                 self.calculation_domain_selected()
 
                 for btn, placement in zip(self._optimization_buttons['cylinder'],
