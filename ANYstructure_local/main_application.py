@@ -682,16 +682,7 @@ class Application():
                                             command = self.update_frame)
         self._toggle_choose.place(relx=hor_start+ delta_x*3, rely=vert_start+2*delta_y, relwidth = 0.25)
 
-        # PULS interface
-        self._toggle_btn_puls = tk.Button(self._tab_prop, text="Use PULS\n"
-                                                              "results", relief="raised",
-                                     command=self.toggle_puls_run, bg = self._button_bg_color)
-        self._puls_run_all = ttk.Button(self._tab_prop, text='Run PULS -\nupdate results',
-                                     command=self.puls_run_all_lines)
-        self._ent_puls_uf = ttk.Entry(self._tab_prop, textvariable=self._new_puls_uf,
-                                        width=int(ent_width * 1),
-                                         )
-        self._new_puls_uf.trace('w', self.trace_acceptance_change)
+
 
         self._new_buckling_method = tk.StringVar()
         options = ['DNV-RP-C201 - prescriptive','DNV PULS','ML-CL (PULS based)']
@@ -794,18 +785,34 @@ class Application():
         Flat plate input
         '''
 
+
+
+
         self._ent_field_len = ttk.Entry(self._tab_prop, textvariable=self._new_field_len)
         self._ent_stf_spacing = ttk.Entry(self._tab_prop, textvariable=self._new_stf_spacing)
         self._ent_plate_thk = ttk.Entry(self._tab_prop, textvariable=self._new_plate_thk)
+        self._lab_span = ttk.Label(self._tab_prop, text='span', )
+        self._lab_s = ttk.Label(self._tab_prop, text='s', )
+        self._lab_pl_thk = ttk.Label(self._tab_prop, text='pl_thk', )
+
         self._flat_gui_plate = [self._ent_field_len, self._ent_stf_spacing, self._ent_plate_thk]
-        
+        self._flat_gui_lab_plate = [self._lab_span, self._lab_s, self._lab_pl_thk]
+
         self._ent_stf_type = ttk.OptionMenu(self._tab_prop, self._new_stf_type, 'T', *['T', 'FB', 'L', 'L-bulb'])
         self._ent_stf_web_h = ttk.Entry(self._tab_prop, textvariable=self._new_stf_web_h, width = int(5*1))
         self._ent_stf_web_t = ttk.Entry(self._tab_prop, textvariable=self._new_stf_web_t)
         self._ent_stf_fl_w = ttk.Entry(self._tab_prop, textvariable=self._new_stf_fl_w)
         self._ent_str_fl_t = ttk.Entry(self._tab_prop, textvariable=self._new_stf_fl_t)
+
+        self._lab_stf_type = ttk.Label(self._tab_prop, text='Stf. type')
+        self._lab_web_h = ttk.Label(self._tab_prop, text='web_h', )
+        self._lab_web_thk = ttk.Label(self._tab_prop, text='web_thk', )
+        self._lab_fl_w= ttk.Label(self._tab_prop, text='fl_w', )
+        self._lab_fl_thk = ttk.Label(self._tab_prop, text='fl_thk', )
+
         self._flat_gui_stf = [self._ent_stf_type, self._ent_stf_web_h, self._ent_stf_web_t,
                               self._ent_stf_fl_w,self._ent_str_fl_t]
+        self._flat_gui_lab_stf = [self._lab_stf_type,self._lab_web_h,self._lab_web_thk, self._lab_fl_w,self._lab_fl_thk]
         
         self._ent_girder_type = ttk.OptionMenu(self._tab_prop, self._new_girder_type, 'T', *['T', 'FB', 'L', 'L-bulb'])
         self._ent_girder_web_h = ttk.Entry(self._tab_prop, textvariable=self._new_girder_web_h, width = int(5*1))
@@ -820,8 +827,15 @@ class Application():
         self._ent_stf_km1 = ttk.Entry(self._tab_prop, textvariable=self._new_stf_km1, width = int(5*1))
         self._ent_stf_km2 = ttk.Entry(self._tab_prop, textvariable=self._new_stf_km2,width = int(5*1))
         self._ent_stf_km3 = ttk.Entry(self._tab_prop, textvariable=self._new_stf_km3, width = int(5*1))
+        self._lab_kpp = ttk.Label(self._tab_prop,text='kpp', )
+        self._lab_kps = ttk.Label(self._tab_prop, text='kps', )
+        self._lab_km1 = ttk.Label(self._tab_prop, text='km1', )
+        self._lab_km2 = ttk.Label(self._tab_prop, text='km2', )
+        self._lab_km3 = ttk.Label(self._tab_prop, text='km3', )
         self._flat_gui_os_c101_provisions = [self._ent_plate_kpp, self._ent_plate_kps, self._ent_stf_km1,
                                              self._ent_stf_km2, self._ent_stf_km3]
+        self._flat_gui_lab_os_c101_provisions = [self._lab_kpp, self._lab_kps, self._lab_km1,self._lab_km2,
+                                                 self._lab_km3]
 
         self._ent_pressure_side = ttk.OptionMenu(self._tab_prop,self._new_pressure_side,('both sides','plate side','stiffener side')[0],
                                                  *('both sides','plate side','stiffener side'))
@@ -830,11 +844,24 @@ class Application():
         self._ent_sigma_x1 = ttk.Entry(self._tab_prop, textvariable=self._new_sigma_x1, width=int(7*1))
         self._ent_sigma_x2 = ttk.Entry(self._tab_prop, textvariable=self._new_sigma_x2, width=int(7 * 1))
         self._ent_tauxy = ttk.Entry(self._tab_prop, textvariable=self._new_tauxy, width=int(7*1))
+        self._lab_sig_y1 = ttk.Label(self._tab_prop, text='sig_y1')
+        self._lab_sig_y2 = ttk.Label(self._tab_prop, text='sig_y2')
+        self._lab_sig_x1 = ttk.Label(self._tab_prop, text='sig_x1')
+        self._lab_sig_x2 = ttk.Label(self._tab_prop, text='sig_x2')
+        self._lab_tau_y1 = ttk.Label(self._tab_prop, text='tau_y1')
         
         self._flat_gui_loads = [self._ent_pressure_side, self._ent_sigma_y1, self._ent_sigma_y2, self._ent_sigma_x1, 
                                 self._ent_sigma_x2, self._ent_tauxy]
+        self._flat_gui_lab_loads = [self._lab_sig_y1, self._lab_sig_y2,self._lab_sig_x1, self._lab_sig_x2,
+                                    self._lab_tau_y1]
         self._ent_structure_type = ttk.OptionMenu(self._tab_prop, self._new_stucture_type, self._options_type[0],
                                                   *self._options_type,command = self.option_meny_structure_type_trace)
+
+        # PULS interface
+        self._puls_run_all = ttk.Button(self._tab_prop, text='Run PULS -\nupdate results',
+                                     command=self.puls_run_all_lines)
+        self._ent_puls_uf = ttk.Entry(self._tab_prop, textvariable=self._new_puls_uf, width=int(ent_width * 1))
+        self._new_puls_uf.trace('w', self.trace_acceptance_change)
 
         self._ent_puls_sp_or_up= ttk.OptionMenu(self._tab_prop, self._new_puls_sp_or_up, 'SP', *['SP', 'UP'],
                                                 command = self.trace_puls_up_or_sp,)
@@ -846,8 +873,22 @@ class Application():
                                                       *['C', 'S'])
         self._ent_puls_up_boundary = ttk.Entry(self._tab_prop, textvariable=self._new_puls_up_boundary, width=int(7*1))
 
-        self._flat_gui_buckling = [self._ent_puls_sp_or_up, self._ent_puls_method, self._ent_puls_panel_boundary,
-                                   self._ent_puls_stf_end_type, self._ent_puls_up_boundary]
+        self._lab_puls_input =  ttk.Label(self._tab_prop, text='Buckling paramenters input',
+                                         font=self._text_size['Text 8 bold'])
+        self._lab_puls_spup =  ttk.Label(self._tab_prop, text='Siffened: SP Unstf. pl.: UP')
+
+        self._lab_puls_acceptance=  ttk.Label(self._tab_prop, text='PULS acceptance')
+        self._lab_puls_uf =  ttk.Label(self._tab_prop, text='PULS utilization factor:')
+        self._lab_puls_int_gt =  ttk.Label(self._tab_prop, text='Int-integrated GL-free left/right GT-free top/bottom')
+        self._lab_puls_up_supp =  ttk.Label(self._tab_prop, text='UP sup.left,right,upper,lower',
+                                           font = self._text_size['Text 7'])
+
+        self._flat_gui_buckling = [self._ent_puls_sp_or_up, self._ent_puls_method, self._ent_puls_uf,
+                                   self._ent_puls_panel_boundary, self._ent_puls_stf_end_type,
+                                   self._ent_puls_up_boundary]
+        self._flat_gui_lab_buckling = [self._lab_puls_spup, self._lab_puls_acceptance,  self._lab_puls_uf,
+                                       self._lab_puls_int_gt, self._ent_puls_stf_end_type,
+                                       self._lab_puls_up_supp]
 
 
         self._lab_structure_type = ttk.Label(self._tab_prop, text='Select structure type:', font=self._text_size['Text 9'])
@@ -855,16 +896,7 @@ class Application():
         self._structure_types_label =  ttk.Label(textvariable = self._new_stucture_type_label,
                                                 font = self._text_size['Text 8'], )
 
-        self._lab_kpp = ttk.Label(self._tab_prop,text='kpp', )
-        self._lab_kps = ttk.Label(self._tab_prop, text='kps', )
-        self._lab_km1 = ttk.Label(self._tab_prop, text='km1', )
-        self._lab_km2 = ttk.Label(self._tab_prop, text='km2', )
-        self._lab_k3 = ttk.Label(self._tab_prop, text='k3', )
-        self._lab_sig_y1 = ttk.Label(self._tab_prop, text='sig_y1')
-        self._lab_sig_y2 = ttk.Label(self._tab_prop, text='sig_y2')
-        self._lab_sig_x1 = ttk.Label(self._tab_prop, text='sig_x1')
-        self._lab_sig_x2 = ttk.Label(self._tab_prop, text='sig_x2')
-        self._lab_tau_y1 = ttk.Label(self._tab_prop, text='tau_y1')
+
         self._lab_stf_type = ttk.Label(self._tab_prop, text='Stf. type')
 
         self._zstar_chk = ttk.Checkbutton(self._tab_prop, variable=self._new_zstar_optimization)
@@ -872,25 +904,9 @@ class Application():
                                       font=self._text_size['Text 8'],
                  )
 
-        self._lab_puls_input =  ttk.Label(self._tab_prop, text='PULS input',
-                                         font=self._text_size['Text 8'])
-        self._lab_puls_spup =  ttk.Label(self._tab_prop, text='Siffened: SP Unstf. pl.: UP')
-        self._lab_puls_up_supp =  ttk.Label(self._tab_prop, text='UP sup.left,right,upper,lower',
-                                           font = self._text_size['Text 7'])
-        self._lab_puls_acceptance=  ttk.Label(self._tab_prop, text='PULS acceptance')
-        self._lab_puls_uf =  ttk.Label(self._tab_prop, text='PULS utilization factor:')
-        self._lab_puls_int_gt =  ttk.Label(self._tab_prop, text='Int-integrated GL-free left/right GT-free top/bottom')
-
         self._lab_puls_cont_sniped =  ttk.Label(self._tab_prop, text='Continous or Sniped',
                  font = self._text_size['Text 8'])
 
-        self._lab_span = ttk.Label(self._tab_prop, text='span', )
-        self._lab_s = ttk.Label(self._tab_prop, text='s', )
-        self._lab_pl_thk = ttk.Label(self._tab_prop, text='pl_thk', )
-        self._lab_web_h = ttk.Label(self._tab_prop, text='web_h', )
-        self._lab_web_thk = ttk.Label(self._tab_prop, text='web_thk', )
-        self._lab_fl_w= ttk.Label(self._tab_prop, text='fl_w', )
-        self._lab_fl_thk = ttk.Label(self._tab_prop, text='fl_thk', )
 
         self._chk_button_sigmax1 = ttk.Checkbutton(self._tab_prop, variable = self._new_colorcode_sigmax,
                                                  command = self.on_color_code_check)
@@ -1658,7 +1674,7 @@ class Application():
             self._lab_kps.place(relx=hor_start + 1 * delta_x, rely=vert_start + lab_place)
             self._lab_km1.place(relx=hor_start + 2 * delta_x, rely=vert_start + lab_place)
             self._lab_km2.place(relx=hor_start + 3 * delta_x, rely=vert_start + lab_place)
-            self._lab_k3.place(relx=hor_start + 4 * delta_x, rely=vert_start + lab_place)
+            self._lab_km3.place(relx=hor_start + 4 * delta_x, rely=vert_start + lab_place)
             self._lab_yield.place(relx=hor_start + 5 * delta_x, rely=vert_start + lab_place)
             
             lab_place = delta_y * 8
@@ -1928,7 +1944,7 @@ class Application():
                       self._buckling_method, self._lab_yield,
                       self._lab_mat_fac,self._structure_types_label, self._button_str_type, self._ent_structure_type,
                       self._lab_structure_type, self._lab_kpp, self._lab_kps, self._lab_km1, self._lab_km2,
-                      self._lab_k3, self._lab_sig_y1, self._lab_sig_y2, self._lab_sig_x1, self._lab_sig_x2, self._lab_tau_y1,
+                      self._lab_km3, self._lab_sig_y1, self._lab_sig_y2, self._lab_sig_x1, self._lab_sig_x2, self._lab_tau_y1,
                       self._lab_stf_type, self._zstar_label, self._lab_press_side, self._ent_pressure_side,
                       self._lab_puls_input, self._lab_puls_spup, self._lab_puls_up_supp, self._lab_puls_acceptance,
                       self._lab_puls_uf, self._lab_puls_int_gt, self._lab_puls_cont_sniped, self._lab_span, self._lab_s,
@@ -2014,22 +2030,6 @@ class Application():
 
         self._current_calculation_domain = self._new_calculation_domain.get()
         # Setting the correct optmization buttons
-
-    def toggle_puls_run(self):
-        if self._toggle_btn_puls.config('relief')[-1] == 'sunken':
-            self._toggle_btn_puls.config(relief="raised")
-            self._toggle_btn_puls.config(bg=self._button_bg_color)
-            self._toggle_btn_puls.config(text='Use PULS\n'
-                                         'results')
-            self._new_toggle_puls.set(False)
-        else:
-            self._toggle_btn_puls.config(relief="sunken")
-            self._toggle_btn_puls.config(bg='orange')
-            self._toggle_btn_puls.config(text = 'PULS result\n'
-                                           'override set')
-            self._new_toggle_puls.set(True)
-
-        self.update_frame()
 
     def puls_run_all_lines(self, line_given = None):
 
@@ -5954,7 +5954,6 @@ class Application():
                 self._PULS_results.puls_sheet_location = imported['PULS results']['sheet location']
                 imported['PULS results'].pop('sheet location')
             self._PULS_results.set_run_results(imported['PULS results'])
-            self.toggle_puls_run()
 
         # Setting the scale of the canvas
         points = self._point_dict
