@@ -4,18 +4,12 @@ import ANYstructure_local.calc_structure as calc
 import itertools as it
 import time
 import random
-import matplotlib.pyplot as plt
-#from pyswarm import pso
 import copy
 import ANYstructure_local.helper as hlp
-#from opt_problem import MyProblem
 from multiprocessing import Pool, cpu_count
-import ANYstructure_local.example_data as test
-#import psopy
 import math
-from math import ceil, floor
+from math import floor
 from matplotlib import pyplot as plt
-import numpy as np
 from mpl_toolkits.mplot3d import axes3d
 from tkinter.filedialog import asksaveasfilename
 import csv
@@ -98,9 +92,7 @@ def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lat
     elif algorithm == 'random_no_delta' and not is_geometric:
         return get_random_result_no_bounds(initial_structure_obj, lateral_pressure, min_var, max_var, trials=trials,
                                            side=side, const_chk=const_chk)
-    elif algorithm == 'pso' and not is_geometric:
-        return particle_search(min_var,max_var,deltas,initial_structure_obj,lateral_pressure,init_filter_weight,side,
-                               const_chk,pso_options,fat_dict,fat_press_ext_int,slamming_press)
+
     # elif algorithm == 'pso' and is_geometric:
     #     return geometric_summary_search(min_var,max_var,deltas, initial_structure_obj,lateral_pressure,
     #                                     init_filter_weight,side,const_chk,pso_options,fatigue_obj,fat_press_ext_int,
@@ -314,68 +306,6 @@ def any_smart_loop_geometric(min_var,max_var,deltas,initial_structure_obj,latera
 
     return all_obj
 
-def particle_search(min_var,max_var,deltas,initial_structure_obj,lateral_pressure, init_filter = float('inf'),
-                    side='p',const_chk=(True,True,True,True),
-                    pso_options=(10000,0.5,0.5,0.5,100,1e-8,1e-8), fat_dict = None, fat_press = None,
-                    slamming_press = 0):
-    '''
-    Searchin using Particle Swarm Search (http://pythonhosted.org/pyswarm/)
-
-    :param min_var:
-    :param max_var:
-    :param deltas:
-    :param initial_structure_obj:
-    :param lateral_pressure:
-    :param side:
-    :param const_chk:
-        :param pso_options:
-    :return:
-    '''
-
-    args = (initial_structure_obj,lateral_pressure,init_filter,side,const_chk,min_var[6],min_var[7],
-            fat_dict,fat_press, slamming_press)
-    # Multiprocessing is not efficient if the swarm size is below 500 (approximatly).
-    if pso_options[0] < 500:
-        xopt, fopt = pso(calc_weight_pso, min_var[0:6], max_var[0:6],
-                         f_ieqcons=any_constraints_all_number,swarmsize=pso_options[0],
-                         omega=pso_options[1], phip=pso_options[2],phig=pso_options[3],
-                         maxiter=pso_options[4], minstep=pso_options[5], minfunc=pso_options[6],
-                         args=args)
-    else:
-        xopt, fopt = pso(calc_weight_pso, min_var[0:6], max_var[0:6],
-                         f_ieqcons=any_constraints_all_number,swarmsize=pso_options[0],
-                         omega=pso_options[1], phip=pso_options[2],phig=pso_options[3],
-                         maxiter=pso_options[4], minstep=pso_options[5], minfunc=pso_options[6],
-                         args=args)
-
-    ass_var = xopt
-    np.append(ass_var,[args[5],args[6]])
-    new_structure_obj = create_new_structure_obj(initial_structure_obj,[round(item,5) for item in ass_var])
-    new_calc_obj = create_new_calc_obj(initial_structure_obj,[round(item,5) for item in ass_var])[0]
-    args = list(args)
-    args[0] = new_structure_obj
-
-    return new_structure_obj, new_calc_obj, fat_dict, True if any_constraints_all_number(xopt, *args) == 0 else False
-
-def particle_search_geometric(min_var=None,max_var=None,deltas = None, initial_structure_obj=None,lateral_pressure=None,
-                              init_filter = float('inf'),side='p',const_chk=(True,True,True,True, True, True),
-                              pso_options=(100,0.5,0.5,0.5,100,1e-8,1e-8), fat_obj = None, fat_press = None):
-    '''
-    Searching using Particle Swarm Search (http://pythonhosted.org/pyswarm/) for a given section.
-    '''
-
-    all_obj = []
-
-    for struc_obj, lat_press in zip(initial_structure_obj, lateral_pressure):
-
-        opt_obj = particle_search(min_var=min_var, max_var=max_var,initial_structure_obj=struc_obj,
-                                  lateral_pressure=lat_press,
-                                  side=side, const_chk=const_chk, pso_options=pso_options, deltas=deltas)
-
-        all_obj.append(opt_obj)
-
-    return all_obj
-
 def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_structure_obj=None,lateral_pressure=None,
                              init_filter = float('inf'),side='p',const_chk=(True,True,True,True, True, True),
                              pso_options=(100,0.5,0.5,0.5,100,1e-8,1e-8), fat_obj = None, fat_press = None,
@@ -498,14 +428,7 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                 min_var[0:6] += deltas/2
                 max_var[0:6] -= deltas/2
 
-            if algorithm == 'pso':
-                opt_objects = particle_search_geometric(min_var=min_var,max_var=max_var,deltas=deltas,
-                                                        initial_structure_obj=working_objects[no_of_fractions],
-                                                        lateral_pressure=working_lateral[no_of_fractions],
-                                                        init_filter = init_filter,side=side,const_chk=const_chk,
-                                                        pso_options=pso_options, fat_obj = fat_obj,
-                                                        fat_press = fat_press)
-            elif algorithm == 'anysmart':
+            if algorithm == 'anysmart':
                 if load_pre:
                     import pickle
                     with open('geo_opt_2.pickle', 'rb') as file:
@@ -757,60 +680,6 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
     if print_result:
         print('OK Section', calc_object[0].get_one_line_string(), True)
     return True, 'Check OK', x, all_checks
-
-def any_constraints_all_number(x,*args):
-    '''
-    Checking all constraints defined.
-    :param x:
-    :return:
-    '''
-
-    # if calc_weight_pso(x) > init_weight:
-    #     return -1
-
-    obj, lat_press, init_weight, side, chk = args[0:5]
-    fat_dict, fat_press = args[7], args[8]
-    calc_object = create_new_calc_obj(obj, x, fat_dict)
-    slamming_press = args[9]
-
-    # Section modulus
-    if chk[0]:
-        if not min(calc_object[0].get_section_modulus()) > calc_object[0].get_dnv_min_section_modulus(lat_press) :
-            return -1
-
-    # Local stiffener buckling
-    if not calc_object[0].buckling_local_stiffener():
-        return -1
-    # Buckling
-
-    if chk[3]:
-        if not all([uf<=1 for uf in calc_object[0].calculate_buckling_all(design_lat_press=lat_press,
-                                                                          checked_side=side)[0:5]]):
-            return -1
-    #Minimum plate thickeness
-    if chk[1]:
-        if not calc_object[0].get_pl_thk()>calc_object[0].get_dnv_min_thickness(lat_press)/1000:
-            return -1
-    # Shear area
-    if chk[2]:
-        if not calc_object[0].get_shear_area()>calc_object[0].get_minimum_shear_area(lat_press):
-            return -1
-
-    # Fatigue
-    try:
-        if chk[4] and fat_dict is not None:
-            if calc_object[1].get_total_damage(ext_press=fat_press[0], int_press=fat_press[1]) * \
-                    calc_object[1].get_dff() > 1:
-                return -1
-    except IndexError:
-        pass
-
-    # Slamming
-    if chk[5] and slamming_press != 0:
-        if not calc_object[0].check_all_slamming(slamming_press):
-            return -1
-    #print('OK')
-    return 0
 
 def constraint_geometric(fractions, *args):
     return sum(fractions) == 1
