@@ -652,15 +652,15 @@ class Application():
             .place(relx = hor_start + delta_x*3, rely=vert_start+32*delta_y)
 
         ttk.Label(self._tab_prop, text='scale up, fup', font=self._text_size['Text 8']).place(relx =hor_start,
-                                                                                          rely=vert_start+34*delta_y)
+                                                                                          rely=vert_start+33.5*delta_y)
         ttk.Label(self._tab_prop, text='fdown', font=self._text_size['Text 8']).place(relx =hor_start + delta_x*3,
-                                                                                  rely=vert_start+34*delta_y)
+                                                                                  rely=vert_start+33.5*delta_y)
 
         ent_fup = ttk.Entry(self._tab_prop, textvariable=self._new_fup)
-        ent_fup.place(relx =hor_start + delta_x*2, rely=vert_start+34*delta_y, relwidth = 0.05)
+        ent_fup.place(relx =hor_start + delta_x*2, rely=vert_start+33.5*delta_y, relwidth = 0.05)
 
         ent_fdwn = ttk.Entry(self._tab_prop, textvariable=self._new_fdwn)
-        ent_fdwn.place(relx =hor_start + delta_x*4, rely=vert_start+34*delta_y, relwidth = 0.05)
+        ent_fdwn.place(relx =hor_start + delta_x*4, rely=vert_start+33.5*delta_y, relwidth = 0.05)
 
         # Toggle buttons
         ttk.Label(self._tab_prop_tools, text='Change one property for multiple lines here. \n'
@@ -1200,10 +1200,8 @@ class Application():
 
         ''' END shell input '''
 
-        # ent_x = 0.4
-        # delta_y = 0.04
-        # delta_x = 0.1
-        prop_vert_start = 0
+
+        prop_vert_start = 0.01
         types_start = 0.005208333
 
         options = list(CylinderAndCurvedPlate.geomeries.values()) # Shell geometry selection [string]
@@ -1220,9 +1218,9 @@ class Application():
                                                   anchor = tk.NW)
         ttk.Label(self._tab_prop, text='Select calculation domain ->',
                  font=self._text_size['Text 9'],
-                 ).place(rely=prop_vert_start - delta_y * 1, relx=types_start,
+                 ).place(rely=prop_vert_start, relx=types_start,
                                                anchor=tk.NW)
-        self._ent_calculation_domain.place(rely=prop_vert_start - delta_y * 1.25, relx=types_start + delta_x*4)
+        self._ent_calculation_domain.place(rely=prop_vert_start, relx=types_start + delta_x*4)
 
         self.gui_structural_properties() # Initiating the flat panel structural properties
 
@@ -1558,10 +1556,10 @@ class Application():
 
     def gui_structural_properties(self, flat_panel = True, shell = False, long_stf = False, ring_stf = False,
                                   ring_frame = False, force_input = False, stress_input = False):
-        vert_start = 0.02
+        vert_start = 0.04
         hor_start = 0.02
 
-        delta_y = 0.03
+        delta_y = 0.028
         delta_x = 0.13
         
         ent_relx = hor_start + 6*delta_x
@@ -1576,10 +1574,10 @@ class Application():
             if any([shell, long_stf, ring_stf, ring_frame, force_input, stress_input]):
                 return
 
-            self._stf_button.place(relx=hor_start, rely=vert_start)
-            self._stress_button.place(relx=hor_start + delta_x*2, rely=vert_start)
-            self._fls_button.place(relx=hor_start + delta_x*4, rely=vert_start)
-            self._puls_run_all.place(relx=hor_start + delta_x*6, rely=vert_start)
+            self._stf_button.place(relx=hor_start, rely=vert_start+ 0.5 * delta_y)
+            self._stress_button.place(relx=hor_start + delta_x*2, rely=vert_start+ 0.5 * delta_y)
+            self._fls_button.place(relx=hor_start + delta_x*4, rely=vert_start+ 0.5 * delta_y)
+            self._puls_run_all.place(relx=hor_start + delta_x*6, rely=vert_start+ 0.5 * delta_y)
 
             # self._structure_types_label.place(relx=hor_start + 2.8 * delta_x, rely=vert_start + 2.8 * delta_y,
             #                                   relwidth=0.11, relheight=0.02)
