@@ -1740,14 +1740,14 @@ class PrescriptiveBuckling():
                                               math.sqrt((1 - eta)) # e 7.36, checked ok
 
         beta = (3*C+0.2)/(C+0.2) # eq 7.35
-        It = 1177600.0 #self._Stiffener.get_torsional_moment_venant() TODO remeber
+        It = self._Stiffener.get_torsional_moment_venant()
         Ipo = self._Stiffener.get_polar_moment()
         Iz = self._Stiffener.get_Iz_moment_of_inertia()
 
         def red_prop():
             tw =max(0,self._Stiffener.tw*(1-Vsd_div_Vrd))
             Atot = As+se*t-self._Stiffener.hw*(self._Stiffener.tw - tw)
-            It = 1177600.0  # self._Stiffener.get_torsional_moment_venant(reduced_tw=tw) TODO remeber
+            It = self._Stiffener.get_torsional_moment_venant(reduced_tw=tw)
             Ipo = self._Stiffener.get_polar_moment(reduced_tw=tw)
             Iz = self._Stiffener.get_Iz_moment_of_inertia(reduced_tw=tw)
             zp = self._Stiffener.get_cross_section_centroid_with_effective_plate(se / 1000, reduced_tw=tw) * 1000 - t / 2  # ch7.5.1 page 19
@@ -2076,12 +2076,6 @@ class PrescriptiveBuckling():
         qsd_oppsite = p0*l if psd<p0 else 0
         qSd_plate_side = qsd_oppsite if self._overpressure_side == 'stiffener' else qSd_pressure
         qSd_girder_side = qsd_oppsite if self._overpressure_side == 'plate' else qSd_pressure
-
-        # #Stiffener side
-        #
-        # It = 5.749E+06 #self._Stiffener.get_torsional_moment_venant() TODO remeber
-        # Ipo = self._Stiffener.get_polar_moment()
-        # Iz = self._Stiffener.get_Iz_moment_of_inertia()
 
         #8.5  Torsional buckling of girders
         Af = self._Girder.tf*self._Girder.b
@@ -2694,7 +2688,7 @@ class CylinderAndCurvedPlate():
             elif idx == 'Ring Stiffeners':
                 rf = parameters[0][4]
                 shsd_ring = ((self._psd / 1e6) * r / t) - parameters[0][0] * parameters[0][3] / (parameters[0][0] + 1) * \
-                            ((self._psd / 1e6) * r / t - 0.3 * sxsd[0]) #TODO check
+                            ((self._psd / 1e6) * r / t - 0.3 * sxsd[0])
                 shsd.append(np.nan if stucture_objects['Ring Stiffeners'] == None else shsd_ring)
                 shRsd.append(((self._psd/1e6)*r/t-0.3*sxsd[0])*(1/(1+parameters[0][0]))*(r/rf))
                 if self._geometry > 4:
