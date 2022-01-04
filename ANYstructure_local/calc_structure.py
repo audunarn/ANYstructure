@@ -110,7 +110,7 @@ class Structure():
         '''
         return \
             str(
-            '\n Plate field span:              ' + str(round(self._span,3)) + ' meters' +
+            '\n Plate field span:              ' + str(round(self._span*1000)) + ' mm' +
             '\n Stiffener spacing:             ' + str(self._spacing*1000)+' mm'+
             '\n Plate thickness:               ' + str(self._plate_th*1000)+' mm'+
             '\n Stiffener web height:          ' + str(self._web_height*1000)+' mm'+
@@ -2299,7 +2299,8 @@ class CylinderAndCurvedPlate():
 
     '''
 
-    geomeries = {0:'Stiffened panel, flat', 1:'Unstiffened shell (Force input)', 2:'Unstiffened panel (Stress input)',
+    geomeries = {11:'Flat plate, stiffened',10: 'Flat plate, unstiffened', 12: 'Flat plate, stiffened with girder',
+                 1:'Unstiffened shell (Force input)', 2:'Unstiffened panel (Stress input)',
                  3:'Longitudinal Stiffened shell  (Force input)', 4:'Longitudinal Stiffened panel (Stress input)',
                  5:'Ring Stiffened shell (Force input)', 6:'Ring Stiffened panel (Stress input)',
                  7:'Orthogonally Stiffened shell (Force input)', 8:'Orthogonally Stiffened panel (Stress input)'}
