@@ -722,6 +722,13 @@ class Application():
         self._new_stf_kps = tk.DoubleVar()
         self._new_plate_kpp = tk.DoubleVar()
         self._new_stf_type = tk.StringVar()
+        
+        self._new_girder_web_h = tk.DoubleVar()
+        self._new_girder_web_t = tk.DoubleVar()
+        self._new_girder_fl_w = tk.DoubleVar()
+        self._new_girder_fl_t = tk.DoubleVar()
+        self._new_girder_type = tk.StringVar()
+        
         self._new_pressure_side = tk.StringVar()
         self._new_puls_method = tk.StringVar()
         self._new_puls_panel_boundary = tk.StringVar()
@@ -739,6 +746,12 @@ class Application():
         self._new_stf_web_t.set(12)
         self._new_stf_fl_w.set(150)
         self._new_stf_fl_t.set(20)
+        
+        self._new_girder_web_h.set(800)
+        self._new_girder_web_t.set(20)
+        self._new_girder_fl_w.set(200)
+        self._new_girder_fl_t.set(30)
+        
         self._new_sigma_y1.set(80)
         self._new_sigma_y2.set(80)
         self._new_sigma_x1.set(50)
@@ -749,8 +762,6 @@ class Application():
         self._new_stf_kps.set(1)
         self._new_plate_kpp.set(1)
         self._new_material_factor.set(1.15)
-
-
 
         self._new_overpresure = tk.DoubleVar()
         self._new_overpresure.set(25000)
@@ -763,7 +774,7 @@ class Application():
         self._new_stucture_type.set('GENERAL_INTERNAL_WT')
         self.option_meny_structure_type_trace(event='GENERAL_INTERNAL_WT')
         self._new_stf_type.set('T')
-        self._new_pressure_side.set('p')
+        self._new_pressure_side.set('both sides')
         self._new_puls_method.set('ultimate')
         self._new_puls_panel_boundary.set('Int')
         self._new_puls_stf_end_type.set('C')
@@ -782,33 +793,49 @@ class Application():
         '''
         Flat plate input
         '''
+
         self._ent_field_len = ttk.Entry(self._tab_prop, textvariable=self._new_field_len)
         self._ent_stf_spacing = ttk.Entry(self._tab_prop, textvariable=self._new_stf_spacing)
         self._ent_plate_thk = ttk.Entry(self._tab_prop, textvariable=self._new_plate_thk)
+        self._flat_gui_plate = [self._ent_field_len, self._ent_stf_spacing, self._ent_plate_thk]
+        
+        self._ent_stf_type = ttk.OptionMenu(self._tab_prop, self._new_stf_type, 'T', *['T', 'FB', 'L', 'L-bulb'])
         self._ent_stf_web_h = ttk.Entry(self._tab_prop, textvariable=self._new_stf_web_h, width = int(5*1))
         self._ent_stf_web_t = ttk.Entry(self._tab_prop, textvariable=self._new_stf_web_t)
         self._ent_stf_fl_w = ttk.Entry(self._tab_prop, textvariable=self._new_stf_fl_w)
         self._ent_str_fl_t = ttk.Entry(self._tab_prop, textvariable=self._new_stf_fl_t)
-
+        self._flat_gui_stf = [self._ent_stf_type, self._ent_stf_web_h, self._ent_stf_web_t,
+                              self._ent_stf_fl_w,self._ent_str_fl_t]
+        
+        self._ent_girder_type = ttk.OptionMenu(self._tab_prop, self._new_girder_type, 'T', *['T', 'FB', 'L', 'L-bulb'])
+        self._ent_girder_web_h = ttk.Entry(self._tab_prop, textvariable=self._new_girder_web_h, width = int(5*1))
+        self._ent_girder_web_t = ttk.Entry(self._tab_prop, textvariable=self._new_girder_web_t)
+        self._ent_girder_fl_w = ttk.Entry(self._tab_prop, textvariable=self._new_girder_fl_w)
+        self._ent_str_fl_t = ttk.Entry(self._tab_prop, textvariable=self._new_girder_fl_t)
+        self._flat_gui_girder = [self._ent_girder_type, self._ent_girder_web_h, self._ent_girder_web_t,
+                              self._ent_girder_fl_w,self._ent_str_fl_t]
 
         self._ent_plate_kpp = ttk.Entry(self._tab_prop, textvariable=self._new_plate_kpp, width = int(5*1))
         self._ent_plate_kps = ttk.Entry(self._tab_prop, textvariable=self._new_stf_kps, width = int(5*1))
         self._ent_stf_km1 = ttk.Entry(self._tab_prop, textvariable=self._new_stf_km1, width = int(5*1))
         self._ent_stf_km2 = ttk.Entry(self._tab_prop, textvariable=self._new_stf_km2,width = int(5*1))
         self._ent_stf_km3 = ttk.Entry(self._tab_prop, textvariable=self._new_stf_km3, width = int(5*1))
+        self._flat_gui_os_c101_provisions = [self._ent_plate_kpp, self._ent_plate_kps, self._ent_stf_km1,
+                                             self._ent_stf_km2, self._ent_stf_km3]
 
-        self._ent_pressure_side = ttk.OptionMenu(self._tab_prop, self._new_pressure_side,('p', 's')[0], *('p', 's'))
+        self._ent_pressure_side = ttk.OptionMenu(self._tab_prop,self._new_pressure_side,('both sides','plate side','stiffener side')[0],
+                                                 *('both sides','plate side','stiffener side'))
         self._ent_sigma_y1= ttk.Entry(self._tab_prop, textvariable=self._new_sigma_y1, width = int(7*1))
         self._ent_sigma_y2 = ttk.Entry(self._tab_prop, textvariable=self._new_sigma_y2, width=int(7*1))
         self._ent_sigma_x1 = ttk.Entry(self._tab_prop, textvariable=self._new_sigma_x1, width=int(7*1))
         self._ent_sigma_x2 = ttk.Entry(self._tab_prop, textvariable=self._new_sigma_x2, width=int(7 * 1))
-        self._ent_tauxy = ttk.Entry(self._tab_prop, textvariable=self._new_tauxy, width=int(7*1),
-                                   )
-        # self._ent_stf_type = ttk.Entry(self._main_fr, textvariable=self._new_stf_type, width=int(7*1),
-        #                               )
-        self._ent_stf_type = ttk.OptionMenu(self._tab_prop, self._new_stf_type, 'T', *['T', 'FB', 'L', 'L-bulb'])
+        self._ent_tauxy = ttk.Entry(self._tab_prop, textvariable=self._new_tauxy, width=int(7*1))
+        
+        self._flat_gui_loads = [self._ent_pressure_side, self._ent_sigma_y1, self._ent_sigma_y2, self._ent_sigma_x1, 
+                                self._ent_sigma_x2, self._ent_tauxy]
         self._ent_structure_type = ttk.OptionMenu(self._tab_prop, self._new_stucture_type, self._options_type[0],
                                                   *self._options_type,command = self.option_meny_structure_type_trace)
+
         self._ent_puls_sp_or_up= ttk.OptionMenu(self._tab_prop, self._new_puls_sp_or_up, 'SP', *['SP', 'UP'],
                                                 command = self.trace_puls_up_or_sp,)
         self._ent_puls_method = ttk.OptionMenu(self._tab_prop, self._new_puls_method,'buckling',
@@ -818,6 +845,9 @@ class Application():
         self._ent_puls_stf_end_type = ttk.OptionMenu(self._tab_prop, self._new_puls_stf_end_type,'C',
                                                       *['C', 'S'])
         self._ent_puls_up_boundary = ttk.Entry(self._tab_prop, textvariable=self._new_puls_up_boundary, width=int(7*1))
+
+        self._flat_gui_buckling = [self._ent_puls_sp_or_up, self._ent_puls_method, self._ent_puls_panel_boundary,
+                                   self._ent_puls_stf_end_type, self._ent_puls_up_boundary]
 
 
         self._lab_structure_type = ttk.Label(self._tab_prop, text='Select structure type:', font=self._text_size['Text 9'])
@@ -1582,7 +1612,8 @@ class Application():
 
             # self._structure_types_label.place(relx=hor_start + 2.8 * delta_x, rely=vert_start + 2.8 * delta_y,
             #                                   relwidth=0.11, relheight=0.02)
-            
+
+
             self._ent_structure_type.place(relx=hor_start + 2 * delta_x, rely=vert_start + 3 * delta_y, relwidth=0.44)
             self._lab_structure_type.place(relx=hor_start, rely=vert_start + 3 * delta_y)
             self._button_str_type.place(relx=hor_start + 5.5 * delta_x, rely=vert_start + 3 * delta_y, relwidth=0.26)
@@ -5068,7 +5099,7 @@ class Application():
             try:
                 self._new_pressure_side.set(properties['press_side'][0])
             except KeyError:
-                self._new_pressure_side.set('p')
+                self._new_pressure_side.set('both sides')
             self._new_zstar_optimization.set(properties['zstar_optimization'][0])
             self._new_puls_method.set(properties['puls buckling method'][0])
             self._new_puls_panel_boundary.set(properties['puls boundary'][0])
