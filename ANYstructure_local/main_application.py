@@ -769,9 +769,6 @@ class Application():
         #self._new_material_factor.trace('w', self.trace_material_factor)
         # --- main entries and labels to define the structural properties ---
         ent_width = 12 #width of entries
-
-        self._ent_mat = ttk.Entry(self._tab_prop, textvariable=self._new_material)
-        self._ent_mat_factor = ttk.Entry(self._tab_prop, textvariable=self._new_material_factor)
         
         '''
         Flat plate input
@@ -847,6 +844,11 @@ class Application():
         self._ent_sigma_x1 = ttk.Entry(self._tab_prop, textvariable=self._new_sigma_x1, width=int(7*1))
         self._ent_sigma_x2 = ttk.Entry(self._tab_prop, textvariable=self._new_sigma_x2, width=int(7 * 1))
         self._ent_tauxy = ttk.Entry(self._tab_prop, textvariable=self._new_tauxy, width=int(7*1))
+        self._ent_mat = ttk.Entry(self._tab_prop, textvariable=self._new_material)
+        self._ent_mat_factor = ttk.Entry(self._tab_prop, textvariable=self._new_material_factor)
+        self._ent_structure_type = ttk.OptionMenu(self._tab_prop, self._new_stucture_type, self._options_type[0],
+                                                  *self._options_type,command = self.option_meny_structure_type_trace)
+
 
         self._lab_press_side = ttk.Label(self._tab_prop, text='Overpressure side')
         self._lab_sig_y1 = ttk.Label(self._tab_prop, text='Longitudinal compr. ,sig_y1')
@@ -854,14 +856,19 @@ class Application():
         self._lab_sig_x1 = ttk.Label(self._tab_prop, text='Transverse compress.,sig_x1')
         self._lab_sig_x2 = ttk.Label(self._tab_prop, text='Transverse compress.,sig_x2')
         self._lab_tau_y1 = ttk.Label(self._tab_prop, text='Shear Stres,tau_y1')
-        
-        self._flat_gui_loads = [self._ent_pressure_side, self._ent_sigma_y1, self._ent_sigma_y2, self._ent_sigma_x1, 
-                                self._ent_sigma_x2, self._ent_tauxy]
+        self._lab_yield = ttk.Label(self._tab_prop, text='Yield [MPa]:', font = self._text_size['Text 9'])
+        self._lab_mat_fac = ttk.Label(self._tab_prop, text='Mat. factor', font = self._text_size['Text 9'])
+        self._lab_structure_type = ttk.Label(self._tab_prop, text='Select structure type:',
+                                             font=self._text_size['Text 9'])
+
         self._flat_gui_lab_loads = [self._lab_press_side ,self._lab_sig_y1, self._lab_sig_y2,self._lab_sig_x1,
-                                    self._lab_sig_x2,
-                                    self._lab_tau_y1]
-        self._ent_structure_type = ttk.OptionMenu(self._tab_prop, self._new_stucture_type, self._options_type[0],
-                                                  *self._options_type,command = self.option_meny_structure_type_trace)
+                                    self._lab_sig_x2, self._lab_tau_y1, self._lab_yield, self._lab_mat_fac,
+                                    self._lab_structure_type]
+        self._flat_gui_loads = [self._ent_pressure_side, self._ent_sigma_y1, self._ent_sigma_y2, self._ent_sigma_x1, 
+                                self._ent_sigma_x2, self._ent_tauxy, self._ent_mat, self._ent_mat_factor,
+                                self._ent_structure_type]
+
+
 
         # PULS interface
         self._puls_run_all = ttk.Button(self._tab_prop, text='Run PULS -\nupdate results',
@@ -890,41 +897,56 @@ class Application():
                  font = self._text_size['Text 8'])
         self._lab_puls_up_supp =  ttk.Label(self._tab_prop, text='UP sup.left,right,upper,lower',
                                            font = self._text_size['Text 7'])
-
-        self._flat_gui_buckling = [self._ent_puls_sp_or_up, self._ent_puls_method, self._ent_puls_uf,
-                                   self._ent_puls_panel_boundary, self._ent_puls_stf_end_type,
-                                   self._ent_puls_up_boundary]
-        self._flat_gui_lab_buckling = [self._lab_puls_spup, self._lab_puls_acceptance,  self._lab_puls_uf,
-                                       self._lab_puls_int_gt, self._lab_puls_cont_sniped,
-                                       self._lab_puls_up_supp]
-
-
-        self._lab_structure_type = ttk.Label(self._tab_prop, text='Select structure type:', font=self._text_size['Text 9'])
-        self._button_str_type = ttk.Button(self._tab_prop, text='Show structure types', command=show_message)
-        self._structure_types_label =  ttk.Label(textvariable = self._new_stucture_type_label,
-                                                font = self._text_size['Text 8'], )
         self._zstar_chk = ttk.Checkbutton(self._tab_prop, variable=self._new_zstar_optimization)
         self._zstar_label = ttk.Label(self._tab_prop, text='z* optimization (buckling RP-C201)',
                                       font=self._text_size['Text 8'])
-        self._lab_yield = ttk.Label(self._tab_prop, text='Yield [MPa]:', font = self._text_size['Text 9'])
-        self._lab_mat_fac = ttk.Label(self._tab_prop, text='Mat. factor', font = self._text_size['Text 9'])
 
-        self._chk_button_sigmax1 = ttk.Checkbutton(self._tab_prop, variable = self._new_colorcode_sigmax,
+        self._flat_gui_buckling = [self._ent_puls_sp_or_up, self._ent_puls_method, self._ent_puls_uf,
+                                   self._ent_puls_panel_boundary, self._ent_puls_stf_end_type,
+                                   self._ent_puls_up_boundary, self._zstar_chk]
+
+        self._flat_gui_lab_buckling = [self._lab_puls_spup, self._lab_puls_acceptance,  self._lab_puls_uf,
+                                       self._lab_puls_int_gt, self._lab_puls_cont_sniped,
+                                       self._lab_puls_up_supp, self._zstar_label]
+
+        self._button_str_type = ttk.Button(self._tab_prop, text='Show structure types', command=show_message)
+        self._structure_types_label =  ttk.Label(textvariable = self._new_stucture_type_label,
+                                                font = self._text_size['Text 8'], )
+
+
+
+        self._chk_button_sigmax1 = ttk.Checkbutton(self._tab_prop_tools, variable = self._new_colorcode_sigmax,
                                                  command = self.on_color_code_check)
-        self._chk_button_sigmay1 = ttk.Checkbutton(self._tab_prop, variable = self._new_colorcode_sigmay1,
+        self._chk_button_sigmax2 = ttk.Checkbutton(self._tab_prop_tools, variable = self._new_colorcode_sigmax,
+                                                 command = self.on_color_code_check)
+        self._chk_button_sigmay1 = ttk.Checkbutton(self._tab_prop_tools, variable = self._new_colorcode_sigmay1,
                                                   command = self.on_color_code_check)
-        self._chk_button_sigmay2 = ttk.Checkbutton(self._tab_prop, variable = self._new_colorcode_sigmay2,
+        self._chk_button_sigmay2 = ttk.Checkbutton(self._tab_prop_tools, variable = self._new_colorcode_sigmay2,
                                                   command = self.on_color_code_check)
-        self._chk_button_tauxy = ttk.Checkbutton(self._tab_prop, variable = self._new_colorcode_tauxy,
+        self._chk_button_tauxy = ttk.Checkbutton(self._tab_prop_tools, variable = self._new_colorcode_tauxy,
                                                 command = self.on_color_code_check)
-        self._chk_button_structure_type = ttk.Checkbutton(self._tab_prop, variable = self._new_colorcode_structure_type,
+        self._chk_button_structure_type = ttk.Checkbutton(self._tab_prop_tools, variable = self._new_colorcode_structure_type,
                                                          command = self.on_color_code_check)
-        self._chk_button_cc = ttk.Label(self._tab_prop, text='<-- Color coding', font=self._text_size['Text 9'],)
-        self._chk_button_puls_spup = ttk.Checkbutton(self._tab_prop, variable=self._new_colorcode_puls_sp_or_up,
+
+        self._chk_button_puls_spup = ttk.Checkbutton(self._tab_prop_tools, variable=self._new_colorcode_puls_sp_or_up,
                                                     command=self.on_color_code_check)
-        self._chk_button_puls_acceptance =ttk.Checkbutton(self._tab_prop, variable=self._new_colorcode_puls_acceptance,
+        self._chk_button_puls_acceptance =ttk.Checkbutton(self._tab_prop_tools, variable=self._new_colorcode_puls_acceptance,
                                                          command=self.on_color_code_check)
 
+        self._information_gui_chk_structure = [self._chk_button_sigmax1, self._chk_button_sigmax2,
+                                               self._chk_button_sigmay1, self._chk_button_sigmay2,
+                                               self._chk_button_tauxy,self._chk_button_structure_type ,
+                                               self._chk_button_puls_spup,
+                                               self._chk_button_puls_acceptance]
+
+        self._information_gui_lab_chk_structure = [ttk.Label(self._tab_prop_tools, text='Stresses, sigma x1'),
+                                                   ttk.Label(self._tab_prop_tools, text='Stresses, sigma x2'),
+                                                   ttk.Label(self._tab_prop_tools, text='Stresses, sigma y1'),
+                                                   ttk.Label(self._tab_prop_tools, text='Stresses, sigma y2'),
+                                                   ttk.Label(self._tab_prop_tools, text='Stresses, sigma tauxy'),
+                                                   ttk.Label(self._tab_prop_tools, text='Structure type'),
+                                                   ttk.Label(self._tab_prop_tools, text='Buckling - SP or UP'),
+                                                   ttk.Label(self._tab_prop_tools, text='Buckling acceptance criteria')]
         try:
             img_file_name = 'img_stf_button.gif'
             if os.path.isfile('images/' + img_file_name):
@@ -1607,7 +1629,7 @@ class Application():
         vert_start = 0.04
         hor_start = 0.02
 
-        delta_y = 0.028
+        delta_y = 0.023
         delta_x = 0.13
         
         ent_relx = hor_start + 6*delta_x
@@ -1683,132 +1705,6 @@ class Application():
                 idx += 1
             idx += 1
             self._puls_run_all.place(relx=hor_start + 6 * delta_x, rely=vert_start + idx * delta_y)
-
-
-
-            #
-            #
-            #
-            #
-            # self._ent_structure_type.place(relx=hor_start + 2 * delta_x, rely=vert_start + 3 * delta_y, relwidth=0.44)
-            # self._lab_structure_type.place(relx=hor_start, rely=vert_start + 3 * delta_y)
-            # self._button_str_type.place(relx=hor_start + 5.5 * delta_x, rely=vert_start + 3 * delta_y, relwidth=0.26)
-            #
-            # lab_place = delta_y * 4
-            # self._lab_span.place(relx=hor_start + 0 * delta_x, rely=vert_start + lab_place)
-            #
-            # self._lab_s.place(relx=hor_start + 1 * delta_x, rely=vert_start + lab_place)
-            # self._chk_cc_spacing.place(relx=hor_start + 1.2 * delta_x, rely=vert_start + lab_place)
-            #
-            # self._lab_pl_thk.place(relx=hor_start + 2 * delta_x, rely=vert_start + lab_place)
-            # self._lab_web_h.place(relx=hor_start + 3 * delta_x, rely=vert_start + lab_place)
-            # self._lab_web_thk.place(relx=hor_start + 4 * delta_x, rely=vert_start + lab_place)
-            # self._lab_fl_w.place(relx=hor_start + 5 * delta_x, rely=vert_start + lab_place)
-            # self._lab_fl_thk.place(relx=hor_start + 6 * delta_x, rely=vert_start + lab_place)
-            #
-            # self._ent_field_len.place(relx=hor_start + 0 * delta_x, rely=vert_start + lab_place + delta_y,
-            #                           relwidth=geo_ent_width)
-            # self._ent_stf_spacing.place(relx=hor_start + 1 * delta_x, rely=vert_start + lab_place + delta_y,
-            #                             relwidth=geo_ent_width)
-            # self._ent_plate_thk.place(relx=hor_start + 2 * delta_x, rely=vert_start + lab_place + delta_y,
-            #                           relwidth=geo_ent_width)
-            # self._ent_stf_web_h.place(relx=hor_start + 3 * delta_x, rely=vert_start + lab_place + delta_y,
-            #                           relwidth=geo_ent_width)
-            # self._ent_stf_web_t.place(relx=hor_start + 4 * delta_x, rely=vert_start + lab_place + delta_y,
-            #                           relwidth=geo_ent_width)
-            # self._ent_stf_fl_w.place(relx=hor_start + 5 * delta_x, rely=vert_start + lab_place + delta_y,
-            #                          relwidth=geo_ent_width)
-            # self._ent_str_fl_t.place(relx=hor_start + 6 * delta_x, rely=vert_start + lab_place + delta_y,
-            #                          relwidth=geo_ent_width)
-            #
-            # tmp_units = list()
-            #
-            # for lab, idx in zip(['[mm]', '[mm]', '[mm]', '[mm]', '[mm]', '[mm]', '[mm]'], np.arange(2, 9.9, 1.1)):
-            #     tmp_units.append(ttk.Label(self._tab_prop, text=lab))
-            # for idx,lab  in enumerate(tmp_units):
-            #     lab.place(relx=hor_start + idx * delta_x,rely=vert_start + lab_place + delta_y*2)
-            #     self._unit_informations_dimensions.append(lab)
-            #
-            # lab_place = delta_y*7
-            # self._lab_kpp.place(relx=hor_start + 0 * delta_x, rely=vert_start + lab_place)
-            # self._lab_kps.place(relx=hor_start + 1 * delta_x, rely=vert_start + lab_place)
-            # self._lab_km1.place(relx=hor_start + 2 * delta_x, rely=vert_start + lab_place)
-            # self._lab_km2.place(relx=hor_start + 3 * delta_x, rely=vert_start + lab_place)
-            # self._lab_km3.place(relx=hor_start + 4 * delta_x, rely=vert_start + lab_place)
-            # self._lab_yield.place(relx=hor_start + 5 * delta_x, rely=vert_start + lab_place)
-            #
-            # lab_place = delta_y * 8
-            #
-            # self._ent_plate_kpp.place(relx=hor_start + 0 * delta_x, rely=vert_start + lab_place)
-            # self._ent_plate_kps.place(relx=hor_start + 1 * delta_x, rely=vert_start + lab_place)
-            # self._ent_stf_km1.place(relx=hor_start + 2 * delta_x, rely=vert_start + lab_place)
-            # self._ent_stf_km2.place(relx=hor_start + 3 * delta_x, rely=vert_start + lab_place)
-            # self._ent_stf_km3.place(relx=hor_start + 4 * delta_x, rely=vert_start + lab_place)
-            # self._ent_mat.place(relx=hor_start + 5 * delta_x, rely=vert_start + lab_place, relwidth=0.1)
-            #
-            # lab_place = delta_y * 9
-            # self._lab_sig_y1.place(relx=hor_start + 0 * delta_x, rely=vert_start + lab_place)
-            # self._lab_sig_y2.place(relx=hor_start + 1 * delta_x, rely=vert_start + lab_place)
-            # self._lab_sig_x1.place(relx=hor_start + 2 * delta_x, rely=vert_start + lab_place)
-            # self._lab_sig_x2.place(relx=hor_start + 3 * delta_x, rely=vert_start + lab_place)
-            # self._lab_tau_y1.place(relx=hor_start + 4 * delta_x, rely=vert_start + lab_place)
-            # self._lab_stf_type.place(relx=hor_start + 5 * delta_x, rely=vert_start + lab_place)
-            # self._lab_mat_fac.place(relx=hor_start + 6 * delta_x, rely=vert_start + lab_place)
-            #
-            # lab_place = delta_y * 10
-            # self._ent_sigma_y1.place(relx=hor_start + 0 * delta_x, rely=vert_start + lab_place)
-            # self._ent_sigma_y2.place(relx=hor_start + 1 * delta_x, rely=vert_start + lab_place)
-            # self._ent_sigma_x1.place(relx=hor_start + 2 * delta_x, rely=vert_start + lab_place)
-            # self._ent_sigma_x2.place(relx=hor_start + 3 * delta_x, rely=vert_start + lab_place)
-            # self._ent_tauxy.place(relx=hor_start + 4 * delta_x, rely=vert_start + lab_place)
-            # self._ent_stf_type.place(relx=hor_start + 5 * delta_x, rely=vert_start + lab_place)
-            # self._ent_mat_factor.place(relx=hor_start + 6 * delta_x, rely=vert_start + lab_place, relwidth=0.1)
-            #
-            #
-            # lab_place = delta_y * 11
-            # self._chk_button_sigmay1.place(relx=hor_start + 0 * delta_x, rely=vert_start + lab_place)
-            # self._chk_button_sigmay2.place(relx=hor_start + 1 * delta_x, rely=vert_start + lab_place)
-            # self._chk_button_sigmax1.place(relx=hor_start + 2 * delta_x, rely=vert_start + lab_place)
-            # self._chk_button_tauxy.place(relx=hor_start + 4 * delta_x, rely=vert_start + lab_place)
-            # self._chk_button_structure_type.place(relx=hor_start + 5 * delta_x, rely=vert_start + lab_place)
-            # #self._chk_button_cc.place(relx=hor_start + 7* delta_x, rely=vert_start + lab_place)
-            # shift_x = delta_x * 5
-            # self._zstar_label.place(relx=hor_start, rely=vert_start + 12 * delta_y)
-            # self._zstar_chk.place(relx=hor_start + shift_x, rely=vert_start + 12 * delta_y)
-            # self._lab_press_side.place(relx=hor_start, rely=vert_start + 13 * delta_y,
-            #                            relheight=0.025)
-            # self._ent_pressure_side.place(relx=hor_start + shift_x, rely=vert_start + 13 * delta_y,relwidth=opt_width)
-            #
-            # lab_place = delta_y * 14
-            # self._lab_puls_input.place(relx=hor_start, rely=vert_start + lab_place+ 0*delta_y)
-            # self._lab_puls_spup.place(relx=hor_start, rely=vert_start + lab_place+ 1*delta_y)
-            # self._lab_puls_up_supp.place(relx=hor_start, rely=vert_start + lab_place+ 2*delta_y)
-            # self._lab_puls_acceptance.place(relx=hor_start, rely=vert_start + lab_place+ 3*delta_y)
-            # self._lab_puls_uf.place(relx=hor_start, rely=vert_start + lab_place+ 4*delta_y)
-            # self._lab_puls_int_gt.place(relx=hor_start, rely=vert_start + lab_place+ 5*delta_y)
-            # self._lab_puls_cont_sniped.place(relx=hor_start, rely=vert_start + lab_place+ 6*delta_y)
-            #
-            # # Entries below goemetry and stress input.
-            #
-            # self._ent_puls_sp_or_up.place(relx=hor_start + shift_x, rely=vert_start + lab_place+ 1*delta_y
-            #                               ,relwidth=opt_width)
-            # self._chk_button_puls_spup.place(relx=hor_start + shift_x+delta_x*2, rely=vert_start + lab_place+ 1*delta_y)
-            # self._ent_puls_method.place(relx=hor_start + shift_x, rely=vert_start + lab_place+ 3*delta_y,
-            #                             relwidth=opt_width)
-            # self._chk_button_puls_acceptance.place(relx=hor_start + shift_x+delta_x*2, rely=vert_start +
-            #                                                                                 lab_place+ 3*delta_y)
-
-            # self._ent_puls_uf.place(relx=hor_start + shift_x, rely=vert_start + lab_place+ 4*delta_y,
-            #                         relwidth=0.2)
-            # self._ent_puls_panel_boundary.place(relx=hor_start + shift_x,rely=vert_start + lab_place+ 5*delta_y,
-            #                                     relwidth=opt_width)
-            # self._ent_puls_stf_end_type.place(relx=hor_start + shift_x,rely=vert_start + lab_place+ 6*delta_y,
-            #                                   relwidth=opt_width)
-            #
-            #
-            # self._lab_buckling_method.place(relx=hor_start, rely=vert_start + lab_place+ 7*delta_y)
-            # self._buckling_method.place(relx=hor_start + shift_x-delta_x, rely=vert_start + lab_place+ 7*delta_y,
-            #                             relwidth=opt_width+0.2)
 
         if shell:
             '''
@@ -2004,17 +1900,11 @@ class Application():
                       self._buckling_method, self._lab_yield,
                       self._lab_mat_fac,self._structure_types_label, self._button_str_type, self._ent_structure_type,
                       self._lab_structure_type, self._lab_kpp, self._lab_kps, self._lab_km1, self._lab_km2,
-                      self._lab_km3, self._lab_sig_y1, self._lab_sig_y2, self._lab_sig_x1, self._lab_sig_x2, self._lab_tau_y1,
                       self._lab_stf_type, self._zstar_label, self._lab_press_side, self._ent_pressure_side,
                       self._lab_puls_input, self._lab_puls_spup, self._lab_puls_up_supp, self._lab_puls_acceptance,
                       self._lab_puls_uf, self._lab_puls_int_gt, self._lab_puls_cont_sniped, self._lab_span, self._lab_s,
-                      self._lab_pl_thk, self._lab_web_h, self._lab_web_thk, self._lab_fl_w, self._lab_fl_thk,
-                      self._ent_field_len, self._ent_stf_spacing, self._ent_plate_thk, self._ent_stf_web_h,
-                      self._ent_stf_web_t, self._ent_stf_fl_w, self._ent_str_fl_t, self._ent_mat, self._ent_mat_factor,
-                      self._ent_plate_kpp, self._ent_plate_kps, self._ent_stf_km1, self._ent_stf_km2, self._ent_stf_km3,
-                      self._ent_sigma_y1, self._ent_sigma_y2, self._ent_sigma_x1, self._ent_sigma_x2, self._ent_tauxy, self._ent_stf_type,
                       self._chk_button_sigmax1, self._chk_button_sigmay1, self._chk_button_sigmay2,
-                      self._chk_button_tauxy, self._chk_button_structure_type, self._chk_button_cc,
+                      self._chk_button_tauxy, self._chk_button_structure_type,
                       self._ent_puls_sp_or_up, self._ent_puls_method, self._ent_puls_uf, self._ent_puls_panel_boundary,
                       self._ent_puls_stf_end_type, self._chk_button_puls_acceptance, self._chk_button_puls_spup,
                       self._stf_button, self._stress_button,self._fls_button]
@@ -2022,7 +1912,11 @@ class Application():
         to_process = to_process+self._shell_gui_items+self._shell_long_stf_gui_items+self._shell_ring_stf_gui_items+\
                      self._shell_ring_frame_gui_items+self._shell_loads_other_gui_items+\
                      self._shell_loads_forces_gui_items+self._shell_loads_stress_gui_items+\
-                     self._unit_informations_dimensions + self._shell_other_gui_items
+                     self._unit_informations_dimensions + self._shell_other_gui_items+ self._flat_gui_plate + \
+                     self._flat_gui_lab_plate + self._flat_gui_lab_stf+self._flat_gui_stf + self._flat_gui_girder + \
+                     self._flat_gui_lab_loads + self._flat_gui_loads  + self._flat_gui_lab_os_c101_provisions + \
+                     self._flat_gui_os_c101_provisions + \
+                     self._flat_gui_lab_buckling + self._flat_gui_buckling + self._flat_gui_headlines
         for item in to_process:
             item.place_forget()
 
