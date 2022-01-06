@@ -1384,36 +1384,34 @@ class PrescriptiveBuckling():
     Calculation of buckling
     '''
     def __init__(self, Plate: CalcScantlings = None, Stiffener: CalcScantlings = None, Girder: CalcScantlings = None,
-                 lat_press = None):
+                 lat_press = None, main_dict = None):
         super(PrescriptiveBuckling, self).__init__()
         self._Plate = Plate  # This contain the stresses
         self._Stiffener = Stiffener
         self._Girder = Girder
         self._lat_press = lat_press
-        self._min_lat_press_adj_span = None
+        self._min_lat_press_adj_span = main_dict['minimum pressure in adjacent spans'][0]
         self._v = 0.3
-        self._yield = 355e6
+        self._yield =  main_dict['material yield'][0]
         self._E = 2.1e11
-        self._stress_load_factor = 1
-        self._lat_load_factor = 1
-        self._method = 1
+        self._stress_load_factor = main_dict['load factor on stresses'][0]
+        self._lat_load_factor = main_dict['load factor on pressure'][0]
+        self._method = main_dict['buckling method'][0]
 
-        self._stf_end_support = 'Continuous'
-        self._girder_end_support = 'Continuous'
-        self._tension_field_action = 'not allowed'
-        self._stiffed_plate_effective_aginst_sigy = True
+        self._stf_end_support = main_dict['stiffener end support'][0]#'Continuous'
+        self._girder_end_support = main_dict['girder end support'][0]#'Continuous'
+        self._tension_field_action = main_dict['tension field'][0]# 'not allowed'
+        self._stiffed_plate_effective_aginst_sigy = main_dict['plate effective agains sigy'][0] #True
 
-        self._buckling_length_factor = None
-        self._km3 = 12
-        self._km2 = 24
+        self._buckling_length_factor = main_dict['buckling length factor'][0]
+        self._km3 = main_dict['km3'][0]#12
+        self._km2 = main_dict['km2'][0]#24
 
-        self._press_variations_between_spans = None
-        self._girder_dist_between_lateral_supp = None
-        self._kgirder = None
+        self._girder_dist_between_lateral_supp = main_dict['girder distance between lateral support'][0]
+        self._kgirder = main_dict['kgirder'][0]
+        self._panel_length_Lp = main_dict['panel length, Lp'][0]
 
-        self._panel_length_Lp = None
-
-        self._overpressure_side = 'both' # either 'stiffener', 'plate', 'both'
+        self._overpressure_side = main_dict['pressure side'][0] # either 'stiffener', 'plate', 'both'
 
     def plate_buckling(self):
         '''
@@ -1687,8 +1685,8 @@ class PrescriptiveBuckling():
 
         qsd_press = (psd+abs(Po))*s
         qsd_opposite = abs(Po)*s if psd<Po else 0
-        qsd_plate_side = qsd_opposite if self._press_variations_between_spans is None else qsd_press
-        qsd_stf_side = qsd_opposite if self._press_variations_between_spans is not None else qsd_press
+        qsd_plate_side = qsd_opposite if self._min_lat_press_adj_span is None else qsd_press
+        qsd_stf_side = qsd_opposite if self._min_lat_press_adj_span is not None else qsd_press
 
         kl = unstf_pl_data['kl']
 
@@ -4225,7 +4223,9 @@ if __name__ == '__main__':
     Stiffener = CalcScantlings(ex.obj_dict)
     Girder = CalcScantlings(ex.obj_dict_heavy)
 
-    PreBuc = PrescriptiveBuckling(Plate = Plate, Stiffener = Stiffener, Girder = Girder, lat_press=0.3)
+
+    PreBuc = PrescriptiveBuckling(Plate = Plate, Stiffener = Stiffener, Girder = Girder, lat_press=0.3,
+                                  main_dict=ex.prescriptive_main_dict)
     # print(Plate)
     # print(Stiffener)
     # print(Girder)

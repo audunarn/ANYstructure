@@ -1624,7 +1624,8 @@ class Application():
 
         self.update_frame()
 
-    def gui_structural_properties(self, flat_panel = True, shell = False, long_stf = False, ring_stf = False,
+    def gui_structural_properties(self, flat_panel_stf_girder = False, flat_unstf = False, flat_stf = True,
+                                  shell = False, long_stf = False, ring_stf = False,
                                   ring_frame = False, force_input = False, stress_input = False):
         vert_start = 0.04
         hor_start = 0.02
@@ -1640,7 +1641,7 @@ class Application():
         opt_width = 0.2
 
         self._unit_informations_dimensions = list()
-        if flat_panel:
+        if any([flat_unstf, flat_stf, flat_panel_stf_girder]):
 
             '''
                     self._flat_gui_headlines = [ttk.Label(self._tab_prop, text='Plate input'), 
@@ -1701,7 +1702,7 @@ class Application():
             idx += 1
             for buckling_lab, buckling_ent in zip(self._flat_gui_lab_buckling, self._flat_gui_buckling):
                 buckling_lab.place(relx=hor_start, rely=vert_start + idx * delta_y)
-                buckling_ent.place(relx=hor_start + 3 * delta_x, rely=vert_start + idx * delta_y)
+                buckling_ent.place(relx=hor_start + 5 * delta_x, rely=vert_start + idx * delta_y)
                 idx += 1
             idx += 1
             self._puls_run_all.place(relx=hor_start + 6 * delta_x, rely=vert_start + idx * delta_y)
@@ -1805,7 +1806,7 @@ class Application():
 
             ent_geo_y += delta_y*3
 
-        if not flat_panel:
+        if not any([flat_panel_stf_girder, flat_stf, flat_unstf]):
             # Other data
             '''
                 self._shell_other_gui_items = [self._ent_shell_end_cap_pressure_included, self._ent_shell_uls_or_als,
@@ -1933,10 +1934,15 @@ class Application():
                     7:'Orthogonally Stiffened shell (Force input)',
                     8:'Orthogonally Stiffened panel (Stress input)'}
         '''
-        if self._new_calculation_domain.get() in ['Flat plate, stiffened','Flat plate, unstiffened',
-                                                  'Flat plate, stiffened with girder']:
+        if self._new_calculation_domain.get() == 'Flat plate, unstiffened':
+            self.gui_structural_properties(flat_unstf = True)
 
-            self.gui_structural_properties(flat_panel=True)
+        elif self._new_calculation_domain.get() == 'Flat plate, stiffened':
+            self.gui_structural_properties(flat_stf = True)
+
+        elif self._new_calculation_domain.get() == 'Flat plate, stiffened with girder':
+            self.gui_structural_properties(flat_panel_stf_girder = True)
+
         elif self._new_calculation_domain.get() in ['Unstiffened shell (Force input)',
                                                     'Unstiffened panel (Stress input)']:
             self.gui_structural_properties(flat_panel=False, shell=True, long_stf=False, ring_stf=False, ring_frame=False)

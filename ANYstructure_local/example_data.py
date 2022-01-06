@@ -287,9 +287,26 @@ shell_main_dict2 = {'sasd': [-14.84 * 1e6, 'Pa'],
                     'ring stf excluded': [True, ''],
                     'ring frame excluded': [False, ''],
                     'end cap pressure': ['not included in axial stresses', ''],
-                   'ULS or ALS': ['ULS', '']
+                   'ULS or ALS': ['ULS', '']}
 
-                    }
+prescriptive_main_dict = dict()
+prescriptive_main_dict['minimum pressure in adjacent spans']  = [None, '']
+prescriptive_main_dict['material yield']  = [355e6, 'Pa']
+prescriptive_main_dict['load factor on stresses']  = [1, '']
+prescriptive_main_dict['load factor on pressure']  = [1, '']
+prescriptive_main_dict['buckling method']  = ['ultimate', '']
+prescriptive_main_dict['stiffener end support']  = ['Continuous', '']  # 'Continuous'
+prescriptive_main_dict['girder end support']  = ['Continuous', '']  # 'Continuous'
+prescriptive_main_dict['tension field']  = ['not allowed', '']  # 'not allowed'
+prescriptive_main_dict['plate effective agains sigy']   = [True, ''] # True
+prescriptive_main_dict['buckling length factor']  = [None, '']
+prescriptive_main_dict['km3']  = [12, '']  # 12
+prescriptive_main_dict['km2']  = [24, '']  # 24
+prescriptive_main_dict['girder distance between lateral support']  = ['both', '']
+prescriptive_main_dict['kgirder']  = [None, '']
+prescriptive_main_dict['panel length, Lp']  = [None, '']
+prescriptive_main_dict['pressure side']  = ['both', '']# either 'stiffener', 'plate', 'both'
+
 def get_slamming_pressure():
     return 1000000
 
