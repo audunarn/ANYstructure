@@ -306,6 +306,8 @@ prescriptive_main_dict['girder distance between lateral support']  = ['both', ''
 prescriptive_main_dict['kgirder']  = [None, '']
 prescriptive_main_dict['panel length, Lp']  = [None, '']
 prescriptive_main_dict['pressure side']  = ['both', '']# either 'stiffener', 'plate', 'both'
+prescriptive_main_dict['fabrication method stiffener'] =  ['welded', '']
+prescriptive_main_dict['fabrication method girder'] =   ['welded', '']
 
 def get_slamming_pressure():
     return 1000000

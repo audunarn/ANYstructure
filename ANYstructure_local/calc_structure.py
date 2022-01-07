@@ -1390,28 +1390,29 @@ class PrescriptiveBuckling():
         self._Stiffener = Stiffener
         self._Girder = Girder
         self._lat_press = lat_press
-        self._min_lat_press_adj_span = main_dict['minimum pressure in adjacent spans'][0]
+
         self._v = 0.3
-        self._yield =  main_dict['material yield'][0]
         self._E = 2.1e11
+
+
+        self._min_lat_press_adj_span = main_dict['minimum pressure in adjacent spans'][0]
+        self._yield =  main_dict['material yield'][0]
         self._stress_load_factor = main_dict['load factor on stresses'][0]
         self._lat_load_factor = main_dict['load factor on pressure'][0]
         self._method = main_dict['buckling method'][0]
-
         self._stf_end_support = main_dict['stiffener end support'][0]#'Continuous'
         self._girder_end_support = main_dict['girder end support'][0]#'Continuous'
         self._tension_field_action = main_dict['tension field'][0]# 'not allowed'
         self._stiffed_plate_effective_aginst_sigy = main_dict['plate effective agains sigy'][0] #True
-
         self._buckling_length_factor = main_dict['buckling length factor'][0]
         self._km3 = main_dict['km3'][0]#12
         self._km2 = main_dict['km2'][0]#24
-
         self._girder_dist_between_lateral_supp = main_dict['girder distance between lateral support'][0]
         self._kgirder = main_dict['kgirder'][0]
         self._panel_length_Lp = main_dict['panel length, Lp'][0]
-
         self._overpressure_side = main_dict['pressure side'][0] # either 'stiffener', 'plate', 'both'
+        self._fab_method_stiffener = main_dict['fabrication method stiffener'][0]#'welded'
+        self._fab_method_girder = main_dict['fabrication method girder'][0]#'welded'
 
     def plate_buckling(self):
         '''
@@ -1419,8 +1420,33 @@ class PrescriptiveBuckling():
         '''
 
         unstf_pl = self.unstiffened_plate_buckling()
-        stf_pla = self.stiffened_panel(unstf_pl_data=unstf_pl)
-        girder = self.girder(unstf_pl_data=unstf_pl, stf_pl_data=stf_pla)
+        up_buckling = max([unstf_pl['UF Pnt. 5  Lateral loaded plates'], unstf_pl['UF sjsd'],
+                           max([unstf_pl['UF Longitudinal stress'],  unstf_pl['UF transverse stresses'],
+                                unstf_pl['UF Shear stresses'], unstf_pl['UF Combined stresses']])
+                           if all([self._Girder is None, self._Stiffener is None]) else 0])
+
+        if self._Stiffener is not None:
+            stf_pla = self.stiffened_panel(unstf_pl_data=unstf_pl)
+            stf_buckling_pl_side = stf_pla['UF Plate side'] if self._stf_end_support == 'Continuous' else \
+                stf_pla['UF simply supported plate side']
+            stf_buckling_stf_side = stf_pla['UF Stiffener side'] if self._stf_end_support == 'Continuous' else \
+                stf_pla['UF simply supported stf side']
+            stf_plate_resistance = stf_pla['UF Plate resistance']
+            stf_shear_capacity = stf_pla['UF Shear force']
+
+        if self._Girder is not None:
+            girder = self.girder(unstf_pl_data=unstf_pl, stf_pl_data=stf_pla)
+            print(girder)
+            girder_buckling_pl_side = girder['UF Cont. plate side'] if self._girder_end_support == 'Continuous' else \
+                stf_pla['UF Simplified plate side']
+            girder_buckling_girder_side = girder['UF Cont. girder side'] if self._girder_end_support == 'Continuous' else \
+                stf_pla['UF Simplified girder side']
+            girder_shear_capacity = girder['UF shear force']
+
+        local_buckling = self.local_buckling()
+
+
+        print(up_buckling, stf_buckling_pl_side, stf_buckling_stf_side, stf_plate_resistance, stf_shear_capacity, girder_buckling_pl_side, girder_buckling_girder_side, girder_shear_capacity)
 
     def unstiffened_plate_buckling(self):
 
@@ -1641,7 +1667,7 @@ class PrescriptiveBuckling():
         Vrd = Anet*fy/(gammaM*math.sqrt(3))
 
         Vsd_div_Vrd = Vsd/Vrd
-        unstf_pl_data['UF Shear force'] = Vsd_div_Vrd 
+        stf_pl_data['UF Shear force'] = Vsd_div_Vrd
         # 7.2  Forces in idealised stiffened plate
         Iy = Is = self._Stiffener.get_moment_of_intertia()*1000**4
 
@@ -1685,8 +1711,14 @@ class PrescriptiveBuckling():
 
         qsd_press = (psd+abs(Po))*s
         qsd_opposite = abs(Po)*s if psd<Po else 0
-        qsd_plate_side = qsd_opposite if self._min_lat_press_adj_span is None else qsd_press
-        qsd_stf_side = qsd_opposite if self._min_lat_press_adj_span is not None else qsd_press
+
+        '''
+        1	Overpressure on Stiffener Side
+        2	Overpressure on Plate Side
+        3	Overpr. may occur on both sides
+        '''
+        qsd_plate_side = qsd_opposite if self._overpressure_side == 'stiffener side' else qsd_press
+        qsd_stf_side = qsd_opposite if self._overpressure_side == 'plate side' else qsd_press
 
         kl = unstf_pl_data['kl']
 
@@ -1872,7 +1904,6 @@ class PrescriptiveBuckling():
         stf_pl_data['UF simply supported stf side'] = uf_max_simp_stf
         #7.7.1 Continuous stiffeners
 
-
         M1Sd_pl = abs(qsd_plate_side)*math.pow(l,2)/self._km3
         M2Sd_pl = abs(qsd_plate_side)*math.pow(l,2)/self._km2
         M1Sd_stf = abs(qsd_stf_side) * math.pow(l, 2) / self._km3
@@ -1888,11 +1919,12 @@ class PrescriptiveBuckling():
             eq7_51 = NSd/NkpRd-2*NSd/NRd +(M1Sd_pl-NSd*x)/(MpRd*(1-NSd/Ne))+u
             eq7_52 = NSd/NksRd-2*NSd/NRd+(M2Sd_pl+NSd*x)/(MstRd*(1-NSd/Ne))+u
             eq7_53 = NSd/NkpRd+(M2Sd_pl+NSd*x)/(MpRd*(1-NSd/Ne))+u
+            #print(zstar, eq7_50, eq7_51,eq7_52,eq7_53,max([eq7_50, eq7_51,eq7_52,eq7_53]))
             return max(eq7_50, eq7_51, eq7_52, eq7_53)
         res_iter_pl = minimize(iteration_min_uf_pl_side, 0, bounds=[[-zt+self._Stiffener.tf/2,zp]])
         stf_pl_data['UF Plate side'] = res_iter_pl.fun[0]
 
-        # Lateral pressure on stiffener side:
+        # Lateral pressure   on stiffener side:
 
         # max_lfs = []
         # ufs = []
@@ -2182,6 +2214,32 @@ class PrescriptiveBuckling():
         girder_data['UF Cont. girder side'] = res_iter_girder.fun[0]
 
         return girder_data
+
+    def local_buckling(self):
+        '''
+        Checks for girders and stiffeners
+        '''
+        fy = self._yield/1e6
+        if self._Stiffener is not None:
+            max_web_stf = 42*self._Stiffener.tw*math.sqrt(235/fy) if self._Stiffener.get_stiffener_type() != 'FB' else 0
+            max_flange_stf = (14 if self._fab_method_stiffener == 'welded' else 15) *  self._Stiffener.tf *math.sqrt(235/fy)
+        else:
+            max_web_stf = 0
+            max_flange_stf = 0
+
+        if self._Girder is not None:
+            max_web_girder = 42*self._Girder.tw*math.sqrt(235/fy) if self._Girder.get_stiffener_type() != 'FB' else 0
+            max_flange_girder = (14 if self._fab_method_girder == 'welded' else 15) *  self._Girder.tf *math.sqrt(235/fy)
+        else:
+            max_web_girder = 0
+            max_flange_girder = 0
+
+        return {'stiffener': [max_web_stf, max_flange_stf], 'girder': [max_web_girder, max_flange_girder]}
+
+
+
+
+
 
 class Shell():
     '''
@@ -4226,6 +4284,8 @@ if __name__ == '__main__':
 
     PreBuc = PrescriptiveBuckling(Plate = Plate, Stiffener = Stiffener, Girder = Girder, lat_press=0.3,
                                   main_dict=ex.prescriptive_main_dict)
+
+    print(Plate)
     # print(Plate)
     # print(Stiffener)
     # print(Girder)
