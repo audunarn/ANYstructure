@@ -625,11 +625,7 @@ class Application():
         ent_fdwn = ttk.Entry(self._tab_prop_tools, textvariable=self._new_fdwn)
         ent_fdwn.place(relx =hor_start, rely=vert_start+8*delta_y, relwidth = 0.1)
 
-        self._new_buckling_method = tk.StringVar()
-        options = ['DNV-RP-C201 - prescriptive','DNV PULS','ML-CL (PULS based)']
-        self._lab_buckling_method = ttk.Label(self._tab_prop, text='Set buckling method')
-        self._buckling_method = ttk.OptionMenu(self._tab_prop, self._new_buckling_method, options[0], *options,
-                                               command=self.update_frame)
+
 
         # --- main variable to define the structural properties ---
         self._new_material = tk.DoubleVar()
@@ -759,7 +755,12 @@ class Application():
                                     ttk.Label(self._tab_prop, text='Special provitions input',
                                               font = self._text_size['Text 8 bold']),
                                     ttk.Label(self._tab_prop, text='Buckling input',
-                                              font = self._text_size['Text 8 bold'])]
+                                              font = self._text_size['Text 8 bold']),
+                                    ttk.Label(self._tab_prop, text='Stiffener',
+                                              font=self._text_size['Text 8 bold']),
+                                    ttk.Label(self._tab_prop, text='Girder',
+                                              font=self._text_size['Text 8 bold']),
+                                    ]
 
         self._ent_field_len = ttk.Entry(self._tab_prop, textvariable=self._new_field_len, width = int(10))
         self._ent_stf_spacing = ttk.Entry(self._tab_prop, textvariable=self._new_stf_spacing, width = int(10))
@@ -850,6 +851,11 @@ class Application():
                                 self._ent_structure_type]
 
 
+        self._new_buckling_method = tk.StringVar()
+        options = ['DNV-RP-C201 - prescriptive','DNV PULS','ML-CL (PULS based)']
+        self._lab_buckling_method = ttk.Label(self._tab_prop, text='Set buckling method')
+        self._buckling_method = ttk.OptionMenu(self._tab_prop, self._new_buckling_method, options[0], *options,
+                                               command=self.update_frame)
 
         # PULS interface
         self._puls_run_all = ttk.Button(self._tab_prop, text='Run PULS -\nupdate results',
@@ -863,7 +869,9 @@ class Application():
                                                *['buckling', 'ultimate'])
         self._ent_puls_panel_boundary = ttk.OptionMenu(self._tab_prop, self._new_puls_panel_boundary,'Int',
                                                       *['Int', 'GL', 'GT'])
-        self._ent_puls_stf_end_type = ttk.OptionMenu(self._tab_prop, self._new_buckling_stf_end_support,'C',*['C', 'S'])
+        #self._ent_puls_stf_end_type = ttk.OptionMenu(self._tab_prop, self._new_buckling_stf_end_support,'C',*['C', 'S'])
+        self._ent_puls_stf_end_type = ttk.OptionMenu(self._tab_prop, self._new_buckling_stf_end_support, 'Continuous',
+                                                     *['Continuous', 'Sniped'])
         self._ent_puls_up_boundary = ttk.Entry(self._tab_prop, textvariable=self._new_puls_up_boundary, width=int(7*1))
         self._zstar_chk = ttk.Checkbutton(self._tab_prop, variable=self._new_zstar_optimization)
 
@@ -1727,7 +1735,7 @@ class Application():
                                     ttk.Label(self._tab_prop, text='Buckling input')]
             '''
             # Top buttons
-            top_button_shift = 0.3
+            top_button_shift = 0.2
             self._stf_button.place(relx=hor_start, rely=vert_start+ top_button_shift * delta_y)
             self._stress_button.place(relx=hor_start + delta_x*1.5, rely=vert_start+ top_button_shift * delta_y)
             self._fls_button.place(relx=hor_start + delta_x*3, rely=vert_start+ top_button_shift * delta_y)
@@ -1746,14 +1754,18 @@ class Application():
                 pl_ent.place(relx=hor_start + 3*delta_x, rely=vert_start + idx * delta_y)
                 idx += 1
 
-            self._flat_gui_headlines[1].place(relx=hor_start + 3*delta_x, rely=vert_start + idx * delta_y)
-            self._flat_gui_headlines[2].place(relx=hor_start + 5*delta_x, rely=vert_start + idx * delta_y)
-            idx += 1
-            for stf_lab, stf_ent, girder_ent in zip(self._flat_gui_lab_stf, self._flat_gui_stf, self._flat_gui_girder):
-                stf_lab.place(relx=hor_start, rely=vert_start + idx * delta_y)
-                stf_ent.place(relx=hor_start + 3*delta_x, rely=vert_start + idx * delta_y)
-                girder_ent.place(relx=hor_start + 5 * delta_x, rely=vert_start + idx * delta_y)
+            if flat_panel_stf_girder:
+                self._flat_gui_headlines[2].place(relx=hor_start + 5 * delta_x, rely=vert_start + idx * delta_y)
+            if flat_stf:
+                self._flat_gui_headlines[1].place(relx=hor_start + 3*delta_x, rely=vert_start + idx * delta_y)
                 idx += 1
+            for stf_lab, stf_ent, girder_ent in zip(self._flat_gui_lab_stf, self._flat_gui_stf, self._flat_gui_girder):
+                if flat_panel_stf_girder:
+                    girder_ent.place(relx=hor_start + 5 * delta_x, rely=vert_start + idx * delta_y)
+                if flat_stf:
+                    stf_lab.place(relx=hor_start, rely=vert_start + idx * delta_y)
+                    stf_ent.place(relx=hor_start + 3 * delta_x, rely=vert_start + idx * delta_y)
+                    idx += 1
 
             self._flat_gui_headlines[3].place(relx=hor_start + 0 * delta_x, rely=vert_start + idx * delta_y)
             idx += 1
@@ -1775,23 +1787,33 @@ class Application():
             idx = idx_now
             self._flat_gui_headlines[5].place(relx=hor_start + 0 * delta_x, rely=vert_start + idx * delta_y)
             idx += 1
-            self._flat_gui_headlines[1].place(relx=hor_start + 4*delta_x, rely=vert_start + idx * delta_y)
-            self._flat_gui_headlines[2].place(relx=hor_start + 6*delta_x, rely=vert_start + idx * delta_y)
+            self._lab_buckling_method.place(relx=hor_start + 0 * delta_x, rely=vert_start + idx * delta_y)
+            self._buckling_method.place(relx=hor_start + 4 * delta_x, rely=vert_start + idx * delta_y)
             idx += 1
+            if flat_panel_stf_girder:
+                self._flat_gui_headlines[7].place(relx=hor_start + 6 * delta_x, rely=vert_start + idx * delta_y)
+            if flat_stf:
+                self._flat_gui_headlines[6].place(relx=hor_start + 4*delta_x, rely=vert_start + idx * delta_y)
+                idx += 1
+
             for buckling_lab, buckling_stf_ent, buckling_girder_ent in zip(self._flat_gui_buc_lab_stf_girder,
                                                                            self._flat_gui_buc_stf_opt,
                                                                            self._flat_gui_buc_girder_opt):
-                buckling_lab.place(relx=hor_start, rely=vert_start + idx * delta_y)
-                buckling_stf_ent.place(relx=hor_start + 4 * delta_x, rely=vert_start + idx * delta_y)
-                buckling_girder_ent.place(relx=hor_start + 6 * delta_x, rely=vert_start + idx * delta_y)
-                idx += 1
+                if flat_panel_stf_girder:
+                    buckling_girder_ent.place(relx=hor_start + 6 * delta_x, rely=vert_start + idx * delta_y)
+                if flat_stf:
+                    buckling_lab.place(relx=hor_start, rely=vert_start + idx * delta_y)
+                    buckling_stf_ent.place(relx=hor_start + 4 * delta_x, rely=vert_start + idx * delta_y)
+                    idx += 1
 
-            self._flat_gui_girder_moment_factor[0].place(relx=hor_start + 0 * delta_x, rely=vert_start + idx * delta_y)
-            self._flat_gui_girder_moment_factor[1].place(relx=hor_start + 6 * delta_x, rely=vert_start + idx * delta_y,
-                                                         relwidth = 0.08)
-            self._flat_gui_girder_moment_factor[2].place(relx=hor_start + 7 * delta_x, rely=vert_start + idx * delta_y,
-                                                         relwidth = 0.08)
-            idx += 1
+
+            if flat_panel_stf_girder:
+                self._flat_gui_girder_moment_factor[0].place(relx=hor_start + 0 * delta_x, rely=vert_start + idx * delta_y)
+                self._flat_gui_girder_moment_factor[1].place(relx=hor_start + 6 * delta_x, rely=vert_start + idx * delta_y,
+                                                             relwidth = 0.08)
+                self._flat_gui_girder_moment_factor[2].place(relx=hor_start + 7 * delta_x, rely=vert_start + idx * delta_y,
+                                                             relwidth = 0.08)
+                idx += 1
 
             for buckling_lab, buckling_ent in zip(self._flat_gui_buc_lab_common, self._flat_gui_buc_common_opt):
                 buckling_lab.place(relx=hor_start, rely=vert_start + idx * delta_y)
@@ -2015,8 +2037,8 @@ class Application():
                      self._flat_gui_lab_loads + self._flat_gui_loads  + self._flat_gui_lab_os_c101_provisions + \
                      self._flat_gui_os_c101_provisions + \
                      self._flat_gui_lab_buckling + self._flat_gui_buckling + self._flat_gui_headlines + \
-                     self._flat_gui_buc_lab_common, self._flat_gui_buc_common_opt, self._flat_gui_buc_girder_opt,\
-                     self._flat_gui_buc_lab_stf_girder, self._flat_gui_buc_stf_opt, self._flat_gui_girder_moment_factor
+                     self._flat_gui_buc_lab_common+ self._flat_gui_buc_common_opt+ self._flat_gui_buc_girder_opt+\
+                     self._flat_gui_buc_lab_stf_girder+ self._flat_gui_buc_stf_opt+ self._flat_gui_girder_moment_factor
         for item in to_process:
             item.place_forget()
 
@@ -2034,13 +2056,16 @@ class Application():
                     8:'Orthogonally Stiffened panel (Stress input)'}
         '''
         if self._new_calculation_domain.get() == 'Flat plate, unstiffened':
-            self.gui_structural_properties(flat_unstf = True)
+            self._new_puls_sp_or_up.set('UP')
+            self.gui_structural_properties(flat_unstf = True, flat_stf = False)
 
         elif self._new_calculation_domain.get() == 'Flat plate, stiffened':
+            self._new_puls_sp_or_up.set('SP')
             self.gui_structural_properties(flat_stf = True)
 
         elif self._new_calculation_domain.get() == 'Flat plate, stiffened with girder':
-            self.gui_structural_properties(flat_panel_stf_girder = True)
+            self._new_puls_sp_or_up.set('SP')
+            self.gui_structural_properties(flat_panel_stf_girder = True, flat_stf = True)
 
         elif self._new_calculation_domain.get() in ['Unstiffened shell (Force input)',
                                                     'Unstiffened panel (Stress input)']:
@@ -2095,7 +2120,9 @@ class Application():
         # Setting the correct optmization buttons
 
     def puls_run_all_lines(self, line_given = None):
-
+        progress = ttk.Progressbar(self._tab_prop, mode='indeterminate')
+        progress.place(relx = 0.85, rely = 0.9, relwidth = 0.1)
+        progress.start()
         if self._PULS_results is None:
             self._PULS_results = PULSpanel()
         if self._PULS_results.puls_sheet_location is None or not os.path.isfile(self._PULS_results.puls_sheet_location):
@@ -2135,18 +2162,20 @@ class Application():
 
         if len(dict_to_run) > 0:
 
-            current_button.config(relief = 'sunken')
+            #current_button.config(relief = 'sunken')
             self._PULS_results.set_all_to_run(dict_to_run)
             self._PULS_results.run_all()
-            current_button.config(relief='raised')
+            #current_button.config(relief='raised')
             current_button.config(text='PULS run or\nupdate all lines' if line_given == None else 'PULS\nRun one line')
-            current_button.config(bg=self._button_bg_color)
+            #current_button.config(bg=self._button_bg_color)
             for key, value in self._line_to_struc.items():
                 value[1].need_recalc = True
         else:
             tk.messagebox.showinfo('Results avaliable', 'PULS results is already avaliable for this line or no '
                                                         'lines need update.')
 
+        progress.stop()
+        progress.destroy()
         self.update_frame()
 
     def trace_puls_uf(self, *args):
@@ -6157,9 +6186,9 @@ class Application():
             return
         elif self._PULS_results.get_puls_line_results(self._active_line) is None:
             return
-        if self._puls_information_button.config('relief')[-1] == 'sunken':
-            self.text_widget.forget()
-            self._puls_information_button.config(relief='raised')
+        # if self._puls_information_button.config('relief')[-1] == 'sunken':
+        #     self.text_widget.forget()
+        #     self._puls_information_button.config(relief='raised')
         this_result = self._PULS_results.get_puls_line_results(self._active_line)
         this_string = ''
         for key, value in this_result.items():

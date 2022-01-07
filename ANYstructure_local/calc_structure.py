@@ -672,6 +672,7 @@ class Structure():
         self._main_dict['span'][0] = span
 
     def get_puls_input(self, run_type: str = 'SP'):
+
         if self._stiffener_type == 'FB':
             stf_type = 'F'
         else:
@@ -681,7 +682,8 @@ class Structure():
                             'Plate thickness': self._plate_th*1000,
                           'Number of primary stiffeners': 10,
                            'Stiffener type (L,T,F)': stf_type,
-                            'Stiffener boundary': self._puls_stf_end,
+                            'Stiffener boundary': self._puls_stf_end if self._puls_stf_end in ['C', 'S']
+                            else 'C' if self._puls_stf_end == 'Continuous' else 'S',
                           'Stiff. Height': self._web_height*1000, 'Web thick.': self._web_th*1000,
                            'Flange width': self._flange_width*1000,
                             'Flange thick.': self._flange_th*1000, 'Tilt angle': 0,
@@ -2234,11 +2236,6 @@ class PrescriptiveBuckling():
             max_flange_girder = 0
 
         return {'stiffener': [max_web_stf, max_flange_stf], 'girder': [max_web_girder, max_flange_girder]}
-
-
-
-
-
 
 class Shell():
     '''
