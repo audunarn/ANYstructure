@@ -73,13 +73,13 @@ class Application():
         self._tab_prop = ttk.Frame(self._tabControl, relief = 'flat')
         self._tab_comp = ttk.Frame(self._tabControl, relief='flat')
         self._tab_prop_tools = ttk.Frame(self._tabControl, relief='flat')
-        self._tab5 = ttk.Frame(self._tabControl, relief='flat')
+        self._tab_information = ttk.Frame(self._tabControl, relief='flat')
 
         self._tabControl.add(self._tab_geo, text='Geometry')
         self._tabControl.add(self._tab_prop, text='Line properties')
         self._tabControl.add(self._tab_prop_tools, text='Properties tools')
         self._tabControl.add(self._tab_comp, text='Compartments')
-        self._tabControl.add(self._tab5, text='Information')
+        self._tabControl.add(self._tab_information, text='Information')
         self._tabControl.place(relwidth=0.2585, relheight = 0.99)
         #self._tabControl.select(self._tab2)
 
@@ -390,7 +390,6 @@ class Application():
         ttk.Entry(self._tab_geo, textvariable=self._new_point_y, width = int(ent_width * 1.5))\
             .place(relx=ent_x, rely=point_start + delta_y*2)
 
-
         ttk.Button(self._tab_geo, text='Add point (coords)', command=self.new_point,style = "Bold.TButton")\
             .place(relx=ent_x + 2 * delta_x, rely=point_start+1*delta_y, relwidth = 0.3)
         ttk.Button(self._tab_geo, text='Copy point (relative)', command=self.copy_point,style = "Bold.TButton")\
@@ -406,6 +405,16 @@ class Application():
             .place(relx=point_x_start, rely=point_start+3*delta_y)
         ttk.Checkbutton(self._tab_geo, variable = self._new_draw_point_name, command = self.on_color_code_check)\
             .place(relx=ent_x, rely=point_start+3*delta_y)
+
+        line_start, line_x = point_start+0.2, 0.0055
+        ttk.Label(self._tab_geo, text='Input line from "point number" to "point number"',
+                 font=self._text_size['Text 9 bold'], )\
+            .place(rely=line_start, relx=line_x, anchor = tk.NW)
+        ttk.Label(self._tab_geo, text='Line from point:',font="Text 9", )\
+            .place(relx=line_x, rely=line_start+delta_y)
+        ttk.Label(self._tab_geo, text='Line to point:',font="Text 9", )\
+            .place(relx=line_x, rely=line_start+2*delta_y)
+
 
         # --- line input/output ---
         self._new_line_p1 = tk.IntVar()
@@ -474,52 +483,6 @@ class Application():
         self._new_shift_viz_coord_hor.set(0)
 
         line_start, line_x = point_start+0.2, 0.0055
-        ttk.Label(self._tab_geo, text='Input line from "point number" to "point number"',
-                 font=self._text_size['Text 9 bold'], )\
-            .place(rely=line_start, relx=line_x, anchor = tk.NW)
-        ttk.Label(self._tab_geo, text='Line from point:',font="Text 9", )\
-            .place(relx=line_x, rely=line_start+delta_y)
-        ttk.Label(self._tab_geo, text='Line to point:',font="Text 9", )\
-            .place(relx=line_x, rely=line_start+2*delta_y)
-
-        ttk.Label(self._tab_geo, text='Show line names in GUI', font="Text 9")\
-            .place(relx=line_x, rely=line_start+3*delta_y)
-        ttk.Checkbutton(self._tab_geo, variable = self._new_line_name, command = self.on_color_code_check)\
-            .place(relx=ent_x, rely=line_start+3*delta_y)
-        
-        chk_x_shift = 0.5
-        lab_x_shift = 0.02
-        ttk.Checkbutton(self._tab5, variable = self._new_shortcut_backdrop, command = self.update_frame)\
-            .place(relx = chk_x_shift, rely=0.05-1*delta_y)
-        ttk.Label(self._tab5, text='Color coding of line properties and utilizations:',font="Text 9", )\
-            .place(relx = lab_x_shift, rely=0.05+3*delta_y)
-        ttk.Checkbutton(self._tab5, variable = self._new_colorcode_beams, command = self.on_color_code_check)\
-            .place(relx = chk_x_shift, rely=0.05+4*delta_y)
-        ttk.Checkbutton(self._tab5, variable = self._new_colorcode_plates, command = self.on_color_code_check)\
-            .place(relx = chk_x_shift, rely=0.05+5*delta_y)
-        ttk.Checkbutton(self._tab5, variable = self._new_colorcode_pressure, command = self.on_color_code_check)\
-            .place(relx = chk_x_shift, rely=0.05+6*delta_y)
-        ttk.Checkbutton(self._tab5, variable = self._new_colorcode_utilization, command = self.on_color_code_check)\
-            .place(relx = chk_x_shift, rely=0.05+7*delta_y)
-        ttk.Checkbutton(self._tab5, variable = self._new_colorcode_section_modulus, command = self.on_color_code_check)\
-            .place(relx = chk_x_shift, rely=0.05+8*delta_y)
-        ttk.Checkbutton(self._tab5, variable = self._new_colorcode_fatigue, command = self.on_color_code_check)\
-            .place(relx = chk_x_shift, rely=0.05+9*delta_y)
-        ttk.Checkbutton(self._tab5, variable = self._new_colorcode_total, command = self.on_color_code_check)\
-            .place(relx = chk_x_shift, rely=0.05+10*delta_y)
-
-        self._chk_cc_spacing = ttk.Checkbutton(self._tab_prop, variable = self._new_colorcode_spacing,
-                                              command = self.on_color_code_check)
-
-        ttk.Label(self._tab5, text='Check to see avaliable shortcuts', font="Text 9").place(relx = lab_x_shift,
-                                                                                            rely=0.05-1*delta_y)
-        ttk.Label(self._tab5, text='Beam prop.', font="Text 9").place(relx = lab_x_shift, rely=0.05+4*delta_y)
-        ttk.Label(self._tab5, text='Plate thk.', font="Text 9").place(relx = lab_x_shift, rely=0.05+5*delta_y)
-        ttk.Label(self._tab5, text='Pressure', font="Text 9").place(relx = lab_x_shift, rely=0.05+6*delta_y)
-        ttk.Label(self._tab5, text='Buckling UF', font="Text 9").place(relx = lab_x_shift, rely=0.05+7*delta_y)
-        ttk.Label(self._tab5, text='Sec. mod. UF', font="Text 9").place(relx = lab_x_shift, rely=0.05+8*delta_y)
-        ttk.Label(self._tab5, text='Fatigue UF', font="Text 9").place(relx = lab_x_shift, rely=0.05+9*delta_y)
-        ttk.Label(self._tab5, text='Total UF', font="Text 9").place(relx = lab_x_shift, rely=0.05+10*delta_y)
 
         ttk.Spinbox(self._tab_geo, textvariable=self._new_line_p1, width=int(ent_width * 1), from_ = 0,
                     to = float('inf')).place(relx=ent_x, rely=line_start+1*delta_y)
@@ -622,18 +585,6 @@ class Application():
 
 
 
-
-        ttk.Label(self._tab5, text='Label color code', font="Text 9")\
-            .place(relx=0.02, rely=0.05)
-        ttk.Label(self._tab5, text='Show COG/COB', font="Text 9")\
-            .place(relx=0.02, rely=0.05+delta_y)
-
-        ttk.Checkbutton(self._tab5, variable = self._new_label_color_coding, command = self.on_color_code_check)\
-            .place(relx=0.5, rely=0.05)
-
-        ttk.Checkbutton(self._tab5, variable = self._new_show_cog, command = self.update_frame)\
-            .place(relx=0.5, rely=0.05+delta_y)
-
         vert_start = 0.1
         hor_start = 0.02
 
@@ -715,7 +666,6 @@ class Application():
         self._new_pressure_side = tk.StringVar()
         self._new_puls_method = tk.StringVar()
         self._new_puls_panel_boundary = tk.StringVar()
-        self._new_puls_stf_end_type = tk.StringVar()
         self._new_puls_sp_or_up = tk.StringVar()
         self._new_puls_up_boundary = tk.StringVar()
 
@@ -724,12 +674,13 @@ class Application():
         self._new_buckling_stf_end_support = tk.StringVar()
         self._new_buckling_girder_end_support = tk.StringVar()
         self._new_buckling_tension_field = tk.StringVar()
-        self._new_buckling_effective_against_sigy = tk.BooleanVar()
-        self._new_buckling_length_factor = tk.DoubleVar()
+        self._new_buckling_effective_against_sigy = tk.StringVar()
+        self._new_buckling_length_factor_stf = tk.DoubleVar()
+        self._new_buckling_length_factor_girder = tk.DoubleVar()
         self._new_buckling_km3 = tk.DoubleVar()
         self._new_buckling_km2 = tk.DoubleVar()
+        self._new_buckling_stf_dist_bet_lat_supp = tk.DoubleVar()
         self._new_buckling_girder_dist_bet_lat_supp = tk.DoubleVar()
-        self._new_buckling_kgirder = tk.DoubleVar()
         self._new_buckling_fab_method_stf = tk.StringVar()
         self._new_buckling_fab_method_girder = tk.StringVar()
 
@@ -737,7 +688,7 @@ class Application():
         self._new_buckling_stf_end_support.set('Continuous')
         self._new_buckling_girder_end_support.set('Continuous')
         self._new_buckling_tension_field.set('not allowed')
-        self._new_buckling_effective_against_sigy.set(True)
+        self._new_buckling_effective_against_sigy.set("Stf. pl. effective against sigma y")
         self._new_buckling_km3.set(12)
         self._new_buckling_km2.set(24)
         self._new_buckling_fab_method_stf.set('welded')
@@ -784,7 +735,6 @@ class Application():
         self._new_pressure_side.set('both sides')
         self._new_puls_method.set('ultimate')
         self._new_puls_panel_boundary.set('Int')
-        self._new_puls_stf_end_type.set('C')
         self._new_puls_sp_or_up.set('SP')
         self._new_puls_up_boundary.set('SSSS')
         #self._new_calculation_domain.set('Stiffened panel, flat')
@@ -913,71 +863,165 @@ class Application():
                                                *['buckling', 'ultimate'])
         self._ent_puls_panel_boundary = ttk.OptionMenu(self._tab_prop, self._new_puls_panel_boundary,'Int',
                                                       *['Int', 'GL', 'GT'])
-        self._ent_puls_stf_end_type = ttk.OptionMenu(self._tab_prop, self._new_puls_stf_end_type,'C',
-                                                      *['C', 'S'])
+        self._ent_puls_stf_end_type = ttk.OptionMenu(self._tab_prop, self._new_buckling_stf_end_support,'C',*['C', 'S'])
         self._ent_puls_up_boundary = ttk.Entry(self._tab_prop, textvariable=self._new_puls_up_boundary, width=int(7*1))
+        self._zstar_chk = ttk.Checkbutton(self._tab_prop, variable=self._new_zstar_optimization)
 
         self._lab_puls_input =  ttk.Label(self._tab_prop, text='Buckling paramenters input',
                                          font=self._text_size['Text 8 bold'])
-        self._lab_puls_spup =  ttk.Label(self._tab_prop, text='Siffened: SP Unstf. pl.: UP')
+
+        self._flat_gui_buc_lab_stf_girder = [ttk.Label(self._tab_prop, text='End support'),
+                                             ttk.Label(self._tab_prop, text='Fabrication method'),
+                                             ttk.Label(self._tab_prop, text='Buckling length factor'),
+                                             ttk.Label(self._tab_prop, text='Distance between lateral support'),
+                                             ttk.Label(self._tab_prop, text='Tension field action:')]
+
+        self._flat_gui_buc_stf_opt = [ttk.OptionMenu(self._tab_prop, self._new_buckling_stf_end_support,
+                                                     'Continuous', *['Continuous', 'Sniped']),
+                                      ttk.OptionMenu(self._tab_prop, self._new_buckling_fab_method_stf,
+                                                     'welded', *['welded', 'rolled']),
+                                      ttk.Entry(self._tab_prop, textvariable=self._new_buckling_length_factor_stf,
+                                                width=int(ent_width * 1)),
+                                      ttk.Entry(self._tab_prop, textvariable=self._new_buckling_stf_dist_bet_lat_supp
+                                                ,width=int(ent_width * 1)),
+                                      ttk.OptionMenu(self._tab_prop, self._new_buckling_tension_field,
+                                                     'not allowed', *['allowed', 'not allowed'])]
+        self._flat_gui_buc_girder_opt = [ttk.OptionMenu(self._tab_prop, self._new_buckling_girder_end_support,
+                                                        'Continuous', *['Continuous', 'Sniped']),
+                                         ttk.OptionMenu(self._tab_prop, self._new_buckling_fab_method_girder,
+                                                        'welded',*['welded', 'rolled']),
+                                         ttk.Entry(self._tab_prop, textvariable=self._new_buckling_length_factor_girder
+                                                   ,width=int(ent_width * 1)),
+                                         ttk.Entry(self._tab_prop,
+                                                   textvariable=self._new_buckling_girder_dist_bet_lat_supp,
+                                                   width=int(ent_width * 1)),
+                                         ttk.OptionMenu(self._tab_prop, self._new_buckling_effective_against_sigy,
+                                                        'Stf. pl. effective against sigma y',
+                                                        *['Stf. pl. effective against sigma y',
+                                                          'All sigma y to girder'])]
+        self._flat_gui_girder_moment_factor = [ ttk.Label(self._tab_prop, text='Girder moment factor at support/midspan'),
+                                                ttk.Entry(self._tab_prop, textvariable=self._new_buckling_km3,
+                                                   width=int(ent_width * 1)),
+                                                 ttk.Entry(self._tab_prop, textvariable=self._new_buckling_km2,
+                                                   width=int(ent_width * 1))]
+        self._flat_gui_buc_lab_common = [ttk.Label(self._tab_prop, text='Minimum pressure in adjacent spans'),
+                        ttk.Label(self._tab_prop, text='Load factor on stresses')]
+        self._flat_gui_buc_common_opt = [ttk.Entry(self._tab_prop, textvariable=self._new_buckling_min_press_adj_spans,
+                                                   width=int(ent_width * 1)),
+                                         ttk.Entry(self._tab_prop, textvariable=self._new_buckling_lf_stresses,
+                                                   width=int(ent_width * 1))]
 
         self._lab_puls_acceptance=  ttk.Label(self._tab_prop, text='PULS acceptance')
         self._lab_puls_uf =  ttk.Label(self._tab_prop, text='PULS utilization factor:')
-        self._lab_puls_int_gt =  ttk.Label(self._tab_prop, text='Int-integrated GL-free left/right GT-free top/bottom')
+        self._lab_puls_int_gt =  ttk.Label(self._tab_prop, text='PULS Int-integrated GL-free left/right GT-free top/bottom')
         self._lab_puls_cont_sniped =  ttk.Label(self._tab_prop, text='Continous or Sniped',
-                 font = self._text_size['Text 8'])
-        self._lab_puls_up_supp =  ttk.Label(self._tab_prop, text='UP sup.left,right,upper,lower',
-                                           font = self._text_size['Text 7'])
-        self._zstar_chk = ttk.Checkbutton(self._tab_prop, variable=self._new_zstar_optimization)
-        self._zstar_label = ttk.Label(self._tab_prop, text='z* optimization (buckling RP-C201)',
-                                      font=self._text_size['Text 8'])
+                                                font = self._text_size['Text 8'])
+        self._lab_puls_up_supp =  ttk.Label(self._tab_prop, text='PULS UP support - left,right,upper,lower',
+                                           font = self._text_size['Text 8'])
+        # self._zstar_label = ttk.Label(self._tab_prop, text='z* optimization (buckling RP-C201)',
+        #                               font=self._text_size['Text 8'])
 
-        self._flat_gui_buckling = [self._ent_puls_sp_or_up, self._ent_puls_method, self._ent_puls_uf,
-                                   self._ent_puls_panel_boundary, self._ent_puls_stf_end_type,
-                                   self._ent_puls_up_boundary, self._zstar_chk]
+        self._flat_gui_buckling = [self._ent_puls_method, self._ent_puls_uf,
+                                   self._ent_puls_panel_boundary,
+                                   self._ent_puls_up_boundary]#, self._zstar_chk]
 
-        self._flat_gui_lab_buckling = [self._lab_puls_spup, self._lab_puls_acceptance,  self._lab_puls_uf,
-                                       self._lab_puls_int_gt, self._lab_puls_cont_sniped,
-                                       self._lab_puls_up_supp, self._zstar_label]
+        self._flat_gui_lab_buckling = [self._lab_puls_acceptance,  self._lab_puls_uf,
+                                       self._lab_puls_int_gt,
+                                       self._lab_puls_up_supp]#, self._zstar_label]
 
         self._button_str_type = ttk.Button(self._tab_prop, text='Show structure types', command=show_message)
         self._structure_types_label =  ttk.Label(textvariable = self._new_stucture_type_label,
                                                 font = self._text_size['Text 8'], )
 
-
-
-        self._chk_button_sigmax1 = ttk.Checkbutton(self._tab_prop_tools, variable = self._new_colorcode_sigmax,
+        #-------------Color coding-------------------
+        self._chk_cc_spacing = ttk.Checkbutton(self._tab_information, variable = self._new_colorcode_spacing,
+                                              command = self.on_color_code_check)
+        self._chk_button_sigmax1 = ttk.Checkbutton(self._tab_information, variable = self._new_colorcode_sigmax,
                                                  command = self.on_color_code_check)
-        self._chk_button_sigmax2 = ttk.Checkbutton(self._tab_prop_tools, variable = self._new_colorcode_sigmax,
+        self._chk_button_sigmax2 = ttk.Checkbutton(self._tab_information, variable = self._new_colorcode_sigmax,
                                                  command = self.on_color_code_check)
-        self._chk_button_sigmay1 = ttk.Checkbutton(self._tab_prop_tools, variable = self._new_colorcode_sigmay1,
+        self._chk_button_sigmay1 = ttk.Checkbutton(self._tab_information, variable = self._new_colorcode_sigmay1,
                                                   command = self.on_color_code_check)
-        self._chk_button_sigmay2 = ttk.Checkbutton(self._tab_prop_tools, variable = self._new_colorcode_sigmay2,
+        self._chk_button_sigmay2 = ttk.Checkbutton(self._tab_information, variable = self._new_colorcode_sigmay2,
                                                   command = self.on_color_code_check)
-        self._chk_button_tauxy = ttk.Checkbutton(self._tab_prop_tools, variable = self._new_colorcode_tauxy,
+        self._chk_button_tauxy = ttk.Checkbutton(self._tab_information, variable = self._new_colorcode_tauxy,
                                                 command = self.on_color_code_check)
-        self._chk_button_structure_type = ttk.Checkbutton(self._tab_prop_tools, variable = self._new_colorcode_structure_type,
+        self._chk_button_structure_type = ttk.Checkbutton(self._tab_information, variable = self._new_colorcode_structure_type,
                                                          command = self.on_color_code_check)
 
-        self._chk_button_puls_spup = ttk.Checkbutton(self._tab_prop_tools, variable=self._new_colorcode_puls_sp_or_up,
+        self._chk_button_puls_spup = ttk.Checkbutton(self._tab_information, variable=self._new_colorcode_puls_sp_or_up,
                                                     command=self.on_color_code_check)
-        self._chk_button_puls_acceptance =ttk.Checkbutton(self._tab_prop_tools, variable=self._new_colorcode_puls_acceptance,
+        self._chk_button_puls_acceptance =ttk.Checkbutton(self._tab_information, variable=self._new_colorcode_puls_acceptance,
                                                          command=self.on_color_code_check)
 
-        self._information_gui_chk_structure = [self._chk_button_sigmax1, self._chk_button_sigmax2,
+
+        chk_deltax = 0.1
+        chk_deltay = 0.025
+        self._information_gui_chk_structure = [ttk.Checkbutton(self._tab_information, variable = self._new_line_name,
+                                                               command = self.on_color_code_check),
+                                               ttk.Checkbutton(self._tab_information,
+                                                              variable = self._new_label_color_coding,
+                                                              command = self.on_color_code_check),
+                                              ttk.Checkbutton(self._tab_information,
+                                                              variable = self._new_show_cog,
+                                                              command = self.update_frame),
+                                              ttk.Checkbutton(self._tab_information,
+                                                                     variable = self._new_shortcut_backdrop,
+                                                                     command = self.update_frame),
+                                                ttk.Checkbutton(self._tab_information,
+                                                                variable = self._new_colorcode_beams,
+                                                                command = self.on_color_code_check),
+                                                ttk.Checkbutton(self._tab_information,
+                                                                variable = self._new_colorcode_plates,
+                                                                command = self.on_color_code_check),
+                                                ttk.Checkbutton(self._tab_information,
+                                                                variable = self._new_colorcode_pressure,
+                                                                command = self.on_color_code_check),
+                                                ttk.Checkbutton(self._tab_information,
+                                                                variable = self._new_colorcode_utilization,
+                                                                command = self.on_color_code_check),
+                                                ttk.Checkbutton(self._tab_information,
+                                                                variable = self._new_colorcode_section_modulus,
+                                                                command = self.on_color_code_check),
+                                                ttk.Checkbutton(self._tab_information,
+                                                                variable = self._new_colorcode_fatigue,
+                                                                command = self.on_color_code_check),
+                                                ttk.Checkbutton(self._tab_information,
+                                                                variable = self._new_colorcode_total,
+                                                                command = self.on_color_code_check),
+                                                    self._chk_cc_spacing, self._chk_button_sigmax1,
+                                                     self._chk_button_sigmax2,
                                                self._chk_button_sigmay1, self._chk_button_sigmay2,
                                                self._chk_button_tauxy,self._chk_button_structure_type ,
                                                self._chk_button_puls_spup,
                                                self._chk_button_puls_acceptance]
 
-        self._information_gui_lab_chk_structure = [ttk.Label(self._tab_prop_tools, text='Stresses, sigma x1'),
-                                                   ttk.Label(self._tab_prop_tools, text='Stresses, sigma x2'),
-                                                   ttk.Label(self._tab_prop_tools, text='Stresses, sigma y1'),
-                                                   ttk.Label(self._tab_prop_tools, text='Stresses, sigma y2'),
-                                                   ttk.Label(self._tab_prop_tools, text='Stresses, sigma tauxy'),
-                                                   ttk.Label(self._tab_prop_tools, text='Structure type'),
-                                                   ttk.Label(self._tab_prop_tools, text='Buckling - SP or UP'),
-                                                   ttk.Label(self._tab_prop_tools, text='Buckling acceptance criteria')]
+        self._information_gui_lab_chk_structure = [ttk.Label(self._tab_information, text='Show line names in GUI', font="Text 9"),
+                                                   ttk.Label(self._tab_information, text='Label color code', font="Text 9"),
+                                                   ttk.Label(self._tab_information, text='Show COG/COB', font="Text 9"),
+                                                   ttk.Label(self._tab_information, text='Check to see avaliable shortcuts', font="Text 9"),
+                                                    ttk.Label(self._tab_information, text='Beam prop.', font="Text 9"),
+                                                    ttk.Label(self._tab_information, text='Plate thk.', font="Text 9"),
+                                                    ttk.Label(self._tab_information, text='Pressure', font="Text 9"),
+                                                    ttk.Label(self._tab_information, text='Buckling UF', font="Text 9"),
+                                                    ttk.Label(self._tab_information, text='Sec. mod. UF', font="Text 9"),
+                                                    ttk.Label(self._tab_information, text='Fatigue UF', font="Text 9"),
+                                                    ttk.Label(self._tab_information, text='Total UF', font="Text 9"),
+                                                    ttk.Label(self._tab_information, text='Stiffener spacing'),
+                                                   ttk.Label(self._tab_information, text='Stresses, sigma x1'),
+                                                   ttk.Label(self._tab_information, text='Stresses, sigma x2'),
+                                                   ttk.Label(self._tab_information, text='Stresses, sigma y1'),
+                                                   ttk.Label(self._tab_information, text='Stresses, sigma y2'),
+                                                   ttk.Label(self._tab_information, text='Stresses, sigma tauxy'),
+                                                   ttk.Label(self._tab_information, text='Structure type'),
+                                                   ttk.Label(self._tab_information, text='Buckling - SP or UP'),
+                                                   ttk.Label(self._tab_information, text='Buckling acceptance criteria')]
+        idx = 2
+        for lab, ent in zip(self._information_gui_chk_structure, self._information_gui_lab_chk_structure):
+            lab.place(relx=0.02, rely=idx*chk_deltay)
+            ent.place(relx=0.02 + chk_deltax, rely=idx*chk_deltay)
+            idx += 1
+            
         try:
             img_file_name = 'img_stf_button.gif'
             if os.path.isfile('images/' + img_file_name):
@@ -1661,7 +1705,7 @@ class Application():
         vert_start = 0.04
         hor_start = 0.02
 
-        delta_y = 0.023
+        delta_y = 0.024
         delta_x = 0.13
 
         ent_relx = hor_start + 6*delta_x
@@ -1731,12 +1775,34 @@ class Application():
             idx = idx_now
             self._flat_gui_headlines[5].place(relx=hor_start + 0 * delta_x, rely=vert_start + idx * delta_y)
             idx += 1
+            self._flat_gui_headlines[1].place(relx=hor_start + 4*delta_x, rely=vert_start + idx * delta_y)
+            self._flat_gui_headlines[2].place(relx=hor_start + 6*delta_x, rely=vert_start + idx * delta_y)
+            idx += 1
+            for buckling_lab, buckling_stf_ent, buckling_girder_ent in zip(self._flat_gui_buc_lab_stf_girder,
+                                                                           self._flat_gui_buc_stf_opt,
+                                                                           self._flat_gui_buc_girder_opt):
+                buckling_lab.place(relx=hor_start, rely=vert_start + idx * delta_y)
+                buckling_stf_ent.place(relx=hor_start + 4 * delta_x, rely=vert_start + idx * delta_y)
+                buckling_girder_ent.place(relx=hor_start + 6 * delta_x, rely=vert_start + idx * delta_y)
+                idx += 1
+
+            self._flat_gui_girder_moment_factor[0].place(relx=hor_start + 0 * delta_x, rely=vert_start + idx * delta_y)
+            self._flat_gui_girder_moment_factor[1].place(relx=hor_start + 6 * delta_x, rely=vert_start + idx * delta_y,
+                                                         relwidth = 0.08)
+            self._flat_gui_girder_moment_factor[2].place(relx=hor_start + 7 * delta_x, rely=vert_start + idx * delta_y,
+                                                         relwidth = 0.08)
+            idx += 1
+
+            for buckling_lab, buckling_ent in zip(self._flat_gui_buc_lab_common, self._flat_gui_buc_common_opt):
+                buckling_lab.place(relx=hor_start, rely=vert_start + idx * delta_y)
+                buckling_ent.place(relx=hor_start + 5 * delta_x, rely=vert_start + idx * delta_y)
+                idx += 1
             for buckling_lab, buckling_ent in zip(self._flat_gui_lab_buckling, self._flat_gui_buckling):
                 buckling_lab.place(relx=hor_start, rely=vert_start + idx * delta_y)
                 buckling_ent.place(relx=hor_start + 5 * delta_x, rely=vert_start + idx * delta_y)
                 idx += 1
-            idx += 1
-            self._puls_run_all.place(relx=hor_start + 6 * delta_x, rely=vert_start + idx * delta_y)
+
+            self._puls_run_all.place(relx=hor_start + 6 * delta_x, rely=vert_start + (idx-2) * delta_y)
 
         if shell:
             '''
@@ -1932,8 +1998,8 @@ class Application():
                       self._buckling_method, self._lab_yield,
                       self._lab_mat_fac,self._structure_types_label, self._button_str_type, self._ent_structure_type,
                       self._lab_structure_type, self._lab_kpp, self._lab_kps, self._lab_km1, self._lab_km2,
-                      self._lab_stf_type, self._zstar_label, self._lab_press_side, self._ent_pressure_side,
-                      self._lab_puls_input, self._lab_puls_spup, self._lab_puls_up_supp, self._lab_puls_acceptance,
+                      self._lab_stf_type, self._lab_press_side, self._ent_pressure_side,
+                      self._lab_puls_input, self._lab_puls_up_supp, self._lab_puls_acceptance,
                       self._lab_puls_uf, self._lab_puls_int_gt, self._lab_puls_cont_sniped, self._lab_span, self._lab_s,
                       self._chk_button_sigmax1, self._chk_button_sigmay1, self._chk_button_sigmay2,
                       self._chk_button_tauxy, self._chk_button_structure_type,
@@ -1948,7 +2014,9 @@ class Application():
                      self._flat_gui_lab_plate + self._flat_gui_lab_stf+self._flat_gui_stf + self._flat_gui_girder + \
                      self._flat_gui_lab_loads + self._flat_gui_loads  + self._flat_gui_lab_os_c101_provisions + \
                      self._flat_gui_os_c101_provisions + \
-                     self._flat_gui_lab_buckling + self._flat_gui_buckling + self._flat_gui_headlines
+                     self._flat_gui_lab_buckling + self._flat_gui_buckling + self._flat_gui_headlines + \
+                     self._flat_gui_buc_lab_common, self._flat_gui_buc_common_opt, self._flat_gui_buc_girder_opt,\
+                     self._flat_gui_buc_lab_stf_girder, self._flat_gui_buc_stf_opt, self._flat_gui_girder_moment_factor
         for item in to_process:
             item.place_forget()
 
@@ -2183,7 +2251,7 @@ class Application():
                     'zstar_optimization': self._new_zstar_optimization.get,
                     'puls buckling method': self._new_puls_method.get,
                     'puls boundary': self._new_puls_panel_boundary.get,
-                    'puls stiffener end': self._new_puls_stf_end_type.get,
+                    'puls stiffener end': self._new_buckling_stf_end_support.get,
                     'puls sp or up': self._new_puls_sp_or_up.get,
                     'puls up boundary': self._new_puls_up_boundary.get}
 
@@ -2510,7 +2578,7 @@ class Application():
         self.draw_results(state=state)
         self.draw_canvas(state=state)
         self.draw_prop()
-        self.trace_puls_up_or_sp()
+        #self.trace_puls_up_or_sp()
 
         return state
 
@@ -4484,7 +4552,7 @@ class Application():
                             'zstar_optimization': [self._new_zstar_optimization.get(), ''],
                             'puls buckling method': [self._new_puls_method.get(), ''],
                             'puls boundary': [self._new_puls_panel_boundary.get(), ''],
-                            'puls stiffener end': [self._new_puls_stf_end_type.get(), ''],
+                            'puls stiffener end': [self._new_buckling_stf_end_support.get(), ''],
                             'puls sp or up':  [self._new_puls_sp_or_up.get(), ''],
                             'puls up boundary': [self._new_puls_up_boundary.get(), ''],
                             'panel or shell': [self._new_panel_or_shell.get(), '']}
@@ -4518,7 +4586,7 @@ class Application():
                                   'zstar_optimization': [self._new_zstar_optimization.get(), ''],
                                   'puls buckling method': [self._new_puls_method.get(), ''],
                                   'puls boundary': [self._new_puls_panel_boundary.get(), ''],
-                                  'puls stiffener end': [self._new_puls_stf_end_type.get(), ''],
+                                  'puls stiffener end': [self._new_buckling_stf_end_support.get(), ''],
                                   'puls sp or up':  [self._new_puls_sp_or_up.get(), ''],
                                   'puls up boundary': [self._new_puls_up_boundary.get(), ''],
                                   'panel or shell': [self._new_panel_or_shell.get(), ''],
@@ -5098,7 +5166,7 @@ class Application():
             self._new_zstar_optimization.set(properties['zstar_optimization'][0])
             self._new_puls_method.set(properties['puls buckling method'][0])
             self._new_puls_panel_boundary.set(properties['puls boundary'][0])
-            self._new_puls_stf_end_type.set(properties['puls stiffener end'][0])
+            self._new_buckling_stf_end_support.set(properties['puls stiffener end'][0])
             self._new_puls_sp_or_up.set(properties['puls sp or up'][0])
             self._new_puls_up_boundary.set(properties['puls up boundary'][0])
 
@@ -5826,7 +5894,7 @@ class Application():
             if 'puls boundary' not in lines_prop.keys():
                 lines_prop['puls boundary'] = [self._new_puls_panel_boundary.get(), '']
             if 'puls stiffener end' not in lines_prop.keys():
-                lines_prop['puls stiffener end'] = [self._new_puls_stf_end_type.get(), '']
+                lines_prop['puls stiffener end'] = [self._new_buckling_stf_end_support.get(), '']
             if 'puls sp or up' not in lines_prop.keys():
                 lines_prop['puls sp or up'] = [self._new_puls_sp_or_up.get(), '']
             if 'puls up boundary' not in lines_prop.keys():
