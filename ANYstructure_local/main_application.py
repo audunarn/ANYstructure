@@ -637,8 +637,6 @@ class Application():
         vert_start = 0.1
         hor_start = 0.02
 
-
-
         # Toggle buttons
         ttk.Label(self._tab_prop_tools, text='Change one property for multiple lines here. \n'
                                              '1. Press mulitple select button\n'
@@ -711,7 +709,9 @@ class Application():
         self._new_girder_fl_w = tk.DoubleVar()
         self._new_girder_fl_t = tk.DoubleVar()
         self._new_girder_type = tk.StringVar()
-        
+        self._new_girder_length_LG = tk.DoubleVar()
+        self._new_panel_length_Lp = tk.DoubleVar()
+
         self._new_pressure_side = tk.StringVar()
         self._new_puls_method = tk.StringVar()
         self._new_puls_panel_boundary = tk.StringVar()
@@ -719,6 +719,29 @@ class Application():
         self._new_puls_sp_or_up = tk.StringVar()
         self._new_puls_up_boundary = tk.StringVar()
 
+        self._new_buckling_min_press_adj_spans = tk.DoubleVar()
+        self._new_buckling_lf_stresses = tk.DoubleVar()
+        self._new_buckling_stf_end_support = tk.StringVar()
+        self._new_buckling_girder_end_support = tk.StringVar()
+        self._new_buckling_tension_field = tk.StringVar()
+        self._new_buckling_effective_against_sigy = tk.BooleanVar()
+        self._new_buckling_length_factor = tk.DoubleVar()
+        self._new_buckling_km3 = tk.DoubleVar()
+        self._new_buckling_km2 = tk.DoubleVar()
+        self._new_buckling_girder_dist_bet_lat_supp = tk.DoubleVar()
+        self._new_buckling_kgirder = tk.DoubleVar()
+        self._new_buckling_fab_method_stf = tk.StringVar()
+        self._new_buckling_fab_method_girder = tk.StringVar()
+
+        self._new_buckling_lf_stresses.set(1)
+        self._new_buckling_stf_end_support.set('Continuous')
+        self._new_buckling_girder_end_support.set('Continuous')
+        self._new_buckling_tension_field.set('not allowed')
+        self._new_buckling_effective_against_sigy.set(True)
+        self._new_buckling_km3.set(12)
+        self._new_buckling_km2.set(24)
+        self._new_buckling_fab_method_stf.set('welded')
+        self._new_buckling_fab_method_girder.set('welded')
 
         # Setting default values to tkinter variables
         self._new_material.set(355)
@@ -729,12 +752,13 @@ class Application():
         self._new_stf_web_t.set(12)
         self._new_stf_fl_w.set(150)
         self._new_stf_fl_t.set(20)
-        
+
         self._new_girder_web_h.set(800)
         self._new_girder_web_t.set(20)
         self._new_girder_fl_w.set(200)
         self._new_girder_fl_t.set(30)
-        
+        self._new_girder_length_LG.set(10000)
+
         self._new_sigma_y1.set(80)
         self._new_sigma_y2.set(80)
         self._new_sigma_x1.set(50)
@@ -769,7 +793,7 @@ class Application():
         #self._new_material_factor.trace('w', self.trace_material_factor)
         # --- main entries and labels to define the structural properties ---
         ent_width = 12 #width of entries
-        
+
         '''
         Flat plate input
         '''
@@ -787,21 +811,28 @@ class Application():
                                     ttk.Label(self._tab_prop, text='Buckling input',
                                               font = self._text_size['Text 8 bold'])]
 
-        self._ent_field_len = ttk.Entry(self._tab_prop, textvariable=self._new_field_len)
-        self._ent_stf_spacing = ttk.Entry(self._tab_prop, textvariable=self._new_stf_spacing)
-        self._ent_plate_thk = ttk.Entry(self._tab_prop, textvariable=self._new_plate_thk)
-        self._lab_span = ttk.Label(self._tab_prop, text='span', )
-        self._lab_s = ttk.Label(self._tab_prop, text='s', )
-        self._lab_pl_thk = ttk.Label(self._tab_prop, text='pl_thk', )
+        self._ent_field_len = ttk.Entry(self._tab_prop, textvariable=self._new_field_len, width = int(10))
+        self._ent_stf_spacing = ttk.Entry(self._tab_prop, textvariable=self._new_stf_spacing, width = int(10))
+        self._ent_plate_thk = ttk.Entry(self._tab_prop, textvariable=self._new_plate_thk, width = int(10))
+        self._ent_girder_length = ttk.Entry(self._tab_prop, textvariable=self._new_girder_length_LG, width = int(10))
+        self._ent_panel_length = ttk.Entry(self._tab_prop, textvariable=self._new_panel_length_Lp, width = int(10))
 
-        self._flat_gui_plate = [self._ent_field_len, self._ent_stf_spacing, self._ent_plate_thk]
-        self._flat_gui_lab_plate = [self._lab_span, self._lab_s, self._lab_pl_thk]
+        self._lab_span = ttk.Label(self._tab_prop, text='Stiffener/plate length', )
+        self._lab_s = ttk.Label(self._tab_prop, text='Stiffener spacing/plate width', )
+        self._lab_pl_thk = ttk.Label(self._tab_prop, text='Plate thickness', )
+        self._lab_girder_length_LG = ttk.Label(self._tab_prop, text='Girder length, LG')
+        self._lab_gpanel_length_Lp = ttk.Label(self._tab_prop, text='Girder length, LG')
+
+        self._flat_gui_plate = [self._ent_field_len, self._ent_stf_spacing, self._ent_plate_thk,
+                                self._ent_girder_length, self._ent_panel_length]
+        self._flat_gui_lab_plate = [self._lab_span, self._lab_s, self._lab_pl_thk, self._lab_girder_length_LG,
+                                    self._lab_gpanel_length_Lp]
 
         self._ent_stf_type = ttk.OptionMenu(self._tab_prop, self._new_stf_type, 'T', *['T', 'FB', 'L', 'L-bulb'])
-        self._ent_stf_web_h = ttk.Entry(self._tab_prop, textvariable=self._new_stf_web_h, width = int(5*1))
-        self._ent_stf_web_t = ttk.Entry(self._tab_prop, textvariable=self._new_stf_web_t)
-        self._ent_stf_fl_w = ttk.Entry(self._tab_prop, textvariable=self._new_stf_fl_w)
-        self._ent_str_fl_t = ttk.Entry(self._tab_prop, textvariable=self._new_stf_fl_t)
+        self._ent_stf_web_h = ttk.Entry(self._tab_prop, textvariable=self._new_stf_web_h, width = int(10))
+        self._ent_stf_web_t = ttk.Entry(self._tab_prop, textvariable=self._new_stf_web_t, width = int(10))
+        self._ent_stf_fl_w = ttk.Entry(self._tab_prop, textvariable=self._new_stf_fl_w, width = int(10))
+        self._ent_str_fl_t = ttk.Entry(self._tab_prop, textvariable=self._new_stf_fl_t, width = int(10))
 
         self._lab_stf_type = ttk.Label(self._tab_prop, text='Stiffener/girder type')
         self._lab_web_h = ttk.Label(self._tab_prop, text='Web height, hw', )
@@ -812,12 +843,12 @@ class Application():
         self._flat_gui_stf = [self._ent_stf_type, self._ent_stf_web_h, self._ent_stf_web_t,
                               self._ent_stf_fl_w,self._ent_str_fl_t]
         self._flat_gui_lab_stf = [self._lab_stf_type,self._lab_web_h,self._lab_web_thk, self._lab_fl_w,self._lab_fl_thk]
-        
+
         self._ent_girder_type = ttk.OptionMenu(self._tab_prop, self._new_girder_type, 'T', *['T', 'FB', 'L', 'L-bulb'])
-        self._ent_girder_web_h = ttk.Entry(self._tab_prop, textvariable=self._new_girder_web_h, width = int(5*1))
-        self._ent_girder_web_t = ttk.Entry(self._tab_prop, textvariable=self._new_girder_web_t)
-        self._ent_girder_fl_w = ttk.Entry(self._tab_prop, textvariable=self._new_girder_fl_w)
-        self._ent_str_fl_t = ttk.Entry(self._tab_prop, textvariable=self._new_girder_fl_t)
+        self._ent_girder_web_h = ttk.Entry(self._tab_prop, textvariable=self._new_girder_web_h, width = int(10))
+        self._ent_girder_web_t = ttk.Entry(self._tab_prop, textvariable=self._new_girder_web_t, width = int(10))
+        self._ent_girder_fl_w = ttk.Entry(self._tab_prop, textvariable=self._new_girder_fl_w, width = int(10))
+        self._ent_str_fl_t = ttk.Entry(self._tab_prop, textvariable=self._new_girder_fl_t, width = int(10))
         self._flat_gui_girder = [self._ent_girder_type, self._ent_girder_web_h, self._ent_girder_web_t,
                               self._ent_girder_fl_w,self._ent_str_fl_t]
 
@@ -839,13 +870,13 @@ class Application():
         self._ent_pressure_side = ttk.OptionMenu(self._tab_prop,self._new_pressure_side,('both sides','plate side',
                                                                                          'stiffener side')[0],
                                                  *('both sides','plate side','stiffener side'))
-        self._ent_sigma_y1= ttk.Entry(self._tab_prop, textvariable=self._new_sigma_y1, width = int(7*1))
-        self._ent_sigma_y2 = ttk.Entry(self._tab_prop, textvariable=self._new_sigma_y2, width=int(7*1))
-        self._ent_sigma_x1 = ttk.Entry(self._tab_prop, textvariable=self._new_sigma_x1, width=int(7*1))
-        self._ent_sigma_x2 = ttk.Entry(self._tab_prop, textvariable=self._new_sigma_x2, width=int(7 * 1))
-        self._ent_tauxy = ttk.Entry(self._tab_prop, textvariable=self._new_tauxy, width=int(7*1))
-        self._ent_mat = ttk.Entry(self._tab_prop, textvariable=self._new_material)
-        self._ent_mat_factor = ttk.Entry(self._tab_prop, textvariable=self._new_material_factor)
+        self._ent_sigma_y1= ttk.Entry(self._tab_prop, textvariable=self._new_sigma_y1,  width = int(10))
+        self._ent_sigma_y2 = ttk.Entry(self._tab_prop, textvariable=self._new_sigma_y2, width=int(10))
+        self._ent_sigma_x1 = ttk.Entry(self._tab_prop, textvariable=self._new_sigma_x1, width=int(10))
+        self._ent_sigma_x2 = ttk.Entry(self._tab_prop, textvariable=self._new_sigma_x2, width=int(10))
+        self._ent_tauxy = ttk.Entry(self._tab_prop, textvariable=self._new_tauxy, width=int(10))
+        self._ent_mat = ttk.Entry(self._tab_prop, textvariable=self._new_material, width = int(10))
+        self._ent_mat_factor = ttk.Entry(self._tab_prop, textvariable=self._new_material_factor, width = int(10))
         self._ent_structure_type = ttk.OptionMenu(self._tab_prop, self._new_stucture_type, self._options_type[0],
                                                   *self._options_type,command = self.option_meny_structure_type_trace)
 
@@ -864,7 +895,7 @@ class Application():
         self._flat_gui_lab_loads = [self._lab_press_side ,self._lab_sig_y1, self._lab_sig_y2,self._lab_sig_x1,
                                     self._lab_sig_x2, self._lab_tau_y1, self._lab_yield, self._lab_mat_fac,
                                     self._lab_structure_type]
-        self._flat_gui_loads = [self._ent_pressure_side, self._ent_sigma_y1, self._ent_sigma_y2, self._ent_sigma_x1, 
+        self._flat_gui_loads = [self._ent_pressure_side, self._ent_sigma_y1, self._ent_sigma_y2, self._ent_sigma_x1,
                                 self._ent_sigma_x2, self._ent_tauxy, self._ent_mat, self._ent_mat_factor,
                                 self._ent_structure_type]
 
@@ -1049,9 +1080,9 @@ class Application():
         self._ent_shell_dist_rings = ttk.Entry(self._tab_prop, textvariable=self._new_shell_dist_rings)
         self._ent_shell_length = ttk.Entry(self._tab_prop, textvariable=self._new_shell_length,width = int(5*1))
         self._ent_shell_tot_length = ttk.Entry(self._tab_prop, textvariable=self._new_shell_tot_length,
-                                              
+
                                        )
-        self._ent_shell_k_factor= ttk.Entry(self._tab_prop, textvariable=self._new_shell_k_factor, 
+        self._ent_shell_k_factor= ttk.Entry(self._tab_prop, textvariable=self._new_shell_k_factor,
                                       )
         self._ent_shell_material_factor= ttk.Entry(self._tab_prop, textvariable=self._new_shell_mat_factor)
 
@@ -1065,14 +1096,14 @@ class Application():
         '''
         # USING stiffeners for flat plates
         self._lab_shell_long_stiffener =  ttk.Label(self._tab_prop, text='Longitudinal stiffener properties [mm]',
-                                                   
+
                                       )
         self._btn_shell_stf_section_long_stf = ttk.Button(self._tab_prop, text='STF',command= lambda id= "long stf": self.on_open_structure_window(id))
 
         self._shell_long_stf_gui_items = [self._lab_shell_long_stiffener ,self._ent_stf_web_h, self._ent_stf_web_t,
                                           self._ent_stf_fl_w, self._ent_str_fl_t, self._ent_stf_spacing,
                                           self._ent_stf_type,self._btn_shell_stf_section_long_stf]
-        
+
         '''
         Shell, ring stiffener
         '''
@@ -1098,7 +1129,7 @@ class Application():
                                               )
         self._ent_shell_ring_stf_tf = ttk.Entry(self._tab_prop, textvariable=self._new_shell_ring_stf_tf,
                                                )
-        self._ent_shell_ring_stf_tripping_brackets = ttk.Entry(self._tab_prop, 
+        self._ent_shell_ring_stf_tripping_brackets = ttk.Entry(self._tab_prop,
                                                               textvariable=self._new_shell_ring_stf_tripping_brackets,
                                                )
 
@@ -1340,7 +1371,7 @@ class Application():
         self._ent_min_el = ttk.Entry(self._tab_comp, textvariable=self._new_min_el,
                                    width=int(ent_width * 1),
                                     )
-        
+
         comp_dx = delta_x
         comp_dy = delta_y
         comp_ent_x = ent_x
@@ -1418,13 +1449,13 @@ class Application():
         ttk.Label(self._main_fr,text='Static and dynamic accelerations',
                   )\
             .place(relx=lc_x, rely=lc_y - 5 * lc_y_delta)
-        ttk.Label(self._main_fr,text='Static acceleration [m/s^2]: ', 
+        ttk.Label(self._main_fr,text='Static acceleration [m/s^2]: ',
                   )\
             .place(relx=lc_x, rely=lc_y - 4 * lc_y_delta)
-        ttk.Label(self._main_fr,text='Dyn. acc. loaded [m/s^2]:', 
+        ttk.Label(self._main_fr,text='Dyn. acc. loaded [m/s^2]:',
                  )\
             .place(relx=lc_x, rely=lc_y - 3 * lc_y_delta)
-        ttk.Label(self._main_fr,text='Dyn. acc. ballast [m/s^2]:', 
+        ttk.Label(self._main_fr,text='Dyn. acc. ballast [m/s^2]:',
                  )\
             .place(relx=lc_x, rely=lc_y - 2 * lc_y_delta)
         self._new_dyn_acc_loaded = tk.DoubleVar()
@@ -1449,7 +1480,7 @@ class Application():
         self._dnv_a_chk,self._dnv_b_chk  = tk.IntVar(),tk.IntVar()
         self._tank_test_chk,self._manual_chk = tk.IntVar(),tk.IntVar()
         self._check_button_load_comb = [self._dnv_a_chk,self._dnv_b_chk, self._tank_test_chk, self._manual_chk]
-        self._active_label = ttk.Label(self._main_fr, text = '',  
+        self._active_label = ttk.Label(self._main_fr, text = '',
                                       )
         self._active_label.place(relx=lc_x+lc_x_delta*10,rely=lc_y-lc_y_delta*5)
         ttk.Label(self._main_fr, text='Combination for line (select line). Change with slider.: ',
@@ -1632,7 +1663,7 @@ class Application():
 
         delta_y = 0.023
         delta_x = 0.13
-        
+
         ent_relx = hor_start + 6*delta_x
 
         geo_ent_width = 0.1
@@ -1945,16 +1976,20 @@ class Application():
 
         elif self._new_calculation_domain.get() in ['Unstiffened shell (Force input)',
                                                     'Unstiffened panel (Stress input)']:
-            self.gui_structural_properties(flat_panel=False, shell=True, long_stf=False, ring_stf=False, ring_frame=False)
+            self.gui_structural_properties(flat_unstf=False, flat_stf = False, flat_panel_stf_girder = False,
+                                           shell=True, long_stf=False, ring_stf=False, ring_frame=False)
         elif self._new_calculation_domain.get() in ['Longitudinal Stiffened shell  (Force input)',
                                                     'Longitudinal Stiffened panel (Stress input)']:
-            self.gui_structural_properties(flat_panel=False, shell=True, long_stf=True, ring_stf=False, ring_frame=False)
+            self.gui_structural_properties(flat_unstf=False, flat_stf = False, flat_panel_stf_girder = False,
+                                           shell=True, long_stf=True, ring_stf=False, ring_frame=False)
         elif self._new_calculation_domain.get() in ['Ring Stiffened shell (Force input)',
                                                     'Ring Stiffened panel (Stress input)']:
-            self.gui_structural_properties(flat_panel=False, shell=True, long_stf=False, ring_stf=True, ring_frame=True)
+            self.gui_structural_properties(flat_unstf=False, flat_stf = False, flat_panel_stf_girder = False,
+                                           shell=True, long_stf=False, ring_stf=True, ring_frame=True)
         elif self._new_calculation_domain.get() in ['Orthogonally Stiffened shell (Force input)',
                                                     'Orthogonally Stiffened panel (Stress input)']:
-            self.gui_structural_properties(flat_panel=False, shell=True, long_stf=True, ring_stf=True, ring_frame=True)
+            self.gui_structural_properties(flat_unstf=False, flat_stf = False, flat_panel_stf_girder = False,
+                                           shell=True, long_stf=True, ring_stf=True, ring_frame=True)
 
         if self._line_is_active and self._active_line in self._line_to_struc.keys():
             if event == None and self._line_to_struc[self._active_line][5] is not None:
@@ -2045,7 +2080,7 @@ class Application():
                                                         'lines need update.')
 
         self.update_frame()
-        
+
     def trace_puls_uf(self, *args):
         if self._PULS_results is not None:
             pass
@@ -2207,11 +2242,11 @@ class Application():
                                                                   ))
                             self._lc_comb_created.append(ttk.Entry(self._main_fr,
                                                                  textvariable =self._new_load_comb_dict[name][0],
-                                                                  width=5, 
+                                                                  width=5,
                                                                   ))
                             self._lc_comb_created.append(ttk.Entry(self._main_fr,
                                                                  textvariable=self._new_load_comb_dict[name][1],
-                                                                 width=5, 
+                                                                 width=5,
                                                                   ))
                             self._lc_comb_created.append(ttk.Checkbutton(self._main_fr,
                                                                        variable =self._new_load_comb_dict[name][2]))
@@ -2233,11 +2268,11 @@ class Application():
                                                                ))
                         self._comp_comb_created.append(ttk.Entry(self._main_fr,
                                                                textvariable=self._new_load_comb_dict[name][0],
-                                                                width=5, 
+                                                                width=5,
                                                                 ))
                         self._comp_comb_created.append(ttk.Entry(self._main_fr,
                                                                textvariable=self._new_load_comb_dict[name][1],
-                                                                width=5, 
+                                                                width=5,
                                                                 ))
                         self._comp_comb_created.append(ttk.Checkbutton(self._main_fr,
                                                                      variable = self._new_load_comb_dict[name][2]))
@@ -2255,7 +2290,7 @@ class Application():
                 name = ('manual', self._active_line, 'manual')  # tuple to identify combinations on line
                 if name in self._new_load_comb_dict.keys():
                     self._manual_created.append(ttk.Label(self._main_fr, text='Manual (pressure/LF)',
-                                                        
+
                                                          ))
                     self._manual_created.append(
                         ttk.Entry(self._main_fr, textvariable=self._new_load_comb_dict[name][0], width=15,
@@ -3246,7 +3281,7 @@ class Application():
                 if line in self._multiselect_lines:
                     self._main_canvas.create_text(coord1[0] + vector[0] / 2 +5, coord1[1] + vector[1] / 2 -10,
                                                   text=self._new_toggle_var.get(),
-                                                  
+
                                                   fill='orange')
 
         # drawing waterline
@@ -3373,8 +3408,8 @@ class Application():
                                               font=self._text_size["Text 10 bold"],
                                               fill='black' if cc_state['max sigma x']-cc_state['min sigma x'] == 0 else
                                               matplotlib.colors.rgb2hex(
-                                                  cmap_sections(0 if cc_state['max sigma x'] == 0 else 
-                                                                (value+ abs(cc_state['min sigma x'])) /  
+                                                  cmap_sections(0 if cc_state['max sigma x'] == 0 else
+                                                                (value+ abs(cc_state['min sigma x'])) /
                                                                 (cc_state['max sigma x']-cc_state['min sigma x']))),
                                               anchor="nw")
         elif self._new_colorcode_sigmay1.get() == True:
@@ -3387,8 +3422,8 @@ class Application():
                                               font=self._text_size["Text 10 bold"],
                                               fill='black' if cc_state['max sigma y1']-cc_state['min sigma y1'] == 0
                                               else matplotlib.colors.rgb2hex(
-                                                  cmap_sections(0 if cc_state['max sigma y1'] == 0 else 
-                                                                (value+ abs(cc_state['min sigma y1'])) /  
+                                                  cmap_sections(0 if cc_state['max sigma y1'] == 0 else
+                                                                (value+ abs(cc_state['min sigma y1'])) /
                                                                 (cc_state['max sigma y1']-cc_state['min sigma y1']))),
                                               anchor="nw")
         elif self._new_colorcode_sigmay2.get() == True:
@@ -3401,8 +3436,8 @@ class Application():
                                               font=self._text_size["Text 10 bold"],
                                               fill='black' if cc_state['max sigma y2']-cc_state['min sigma y2'] == 0 else
                                               matplotlib.colors.rgb2hex(
-                                                  cmap_sections(0 if cc_state['max sigma y2'] == 0 else 
-                                                                (value+ abs(cc_state['min sigma y2'])) /  
+                                                  cmap_sections(0 if cc_state['max sigma y2'] == 0 else
+                                                                (value+ abs(cc_state['min sigma y2'])) /
                                                                 (cc_state['max sigma y2']-cc_state['min sigma y2']))),
                                               anchor="nw")
         elif self._new_colorcode_tauxy.get() == True:
@@ -3415,8 +3450,8 @@ class Application():
                                               font=self._text_size["Text 10 bold"],
                                               fill='black' if cc_state['max tau xy']-cc_state['min tau xy'] == 0 else
                                               matplotlib.colors.rgb2hex(
-                                                  cmap_sections(0 if cc_state['max tau xy'] == 0 else 
-                                                                (value+ abs(cc_state['min tau xy'])) /  
+                                                  cmap_sections(0 if cc_state['max tau xy'] == 0 else
+                                                                (value+ abs(cc_state['min tau xy'])) /
                                                                 (cc_state['max tau xy']-cc_state['min tau xy']))),
                                               anchor="nw")
         elif self._new_colorcode_structure_type.get() == True:
@@ -4134,7 +4169,7 @@ class Application():
                         if value is not None:
                             y_location +=1
                             self._result_canvas.create_text([x, y * y_location],
-                                                            text='Stiffener requirement checks:', 
+                                                            text='Stiffener requirement checks:',
                                                             font=self._text_size['Text 10 bold'],
                                                             anchor='nw',
                                                             fill = self._color_text)
@@ -5659,13 +5694,13 @@ class Application():
         new_upper_br = tk.IntVar()
         new_lower_br = tk.IntVar()
         wid = 5
-        ent_left = ttk.Entry(self._pt_frame,textvariable=new_left_br, width=wid, 
+        ent_left = ttk.Entry(self._pt_frame,textvariable=new_left_br, width=wid,
                             )
-        ent_right = ttk.Entry(self._pt_frame, textvariable=new_right_br, width=wid, 
+        ent_right = ttk.Entry(self._pt_frame, textvariable=new_right_br, width=wid,
                              )
-        ent_upper = ttk.Entry(self._pt_frame, textvariable=new_upper_br, width=wid, 
+        ent_upper = ttk.Entry(self._pt_frame, textvariable=new_upper_br, width=wid,
                              )
-        ent_lower = ttk.Entry(self._pt_frame, textvariable=new_lower_br, width=wid, 
+        ent_lower = ttk.Entry(self._pt_frame, textvariable=new_lower_br, width=wid,
                              )
         ent_lower.place(relx=0.018229167, rely=0.009259259)
         ent_upper.place(relx=0.018229167, rely=0.069444444)

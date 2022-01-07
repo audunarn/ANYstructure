@@ -1394,7 +1394,6 @@ class PrescriptiveBuckling():
         self._v = 0.3
         self._E = 2.1e11
 
-
         self._min_lat_press_adj_span = main_dict['minimum pressure in adjacent spans'][0]
         self._yield =  main_dict['material yield'][0]
         self._stress_load_factor = main_dict['load factor on stresses'][0]
