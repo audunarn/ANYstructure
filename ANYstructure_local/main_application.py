@@ -2319,7 +2319,7 @@ class Application():
              [self._lc_comb_created,self._comp_comb_created,self._manual_created, self._info_created]]
             self._lc_comb_created, self._comp_comb_created, self._manual_created, self._info_created= [], [], [], []
 
-            if self._line_to_struc[self._active_line][0].get_structure_type() == '':
+            if self._line_to_struc[self._active_line][1].get_structure_type() == '':
                 self._info_created.append(ttk.Label(self._main_fr, text='No structure type selected',
                                                font=self._text_size["Text 10 bold"], ))
                 self._info_created[0].place(relx=lc_x , y = lc_y + 3*lc_y_delta)
@@ -2440,7 +2440,7 @@ class Application():
         :return:
         '''
         try:
-            if self._line_to_struc[line][0].get_structure_type() not in ('GENERAL_INTERNAL_NONWT','FRAME'):
+            if self._line_to_struc[line][1].get_structure_type() not in ('GENERAL_INTERNAL_NONWT','FRAME'):
                 self._pending_grid_draw[line] = coordinates
         except KeyError:
             pass
@@ -2637,7 +2637,7 @@ class Application():
             rec_for_color[current_line]  = {}
             slamming_pressure = 0
             if current_line in self._line_to_struc.keys():
-                obj_structure = self._line_to_struc[current_line][0]
+                obj_structure = self._line_to_struc[current_line][1]
                 obj_scnt_calc = self._line_to_struc[current_line][1]
                 if obj_scnt_calc.need_recalc is False:
                     return self._state_logger[current_line]
@@ -2933,7 +2933,7 @@ class Application():
         if self._line_to_struc != {}:
             sec_mod_map = np.arange(0,1.1,0.1)
             fat_map = np.arange(0,1.1,0.1)
-            all_thicknesses = [round(objs[0].get_pl_thk(), 5) for objs in self._line_to_struc.values()]
+            all_thicknesses = [round(objs[1].get_pl_thk(), 5) for objs in self._line_to_struc.values()]
             all_thicknesses = np.unique(all_thicknesses).tolist()
             thickest_plate = max(all_thicknesses)
             if len(all_thicknesses) > 1:
@@ -2974,7 +2974,7 @@ class Application():
                 #puls_util_map = self._PULS_results.all_uf
                 puls_util_map = list()
                 for key, val in self._line_to_struc.items():
-                    puls_util_map.append(self._PULS_results.get_utilization(key, val[0].get_puls_method(),
+                    puls_util_map.append(self._PULS_results.get_utilization(key, val[1].get_puls_method(),
                                                                             acceptance = self._new_puls_uf.get()))
                 # puls_util_map  = np.arange(min(puls_util_map), max(puls_util_map) + (max(puls_util_map) -
                 #                                                                      min(puls_util_map)) / 10,
@@ -3826,7 +3826,7 @@ class Application():
             # printing the properties to the active line
             if self._line_is_active and self._line_to_struc[self._active_line][5] is None:
                 self._prop_canvas.create_text([canvas_width*0.239726027, canvas_height*0.446096654],
-                                             text=self._line_to_struc[self._active_line][0],
+                                             text=self._line_to_struc[self._active_line][1],
                                              font = self._text_size["Text 9"], fill = self._color_text)
 
                 # setting the input field to active line properties
@@ -3837,7 +3837,7 @@ class Application():
                 thk_mult = 500*1
                 startx = 540*1
                 starty = 150*1
-                structure_obj = self._line_to_struc[self._active_line][0]
+                structure_obj = self._line_to_struc[self._active_line][1]
 
                 self._prop_canvas.create_text([canvas_width/2-canvas_width/20, canvas_height/20],
                                              text ='SELECTED: '+str(self._active_line),
@@ -4453,10 +4453,10 @@ class Application():
                     coord1 = self._point_dict['point'+str(data[0])]
                     coord2 = self._point_dict['point'+str(data[1])]
                     if line in self._line_to_struc.keys():
-                        self._line_to_struc[line][0].set_span(dist(coord1,coord2))
+                        self._line_to_struc[line][1].set_span(dist(coord1,coord2))
                         self._line_to_struc[line][1].set_span(dist(coord1, coord2))
                         self._PULS_results.result_changed(line)
-                        if self._line_to_struc[line][0].get_structure_type() not in ['GENERAL_INTERNAL_NONWT',
+                        if self._line_to_struc[line][1].get_structure_type() not in ['GENERAL_INTERNAL_NONWT',
                                                                                                 'FRAME']:
                             self._tank_dict = {}
                             self._main_grid.clear()
@@ -4735,11 +4735,11 @@ class Application():
 
             if self._active_line not in self._line_to_struc.keys() :
                 self._line_to_struc[self._active_line] = [None, None, None, [None], {}, None]
-                self._line_to_struc[self._active_line][0] = Structure(obj_dict)
+                self._line_to_struc[self._active_line][1] = Structure(obj_dict)
                 self._sections = add_new_section(self._sections, struc.Section(obj_dict))
                 self._line_to_struc[self._active_line][1] = CalcScantlings(obj_dict)
                 self._line_to_struc[self._active_line][5] = CylinderObj
-                if self._line_to_struc[self._active_line][0].get_structure_type() not in \
+                if self._line_to_struc[self._active_line][1].get_structure_type() not in \
                         self._structure_types['non-wt']:
                     self._tank_dict = {}
                     self._main_grid.clear()
@@ -4759,17 +4759,17 @@ class Application():
                     self._line_to_struc[self._active_line][5] = CylinderObj
 
             else:
-                prev_type = self._line_to_struc[self._active_line][0].get_structure_type()
-                prev_str_obj, prev_calc_obj = copy.deepcopy(self._line_to_struc[self._active_line][0]),\
+                prev_type = self._line_to_struc[self._active_line][1].get_structure_type()
+                prev_str_obj, prev_calc_obj = copy.deepcopy(self._line_to_struc[self._active_line][1]),\
                                               copy.deepcopy(self._line_to_struc[self._active_line][1])
 
-                self._line_to_struc[self._active_line][0].set_main_properties(obj_dict)
+                self._line_to_struc[self._active_line][1].set_main_properties(obj_dict)
                 self._line_to_struc[self._active_line][1].set_main_properties(obj_dict)
 
                 if self._new_scale_stresses.get() and prev_str_obj.get_tuple() != \
-                        self._line_to_struc[self._active_line][0].get_tuple():
-                    self._line_to_struc[self._active_line][0] = \
-                        op.create_new_structure_obj(prev_str_obj, self._line_to_struc[self._active_line][0].get_tuple(),
+                        self._line_to_struc[self._active_line][1].get_tuple():
+                    self._line_to_struc[self._active_line][1] = \
+                        op.create_new_structure_obj(prev_str_obj, self._line_to_struc[self._active_line][1].get_tuple(),
                                                     fup=self._new_fup.get(), fdwn=self._new_fdwn.get())
                     self._line_to_struc[self._active_line][1] = \
                         op.create_new_calc_obj(prev_calc_obj,self._line_to_struc[self._active_line][1].get_tuple(),
@@ -4898,7 +4898,7 @@ class Application():
         line_results = {}
         for line, data in self._line_to_struc.items():
             line_results[line] = data[1].is_acceptable_sec_mod(
-                data[0].get_section_modulus(), self.get_highest_pressure(line)['normal'])
+                data[1].get_section_modulus(), self.get_highest_pressure(line)['normal'])
 
         return line_results
 
@@ -4975,9 +4975,9 @@ class Application():
 
         load_factors_all = self._new_load_comb_dict
 
-        line_name_obj = [line_name, self._line_to_struc[line_name][0]]
+        line_name_obj = [line_name, self._line_to_struc[line_name][1]]
 
-        if self._line_to_struc[line_name][0].get_structure_type() in ['', 'FRAME','GENERAL_INTERNAL_NONWT']:
+        if self._line_to_struc[line_name][1].get_structure_type() in ['', 'FRAME','GENERAL_INTERNAL_NONWT']:
             return [0, '']
         else:
             return_value = one_load_combination(line_name_obj, coord, defined_loads, load_condition,
@@ -5030,7 +5030,7 @@ class Application():
 
                 if line in self._line_dict.keys():
                     if line in self._line_to_struc.keys():
-                        if self._line_to_struc[line][0].get_structure_type() not in self._structure_types['non-wt']:
+                        if self._line_to_struc[line][1].get_structure_type() not in self._structure_types['non-wt']:
                             self.delete_properties_pressed()
                             self.delete_all_tanks()
                     self._line_dict.pop(line)
@@ -5112,16 +5112,16 @@ class Application():
             if self._line_to_struc[self.__copied_line_prop][5] is not None:
                 self.new_structure(cylinder_return=self._line_to_struc[self.__copied_line_prop][5])
             else:
-                self.new_structure(pasted_structure=self._line_to_struc[self.__copied_line_prop][0])
+                self.new_structure(pasted_structure=self._line_to_struc[self.__copied_line_prop][1])
         elif self._line_to_struc[self.__copied_line_prop][5] is not None:
             self.new_structure(cylinder_return=self._line_to_struc[self.__copied_line_prop][5])
-        elif self._line_to_struc[self._active_line][0].get_structure_type() !=\
-                self._line_to_struc[self.__copied_line_prop][0].get_structure_type():
+        elif self._line_to_struc[self._active_line][1].get_structure_type() !=\
+                self._line_to_struc[self.__copied_line_prop][1].get_structure_type():
             tk.messagebox.showerror('Paste error', 'Can only paste to same structure type. This is to avoid problems '
                                                    'with compartments not detecting changes to watertightness.')
             return
         else:
-            self.new_structure(pasted_structure = self._line_to_struc[self.__copied_line_prop][0])
+            self.new_structure(pasted_structure = self._line_to_struc[self.__copied_line_prop][1])
 
         self.update_frame()
 
@@ -5165,7 +5165,7 @@ class Application():
         Setting the properties in the entry fields to the specified values.
         '''
         if line in self._line_to_struc:
-            properties = self._line_to_struc[line][0].get_structure_prop()
+            properties = self._line_to_struc[line][1].get_structure_prop()
             self._new_material.set(round(properties['mat_yield'][0]/1e6,5))
             self._new_material_factor.set(properties['mat_factor'][0])
             self._new_field_len.set(round(properties['span'][0]*1000,5))
@@ -5442,8 +5442,8 @@ class Application():
         beams, plates = list(), list()
         if self._line_to_struc != {}:
             for line, data in self._line_to_struc.items():
-                this_beam = data[0].get_beam_string()
-                this_plate = data[0].get_pl_thk()*1000
+                this_beam = data[1].get_beam_string()
+                this_plate = data[1].get_pl_thk()*1000
                 if this_beam not in beams:
                     beams.append(this_beam)
                 if this_plate not in plates:
@@ -5936,7 +5936,7 @@ class Application():
                 lines_prop['sigma_x2'] = lines_prop['sigma_x']
                 lines_prop.pop('sigma_x')
 
-            self._line_to_struc[line][0] = Structure(lines_prop)
+            self._line_to_struc[line][1] = Structure(lines_prop)
             self._line_to_struc[line][1] = CalcScantlings(lines_prop)
             if imported['fatigue_properties'][line] is not None:
                 self._line_to_struc[line][2] = CalcFatigue(lines_prop, imported['fatigue_properties'][line])
@@ -6404,7 +6404,7 @@ class Application():
         '''
 
         self.new_structure(multi_return = returned_object[0:3])
-        # self._line_to_struc[self._active_line][0]=returned_objects[0]
+        # self._line_to_struc[self._active_line][1]=returned_objects[0]
         # self._line_to_struc[self._active_line][1]=returned_objects[1]
         # self._line_to_struc[self._active_line][1].need_recalc = True
         # self.set_selected_variables(self._active_line)

@@ -1380,14 +1380,13 @@ class CalcScantlings(Structure):
         '''
         return self.get_dnv_min_thickness(design_pressure) <= self._plate_th*1000
 
-class PrescriptiveBuckling():
+class AllStructure():
     '''
-
     Calculation of buckling
     '''
     def __init__(self, Plate: CalcScantlings = None, Stiffener: CalcScantlings = None, Girder: CalcScantlings = None,
                  lat_press = None, main_dict = None):
-        super(PrescriptiveBuckling, self).__init__()
+        super(AllStructure, self).__init__()
         self._Plate = Plate  # This contain the stresses
         self._Stiffener = Stiffener
         self._Girder = Girder
@@ -4278,7 +4277,7 @@ if __name__ == '__main__':
     Girder = CalcScantlings(ex.obj_dict_heavy)
 
 
-    PreBuc = PrescriptiveBuckling(Plate = Plate, Stiffener = Stiffener, Girder = Girder, lat_press=0.3,
+    PreBuc = AllStructure(Plate = Plate, Stiffener = Stiffener, Girder = Girder, lat_press=0.3,
                                   main_dict=ex.prescriptive_main_dict)
 
     print(Plate)
