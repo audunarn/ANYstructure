@@ -4531,8 +4531,8 @@ class Application():
             [1] calc scantling class instance
             [2] calc fatigue class instance
             [3] load class instance
-            [4] load combinations result (currently not used)
-            [5] Cylinder buckling data (under development)
+            [4] Prescriptive buckling data (under development) 07/01-2022
+            [5] Cylinder buckling data
         :return:
         '''
 
@@ -4554,7 +4554,6 @@ class Application():
             elif toggle_multi is not None:
                 obj_dict = toggle_multi
             elif pasted_structure is None:
-
                 obj_dict = {'mat_yield': [self._new_material.get()*1e6, 'Pa'],
                             'mat_factor': [self._new_material_factor.get(), ''],
                             'span': [self._new_field_len.get()/1000, 'm'],
