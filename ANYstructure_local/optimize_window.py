@@ -20,7 +20,7 @@ class CreateOptimizeWindow():
         super(CreateOptimizeWindow,self).__init__()
         if __name__ == '__main__':
             import pickle
-            self._initial_structure_obj = test.get_structure_calc_object(heavy=True)
+
             self._initial_calc_obj = test.get_structure_calc_object(heavy=True)
             self._lateral_pressure = 200
             self._fatigue_object = test.get_fatigue_object()
@@ -79,7 +79,7 @@ class CreateOptimizeWindow():
                                 9: 'UF below or equal 0.87', 10: 'UF between 0.87 and 1.0', 11: 'UF above 1.0'}
         else:
             self.app = app
-            self._initial_structure_obj = app._line_to_struc[app._active_line][0]
+
             self._initial_calc_obj = app._line_to_struc[app._active_line][1]
             self._fatigue_object = app._line_to_struc[app._active_line][2]
             try:
@@ -132,12 +132,12 @@ class CreateOptimizeWindow():
 
         tk.Label(self._frame,text='-- Structural optimizer --',font='Verdana 15 bold').place(x=10,y=10)
 
-        self._spacing = self._initial_structure_obj.get_s()
-        self._pl_thk = self._initial_structure_obj.get_pl_thk()
-        self._stf_web_h = self._initial_structure_obj.get_web_h()
-        self._stf_web_thk =self._initial_structure_obj.get_web_thk()
-        self._fl_w = self._initial_structure_obj.get_fl_w()
-        self._fl_thk =self._initial_structure_obj.get_fl_thk()
+        self._spacing = self._initial_calc_obj.get_s()
+        self._pl_thk = self._initial_calc_obj.get_pl_thk()
+        self._stf_web_h = self._initial_calc_obj.get_web_h()
+        self._stf_web_thk =self._initial_calc_obj.get_web_thk()
+        self._fl_w = self._initial_calc_obj.get_fl_w()
+        self._fl_thk =self._initial_calc_obj.get_fl_thk()
 
         # upper and lower bounds for optimization
         #[0.6, 0.012, 0.3, 0.01, 0.1, 0.01]
@@ -413,10 +413,10 @@ class CreateOptimizeWindow():
         self._new_delta_web_thk.set(init_thk)
         self._new_delta_fl_w.set(init_dim)
         self._new_delta_fl_thk.set(init_thk)
-        self._new_trans_stress_high.set(self._initial_structure_obj.get_sigma_y1())
-        self._new_trans_stress_low.set(self._initial_structure_obj.get_sigma_y2())
-        self._new_axial_stress.set(self._initial_structure_obj.get_sigma_x1())
-        self._new_shear_stress.set(self._initial_structure_obj.get_tau_xy())
+        self._new_trans_stress_high.set(self._initial_calc_obj.get_sigma_y1())
+        self._new_trans_stress_low.set(self._initial_calc_obj.get_sigma_y2())
+        self._new_axial_stress.set(self._initial_calc_obj.get_sigma_x1())
+        self._new_shear_stress.set(self._initial_calc_obj.get_tau_xy())
 
         self._new_design_pressure.set(self._lateral_pressure)
         self._new_slamming_pressure.set(self._slamming_pressure)
@@ -434,7 +434,7 @@ class CreateOptimizeWindow():
         self._new_web_h_lower.set(round(max(self._stf_web_h*1000-100,100),5))
         self._new_web_thk_upper.set(round(self._stf_web_thk*1000+10,5))
         self._new_web_thk_lower.set(round(max(self._stf_web_thk*1000-10,float(10)),5))
-        if self._initial_structure_obj.get_stiffener_type() != 'FB':
+        if self._initial_calc_obj.get_stiffener_type() != 'FB':
             self._new_fl_w_upper.set(min(round(self._fl_w*1000+100,5), 200))
             self._new_fl_w_lower.set(round(max(self._fl_w*1000-100,100),5))
             self._new_fl_thk_upper.set(round(self._fl_thk*1000+10,15))
@@ -447,7 +447,7 @@ class CreateOptimizeWindow():
 
         self._new_pressure_side.set('p')
         self._new_width_lg.set(10)
-        self._new_span.set(round(self._initial_structure_obj.get_span(),5))
+        self._new_span.set(round(self._initial_calc_obj.get_span(),5))
         self._new_algorithm.set('anysmart')
         self._new_algorithm_random_trials.set(100000)
         self._new_swarm_size.set(100)
@@ -590,7 +590,7 @@ class CreateOptimizeWindow():
         self._toggle_btn = tk.Button(self._frame, text="Iterate predefiened stiffeners", relief="raised",
                                      command=self.toggle, bg = 'salmon')
         self._toggle_btn.place(x=start_x, y=start_y - dy * 2)
-        self._toggle_object, self._filez = self._initial_structure_obj, None
+        self._toggle_object, self._filez = self._initial_calc_obj, None
         self.draw_properties()
         self.update_running_time()
 
@@ -703,7 +703,7 @@ class CreateOptimizeWindow():
                       self._new_check_fatigue.get(), self._new_check_slamming.get(),
                       self._new_check_local_buckling.get(), self._new_check_buckling_puls.get(),
                       self._new_check_buckling_ml_cl.get(), False)
-        self._initial_structure_obj.set_span(self._new_span.get())
+        self._initial_calc_obj.set_span(self._new_span.get())
 
         if self._fatigue_pressure is not None:
 
@@ -714,7 +714,7 @@ class CreateOptimizeWindow():
         else:
             fat_press = None
 
-        self._opt_results= op.run_optmizataion(self._initial_structure_obj,self.get_lower_bounds(),
+        self._opt_results= op.run_optmizataion(self._initial_calc_obj,self.get_lower_bounds(),
                                                self.get_upper_bounds(),self._new_design_pressure.get(),
                                                self.get_deltas(),algorithm=self._new_algorithm.get(),
                                                trials=self._new_algorithm_random_trials.get(),
@@ -898,7 +898,7 @@ class CreateOptimizeWindow():
         self._canvas_opt.create_rectangle(ctr_x - m * self._stf_web_thk / 2, ctr_y-m* self._pl_thk,
                                          ctr_x + m * self._stf_web_thk / 2, ctr_y - m *(self._stf_web_h+self._pl_thk)
                                          , fill=init_color, stipple=init_stipple )
-        if self._initial_structure_obj.get_stiffener_type() not in ['L', 'L-bulb']:
+        if self._initial_calc_obj.get_stiffener_type() not in ['L', 'L-bulb']:
             self._canvas_opt.create_rectangle(ctr_x-m*self._fl_w/2, ctr_y-m*(self._pl_thk+self._stf_web_h),
                                              ctr_x+m*self._fl_w/2, ctr_y-m*(self._pl_thk+self._stf_web_h+self._fl_thk),
                                              fill=init_color, stipple=init_stipple)
@@ -1031,7 +1031,7 @@ class CreateOptimizeWindow():
 
             open_files = askopenfilenames(parent=self._frame, title='Choose files to open')
             predefined_stiffener_iter = hlp.helper_read_section_file(files=list(open_files),
-                                                                     obj=self._initial_structure_obj)
+                                                                     obj=self._initial_calc_obj)
 
 
 

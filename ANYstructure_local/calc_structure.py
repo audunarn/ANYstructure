@@ -1385,7 +1385,7 @@ class AllStructure():
     Calculation of buckling
     '''
     def __init__(self, Plate: CalcScantlings = None, Stiffener: CalcScantlings = None, Girder: CalcScantlings = None,
-                 lat_press = None, main_dict = None):
+                 lat_press = None, main_dict = None, calculation_domain = None):
         super(AllStructure, self).__init__()
         self._Plate = Plate  # This contain the stresses
         self._Stiffener = Stiffener
@@ -1404,15 +1404,55 @@ class AllStructure():
         self._girder_end_support = main_dict['girder end support'][0]#'Continuous'
         self._tension_field_action = main_dict['tension field'][0]# 'not allowed'
         self._stiffed_plate_effective_aginst_sigy = main_dict['plate effective agains sigy'][0] #True
-        self._buckling_length_factor = main_dict['buckling length factor'][0]
+        self._buckling_length_factor_stf = main_dict['buckling length factor stf'][0]
+        self._buckling_length_factor_girder = main_dict['buckling length factor girder'][0]
         self._km3 = main_dict['km3'][0]#12
         self._km2 = main_dict['km2'][0]#24
         self._girder_dist_between_lateral_supp = main_dict['girder distance between lateral support'][0]
-        self._kgirder = main_dict['kgirder'][0]
         self._panel_length_Lp = main_dict['panel length, Lp'][0]
         self._overpressure_side = main_dict['pressure side'][0] # either 'stiffener', 'plate', 'both'
         self._fab_method_stiffener = main_dict['fabrication method stiffener'][0]#'welded'
         self._fab_method_girder = main_dict['fabrication method girder'][0]#'welded'
+        
+        self._calculation_domain = calculation_domain
+        self._need_recalc = True
+
+    @property
+    def need_recalc(self):
+        return self._need_recalc
+
+    @need_recalc.setter
+    def need_recalc(self, val):
+        self._need_recalc = val
+        
+    @property
+    def Plate(self):
+        return self._Plate
+
+    @Plate.setter
+    def Plate(self, val):
+        self._Plate = val
+        
+    @property
+    def Stiffener(self):
+        return self._Stiffener
+    @Stiffener.setter
+    def Stiffener(self, val):
+        self._Stiffener = val
+        
+    @property
+    def Girder(self):
+        return self._Girder
+    @Girder.setter
+    def Girder(self, val):
+        self._Girder = val
+        
+    @property
+    def calculation_domain(self):
+        return self._calculation_domain
+    @calculation_domain.setter
+    def calculation_domain(self, val):
+        self._calculation_domain = val
 
     def plate_buckling(self):
         '''
@@ -1820,14 +1860,14 @@ class AllStructure():
         Wmin = min([Wes, Wep])
         pf = 0.0001 if l*s*gammaM == 0 else 12*Wmin*fy/(math.pow(l,2)*s*gammaM)
 
-        if self._buckling_length_factor is None:
+        if self._buckling_length_factor_stf is None:
             if self._stf_end_support == 'Continuous':
                 lk = l*(1-0.5*abs(psd_min_adj/pf))
 
             else:
                 lk = l
         else:
-            lk = self._buckling_length_factor * l
+            lk = self._buckling_length_factor_stf * l
         ie = 0.0001 if As+se*t == 0 else math.sqrt(Iy/(As+se*t))
         fE = 0.0001 if lk == 0 else math.pow(math.pi,2)*E*math.pow(ie/lk,2)
 
@@ -2083,7 +2123,7 @@ class AllStructure():
         pf = 0.0001 if l*s*gammaM == 0 else 12*Wmin*fy/(math.pow(l,2)*s*gammaM)
 
         lk = Lg
-        LGk = lk if self._kgirder is None else lk*self._kgirder
+        LGk = lk if self._buckling_length_factor_girder is None else lk*self._buckling_length_factor_girder
 
         ie = 0 if Vsd_div_Vrd<0.5 else math.sqrt(Iy/AtotG) # TODO minor difference doe to Iy
 

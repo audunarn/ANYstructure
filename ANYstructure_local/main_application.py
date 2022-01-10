@@ -2147,7 +2147,7 @@ class Application():
             current_button = self._puls_run_all
             for line, data in self._line_to_struc.items():
                 if line not in result_lines:
-                    dict_to_run[line] = data[1].get_puls_input()
+                    dict_to_run[line] = data[0].Plate.get_puls_input() #TODO both plate and stiffener
                     dict_to_run[line]['Identification'] = line
                     dict_to_run[line]['Pressure (fixed)'] = self.get_highest_pressure(line)['normal']/1e6
         else:
@@ -2155,7 +2155,7 @@ class Application():
             if line_given == '':
                 return
             if line_given not in result_lines:
-                dict_to_run[line_given] = self._line_to_struc[line_given][1].get_puls_input()
+                dict_to_run[line_given] = self._line_to_struc[line_given][0].Plate.get_puls_input()
                 dict_to_run[line_given]['Identification'] = line_given
                 dict_to_run[line_given]['Pressure (fixed)'] = self.get_highest_pressure(line_given)['normal'] / 1e6
 
@@ -2169,7 +2169,7 @@ class Application():
             current_button.config(text='PULS run or\nupdate all lines' if line_given == None else 'PULS\nRun one line')
             #current_button.config(bg=self._button_bg_color)
             for key, value in self._line_to_struc.items():
-                value[1].need_recalc = True
+                value[0].need_recalc = True
         else:
             tk.messagebox.showinfo('Results avaliable', 'PULS results is already avaliable for this line or no '
                                                         'lines need update.')
@@ -2319,7 +2319,7 @@ class Application():
              [self._lc_comb_created,self._comp_comb_created,self._manual_created, self._info_created]]
             self._lc_comb_created, self._comp_comb_created, self._manual_created, self._info_created= [], [], [], []
 
-            if self._line_to_struc[self._active_line][1].get_structure_type() == '':
+            if self._line_to_struc[self._active_line][0].Plate.get_structure_type() == '':
                 self._info_created.append(ttk.Label(self._main_fr, text='No structure type selected',
                                                font=self._text_size["Text 10 bold"], ))
                 self._info_created[0].place(relx=lc_x , y = lc_y + 3*lc_y_delta)
@@ -2440,7 +2440,7 @@ class Application():
         :return:
         '''
         try:
-            if self._line_to_struc[line][1].get_structure_type() not in ('GENERAL_INTERNAL_NONWT','FRAME'):
+            if self._line_to_struc[line][0].Plate.get_structure_type() not in ('GENERAL_INTERNAL_NONWT','FRAME'):
                 self._pending_grid_draw[line] = coordinates
         except KeyError:
             pass
@@ -2597,7 +2597,7 @@ class Application():
         try:
             self.update_frame()
             for key, val in self._line_to_struc.items():
-                val[1].need_recalc = True
+                val[0].need_recalc = True
         except (TclError, ZeroDivisionError):
             pass
 
@@ -2637,9 +2637,9 @@ class Application():
             rec_for_color[current_line]  = {}
             slamming_pressure = 0
             if current_line in self._line_to_struc.keys():
-                obj_structure = self._line_to_struc[current_line][1]
                 obj_scnt_calc = self._line_to_struc[current_line][1]
-                if obj_scnt_calc.need_recalc is False:
+                all_obj = self._line_to_struc[current_line][0]
+                if all_obj.need_recalc is False:
                     return self._state_logger[current_line]
                 try:
                     norm_and_slam = self.get_highest_pressure(current_line)
@@ -2889,7 +2889,7 @@ class Application():
                 return_dict['section_modulus'][current_line] = {'sec_mod': sec_mod, 'min_sec_mod': min_sec_mod}
                 return_dict['shear_area'][current_line] = {'shear_area': shear_area, 'min_shear_area': min_shear}
                 return_dict['thickness'][current_line] = {'thk': obj_scnt_calc.get_pl_thk(), 'min_thk': min_thk}
-                return_dict['struc_obj'][current_line] = obj_structure
+                return_dict['struc_obj'][current_line] = obj_scnt_calc
                 return_dict['scant_calc_obj'][current_line] = obj_scnt_calc
                 return_dict['fatigue_obj'][current_line] = fatigue_obj
                 return_dict['color code'][current_line] = {}
@@ -2904,7 +2904,7 @@ class Application():
 
                 fat_util = 0 if damage is None else damage * dff
                 shear_util = 0 if shear_area == 0 else min_shear / shear_area
-                thk_util = 0 if obj_structure.get_pl_thk() == 0 else min_thk / (1000 * obj_structure.get_pl_thk())
+                thk_util = 0 if obj_scnt_calc.get_pl_thk() == 0 else min_thk / (1000 * obj_scnt_calc.get_pl_thk())
                 sec_util = 0 if min(sec_mod) == 0 else min_sec_mod / min(sec_mod)
                 buc_util = 1 if float('inf') in buckling else max(buckling[0:5])
                 rec_for_color[current_line]['rp buckling'] = max(buckling[0:5])
@@ -2918,7 +2918,7 @@ class Application():
                 # Color coding state
 
                 self._state_logger[current_line] = return_dict #  Logging the current state of the line.
-                self._line_to_struc[current_line][1].need_recalc = False
+                self._line_to_struc[current_line][0].need_recalc = False
             else:
                 pass
 
@@ -3016,7 +3016,7 @@ class Application():
 
             spacing = np.unique([self._line_to_struc[line][1].get_s() for line in
                                  self._line_to_struc.keys()]).tolist()
-            structure_type = [self._line_to_struc[line][1].get_structure_type() for line in
+            structure_type = [self._line_to_struc[line][0].Plate.get_structure_type() for line in
                               self._line_to_struc.keys()]
 
             return_dict['color code'] = {'thickest plate': thickest_plate, 'thickness map': thk_map,
@@ -3098,7 +3098,7 @@ class Application():
                                                                                 .get_beam_string()]
                                                       /len(list(recorded_sections)))),
                                            'structure type': matplotlib.colors.rgb2hex(
-                                               cmap_sections(structure_type_unique.index(line_data[1].get_structure_type())
+                                               cmap_sections(structure_type_unique.index(line_data[0].Plate.get_structure_type())
                                                              /len(structure_type_unique))),
                                            'pressure color': 'black' if all_pressures in [[0],[0,1]] else matplotlib.colors.rgb2hex(cmap_sections(
                                                this_pressure/highest_pressure)),
@@ -3733,7 +3733,7 @@ class Application():
                 this_text = 'N/A'
             else:
                 color = state['color code']['lines'][line]['structure type']
-                this_text =self._line_to_struc[line][1].get_structure_type()
+                this_text =self._line_to_struc[line][0].Plate.get_structure_type()
 
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
@@ -3984,7 +3984,7 @@ class Application():
 
                 current_line = self._active_line
 
-                obj_structure = state['struc_obj'][current_line]
+                obj_scnt_calc = state['struc_obj'][current_line]
                 sec_mod = [round(state['section_modulus'][current_line]['sec_mod'][0], 5),
                            round(state['section_modulus'][current_line]['sec_mod'][1], 5)]
                 shear_area = state['shear_area'][current_line]['shear_area']
@@ -4001,10 +4001,10 @@ class Application():
                     slm_min_web_thk = state['slamming'][current_line]['min_web_thk']
 
                     slm_text_pl_thk = 'Minimum plate thickness (BOW SLAMMING): '+str(round(slm_min_pl_thk,1))+' [mm]' \
-                        if obj_structure.get_pl_thk() * 1000 < slm_min_pl_thk else None
+                        if obj_scnt_calc.get_pl_thk() * 1000 < slm_min_pl_thk else None
 
                     slm_text_min_web_thk = 'Minimum web thickness (BOW SLAMMING): '+str(round(slm_min_web_thk,1))+' [mm]' \
-                        if obj_structure.get_web_thk()*1000 < slm_min_web_thk else None
+                        if obj_scnt_calc.get_web_thk()*1000 < slm_min_web_thk else None
                     if slm_zpl_req is not None:
                         slm_text_min_zpl = 'Minimum section modulus (BOW SLAMMING): '+str(round(slm_zpl_req,1))+' [cm^3]' \
                             if slm_zpl < slm_zpl_req else None
@@ -4041,7 +4041,7 @@ class Application():
 
                 #minimum shear area
                 text = 'Shear area: '+str('%.4E' % decimal.Decimal(shear_area * m2_to_mm2 ))+' [mm^2]' \
-                    if not slm_text_min_web_thk else 'Stiffener web thickness: '+str(obj_structure.get_web_thk()*1000)+' [mm]'
+                    if not slm_text_min_web_thk else 'Stiffener web thickness: '+str(obj_scnt_calc.get_web_thk()*1000)+' [mm]'
                 self._result_canvas.create_text([x*1, (y+3*dy)*1],
                                                text= text,
                                                font=self._text_size["Text 9 bold"],anchor='nw', fill = self._color_text)
@@ -4056,7 +4056,7 @@ class Application():
 
                 self._result_canvas.create_text([x*1, (y+6*dy)*1],
                                                text='Plate thickness: '
-                                                    +str(obj_structure.get_pl_thk()*1000)+' [mm] ',
+                                                    +str(obj_scnt_calc.get_pl_thk()*1000)+' [mm] ',
                                                font=self._text_size["Text 9 bold"],anchor='nw', fill = self._color_text)
                 text = 'Minimum plate thickness: '+str(round(min_thk,1)) + ' [mm]' if not slm_text_pl_thk \
                     else 'Minimum plate thickness due to SLAMMING'+str(slm_min_pl_thk)+' [mm]'
@@ -4086,9 +4086,9 @@ class Application():
                             buc_text = 'Buckling capacity usage factor:  None - geometric issue'
 
                         loc_label = 'Local geom req (PULS validity limits)' if \
-                            obj_structure.get_puls_sp_or_up() == 'SP' else 'Geom. Req (PULS validity limits)'
+                            obj_scnt_calc.get_puls_sp_or_up() == 'SP' else 'Geom. Req (PULS validity limits)'
                         csr_label = 'CSR-Tank requirements (primary stiffeners)' if \
-                            obj_structure.get_puls_sp_or_up() == 'SP' else 'CSR-Tank req'
+                            obj_scnt_calc.get_puls_sp_or_up() == 'SP' else 'CSR-Tank req'
                         if geo_problem:
                             loc_geom = 'Not ok: '
                             for key, value in puls_res[loc_label].items():
@@ -4145,11 +4145,11 @@ class Application():
                         elif buckling[1] == float('inf'):
                             res_text = 'Spacing/thickness aspect ratio error (equation eq 6.11 - ha < 0). '
                         else:
-                            if obj_structure.get_side() == 'p':
+                            if obj_scnt_calc.get_side() == 'p':
                                 res_text = '|eq 7.19: '+str(buckling[0])+' |eq 7.50: '+str(buckling[1])+ ' |eq 7.51: '+ \
                                              str(buckling[2])+' |7.52: '+str(buckling[3])+ '|eq 7.53: '+str(buckling[4])+\
                                              ' |z*: '+str(buckling[5])
-                            elif obj_structure.get_side() == 's':
+                            elif obj_scnt_calc.get_side() == 's':
                                 res_text = '|eq 7.19: '+str(buckling[0])+' |eq 7.54: '+str(buckling[1])+' |eq 7.55: '+ \
                                              str(buckling[2])+' |7.56: '+str(buckling[3])+ '|eq 7.57: '+str(buckling[4])+ \
                                              ' |z*: '+str(buckling[5])
@@ -4170,7 +4170,7 @@ class Application():
                                                     text='Ultimate: ' +self._ML_classes[state['ML buckling class'][current_line]['ultimate']],
                                                     font=self._text_size["Text 9 bold"],
                                                     anchor='nw', fill=state['ML buckling colors'][current_line]['ultimate'])
-                    if obj_structure.get_puls_sp_or_up() == 'SP':
+                    if obj_scnt_calc.get_puls_sp_or_up() == 'SP':
                         csr = state['ML buckling class'][current_line]['CSR']
                         csr_str = ['Ok' if csr[0] == 1 else 'Not ok', 'Ok' if csr[1] == 1 else 'Not ok',
                                    'Ok' if csr[2] == 1 else 'Not ok', 'Ok' if csr[3] == 1 else 'Not ok']
@@ -4375,7 +4375,7 @@ class Application():
                     data.set_acceleration(self._accelerations_dict)
 
             for line, obj in self._line_to_struc.items():
-                obj[1].need_recalc = True
+                obj[0].need_recalc = True
         except TclError:
             messagebox.showinfo(title='Input error', message='Input must be a number. Dots used not comma.')
 
@@ -4456,14 +4456,14 @@ class Application():
                         self._line_to_struc[line][1].set_span(dist(coord1,coord2))
                         self._line_to_struc[line][1].set_span(dist(coord1, coord2))
                         self._PULS_results.result_changed(line)
-                        if self._line_to_struc[line][1].get_structure_type() not in ['GENERAL_INTERNAL_NONWT',
+                        if self._line_to_struc[line][0].Plate.get_structure_type() not in ['GENERAL_INTERNAL_NONWT',
                                                                                                 'FRAME']:
                             self._tank_dict = {}
                             self._main_grid.clear()
                             self._compartments_listbox.delete(0, 'end')
 
             for line, obj in self._line_to_struc.items():
-                obj[1].need_recalc = True
+                obj[0].need_recalc = True
             self.update_frame()
         else:
             messagebox.showinfo(title='Input error', message='A point must be selected (right click).')
@@ -4516,7 +4516,7 @@ class Application():
 
                     self.add_to_combinations_dict(current_name)
             for line, obj in self._line_to_struc.items():
-                obj[1].need_recalc = True
+                obj[0].need_recalc = True
         except TclError:
             messagebox.showinfo(title='Input error', message='Input must be a line number.')
 
@@ -4584,6 +4584,37 @@ class Application():
                             'puls sp or up':  [self._new_puls_sp_or_up.get(), ''],
                             'puls up boundary': [self._new_puls_up_boundary.get(), ''],
                             'panel or shell': [self._new_panel_or_shell.get(), '']}
+
+                obj_dict_pl = obj_dict
+                obj_dict_stf = obj_dict
+                obj_dict_girder = obj_dict
+
+                obj_dict_girder['stf_web_height'] =  [self._new_girder_web_h.get()/1000, 'm']
+                obj_dict_girder['stf_web_thk'] = [self._new_girder_web_t.get() / 1000, 'm']
+                obj_dict_girder['stf_flange_width'] = [self._new_girder_fl_w.get() / 1000, 'm']
+                obj_dict_girder['stf_flange_thk]'] =  [self._new_girder_fl_t.get() / 1000, 'm']
+                obj_dict_girder['stf_type'] = [self._new_girder_type.get(), '']
+                
+                main_dict = dict()
+                main_dict['minimum pressure in adjacent spans'] = [self._new_buckling_min_press_adj_spans.get(), '']
+                main_dict['material yield'] = [self._new_material.get(), 'Pa']
+                main_dict['load factor on stresses'] = [self._new_buckling_lf_stresses.get(), '']
+                main_dict['load factor on pressure'] = [1, '']
+                main_dict['buckling method'] = ['ultimate', '']
+                main_dict['stiffener end support'] =[self._new_buckling_stf_end_support.get(), '']  # 'Continuous'
+                main_dict['girder end support'] = [self._new_buckling_girder_end_support.get(), '']  # 'Continuous'
+                main_dict['tension field'] = [self._new_buckling_tension_field.get(), '']  # 'not allowed'
+                main_dict['plate effective agains sigy'] = [self._new_buckling_effective_against_sigy.get(), '']  # True
+                main_dict['buckling length factor stf'] = [self._new_buckling_length_factor_stf.get(), '']
+                main_dict['buckling length factor girder'] = [self._new_buckling_length_factor_stf.get(), '']
+                main_dict['km3'] = [self._new_buckling_km3.get(), '']  # 12
+                main_dict['km2'] = [self._new_buckling_km2.get(), '']  # 24
+                main_dict['girder distance between lateral support'] = [self._new_buckling_girder_dist_bet_lat_supp, '']
+                main_dict['panel length, Lp'] = [self._new_panel_length_Lp.get(), '']
+                main_dict['pressure side'] = [self._new_pressure_side.get(), '']  # either 'stiffener', 'plate', 'both'
+                main_dict['fabrication method stiffener'] = [self._new_buckling_fab_method_stf.get(), '']
+                main_dict['fabrication method girder'] = [self._new_buckling_fab_method_girder.get(), '']
+
                 if self._new_calculation_domain.get() not in ['Flat plate, stiffened','Flat plate, unstiffened',
                                                   'Flat plate, stiffened with girder'] and cylinder_return is None:
                     '''
@@ -4735,11 +4766,23 @@ class Application():
 
             if self._active_line not in self._line_to_struc.keys() :
                 self._line_to_struc[self._active_line] = [None, None, None, [None], {}, None]
-                self._line_to_struc[self._active_line][1] = Structure(obj_dict)
+                # First entry
+                # Flat plate domains: 'Flat plate, stiffened with girder', 'Flat plate, stiffened', Flat plate, unstiffened'
+                cdom = self._new_calculation_domain.get()
+                All = AllStructure(Plate=obj_dict_pl,
+                                   Stiffener=None if cdom == 'Flat plate, unstiffened'
+                                   else CalcScantlings(obj_dict_stf),
+                                   Girder=None if cdom != 'Flat plate, stiffened with girder'
+                                   else CalcScantlings(obj_dict_girder),
+                                   lat_press= self.get_highest_pressure(self._active_line), main_dict=main_dict,
+                                   calculation_domain=cdom)
+
+                #self._line_to_struc[self._active_line][1] = Structure(obj_dict)
                 self._sections = add_new_section(self._sections, struc.Section(obj_dict))
+                self._line_to_struc[self._active_line][0] = All
                 self._line_to_struc[self._active_line][1] = CalcScantlings(obj_dict)
                 self._line_to_struc[self._active_line][5] = CylinderObj
-                if self._line_to_struc[self._active_line][1].get_structure_type() not in \
+                if self._line_to_struc[self._active_line][0].Plate.get_structure_type() not in \
                         self._structure_types['non-wt']:
                     self._tank_dict = {}
                     self._main_grid.clear()
@@ -4759,23 +4802,18 @@ class Application():
                     self._line_to_struc[self._active_line][5] = CylinderObj
 
             else:
-                prev_type = self._line_to_struc[self._active_line][1].get_structure_type()
-                prev_str_obj, prev_calc_obj = copy.deepcopy(self._line_to_struc[self._active_line][1]),\
-                                              copy.deepcopy(self._line_to_struc[self._active_line][1])
+                prev_type = self._line_to_struc[self._active_line][0].Plate.get_structure_type()
+                prev_calc_obj = copy.deepcopy(self._line_to_struc[self._active_line][1])
 
                 self._line_to_struc[self._active_line][1].set_main_properties(obj_dict)
-                self._line_to_struc[self._active_line][1].set_main_properties(obj_dict)
 
-                if self._new_scale_stresses.get() and prev_str_obj.get_tuple() != \
+                if self._new_scale_stresses.get() and prev_calc_obj.get_tuple() != \
                         self._line_to_struc[self._active_line][1].get_tuple():
-                    self._line_to_struc[self._active_line][1] = \
-                        op.create_new_structure_obj(prev_str_obj, self._line_to_struc[self._active_line][1].get_tuple(),
-                                                    fup=self._new_fup.get(), fdwn=self._new_fdwn.get())
                     self._line_to_struc[self._active_line][1] = \
                         op.create_new_calc_obj(prev_calc_obj,self._line_to_struc[self._active_line][1].get_tuple(),
                                                fup=self._new_fup.get(), fdwn=self._new_fdwn.get())[0]
 
-                self._line_to_struc[self._active_line][1].need_recalc = True
+                self._line_to_struc[self._active_line][0].need_recalc = True
 
                 if self._line_to_struc[self._active_line][2] is not None:
                     self._line_to_struc[self._active_line][2].set_main_properties(obj_dict)
@@ -4817,7 +4855,7 @@ class Application():
         if not suspend_recalc:
             # when changing multiple parameters, recalculations are suspended.
             for line, obj in self._line_to_struc.items():
-                obj[1].need_recalc = True
+                obj[0].need_recalc = True
             state = self.update_frame()
             if state != None and self._line_is_active:
                 self._weight_logger['new structure']['COG'].append(self.get_color_and_calc_state()['COG'])
@@ -4946,7 +4984,7 @@ class Application():
             return load_info
         return results
 
-    def calculate_one_load_combination(self, line_name, comb_name, load_condition):
+    def calculate_one_load_combination(self, current_line, comb_name, load_condition):
         '''
         Creating load combination for ULS.
         Inserted into self._line_to_struc index = 4
@@ -4956,7 +4994,7 @@ class Application():
         '''
 
         defined_loads = []
-        for load_obj in self._line_to_struc[line_name][3]:
+        for load_obj in self._line_to_struc[current_line][3]:
             if load_obj is not None:
                 if load_obj.get_limit_state() != 'FLS':
                     defined_loads.append(load_obj)
@@ -4964,9 +5002,9 @@ class Application():
             defined_tanks =  []
         else:
             defined_tanks = [['comp'+str(int(tank_num)), self._tank_dict['comp'+str(int(tank_num))]]
-                     for tank_num in self.get_compartments_for_line_duplicates(line_name)]
+                     for tank_num in self.get_compartments_for_line_duplicates(current_line)]
 
-        coord = (self.get_line_radial_mid(line_name), self.get_line_low_elevation(line_name))
+        coord = (self.get_line_radial_mid(current_line), self.get_line_low_elevation(current_line))
 
         if load_condition not in ['tanktest','manual','slamming']:
             acc = (self._accelerations_dict['static'], self._accelerations_dict['dyn_'+str(load_condition)])
@@ -4975,12 +5013,12 @@ class Application():
 
         load_factors_all = self._new_load_comb_dict
 
-        line_name_obj = [line_name, self._line_to_struc[line_name][1]]
+        current_line_obj = [current_line, self._line_to_struc[current_line][1]]
 
-        if self._line_to_struc[line_name][1].get_structure_type() in ['', 'FRAME','GENERAL_INTERNAL_NONWT']:
+        if self._line_to_struc[current_line][0].Plate.get_structure_type() in ['', 'FRAME','GENERAL_INTERNAL_NONWT']:
             return [0, '']
         else:
-            return_value = one_load_combination(line_name_obj, coord, defined_loads, load_condition,
+            return_value = one_load_combination(current_line_obj, coord, defined_loads, load_condition,
                                                 defined_tanks, comb_name, acc, load_factors_all)
 
             return return_value
@@ -5008,7 +5046,7 @@ class Application():
         current_tank.set_acceleration(self._accelerations_dict)
         current_tank.set_density(self._new_density.get())
         for line, obj in self._line_to_struc.items():
-            obj[1].need_recalc = True
+            obj[0].need_recalc = True
             if  self._compartments_listbox.get('active') in self.get_compartments_for_line(line):
                 self._PULS_results.result_changed(line)
 
@@ -5030,7 +5068,7 @@ class Application():
 
                 if line in self._line_dict.keys():
                     if line in self._line_to_struc.keys():
-                        if self._line_to_struc[line][1].get_structure_type() not in self._structure_types['non-wt']:
+                        if self._line_to_struc[line][0].Plate.get_structure_type() not in self._structure_types['non-wt']:
                             self.delete_properties_pressed()
                             self.delete_all_tanks()
                     self._line_dict.pop(line)
@@ -5115,8 +5153,8 @@ class Application():
                 self.new_structure(pasted_structure=self._line_to_struc[self.__copied_line_prop][1])
         elif self._line_to_struc[self.__copied_line_prop][5] is not None:
             self.new_structure(cylinder_return=self._line_to_struc[self.__copied_line_prop][5])
-        elif self._line_to_struc[self._active_line][1].get_structure_type() !=\
-                self._line_to_struc[self.__copied_line_prop][1].get_structure_type():
+        elif self._line_to_struc[self._active_line][0].Plate.get_structure_type() !=\
+                self._line_to_struc[self.__copied_line_prop][0].Plate.get_structure_type():
             tk.messagebox.showerror('Paste error', 'Can only paste to same structure type. This is to avoid problems '
                                                    'with compartments not detecting changes to watertightness.')
             return
@@ -5140,7 +5178,7 @@ class Application():
 
         if action_taken:
             for line, obj in self._line_to_struc.items():
-                obj[1].need_recalc = True
+                obj[0].need_recalc = True
             self.update_frame()
 
     def delete_all_tanks(self):
@@ -5254,18 +5292,18 @@ class Application():
                         pressures['p_ext']['loaded'] = load.get_calculated_pressure(self.get_pressures_calc_coord(line),
                                                                                     accelerations[0],
                                                                                     self._line_to_struc[line][
-                                                                                        0].get_structure_type())
+                                                                                        0].Plate.get_structure_type())
                     if fls_exist[exist_i] and load.get_load_condition() == 'ballast':
                         pressures['p_ext']['ballast'] = load.get_calculated_pressure(self.get_pressures_calc_coord(line),
                                                                                     accelerations[1],
                                                                                     self._line_to_struc[line][
-                                                                                        0].get_structure_type())
+                                                                                        0].Plate.get_structure_type())
 
                     if fls_exist[exist_i] and load.get_load_condition() == 'part':
                         pressures['p_ext']['part'] = load.get_calculated_pressure(self.get_pressures_calc_coord(line),
                                                                                     accelerations[2],
                                                                                     self._line_to_struc[line][
-                                                                                        0].get_structure_type())
+                                                                                        0].Plate.get_structure_type())
 
         if self._tank_dict == {}:
             compartments = []
@@ -5587,7 +5625,7 @@ class Application():
             for line in self._line_to_struc.keys():
                 if line not in self._multiselect_lines:
                     if event.keysym == 't':
-                        if self._line_to_struc[line][1].get_structure_type() == self._new_stucture_type.get():
+                        if self._line_to_struc[line][0].Plate.get_structure_type() == self._new_stucture_type.get():
                             self._multiselect_lines.append(line)
                     else:
                         self._multiselect_lines.append(line)
@@ -5905,14 +5943,20 @@ class Application():
         self._point_dict = imported['point_dict']
         self._line_dict = imported['line_dict']
         struc_prop = imported['structure_properties']
+        old_save_file = True
 
         for line, lines_prop in struc_prop.items():
+
+            if len(lines_prop) > 10:
+                # Loading a file (pre 3.4)
+                old_save_file = True
 
             self._line_to_struc[line] = [None, None, None, [], {}, None]
             self._line_point_to_point_string.append(
                 self.make_point_point_line_string(self._line_dict[line][0], self._line_dict[line][1])[0])
             self._line_point_to_point_string.append(
                 self.make_point_point_line_string(self._line_dict[line][0], self._line_dict[line][1])[1])
+
             if 'structure_types' not in lines_prop.keys():
                 lines_prop['structure_types'] = [self._structure_types, ' ']
             if 'zstar_optimization' not in lines_prop.keys():
@@ -5936,8 +5980,23 @@ class Application():
                 lines_prop['sigma_x2'] = lines_prop['sigma_x']
                 lines_prop.pop('sigma_x')
 
-            self._line_to_struc[line][1] = Structure(lines_prop)
             self._line_to_struc[line][1] = CalcScantlings(lines_prop)
+            
+            if old_save_file: #need to get some basic information
+                import ANYstructure_local.example_data as ex
+                main_dict = ex.prescriptive_main_dict
+                main_dict['material yield'] = [355e6, 'Pa']
+                main_dict['load factor on stresses'] = [1, '']
+                main_dict['load factor on pressure'] = [1, '']
+                main_dict['buckling method'] = [lines_prop['puls buckling method'], '']
+                main_dict['stiffener end support'] = [lines_prop['puls stiffener end'], '']  # 'Continuous'
+                main_dict['girder end support'] = ['Continuous', '']  # 'Continuous'
+            #TODO saving not implented for AllStructure
+            self._line_to_struc[line][0] = AllStructure(Plate=CalcScantlings(lines_prop),
+                                                  Stiffener=CalcScantlings(lines_prop),
+                                                  Girder=None, main_dict=main_dict,
+                                                  calculation_domain='Flat plate, stiffened')
+
             if imported['fatigue_properties'][line] is not None:
                 self._line_to_struc[line][2] = CalcFatigue(lines_prop, imported['fatigue_properties'][line])
             else:
@@ -5967,6 +6026,8 @@ class Application():
                         else Structure(imported_dict['Ring frame']))
             #  Recording sections.
             self._sections = add_new_section(self._sections, struc.Section(lines_prop))
+
+
 
         # opening the loads
         variables = ['poly_third','poly_second', 'poly_first', 'poly_const', 'load_condition',
@@ -6374,7 +6435,7 @@ class Application():
             # adding values to the line dictionary. resetting first.
             for key, value in self._line_to_struc.items():
                 self._line_to_struc[key][3] = []
-                self._line_to_struc[key][1].need_recalc = True  # All lines need recalculations.
+                self._line_to_struc[key][0].need_recalc = True  # All lines need recalculations.
 
             for main_line in self._line_dict.keys():
                 for load_obj, load_line in self._load_dict.values():
@@ -6406,7 +6467,7 @@ class Application():
         self.new_structure(multi_return = returned_object[0:3])
         # self._line_to_struc[self._active_line][1]=returned_objects[0]
         # self._line_to_struc[self._active_line][1]=returned_objects[1]
-        # self._line_to_struc[self._active_line][1].need_recalc = True
+        # self._line_to_struc[self._active_line][0].need_recalc = True
         # self.set_selected_variables(self._active_line)
         # if returned_objects[2] is not None:
         #     self._line_to_struc[self._active_line][2] = CalcFatigue(returned_objects[0].get_structure_prop(),
@@ -6434,7 +6495,7 @@ class Application():
 
         for line,all_objs in returned_objects.items():
             self._active_line = line
-            #self._line_to_struc[line][1].need_recalc = True
+            #self._line_to_struc[line][0].need_recalc = True
             self.new_structure(multi_return= all_objs[0:3])
         self.update_frame()
 
@@ -6513,7 +6574,7 @@ class Application():
         else:
             self._line_to_struc[self._active_line][2].set_fatigue_properties(returned_fatigue_prop)
 
-        self._line_to_struc[self._active_line][1].need_recalc = True
+        self._line_to_struc[self._active_line][0].need_recalc = True
         if self.__returned_load_data is not None:
             map(self.on_close_load_window, self.__returned_load_data)
 
@@ -6521,7 +6582,7 @@ class Application():
         for key, value in self._line_to_struc.items():
             if self._line_to_struc[key][2] is not None:
                 self._line_to_struc[key][2].set_commmon_properties(returned_fatigue_prop)
-            self._line_to_struc[key][1].need_recalc = True  # All lines need recalculations.
+            self._line_to_struc[key][0].need_recalc = True  # All lines need recalculations.
 
         self.update_frame()
 
