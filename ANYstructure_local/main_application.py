@@ -2296,7 +2296,11 @@ class Application():
             self._active_line = line
             self._line_is_active = True
             if self._active_line in self._line_to_struc.keys():
-                dict = self._line_to_struc[self._active_line][1].get_structure_prop()
+                if self._active_line[self._active_line][0].Stiffener is not None:
+                    dict = self._line_to_struc[self._active_line][0].Stiffener.get_structure_prop()
+                else:
+                    dict = self._line_to_struc[self._active_line][0].Plate.get_structure_prop()
+
                 dict[var_to_set][0] = set_var
                 self.new_structure(toggle_multi=dict, suspend_recalc=True if (idx+1) != no_of_lines else False)
 
@@ -2637,8 +2641,13 @@ class Application():
             rec_for_color[current_line]  = {}
             slamming_pressure = 0
             if current_line in self._line_to_struc.keys():
-                obj_scnt_calc = self._line_to_struc[current_line][1]
                 all_obj = self._line_to_struc[current_line][0]
+
+                obj_scnt_calc_pl = all_obj.Plate #self._line_to_struc[current_line][1]
+                obj_scnt_calc_stf = all_obj.Stiffener  # self._line_to_struc[current_line][1]
+                obj_scnt_calc_girder = all_obj.Girder  # self._line_to_struc[current_line][1]
+
+
                 if all_obj.need_recalc is False:
                     return self._state_logger[current_line]
                 try:
@@ -2654,67 +2663,67 @@ class Application():
                 except KeyError:
                     design_pressure = 0
 
-                sec_mod = [obj_scnt_calc.get_section_modulus()[0],
-                           obj_scnt_calc.get_section_modulus()[1]]
+                min_thk = obj_scnt_calc_pl.get_dnv_min_thickness(design_pressure)
+                color_thk = 'green' if obj_scnt_calc_pl.is_acceptable_pl_thk(design_pressure) else 'red'
+                rec_for_color[current_line]['plate thickness'] = (min_thk / 1000) / obj_scnt_calc_stf.get_pl_thk()
 
-                shear_area = obj_scnt_calc.get_shear_area()
-                min_shear = obj_scnt_calc.get_minimum_shear_area(design_pressure)
-                min_sec_mod = obj_scnt_calc.get_dnv_min_section_modulus(design_pressure)
-                min_thk = obj_scnt_calc.get_dnv_min_thickness(design_pressure)
-                buckling = [round(res, 2) for res in obj_scnt_calc.calculate_buckling_all(
-                    design_lat_press=design_pressure,
-                    checked_side=obj_scnt_calc.get_side())]
+                if obj_scnt_calc_stf is not None:
+                    sec_mod = [obj_scnt_calc_stf.get_section_modulus()[0],
+                               obj_scnt_calc_stf.get_section_modulus ()[1]]
 
-                rec_for_color[current_line]['section modulus'] = min_sec_mod/min(sec_mod)
+                    shear_area = obj_scnt_calc_stf.get_shear_area()
+                    min_shear = obj_scnt_calc_stf.get_minimum_shear_area(design_pressure)
+                    min_sec_mod = obj_scnt_calc_stf.get_dnv_min_section_modulus(design_pressure)
 
-                rec_for_color[current_line]['plate thickness'] = (min_thk/1000)/obj_scnt_calc.get_pl_thk()
-                rec_for_color[current_line]['rp buckling'] = max(buckling)
+                    buckling = [round(res, 2) for res in obj_scnt_calc_stf.calculate_buckling_all(
+                        design_lat_press=design_pressure,
+                        checked_side=obj_scnt_calc_stf.get_side())]
+                    color_buckling = 'green' if all([uf <= 1 for uf in buckling]) \
+                        else 'red'
+                    rec_for_color[current_line]['section modulus'] = min_sec_mod/min(sec_mod)
+                    rec_for_color[current_line]['rp buckling'] = max(buckling)
+                    rec_for_color[current_line]['shear'] = min_shear/shear_area
+                    return_dict['slamming'][current_line] = dict()
+                    if slamming_pressure is not None and slamming_pressure > 0:
+                        return_dict['slamming'][current_line]['state'] = True
+                    else:
+                        return_dict['slamming'][current_line]['state'] = False
 
-                rec_for_color[current_line]['shear'] = min_shear/shear_area
-                return_dict['slamming'][current_line] = dict()
-                if slamming_pressure is not None and slamming_pressure > 0:
-                    return_dict['slamming'][current_line]['state'] = True
-                else:
-                    return_dict['slamming'][current_line]['state'] = False
+                    try:
+                        fatigue_obj = self._line_to_struc[current_line][2]
+                        p_int = self.get_fatigue_pressures(current_line, fatigue_obj.get_accelerations())['p_int']
+                        p_ext = self.get_fatigue_pressures(current_line, fatigue_obj.get_accelerations())['p_ext']
+                        damage = fatigue_obj.get_total_damage(int_press=(p_int['loaded'], p_int['ballast'],
+                                                                         p_int['part']), ext_press=(p_ext['loaded'],
+                                                                                                    p_ext['ballast'],
+                                                                                                    p_ext['part']))
+                        dff = fatigue_obj.get_dff()
+                        color_fatigue = 'green' if damage * dff <= 1 else 'red'
+                    except AttributeError:
+                        fatigue_obj, p_int, p_ext, damage, dff = [None for dummy in range(5)]
+                        color_fatigue = 'green'
 
-                try:
-                    fatigue_obj = self._line_to_struc[current_line][2]
-                    p_int = self.get_fatigue_pressures(current_line, fatigue_obj.get_accelerations())['p_int']
-                    p_ext = self.get_fatigue_pressures(current_line, fatigue_obj.get_accelerations())['p_ext']
-                    damage = fatigue_obj.get_total_damage(int_press=(p_int['loaded'], p_int['ballast'],
-                                                                     p_int['part']), ext_press=(p_ext['loaded'],
-                                                                                                p_ext['ballast'],
-                                                                                                p_ext['part']))
-                    dff = fatigue_obj.get_dff()
-                    color_fatigue = 'green' if damage * dff <= 1 else 'red'
-                except AttributeError:
-                    fatigue_obj, p_int, p_ext, damage, dff = [None for dummy in range(5)]
-                    color_fatigue = 'green'
+                    color_sec = 'green' if obj_scnt_calc_stf.is_acceptable_sec_mod(sec_mod, design_pressure) else 'red'
+                    color_shear = 'green' if obj_scnt_calc_stf.is_acceptable_shear_area(shear_area, design_pressure) else 'red'
 
-                color_sec = 'green' if obj_scnt_calc.is_acceptable_sec_mod(sec_mod, design_pressure) else 'red'
-                color_shear = 'green' if obj_scnt_calc.is_acceptable_shear_area(shear_area, design_pressure) else 'red'
-                color_thk = 'green' if obj_scnt_calc.is_acceptable_pl_thk(design_pressure) else 'red'
-                color_buckling = 'green' if all([uf <= 1 for uf in buckling]) \
-                    else 'red'
-
-                if slamming_pressure is not None and slamming_pressure > 0:
-                    slamming_res = obj_scnt_calc.calculate_slamming_stiffener(slamming_pressure,
+                if slamming_pressure is not None and slamming_pressure > 0 and obj_scnt_calc_stf is not None:
+                    slamming_res = obj_scnt_calc_stf.calculate_slamming_stiffener(slamming_pressure,
                                                                               red_fac=slamming_red_fac_pl)
-                    min_pl_slamming = obj_scnt_calc.calculate_slamming_plate(slamming_pressure,
+                    min_pl_slamming = obj_scnt_calc_stf.calculate_slamming_plate(slamming_pressure,
                                                                              red_fac=slamming_red_fac_stf)
 
                     if slamming_res['Zp_req'] is not None:
-                        zpl = obj_scnt_calc.get_net_effective_plastic_section_modulus()
+                        zpl = obj_scnt_calc_stf.get_net_effective_plastic_section_modulus()
                         zpl_req = slamming_res['Zp_req']
                         color_sec = 'green' if zpl >= zpl_req else 'red'
                     else:
-                        zpl = obj_scnt_calc.get_net_effective_plastic_section_modulus()
+                        zpl = obj_scnt_calc_stf.get_net_effective_plastic_section_modulus()
                         zpl_req = None
                         color_sec = 'red'
 
-                    color_shear = 'green' if round(obj_scnt_calc.get_web_thk()* 1000,1)  >= \
+                    color_shear = 'green' if round(obj_scnt_calc_stf.get_web_thk()* 1000,1)  >= \
                                              round(slamming_res['tw_req'],1) else 'red'
-                    color_thk = 'green' if round(obj_scnt_calc.get_pl_thk() * 1000,1) >= \
+                    color_thk = 'green' if round(obj_scnt_calc_stf.get_pl_thk() * 1000,1) >= \
                                            round(min_pl_slamming,1) else 'red'
 
                     return_dict['slamming'][current_line]['zpl'] = zpl
@@ -2727,12 +2736,6 @@ class Application():
                                                        'thickness': color_thk}
                 '''
                 Cylinder calculations
-                    'cylinder' = {'Unstiffened shell': uf_unstf_shell,
-                               'Longitudinal stiffened shell': uf_long_stf,
-                               'Ring stiffened shell': uf_ring_stf,
-                               'Heavy ring frame': uf_ring_frame,
-                               'Column stability check': column_stability,
-                               'Stiffener check': stiffener_check}
                 '''
                 if self._line_to_struc[current_line][5] is not None:
                     cylinder_results = self._line_to_struc[current_line][5].get_utilization_factors()
@@ -2763,10 +2766,10 @@ class Application():
                             loc_geom = 'red'
                         else:
                             loc_label = 'Local geom req (PULS validity limits)' if \
-                                obj_scnt_calc.get_puls_sp_or_up() == 'SP' else 'Geom. Req (PULS validity limits)'
+                                obj_scnt_calc_stf.get_puls_sp_or_up() == 'SP' else 'Geom. Req (PULS validity limits)'
                             loc_geom = 'green' if all([val[0] == 'Ok' for val in res[loc_label].values()]) else 'red'
                         csr_label = 'CSR-Tank requirements (primary stiffeners)' if \
-                            obj_scnt_calc.get_puls_sp_or_up() == 'SP' else'CSR-Tank req'
+                            obj_scnt_calc_stf.get_puls_sp_or_up() == 'SP' else'CSR-Tank req'
 
                         csr_geom = 'green' if all([val[0] in ['Ok', '-'] for val in res[csr_label].values()]) else 'red'
                         return_dict['PULS colors'][current_line] = {'ultimate': col_ult, 'buckling': col_buc,
@@ -2786,10 +2789,10 @@ class Application():
                         'cl SP ult GLGT predictor', 'cl SP ult GLGT scaler']
                 '''
 
-                if obj_scnt_calc.get_puls_sp_or_up() == 'UP':
-                    buckling_ml_input = obj_scnt_calc.get_buckling_ml_input(design_lat_press=design_pressure)
+                if obj_scnt_calc_stf.get_puls_sp_or_up() == 'UP':
+                    buckling_ml_input = obj_scnt_calc_stf.get_buckling_ml_input(design_lat_press=design_pressure)
 
-                    if obj_scnt_calc.get_puls_boundary() == 'Int':
+                    if obj_scnt_calc_stf.get_puls_boundary() == 'Int':
                         if self._ML_buckling['cl UP buc int predictor'] != None:
                             x_buc = self._ML_buckling['cl UP buc int scaler'].transform(buckling_ml_input)
                             y_pred_buc = self._ML_buckling['cl UP buc int predictor'].predict(x_buc)[0]
@@ -2812,7 +2815,7 @@ class Application():
                         else:
                             y_pred_ult = 0
 
-                    x_csr = obj_scnt_calc.get_buckling_ml_input(design_lat_press=design_pressure, csr = True)
+                    x_csr = obj_scnt_calc_stf.get_buckling_ml_input(design_lat_press=design_pressure, csr = True)
                     x_csr = self._ML_buckling['CSR scaler UP'].transform(x_csr)
                     csr_pl = self._ML_buckling['CSR predictor UP'].predict(x_csr)[0]
 
@@ -2826,8 +2829,8 @@ class Application():
                                                                       'CSR': [csr_pl, float('inf'),
                                                                               float('inf'), float('inf')]}
                 else:
-                    buckling_ml_input = obj_scnt_calc.get_buckling_ml_input(design_lat_press=design_pressure)
-                    if obj_scnt_calc.get_puls_boundary() == 'Int':
+                    buckling_ml_input = obj_scnt_calc_stf.get_buckling_ml_input(design_lat_press=design_pressure)
+                    if obj_scnt_calc_stf.get_puls_boundary() == 'Int':
                         if self._ML_buckling['cl SP buc int predictor'] != None:
                             x_buc = self._ML_buckling['cl SP buc int scaler'].transform(buckling_ml_input)
                             y_pred_buc = self._ML_buckling['cl SP buc int predictor'].predict(x_buc)[0]
@@ -2850,7 +2853,7 @@ class Application():
                         else:
                             y_pred_ult = 0
 
-                    x_csr = obj_scnt_calc.get_buckling_ml_input(design_lat_press=design_pressure, csr = True)
+                    x_csr = obj_scnt_calc_stf.get_buckling_ml_input(design_lat_press=design_pressure, csr = True)
 
                     x_csr = self._ML_buckling['CSR scaler SP'].transform(x_csr)
                     csr_pl, csr_web, csr_web_fl, csr_fl = self._ML_buckling['CSR predictor SP'].predict(x_csr)[0]
@@ -2867,10 +2870,10 @@ class Application():
                 '''
                 Weight calculations for line.
                 '''
-                line_weight = op.calc_weight([obj_scnt_calc.get_s(), obj_scnt_calc.get_pl_thk(),
-                                              obj_scnt_calc.get_web_h(), obj_scnt_calc.get_web_thk(),
-                                              obj_scnt_calc.get_fl_w(), obj_scnt_calc.get_fl_thk(),
-                                              obj_scnt_calc.get_span(), obj_scnt_calc.get_lg()])
+                line_weight = op.calc_weight([obj_scnt_calc_stf.get_s(), obj_scnt_calc_stf.get_pl_thk(),
+                                              obj_scnt_calc_stf.get_web_h(), obj_scnt_calc_stf.get_web_thk(),
+                                              obj_scnt_calc_stf.get_fl_w(), obj_scnt_calc_stf.get_fl_thk(),
+                                              obj_scnt_calc_stf.get_span(), obj_scnt_calc_stf.get_lg()])
                 points = self._line_dict[current_line]
                 p1 = self._point_dict['point' + str(points[0])]
                 p2 = self._point_dict['point' + str(points[1])]
@@ -2886,11 +2889,11 @@ class Application():
                 return_dict['buckling'][current_line] = buckling
                 return_dict['pressure_uls'][current_line] = design_pressure
                 return_dict['pressure_fls'][current_line] = {'p_int': p_int, 'p_ext': p_ext}
-                return_dict['section_modulus'][current_line] = {'sec_mod': sec_mod, 'min_sec_mod': min_sec_mod}
-                return_dict['shear_area'][current_line] = {'shear_area': shear_area, 'min_shear_area': min_shear}
-                return_dict['thickness'][current_line] = {'thk': obj_scnt_calc.get_pl_thk(), 'min_thk': min_thk}
-                return_dict['struc_obj'][current_line] = obj_scnt_calc
-                return_dict['scant_calc_obj'][current_line] = obj_scnt_calc
+                return_dict['section_modulus'][current_line] = {'sec_mod': 0, 'min_sec_mod': 0} if \
+                    obj_scnt_calc_stf is None else {'sec_mod': sec_mod, 'min_sec_mod': min_sec_mod}
+                return_dict['shear_area'][current_line] = {'shear_area': 0, 'min_shear_area': 0} if \
+                    obj_scnt_calc_stf is None else{'shear_area': shear_area, 'min_shear_area': min_shear}
+                return_dict['thickness'][current_line] = {'thk': obj_scnt_calc_pl.get_pl_thk(), 'min_thk': min_thk}
                 return_dict['fatigue_obj'][current_line] = fatigue_obj
                 return_dict['color code'][current_line] = {}
 
@@ -2904,7 +2907,7 @@ class Application():
 
                 fat_util = 0 if damage is None else damage * dff
                 shear_util = 0 if shear_area == 0 else min_shear / shear_area
-                thk_util = 0 if obj_scnt_calc.get_pl_thk() == 0 else min_thk / (1000 * obj_scnt_calc.get_pl_thk())
+                thk_util = 0 if obj_scnt_calc_stf.get_pl_thk() == 0 else min_thk / (1000 * obj_scnt_calc_stf.get_pl_thk())
                 sec_util = 0 if min(sec_mod) == 0 else min_sec_mod / min(sec_mod)
                 buc_util = 1 if float('inf') in buckling else max(buckling[0:5])
                 rec_for_color[current_line]['rp buckling'] = max(buckling[0:5])
@@ -2916,7 +2919,6 @@ class Application():
                                                             'thickness': thk_util}
 
                 # Color coding state
-
                 self._state_logger[current_line] = return_dict #  Logging the current state of the line.
                 self._line_to_struc[current_line][0].need_recalc = False
             else:
@@ -2933,11 +2935,12 @@ class Application():
         if self._line_to_struc != {}:
             sec_mod_map = np.arange(0,1.1,0.1)
             fat_map = np.arange(0,1.1,0.1)
-            all_thicknesses = [round(objs[1].get_pl_thk(), 5) for objs in self._line_to_struc.values()]
+            all_thicknesses = [round(objs[0].Plate.get_pl_thk(), 5) for objs in self._line_to_struc.values()]
             all_thicknesses = np.unique(all_thicknesses).tolist()
             thickest_plate = max(all_thicknesses)
             if len(all_thicknesses) > 1:
-                thk_map = np.arange(min(all_thicknesses), max(all_thicknesses) + (max(all_thicknesses) - min(all_thicknesses)) / 10,
+                thk_map = np.arange(min(all_thicknesses), max(all_thicknesses) + (max(all_thicknesses) -
+                                                                                  min(all_thicknesses)) / 10,
                                      (max(all_thicknesses) - min(all_thicknesses)) / 10)
             else:
                 thk_map = all_thicknesses
@@ -2963,10 +2966,7 @@ class Application():
                          for line in self._line_to_struc.keys()]
             all_utils = np.unique(all_utils).tolist()
             if len(all_utils) >1:
-                # util_map = np.arange(min(all_utils), max(all_utils) + (max(all_utils) - min(all_utils)) / 10,
-                #                      (max(all_utils) - min(all_utils)) / 10)
                 util_map =  np.arange(0, 1.1, 0.1)
-
             else:
                 util_map = all_utils
 
@@ -2976,21 +2976,18 @@ class Application():
                 for key, val in self._line_to_struc.items():
                     puls_util_map.append(self._PULS_results.get_utilization(key, val[1].get_puls_method(),
                                                                             acceptance = self._new_puls_uf.get()))
-                # puls_util_map  = np.arange(min(puls_util_map), max(puls_util_map) + (max(puls_util_map) -
-                #                                                                      min(puls_util_map)) / 10,
-                #                      (max(puls_util_map) - min(puls_util_map)) / 10)
                 puls_util_map  = np.arange(0, 1.1, 0.1)
             else:
                 puls_util_map = None
 
-            sig_x = np.unique([self._line_to_struc[line][1].get_sigma_x1() for line in
+            sig_x = np.unique([self._line_to_struc[line][0].Plate.get_sigma_x1() for line in
                                self._line_to_struc.keys()]).tolist()
             if len(sig_x) > 1: # TODO color coding when using sig_x1 and sig_x2 (23.12.2021)
                 sig_x_map = np.arange(min(sig_x), max(sig_x) + (max(sig_x) - min(sig_x)) / 10,
                                       (max(sig_x) - min(sig_x)) / 10)
             else:
                 sig_x_map = sig_x
-            sig_y1 = np.unique([self._line_to_struc[line][1].get_sigma_y1() for line in
+            sig_y1 = np.unique([self._line_to_struc[line][0].Plate.get_sigma_y1() for line in
                                 self._line_to_struc.keys()]).tolist()
             if len(sig_y1) > 1:
                 sig_y1_map = np.arange(min(sig_y1), max(sig_y1) + (max(sig_y1) - min(sig_y1)) / 10,
@@ -2998,7 +2995,7 @@ class Application():
             else:
                 sig_y1_map = sig_y1
 
-            sig_y2 = np.unique([self._line_to_struc[line][1].get_sigma_y2() for line in
+            sig_y2 = np.unique([self._line_to_struc[line][0].Plate.get_sigma_y2() for line in
                                 self._line_to_struc.keys()]).tolist()
             if len(sig_y2) > 1:
 
@@ -3006,7 +3003,7 @@ class Application():
                                        (max(sig_y2) - min(sig_y2)) / 10)
             else:
                 sig_y2_map = sig_y2
-            tau_xy = np.unique([self._line_to_struc[line][1].get_tau_xy() for line in
+            tau_xy = np.unique([self._line_to_struc[line][0].Plate.get_tau_xy() for line in
                                 self._line_to_struc.keys()]).tolist()
             if len(tau_xy) > 1:
                 tau_xy_map = np.arange(min(tau_xy), max(tau_xy) + (max(tau_xy) - min(tau_xy)) / 10,
@@ -3014,8 +3011,11 @@ class Application():
             else:
                 tau_xy_map = tau_xy
 
-            spacing = np.unique([self._line_to_struc[line][1].get_s() for line in
-                                 self._line_to_struc.keys()]).tolist()
+            spacings = list()
+            for line in self._line_to_struc.keys():
+                if self._line_to_struc[line][0].Stiffener is not None:
+                    spacings.append(self._line_to_struc[line][0].Stiffener.get_s())
+            spacing = np.unique(spacings).tolist()
             structure_type = [self._line_to_struc[line][0].Plate.get_structure_type() for line in
                               self._line_to_struc.keys()]
 
@@ -3047,16 +3047,16 @@ class Application():
             for line, line_data in self._line_to_struc.items():
                 if self._PULS_results is None:
                     puls_color, buc_uf, puls_uf, puls_method, puls_sp_or_up = 'black', 0, 0, None, None
-                elif self._PULS_results.get_utilization(line, self._line_to_struc[line][1].get_puls_method(),
+                elif self._PULS_results.get_utilization(line, self._line_to_struc[line][0].Plate.get_puls_method(),
                                                         self._new_puls_uf.get()) == None:
                     puls_color, buc_uf, puls_uf, puls_method, puls_sp_or_up = 'black', 0,0, None, None
                 else:
-                    puls_method = self._line_to_struc[line][1].get_puls_method()
+                    puls_method = self._line_to_struc[line][0].Plate.get_puls_method()
                     puls_uf = self._PULS_results.get_utilization(
                                                    line, puls_method,
                                                    self._new_puls_uf.get())
                     puls_color = matplotlib.colors.rgb2hex(cmap_sections(puls_uf))
-                    puls_sp_or_up = self._line_to_struc[line][1].get_puls_sp_or_up()
+                    puls_sp_or_up = self._line_to_struc[line][0].Plate.get_puls_sp_or_up()
 
                 rp_uf = rec_for_color[line]['rp buckling']
 
@@ -3074,8 +3074,8 @@ class Application():
 
                 res = list()
                 for stress_list, this_stress in zip([sig_x, sig_y1, sig_y2, tau_xy],
-                                                     [line_data[1].get_sigma_x1(), line_data[1].get_sigma_y1(),
-                                                      line_data[1].get_sigma_y2(), line_data[1].get_tau_xy()]):
+                                                     [line_data[0].Plate.get_sigma_x1(), line_data[0].Plate.get_sigma_y1(),
+                                                      line_data[0].Plate.get_sigma_y2(), line_data[0].Plate.get_tau_xy()]):
                     if len(stress_list) == 1:
                         res.append(1)
                     elif max(stress_list) == 0 and min(stress_list) == 0:
@@ -3316,7 +3316,7 @@ class Application():
                                 col1, col2 = state['PULS colors'][line]['buckling'], \
                                              state['PULS colors'][line]['ultimate']
 
-                                if self._line_to_struc[line][1].get_puls_method() == 'buckling':
+                                if self._line_to_struc[line][0].Plate.get_puls_method() == 'buckling':
                                     color = 'red' if any([col1 == 'red', col2 == 'red']) else 'green'
                                 else:
                                     color = col2
@@ -3333,7 +3333,7 @@ class Application():
                                 col1, col2 = state['ML buckling colors'][line]['buckling'], \
                                              state['ML buckling colors'][line]['ultimate']
 
-                                if self._line_to_struc[line][1].get_puls_method() == 'buckling':
+                                if self._line_to_struc[line][0].Plate.get_puls_method() == 'buckling':
                                     color = col1
                                 else:
                                     color = col2
@@ -3826,7 +3826,7 @@ class Application():
             # printing the properties to the active line
             if self._line_is_active and self._line_to_struc[self._active_line][5] is None:
                 self._prop_canvas.create_text([canvas_width*0.239726027, canvas_height*0.446096654],
-                                             text=self._line_to_struc[self._active_line][1],
+                                             text=self._line_to_struc[self._active_line][0].Plate,
                                              font = self._text_size["Text 9"], fill = self._color_text)
 
                 # setting the input field to active line properties
@@ -3837,7 +3837,7 @@ class Application():
                 thk_mult = 500*1
                 startx = 540*1
                 starty = 150*1
-                structure_obj = self._line_to_struc[self._active_line][1]
+                structure_obj = self._line_to_struc[self._active_line][0].Plate
 
                 self._prop_canvas.create_text([canvas_width/2-canvas_width/20, canvas_height/20],
                                              text ='SELECTED: '+str(self._active_line),
@@ -3984,7 +3984,7 @@ class Application():
 
                 current_line = self._active_line
 
-                obj_scnt_calc = state['struc_obj'][current_line]
+                obj_scnt_calc_stf = state['struc_obj'][current_line]
                 sec_mod = [round(state['section_modulus'][current_line]['sec_mod'][0], 5),
                            round(state['section_modulus'][current_line]['sec_mod'][1], 5)]
                 shear_area = state['shear_area'][current_line]['shear_area']
@@ -4001,10 +4001,10 @@ class Application():
                     slm_min_web_thk = state['slamming'][current_line]['min_web_thk']
 
                     slm_text_pl_thk = 'Minimum plate thickness (BOW SLAMMING): '+str(round(slm_min_pl_thk,1))+' [mm]' \
-                        if obj_scnt_calc.get_pl_thk() * 1000 < slm_min_pl_thk else None
+                        if obj_scnt_calc_stf.get_pl_thk() * 1000 < slm_min_pl_thk else None
 
                     slm_text_min_web_thk = 'Minimum web thickness (BOW SLAMMING): '+str(round(slm_min_web_thk,1))+' [mm]' \
-                        if obj_scnt_calc.get_web_thk()*1000 < slm_min_web_thk else None
+                        if obj_scnt_calc_stf.get_web_thk()*1000 < slm_min_web_thk else None
                     if slm_zpl_req is not None:
                         slm_text_min_zpl = 'Minimum section modulus (BOW SLAMMING): '+str(round(slm_zpl_req,1))+' [cm^3]' \
                             if slm_zpl < slm_zpl_req else None
@@ -4041,7 +4041,7 @@ class Application():
 
                 #minimum shear area
                 text = 'Shear area: '+str('%.4E' % decimal.Decimal(shear_area * m2_to_mm2 ))+' [mm^2]' \
-                    if not slm_text_min_web_thk else 'Stiffener web thickness: '+str(obj_scnt_calc.get_web_thk()*1000)+' [mm]'
+                    if not slm_text_min_web_thk else 'Stiffener web thickness: '+str(obj_scnt_calc_stf.get_web_thk()*1000)+' [mm]'
                 self._result_canvas.create_text([x*1, (y+3*dy)*1],
                                                text= text,
                                                font=self._text_size["Text 9 bold"],anchor='nw', fill = self._color_text)
@@ -4056,7 +4056,7 @@ class Application():
 
                 self._result_canvas.create_text([x*1, (y+6*dy)*1],
                                                text='Plate thickness: '
-                                                    +str(obj_scnt_calc.get_pl_thk()*1000)+' [mm] ',
+                                                    +str(obj_scnt_calc_stf.get_pl_thk()*1000)+' [mm] ',
                                                font=self._text_size["Text 9 bold"],anchor='nw', fill = self._color_text)
                 text = 'Minimum plate thickness: '+str(round(min_thk,1)) + ' [mm]' if not slm_text_pl_thk \
                     else 'Minimum plate thickness due to SLAMMING'+str(slm_min_pl_thk)+' [mm]'
@@ -4086,9 +4086,9 @@ class Application():
                             buc_text = 'Buckling capacity usage factor:  None - geometric issue'
 
                         loc_label = 'Local geom req (PULS validity limits)' if \
-                            obj_scnt_calc.get_puls_sp_or_up() == 'SP' else 'Geom. Req (PULS validity limits)'
+                            obj_scnt_calc_stf.get_puls_sp_or_up() == 'SP' else 'Geom. Req (PULS validity limits)'
                         csr_label = 'CSR-Tank requirements (primary stiffeners)' if \
-                            obj_scnt_calc.get_puls_sp_or_up() == 'SP' else 'CSR-Tank req'
+                            obj_scnt_calc_stf.get_puls_sp_or_up() == 'SP' else 'CSR-Tank req'
                         if geo_problem:
                             loc_geom = 'Not ok: '
                             for key, value in puls_res[loc_label].items():
@@ -4145,11 +4145,11 @@ class Application():
                         elif buckling[1] == float('inf'):
                             res_text = 'Spacing/thickness aspect ratio error (equation eq 6.11 - ha < 0). '
                         else:
-                            if obj_scnt_calc.get_side() == 'p':
+                            if obj_scnt_calc_stf.get_side() == 'p':
                                 res_text = '|eq 7.19: '+str(buckling[0])+' |eq 7.50: '+str(buckling[1])+ ' |eq 7.51: '+ \
                                              str(buckling[2])+' |7.52: '+str(buckling[3])+ '|eq 7.53: '+str(buckling[4])+\
                                              ' |z*: '+str(buckling[5])
-                            elif obj_scnt_calc.get_side() == 's':
+                            elif obj_scnt_calc_stf.get_side() == 's':
                                 res_text = '|eq 7.19: '+str(buckling[0])+' |eq 7.54: '+str(buckling[1])+' |eq 7.55: '+ \
                                              str(buckling[2])+' |7.56: '+str(buckling[3])+ '|eq 7.57: '+str(buckling[4])+ \
                                              ' |z*: '+str(buckling[5])
@@ -4170,7 +4170,7 @@ class Application():
                                                     text='Ultimate: ' +self._ML_classes[state['ML buckling class'][current_line]['ultimate']],
                                                     font=self._text_size["Text 9 bold"],
                                                     anchor='nw', fill=state['ML buckling colors'][current_line]['ultimate'])
-                    if obj_scnt_calc.get_puls_sp_or_up() == 'SP':
+                    if obj_scnt_calc_stf.get_puls_sp_or_up() == 'SP':
                         csr = state['ML buckling class'][current_line]['CSR']
                         csr_str = ['Ok' if csr[0] == 1 else 'Not ok', 'Ok' if csr[1] == 1 else 'Not ok',
                                    'Ok' if csr[2] == 1 else 'Not ok', 'Ok' if csr[3] == 1 else 'Not ok']
@@ -5013,7 +5013,7 @@ class Application():
 
         load_factors_all = self._new_load_comb_dict
 
-        current_line_obj = [current_line, self._line_to_struc[current_line][1]]
+        current_line_obj = [current_line, self._line_to_struc[current_line][0].Plate]
 
         if self._line_to_struc[current_line][0].Plate.get_structure_type() in ['', 'FRAME','GENERAL_INTERNAL_NONWT']:
             return [0, '']
@@ -5159,7 +5159,7 @@ class Application():
                                                    'with compartments not detecting changes to watertightness.')
             return
         else:
-            self.new_structure(pasted_structure = self._line_to_struc[self.__copied_line_prop][1])
+            self.new_structure(pasted_structure = self._line_to_struc[self.__copied_line_prop][0].Plate)
 
         self.update_frame()
 
@@ -5203,7 +5203,7 @@ class Application():
         Setting the properties in the entry fields to the specified values.
         '''
         if line in self._line_to_struc:
-            properties = self._line_to_struc[line][1].get_structure_prop()
+            properties = self._line_to_struc[line][0].Plate.get_structure_prop()
             self._new_material.set(round(properties['mat_yield'][0]/1e6,5))
             self._new_material_factor.set(properties['mat_factor'][0])
             self._new_field_len.set(round(properties['span'][0]*1000,5))
