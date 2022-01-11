@@ -2676,7 +2676,14 @@ class Application():
                 all_obj.lat_press = design_pressure/1000
                 buckling = all_obj.plate_buckling()
 
-                print('Line:', current_line, 'Pressure', design_pressure/1000, buckling)
+                # if current_line == 'line7':
+                #     print('Line:', current_line, 'Pressure', design_pressure/1000, buckling)
+                #     for key, val in self._line_to_struc[current_line][0].get_main_properties().items():
+                #         print(key, val)
+                #     buckling = all_obj.plate_buckling()
+                # else:
+                #     buckling =  {'Plate': {'Plate buckling': 0.6008375683848213}, 'Stiffener': {'Overpressure plate side': 1.906936135011311, 'Overpressure stiffener side': 1.5597740194239675, 'Resistance between stiffeners': 0.8819819808767574, 'Shear capacity': 0.6480527944404696}, 'Girder': {'Overpressure plate side': 0, 'Overpressure girder side': 0, 'Shear capacity': 0}, 'Local buckling': {'stiffener': [410.06272278728085, 136.68757426242695], 'girder': [0, 0]}}
+
 
                 all_buckling_uf_list = list()
                 for buc_domain, domain_results in buckling.items():
@@ -6010,11 +6017,12 @@ class Application():
             if old_save_file: #need to get some basic information
                 import ANYstructure_local.example_data as ex
                 main_dict = ex.prescriptive_main_dict
+                map_end = {'C': 'Continuous', 'S': 'Sniped'}
                 main_dict['material yield'] = [355e6, 'Pa']
                 main_dict['load factor on stresses'] = [1, '']
                 main_dict['load factor on pressure'] = [1, '']
                 main_dict['buckling method'] = [lines_prop['puls buckling method'], '']
-                main_dict['stiffener end support'] = [lines_prop['puls stiffener end'], '']  # 'Continuous'
+                main_dict['stiffener end support'] = [map_end[lines_prop['puls stiffener end'][0]], '']  # 'Continuous'
                 main_dict['girder end support'] = ['Continuous', '']  # 'Continuous'
                 dom = 'Flat plate, stiffened' if lines_prop['puls sp or up'][0] == 'SP' else 'Flat plate, unstiffened'
 

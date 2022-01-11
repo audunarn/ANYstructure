@@ -1837,7 +1837,6 @@ class AllStructure():
 
         qsd_plate_side = qsd_opposite if self._overpressure_side == 'stiffener side' else qsd_press
         qsd_stf_side = qsd_opposite if self._overpressure_side == 'plate side' else qsd_press
-        print(self._overpressure_side, qsd_press, qsd_opposite, qsd_plate_side, qsd_stf_side)
         kl = unstf_pl_data['kl']
 
         tcrl = 0 if s == 0 else kl*0.904*E*math.pow(t/s,2)
@@ -1925,7 +1924,7 @@ class AllStructure():
 
 
         zp = self._Stiffener.get_cross_section_centroid_with_effective_plate(se/1000)*1000 - t / 2  # ch7.5.1 page 19
-        zt = (t / 2 + self._Stiffener.hw + self._Stiffener.tf) - zp  # ch 7.5.1 page 19
+        zt  = (self._Stiffener.hw + self._Stiffener.tf) - zp + t/2  # ch 7.5.1 page 19
         fr = fy
 
         if Vsd_div_Vrd < 0.5:
@@ -1942,7 +1941,7 @@ class AllStructure():
         pf = 0.0001 if l*s*gammaM == 0 else 12*Wmin*fy/(math.pow(l,2)*s*gammaM)
 
         if self._buckling_length_factor_stf is None:
-            if self._stf_end_support == 'Continuous':
+            if self._stf_end_support == 'Continuous': # TODO wrong here. self._stf_end_support is 'C'
                 lk = l*(1-0.5*abs(psd_min_adj/pf))
 
             else:
@@ -2060,9 +2059,7 @@ class AllStructure():
 
         res_iter_stf = minimize(iteration_min_uf_stf_side, 0, bounds=[[-zt+self._Stiffener.tf/2,zp]])
         stf_pl_data['UF Stiffener side'] = res_iter_stf.fun[0]
-        # print(res_iter_stf)
-        # for key, val in stf_pl_data.items():
-        #     print(key, val)
+
         return stf_pl_data
 
     def girder(self, unstf_pl_data = None, stf_pl_data = None):
@@ -4403,11 +4400,11 @@ if __name__ == '__main__':
 
     PreBuc = AllStructure(Plate = Plate, Stiffener = Stiffener, Girder = Girder,
                                   main_dict=ex.prescriptive_main_dict)
-    PreBuc.lat_press = 0.423
+    PreBuc.lat_press = 0.422985
 
     #print(Plate)
     # print(Plate)
-    # print(Stiffener)
+    print(Stiffener)
     # print(Girder)
 
     print(PreBuc.plate_buckling())
