@@ -1382,7 +1382,7 @@ class CalcScantlings(Structure):
 
 class AllStructure():
     '''
-    Calculation of buckling
+    Calculation of structure
     '''
     def __init__(self, Plate: CalcScantlings = None, Stiffener: CalcScantlings = None, Girder: CalcScantlings = None,
                  lat_press = None, main_dict = None, calculation_domain = None):
@@ -1453,6 +1453,64 @@ class AllStructure():
     @calculation_domain.setter
     def calculation_domain(self, val):
         self._calculation_domain = val
+
+    def get_main_properties(self):
+        main_dict = dict()
+        main_dict['minimum pressure in adjacent spans'] = [self._min_lat_press_adj_span , '']
+        main_dict['material yield'] = [self._yield, 'Pa']
+        main_dict['load factor on stresses'] = [self._stress_load_factor, '']
+        main_dict['load factor on pressure'] = [self._lat_load_factor, '']
+        main_dict['buckling method'] = [self._method, '']
+        main_dict['stiffener end support'] = [self._stf_end_support, '']  # 'Continuous'
+        main_dict['girder end support'] = [self._girder_end_support, '']  # 'Continuous'
+        main_dict['tension field'] = [self._tension_field_action, '']  # 'not allowed'
+        main_dict['plate effective agains sigy'] = [self._stiffed_plate_effective_aginst_sigy, '']  # True
+        main_dict['buckling length factor stf'] = [self._buckling_length_factor_stf, '']
+        main_dict['buckling length factor girder'] = [self._buckling_length_factor_girder, '']
+        main_dict['km3'] = [self._km3, '']  # 12
+        main_dict['km2'] = [self._km2, '']  # 24
+        main_dict['girder distance between lateral support'] = [self._girder_dist_between_lateral_supp, '']
+        main_dict['panel length, Lp'] = [self._panel_length_Lp, '']
+        main_dict['pressure side'] = [self._overpressure_side, '']  # either 'stiffener', 'plate', 'both'
+        main_dict['fabrication method stiffener'] = [self._fab_method_stiffener, '']
+        main_dict['fabrication method girder'] = [self._fab_method_girder, '']
+
+        return {'main dict': main_dict, 'Plate': self._Plate.get_structure_prop(),
+                'Stiffener': None if self._Stiffener is None else self._Stiffener.get_structure_prop(),
+                'Girder': None if self._Girder is None else self._Girder.get_structure_prop()}
+
+    def set_main_properties(self, prop_dict):
+        main_dict = prop_dict['main dict']
+        self._min_lat_press_adj_span = main_dict['minimum pressure in adjacent spans'][0]
+        self._yield =  main_dict['material yield'][0]
+        self._stress_load_factor = main_dict['load factor on stresses'][0]
+        self._lat_load_factor = main_dict['load factor on pressure'][0]
+        self._method = main_dict['buckling method'][0]
+        self._stf_end_support = main_dict['stiffener end support'][0]#'Continuous'
+        self._girder_end_support = main_dict['girder end support'][0]#'Continuous'
+        self._tension_field_action = main_dict['tension field'][0]# 'not allowed'
+        self._stiffed_plate_effective_aginst_sigy = main_dict['plate effective agains sigy'][0] #True
+        self._buckling_length_factor_stf = main_dict['buckling length factor stf'][0]
+        self._buckling_length_factor_girder = main_dict['buckling length factor girder'][0]
+        self._km3 = main_dict['km3'][0]#12
+        self._km2 = main_dict['km2'][0]#24
+        self._girder_dist_between_lateral_supp = main_dict['girder distance between lateral support'][0]
+        self._panel_length_Lp = main_dict['panel length, Lp'][0]
+        self._overpressure_side = main_dict['pressure side'][0] # either 'stiffener', 'plate', 'both'
+        self._fab_method_stiffener = main_dict['fabrication method stiffener'][0]#'welded'
+        self._fab_method_girder = main_dict['fabrication method girder'][0]#'welded'
+
+        self._Plate.set_main_properties(prop_dict['Plate'])
+        if prop_dict['Stiffener'] is not None:
+            self._Stiffener.get_structure_prop(prop_dict['Stiffener'])
+        else:
+            self._Stiffener = None
+
+        if prop_dict['Girder'] is not None:
+            self._Girder.get_structure_prop(prop_dict['Girder'])
+        else:
+            self._Girder = None
+
 
     def plate_buckling(self):
         '''

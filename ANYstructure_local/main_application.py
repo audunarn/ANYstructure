@@ -74,12 +74,15 @@ class Application():
         self._tab_comp = ttk.Frame(self._tabControl, relief='flat')
         self._tab_prop_tools = ttk.Frame(self._tabControl, relief='flat')
         self._tab_information = ttk.Frame(self._tabControl, relief='flat')
+        self._tab_help = ttk.Frame(self._tabControl, relief='flat')
 
         self._tabControl.add(self._tab_geo, text='Geometry')
         self._tabControl.add(self._tab_prop, text='Line properties')
         self._tabControl.add(self._tab_prop_tools, text='Properties tools')
-        self._tabControl.add(self._tab_comp, text='Compartments')
+        self._tabControl.add(self._tab_comp, text='Compartments and loads')
         self._tabControl.add(self._tab_information, text='Information')
+        self._tabControl.add(self._tab_help, text='Help')
+
         self._tabControl.place(relwidth=0.2585, relheight = 0.99)
         #self._tabControl.select(self._tab2)
 
@@ -2926,10 +2929,11 @@ class Application():
 
         sec_in_model, idx, recorded_sections = dict(), 0, list()
         for data in self._line_to_struc.values():
-            if data[1].get_beam_string() not in recorded_sections:
-                sec_in_model[data[1].get_beam_string()] = idx
-                recorded_sections.append(data[1].get_beam_string())
-                idx += 1
+            if data[0].Stiffener is not None:
+                if data[0].Stiffener.get_beam_string() not in recorded_sections:
+                    sec_in_model[data[0].Stiffener.get_beam_string()] = idx
+                    recorded_sections.append(data[0].Stiffener.get_beam_string())
+                    idx += 1
         sec_in_model['length'] = len(recorded_sections)
 
         if self._line_to_struc != {}:
@@ -2974,7 +2978,7 @@ class Application():
                 #puls_util_map = self._PULS_results.all_uf
                 puls_util_map = list()
                 for key, val in self._line_to_struc.items():
-                    puls_util_map.append(self._PULS_results.get_utilization(key, val[1].get_puls_method(),
+                    puls_util_map.append(self._PULS_results.get_utilization(key, val[0].Plate.get_puls_method(),
                                                                             acceptance = self._new_puls_uf.get()))
                 puls_util_map  = np.arange(0, 1.1, 0.1)
             else:
@@ -3088,15 +3092,16 @@ class Application():
                 sig_x_uf, sig_y1_uf, sig_y2_uf , tau_xy_uf = res
 
 
-                line_color_coding[line] = {'plate': matplotlib.colors.rgb2hex(cmap_sections(thk_sort_unique.index(round(line_data[1]
-                                                                              .get_pl_thk(),10))/len(thk_sort_unique))),
-                                           'spacing': matplotlib.colors.rgb2hex(
-                                               cmap_sections(spacing_sort_unique.index(round(line_data[1]
+                line_color_coding[line] = {'plate': matplotlib.colors.rgb2hex(cmap_sections(
+                    thk_sort_unique.index(round(line_data[0].Plate.get_pl_thk(),10))/len(thk_sort_unique))),
+                                           'spacing': 'black' if line_data[0].Stiffener is None else matplotlib.colors.rgb2hex(
+                                               cmap_sections(spacing_sort_unique.index(round(line_data[0].Stiffener
                                                                                          .get_s(), 10)) / len(
                                                    spacing_sort_unique))),
-                                           'section': matplotlib.colors.rgb2hex(cmap_sections(sec_in_model[line_data[1]
-                                                                                .get_beam_string()]
-                                                      /len(list(recorded_sections)))),
+                                           'section': 'black' if line_data[0].Stiffener is None else
+                                           matplotlib.colors.rgb2hex(cmap_sections(sec_in_model[line_data[0]
+                                                                                   .Stiffener.get_beam_string()]/
+                                                                                   len(list(recorded_sections)))),
                                            'structure type': matplotlib.colors.rgb2hex(
                                                cmap_sections(structure_type_unique.index(line_data[0].Plate.get_structure_type())
                                                              /len(structure_type_unique))),
@@ -3605,12 +3610,12 @@ class Application():
         if line not in state['color code']['lines'].keys():
             return 'black'
         if self._new_colorcode_beams.get() == True and line in list(self._line_to_struc.keys()):
-            if self._line_to_struc[line][5] is not None:
+            if self._line_to_struc[line][5] is not None or self._line_to_struc[line][0].Stiffener is None:
                 color = 'grey'
                 this_text = 'N/A'
-            else:
+            elif self._line_to_struc[line][0].Plate is not None:
                 color = state['color code']['lines'][line]['section']
-                this_text = self._line_to_struc[line][1].get_beam_string()
+                this_text = self._line_to_struc[line][0].Plate.get_beam_string()
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                               text=this_text ,
@@ -3622,18 +3627,18 @@ class Application():
                 this_text = 'N/A'
             else:
                 color = state['color code']['lines'][line]['plate']
-                this_text = str(self._line_to_struc[line][1].get_pl_thk()*1000)
+                this_text = str(self._line_to_struc[line][0].Plate.get_pl_thk()*1000)
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                               text=this_text)
 
         elif self._new_colorcode_spacing.get() == True and line in list(self._line_to_struc.keys()):
-            if self._line_to_struc[line][5] is not None:
+            if self._line_to_struc[line][5] is not None or self._line_to_struc[line][0].Stiffener is None:
                 color = 'grey'
                 this_text = 'N/A'
             else:
                 color = state['color code']['lines'][line]['spacing']
-                this_text = str(self._line_to_struc[line][1].get_s()*1000)
+                this_text = str(self._line_to_struc[line][0].Stiffener.get_s()*1000)
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                               text=this_text)
@@ -3685,7 +3690,7 @@ class Application():
                 this_text = 'N/A'
             else:
                 color = state['color code']['lines'][line]['sigma x']
-                this_text = str(self._line_to_struc[line][1].get_sigma_x1())
+                this_text = str(self._line_to_struc[line][0].Plate.get_sigma_x1())
 
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
@@ -3697,7 +3702,7 @@ class Application():
                 this_text = 'N/A'
             else:
                 color = state['color code']['lines'][line]['sigma y1']
-                this_text = str(self._line_to_struc[line][1].get_sigma_y2())
+                this_text = str(self._line_to_struc[line][0].Plate.get_sigma_y2())
 
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
@@ -3709,7 +3714,7 @@ class Application():
                 this_text = 'N/A'
             else:
                 color = state['color code']['lines'][line]['sigma y2']
-                this_text = str(self._line_to_struc[line][1].get_sigma_y2())
+                this_text = str(self._line_to_struc[line][0].Plate.get_sigma_y2())
 
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
@@ -3721,7 +3726,7 @@ class Application():
                 this_text = 'N/A'
             else:
                 color = state['color code']['lines'][line]['tau xy']
-                this_text =round(self._line_to_struc[line][1].get_tau_xy(),2)
+                this_text =round(self._line_to_struc[line][0].Plate.get_tau_xy(),2)
 
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
@@ -4453,8 +4458,8 @@ class Application():
                     coord1 = self._point_dict['point'+str(data[0])]
                     coord2 = self._point_dict['point'+str(data[1])]
                     if line in self._line_to_struc.keys():
-                        self._line_to_struc[line][1].set_span(dist(coord1,coord2))
-                        self._line_to_struc[line][1].set_span(dist(coord1, coord2))
+                        self._line_to_struc[line][0].Plate.set_span(dist(coord1,coord2))
+                        self._line_to_struc[line][0].Plate.set_span(dist(coord1, coord2))
                         self._PULS_results.result_changed(line)
                         if self._line_to_struc[line][0].Plate.get_structure_type() not in ['GENERAL_INTERNAL_NONWT',
                                                                                                 'FRAME']:
@@ -4600,7 +4605,7 @@ class Application():
                 main_dict['material yield'] = [self._new_material.get(), 'Pa']
                 main_dict['load factor on stresses'] = [self._new_buckling_lf_stresses.get(), '']
                 main_dict['load factor on pressure'] = [1, '']
-                main_dict['buckling method'] = ['ultimate', '']
+                main_dict['buckling method'] = [self._new_puls_method.get(), '']
                 main_dict['stiffener end support'] =[self._new_buckling_stf_end_support.get(), '']  # 'Continuous'
                 main_dict['girder end support'] = [self._new_buckling_girder_end_support.get(), '']  # 'Continuous'
                 main_dict['tension field'] = [self._new_buckling_tension_field.get(), '']  # 'not allowed'
@@ -4614,6 +4619,9 @@ class Application():
                 main_dict['pressure side'] = [self._new_pressure_side.get(), '']  # either 'stiffener', 'plate', 'both'
                 main_dict['fabrication method stiffener'] = [self._new_buckling_fab_method_stf.get(), '']
                 main_dict['fabrication method girder'] = [self._new_buckling_fab_method_girder.get(), '']
+
+                prop_dict = {'main dict': main_dict, 'Plate': obj_dict_pl, 'Stiffener': obj_dict_stf,
+                             'Girder': obj_dict_girder}
 
                 if self._new_calculation_domain.get() not in ['Flat plate, stiffened','Flat plate, unstiffened',
                                                   'Flat plate, stiffened with girder'] and cylinder_return is None:
@@ -4780,7 +4788,7 @@ class Application():
                 #self._line_to_struc[self._active_line][1] = Structure(obj_dict)
                 self._sections = add_new_section(self._sections, struc.Section(obj_dict))
                 self._line_to_struc[self._active_line][0] = All
-                self._line_to_struc[self._active_line][1] = CalcScantlings(obj_dict)
+                #self._line_to_struc[self._active_line][1] = CalcScantlings(obj_dict)
                 self._line_to_struc[self._active_line][5] = CylinderObj
                 if self._line_to_struc[self._active_line][0].Plate.get_structure_type() not in \
                         self._structure_types['non-wt']:
@@ -4803,14 +4811,15 @@ class Application():
 
             else:
                 prev_type = self._line_to_struc[self._active_line][0].Plate.get_structure_type()
-                prev_calc_obj = copy.deepcopy(self._line_to_struc[self._active_line][1])
+                #prev_calc_obj = copy.deepcopy(self._line_to_struc[self._active_line][1])
+                prev_all_obj = copy.deepcopy(self._line_to_struc[self._active_line][0])
+                self._line_to_struc[self._active_line][0].set_main_properties(prop_dict)
 
-                self._line_to_struc[self._active_line][1].set_main_properties(obj_dict)
-
-                if self._new_scale_stresses.get() and prev_calc_obj.get_tuple() != \
-                        self._line_to_struc[self._active_line][1].get_tuple():
-                    self._line_to_struc[self._active_line][1] = \
-                        op.create_new_calc_obj(prev_calc_obj,self._line_to_struc[self._active_line][1].get_tuple(),
+                if self._new_scale_stresses.get() and prev_all_obj.Plate.get_tuple() != \
+                        self._line_to_struc[self._active_line][0].Plate.get_tuple():
+                    self._line_to_struc[self._active_line][0].Plate = \
+                        op.create_new_calc_obj(prev_all_obj.Plate,
+                                               self._line_to_struc[self._active_line][0].Plate.get_tuple(),
                                                fup=self._new_fup.get(), fdwn=self._new_fdwn.get())[0]
 
                 self._line_to_struc[self._active_line][0].need_recalc = True
@@ -5980,7 +5989,7 @@ class Application():
                 lines_prop['sigma_x2'] = lines_prop['sigma_x']
                 lines_prop.pop('sigma_x')
 
-            self._line_to_struc[line][1] = CalcScantlings(lines_prop)
+            #self._line_to_struc[line][1] = CalcScantlings(lines_prop)
             
             if old_save_file: #need to get some basic information
                 import ANYstructure_local.example_data as ex
@@ -6568,7 +6577,7 @@ class Application():
         :return:
         '''
         if self._line_to_struc[self._active_line][2] == None:
-            self._line_to_struc[self._active_line][2] = CalcFatigue(self._line_to_struc[self._active_line][1]
+            self._line_to_struc[self._active_line][2] = CalcFatigue(self._line_to_struc[self._active_line][0].Plate
                                                                     .get_structure_prop(),
                                                                          returned_fatigue_prop)
         else:
