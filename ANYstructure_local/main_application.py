@@ -6007,11 +6007,12 @@ class Application():
                 main_dict['stiffener end support'] = [lines_prop['puls stiffener end'], '']  # 'Continuous'
                 main_dict['girder end support'] = ['Continuous', '']  # 'Continuous'
                 dom = 'Flat plate, stiffened' if lines_prop['puls sp or up'][0] == 'SP' else 'Flat plate, unstiffened'
+                main_dict['calculation domain'] = dom
+
 
                 self._line_to_struc[line][0] = AllStructure(Plate=CalcScantlings(lines_prop),
                                                       Stiffener=CalcScantlings(lines_prop),
-                                                      Girder=None, main_dict=main_dict,
-                                                      calculation_domain=dom)
+                                                      Girder=None, main_dict=main_dict)
 
             else:
                 self._line_to_struc[line][0] = AllStructure(Plate=None if lines_prop['Plate'] is None
@@ -6020,9 +6021,7 @@ class Application():
                                                             else lines_prop['Stiffener'],
                                                             Girder=None if lines_prop['Girder'] is None
                                                             else lines_prop['Girder'],
-                                                            main_dict=lines_prop['main dict'],
-                                                            calculation_domain=
-                                                            lines_prop['main dict']['calculation domain'])
+                                                            main_dict=lines_prop['main dict'])
 
             if imported['fatigue_properties'][line] is not None:
                 self._line_to_struc[line][2] = CalcFatigue(lines_prop, imported['fatigue_properties'][line])

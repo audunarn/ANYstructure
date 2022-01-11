@@ -1385,7 +1385,7 @@ class AllStructure():
     Calculation of structure
     '''
     def __init__(self, Plate: CalcScantlings = None, Stiffener: CalcScantlings = None, Girder: CalcScantlings = None,
-                 lat_press = None, main_dict = None, calculation_domain = None):
+                 lat_press = None, main_dict = None):
         super(AllStructure, self).__init__()
         self._Plate = Plate  # This contain the stresses
         self._Stiffener = Stiffener
@@ -1414,7 +1414,7 @@ class AllStructure():
         self._fab_method_stiffener = main_dict['fabrication method stiffener'][0]#'welded'
         self._fab_method_girder = main_dict['fabrication method girder'][0]#'welded'
         
-        self._calculation_domain = calculation_domain
+        self._calculation_domain = main_dict['calculation domain'][0]
         self._need_recalc = True
 
     @property
@@ -1474,6 +1474,7 @@ class AllStructure():
         main_dict['pressure side'] = [self._overpressure_side, '']  # either 'stiffener', 'plate', 'both'
         main_dict['fabrication method stiffener'] = [self._fab_method_stiffener, '']
         main_dict['fabrication method girder'] = [self._fab_method_girder, '']
+        main_dict['calculation domain']= [self._calculation_domain, '']
 
         return {'main dict': main_dict, 'Plate': self._Plate.get_structure_prop(),
                 'Stiffener': None if self._Stiffener is None else self._Stiffener.get_structure_prop(),
@@ -1501,13 +1502,18 @@ class AllStructure():
         self._fab_method_girder = main_dict['fabrication method girder'][0]#'welded'
 
         self._Plate.set_main_properties(prop_dict['Plate'])
-        if prop_dict['Stiffener'] is not None:
-            self._Stiffener.get_structure_prop(prop_dict['Stiffener'])
+
+        if prop_dict['Stiffener'] is not None and self._Stiffener is None:
+            self._Stiffener = CalcScantlings(prop_dict['Stiffener'])
+        elif prop_dict['Stiffener'] is not None and self._Stiffener is not None:
+            self._Stiffener.set_main_properties(prop_dict['Stiffener'])
         else:
             self._Stiffener = None
 
-        if prop_dict['Girder'] is not None:
-            self._Girder.get_structure_prop(prop_dict['Girder'])
+        if prop_dict['Girder'] is not None and self._Girder is None:
+            self._Girder = CalcScantlings(prop_dict['Girder'])
+        elif prop_dict['Girder'] is not None and self._Girder is not None:
+            self._Girder.set_main_properties(prop_dict['Girder'])
         else:
             self._Girder = None
 
