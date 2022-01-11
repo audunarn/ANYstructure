@@ -423,8 +423,6 @@ class Structure():
         tf2 = self._flange_th * 1000
         b2 = self._flange_width * 1000
 
-        Af = b2*tf2
-        Aw = tw*hw
         if self._stiffener_type == 'FB':
             Iz = math.pow(tw,3)*hw/12
         elif self._stiffener_type == 'T':
@@ -445,7 +443,6 @@ class Structure():
             Ihor = (1/12)*tf2*math.pow(b2,3) + Ahor*math.pow(dz,2)
 
             Iz = Iver + Ihor
-
 
         return Iz
 
@@ -1385,12 +1382,12 @@ class AllStructure():
     Calculation of structure
     '''
     def __init__(self, Plate: CalcScantlings = None, Stiffener: CalcScantlings = None, Girder: CalcScantlings = None,
-                 lat_press = None, main_dict = None):
+                 main_dict = None):
         super(AllStructure, self).__init__()
         self._Plate = Plate  # This contain the stresses
         self._Stiffener = Stiffener
         self._Girder = Girder
-        self._lat_press = lat_press
+        self._lat_press = None
 
         self._v = 0.3
         self._E = 2.1e11
@@ -1570,8 +1567,6 @@ class AllStructure():
                            'Overpressure girder side': girder_buckling_girder_side,
                            'Shear capacity': girder_shear_capacity},
                 'Local buckling': local_buckling}
-
-
 
     def unstiffened_plate_buckling(self):
 
@@ -1762,11 +1757,6 @@ class AllStructure():
         s = self._Plate.s
         l = self._Plate.get_span() * 1000
 
-        tsd = self._Plate.get_tau_xy() * self._stress_load_factor
-        psd = self._lat_press
-        shear_ratio_long = 1
-        shear_ratio_trans = 1
-
         sig_x1 = self._Plate.get_sigma_x1() * self._stress_load_factor
         sig_x2 = self._Plate.get_sigma_x2() * self._stress_load_factor
 
@@ -1790,11 +1780,10 @@ class AllStructure():
         #Pnt.7:  Buckling of stiffened plates
         Vsd = psd*s*l/2
         tw_req = Vsd*gammaM*math.sqrt(3)/(fy*self._Stiffener.hw)
-        Anet = self._Stiffener.hw * self._Stiffener.tw + self._Stiffener.tw*self._Stiffener.tf
-
+        Anet = (self._Stiffener.hw + self._Stiffener.tf) * self._Stiffener.tw# + self._Stiffener.b*self._Stiffener.tf
         Vrd = Anet*fy/(gammaM*math.sqrt(3))
-
         Vsd_div_Vrd = Vsd/Vrd
+
         stf_pl_data['UF Shear force'] = Vsd_div_Vrd
         # 7.2  Forces in idealised stiffened plate
         Iy = Is = self._Stiffener.get_moment_of_intertia()*1000**4
@@ -1838,16 +1827,17 @@ class AllStructure():
             if shear_ratio_trans >-1.5 else 0
 
         qsd_press = (psd+abs(Po))*s
-        qsd_opposite = abs(Po)*s if psd<Po else 0
+        qsd_opposite = abs(Po)*s if psd < Po else 0
 
         '''
         1	Overpressure on Stiffener Side
         2	Overpressure on Plate Side
         3	Overpr. may occur on both sides
         '''
+
         qsd_plate_side = qsd_opposite if self._overpressure_side == 'stiffener side' else qsd_press
         qsd_stf_side = qsd_opposite if self._overpressure_side == 'plate side' else qsd_press
-
+        print(self._overpressure_side, qsd_press, qsd_opposite, qsd_plate_side, qsd_stf_side)
         kl = unstf_pl_data['kl']
 
         tcrl = 0 if s == 0 else kl*0.904*E*math.pow(t/s,2)
@@ -1903,16 +1893,19 @@ class AllStructure():
         Iz = self._Stiffener.get_Iz_moment_of_inertia()
 
         def red_prop():
-            tw =max(0,self._Stiffener.tw*(1-Vsd_div_Vrd))
-            Atot = As+se*t-self._Stiffener.hw*(self._Stiffener.tw - tw)
-            It = self._Stiffener.get_torsional_moment_venant(reduced_tw=tw)
-            Ipo = self._Stiffener.get_polar_moment(reduced_tw=tw)
-            Iz = self._Stiffener.get_Iz_moment_of_inertia(reduced_tw=tw)
-            zp = self._Stiffener.get_cross_section_centroid_with_effective_plate(se / 1000, reduced_tw=tw) * 1000 - t / 2  # ch7.5.1 page 19
-            zt = (t / 2 + self._Stiffener.hw + self._Stiffener.tf) - zp  # ch 7.5.1 page 19
-            Wes = 0.0001 if zt == 0 else Iy/zt
-            Wep = 0.0001 if zp == 0 else Iy/zp
-            return {'tw':tw, 'Atot': Atot, 'It': It, 'Ipo': Ipo, 'Iz': Iz, 'zp': zp, 'zt': zt, 'Wes': Wes, 'Wep': Wep}
+            tw_red =max(0,self._Stiffener.tw*(1-Vsd_div_Vrd))
+            Atot_red  = As+se*t-self._Stiffener.hw*(self._Stiffener.tw - tw_red )
+            It_red  = self._Stiffener.get_torsional_moment_venant(reduced_tw=tw_red )
+            Ipo_red  = self._Stiffener.get_polar_moment(reduced_tw=tw_red )
+            #Iz = self._Stiffener.get_Iz_moment_of_inertia(reduced_tw=tw)
+            #Iz_red = self._Stiffener.get_moment_of_intertia(efficent_se=se/1000, reduced_tw=tw_red)
+            Iy_red = self._Stiffener.get_moment_of_intertia(efficent_se=se / 1000, reduced_tw=tw_red) * 1000 ** 4
+            zp_red  = self._Stiffener.get_cross_section_centroid_with_effective_plate(se / 1000, reduced_tw=tw_red ) * 1000 - t / 2  # ch7.5.1 page 19
+            zt_red  = (self._Stiffener.hw + self._Stiffener.tf) - zp_red + t/2  # ch 7.5.1 page 19
+            Wes_red  = 0.0001 if zt_red == 0 else Iy_red/zt_red
+            Wep_red  = 0.0001 if zp_red == 0 else Iy_red/zp_red
+            return {'tw':tw_red , 'Atot': Atot_red , 'It': It_red , 'Ipo': Ipo_red , 'zp': zp_red ,
+                    'zt': zt_red , 'Wes': Wes_red , 'Wep': Wep_red, 'Iy': Iy_red}
 
         hs = self._Stiffener.hw / 2 if self._Stiffener.get_stiffener_type() == 'FB' else \
             self._Stiffener.hw + self._Stiffener.tf / 2
@@ -1938,12 +1931,12 @@ class AllStructure():
         if Vsd_div_Vrd < 0.5:
             Wes = 0.0001 if zt == 0 else Iy/zt
             Wep = 0.0001 if zp == 0 else Iy/zp
+            Ae = As + se * t
         else:
             red_param = red_prop()
             Wes = red_param['Wes']
             Wep = red_param['Wep']
-
-
+            Ae = red_param['Atot']
 
         Wmin = min([Wes, Wep])
         pf = 0.0001 if l*s*gammaM == 0 else 12*Wmin*fy/(math.pow(l,2)*s*gammaM)
@@ -1985,7 +1978,7 @@ class AllStructure():
             fk_dict[lT] = fk
 
         #7.7.3  Resistance parameters for stiffeners
-        Ae = As + se * t  # ch7.7.3 checked, ok
+
         NRd = 0.0001 if gammaM == 0 else Ae * (fy / gammaM)  # eq7.65, checked ok
 
         NksRd = Ae * (fk_dict[l] / gammaM) #eq7.66
@@ -2006,6 +1999,7 @@ class AllStructure():
         tRdl = tcrl/gammaM
         tRds = tcrs/gammaM
         tRd = min([tRdy,tRdl,tRds])
+
 
         u = 0 if all([tsd>(tcrl/gammaM), self._tension_field_action == 'allowed']) else math.pow(tsd/tRd, 2)
         zstar = zp
@@ -2028,8 +2022,9 @@ class AllStructure():
         uf_7_62 = NSd/NksRd-2*NSd/NRd+(NSd*zstar-(qsd_stf_side*math.pow(l,2)/8))/(MstRd*(1-NSd/Ne))+u
         uf_7_63 = NSd/NkpRd+(NSd*zstar-(qsd_stf_side*math.pow(l,2)/8))/(MpRd*(1-NSd/Ne))+u
 
-        uf_max_simp_stf = max([0,uf_7_62,uf_7_63]) if test_qsd_l else max([0,uf_7_60,uf_7_61])
+        uf_max_simp_stf = max([0,uf_7_62,uf_7_63]) if not test_qsd_l else max([0,uf_7_60,uf_7_61])
         stf_pl_data['UF simply supported stf side'] = uf_max_simp_stf
+
         #7.7.1 Continuous stiffeners
 
         M1Sd_pl = abs(qsd_plate_side)*math.pow(l,2)/self._km3
@@ -2039,9 +2034,8 @@ class AllStructure():
         M1Sd_max = max([M1Sd_pl, M1Sd_stf])
         M2Sd_max = max([M2Sd_pl, M2Sd_stf])
         # Lateral pressure on plate side:
-
+        #print(M1Sd_pl, M2Sd_pl, M1Sd_stf,M2Sd_stf, qsd_stf_side, qsd_plate_side)
         from scipy.optimize import minimize
-        t2 = time.time()
         def iteration_min_uf_pl_side(x):
             eq7_50 = NSd/NksRd+(M1Sd_pl-NSd*x)/(Ms1Rd*(1-NSd/Ne))+u
             eq7_51 = NSd/NkpRd-2*NSd/NRd +(M1Sd_pl-NSd*x)/(MpRd*(1-NSd/Ne))+u
@@ -2066,7 +2060,9 @@ class AllStructure():
 
         res_iter_stf = minimize(iteration_min_uf_stf_side, 0, bounds=[[-zt+self._Stiffener.tf/2,zp]])
         stf_pl_data['UF Stiffener side'] = res_iter_stf.fun[0]
-
+        # print(res_iter_stf)
+        # for key, val in stf_pl_data.items():
+        #     print(key, val)
         return stf_pl_data
 
     def girder(self, unstf_pl_data = None, stf_pl_data = None):
@@ -2113,7 +2109,7 @@ class AllStructure():
         #Pnt.8:  Buckling of Girders
         #7.8  Check for shear force
         Vsd = psd*l*Lg/2
-
+        print(Vsd)
         tw_req = Vsd*gammaM*math.sqrt(3)/(fy*self._Girder.hw)
         Anet = self._Girder.hw * self._Girder.tw + self._Girder.tw*self._Girder.tf
         Vrd = Anet*fy/(gammaM*math.sqrt(3))
@@ -4402,16 +4398,17 @@ if __name__ == '__main__':
     # Prescriptive buckling UPDATED
     Plate = CalcScantlings(ex.obj_dict)
     Stiffener = CalcScantlings(ex.obj_dict)
-    Girder = CalcScantlings(ex.obj_dict_heavy)
+    Girder = None#CalcScantlings(ex.obj_dict_heavy)
 
 
-    PreBuc = AllStructure(Plate = Plate, Stiffener = Stiffener, Girder = Girder, lat_press=0.3,
+    PreBuc = AllStructure(Plate = Plate, Stiffener = Stiffener, Girder = Girder,
                                   main_dict=ex.prescriptive_main_dict)
+    PreBuc.lat_press = 0.423
 
-    print(Plate)
+    #print(Plate)
     # print(Plate)
     # print(Stiffener)
     # print(Girder)
 
-    PreBuc.plate_buckling()
+    print(PreBuc.plate_buckling())
 

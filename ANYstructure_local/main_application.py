@@ -2674,8 +2674,9 @@ class Application():
                 color_thk = 'green' if obj_scnt_calc_pl.is_acceptable_pl_thk(design_pressure) else 'red'
                 rec_for_color[current_line]['plate thickness'] = (min_thk / 1000) / obj_scnt_calc_stf.get_pl_thk()
                 all_obj.lat_press = design_pressure/1000
-
                 buckling = all_obj.plate_buckling()
+
+                print('Line:', current_line, 'Pressure', design_pressure/1000, buckling)
 
                 all_buckling_uf_list = list()
                 for buc_domain, domain_results in buckling.items():
