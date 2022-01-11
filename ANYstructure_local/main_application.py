@@ -2299,13 +2299,17 @@ class Application():
             self._active_line = line
             self._line_is_active = True
             if self._active_line in self._line_to_struc.keys():
-                if self._active_line[self._active_line][0].Stiffener is not None:
-                    dict = self._line_to_struc[self._active_line][0].Stiffener.get_structure_prop()
-                else:
-                    dict = self._line_to_struc[self._active_line][0].Plate.get_structure_prop()
+                # if self._active_line[self._active_line][0].Stiffener is not None:
+                #     dict = self._line_to_struc[self._active_line][0].Stiffener.get_structure_prop()
+                # else:
+                #     dict = self._line_to_struc[self._active_line][0].Plate.get_structure_prop()
+                prop_dict = self._line_to_struc[self._active_line][0].get_main_properties()
 
-                dict[var_to_set][0] = set_var
-                self.new_structure(toggle_multi=dict, suspend_recalc=True if (idx+1) != no_of_lines else False)
+                prop_dict['Plate'][var_to_set][0] = set_var
+                prop_dict['Stiffener'][var_to_set][0] = set_var
+
+                #dict[var_to_set][0] = set_var
+                self.new_structure(toggle_multi=prop_dict, suspend_recalc=True if (idx+1) != no_of_lines else False)
 
     def gui_load_combinations(self,event):
         '''
@@ -4555,9 +4559,9 @@ class Application():
             # 2.calc fatigue class, 3.load object, 4.load combinations result ]
             CylinderObj = None
             if multi_return is not None:
-                obj_dict = multi_return[1].get_structure_prop()
+                prop_dict = multi_return[0].get_structure_prop()
             elif toggle_multi is not None:
-                obj_dict = toggle_multi
+                prop_dict = toggle_multi
             elif pasted_structure is None:
                 obj_dict = {'mat_yield': [self._new_material.get()*1e6, 'Pa'],
                             'mat_factor': [self._new_material_factor.get(), ''],
@@ -4619,6 +4623,7 @@ class Application():
                 main_dict['pressure side'] = [self._new_pressure_side.get(), '']  # either 'stiffener', 'plate', 'both'
                 main_dict['fabrication method stiffener'] = [self._new_buckling_fab_method_stf.get(), '']
                 main_dict['fabrication method girder'] = [self._new_buckling_fab_method_girder.get(), '']
+                main_dict['calculation domain'] = [self._new_calculation_domain.get(), '']
 
                 prop_dict = {'main dict': main_dict, 'Plate': obj_dict_pl, 'Stiffener': obj_dict_stf,
                              'Girder': obj_dict_girder}
@@ -4770,20 +4775,20 @@ class Application():
                     main_dict_cyl, shell_dict, long_dict, ring_stf_dict, ring_frame_dict = \
                         cylinder_return.get_all_properties()
             else:
-                obj_dict = pasted_structure.get_structure_prop()
+                prop_dict = pasted_structure.get_main_properties()
 
             if self._active_line not in self._line_to_struc.keys() :
                 self._line_to_struc[self._active_line] = [None, None, None, [None], {}, None]
                 # First entry
                 # Flat plate domains: 'Flat plate, stiffened with girder', 'Flat plate, stiffened', Flat plate, unstiffened'
                 cdom = self._new_calculation_domain.get()
-                All = AllStructure(Plate=obj_dict_pl,
+                All = AllStructure(Plate=prop_dict['Plate'],
                                    Stiffener=None if cdom == 'Flat plate, unstiffened'
-                                   else CalcScantlings(obj_dict_stf),
+                                   else CalcScantlings(prop_dict['Stiffener']),
                                    Girder=None if cdom != 'Flat plate, stiffened with girder'
-                                   else CalcScantlings(obj_dict_girder),
-                                   lat_press= self.get_highest_pressure(self._active_line), main_dict=main_dict,
-                                   calculation_domain=cdom)
+                                   else CalcScantlings(prop_dict['Girder']),
+                                   lat_press= self.get_highest_pressure(self._active_line),
+                                   main_dict=prop_dict['main dict'])
 
                 #self._line_to_struc[self._active_line][1] = Structure(obj_dict)
                 self._sections = add_new_section(self._sections, struc.Section(obj_dict))
@@ -4811,6 +4816,7 @@ class Application():
 
             else:
                 prev_type = self._line_to_struc[self._active_line][0].Plate.get_structure_type()
+                #cdom = self._line_to_struc[self._active_line][0].calculation_domain
                 #prev_calc_obj = copy.deepcopy(self._line_to_struc[self._active_line][1])
                 prev_all_obj = copy.deepcopy(self._line_to_struc[self._active_line][0])
                 self._line_to_struc[self._active_line][0].set_main_properties(prop_dict)
@@ -4825,9 +4831,9 @@ class Application():
                 self._line_to_struc[self._active_line][0].need_recalc = True
 
                 if self._line_to_struc[self._active_line][2] is not None:
-                    self._line_to_struc[self._active_line][2].set_main_properties(obj_dict)
+                    self._line_to_struc[self._active_line][2].set_main_properties(prop_dict['Stiffener'])
 
-                if prev_type in self._structure_types['non-wt'] and obj_dict['structure_type'][0] in \
+                if prev_type in self._structure_types['non-wt'] and prop_dict['Plate']['structure_type'][0] in \
                                         self._structure_types['internals'] + self._structure_types['horizontal'] + \
                                 self._structure_types['vertical']:
                     self._tank_dict = {}
@@ -5159,7 +5165,7 @@ class Application():
             if self._line_to_struc[self.__copied_line_prop][5] is not None:
                 self.new_structure(cylinder_return=self._line_to_struc[self.__copied_line_prop][5])
             else:
-                self.new_structure(pasted_structure=self._line_to_struc[self.__copied_line_prop][1])
+                self.new_structure(pasted_structure=self._line_to_struc[self.__copied_line_prop][0])
         elif self._line_to_struc[self.__copied_line_prop][5] is not None:
             self.new_structure(cylinder_return=self._line_to_struc[self.__copied_line_prop][5])
         elif self._line_to_struc[self._active_line][0].Plate.get_structure_type() !=\
@@ -5168,7 +5174,7 @@ class Application():
                                                    'with compartments not detecting changes to watertightness.')
             return
         else:
-            self.new_structure(pasted_structure = self._line_to_struc[self.__copied_line_prop][0].Plate)
+            self.new_structure(pasted_structure = self._line_to_struc[self.__copied_line_prop][0])
 
         self.update_frame()
 
@@ -5753,7 +5759,7 @@ class Application():
                     btn.place(relx = placement[0], rely= placement[1],relheight = placement[2], relwidth = placement[3])
 
             else:
-                self._new_calculation_domain.set('Flat plate, stiffened')
+                self._new_calculation_domain.set(self._line_to_struc[self._active_line][0].calculation_domain)
                 self.calculation_domain_selected()
 
                 for btn, placement in zip(self._optimization_buttons['cylinder'],
@@ -6000,11 +6006,23 @@ class Application():
                 main_dict['buckling method'] = [lines_prop['puls buckling method'], '']
                 main_dict['stiffener end support'] = [lines_prop['puls stiffener end'], '']  # 'Continuous'
                 main_dict['girder end support'] = ['Continuous', '']  # 'Continuous'
-            #TODO saving not implented for AllStructure
-            self._line_to_struc[line][0] = AllStructure(Plate=CalcScantlings(lines_prop),
-                                                  Stiffener=CalcScantlings(lines_prop),
-                                                  Girder=None, main_dict=main_dict,
-                                                  calculation_domain='Flat plate, stiffened')
+                dom = 'Flat plate, stiffened' if lines_prop['puls sp or up'][0] == 'SP' else 'Flat plate, unstiffened'
+
+                self._line_to_struc[line][0] = AllStructure(Plate=CalcScantlings(lines_prop),
+                                                      Stiffener=CalcScantlings(lines_prop),
+                                                      Girder=None, main_dict=main_dict,
+                                                      calculation_domain=dom)
+
+            else:
+                self._line_to_struc[line][0] = AllStructure(Plate=None if lines_prop['Plate'] is None
+                                                            else lines_prop['Plate'],
+                                                            Stiffener=None if lines_prop['Stiffener'] is None
+                                                            else lines_prop['Stiffener'],
+                                                            Girder=None if lines_prop['Girder'] is None
+                                                            else lines_prop['Girder'],
+                                                            main_dict=lines_prop['main dict'],
+                                                            calculation_domain=
+                                                            lines_prop['main dict']['calculation domain'])
 
             if imported['fatigue_properties'][line] is not None:
                 self._line_to_struc[line][2] = CalcFatigue(lines_prop, imported['fatigue_properties'][line])
