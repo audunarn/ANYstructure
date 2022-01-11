@@ -2673,6 +2673,15 @@ class Application():
                 min_thk = obj_scnt_calc_pl.get_dnv_min_thickness(design_pressure)
                 color_thk = 'green' if obj_scnt_calc_pl.is_acceptable_pl_thk(design_pressure) else 'red'
                 rec_for_color[current_line]['plate thickness'] = (min_thk / 1000) / obj_scnt_calc_stf.get_pl_thk()
+                all_obj.lat_press = design_pressure/1000
+
+                buckling = all_obj.plate_buckling()
+
+                all_buckling_uf_list = list()
+                for buc_domain, domain_results in buckling.items():
+                    for uf_text, uf_num in domain_results.items():
+                        if buc_domain != 'Local buckling':
+                            all_buckling_uf_list.append(uf_num)
 
                 if obj_scnt_calc_stf is not None:
                     sec_mod = [obj_scnt_calc_stf.get_section_modulus()[0],
@@ -2682,13 +2691,15 @@ class Application():
                     min_shear = obj_scnt_calc_stf.get_minimum_shear_area(design_pressure)
                     min_sec_mod = obj_scnt_calc_stf.get_dnv_min_section_modulus(design_pressure)
 
-                    buckling = [round(res, 2) for res in obj_scnt_calc_stf.calculate_buckling_all(
-                        design_lat_press=design_pressure,
-                        checked_side=obj_scnt_calc_stf.get_side())]
-                    color_buckling = 'green' if all([uf <= 1 for uf in buckling]) \
+                    # buckling = [round(res, 2) for res in obj_scnt_calc_stf.calculate_buckling_all(
+                    #     design_lat_press=design_pressure,
+                    #     checked_side=obj_scnt_calc_stf.get_side())]
+
+
+                    color_buckling = 'green' if all([uf <= 1 for uf in all_buckling_uf_list]) \
                         else 'red'
                     rec_for_color[current_line]['section modulus'] = min_sec_mod/min(sec_mod)
-                    rec_for_color[current_line]['rp buckling'] = max(buckling)
+                    rec_for_color[current_line]['rp buckling'] = max(all_buckling_uf_list)
                     rec_for_color[current_line]['shear'] = min_shear/shear_area
                     return_dict['slamming'][current_line] = dict()
                     if slamming_pressure is not None and slamming_pressure > 0:
@@ -2916,8 +2927,8 @@ class Application():
                 shear_util = 0 if shear_area == 0 else min_shear / shear_area
                 thk_util = 0 if obj_scnt_calc_stf.get_pl_thk() == 0 else min_thk / (1000 * obj_scnt_calc_stf.get_pl_thk())
                 sec_util = 0 if min(sec_mod) == 0 else min_sec_mod / min(sec_mod)
-                buc_util = 1 if float('inf') in buckling else max(buckling[0:5])
-                rec_for_color[current_line]['rp buckling'] = max(buckling[0:5])
+                buc_util = 1 if float('inf') in buckling else max(all_buckling_uf_list)
+                rec_for_color[current_line]['rp buckling'] = max(all_buckling_uf_list)
                 return_dict['utilization'][current_line] = {'buckling': buc_util,
                                                             'PULS buckling': buc_util,
                                                             'fatigue': fat_util,
@@ -6005,11 +6016,15 @@ class Application():
                 main_dict['stiffener end support'] = [lines_prop['puls stiffener end'], '']  # 'Continuous'
                 main_dict['girder end support'] = ['Continuous', '']  # 'Continuous'
                 dom = 'Flat plate, stiffened' if lines_prop['puls sp or up'][0] == 'SP' else 'Flat plate, unstiffened'
-                main_dict['calculation domain'] = dom
+
+                main_dict['calculation domain'] = [dom, '']
+                map_side = {'p': 'plate side', 's': 'stiffener side'}
+                lines_prop['press_side'] = [map_side[lines_prop['press_side'][0]], '']
 
                 self._line_to_struc[line][0] = AllStructure(Plate=CalcScantlings(lines_prop),
-                                                      Stiffener=CalcScantlings(lines_prop),
-                                                      Girder=None, main_dict=main_dict)
+                                                            Stiffener=CalcScantlings(lines_prop),
+                                                            Girder=None, main_dict=main_dict)
+
                 if imported['fatigue_properties'][line] is not None:
                     self._line_to_struc[line][2] = CalcFatigue(lines_prop,
                                                                imported['fatigue_properties'][line])
@@ -6034,29 +6049,32 @@ class Application():
                     self._line_to_struc[line][2] = None
                 #  Recording sections.
                 self._sections = add_new_section(self._sections, struc.Section(lines_prop['Stiffener']))
-                if 'shell structure properties' in imported.keys():
-                    if imported['shell structure properties'][line] is not None:
-                        imported_dict = imported['shell structure properties'][line]
-                        '''
-                        all_data = {'Main class': self.get_main_properties(),
-                                    'Shell': self._Shell.get_main_properties(),
-                                    'Long. stf.': self._LongStf.get_structure_prop(),
-                                    'Ring stf.': self.RingStfObj.get_structure_prop(),
-                                    'Ring frame': self._RingFrame.get_structure_prop()}
-                        '''
-                        for stuc_type in ['Long. stf.', 'Ring stf.', 'Ring frame']:
-                            if imported_dict[stuc_type] is not None:
-                                if 'sigma_x' in imported_dict[stuc_type].keys():
-                                    imported_dict[stuc_type]['sigma_x1'] = imported_dict[stuc_type]['sigma_x']
-                                    imported_dict[stuc_type]['sigma_x2'] = imported_dict[stuc_type]['sigma_x']
-                                    imported_dict[stuc_type].pop('sigma_x')
-                        self._line_to_struc[line][5] = \
-                            CylinderAndCurvedPlate(imported_dict['Main class'], shell=None if imported_dict['Shell'] is None
-                            else Shell(imported_dict['Shell']), long_stf=None if imported_dict['Long. stf.'] is None
-                            else Structure(imported_dict['Long. stf.']), ring_stf=None if imported_dict['Ring stf.'] is None
-                            else Structure(imported_dict['Ring stf.']), ring_frame=None if imported_dict['Ring frame']
-                                                                                           is None
-                            else Structure(imported_dict['Ring frame']))
+
+            if 'shell structure properties' in imported.keys():
+                if imported['shell structure properties'][line] is not None:
+                    # need to correct the calcuation domain.
+                    #self._new_calculation_domain.set(imported_dict['Main class'][CylinderAndCurvedPlate.geomeries])
+                    imported_dict = imported['shell structure properties'][line]
+                    '''
+                    all_data = {'Main class': self.get_main_properties(),
+                                'Shell': self._Shell.get_main_properties(),
+                                'Long. stf.': self._LongStf.get_structure_prop(),
+                                'Ring stf.': self.RingStfObj.get_structure_prop(),
+                                'Ring frame': self._RingFrame.get_structure_prop()}
+                    '''
+                    for stuc_type in ['Long. stf.', 'Ring stf.', 'Ring frame']:
+                        if imported_dict[stuc_type] is not None:
+                            if 'sigma_x' in imported_dict[stuc_type].keys():
+                                imported_dict[stuc_type]['sigma_x1'] = imported_dict[stuc_type]['sigma_x']
+                                imported_dict[stuc_type]['sigma_x2'] = imported_dict[stuc_type]['sigma_x']
+                                imported_dict[stuc_type].pop('sigma_x')
+                    self._line_to_struc[line][5] = \
+                        CylinderAndCurvedPlate(imported_dict['Main class'], shell=None if imported_dict['Shell'] is None
+                        else Shell(imported_dict['Shell']), long_stf=None if imported_dict['Long. stf.'] is None
+                        else Structure(imported_dict['Long. stf.']), ring_stf=None if imported_dict['Ring stf.'] is None
+                        else Structure(imported_dict['Ring stf.']), ring_frame=None if imported_dict['Ring frame']
+                                                                                       is None
+                        else Structure(imported_dict['Ring frame']))
 
         # opening the loads
         variables = ['poly_third','poly_second', 'poly_first', 'poly_const', 'load_condition',

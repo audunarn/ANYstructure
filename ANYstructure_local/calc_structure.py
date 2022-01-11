@@ -1417,6 +1417,7 @@ class AllStructure():
         self._calculation_domain = main_dict['calculation domain'][0]
         self._need_recalc = True
 
+
     @property
     def need_recalc(self):
         return self._need_recalc
@@ -1424,6 +1425,14 @@ class AllStructure():
     @need_recalc.setter
     def need_recalc(self, val):
         self._need_recalc = val
+        
+    @property
+    def lat_press(self):
+        return self._lat_press
+
+    @lat_press.setter
+    def lat_press(self, val):
+        self._lat_press = val
         
     @property
     def Plate(self):
@@ -1517,7 +1526,6 @@ class AllStructure():
         else:
             self._Girder = None
 
-
     def plate_buckling(self):
         '''
         Summary
@@ -1529,6 +1537,8 @@ class AllStructure():
                                 unstf_pl['UF Shear stresses'], unstf_pl['UF Combined stresses']])
                            if all([self._Girder is None, self._Stiffener is None]) else 0])
 
+        local_buckling = self.local_buckling()
+
         if self._Stiffener is not None:
             stf_pla = self.stiffened_panel(unstf_pl_data=unstf_pl)
             stf_buckling_pl_side = stf_pla['UF Plate side'] if self._stf_end_support == 'Continuous' else \
@@ -1537,20 +1547,31 @@ class AllStructure():
                 stf_pla['UF simply supported stf side']
             stf_plate_resistance = stf_pla['UF Plate resistance']
             stf_shear_capacity = stf_pla['UF Shear force']
+        else:
+            stf_buckling_pl_side, stf_buckling_pl_side, stf_buckling_stf_side, stf_plate_resistance, \
+            stf_shear_capacity = 0,0,0,0,0
 
         if self._Girder is not None:
             girder = self.girder(unstf_pl_data=unstf_pl, stf_pl_data=stf_pla)
-            print(girder)
+
             girder_buckling_pl_side = girder['UF Cont. plate side'] if self._girder_end_support == 'Continuous' else \
                 stf_pla['UF Simplified plate side']
             girder_buckling_girder_side = girder['UF Cont. girder side'] if self._girder_end_support == 'Continuous' else \
                 stf_pla['UF Simplified girder side']
             girder_shear_capacity = girder['UF shear force']
+        else:
+            girder_buckling_pl_side, girder_buckling_girder_side, girder_shear_capacity = 0,0,0
+        
+        return {'Plate': {'Plate buckling': up_buckling}, 'Stiffener': {'Overpressure plate side': stf_buckling_pl_side,
+                                                    'Overpressure stiffener side': stf_buckling_stf_side, 
+                                                    'Resistance between stiffeners': stf_plate_resistance,
+                                                    'Shear capacity': stf_shear_capacity},
+                'Girder': {'Overpressure plate side': girder_buckling_pl_side,
+                           'Overpressure girder side': girder_buckling_girder_side,
+                           'Shear capacity': girder_shear_capacity},
+                'Local buckling': local_buckling}
 
-        local_buckling = self.local_buckling()
 
-
-        print(up_buckling, stf_buckling_pl_side, stf_buckling_stf_side, stf_plate_resistance, stf_shear_capacity, girder_buckling_pl_side, girder_buckling_girder_side, girder_shear_capacity)
 
     def unstiffened_plate_buckling(self):
 
@@ -1608,7 +1629,8 @@ class AllStructure():
         trans_stress_used = sysd = 0.75*Use_Smax_y if abs(0.75*Use_Smax_y) > abs(Use_Smax_y) else sig_trans_l1
         unstf_pl_data['sysd'] = sysd
         #Pnt. 5  Lateral loaded plates
-        sjsd =math.sqrt(math.pow(Max_vonMises_x,2) + math.pow(Use_Smax_x,2)-Max_vonMises_x*sysd+3*math.pow(tsd,2))
+
+        sjsd =math.sqrt(math.pow(Max_vonMises_x,2) + math.pow(sysd,2)-Max_vonMises_x*sysd+3*math.pow(tsd,2))
         uf_sjsd = sjsd/fy*gammaM
         unstf_pl_data['UF sjsd'] = uf_sjsd
         psi_x =max([0,(1-math.pow(sjsd/fy,2))/math.sqrt(1-3/4*math.pow(sysd/fy,2)-3*math.pow(tsd/fy,2))])
@@ -1659,14 +1681,16 @@ class AllStructure():
 
         alpha_c = 0 if t*E == 0 else 1.1*s/t*math.sqrt(fy/E)
         mu = 0.21*(alpha_c-0.2)
+
         if alpha_c <= 0.2:
             kappa = 1
-        elif 0.2 <- alpha_c < 2:
+        elif 0.2 < alpha_c < 2:
             kappa = 0 if alpha_c == 0 else 1/(2*math.pow(alpha_c,2))*(1+mu+math.pow(alpha_c,2)-
-                                                                      math.sqrt((1+mu+math.pow(alpha_c,2))^2-
+                                                                      math.sqrt(math.pow(1+mu+math.pow(alpha_c,2),2)-
                                                                                 4*math.pow(alpha_c,2)))
         elif alpha_c >= 2:
             kappa = 0 if alpha_c == 0 else 1/(2*math.pow(alpha_c,2))+0.07
+
 
         syR = 0 if l*fy == 0 else (1.3*t/l*math.sqrt(E/fy)+kappa*(1-1.3*t/l*math.sqrt(E/fy)))*fy*kp_used
         syRd = syR if not all([sig_y1<0, sig_y2<0]) else fy
