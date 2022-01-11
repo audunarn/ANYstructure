@@ -4536,11 +4536,11 @@ class Application():
         The result is put in a dictionary. Key is line name and value is the structure object.
 
         self_line_to_stuc
-            [0] Structure class
-            [1] calc scantling class instance
+            [0] AllStructure class
+            [1] None
             [2] calc fatigue class instance
             [3] load class instance
-            [4] Prescriptive buckling data (under development) 07/01-2022
+            [4] None
             [5] Cylinder buckling data
         :return:
         '''
@@ -4782,7 +4782,7 @@ class Application():
                 # First entry
                 # Flat plate domains: 'Flat plate, stiffened with girder', 'Flat plate, stiffened', Flat plate, unstiffened'
                 cdom = self._new_calculation_domain.get()
-                All = AllStructure(Plate=prop_dict['Plate'],
+                All = AllStructure(Plate=CalcScantlings(prop_dict['Plate']),
                                    Stiffener=None if cdom == 'Flat plate, unstiffened'
                                    else CalcScantlings(prop_dict['Stiffener']),
                                    Girder=None if cdom != 'Flat plate, stiffened with girder'
@@ -5867,7 +5867,7 @@ class Application():
         structure_properties = {}
         shell_structure_properties = {}
         for key, value in self._line_to_struc.items():
-            structure_properties[key] = value[0].get_structure_prop()
+            structure_properties[key] = value[0].get_main_properties()
             shell_structure_properties[key] = None if value[5] is None else value[5].get_all_properties()
 
         fatigue_properties = {}
@@ -5898,7 +5898,7 @@ class Application():
 
         export_all = {}
 
-        export_all['project information'] = self._project_infomation.get('1.0', tk.END)
+        export_all['project information'] = self._project_information.get('1.0', tk.END)
         export_all['point_dict'] = self._point_dict
         export_all['line_dict'] = self._line_dict
         export_all['structure_properties'] = structure_properties
@@ -5958,7 +5958,7 @@ class Application():
         self._point_dict = imported['point_dict']
         self._line_dict = imported['line_dict']
         struc_prop = imported['structure_properties']
-        old_save_file = True
+        old_save_file = False
 
         for line, lines_prop in struc_prop.items():
 
@@ -5995,8 +5995,6 @@ class Application():
                 lines_prop['sigma_x2'] = lines_prop['sigma_x']
                 lines_prop.pop('sigma_x')
 
-            #self._line_to_struc[line][1] = CalcScantlings(lines_prop)
-            
             if old_save_file: #need to get some basic information
                 import ANYstructure_local.example_data as ex
                 main_dict = ex.prescriptive_main_dict
@@ -6009,51 +6007,56 @@ class Application():
                 dom = 'Flat plate, stiffened' if lines_prop['puls sp or up'][0] == 'SP' else 'Flat plate, unstiffened'
                 main_dict['calculation domain'] = dom
 
-
                 self._line_to_struc[line][0] = AllStructure(Plate=CalcScantlings(lines_prop),
                                                       Stiffener=CalcScantlings(lines_prop),
                                                       Girder=None, main_dict=main_dict)
+                if imported['fatigue_properties'][line] is not None:
+                    self._line_to_struc[line][2] = CalcFatigue(lines_prop,
+                                                               imported['fatigue_properties'][line])
+                else:
+                    self._line_to_struc[line][2] = None
+                #  Recording sections.
+                self._sections = add_new_section(self._sections, struc.Section(lines_prop))
 
             else:
                 self._line_to_struc[line][0] = AllStructure(Plate=None if lines_prop['Plate'] is None
-                                                            else lines_prop['Plate'],
+                                                            else CalcScantlings(lines_prop['Plate']),
                                                             Stiffener=None if lines_prop['Stiffener'] is None
-                                                            else lines_prop['Stiffener'],
+                                                            else CalcScantlings(lines_prop['Stiffener']),
                                                             Girder=None if lines_prop['Girder'] is None
-                                                            else lines_prop['Girder'],
+                                                            else CalcScantlings(lines_prop['Girder']),
                                                             main_dict=lines_prop['main dict'])
 
-            if imported['fatigue_properties'][line] is not None:
-                self._line_to_struc[line][2] = CalcFatigue(lines_prop, imported['fatigue_properties'][line])
-            else:
-                self._line_to_struc[line][2] = None
-            if 'shell structure properties' in imported.keys():
-                if imported['shell structure properties'][line] is not None:
-                    imported_dict = imported['shell structure properties'][line]
-                    '''
-                    all_data = {'Main class': self.get_main_properties(),
-                                'Shell': self._Shell.get_main_properties(),
-                                'Long. stf.': self._LongStf.get_structure_prop(),
-                                'Ring stf.': self.RingStfObj.get_structure_prop(),
-                                'Ring frame': self._RingFrame.get_structure_prop()}
-                    '''
-                    for stuc_type in ['Long. stf.', 'Ring stf.', 'Ring frame']:
-                        if imported_dict[stuc_type] is not None:
-                            if 'sigma_x' in imported_dict[stuc_type].keys():
-                                imported_dict[stuc_type]['sigma_x1'] = imported_dict[stuc_type]['sigma_x']
-                                imported_dict[stuc_type]['sigma_x2'] = imported_dict[stuc_type]['sigma_x']
-                                imported_dict[stuc_type].pop('sigma_x')
-                    self._line_to_struc[line][5] = \
-                        CylinderAndCurvedPlate(imported_dict['Main class'], shell=None if imported_dict['Shell'] is None
-                        else Shell(imported_dict['Shell']), long_stf=None if imported_dict['Long. stf.'] is None
-                        else Structure(imported_dict['Long. stf.']), ring_stf=None if imported_dict['Ring stf.'] is None
-                        else Structure(imported_dict['Ring stf.']), ring_frame=None if imported_dict['Ring frame']
-                                                                                       is None
-                        else Structure(imported_dict['Ring frame']))
-            #  Recording sections.
-            self._sections = add_new_section(self._sections, struc.Section(lines_prop))
-
-
+                if imported['fatigue_properties'][line] is not None:
+                    self._line_to_struc[line][2] = CalcFatigue(lines_prop['Stiffener'],
+                                                               imported['fatigue_properties'][line])
+                else:
+                    self._line_to_struc[line][2] = None
+                #  Recording sections.
+                self._sections = add_new_section(self._sections, struc.Section(lines_prop['Stiffener']))
+                if 'shell structure properties' in imported.keys():
+                    if imported['shell structure properties'][line] is not None:
+                        imported_dict = imported['shell structure properties'][line]
+                        '''
+                        all_data = {'Main class': self.get_main_properties(),
+                                    'Shell': self._Shell.get_main_properties(),
+                                    'Long. stf.': self._LongStf.get_structure_prop(),
+                                    'Ring stf.': self.RingStfObj.get_structure_prop(),
+                                    'Ring frame': self._RingFrame.get_structure_prop()}
+                        '''
+                        for stuc_type in ['Long. stf.', 'Ring stf.', 'Ring frame']:
+                            if imported_dict[stuc_type] is not None:
+                                if 'sigma_x' in imported_dict[stuc_type].keys():
+                                    imported_dict[stuc_type]['sigma_x1'] = imported_dict[stuc_type]['sigma_x']
+                                    imported_dict[stuc_type]['sigma_x2'] = imported_dict[stuc_type]['sigma_x']
+                                    imported_dict[stuc_type].pop('sigma_x')
+                        self._line_to_struc[line][5] = \
+                            CylinderAndCurvedPlate(imported_dict['Main class'], shell=None if imported_dict['Shell'] is None
+                            else Shell(imported_dict['Shell']), long_stf=None if imported_dict['Long. stf.'] is None
+                            else Structure(imported_dict['Long. stf.']), ring_stf=None if imported_dict['Ring stf.'] is None
+                            else Structure(imported_dict['Ring stf.']), ring_frame=None if imported_dict['Ring frame']
+                                                                                           is None
+                            else Structure(imported_dict['Ring frame']))
 
         # opening the loads
         variables = ['poly_third','poly_second', 'poly_first', 'poly_const', 'load_condition',
