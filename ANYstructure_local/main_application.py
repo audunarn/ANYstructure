@@ -5616,12 +5616,13 @@ class Application():
         beams, plates = list(), list()
         if self._line_to_struc != {}:
             for line, data in self._line_to_struc.items():
-                this_beam = data[1].get_beam_string()
-                this_plate = data[1].get_pl_thk()*1000
-                if this_beam not in beams:
-                    beams.append(this_beam)
-                if this_plate not in plates:
-                    plates.append(this_plate)
+                if data[0].Stiffener is not None:
+                    this_beam = data[0].Stiffener.get_beam_string()
+                    this_plate = data[0].Stiffener.get_pl_thk()*1000
+                    if this_beam not in beams:
+                        beams.append(this_beam)
+                    if this_plate not in plates:
+                        plates.append(this_plate)
 
         return {'plates':plates, 'beams': beams}
 

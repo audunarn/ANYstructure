@@ -1410,7 +1410,7 @@ class AllStructure():
         self._km2 = main_dict['km2'][0]#24
         self._girder_dist_between_lateral_supp = None if main_dict['girder distance between lateral support'][0] == 0 \
             else main_dict['girder distance between lateral support'][0]
-        self._panel_length_Lp = main_dict['panel length, Lp'][0]
+        self._panel_length_Lp = None if main_dict['panel length, Lp'][0] == 0 else main_dict['panel length, Lp'][0]
         self._overpressure_side = main_dict['pressure side'][0] # either 'stiffener', 'plate', 'both'
         self._fab_method_stiffener = main_dict['fabrication method stiffener'][0]#'welded'
         self._fab_method_girder = main_dict['fabrication method girder'][0]#'welded'
@@ -1510,7 +1510,7 @@ class AllStructure():
         self._km2 = main_dict['km2'][0]#24
         self._girder_dist_between_lateral_supp = None if main_dict['girder distance between lateral support'][0] else \
             main_dict['girder distance between lateral support'][0]
-        self._panel_length_Lp = main_dict['panel length, Lp'][0]
+        self._panel_length_Lp = None if main_dict['panel length, Lp'][0] == 0 else main_dict['panel length, Lp'][0]
         self._overpressure_side = main_dict['pressure side'][0] # either 'stiffener', 'plate', 'both'
         self._fab_method_stiffener = main_dict['fabrication method stiffener'][0]#'welded'
         self._fab_method_girder = main_dict['fabrication method girder'][0]#'welded'
