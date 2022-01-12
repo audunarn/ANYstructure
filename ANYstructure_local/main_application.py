@@ -2627,7 +2627,7 @@ class Application():
 
         return_dict = {'colors': {}, 'section_modulus': {}, 'thickness': {}, 'shear_area': {}, 'buckling': {},
                        'fatigue': {}, 'pressure_uls': {}, 'pressure_fls': {},
-                       'struc_obj': {}, 'scant_calc_obj': {}, 'fatigue_obj': {}, 'utilization': {}, 'slamming': {},
+                       'all_obj': {}, 'scant_calc_obj': {}, 'fatigue_obj': {}, 'utilization': {}, 'slamming': {},
                        'color code': {}, 'PULS colors': {}, 'ML buckling colors' : {}, 'ML buckling class' : {},
                        'weights': {}, 'cylinder': {}}
 
@@ -2654,6 +2654,7 @@ class Application():
                 obj_scnt_calc_stf = all_obj.Stiffener  # self._line_to_struc[current_line][1]
                 obj_scnt_calc_girder = all_obj.Girder  # self._line_to_struc[current_line][1]
 
+                return_dict['all_obj'][current_line] = all_obj
 
                 if all_obj.need_recalc is False:
                     return self._state_logger[current_line]
@@ -2682,7 +2683,7 @@ class Application():
                 #         print(key, val)
                 #     buckling = all_obj.plate_buckling()
                 # else:
-                #     buckling =  {'Plate': {'Plate buckling': 0.6008375683848213}, 'Stiffener': {'Overpressure plate side': 1.906936135011311, 'Overpressure stiffener side': 1.5597740194239675, 'Resistance between stiffeners': 0.8819819808767574, 'Shear capacity': 0.6480527944404696}, 'Girder': {'Overpressure plate side': 0, 'Overpressure girder side': 0, 'Shear capacity': 0}, 'Local buckling': {'stiffener': [410.06272278728085, 136.68757426242695], 'girder': [0, 0]}}
+                #     buckling =  {'Plate': {'Plate buckling': 0.6008375683848213}, 'Stiffener': {'Overpressure plate side': 0.1, 'Overpressure stiffener side': 0.1, 'Resistance between stiffeners': 0.8819819808767574, 'Shear capacity': 0.6480527944404696}, 'Girder': {'Overpressure plate side': 0, 'Overpressure girder side': 0, 'Shear capacity': 0}, 'Local buckling': {'stiffener': [410.06272278728085, 136.68757426242695], 'girder': [0, 0]}}
 
 
                 all_buckling_uf_list = list()
@@ -3993,17 +3994,17 @@ class Application():
         The properties canvas is created here.
                 state =     {'colors': {}, 'section_modulus': {}, 'thickness': {}, 'shear_area': {}, 'buckling': {},
                             'fatigue': {}, 'pressure_uls': {}, 'pressure_fls': {},
-                            'struc_obj': {}, 'scant_calc_obj': {}, 'fatigue_obj': {}}
+                            'all_obj': {}, 'scant_calc_obj': {}, 'fatigue_obj': {}}
         :return:
         '''
 
         self._result_canvas.delete('all')
 
-        if state is None or self._active_line not in state['struc_obj'].keys():
+        if state is None or self._active_line not in state['all_obj'].keys():
             return
 
         if self._line_is_active:
-            x, y, dx, dy = 0, 15, 15, 15
+            x, y, dx, dy = 0, 5, 15, 17
 
             if self._active_line in self._line_to_struc and self._line_to_struc[self._active_line][5] is None:
 
@@ -4012,14 +4013,16 @@ class Application():
 
                 current_line = self._active_line
 
-                obj_scnt_calc_stf = state['struc_obj'][current_line]
+                obj_scnt_calc_pl = state['all_obj'][current_line].Plate
+                obj_scnt_calc_stf = state['all_obj'][current_line].Stiffener
+                obj_scnt_calc_girder = state['all_obj'][current_line].Girder
                 sec_mod = [round(state['section_modulus'][current_line]['sec_mod'][0], 5),
                            round(state['section_modulus'][current_line]['sec_mod'][1], 5)]
                 shear_area = state['shear_area'][current_line]['shear_area']
                 min_shear = state['shear_area'][current_line]['min_shear_area']
                 min_sec_mod = state['section_modulus'][current_line]['min_sec_mod']
                 min_thk = state['thickness'][current_line]['min_thk']
-                buckling = [round(res, 2) for res in state['buckling'][current_line]]
+                buckling = state['buckling'][current_line]
 
                 if state['slamming'][current_line]['state']:
                     slamming = True
@@ -4047,53 +4050,88 @@ class Application():
                 color_thk = state['colors'][current_line]['thickness']
                 color_buckling = state['colors'][current_line]['buckling']
 
-                # printing the calculated sectiton modulus
-                if state['slamming'][current_line]['state'] and slm_text_min_zpl is False:
-                    text = 'Slamming strength violation for web thickness.'
-                else:
-                    text = 'Section moduluses: ' + \
-                           'Wey1: '+ str('%.4E' % decimal.Decimal(sec_mod[1]*m3_to_mm3))+ ' [mm^3], '+\
-                           ' Wey2: ' + str('%.4E' % decimal.Decimal(sec_mod[0]*m3_to_mm3)) + ' [mm^3] ' \
-                        if not slm_text_min_zpl else 'Net effective plastic section modulus: ' +str(slm_zpl)+' [cm^3]'
-                self._result_canvas.create_text([x*1, y*1],
-                                               text=text,font=self._text_size['Text 9 bold'],anchor='nw',
-                                                fill = self._color_text)
+
                 #printing the minimum section modulus
+                x1, x2, x3 = 15,25,35
+
+                self._result_canvas.create_text([x+0*dx, (y+0*dy)*1],
+                                                text= 'Special provisions - DNV-OS-C101 - checks for section, '
+                                                      'web thickness and plate thickness.',
+                                                font=self._text_size["Text 9 bold"],anchor='nw', fill='Black')
+                self._result_canvas.create_text([x+0*dx, (y+2*dy)*1],
+                                                text= 'Section modulus check',
+                                                font=self._text_size["Text 9"],anchor='nw', fill='Black')
+                self._result_canvas.create_text([x+0*dx, (y+3*dy)*1],
+                                                text= 'Shear area check',
+                                                font=self._text_size["Text 9"],anchor='nw', fill='Black')
+                self._result_canvas.create_text([x+0*dx, (y+4*dy)*1],
+                                                text= 'Web thickness test',
+                                                font=self._text_size["Text 9"],anchor='nw', fill='Black')
+                self._result_canvas.create_text([x + x1*dx, (y+1*dy)*1],
+                                                text= 'Minimum value',
+                                                font=self._text_size["Text 9"],anchor='nw', fill='Black')
+                self._result_canvas.create_text([x+ x2*dx, (y+1*dy)*1],
+                                                text= 'Actual value',
+                                                font=self._text_size["Text 9"],anchor='nw', fill='Black')
+                self._result_canvas.create_text([x+ x3*dx, (y+1*dy)*1],
+                                                text= 'Accepted?',
+                                                font=self._text_size["Text 9"],anchor='nw', fill='Black')
+
                 if state['slamming'][current_line]['state'] and slm_text_min_zpl is False:
                     text = '(shear issue, change thickness or web height)'
                 else:
-                    text =  'Minimum section modulus: '+str('%.4E' % decimal.Decimal(min_sec_mod * m3_to_mm3)) +\
+                    text =  str('%.4E' % decimal.Decimal(min_sec_mod * m3_to_mm3)) +\
                             ' [mm^3] ' if not slm_text_min_zpl else slm_text_min_zpl
-                self._result_canvas.create_text([x*1, (y+dy)*1], text= text,
-                                                    font=self._text_size["Text 9 bold"],anchor='nw', fill=color_sec)
+                self._result_canvas.create_text([x + x1*dx, (y+2*dy)*1], text= text,
+                                                font=self._text_size["Text 9 bold"],anchor='nw', fill=color_sec)
+
+                # printing the calculated sectiton modulus
+                if state['slamming'][current_line]['state'] and slm_text_min_zpl is False:
+                    text = 'tw issue - slamming'
+                else:
+                    text = str('%.4E' % decimal.Decimal(min(sec_mod[1], sec_mod[0])*m3_to_mm3))+ ' [mm^3]' \
+                        if not slm_text_min_zpl else str(slm_zpl)+'- zpl [cm^3]'
+                self._result_canvas.create_text([x + x2*dx, (y+2*dy)*1],
+                                               text=text,font=self._text_size['Text 9 bold'],anchor='nw',
+                                                fill = self._color_text)
+
+                self._result_canvas.create_text([x + x3*dx, (y+2*dy)*1],
+                                               text='Ok' if min(sec_mod[1], sec_mod[0])*m3_to_mm3 >
+                                                            min_sec_mod * m3_to_mm3 else 'Not ok',
+                                                font=self._text_size['Text 9 bold'],anchor='nw',
+                                                fill = self._color_text)
 
                 #minimum shear area
-                text = 'Shear area: '+str('%.4E' % decimal.Decimal(shear_area * m2_to_mm2 ))+' [mm^2]' \
-                    if not slm_text_min_web_thk else 'Stiffener web thickness: '+str(obj_scnt_calc_stf.get_web_thk()*1000)+' [mm]'
-                self._result_canvas.create_text([x*1, (y+3*dy)*1],
-                                               text= text,
-                                               font=self._text_size["Text 9 bold"],anchor='nw', fill = self._color_text)
-                text = 'Minimum shear area: '+str('%.4E' % decimal.Decimal(min_shear * m2_to_mm2))+' [mm^2] ' \
-                    if not slm_text_min_web_thk else 'Minimum stiffener web thickness due to SLAMMING: '+\
-                                                     str(round(slm_min_web_thk,1))+' [mm]'
-                self._result_canvas.create_text([x*1, (y+4*dy)*1],
+                text = str('%.4E' % decimal.Decimal(min_shear * m2_to_mm2))+' [mm^2] ' \
+                    if not slm_text_min_web_thk else str(round(slm_min_web_thk,1))+' [mm]'
+                self._result_canvas.create_text([x + x1*dx, (y+3*dy)*1],
                                                text = text,
                                                font=self._text_size["Text 9 bold"],anchor='nw', fill=color_shear)
+                text = str('%.4E' % decimal.Decimal(shear_area * m2_to_mm2 ))+' [mm^2]' \
+                    if not slm_text_min_web_thk else str(obj_scnt_calc_stf.get_web_thk()*1000)+' [mm]'
+                self._result_canvas.create_text([x + x2*dx, (y+3*dy)*1],
+                                               text= text,
+                                               font=self._text_size["Text 9 bold"],anchor='nw', fill = self._color_text)
+                self._result_canvas.create_text([x + x3*dx, (y+3*dy)*1],
+                                               text= 'Ok' if shear_area * m2_to_mm2 > min_shear * m2_to_mm2 else 'Not ok',
+                                               font=self._text_size["Text 9 bold"],anchor='nw', fill = self._color_text)
 
                 #minimum thickness for plate
-
-                self._result_canvas.create_text([x*1, (y+6*dy)*1],
-                                               text='Plate thickness: '
-                                                    +str(obj_scnt_calc_stf.get_pl_thk()*1000)+' [mm] ',
-                                               font=self._text_size["Text 9 bold"],anchor='nw', fill = self._color_text)
-                text = 'Minimum plate thickness: '+str(round(min_thk,1)) + ' [mm]' if not slm_text_pl_thk \
-                    else 'Minimum plate thickness due to SLAMMING'+str(slm_min_pl_thk)+' [mm]'
-                self._result_canvas.create_text([x*1, (y+7*dy)*1],
+                text = str(round(min_thk,1)) + ' [mm]' if not slm_text_pl_thk \
+                    else 'SLAMMING'+str(slm_min_pl_thk)+' [mm]'
+                self._result_canvas.create_text([x + x1*dx, (y+4*dy)*1],
                                                text=text,
                                                font=self._text_size["Text 9 bold"],anchor='nw', fill=color_thk)
+                self._result_canvas.create_text([x + x2*dx, (y+4*dy)*1],
+                                               text=str(obj_scnt_calc_pl.get_pl_thk()*1000)+' [mm] ',
+                                               font=self._text_size["Text 9 bold"],anchor='nw', fill = self._color_text)
+                self._result_canvas.create_text([x + x3*dx, (y+4*dy)*1],
+                                               text='Ok' if obj_scnt_calc_pl.get_pl_thk()*1000 > min_thk else 'Not ok',
+                                               font=self._text_size["Text 9 bold"],anchor='nw', fill = self._color_text)
+
 
                 # buckling results
-
+                start_y, y = 5, 10
                 if self._PULS_results != None and self._new_buckling_method.get() == 'DNV PULS':
                     line_results = state['PULS colors'][self._active_line]
                     puls_res = self._PULS_results.get_puls_line_results(self._active_line)
@@ -4131,59 +4169,124 @@ class Application():
                             .values()]) else 'Not ok'
                         loc_geom = loc_label + ':   ' + loc_geom
                         csr_geom = csr_label+':   ' + csr_geom
-                        self._result_canvas.create_text([x * 1, y + 8.5 * dy], text='PULS results',
+                        self._result_canvas.create_text([x * 1, y + (start_y+0) * dy], text='PULS results',
                                                         font=self._text_size['Text 9 bold'],
                                                         anchor='nw',
                                                         fill = self._color_text)
-                        self._result_canvas.create_text([x * 1, y + 9.5 * dy], text=buc_text,
+                        self._result_canvas.create_text([x * 1, y + (start_y+1) * dy], text=buc_text,
                                                         font=self._text_size['Text 9 bold'],
                                                         anchor='nw',
                                                         fill=line_results['buckling'])
-                        self._result_canvas.create_text([x * 1, y + 10.5 * dy], text=ult_text,
+                        self._result_canvas.create_text([x * 1, y + (start_y+2) * dy], text=ult_text,
                                                         font=self._text_size['Text 9 bold'],
                                                         anchor='nw',
                                                         fill=line_results['ultimate'])
-                        self._result_canvas.create_text([x * 1, y + 11.5 * dy], text=loc_geom,
+                        self._result_canvas.create_text([x * 1, y + (start_y+3) * dy], text=loc_geom,
                                                         font=self._text_size['Text 9 bold'],
                                                         anchor='nw',
                                                         fill=line_results['local geometry'])
-                        self._result_canvas.create_text([x * 1, y + 12.5 * dy], text=csr_geom,
+                        self._result_canvas.create_text([x * 1, y + (start_y+4) * dy], text=csr_geom,
                                                         font=self._text_size['Text 9 bold'],
                                                         anchor='nw',
                                                         fill=line_results['csr'])
                     else:
-                        self._result_canvas.create_text([x * 1, y + 9 * dy],
+                        self._result_canvas.create_text([x * 1, y + (start_y+0) * dy],
                                                         text='PULS results not avaliable for this line.\n'
                                                              'Run or update lines.',
                                                         font=self._text_size['Text 9 bold'],
                                                         anchor='nw',
                                                         fill='Orange')
                 elif self._new_buckling_method.get() == 'DNV-RP-C201 - prescriptive':
-                    self._result_canvas.create_text([x * 1, (y+9*dy) * 1],
-                                                   text='Buckling results DNV-RP-C201:',
+                    '''
+                            return {'Plate': {'Plate buckling': up_buckling}, 'Stiffener': {'Overpressure plate side': stf_buckling_pl_side,
+                                                    'Overpressure stiffener side': stf_buckling_stf_side, 
+                                                    'Resistance between stiffeners': stf_plate_resistance,
+                                                    'Shear capacity': stf_shear_capacity},
+                'Girder': {'Overpressure plate side': girder_buckling_pl_side,
+                           'Overpressure girder side': girder_buckling_girder_side,
+                           'Shear capacity': girder_shear_capacity},
+                'Local buckling': local_buckling}
+                    '''
+
+                    self._result_canvas.create_text([x * 1, (y+(start_y+0)*dy) * 1],
+                                                   text='Buckling results DNV-RP-C201 - prescriptive - (plate, stiffener, girder):',
                                                    font=self._text_size["Text 9 bold"], anchor='nw',
                                                     fill = self._color_text)
-                    if sum(buckling)==0:
-                        self._result_canvas.create_text([x * 1, (y+10*dy) * 1],
-                                                       text='No buckling results', font=self._text_size["Text 9 bold"],
-                                                       anchor='nw', fill=color_buckling)
-                    else:
-                        if buckling[0]==float('inf'):
-                            res_text = 'Plate resistance not ok (equation 6.12). '
-                        elif buckling[1] == float('inf'):
-                            res_text = 'Spacing/thickness aspect ratio error (equation eq 6.11 - ha < 0). '
-                        else:
-                            if obj_scnt_calc_stf.get_side() == 'p':
-                                res_text = '|eq 7.19: '+str(buckling[0])+' |eq 7.50: '+str(buckling[1])+ ' |eq 7.51: '+ \
-                                             str(buckling[2])+' |7.52: '+str(buckling[3])+ '|eq 7.53: '+str(buckling[4])+\
-                                             ' |z*: '+str(buckling[5])
-                            elif obj_scnt_calc_stf.get_side() == 's':
-                                res_text = '|eq 7.19: '+str(buckling[0])+' |eq 7.54: '+str(buckling[1])+' |eq 7.55: '+ \
-                                             str(buckling[2])+' |7.56: '+str(buckling[3])+ '|eq 7.57: '+str(buckling[4])+ \
-                                             ' |z*: '+str(buckling[5])
-                        self._result_canvas.create_text([x * 1, (y+10*dy) * 1],
-                                                   text=res_text,font=self._text_size["Text 9 bold"],
-                                                   anchor='nw',fill=color_buckling)
+
+                    self._result_canvas.create_text([x + dx*0, (y+(start_y+2)*dy) * 1],
+                                               text='Overpressure plate side',font=self._text_size["Text 9"],
+                                               anchor='nw',fill='black')
+                    self._result_canvas.create_text([x + dx*0, (y+(start_y+3)*dy) * 1],
+                                               text='Overpressure stiffener side',font=self._text_size["Text 9"],
+                                               anchor='nw',fill='black')
+                    self._result_canvas.create_text([x + dx*0, (y+(start_y+4)*dy) * 1],
+                                               text='Resistance between stiffeners',font=self._text_size["Text 9"],
+                                               anchor='nw',fill='black')
+                    self._result_canvas.create_text([x + dx*0, (y+(start_y+5)*dy) * 1],
+                                               text='Shear capacity',font=self._text_size["Text 9"],
+                                               anchor='nw',fill='black')
+                    self._result_canvas.create_text([x + dx*0, (y+(start_y+6)*dy) * 1],
+                                               text='Local buckling, max web height - max flange width',
+                                                    font=self._text_size["Text 9"],
+                                               anchor='nw',fill='black')
+
+                    #'Local buckling'
+                    x1, x2, x3 = 15,25,35
+                    self._result_canvas.create_text([x + dx*15, (y+(start_y+1)*dy) * 1],
+                                               text='Plate',font=self._text_size["Text 9 bold"],
+                                               anchor='nw',fill=color_buckling)
+                    self._result_canvas.create_text([x + dx*25, (y+(start_y+1)*dy) * 1],
+                                               text='Stiffener',font=self._text_size["Text 9 bold"],
+                                               anchor='nw',fill=color_buckling)
+                    self._result_canvas.create_text([x + dx*35, (y+(start_y+1)*dy) * 1],
+                                               text='Girder',font=self._text_size["Text 9 bold"],
+                                               anchor='nw',fill=color_buckling)
+                    x_mult = x1
+                    self._result_canvas.create_text([x + dx*x_mult , (y+(start_y+2)*dy) * 1],
+                                               text=str(round(buckling['Plate']['Plate buckling'],3)),
+                                                    font=self._text_size["Text 9 bold"],
+                                               anchor='nw',fill=color_buckling)
+                    x_mult = x2
+                    self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+2)*dy) * 1],
+                                               text=str(round(buckling['Stiffener']['Overpressure plate side'],3)),
+                                                    font=self._text_size["Text 9 bold"],
+                                               anchor='nw',fill=color_buckling)
+                    self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+3)*dy) * 1],
+                                               text=str(round(buckling['Stiffener']['Overpressure stiffener side'],3)),
+                                                    font=self._text_size["Text 9 bold"],
+                                               anchor='nw',fill=color_buckling)
+                    self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+4)*dy) * 1],
+                                               text=str(round(buckling['Stiffener']['Resistance between stiffeners'],3))
+                                                    ,font=self._text_size["Text 9 bold"],
+                                               anchor='nw',fill=color_buckling)
+                    self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+5)*dy) * 1],
+                                               text=str(round(buckling['Stiffener']['Shear capacity'],3)),
+                                                    font=self._text_size["Text 9 bold"],
+                                               anchor='nw',fill=color_buckling)
+                    self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+6)*dy) * 1],
+                                               text=str(round(buckling['Local buckling']['Stiffener'][0],3)) + ' - ' +
+                                                        str(round(buckling['Local buckling']['Stiffener'][1],3)),
+                                                    font=self._text_size["Text 9"],
+                                               anchor='nw',fill=color_buckling)
+                    x_mult = x3
+                    self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+2)*dy) * 1],
+                                               text=str(round(buckling['Girder']['Overpressure plate side'],3)),
+                                                    font=self._text_size["Text 9 bold"],
+                                               anchor='nw',fill=color_buckling)
+                    self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+3)*dy) * 1],
+                                               text=str(round(buckling['Girder']['Overpressure girder side'],3)),
+                                                    font=self._text_size["Text 9 bold"],
+                                               anchor='nw',fill=color_buckling)
+                    self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+4)*dy) * 1],
+                                               text=str(round(buckling['Girder']['Shear capacity'],3)),
+                                                    font=self._text_size["Text 9 bold"],
+                                               anchor='nw',fill=color_buckling)
+                    self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+6)*dy) * 1],
+                                               text=str(round(buckling['Local buckling']['Girder'][0],3)) + ' - ' +
+                                                        str(round(buckling['Local buckling']['Girder'][1],3)),
+                                                    font=self._text_size["Text 9"],
+                                               anchor='nw',fill=color_buckling)
+
                 elif self._new_buckling_method.get() == 'ML-CL (PULS based)':
 
                     self._result_canvas.create_text([x * 1, (y + 9 * dy) * 1],
@@ -4222,7 +4325,7 @@ class Application():
 
                 # fatigue results
 
-                self._result_canvas.create_text([x * 1, (y+14*dy) * 1],
+                self._result_canvas.create_text([x * 1, (y+(start_y+7)*dy) * 1],
                                                 text='Fatigue results (DNVGL-RP-C203): ',
                                                 font=self._text_size["Text 9 bold"], anchor='nw', fill = self._color_text)
 
@@ -4230,19 +4333,19 @@ class Application():
                     if state['fatigue'][current_line]['damage'] is not None:
                         damage = state['fatigue'][current_line]['damage']
                         dff = state['fatigue'][current_line]['dff']
-                        self._result_canvas.create_text([x * 1, (y + 15 * dy) * 1],
+                        self._result_canvas.create_text([x * 1, (y + (start_y+8) * dy) * 1],
                                                         text='Total damage (DFF not included): '+str(round(damage,3)) +
                                                              '  |  With DFF = '+str(dff)+' --> Damage: '+
                                                              str(round(damage*dff,3)),
                                                         font=self._text_size["Text 9 bold"], anchor='nw',
                                                         fill=color_fatigue)
                     else:
-                        self._result_canvas.create_text([x * 1, (y + 15 * dy) * 1],
+                        self._result_canvas.create_text([x * 1, (y + (start_y+8) * dy) * 1],
                                                         text='Total damage: NO RESULTS ',
                                                         font=self._text_size["Text 9 bold"],
                                                         anchor='nw', fill = self._color_text)
                 else:
-                    self._result_canvas.create_text([x * 1, (y + 15 * dy) * 1],
+                    self._result_canvas.create_text([x * 1, (y + (start_y+8) * dy) * 1],
                                                     text='Total damage: NO RESULTS ',
                                                     font=self._text_size["Text 9 bold"],
                                                     anchor='nw', fill = self._color_text)
@@ -4283,17 +4386,17 @@ class Application():
                             uf_col = 'grey'
                         else:
                             uf_col = 'red' if any([value > 1, value == False]) else 'green'
-                        self._result_canvas.create_text([x*1, y*y_location],
+                        self._result_canvas.create_text([x*1, y+dy*y_location],
                                                        text=text_key,font=self._text_size['Text 10 bold'],anchor='nw',
                                                     fill = self._color_text)
-                        self._result_canvas.create_text([dx*20, y*y_location],
+                        self._result_canvas.create_text([dx*20, dy*y_location],
                                                        text=text_value,font=self._text_size['Text 10 bold'],anchor='nw',
                                                         fill=uf_col)
                     else:
 
                         if value is not None:
                             y_location +=1
-                            self._result_canvas.create_text([x, y * y_location],
+                            self._result_canvas.create_text([x, dy*y_location],
                                                             text='Stiffener requirement checks:',
                                                             font=self._text_size['Text 10 bold'],
                                                             anchor='nw',
@@ -4306,12 +4409,12 @@ class Application():
 
                                 chk_text = 'OK' if chk_bool == True else 'Not OK' if chk_bool == False else 'N/A'
 
-                                self._result_canvas.create_text([10*dx*idx_x, y * y_location],
+                                self._result_canvas.create_text([10*dx*idx_x, dy*y_location],
                                                                 text=stf_text, font=self._text_size['Text 10 bold'],
                                                                 anchor='nw',
                                                                 fill=self._color_text if not value else 'green')
 
-                                self._result_canvas.create_text([10*dx*idx_x, y * (y_location+1)],
+                                self._result_canvas.create_text([10*dx*idx_x, y + (y_location+1)*dy],
                                                                 text=chk_text, font=self._text_size['Text 10 bold'],
                                                                 anchor='nw',
                                                                 fill='green' if chk_bool == True else 'red' if

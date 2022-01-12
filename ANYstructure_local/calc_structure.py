@@ -2355,7 +2355,7 @@ class AllStructure():
             max_web_girder = 0
             max_flange_girder = 0
 
-        return {'stiffener': [max_web_stf, max_flange_stf], 'girder': [max_web_girder, max_flange_girder]}
+        return {'Stiffener': [max_web_stf, max_flange_stf], 'Girder': [max_web_girder, max_flange_girder]}
 
 class Shell():
     '''
@@ -4312,13 +4312,6 @@ class PULSpanel():
         self.run_all(store_results=True)
         print('Time to run', batch_size, 'batches:', time.time() - now)
 
-def f(name, queue):
-    import time
-    #print('hello', name)
-    time.sleep(2)
-    queue.put(name)
-
-
 if __name__ == '__main__':
     import ANYstructure_local.example_data as ex
     # PULS = PULSpanel(ex.run_dict, puls_sheet_location=r'C:\Github\ANYstructure\ANYstructure\PULS\PulsExcel_new - Copy (1).xlsm')
@@ -4396,16 +4389,12 @@ if __name__ == '__main__':
     Plate = CalcScantlings(ex.obj_dict)
     Stiffener = CalcScantlings(ex.obj_dict)
     Girder = None#CalcScantlings(ex.obj_dict_heavy)
-
-
     PreBuc = AllStructure(Plate = Plate, Stiffener = Stiffener, Girder = Girder,
                                   main_dict=ex.prescriptive_main_dict)
     PreBuc.lat_press = 0.422985
-
     #print(Plate)
     # print(Plate)
     print(Stiffener)
     # print(Girder)
-
     print(PreBuc.plate_buckling())
 
