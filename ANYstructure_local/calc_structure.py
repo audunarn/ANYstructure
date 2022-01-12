@@ -674,12 +674,14 @@ class Structure():
             stf_type = 'F'
         else:
             stf_type = self._stiffener_type
+        map_boundary = {'Continuous': 'C', 'Sniped': 'S'}
         if self._puls_sp_or_up == 'SP':
             return_dict = {'Identification': None, 'Length of panel': self._span*1000, 'Stiffener spacing': self._spacing*1000,
                             'Plate thickness': self._plate_th*1000,
                           'Number of primary stiffeners': 10,
                            'Stiffener type (L,T,F)': stf_type,
-                            'Stiffener boundary': self._puls_stf_end if self._puls_stf_end in ['C', 'S']
+                            'Stiffener boundary': map_boundary[self._puls_stf_end]
+                            if map_boundary[self._puls_stf_end] in ['C', 'S']
                             else 'C' if self._puls_stf_end == 'Continuous' else 'S',
                           'Stiff. Height': self._web_height*1000, 'Web thick.': self._web_th*1000,
                            'Flange width': self._flange_width*1000,
@@ -731,18 +733,21 @@ class Structure():
         stf_end = {'Cont': 1, 'C':1 , 'Sniped': 2, 'S': 2}
         field_type = {'Integrated': 1,'Int': 1, 'Girder - long': 2,'GL': 2, 'Girder - trans': 3,  'GT': 3}
         up_boundary = {'SS': 1, 'CL': 2}
+        map_boundary = {'Continuous': 'C', 'Sniped': 'S'}
 
         if self._puls_sp_or_up == 'SP':
             if csr == False:
                 this_field =  [self._span * 1000, self._spacing * 1000, self._plate_th * 1000, self._web_height * 1000,
                                self._web_th * 1000, self._flange_width * 1000, self._flange_th * 1000, self._mat_yield / 1e6,
                                self._mat_yield / 1e6,  self._sigma_x1, self._sigma_y1, self._sigma_y2, self._tauxy,
-                               design_lat_press/1000, stf_type[self._stiffener_type], stf_end[self._puls_stf_end]]
+                               design_lat_press/1000, stf_type[self._stiffener_type],
+                               stf_end[map_boundary[self._puls_stf_end]]]
             else:
                 this_field =  [self._span * 1000, self._spacing * 1000, self._plate_th * 1000, self._web_height * 1000,
                                self._web_th * 1000, self._flange_width * 1000, self._flange_th * 1000, self._mat_yield / 1e6,
                                self._mat_yield / 1e6,  self._sigma_x1, self._sigma_y1, self._sigma_y2, self._tauxy,
-                               design_lat_press/1000, stf_type[self._stiffener_type], stf_end[self._puls_stf_end],
+                               design_lat_press/1000, stf_type[self._stiffener_type],
+                               stf_end[map_boundary[self._puls_stf_end]],
                                field_type[self._puls_boundary]]
         else:
             ss_cl_list = list()
@@ -1530,6 +1535,8 @@ class AllStructure():
             self._Girder.set_main_properties(prop_dict['Girder'])
         else:
             self._Girder = None
+
+        self._calculation_domain = main_dict['calculation domain'][0]
 
     def plate_buckling(self):
         '''
