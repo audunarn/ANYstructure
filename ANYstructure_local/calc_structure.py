@@ -1392,7 +1392,8 @@ class AllStructure():
         self._v = 0.3
         self._E = 2.1e11
 
-        self._min_lat_press_adj_span = main_dict['minimum pressure in adjacent spans'][0]
+        self._min_lat_press_adj_span = None if main_dict['minimum pressure in adjacent spans'][0] == 0 else \
+            main_dict['minimum pressure in adjacent spans'][0]
         self._yield =  main_dict['material yield'][0]
         self._stress_load_factor = main_dict['load factor on stresses'][0]
         self._lat_load_factor = main_dict['load factor on pressure'][0]
@@ -1401,11 +1402,14 @@ class AllStructure():
         self._girder_end_support = main_dict['girder end support'][0]#'Continuous'
         self._tension_field_action = main_dict['tension field'][0]# 'not allowed'
         self._stiffed_plate_effective_aginst_sigy = main_dict['plate effective agains sigy'][0] #True
-        self._buckling_length_factor_stf = main_dict['buckling length factor stf'][0]
-        self._buckling_length_factor_girder = main_dict['buckling length factor girder'][0]
+        self._buckling_length_factor_stf = None if main_dict['buckling length factor stf'][0] == 0 else \
+            main_dict['buckling length factor stf'][0]
+        self._buckling_length_factor_girder = None if main_dict['buckling length factor girder'][0] == 0 else \
+            main_dict['buckling length factor girder'][0]
         self._km3 = main_dict['km3'][0]#12
         self._km2 = main_dict['km2'][0]#24
-        self._girder_dist_between_lateral_supp = main_dict['girder distance between lateral support'][0]
+        self._girder_dist_between_lateral_supp = None if main_dict['girder distance between lateral support'][0] == 0 \
+            else main_dict['girder distance between lateral support'][0]
         self._panel_length_Lp = main_dict['panel length, Lp'][0]
         self._overpressure_side = main_dict['pressure side'][0] # either 'stiffener', 'plate', 'both'
         self._fab_method_stiffener = main_dict['fabrication method stiffener'][0]#'welded'
@@ -1462,7 +1466,7 @@ class AllStructure():
 
     def get_main_properties(self):
         main_dict = dict()
-        main_dict['minimum pressure in adjacent spans'] = [self._min_lat_press_adj_span , '']
+        main_dict['minimum pressure in adjacent spans'] = [self._min_lat_press_adj_span,  '']
         main_dict['material yield'] = [self._yield, 'Pa']
         main_dict['load factor on stresses'] = [self._stress_load_factor, '']
         main_dict['load factor on pressure'] = [self._lat_load_factor, '']
@@ -1488,7 +1492,8 @@ class AllStructure():
 
     def set_main_properties(self, prop_dict):
         main_dict = prop_dict['main dict']
-        self._min_lat_press_adj_span = main_dict['minimum pressure in adjacent spans'][0]
+        self._min_lat_press_adj_span = None if main_dict['minimum pressure in adjacent spans'][0] == 0 else \
+            main_dict['minimum pressure in adjacent spans'][0]
         self._yield =  main_dict['material yield'][0]
         self._stress_load_factor = main_dict['load factor on stresses'][0]
         self._lat_load_factor = main_dict['load factor on pressure'][0]
@@ -1497,11 +1502,14 @@ class AllStructure():
         self._girder_end_support = main_dict['girder end support'][0]#'Continuous'
         self._tension_field_action = main_dict['tension field'][0]# 'not allowed'
         self._stiffed_plate_effective_aginst_sigy = main_dict['plate effective agains sigy'][0] #True
-        self._buckling_length_factor_stf = main_dict['buckling length factor stf'][0]
-        self._buckling_length_factor_girder = main_dict['buckling length factor girder'][0]
+        self._buckling_length_factor_stf = None if main_dict['buckling length factor stf'][0] == 0 else \
+            main_dict['buckling length factor stf'][0]
+        self._buckling_length_factor_girder = None if main_dict['buckling length factor girder'][0] == 0 else \
+            main_dict['buckling length factor girder'][0]
         self._km3 = main_dict['km3'][0]#12
         self._km2 = main_dict['km2'][0]#24
-        self._girder_dist_between_lateral_supp = main_dict['girder distance between lateral support'][0]
+        self._girder_dist_between_lateral_supp = None if main_dict['girder distance between lateral support'][0] else \
+            main_dict['girder distance between lateral support'][0]
         self._panel_length_Lp = main_dict['panel length, Lp'][0]
         self._overpressure_side = main_dict['pressure side'][0] # either 'stiffener', 'plate', 'both'
         self._fab_method_stiffener = main_dict['fabrication method stiffener'][0]#'welded'
@@ -1574,7 +1582,7 @@ class AllStructure():
 
         E = self._E/1e6
         v = self._v
-        fy = self._yield / 1e6
+        fy = self._yield
         gammaM = self._Plate.get_mat_factor()
         t = self._Plate.t
         s = self._Plate.s
@@ -1628,7 +1636,9 @@ class AllStructure():
         sjsd =math.sqrt(math.pow(Max_vonMises_x,2) + math.pow(sysd,2)-Max_vonMises_x*sysd+3*math.pow(tsd,2))
         uf_sjsd = sjsd/fy*gammaM
         unstf_pl_data['UF sjsd'] = uf_sjsd
+
         psi_x =max([0,(1-math.pow(sjsd/fy,2))/math.sqrt(1-3/4*math.pow(sysd/fy,2)-3*math.pow(tsd/fy,2))])
+
         psi_x_chk = (1-3/4*math.pow(sy1sd/fy,2)-3*math.pow(tsd/fy,2))>0
         psi_y = max([0,(1-math.pow(sjsd/fy,2))/math.sqrt(1-3/4*math.pow(sxsd/fy,2)-3*math.pow(tsd/fy,2))]) \
             if 1-3/4*math.pow(sxsd/fy,2)-3*math.pow(tsd/fy,2) > 0 else 0
@@ -1751,7 +1761,7 @@ class AllStructure():
         E = self._E / 1e6
         v = self._v
         G = E/(2*(1+v))
-        fy = self._yield / 1e6
+        fy = self._yield
         gammaM = self._Plate.get_mat_factor()
         t = self._Plate.t
         s = self._Plate.s
@@ -2072,7 +2082,7 @@ class AllStructure():
         E = self._E / 1e6
         v = self._v
         G = E/(2*(1+v))
-        fy = self._yield / 1e6
+        fy = self._yield
         gammaM = self._Plate.get_mat_factor()
         t = self._Plate.t
         s = self._Plate.s
@@ -2106,7 +2116,7 @@ class AllStructure():
         #Pnt.8:  Buckling of Girders
         #7.8  Check for shear force
         Vsd = psd*l*Lg/2
-        print(Vsd)
+
         tw_req = Vsd*gammaM*math.sqrt(3)/(fy*self._Girder.hw)
         Anet = self._Girder.hw * self._Girder.tw + self._Girder.tw*self._Girder.tf
         Vrd = Anet*fy/(gammaM*math.sqrt(3))
@@ -2340,7 +2350,7 @@ class AllStructure():
         '''
         Checks for girders and stiffeners
         '''
-        fy = self._yield/1e6
+        fy = self._yield
         if self._Stiffener is not None:
             max_web_stf = 42*self._Stiffener.tw*math.sqrt(235/fy) if self._Stiffener.get_stiffener_type() != 'FB' else 0
             max_flange_stf = (14 if self._fab_method_stiffener == 'welded' else 15) *  self._Stiffener.tf *math.sqrt(235/fy)

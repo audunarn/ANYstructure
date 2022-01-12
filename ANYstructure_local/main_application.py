@@ -4728,7 +4728,7 @@ class Application():
                 
                 main_dict = dict()
                 main_dict['minimum pressure in adjacent spans'] = [self._new_buckling_min_press_adj_spans.get(), '']
-                main_dict['material yield'] = [self._new_material.get(), 'Pa']
+                main_dict['material yield'] = [self._new_material.get(), 'MPa']
                 main_dict['load factor on stresses'] = [self._new_buckling_lf_stresses.get(), '']
                 main_dict['load factor on pressure'] = [1, '']
                 main_dict['buckling method'] = [self._new_puls_method.get(), '']
@@ -4907,13 +4907,12 @@ class Application():
                 All = AllStructure(Plate=CalcScantlings(prop_dict['Plate']),
                                    Stiffener=None if cdom == 'Flat plate, unstiffened'
                                    else CalcScantlings(prop_dict['Stiffener']),
-                                   Girder=None if cdom != 'Flat plate, stiffened with girder'
+                                   Girder=None if cdom == 'Flat plate, stiffened with girder'
                                    else CalcScantlings(prop_dict['Girder']),
-                                   lat_press= self.get_highest_pressure(self._active_line),
                                    main_dict=prop_dict['main dict'])
 
                 #self._line_to_struc[self._active_line][1] = Structure(obj_dict)
-                self._sections = add_new_section(self._sections, struc.Section(obj_dict))
+                self._sections = add_new_section(self._sections, struc.Section(obj_dict_stf))
                 self._line_to_struc[self._active_line][0] = All
                 #self._line_to_struc[self._active_line][1] = CalcScantlings(obj_dict)
                 self._line_to_struc[self._active_line][5] = CylinderObj
@@ -6121,7 +6120,7 @@ class Application():
                 import ANYstructure_local.example_data as ex
                 main_dict = ex.prescriptive_main_dict
                 map_end = {'C': 'Continuous', 'S': 'Sniped'}
-                main_dict['material yield'] = [355e6, 'Pa']
+                main_dict['material yield'] = [355, 'Pa']
                 main_dict['load factor on stresses'] = [1, '']
                 main_dict['load factor on pressure'] = [1, '']
                 main_dict['buckling method'] = [lines_prop['puls buckling method'], '']
