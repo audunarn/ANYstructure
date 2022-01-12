@@ -1941,7 +1941,7 @@ class AllStructure():
         pf = 0.0001 if l*s*gammaM == 0 else 12*Wmin*fy/(math.pow(l,2)*s*gammaM)
 
         if self._buckling_length_factor_stf is None:
-            if self._stf_end_support == 'Continuous': # TODO wrong here. self._stf_end_support is 'C'
+            if self._stf_end_support == 'Continuous':
                 lk = l*(1-0.5*abs(psd_min_adj/pf))
 
             else:
@@ -2206,7 +2206,7 @@ class AllStructure():
         lk = Lg
         LGk = lk if self._buckling_length_factor_girder is None else lk*self._buckling_length_factor_girder
 
-        ie = 0 if Vsd_div_Vrd<0.5 else math.sqrt(Iy/AtotG) # TODO minor difference doe to Iy
+        ie = 0 if Vsd_div_Vrd<0.5 else math.sqrt(Iy/AtotG)
 
         fE = 0 if LGk == 0 else math.pow(math.pi,2)*E*math.pow(ie/LGk,2)
 
