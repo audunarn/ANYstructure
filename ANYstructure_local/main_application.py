@@ -193,6 +193,9 @@ class Application():
 
         self._canvas_scale = 20 # Used for slider and can change
         self._base_scale_factor = 10 # Used for grid and will not change, 10 is default
+        self._prop_canvas_scale = 100 # Scrolling for property canvas
+        # self._prop_canvas_x_base =
+        # self._prop_canvas_y_base =
 
         # # Creating the various canvas next.
         self._main_canvas = tk.Canvas(self._main_fr,
@@ -3845,7 +3848,7 @@ class Application():
 
         return color
 
-    def draw_prop(self):
+    def draw_prop(self, event = None):
         '''
         Prints the properties of the selected line to the bottom canvas.
 
@@ -3854,9 +3857,27 @@ class Application():
         name of line : [ Structure class, calc scantling class, calc fatigue class, [load classes] ]
 
         '''
+
         self._prop_canvas.delete('all')
         canvas_width = self._prop_canvas.winfo_width()
         canvas_height = self._prop_canvas.winfo_height()
+
+
+        def checkered(line_distance, canvas):
+            '''
+            Grid lines in the properties canvas.
+            :param line_distance:
+            :return:
+            '''
+            # vertical lines at an interval of "line_distance" pixel
+            for x in range(line_distance, canvas_width, line_distance):
+                canvas.create_line(x, 0, x, canvas_width, stipple='gray50', activestipple='gray75')
+            # horizontal lines at an interval of "line_distance" pixel
+            for y in range(line_distance, canvas_height, line_distance):
+                canvas.create_line(0, y, canvas_width, y, stipple='gray50', activestipple='gray75')
+
+        checkered(10, self._prop_canvas)
+
         if self._active_line in self._line_to_struc:
 
             # printing the properties to the active line
@@ -3874,7 +3895,7 @@ class Application():
                 for idx, structure_obj in enumerate([self._line_to_struc[self._active_line][0].Stiffener,
                                            self._line_to_struc[self._active_line][0].Girder]):
                     mult = 100  # *(400/max_web)
-                    thk_mult = 500  # *(400/max_web)
+                    thk_mult = 100  # *(400/max_web)
                     startx = 100 +300*idx
                     starty = 225
 
@@ -3883,12 +3904,12 @@ class Application():
                                                       text='Stiffener' if idx == 0 else 'Girder',
                                                       font=self._text_size["Text 10 bold"], fill='Black')
                         # drawing stiffener
-                        spacing = structure_obj.get_s()*mult
-                        stf_web_height = structure_obj.get_web_h()*mult
-                        stf_flange_width = structure_obj.get_fl_w() * mult
-                        plate_thk = structure_obj.get_pl_thk()*thk_mult
-                        stf_web_thk = structure_obj.get_web_thk()*thk_mult
-                        stf_flange_thk = structure_obj.get_fl_thk()*thk_mult
+                        spacing = structure_obj.get_s()*self._prop_canvas_scale
+                        stf_web_height = structure_obj.get_web_h()*self._prop_canvas_scale
+                        stf_flange_width = structure_obj.get_fl_w() *self._prop_canvas_scale
+                        plate_thk = str(structure_obj.get_pl_thk()*self._prop_canvas_scale) + 'm'
+                        stf_web_thk = str(structure_obj.get_web_thk()*self._prop_canvas_scale) + 'm'
+                        stf_flange_thk = str(structure_obj.get_fl_thk()*self._prop_canvas_scale) + 'm'
                         count = 0
                         for count in [0,1,2] if idx == 0 else [0,]:
                             self._prop_canvas.create_line(startx + count*spacing,starty,startx+spacing+ count*spacing,
@@ -5406,8 +5427,6 @@ class Application():
                     self._new_girder_fl_w.set(round(properties['stf_flange_width'][0]*1000,5))
                     self._new_girder_fl_t.set(round(properties['stf_flange_thk'][0]*1000,5))
                     self._new_girder_type.set(properties['stf_type'][0])
-                    
-
 
     def get_highest_pressure(self, line, limit_state = 'ULS'):
         '''
@@ -5720,6 +5739,8 @@ class Application():
         self._main_canvas.bind('<Button-3>', self.button_3_click)
         self._main_canvas.bind("<B2-Motion>", self.button_2_click_and_drag)
         self._main_canvas.bind("<MouseWheel>", self.mouse_scroll)
+        #self._prop_canvas.bind("<MouseWheel>", self.mouse_scroll)
+
         self._parent.bind('<Control-z>', self.undo)
         #self._parent.bind('<Control-y>', self.redo)
         #self._parent.bind('<Control-p>', self.delete_point)
@@ -5810,12 +5831,18 @@ class Application():
         self.update_frame()
 
     def mouse_scroll(self,event):
-        self._canvas_scale +=  event.delta/50
-        self._canvas_scale = 0 if self._canvas_scale < 0 else self._canvas_scale
+        print(event, self._main_canvas.winfo_height(), event.x, event.y, event.delta, event)
+        if event.y < self._main_canvas.winfo_height():
+            self._canvas_scale +=  event.delta/50
+            self._canvas_scale = 0 if self._canvas_scale < 0 else self._canvas_scale
+        else:
+            pass
+
         try:
             state = self.get_color_and_calc_state()
         except AttributeError:
             state = None
+
         self.update_frame()
 
     def button_2_click(self, event):

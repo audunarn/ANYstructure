@@ -562,7 +562,9 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
 
     all_checks = [0,0,0,0,0,0,0,0,0,0,0]
     print_result = False
-    calc_object = create_new_calc_obj(obj, x, fat_dict, fdwn = fdwn, fup = fup)
+    calc_object = create_new_calc_obj(obj.Stiffener, x, fat_dict, fdwn = fdwn, fup = fup)
+    obj.Plate = obj.Stiffener = calc_object[0]
+    calc_object = [obj, calc_object[1]]
 
     # PULS buckling check
     if chk[7] and PULSrun is not None:
@@ -581,10 +583,10 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
 
     # Buckling ml-cl
     if chk[8]:
-        if any([calc_object[0].get_puls_method() == 'buckling' and ml_results[0] != 9,
-                calc_object[0].get_puls_method() == 'ultimate' and ml_results[1] != 9]):
+        if any([calc_object[0].Plate.get_puls_method() == 'buckling' and ml_results[0] != 9,
+                calc_object[0].Plate.get_puls_method() == 'ultimate' and ml_results[1] != 9]):
             if print_result:
-                print('Buckling ML-CL', calc_object[0].get_one_line_string(), False)
+                print('Buckling ML-CL', calc_object[0].Stiffener.get_one_line_string(), False)
             return False, 'Buckling ML-CL', x, all_checks
 
     # Buckling ml-reg
@@ -605,8 +607,8 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
 
     # Section modulus
     if chk[0]:
-        section_modulus = min(calc_object[0].get_section_modulus())
-        min_section_modulus = calc_object[0].get_dnv_min_section_modulus(lat_press)
+        section_modulus = min(calc_object[0].Stiffener.get_section_modulus())
+        min_section_modulus = calc_object[0].Stiffener.get_dnv_min_section_modulus(lat_press)
         section_frac = section_modulus / min_section_modulus
         all_checks[1] = section_frac
         if not section_modulus > min_section_modulus :
@@ -617,16 +619,34 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
 
     # Local stiffener buckling
     if chk[6]:
-        buckling_local =  calc_object[0].buckling_local_stiffener()
-        all_checks[2] = buckling_local[1]
-        if not buckling_local[0]:
+        buckling_local = calc_object[0].local_buckling()
+        check = all([buckling_local['Stiffener'][0] <  calc_object[0].Stiffener.hw,
+                     buckling_local['Stiffener'][1] <  calc_object[0].Stiffener.b])
+        all_checks[2] = max([calc_object[0].Stiffener.hw/buckling_local['Stiffener'][0],
+                            calc_object[0].Stiffener.b/buckling_local['Stiffener'][1]])
+        if not check:
             if print_result:
                 print('Local stiffener buckling',calc_object[0].get_one_line_string(), False)
             return False, 'Local stiffener buckling', x, all_checks
 
     # Buckling
     if chk[3]:
-        buckling_results = calc_object[0].calculate_buckling_all(design_lat_press=lat_press, checked_side=side)[0:5]
+        '''
+        {'Plate': {'Plate buckling': up_buckling}, 'Stiffener': {'Overpressure plate side': stf_buckling_pl_side,
+                                                    'Overpressure stiffener side': stf_buckling_stf_side, 
+                                                    'Resistance between stiffeners': stf_plate_resistance,
+                                                    'Shear capacity': stf_shear_capacity},
+                'Girder': {'Overpressure plate side': girder_buckling_pl_side,
+                           'Overpressure girder side': girder_buckling_girder_side,
+                           'Shear capacity': girder_shear_capacity},
+                'Local buckling': local_buckling}
+                '''
+        calc_object[0].lat_press = lat_press
+        buckling_results = calc_object[0].plate_buckling()
+        res = [buckling_results['Plate']['Plate buckling'],]
+        for val in buckling_results['Stiffener'].values():
+            res.append(val)
+        buckling_results = res
         all_checks[3] = max(buckling_results)
         if not all([uf<=1 for uf in buckling_results]):
             if print_result:
@@ -636,8 +656,8 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
 
     # Minimum plate thickness
     if chk[1]:
-        act_pl_thk = calc_object[0].get_pl_thk()
-        min_pl_thk = calc_object[0].get_dnv_min_thickness(lat_press)/1000
+        act_pl_thk = calc_object[0].Plate.get_pl_thk()
+        min_pl_thk = calc_object[0].Plate.get_dnv_min_thickness(lat_press)/1000
         plate_frac = min_pl_thk / act_pl_thk
         all_checks[4] = plate_frac
         if not act_pl_thk > min_pl_thk:
@@ -647,13 +667,13 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
 
     # Shear area
     if chk[2]:
-        calc_shear_area = calc_object[0].get_shear_area()
-        min_shear_area = calc_object[0].get_minimum_shear_area(lat_press)
+        calc_shear_area = calc_object[0].Stiffener.get_shear_area()
+        min_shear_area = calc_object[0].Stiffener.get_minimum_shear_area(lat_press)
         shear_frac = min_shear_area / calc_shear_area
         all_checks[5] = shear_frac
         if not calc_shear_area > min_shear_area:
             if print_result:
-                print('Shear area',calc_object[0].get_one_line_string(), False)
+                print('Shear area',calc_object[0].Stiffener.get_one_line_string(), False)
             return False, 'Shear area', x,  all_checks
 
     # Fatigue
@@ -664,21 +684,21 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
         all_checks[6] = fatigue_uf
         if fatigue_uf > 1:
             if print_result:
-                print('Fatigue',calc_object[0].get_one_line_string(), False)
+                print('Fatigue',calc_object[0].Stiffener.get_one_line_string(), False)
             return False, 'Fatigue', x, all_checks
 
     # Slamming
 
     if chk[5] and slamming_press != 0:
-        slam_check = calc_object[0].check_all_slamming(slamming_press)
+        slam_check = calc_object[0].Stiffener.check_all_slamming(slamming_press)
         all_checks[7] = slam_check[1]
         if slam_check[0] is False:
             if print_result:
-                print('Slamming',calc_object[0].get_one_line_string(), False)
+                print('Slamming',calc_object[0].Stiffener.get_one_line_string(), False)
             return False, 'Slamming', x, all_checks
 
     if print_result:
-        print('OK Section', calc_object[0].get_one_line_string(), True)
+        print('OK Section', calc_object[0].Stiffener.get_one_line_string(), True)
     return True, 'Check OK', x, all_checks
 
 def constraint_geometric(fractions, *args):
