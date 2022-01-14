@@ -59,6 +59,7 @@ class Structure():
             self._pressure_side = main_dict['press_side'][0]
         except KeyError:
             self._pressure_side = 'both sides'
+        self._panel_or_shell = main_dict['panel or shell'][0]
 
     # Property decorators are used in buckling of shells. IN mm!
     @property # in mm
@@ -1538,21 +1539,34 @@ class AllStructure():
 
         self._calculation_domain = main_dict['calculation domain'][0]
 
-    def plate_buckling(self):
+    def plate_buckling(self, optimizing = False):
         '''
         Summary
         '''
+        return_dummy = {'Plate': {'Plate buckling': 0},
+                        'Stiffener': {'Overpressure plate side': 0, 'Overpressure stiffener side': 0,
+                                      'Resistance between stiffeners': 0, 'Shear capacity': 0},
+                        'Girder': {'Overpressure plate side': 0, 'Overpressure girder side': 0, 'Shear capacity': 0},
+                        'Local buckling': 0}
 
-        unstf_pl = self.unstiffened_plate_buckling()
+        unstf_pl = self.unstiffened_plate_buckling(optimizing = optimizing)
         up_buckling = max([unstf_pl['UF Pnt. 5  Lateral loaded plates'], unstf_pl['UF sjsd'],
                            max([unstf_pl['UF Longitudinal stress'],  unstf_pl['UF transverse stresses'],
                                 unstf_pl['UF Shear stresses'], unstf_pl['UF Combined stresses']])
                            if all([self._Girder is None, self._Stiffener is None]) else 0])
+        if optimizing and up_buckling > 0:
+            return_dummy['Plate']['Plate buckling'] = up_buckling
+            return return_dummy
 
-        local_buckling = self.local_buckling()
+        if not optimizing:
+            local_buckling = self.local_buckling()
 
         if self._Stiffener is not None:
-            stf_pla = self.stiffened_panel(unstf_pl_data=unstf_pl)
+            stf_pla = self.stiffened_panel(unstf_pl_data=unstf_pl, optimizing=optimizing)
+            if all([optimizing, type(stf_pla) == list]):
+                return_dummy['Stiffener'][stf_pla[0]] = stf_pla[1]
+                return return_dummy
+
             stf_buckling_pl_side = stf_pla['UF Plate side'] if self._stf_end_support == 'Continuous' else \
                 stf_pla['UF simply supported plate side']
             stf_buckling_stf_side = stf_pla['UF Stiffener side'] if self._stf_end_support == 'Continuous' else \
@@ -1564,11 +1578,15 @@ class AllStructure():
             stf_shear_capacity = 0,0,0,0,0
 
         if self._Girder is not None:
-            girder = self.girder(unstf_pl_data=unstf_pl, stf_pl_data=stf_pla)
+            girder = self.girder(unstf_pl_data=unstf_pl, stf_pl_data=stf_pla, optmizing=optimizing)
+            if all([optimizing, type(girder) == list]):
+                return_dummy['Girder'][stf_pla[0]] = stf_pla[1]
+                return return_dummy
 
             girder_buckling_pl_side = girder['UF Cont. plate side'] if self._girder_end_support == 'Continuous' else \
                 stf_pla['UF Simplified plate side']
-            girder_buckling_girder_side = girder['UF Cont. girder side'] if self._girder_end_support == 'Continuous' else \
+            girder_buckling_girder_side = girder['UF Cont. girder side'] if self._girder_end_support == 'Continuous' \
+                else \
                 stf_pla['UF Simplified girder side']
             girder_shear_capacity = girder['UF shear force']
         else:
@@ -1583,7 +1601,7 @@ class AllStructure():
                            'Shear capacity': girder_shear_capacity},
                 'Local buckling': local_buckling}
 
-    def unstiffened_plate_buckling(self):
+    def unstiffened_plate_buckling(self, optimizing = False):
 
         unstf_pl_data = dict()
 
@@ -1596,7 +1614,8 @@ class AllStructure():
         l = self._Plate.get_span()*1000
 
         tsd = self._Plate.get_tau_xy()
-        psd = self._lat_press * self._lat_load_factor
+        psd = self._lat_press*self._lat_load_factor
+
         shear_ratio_long = 1
         shear_ratio_trans = 1
 
@@ -1605,6 +1624,7 @@ class AllStructure():
 
         sig_y1 = self._Plate.get_sigma_y1() * self._stress_load_factor
         sig_y2 = self._Plate.get_sigma_y2() * self._stress_load_factor
+
         if sig_x1 * sig_x2 >= 0:
             Use_Smax_x = sxsd = sig_x1 if abs(sig_x1) > abs(sig_x2) else sig_x2
         else:
@@ -1657,7 +1677,11 @@ class AllStructure():
                 Psd_max_press = (4 * fy / gammaM * math.pow(t / s,2) * (psi_y + math.pow(s / l, 2) * psi_x))
             else:
                 Psd_max_press = -1
-        uf_lat_load_pl_press = 9 if psd < 0 else abs(psd/Psd_max_press)
+
+        if Psd_max_press == 0:
+            uf_lat_load_pl_press = 0
+        else:
+            uf_lat_load_pl_press = 9 if Psd_max_press < 0 else abs(psd/Psd_max_press)
 
         unstf_pl_data['UF Pnt. 5  Lateral loaded plates'] = uf_lat_load_pl_press
         #6.2 & 6.6 Longitudinal stress
@@ -1764,7 +1788,7 @@ class AllStructure():
 
         return unstf_pl_data
 
-    def stiffened_panel(self, unstf_pl_data = None):
+    def stiffened_panel(self, unstf_pl_data = None, optimizing = False):
         E = self._E / 1e6
         v = self._v
         G = E/(2*(1+v))
@@ -1802,6 +1826,9 @@ class AllStructure():
         Vsd_div_Vrd = Vsd/Vrd
 
         stf_pl_data['UF Shear force'] = Vsd_div_Vrd
+        if optimizing and Vsd_div_Vrd > 1:
+            return ['UF Shear force', Vsd_div_Vrd]
+
         # 7.2  Forces in idealised stiffened plate
         Iy = Is = self._Stiffener.get_moment_of_intertia()*1000**4
 
@@ -1880,6 +1907,8 @@ class AllStructure():
         tsd_7_4 = fy/(math.sqrt(3)*gammaM)
         uf_stf_panel_res_bet_plate = max([sysd/syrd_unstf if all([syrd_unstf >0, sysd > 0]) else 0, tsd/tsd_7_4])
         stf_pl_data['UF Plate resistance'] = uf_stf_panel_res_bet_plate
+        if optimizing and uf_stf_panel_res_bet_plate > 1:
+            return ['UF Plate resistance', uf_stf_panel_res_bet_plate]
         #7.5  Characteristic buckling strength of stiffeners
 
         fEpx = 0 if s == 0 else 3.62*E*math.pow(t/s,2) # eq 7.42, checked, ok
@@ -2019,67 +2048,71 @@ class AllStructure():
 
         u = 0 if all([tsd>(tcrl/gammaM), self._tension_field_action == 'allowed']) else math.pow(tsd/tRd, 2)
         zstar = zp
+        if self._stf_end_support != 'Continuous':
+            #Lateral pressure on plate side:
+            #7.7.2 Simple supported stiffener (sniped stiffeners)
 
-        #Lateral pressure on plate side:
-        #7.7.2 Simple supported stiffener (sniped stiffeners)
+            #Lateral pressure on plate side:
+            stf_pl_data['UF Stiffener side'] = 0
+            stf_pl_data['UF Plate side'] = 0
+            uf_7_58 = NSd/NksRd-2*NSd/NRd +((qsd_plate_side*math.pow(l,2)/8)+NSd*zstar)/(MstRd*(1-NSd/Ne))+u
+            uf_7_59 = NSd/NkpRd+((qsd_plate_side*math.pow(l,2)/8)+NSd*zstar)/(MpRd*(1-NSd/Ne))+u
+            uf_max_simp_pl = max([uf_7_58, uf_7_59])
+            stf_pl_data['UF simply supported plate side'] = uf_max_simp_pl
 
-        #Lateral pressure on plate side:
-        uf_7_58 = NSd/NksRd-2*NSd/NRd +((qsd_plate_side*math.pow(l,2)/8)+NSd*zstar)/(MstRd*(1-NSd/Ne))+u
-        uf_7_59 = NSd/NkpRd+((qsd_plate_side*math.pow(l,2)/8)+NSd*zstar)/(MpRd*(1-NSd/Ne))+u
-        uf_max_simp_pl = max([uf_7_58, uf_7_59])
-        stf_pl_data['UF simply supported plate side'] = uf_max_simp_pl
+            #Lateral pressure on stiffener side:
 
-        #Lateral pressure on stiffener side:
+            uf_7_60 = NSd/NksRd+((qsd_stf_side*math.pow(l,2)/8)-NSd*zstar)/(Ms2Rd*(1-NSd/Ne))+u
+            uf_7_61 = NSd/NkpRd-2*NSd/NRd+((qsd_stf_side*math.pow(l,2)/8)-NSd*zstar)/(MpRd*(1-NSd/Ne))+u
 
-        uf_7_60 = NSd/NksRd+((qsd_stf_side*math.pow(l,2)/8)-NSd*zstar)/(Ms2Rd*(1-NSd/Ne))+u
-        uf_7_61 = NSd/NkpRd-2*NSd/NRd+((qsd_stf_side*math.pow(l,2)/8)-NSd*zstar)/(MpRd*(1-NSd/Ne))+u
+            test_qsd_l = qsd_stf_side*math.pow(l,2)/8 >= NSd*zstar
+            uf_7_62 = NSd/NksRd-2*NSd/NRd+(NSd*zstar-(qsd_stf_side*math.pow(l,2)/8))/(MstRd*(1-NSd/Ne))+u
+            uf_7_63 = NSd/NkpRd+(NSd*zstar-(qsd_stf_side*math.pow(l,2)/8))/(MpRd*(1-NSd/Ne))+u
 
-        test_qsd_l = qsd_stf_side*math.pow(l,2)/8 >= NSd*zstar
-        uf_7_62 = NSd/NksRd-2*NSd/NRd+(NSd*zstar-(qsd_stf_side*math.pow(l,2)/8))/(MstRd*(1-NSd/Ne))+u
-        uf_7_63 = NSd/NkpRd+(NSd*zstar-(qsd_stf_side*math.pow(l,2)/8))/(MpRd*(1-NSd/Ne))+u
+            uf_max_simp_stf = max([0,uf_7_62,uf_7_63]) if not test_qsd_l else max([0,uf_7_60,uf_7_61])
+            stf_pl_data['UF simply supported stf side'] = uf_max_simp_stf
+        else:
+            stf_pl_data['UF simply supported stf side'] = 0
+            stf_pl_data['UF simply supported plate side'] = 0
+            #7.7.1 Continuous stiffeners
 
-        uf_max_simp_stf = max([0,uf_7_62,uf_7_63]) if not test_qsd_l else max([0,uf_7_60,uf_7_61])
-        stf_pl_data['UF simply supported stf side'] = uf_max_simp_stf
+            M1Sd_pl = abs(qsd_plate_side)*math.pow(l,2)/self._km3
+            M2Sd_pl = abs(qsd_plate_side)*math.pow(l,2)/self._km2
+            M1Sd_stf = abs(qsd_stf_side) * math.pow(l, 2) / self._km3
+            M2Sd_stf = abs(qsd_stf_side) * math.pow(l, 2) / self._km2
+            M1Sd_max = max([M1Sd_pl, M1Sd_stf])
+            M2Sd_max = max([M2Sd_pl, M2Sd_stf])
+            # Lateral pressure on plate side:
+            #print(M1Sd_pl, M2Sd_pl, M1Sd_stf,M2Sd_stf, qsd_stf_side, qsd_plate_side)
+            from scipy.optimize import minimize
+            def iteration_min_uf_pl_side(x):
+                eq7_50 = NSd/NksRd+(M1Sd_pl-NSd*x)/(Ms1Rd*(1-NSd/Ne))+u
+                eq7_51 = NSd/NkpRd-2*NSd/NRd +(M1Sd_pl-NSd*x)/(MpRd*(1-NSd/Ne))+u
+                eq7_52 = NSd/NksRd-2*NSd/NRd+(M2Sd_pl+NSd*x)/(MstRd*(1-NSd/Ne))+u
+                eq7_53 = NSd/NkpRd+(M2Sd_pl+NSd*x)/(MpRd*(1-NSd/Ne))+u
+                #print(zstar, eq7_50, eq7_51,eq7_52,eq7_53,max([eq7_50, eq7_51,eq7_52,eq7_53]))
+                return max(eq7_50, eq7_51, eq7_52, eq7_53)
+            res_iter_pl = minimize(iteration_min_uf_pl_side, 0, bounds=[[-zt+self._Stiffener.tf/2,zp]])
+            stf_pl_data['UF Plate side'] = res_iter_pl.fun[0]
 
-        #7.7.1 Continuous stiffeners
+            # Lateral pressure   on stiffener side:
 
-        M1Sd_pl = abs(qsd_plate_side)*math.pow(l,2)/self._km3
-        M2Sd_pl = abs(qsd_plate_side)*math.pow(l,2)/self._km2
-        M1Sd_stf = abs(qsd_stf_side) * math.pow(l, 2) / self._km3
-        M2Sd_stf = abs(qsd_stf_side) * math.pow(l, 2) / self._km2
-        M1Sd_max = max([M1Sd_pl, M1Sd_stf])
-        M2Sd_max = max([M2Sd_pl, M2Sd_stf])
-        # Lateral pressure on plate side:
-        #print(M1Sd_pl, M2Sd_pl, M1Sd_stf,M2Sd_stf, qsd_stf_side, qsd_plate_side)
-        from scipy.optimize import minimize
-        def iteration_min_uf_pl_side(x):
-            eq7_50 = NSd/NksRd+(M1Sd_pl-NSd*x)/(Ms1Rd*(1-NSd/Ne))+u
-            eq7_51 = NSd/NkpRd-2*NSd/NRd +(M1Sd_pl-NSd*x)/(MpRd*(1-NSd/Ne))+u
-            eq7_52 = NSd/NksRd-2*NSd/NRd+(M2Sd_pl+NSd*x)/(MstRd*(1-NSd/Ne))+u
-            eq7_53 = NSd/NkpRd+(M2Sd_pl+NSd*x)/(MpRd*(1-NSd/Ne))+u
-            #print(zstar, eq7_50, eq7_51,eq7_52,eq7_53,max([eq7_50, eq7_51,eq7_52,eq7_53]))
-            return max(eq7_50, eq7_51, eq7_52, eq7_53)
-        res_iter_pl = minimize(iteration_min_uf_pl_side, 0, bounds=[[-zt+self._Stiffener.tf/2,zp]])
-        stf_pl_data['UF Plate side'] = res_iter_pl.fun[0]
+            # max_lfs = []
+            # ufs = []
 
-        # Lateral pressure   on stiffener side:
+            def iteration_min_uf_stf_side(x):
+                eq7_54 = NSd/NksRd-2*NSd/NRd +(M1Sd_stf+NSd*x)/(MstRd*(1-NSd/Ne))+u
+                eq7_55 = NSd/NkpRd+(M1Sd_stf+NSd*x)/(MpRd*(1-NSd/Ne))+u
+                eq7_56 = NSd/NksRd+(M2Sd_stf-NSd*x)/(Ms2Rd*(1-NSd/Ne))+u
+                eq7_57 = NSd/NkpRd-2*NSd/NRd+(M2Sd_stf-NSd*x)/(MpRd*(1-NSd/Ne))+u
+                return max(eq7_54, eq7_55, eq7_56, eq7_57)
 
-        # max_lfs = []
-        # ufs = []
-
-        def iteration_min_uf_stf_side(x):
-            eq7_54 = NSd/NksRd-2*NSd/NRd +(M1Sd_stf+NSd*x)/(MstRd*(1-NSd/Ne))+u
-            eq7_55 = NSd/NkpRd+(M1Sd_stf+NSd*x)/(MpRd*(1-NSd/Ne))+u
-            eq7_56 = NSd/NksRd+(M2Sd_stf-NSd*x)/(Ms2Rd*(1-NSd/Ne))+u
-            eq7_57 = NSd/NkpRd-2*NSd/NRd+(M2Sd_stf-NSd*x)/(MpRd*(1-NSd/Ne))+u
-            return max(eq7_54, eq7_55, eq7_56, eq7_57)
-
-        res_iter_stf = minimize(iteration_min_uf_stf_side, 0, bounds=[[-zt+self._Stiffener.tf/2,zp]])
-        stf_pl_data['UF Stiffener side'] = res_iter_stf.fun[0]
+            res_iter_stf = minimize(iteration_min_uf_stf_side, 0, bounds=[[-zt+self._Stiffener.tf/2,zp]])
+            stf_pl_data['UF Stiffener side'] = res_iter_stf.fun[0]
 
         return stf_pl_data
 
-    def girder(self, unstf_pl_data = None, stf_pl_data = None):
+    def girder(self, unstf_pl_data = None, stf_pl_data = None, optmizing = False):
         '''
         Buckling of girder.
         '''
@@ -2130,6 +2163,9 @@ class AllStructure():
 
         Vsd_div_Vrd = Vsd/Vrd
         girder_data['UF shear force'] = Vsd_div_Vrd
+        if optmizing and Vsd_div_Vrd > 1:
+            return ['UF shear force', Vsd_div_Vrd]
+
         CHK_account_for_interaction = Vsd < 0.5*Vrd
 
         #8.2  Girder forces
@@ -2241,7 +2277,7 @@ class AllStructure():
         p0 = p0_tension if sxsd<0 else p0_compression
 
         qSd_pressure = (psd+p0_tension)*l if sxsd<0 else (psd+p0_compression)*l
-        qsd_oppsite = p0*l if psd<p0 else 0
+        qsd_oppsite = p0*l if psd<p0 else 0 # TODO check
         qSd_plate_side = qsd_oppsite if self._overpressure_side == 'stiffener' else qSd_pressure
         qSd_girder_side = qsd_oppsite if self._overpressure_side == 'plate' else qSd_pressure
 
@@ -2302,58 +2338,64 @@ class AllStructure():
 
         #7.7  Interaction formulas for axial compression and lateral pressure
         #7.7.2 Simple supported girder (sniped girders)
-        u = 0
-        zstar = zp
+        if self._girder_end_support != 'Continuous':
+            u = 0
+            zstar = zp
+            girder_data['UF Cont. plate side'] = 0
+            girder_data['UF Cont. girder side'] = 0
 
-        # Lateral pressure on plate side:
-        uf_7_58 = NySd/NksRd-2*NySd/NRd +((qSd_plate_side*math.pow(Lg, 2)/8)+NySd*zstar)/(MstRd*(1-NySd/NE))+u
-        uf_7_59 = NySd/NkpRd+((qSd_plate_side*math.pow(Lg, 2)/8)+NySd*zstar)/(MpRd*(1-NySd/NE))+u
+            # Lateral pressure on plate side:
+            uf_7_58 = NySd/NksRd-2*NySd/NRd +((qSd_plate_side*math.pow(Lg, 2)/8)+NySd*zstar)/(MstRd*(1-NySd/NE))+u
+            uf_7_59 = NySd/NkpRd+((qSd_plate_side*math.pow(Lg, 2)/8)+NySd*zstar)/(MpRd*(1-NySd/NE))+u
 
-        max_uf_simp_plate = max([0,uf_7_58,uf_7_59])
-        girder_data['UF Simplified plate side'] = max_uf_simp_plate
+            max_uf_simp_plate = max([0,uf_7_58,uf_7_59])
+            girder_data['UF Simplified plate side'] = max_uf_simp_plate
 
-        #Lateral pressure on girder side:
-        uf_7_60 = NySd/NksRd+((qSd_girder_side*math.pow(Lg, 2)/8)-NySd*zstar)/(Ms2Rd*(1-NySd/NE))+u
-        uf_7_61 = NySd/NkpRd-2*NySd/NRd+((qSd_girder_side*math.pow(Lg, 2)/8)-NySd*zstar)/(MpRd*(1-NySd/NE))+u
+            #Lateral pressure on girder side:
+            uf_7_60 = NySd/NksRd+((qSd_girder_side*math.pow(Lg, 2)/8)-NySd*zstar)/(Ms2Rd*(1-NySd/NE))+u
+            uf_7_61 = NySd/NkpRd-2*NySd/NRd+((qSd_girder_side*math.pow(Lg, 2)/8)-NySd*zstar)/(MpRd*(1-NySd/NE))+u
 
-        CHK_qSd_NSd = qSd_girder_side*math.pow(Lg, 2)/8 < NySd*zstar
+            CHK_qSd_NSd = qSd_girder_side*math.pow(Lg, 2)/8 < NySd*zstar
 
-        uf_7_62 = NySd/NksRd-2*NySd/NRd+(NySd*zstar-(qSd_girder_side*math.pow(Lg, 2)/8))/(MstRd*(1-NySd/NE))+u
-        uf_7_63 = NySd/NkpRd+(NySd*zstar-(qSd_girder_side*math.pow(Lg, 2)/8))/(MpRd*(1-NySd/NE))+u
+            uf_7_62 = NySd/NksRd-2*NySd/NRd+(NySd*zstar-(qSd_girder_side*math.pow(Lg, 2)/8))/(MstRd*(1-NySd/NE))+u
+            uf_7_63 = NySd/NkpRd+(NySd*zstar-(qSd_girder_side*math.pow(Lg, 2)/8))/(MpRd*(1-NySd/NE))+u
 
-        max_uf_simp_stiffener = max([0,uf_7_60,uf_7_61]) if CHK_qSd_NSd else max([0,uf_7_60,uf_7_61, uf_7_62,uf_7_63])
-        girder_data['UF Simplified girder side'] = max_uf_simp_stiffener
-        #7.7.1 Continuous stiffeners
-        M1Sd_pl = abs(qSd_plate_side)*math.pow(Lg, 2)/12
-        M2Sd_pl = abs(qSd_plate_side)*math.pow(Lg, 2)/24
+            max_uf_simp_stiffener = max([0,uf_7_60,uf_7_61]) if CHK_qSd_NSd else max([0,uf_7_60,uf_7_61, uf_7_62,uf_7_63])
+            girder_data['UF Simplified girder side'] = max_uf_simp_stiffener
+        else:
+            girder_data['UF Simplified girder side'] = 0
+            girder_data['UF Simplified plate side'] = 0
+            #7.7.1 Continuous stiffeners
+            M1Sd_pl = abs(qSd_plate_side)*math.pow(Lg, 2)/12
+            M2Sd_pl = abs(qSd_plate_side)*math.pow(Lg, 2)/24
 
-        M1Sd_stf = abs(qSd_girder_side)*math.pow(Lg, 2)/12
-        M2Sd_stf = abs(qSd_girder_side)*math.pow(Lg, 2)/24
-        # #Lateral pressure on plate side:
-        def iter_plate(zstar):
-            uf_7_48 = NySd/NksRd+(M1Sd_pl-NySd*zstar)/(Ms1Rd*(1-NySd/NE))+u
-            uf_7_49 = NySd/NkpRd-2*NySd/NRd +(M1Sd_pl-NySd*zstar)/(MpRd*(1-NySd/NE))+u
-            uf_7_50 = NySd/NksRd-2*NySd/NRd+(M2Sd_pl+NySd*zstar)/(MstRd*(1-NySd/NE))+u
-            uf_7_51 = NySd/NkpRd+(M2Sd_pl+NySd*zstar)/(MpRd*(1-NySd/NE))+u
-            return max([uf_7_48, uf_7_49, uf_7_50, uf_7_51])
+            M1Sd_stf = abs(qSd_girder_side)*math.pow(Lg, 2)/12
+            M2Sd_stf = abs(qSd_girder_side)*math.pow(Lg, 2)/24
+            # #Lateral pressure on plate side:
+            def iter_plate(zstar):
+                uf_7_48 = NySd/NksRd+(M1Sd_pl-NySd*zstar)/(Ms1Rd*(1-NySd/NE))+u
+                uf_7_49 = NySd/NkpRd-2*NySd/NRd +(M1Sd_pl-NySd*zstar)/(MpRd*(1-NySd/NE))+u
+                uf_7_50 = NySd/NksRd-2*NySd/NRd+(M2Sd_pl+NySd*zstar)/(MstRd*(1-NySd/NE))+u
+                uf_7_51 = NySd/NkpRd+(M2Sd_pl+NySd*zstar)/(MpRd*(1-NySd/NE))+u
+                return max([uf_7_48, uf_7_49, uf_7_50, uf_7_51])
 
-        res_iter_pl = minimize(iter_plate, 0, bounds=[[-zt + self._Girder.tf / 2, zp]])
+            res_iter_pl = minimize(iter_plate, 0, bounds=[[-zt + self._Girder.tf / 2, zp]])
 
-        girder_data['UF Cont. plate side'] = res_iter_pl.fun[0]
-        #     Lateral pressure on girder side:
-        def iter_girder(zstar):
-            uf_7_52 = NySd/NksRd-2*NySd/NRd +(M1Sd_stf +NySd*zstar)/(MstRd*(1-NySd/NE))+u
-            uf_7_53 = NySd/NkpRd+(M1Sd_stf +NySd*zstar)/(MpRd*(1-NySd/NE))+u
-            uf_7_54 = NySd/NksRd+(M2Sd_stf-NySd*zstar)/(Ms2Rd*(1-NySd/NE))+u
-            uf_7_55 = NySd/NkpRd-2*NySd/NRd+(M2Sd_stf-NySd*zstar)/(MpRd*(1-NySd/NE))+u
-            return max([uf_7_52, uf_7_53 ,uf_7_54 ,uf_7_55])
+            girder_data['UF Cont. plate side'] = res_iter_pl.fun[0]
+            #     Lateral pressure on girder side:
+            def iter_girder(zstar):
+                uf_7_52 = NySd/NksRd-2*NySd/NRd +(M1Sd_stf +NySd*zstar)/(MstRd*(1-NySd/NE))+u
+                uf_7_53 = NySd/NkpRd+(M1Sd_stf +NySd*zstar)/(MpRd*(1-NySd/NE))+u
+                uf_7_54 = NySd/NksRd+(M2Sd_stf-NySd*zstar)/(Ms2Rd*(1-NySd/NE))+u
+                uf_7_55 = NySd/NkpRd-2*NySd/NRd+(M2Sd_stf-NySd*zstar)/(MpRd*(1-NySd/NE))+u
+                return max([uf_7_52, uf_7_53 ,uf_7_54 ,uf_7_55])
 
-        res_iter_girder = minimize(iter_girder, 0, bounds=[[-zt + self._Girder.tf / 2, zp]])
-        girder_data['UF Cont. girder side'] = res_iter_girder.fun[0]
+            res_iter_girder = minimize(iter_girder, 0, bounds=[[-zt + self._Girder.tf / 2, zp]])
+            girder_data['UF Cont. girder side'] = res_iter_girder.fun[0]
 
         return girder_data
 
-    def local_buckling(self):
+    def local_buckling(self, optimizing = False):
         '''
         Checks for girders and stiffeners
         '''

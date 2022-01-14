@@ -4697,7 +4697,7 @@ class Application():
             # 2.calc fatigue class, 3.load object, 4.load combinations result ]
             CylinderObj = None
             if multi_return is not None:
-                prop_dict = multi_return[0].get_structure_prop()
+                prop_dict = multi_return[0].get_main_properties() # From optimizer.
             elif toggle_multi is not None:
                 prop_dict = toggle_multi
             elif pasted_structure is None:
@@ -4968,6 +4968,7 @@ class Application():
                         op.create_new_calc_obj(prev_all_obj.Plate,
                                                self._line_to_struc[self._active_line][0].Plate.get_tuple(),
                                                fup=self._new_fup.get(), fdwn=self._new_fdwn.get())[0]
+
 
                 self._line_to_struc[self._active_line][0].need_recalc = True
 
@@ -6689,7 +6690,7 @@ class Application():
         :return:
         '''
 
-        self.new_structure(multi_return = returned_object[0:3])
+        self.new_structure(multi_return = returned_object[0:2]) #TODO return have been reduced
         # self._line_to_struc[self._active_line][1]=returned_objects[0]
         # self._line_to_struc[self._active_line][1]=returned_objects[1]
         # self._line_to_struc[self._active_line][0].need_recalc = True
@@ -6721,7 +6722,7 @@ class Application():
         for line,all_objs in returned_objects.items():
             self._active_line = line
             #self._line_to_struc[line][0].need_recalc = True
-            self.new_structure(multi_return= all_objs[0:3])
+            self.new_structure(multi_return= all_objs[0:2])
         self.update_frame()
 
     def on_close_structure_window(self,returned_structure):

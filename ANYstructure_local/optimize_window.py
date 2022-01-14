@@ -28,14 +28,14 @@ class CreateOptimizeWindow():
                                   main_dict=ex.prescriptive_main_dict)
 
             #self._initial_calc_obj = test.get_structure_calc_object(heavy=True)
-            self._lateral_pressure = 200
+            self._lateral_pressure = 0.2
             self._fatigue_object = test.get_fatigue_object()
             self._fatigue_pressure = test.get_fatigue_pressures()
             self._slamming_pressure = test.get_slamming_pressure()
             image_dir = os.path.dirname(__file__)+'\\images\\'
             self._PULS_object = None
             self._puls_acceptance = 0.87
-
+            self._initial_calc_obj.lat_press = self._lateral_pressure/1000
             self._ML_buckling = dict()  # Buckling machine learning algorithm
             for name, file_base in zip(['cl SP buc int predictor', 'cl SP buc int scaler',
                                         'cl SP ult int predictor', 'cl SP ult int scaler',
@@ -86,7 +86,7 @@ class CreateOptimizeWindow():
         else:
             self.app = app
 
-            self._initial_calc_obj = app._line_to_struc[app._active_line][1]
+            self._initial_calc_obj = app._line_to_struc[app._active_line][0]
             self._fatigue_object = app._line_to_struc[app._active_line][2]
             try:
                 self._fatigue_pressure = app.get_fatigue_pressures(app._active_line,
@@ -94,7 +94,7 @@ class CreateOptimizeWindow():
             except AttributeError:
                 self._fatigue_pressure = None
             try:
-                self._lateral_pressure = self.app.get_highest_pressure(self.app._active_line)['normal'] / 1000
+                self._lateral_pressure = self.app.get_highest_pressure(self.app._active_line)['normal'] / 1e6
             except KeyError:
                 self._lateral_pressure = 0
             try:
@@ -422,6 +422,7 @@ class CreateOptimizeWindow():
         self._new_trans_stress_high.set(self._initial_calc_obj.Plate.get_sigma_y1())
         self._new_trans_stress_low.set(self._initial_calc_obj.Plate.get_sigma_y2())
         self._new_axial_stress.set(self._initial_calc_obj.Plate.get_sigma_x1())
+
         self._new_shear_stress.set(self._initial_calc_obj.Plate.get_tau_xy())
 
         self._new_design_pressure.set(self._lateral_pressure)
@@ -743,19 +744,19 @@ class CreateOptimizeWindow():
             self._opt_actual_running_time.update()
             self._opt_runned = True
             self._result_label.config(text='Optimization result | Spacing: '+
-                                           str(round(self._opt_results[0].get_s(),10)*1000)+
-                                          ' Plate thickness: '+str(round(self._opt_results[0].get_pl_thk()*1000,10))+
-                                          ' Stiffener - T'+str(round(self._opt_results[0].get_web_h()*1000,10))+'x'
-                                          +str(round(self._opt_results[0].get_web_thk()*1000,10))+
-                                          '+'+str(round(self._opt_results[0].get_fl_w()*1000,10))+'x'
-                                          +str(round(self._opt_results[0].get_fl_thk()*1000,10)))
+                                           str(round(self._opt_results[0].Stiffener.get_s(),10)*1000)+
+                                          ' Plate thickness: '+str(round(self._opt_results[0].Stiffener.get_pl_thk()*1000,10))+
+                                          ' Stiffener - T'+str(round(self._opt_results[0].Stiffener.get_web_h()*1000,10))+'x'
+                                          +str(round(self._opt_results[0].Stiffener.get_web_thk()*1000,10))+
+                                          '+'+str(round(self._opt_results[0].Stiffener.get_fl_w()*1000,10))+'x'
+                                          +str(round(self._opt_results[0].Stiffener.get_fl_thk()*1000,10)))
 
-            self._new_opt_spacing.set(round(self._opt_results[0].get_s(),5))
-            self._new_opt_pl_thk.set(round(self._opt_results[0].get_pl_thk(),5))
-            self._new_opt_web_h.set(round(self._opt_results[0].get_web_h(),5))
-            self._new_opt_web_thk.set(round(self._opt_results[0].get_web_thk(),5))
-            self._new_opt_fl_w.set(round(self._opt_results[0].get_fl_w(),5))
-            self._new_opt_fl_thk.set(round(self._opt_results[0].get_fl_thk(),5))
+            self._new_opt_spacing.set(round(self._opt_results[0].Stiffener.get_s(),5))
+            self._new_opt_pl_thk.set(round(self._opt_results[0].Stiffener.get_pl_thk(),5))
+            self._new_opt_web_h.set(round(self._opt_results[0].Stiffener.get_web_h(),5))
+            self._new_opt_web_thk.set(round(self._opt_results[0].Stiffener.get_web_thk(),5))
+            self._new_opt_fl_w.set(round(self._opt_results[0].Stiffener.get_fl_w(),5))
+            self._new_opt_fl_thk.set(round(self._opt_results[0].Stiffener.get_fl_thk(),5))
             self.draw_properties()
         else:
             messagebox.showinfo(title='Nothing found', message='No better alternatives found. Modify input.\n'
@@ -862,14 +863,6 @@ class CreateOptimizeWindow():
                          self._new_fl_w_lower.get()/1000,self._new_fl_thk_lower.get()/1000,
                          self._new_span.get(), self._new_width_lg.get()])
 
-    def get_sigmas(self):
-        '''
-        Returns the stressess.
-        :return:
-        '''
-        return np.array([self._new_trans_stress_high.get(),self._new_trans_stress_low.get(),
-                         self._new_axial_stress.get(),self._new_shear_stress.get()])
-
     def checkered(self,line_distance):
         # vertical lines at an interval of "line_distance" pixel
         for x in range(line_distance, self._canvas_dim[0], line_distance):
@@ -915,46 +908,46 @@ class CreateOptimizeWindow():
 
         if self._opt_runned:
 
-            self._canvas_opt.create_rectangle(ctr_x - m * self._opt_results[0].get_s() / 2, ctr_y,
-                                             ctr_x + m * self._opt_results[0].get_s()  / 2,
-                                             ctr_y - m * self._opt_results[0].get_pl_thk(), fill=opt_color,
+            self._canvas_opt.create_rectangle(ctr_x - m * self._opt_results[0].Stiffener.get_s() / 2, ctr_y,
+                                             ctr_x + m * self._opt_results[0].Stiffener.get_s()  / 2,
+                                             ctr_y - m * self._opt_results[0].Stiffener.get_pl_thk(), fill=opt_color,
                                              stipple=opt_stippe)
 
-            self._canvas_opt.create_rectangle(ctr_x - m * self._opt_results[0].get_web_thk() / 2, ctr_y -
-                                             m * self._opt_results[0].get_pl_thk(),
-                                             ctr_x + m * self._opt_results[0].get_web_thk() / 2,
-                                             ctr_y - m * (self._opt_results[0].get_web_h() + self._opt_results[0].get_pl_thk())
+            self._canvas_opt.create_rectangle(ctr_x - m * self._opt_results[0].Stiffener.get_web_thk() / 2, ctr_y -
+                                             m * self._opt_results[0].Stiffener.get_pl_thk(),
+                                             ctr_x + m * self._opt_results[0].Stiffener.get_web_thk() / 2,
+                                             ctr_y - m * (self._opt_results[0].Stiffener.get_web_h() + self._opt_results[0].Stiffener.get_pl_thk())
                                              , fill=opt_color, stipple=opt_stippe)
-            if self._opt_results[0].get_stiffener_type() not in ['L', 'L-bulb']:
-                self._canvas_opt.create_rectangle(ctr_x - m * self._opt_results[0].get_fl_w() / 2, ctr_y
-                                                 - m * (self._opt_results[0].get_pl_thk()+ self._opt_results[0].get_web_h()),
-                                                 ctr_x + m * self._opt_results[0].get_fl_w() / 2,ctr_y -
-                                                 m * (self._opt_results[0].get_pl_thk() + self._opt_results[0].get_web_h() +
-                                                      self._opt_results[0].get_fl_thk()),
+            if self._opt_results[0].Stiffener.get_stiffener_type() not in ['L', 'L-bulb']:
+                self._canvas_opt.create_rectangle(ctr_x - m * self._opt_results[0].Stiffener.get_fl_w() / 2, ctr_y
+                                                 - m * (self._opt_results[0].Stiffener.get_pl_thk()+ self._opt_results[0].Stiffener.get_web_h()),
+                                                 ctr_x + m * self._opt_results[0].Stiffener.get_fl_w() / 2,ctr_y -
+                                                 m * (self._opt_results[0].Stiffener.get_pl_thk() + self._opt_results[0].Stiffener.get_web_h() +
+                                                      self._opt_results[0].Stiffener.get_fl_thk()),
                                                  fill=opt_color, stipple=opt_stippe)
             else:
-                self._canvas_opt.create_rectangle(ctr_x - m * self._opt_results[0].get_web_thk() / 2, ctr_y
-                                                 - m * (self._opt_results[0].get_pl_thk()+ self._opt_results[0].get_web_h()),
-                                                 ctr_x + m * self._opt_results[0].get_fl_w() ,ctr_y -
-                                                 m * (self._opt_results[0].get_pl_thk() + self._opt_results[0].get_web_h() +
-                                                      self._opt_results[0].get_fl_thk()),
+                self._canvas_opt.create_rectangle(ctr_x - m * self._opt_results[0].Stiffener.get_web_thk() / 2, ctr_y
+                                                 - m * (self._opt_results[0].Stiffener.get_pl_thk()+ self._opt_results[0].Stiffener.get_web_h()),
+                                                 ctr_x + m * self._opt_results[0].Stiffener.get_fl_w() ,ctr_y -
+                                                 m * (self._opt_results[0].Stiffener.get_pl_thk() + self._opt_results[0].Stiffener.get_web_h() +
+                                                      self._opt_results[0].Stiffener.get_fl_thk()),
                                                  fill=opt_color, stipple=opt_stippe)
 
             self._canvas_opt.create_line(10, 50, 30, 50, fill=opt_color, width=5)
-            self._canvas_opt.create_text(270,50,text='Optimized - Pl.: '+str(round(self._opt_results[0].get_s()*1000,1))
-                                                     +'x'+ str(round(self._opt_results[0].get_pl_thk()*1000,1))+
-                                                     ' Stf.: '+str(round(self._opt_results[0].get_web_h()*1000,1))+
-                                                    'x'+str(round(self._opt_results[0].get_web_thk()*1000,1))+'+'+
-                                                            str(round(self._opt_results[0].get_fl_w()*1000,1))+
-                                                    'x'+str(round(self._opt_results[0].get_fl_thk()*1000,1)),
+            self._canvas_opt.create_text(270,50,text='Optimized - Pl.: '+str(round(self._opt_results[0].Stiffener.get_s()*1000,1))
+                                                     +'x'+ str(round(self._opt_results[0].Stiffener.get_pl_thk()*1000,1))+
+                                                     ' Stf.: '+str(round(self._opt_results[0].Stiffener.get_web_h()*1000,1))+
+                                                    'x'+str(round(self._opt_results[0].Stiffener.get_web_thk()*1000,1))+'+'+
+                                                            str(round(self._opt_results[0].Stiffener.get_fl_w()*1000,1))+
+                                                    'x'+str(round(self._opt_results[0].Stiffener.get_fl_thk()*1000,1)),
                                         font = 'Verdana 8',fill = opt_color)
             self._canvas_opt.create_text(120, 70, text='Weight (per Lg width): '
-                                                      + str(int(op.calc_weight([self._opt_results[0].get_s(),
-                                                                                self._opt_results[0].get_pl_thk(),
-                                                                                self._opt_results[0].get_web_h(),
-                                                                                self._opt_results[0].get_web_thk(),
-                                                                                self._opt_results[0].get_fl_w(),
-                                                                                self._opt_results[0].get_fl_thk(),
+                                                      + str(int(op.calc_weight([self._opt_results[0].Stiffener.get_s(),
+                                                                                self._opt_results[0].Stiffener.get_pl_thk(),
+                                                                                self._opt_results[0].Stiffener.get_web_h(),
+                                                                                self._opt_results[0].Stiffener.get_web_thk(),
+                                                                                self._opt_results[0].Stiffener.get_fl_w(),
+                                                                                self._opt_results[0].Stiffener.get_fl_thk(),
                                                                                 self._new_span.get(),
                                                                                 self._new_width_lg.get()]))),
                                         font='Verdana 8', fill=opt_color)

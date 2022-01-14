@@ -160,7 +160,7 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
     :param initial_structure:
     :return:
     '''
-
+    initial_structure_obj.lat_press = lateral_pressure
 
     if predefiened_stiffener_iter is None:
         structure_to_check = any_get_all_combs(min_var, max_var, deltas)
@@ -193,10 +193,11 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
     else:
         ass_var = [round(item, 10) for item in ass_var[0:8]] + [ass_var[8]]
 
-    new_struc_obj = create_new_structure_obj(initial_structure_obj,ass_var, fdwn = fdwn, fup = fup)
-    new_calc_obj = create_new_calc_obj(initial_structure_obj,ass_var, fdwn = fdwn, fup = fup)[0]
-
-    return new_struc_obj, new_calc_obj, fat_dict, True, main_fail
+    initial_structure_obj.Plate = create_new_structure_obj(initial_structure_obj.Plate, ass_var,
+                                                           fdwn = fdwn, fup = fup)
+    initial_structure_obj.Stiffener = create_new_structure_obj(initial_structure_obj.Stiffener, ass_var,
+                                                               fdwn=fdwn, fup=fup)
+    return initial_structure_obj, fat_dict, True, main_fail
 
 def any_smart_loop_cylinder(min_var,max_var,deltas,initial_structure_obj,lateral_pressure = None, init_filter = float('inf'),
                    side='p',const_chk=(True,True,True,True,True,True,True, False, False,False), fat_dict = None,
@@ -562,16 +563,18 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
 
     all_checks = [0,0,0,0,0,0,0,0,0,0,0]
     print_result = False
-    calc_object = create_new_calc_obj(obj.Stiffener, x, fat_dict, fdwn = fdwn, fup = fup)
-    obj.Plate = obj.Stiffener = calc_object[0]
-    calc_object = [obj, calc_object[1]]
+    calc_object_stf = create_new_calc_obj(obj.Stiffener, x, fat_dict, fdwn = fdwn, fup = fup)
+    calc_object_pl = create_new_calc_obj(obj.Plate, x, fat_dict, fdwn=fdwn, fup=fup)
+    calc_object = [calc.AllStructure(Plate=calc_object_pl[0], Stiffener=calc_object_stf[0], Girder=None,
+                                     main_dict=obj.get_main_properties()['main dict']), calc_object_pl[1]]
+    calc_object[0].lat_press = lat_press
 
     # PULS buckling check
     if chk[7] and PULSrun is not None:
         x_id = x_to_string(x)
-        if calc_object[0].get_puls_method() == 'buckling':
+        if calc_object[0].Plate.get_puls_method() == 'buckling':
             puls_uf = PULSrun.get_puls_line_results(x_id)["Buckling strength"]["Actual usage Factor"][0]
-        elif calc_object[0].get_puls_method() == 'ultimate':
+        elif calc_object[0].Plate.get_puls_method() == 'ultimate':
             puls_uf = PULSrun.get_puls_line_results(x_id)["Ultimate capacity"]["Actual usage Factor"][0]
         if type(puls_uf) == str:
             return False, 'PULS', x, all_checks
@@ -608,7 +611,7 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
     # Section modulus
     if chk[0]:
         section_modulus = min(calc_object[0].Stiffener.get_section_modulus())
-        min_section_modulus = calc_object[0].Stiffener.get_dnv_min_section_modulus(lat_press)
+        min_section_modulus = calc_object[0].Stiffener.get_dnv_min_section_modulus(lat_press*1000)
         section_frac = section_modulus / min_section_modulus
         all_checks[1] = section_frac
         if not section_modulus > min_section_modulus :
@@ -619,9 +622,9 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
 
     # Local stiffener buckling
     if chk[6]:
-        buckling_local = calc_object[0].local_buckling()
-        check = all([buckling_local['Stiffener'][0] <  calc_object[0].Stiffener.hw,
-                     buckling_local['Stiffener'][1] <  calc_object[0].Stiffener.b])
+        buckling_local = calc_object[0].local_buckling(optimizing=True)
+        check = all([buckling_local['Stiffener'][0] < calc_object[0].Stiffener.hw,
+                     buckling_local['Stiffener'][1] < calc_object[0].Stiffener.b])
         all_checks[2] = max([calc_object[0].Stiffener.hw/buckling_local['Stiffener'][0],
                             calc_object[0].Stiffener.b/buckling_local['Stiffener'][1]])
         if not check:
@@ -641,8 +644,8 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
                            'Shear capacity': girder_shear_capacity},
                 'Local buckling': local_buckling}
                 '''
-        calc_object[0].lat_press = lat_press
-        buckling_results = calc_object[0].plate_buckling()
+
+        buckling_results = calc_object[0].plate_buckling(optimizing=True)
         res = [buckling_results['Plate']['Plate buckling'],]
         for val in buckling_results['Stiffener'].values():
             res.append(val)
@@ -657,7 +660,7 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
     # Minimum plate thickness
     if chk[1]:
         act_pl_thk = calc_object[0].Plate.get_pl_thk()
-        min_pl_thk = calc_object[0].Plate.get_dnv_min_thickness(lat_press)/1000
+        min_pl_thk = calc_object[0].Plate.get_dnv_min_thickness(lat_press*1000)/1000
         plate_frac = min_pl_thk / act_pl_thk
         all_checks[4] = plate_frac
         if not act_pl_thk > min_pl_thk:
@@ -667,14 +670,15 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
 
     # Shear area
     if chk[2]:
-        calc_shear_area = calc_object[0].Stiffener.get_shear_area()
-        min_shear_area = calc_object[0].Stiffener.get_minimum_shear_area(lat_press)
-        shear_frac = min_shear_area / calc_shear_area
-        all_checks[5] = shear_frac
-        if not calc_shear_area > min_shear_area:
-            if print_result:
-                print('Shear area',calc_object[0].Stiffener.get_one_line_string(), False)
-            return False, 'Shear area', x,  all_checks
+        pass
+        # calc_shear_area = calc_object[0].Stiffener.get_shear_area()
+        # min_shear_area = calc_object[0].Stiffener.get_minimum_shear_area(lat_press)
+        # shear_frac = min_shear_area / calc_shear_area
+        # all_checks[5] = shear_frac
+        # if not calc_shear_area > min_shear_area:
+        #     if print_result:
+        #         print('Shear area',calc_object[0].Stiffener.get_one_line_string(), False)
+        #     return False, 'Shear area', x,  all_checks
 
     # Fatigue
     if chk[4] and fat_dict is not None and fat_press is not None:
@@ -699,6 +703,7 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
 
     if print_result:
         print('OK Section', calc_object[0].Stiffener.get_one_line_string(), True)
+
     return True, 'Check OK', x, all_checks
 
 def constraint_geometric(fractions, *args):
@@ -773,7 +778,6 @@ def create_new_calc_obj(init_obj,x, fat_dict=None, fdwn = 1, fup = 0.5):
     sigma_x2_new = stress_scaling_area(init_obj.get_sigma_x2(),
                                       sum(get_field_tot_area(x_old)),
                                       sum(get_field_tot_area(x)), fdwn = fdwn, fup = fup)
-
     try:
         stf_type = x[8]
     except IndexError:
@@ -1048,7 +1052,7 @@ def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight
             calc_object = create_new_calc_obj(init_stuc_obj, x, fat_dict, fdwn = fdwn, fup = fup)
             dict_to_run[x_id] = calc_object[0].get_puls_input()
             dict_to_run[x_id]['Identification'] = x_id
-            dict_to_run[x_id]['Pressure (fixed)'] = lat_press/1000 # PULS sheet to have pressure in MPa
+            dict_to_run[x_id]['Pressure (fixed)'] = lat_press # PULS sheet to have pressure in MPa
 
         PULSrun = calc.PULSpanel(dict_to_run, puls_sheet_location=puls_sheet, puls_acceptance=puls_acceptance)
         PULSrun.run_all()
@@ -1133,7 +1137,8 @@ def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight
         processes = max(cpu_count()-1,1)
 
     with Pool(processes) as my_process:
-        # res_pre = my_process.starmap_async(any_constraints_all, iter_var).get()
+        # res_pre = m
+        # y_process.starmap_async(any_constraints_all, iter_var).get()
         # print('Done calculating')
         res_pre = my_process.starmap(any_constraints_all, iter_var)
 
@@ -1247,7 +1252,7 @@ def get_initial_weight(obj,lat_press,min_var,max_var,deltas,trials,fat_dict,fat_
                                                                               predefined_stiffener_iter])
 
     trial_selection = random_product(combs, repeat=trials)
-
+    obj.lat_press = lat_press
     for x in trial_selection:
         if any_constraints_all(x=x,obj=obj,lat_press=lat_press,init_weight=min_weight,
                                fat_dict=fat_dict,fat_press = fat_press,slamming_press=slamming_press,
