@@ -1607,7 +1607,7 @@ class AllStructure():
 
         E = self._E/1e6
         v = self._v
-        fy = self._yield
+        fy = self._yield/1e6
         gammaM = self._Plate.get_mat_factor()
         t = self._Plate.t
         s = self._Plate.s
@@ -1615,9 +1615,6 @@ class AllStructure():
 
         tsd = self._Plate.get_tau_xy()
         psd = self._lat_press*self._lat_load_factor
-
-        shear_ratio_long = 1
-        shear_ratio_trans = 1
 
         sig_x1 = self._Plate.get_sigma_x1()*self._stress_load_factor
         sig_x2 = self._Plate.get_sigma_x2()*self._stress_load_factor
@@ -1645,6 +1642,9 @@ class AllStructure():
         else:
             Use_Smin_y = min(sig_y1 , sig_y2)
 
+        shear_ratio_long = 1 if Use_Smax_x == 0 else Use_Smin_x / Use_Smax_x
+        shear_ratio_trans = 1 if Use_Smax_y == 0 else Use_Smin_y/Use_Smax_y
+
         Max_vonMises_x = sig_x1 if abs(sig_x1) > abs(sig_x2) else sig_x2
 
         unstf_pl_data['sxsd'] = sxsd
@@ -1661,6 +1661,7 @@ class AllStructure():
         #Pnt. 5  Lateral loaded plates
 
         sjsd =math.sqrt(math.pow(Max_vonMises_x,2) + math.pow(sysd,2)-Max_vonMises_x*sysd+3*math.pow(tsd,2))
+
         uf_sjsd = sjsd/fy*gammaM
         unstf_pl_data['UF sjsd'] = uf_sjsd
 
@@ -1792,7 +1793,7 @@ class AllStructure():
         E = self._E / 1e6
         v = self._v
         G = E/(2*(1+v))
-        fy = self._yield
+        fy = self._yield/1e6
         gammaM = self._Plate.get_mat_factor()
         t = self._Plate.t
         s = self._Plate.s
@@ -1852,9 +1853,14 @@ class AllStructure():
                 ci = 0 if t == 0 else 1-s / 120 / t
             else:
                 ci = 0
+            try:
+                Cys = math.sqrt(1 - math.pow(sysd / syR, 2) + ci * ((sxsd * sysd) / (Cxs * fy * syR)))
+            except ValueError:
+                print(self._Stiffener)
+                print(self._Plate)
+                print(1,sysd,syR,ci,sxsd,sysd,Cxs,syR)
 
-            Cys = math.sqrt(1 - math.pow(sysd / syR, 2) + ci * ((sxsd * sysd) / (Cxs * fy * syR)))
-
+                Cys = math.sqrt(1 - math.pow(sysd / syR, 2) + ci * ((sxsd * sysd) / (Cxs * fy * syR)))
             stf_pl_data['Cys_comp'] = Cys
 
         se_div_s = Cxs * Cys
@@ -4445,15 +4451,16 @@ if __name__ == '__main__':
     # print(my_cyl.get_utilization_factors())
 
     # Prescriptive buckling UPDATED
-    Plate = CalcScantlings(ex.obj_dict)
-    Stiffener = CalcScantlings(ex.obj_dict)
+    Plate = CalcScantlings(ex.obj_dict_fr)
+    Stiffener = CalcScantlings(ex.obj_dict_fr)
     Girder = None#CalcScantlings(ex.obj_dict_heavy)
     PreBuc = AllStructure(Plate = Plate, Stiffener = Stiffener, Girder = Girder,
                                   main_dict=ex.prescriptive_main_dict)
-    PreBuc.lat_press = 0.422985
+    PreBuc.lat_press = 0
     #print(Plate)
     # print(Plate)
-    print(Stiffener)
+    #print(Stiffener)
     # print(Girder)
+    #print(PreBuc.get_main_properties())
     print(PreBuc.plate_buckling())
 

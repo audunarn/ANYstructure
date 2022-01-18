@@ -4746,7 +4746,7 @@ class Application():
                 
                 main_dict = dict()
                 main_dict['minimum pressure in adjacent spans'] = [self._new_buckling_min_press_adj_spans.get(), '']
-                main_dict['material yield'] = [self._new_material.get(), 'MPa']
+                main_dict['material yield'] = [self._new_material.get()*1e6, 'Pa']
                 main_dict['load factor on stresses'] = [self._new_buckling_lf_stresses.get(), '']
                 main_dict['load factor on pressure'] = [1, '']
                 main_dict['buckling method'] = [self._new_puls_method.get(), '']
@@ -5832,7 +5832,7 @@ class Application():
         self.update_frame()
 
     def mouse_scroll(self,event):
-        print(event, self._main_canvas.winfo_height(), event.x, event.y, event.delta, event)
+
         if event.y < self._main_canvas.winfo_height():
             self._canvas_scale +=  event.delta/50
             self._canvas_scale = 0 if self._canvas_scale < 0 else self._canvas_scale
@@ -6188,7 +6188,7 @@ class Application():
                 map_end = {'C': 'Continuous', 'S': 'Sniped'}
                 lines_prop['puls stiffener end'] = [map_end[lines_prop['puls stiffener end'][0]],
                                                     lines_prop['puls stiffener end'][1]]
-                main_dict['material yield'] = [355, 'Pa']
+                main_dict['material yield'] = [355e6, 'Pa']
                 main_dict['load factor on stresses'] = [1, '']
                 main_dict['load factor on pressure'] = [1, '']
                 main_dict['buckling method'] = [lines_prop['puls buckling method'], '']
@@ -6198,8 +6198,12 @@ class Application():
 
                 main_dict['calculation domain'] = [dom, '']
                 map_side = {'p': 'plate side', 's': 'stiffener side'}
-                lines_prop['press_side'] = [map_side[lines_prop['press_side'][0]], '']
-
+                if 'press_side' in lines_prop.keys():
+                    lines_prop['press_side'] = [map_side[lines_prop['press_side'][0]], '']
+                else:
+                    lines_prop['press_side'] = 'both sides'
+                lines_prop['panel or shell'] = 'panel'
+                #lines_prop['tension field'] = 'allowed'
                 self._line_to_struc[line][0] = AllStructure(Plate=CalcScantlings(lines_prop),
                                                             Stiffener=CalcScantlings(lines_prop),
                                                             Girder=None, main_dict=main_dict)
