@@ -468,8 +468,11 @@ class Structure():
         Iy = (Af*math.pow(ef,2)*math.pow(b2,2)/12) * ( (Af+2.6*Aw) / (Af+Aw))
         return Iy
 
-    def get_torsional_moment_venant(self, reduced_tw = None):
-        ef = self.get_ef_iacs()*1000
+    def get_torsional_moment_venant(self, reduced_tw = None, efficient_flange = True):
+        if efficient_flange:
+            ef = self.get_ef_iacs()*1000
+        else:
+            ef = self._flange_width * 1000
         tf = self._flange_th*1000
         tw = self._web_th*1000 if reduced_tw is None else reduced_tw
         bf = self._flange_width*1000
@@ -483,6 +486,10 @@ class Structure():
         # G = 80769.2
         # It2 = (2/3) * (math.pow(tw,3)*hw + bf*math.pow(tf, 3)) *(hw+tf/2)
         # print(It, It2*G)
+        # print(hw, tw, bf, tf)
+        # I_t1 = 1.0 / 3.0 * math.pow(tw , 3) * hw + 1.0 / 3.0 * math.pow(tf, 3) * bf
+        # I_t2 = 1.0 / 3.0 * math.pow(tw , 3) * (hw + tf) + 1.0 / 3.0 * math.pow(tf, 3) * (bf - tw)
+        # print('It', I_t1, I_t2, It* 1e4)
 
         return It * 1e4
 
@@ -1939,14 +1946,14 @@ class AllStructure():
                                               math.sqrt((1 - eta)) # e 7.36, checked ok
 
         beta = (3*C+0.2)/(C+0.2) # eq 7.35
-        It = self._Stiffener.get_torsional_moment_venant()
+        It = self._Stiffener.get_torsional_moment_venant(efficient_flange=False)
         Ipo = self._Stiffener.get_polar_moment()
         Iz = self._Stiffener.get_Iz_moment_of_inertia()
 
         def red_prop():
             tw_red =max(0,self._Stiffener.tw*(1-Vsd_div_Vrd))
             Atot_red  = As+se*t-self._Stiffener.hw*(self._Stiffener.tw - tw_red )
-            It_red  = self._Stiffener.get_torsional_moment_venant(reduced_tw=tw_red )
+            It_red  = self._Stiffener.get_torsional_moment_venant(reduced_tw=tw_red, efficient_flange=False)
             Ipo_red  = self._Stiffener.get_polar_moment(reduced_tw=tw_red )
             #Iz = self._Stiffener.get_Iz_moment_of_inertia(reduced_tw=tw)
             #Iz_red = self._Stiffener.get_moment_of_intertia(efficent_se=se/1000, reduced_tw=tw_red)
@@ -4451,12 +4458,12 @@ if __name__ == '__main__':
     # print(my_cyl.get_utilization_factors())
 
     # Prescriptive buckling UPDATED
-    Plate = CalcScantlings(ex.obj_dict_fr)
-    Stiffener = CalcScantlings(ex.obj_dict_fr)
+    Plate = CalcScantlings(ex.obj_dict_L)
+    Stiffener = CalcScantlings(ex.obj_dict_L)
     Girder = None#CalcScantlings(ex.obj_dict_heavy)
     PreBuc = AllStructure(Plate = Plate, Stiffener = Stiffener, Girder = Girder,
                                   main_dict=ex.prescriptive_main_dict)
-    PreBuc.lat_press = 0
+    PreBuc.lat_press = 0.321695
     #print(Plate)
     # print(Plate)
     #print(Stiffener)

@@ -3876,17 +3876,13 @@ class Application():
             for y in range(line_distance, canvas_height, line_distance):
                 canvas.create_line(0, y, canvas_width, y, stipple='gray50', activestipple='gray75')
 
-        checkered(10, self._prop_canvas)
+
 
         if self._active_line in self._line_to_struc:
 
             # printing the properties to the active line
             if self._line_is_active and self._line_to_struc[self._active_line][5] is None:
-                # self._prop_canvas.create_text([canvas_width*0.239726027, canvas_height*0.446096654],
-                #                              text=self._line_to_struc[self._active_line][0].Plate,
-                #                              font = self._text_size["Text 9"], fill = self._color_text)
-
-                # setting the input field to active line properties
+                checkered(10, self._prop_canvas)
                 self.set_selected_variables(self._active_line)
 
                 self._prop_canvas.create_text([canvas_width/2-canvas_width/20, canvas_height/20],
@@ -3907,9 +3903,9 @@ class Application():
                         spacing = structure_obj.get_s()*self._prop_canvas_scale
                         stf_web_height = structure_obj.get_web_h()*self._prop_canvas_scale
                         stf_flange_width = structure_obj.get_fl_w() *self._prop_canvas_scale
-                        plate_thk = str(structure_obj.get_pl_thk()*self._prop_canvas_scale) + 'm'
-                        stf_web_thk = str(structure_obj.get_web_thk()*self._prop_canvas_scale) + 'm'
-                        stf_flange_thk = str(structure_obj.get_fl_thk()*self._prop_canvas_scale) + 'm'
+                        plate_thk = structure_obj.get_pl_thk()*self._prop_canvas_scale
+                        stf_web_thk = structure_obj.get_web_thk()*self._prop_canvas_scale
+                        stf_flange_thk = structure_obj.get_fl_thk()*self._prop_canvas_scale
                         count = 0
                         for count in [0,1,2] if idx == 0 else [0,]:
                             self._prop_canvas.create_line(startx + count*spacing,starty,startx+spacing+ count*spacing,
@@ -4081,7 +4077,7 @@ class Application():
                                                 text= 'Shear area check',
                                                 font=self._text_size["Text 9"],anchor='nw', fill='Black')
                 self._result_canvas.create_text([x+0*dx, (y+4*dy)*1],
-                                                text= 'Web thickness test',
+                                                text= 'Plate thickness test',
                                                 font=self._text_size["Text 9"],anchor='nw', fill='Black')
                 self._result_canvas.create_text([x + x1*dx, (y+1*dy)*1],
                                                 text= 'Minimum value',
@@ -4341,7 +4337,7 @@ class Application():
 
                 # fatigue results
 
-                self._result_canvas.create_text([x * 1, (y+(start_y+7)*dy) * 1],
+                self._result_canvas.create_text([x * 1, (y+(start_y+9)*dy) * 1],
                                                 text='Fatigue results (DNVGL-RP-C203): ',
                                                 font=self._text_size["Text 9 bold"], anchor='nw', fill = self._color_text)
 
@@ -4349,19 +4345,19 @@ class Application():
                     if state['fatigue'][current_line]['damage'] is not None:
                         damage = state['fatigue'][current_line]['damage']
                         dff = state['fatigue'][current_line]['dff']
-                        self._result_canvas.create_text([x * 1, (y + (start_y+8) * dy) * 1],
+                        self._result_canvas.create_text([x * 1, (y + (start_y+10) * dy) * 1],
                                                         text='Total damage (DFF not included): '+str(round(damage,3)) +
                                                              '  |  With DFF = '+str(dff)+' --> Damage: '+
                                                              str(round(damage*dff,3)),
                                                         font=self._text_size["Text 9 bold"], anchor='nw',
                                                         fill=color_fatigue)
                     else:
-                        self._result_canvas.create_text([x * 1, (y + (start_y+8) * dy) * 1],
+                        self._result_canvas.create_text([x * 1, (y + (start_y+10) * dy) * 1],
                                                         text='Total damage: NO RESULTS ',
                                                         font=self._text_size["Text 9 bold"],
                                                         anchor='nw', fill = self._color_text)
                 else:
-                    self._result_canvas.create_text([x * 1, (y + (start_y+8) * dy) * 1],
+                    self._result_canvas.create_text([x * 1, (y + (start_y+10) * dy) * 1],
                                                     text='Total damage: NO RESULTS ',
                                                     font=self._text_size["Text 9 bold"],
                                                     anchor='nw', fill = self._color_text)
