@@ -1958,7 +1958,8 @@ class AllStructure():
             #Iz = self._Stiffener.get_Iz_moment_of_inertia(reduced_tw=tw)
             #Iz_red = self._Stiffener.get_moment_of_intertia(efficent_se=se/1000, reduced_tw=tw_red)
             Iy_red = self._Stiffener.get_moment_of_intertia(efficent_se=se / 1000, reduced_tw=tw_red) * 1000 ** 4
-            zp_red  = self._Stiffener.get_cross_section_centroid_with_effective_plate(se / 1000, reduced_tw=tw_red ) * 1000 - t / 2  # ch7.5.1 page 19
+            zp_red  = self._Stiffener.get_cross_section_centroid_with_effective_plate(se / 1000, reduced_tw=tw_red ) \
+                      * 1000 - t / 2  # ch7.5.1 page 19
             zt_red  = (self._Stiffener.hw + self._Stiffener.tf) - zp_red + t/2  # ch 7.5.1 page 19
             Wes_red  = 0.0001 if zt_red == 0 else Iy_red/zt_red
             Wep_red  = 0.0001 if zp_red == 0 else Iy_red/zp_red

@@ -3882,50 +3882,64 @@ class Application():
 
             # printing the properties to the active line
             if self._line_is_active and self._line_to_struc[self._active_line][5] is None:
-                checkered(10, self._prop_canvas)
+                #checkered(10, self._prop_canvas)
                 self.set_selected_variables(self._active_line)
 
                 self._prop_canvas.create_text([canvas_width/2-canvas_width/20, canvas_height/20],
                                              text ='SELECTED: '+str(self._active_line),
                                              font=self._text_size["Text 10 bold"], fill='red')
+
+
                 for idx, structure_obj in enumerate([self._line_to_struc[self._active_line][0].Stiffener,
-                                           self._line_to_struc[self._active_line][0].Girder]):
-                    mult = 100  # *(400/max_web)
-                    thk_mult = 100  # *(400/max_web)
-                    startx = 100 +300*idx
+                                                     self._line_to_struc[self._active_line][0].Girder]):
+                    mult = 1 if self._line_to_struc[self._active_line][0].Girder is not None else 2  # *(400/max_web)
+                    thk_mult = 2  # *(400/max_web)
+                    startx = 100 + 300 * idx
                     starty = 225
 
                     if structure_obj is not None:
                         self._prop_canvas.create_text([startx +40, 50],
                                                       text='Stiffener' if idx == 0 else 'Girder',
                                                       font=self._text_size["Text 10 bold"], fill='Black')
+                        if structure_obj is not None:
+                            self._prop_canvas.create_text([100, 20],
+                                                          text='Thickness scale x 2' if idx == 0 else 'Girder',
+                                                          font=self._text_size["Text 10 bold"], fill='grey')
                         # drawing stiffener
-                        spacing = structure_obj.get_s()*self._prop_canvas_scale
-                        stf_web_height = structure_obj.get_web_h()*self._prop_canvas_scale
-                        stf_flange_width = structure_obj.get_fl_w() *self._prop_canvas_scale
-                        plate_thk = structure_obj.get_pl_thk()*self._prop_canvas_scale
-                        stf_web_thk = structure_obj.get_web_thk()*self._prop_canvas_scale
-                        stf_flange_thk = structure_obj.get_fl_thk()*self._prop_canvas_scale
-                        count = 0
+                        spacing = structure_obj.get_s()*self._prop_canvas_scale * mult
+                        stf_web_height = structure_obj.get_web_h()*self._prop_canvas_scale * mult
+                        stf_flange_width = structure_obj.get_fl_w() *self._prop_canvas_scale * mult
+                        plate_thk = structure_obj.get_pl_thk()*self._prop_canvas_scale*thk_mult * mult
+                        stf_web_thk = structure_obj.get_web_thk()*self._prop_canvas_scale*thk_mult * mult
+                        stf_flange_thk = structure_obj.get_fl_thk()*self._prop_canvas_scale*thk_mult * mult
+
                         for count in [0,1,2] if idx == 0 else [0,]:
-                            self._prop_canvas.create_line(startx + count*spacing,starty,startx+spacing+ count*spacing,
-                                                          starty, width = plate_thk,
-                                                          fill = self._color_text)
-                            self._prop_canvas.create_line(startx+spacing*0.5+ count*spacing,starty,
-                                                          startx+spacing*0.5+ count*spacing,starty-stf_web_height,
-                                                         width=stf_web_thk, fill = self._color_text )
+
+                            self._prop_canvas.create_rectangle(startx + count*spacing,
+                                                               starty,
+                                                               startx+spacing+ count*spacing,
+                                                               starty- plate_thk ,
+                                                               fill = 'grey', activefill = 'yellow')
+                            self._prop_canvas.create_rectangle(startx+spacing*0.5+ count*spacing - stf_web_thk/2,
+                                                               starty - plate_thk,
+                                                               startx+spacing*0.5+ count*spacing + stf_web_thk/2,
+                                                               starty - stf_web_height - plate_thk,
+                                                               fill = 'grey', activefill = 'yellow')
+
                             if structure_obj.get_stiffener_type() not in ['L', 'L-bulb']:
-                                self._prop_canvas.create_line(startx+spacing*0.5-stf_flange_width/2+ count*spacing,
-                                                              starty-stf_web_height,
-                                                         startx + spacing * 0.5 + stf_flange_width / 2+ count*spacing,
-                                                              starty - stf_web_height,
-                                                         width=stf_flange_thk, fill = self._color_text)
+
+                                self._prop_canvas.create_rectangle(startx+spacing*0.5-stf_flange_width/2+ count*spacing,
+                                                                   starty - stf_web_height - plate_thk,
+                                                                   startx + spacing * 0.5 + stf_flange_width / 2+ count*spacing,
+                                                                   starty - stf_web_height - plate_thk- stf_flange_thk,
+                                                                   fill = 'grey', activefill = 'yellow')
                             else:
-                                self._prop_canvas.create_line(startx+spacing*0.5-stf_web_thk/2+ count*spacing,
-                                                              starty-stf_web_height,
-                                                         startx + spacing * 0.5 + stf_flange_width + count*spacing,
-                                                              starty - stf_web_height,
-                                                         width=stf_flange_thk, fill = self._color_text)
+                                self._prop_canvas.create_rectangle(startx+spacing*0.5-stf_web_thk/2+ count*spacing,
+                                                                   starty-stf_web_height - plate_thk,
+                                                                   startx + spacing * 0.5 + stf_flange_width + count*spacing,
+                                                                   starty - stf_web_height - plate_thk - stf_flange_thk,
+                                                                   fill = 'grey',
+                                                                   activefill = 'yellow')
 
 
             elif self._line_is_active and self._line_to_struc[self._active_line][5] is not None:
@@ -4077,7 +4091,7 @@ class Application():
                                                 text= 'Shear area check',
                                                 font=self._text_size["Text 9"],anchor='nw', fill='Black')
                 self._result_canvas.create_text([x+0*dx, (y+4*dy)*1],
-                                                text= 'Plate thickness test',
+                                                text= 'Plate thickness check',
                                                 font=self._text_size["Text 9"],anchor='nw', fill='Black')
                 self._result_canvas.create_text([x + x1*dx, (y+1*dy)*1],
                                                 text= 'Minimum value',
@@ -4095,7 +4109,7 @@ class Application():
                     text =  str('%.4E' % decimal.Decimal(min_sec_mod * m3_to_mm3)) +\
                             ' [mm^3] ' if not slm_text_min_zpl else slm_text_min_zpl
                 self._result_canvas.create_text([x + x1*dx, (y+2*dy)*1], text= text,
-                                                font=self._text_size["Text 9 bold"],anchor='nw', fill=color_sec)
+                                                font=self._text_size["Text 9 bold"],anchor='nw', fill=self._color_text)
 
                 # printing the calculated sectiton modulus
                 if state['slamming'][current_line]['state'] and slm_text_min_zpl is False:
@@ -4105,41 +4119,41 @@ class Application():
                         if not slm_text_min_zpl else str(slm_zpl)+'- zpl [cm^3]'
                 self._result_canvas.create_text([x + x2*dx, (y+2*dy)*1],
                                                text=text,font=self._text_size['Text 9 bold'],anchor='nw',
-                                                fill = self._color_text)
+                                                fill = color_sec)
 
                 self._result_canvas.create_text([x + x3*dx, (y+2*dy)*1],
                                                text='Ok' if min(sec_mod[1], sec_mod[0])*m3_to_mm3 >
                                                             min_sec_mod * m3_to_mm3 else 'Not ok',
                                                 font=self._text_size['Text 9 bold'],anchor='nw',
-                                                fill = self._color_text)
+                                                fill=color_sec)
 
                 #minimum shear area
                 text = str('%.4E' % decimal.Decimal(min_shear * m2_to_mm2))+' [mm^2] ' \
                     if not slm_text_min_web_thk else str(round(slm_min_web_thk,1))+' [mm]'
                 self._result_canvas.create_text([x + x1*dx, (y+3*dy)*1],
                                                text = text,
-                                               font=self._text_size["Text 9 bold"],anchor='nw', fill=color_shear)
+                                               font=self._text_size["Text 9 bold"],anchor='nw',fill=self._color_text)
                 text = str('%.4E' % decimal.Decimal(shear_area * m2_to_mm2 ))+' [mm^2]' \
                     if not slm_text_min_web_thk else str(obj_scnt_calc_stf.get_web_thk()*1000)+' [mm]'
                 self._result_canvas.create_text([x + x2*dx, (y+3*dy)*1],
                                                text= text,
-                                               font=self._text_size["Text 9 bold"],anchor='nw', fill = self._color_text)
+                                               font=self._text_size["Text 9 bold"],anchor='nw', fill=color_shear)
                 self._result_canvas.create_text([x + x3*dx, (y+3*dy)*1],
                                                text= 'Ok' if shear_area * m2_to_mm2 > min_shear * m2_to_mm2 else 'Not ok',
-                                               font=self._text_size["Text 9 bold"],anchor='nw', fill = self._color_text)
+                                               font=self._text_size["Text 9 bold"],anchor='nw', fill=color_shear)
 
                 #minimum thickness for plate
                 text = str(round(min_thk,1)) + ' [mm]' if not slm_text_pl_thk \
                     else 'SLAMMING'+str(slm_min_pl_thk)+' [mm]'
                 self._result_canvas.create_text([x + x1*dx, (y+4*dy)*1],
                                                text=text,
-                                               font=self._text_size["Text 9 bold"],anchor='nw', fill=color_thk)
+                                               font=self._text_size["Text 9 bold"],anchor='nw', fill=self._color_text)
                 self._result_canvas.create_text([x + x2*dx, (y+4*dy)*1],
                                                text=str(obj_scnt_calc_pl.get_pl_thk()*1000)+' [mm] ',
-                                               font=self._text_size["Text 9 bold"],anchor='nw', fill = self._color_text)
+                                               font=self._text_size["Text 9 bold"],anchor='nw', fill=color_shear)
                 self._result_canvas.create_text([x + x3*dx, (y+4*dy)*1],
                                                text='Ok' if obj_scnt_calc_pl.get_pl_thk()*1000 > min_thk else 'Not ok',
-                                               font=self._text_size["Text 9 bold"],anchor='nw', fill = self._color_text)
+                                               font=self._text_size["Text 9 bold"],anchor='nw', fill=color_shear)
 
 
                 # buckling results
@@ -4238,7 +4252,11 @@ class Application():
                                                text='Shear capacity',font=self._text_size["Text 9"],
                                                anchor='nw',fill='black')
                     self._result_canvas.create_text([x + dx*0, (y+(start_y+6)*dy) * 1],
-                                               text='Local buckling, max web height - max flange width',
+                                               text='Maximum web height [mm]',
+                                                    font=self._text_size["Text 9"],
+                                               anchor='nw',fill='black')
+                    self._result_canvas.create_text([x + dx*0, (y+(start_y+7)*dy) * 1],
+                                               text='Maximum flange width [mm]',
                                                     font=self._text_size["Text 9"],
                                                anchor='nw',fill='black')
 
@@ -4246,13 +4264,13 @@ class Application():
                     x1, x2, x3 = 15,25,35
                     self._result_canvas.create_text([x + dx*15, (y+(start_y+1)*dy) * 1],
                                                text='Plate',font=self._text_size["Text 9 bold"],
-                                               anchor='nw',fill=color_buckling)
+                                               anchor='nw',fill=self._color_text)
                     self._result_canvas.create_text([x + dx*25, (y+(start_y+1)*dy) * 1],
                                                text='Stiffener',font=self._text_size["Text 9 bold"],
-                                               anchor='nw',fill=color_buckling)
+                                               anchor='nw',fill=self._color_text)
                     self._result_canvas.create_text([x + dx*35, (y+(start_y+1)*dy) * 1],
                                                text='Girder',font=self._text_size["Text 9 bold"],
-                                               anchor='nw',fill=color_buckling)
+                                               anchor='nw',fill=self._color_text)
                     x_mult = x1
                     self._result_canvas.create_text([x + dx*x_mult , (y+(start_y+2)*dy) * 1],
                                                text=str(round(buckling['Plate']['Plate buckling'],3)),
@@ -4267,19 +4285,32 @@ class Application():
                                                text=str(round(buckling['Stiffener']['Overpressure stiffener side'],3)),
                                                     font=self._text_size["Text 9 bold"],
                                                anchor='nw',fill=color_buckling)
+
+                    stfweb = round(buckling['Local buckling']['Stiffener'][0],3)*1000
+                    stffl = round(buckling['Local buckling']['Stiffener'][1],3)*1000
+
                     self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+4)*dy) * 1],
                                                text=str(round(buckling['Stiffener']['Resistance between stiffeners'],3))
                                                     ,font=self._text_size["Text 9 bold"],
-                                               anchor='nw',fill=color_buckling)
+                                               anchor='nw',
+                                                    fill= color_buckling)
                     self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+5)*dy) * 1],
                                                text=str(round(buckling['Stiffener']['Shear capacity'],3)),
                                                     font=self._text_size["Text 9 bold"],
-                                               anchor='nw',fill=color_buckling)
+                                               anchor='nw',
+                                                    fill=color_buckling)
+
+
                     self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+6)*dy) * 1],
-                                               text=str(round(buckling['Local buckling']['Stiffener'][0],3)) + ' - ' +
-                                                        str(round(buckling['Local buckling']['Stiffener'][1],3)),
+                                               text=str(stfweb),
                                                     font=self._text_size["Text 9"],
-                                               anchor='nw',fill=color_buckling)
+                                               anchor='nw',fill='black' if obj_scnt_calc_stf is None else 'red'
+                                                    if obj_scnt_calc_stf.hw > stfweb else 'green')
+                    self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+7)*dy) * 1],
+                                               text=str(stffl),
+                                                    font=self._text_size["Text 9"],
+                                               anchor='nw',fill='black' if obj_scnt_calc_stf is None else 'red'
+                                                    if obj_scnt_calc_stf.b > stffl else 'green')
                     x_mult = x3
                     self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+2)*dy) * 1],
                                                text=str(round(buckling['Girder']['Overpressure plate side'],3)),
@@ -4293,11 +4324,24 @@ class Application():
                                                text=str(round(buckling['Girder']['Shear capacity'],3)),
                                                     font=self._text_size["Text 9 bold"],
                                                anchor='nw',fill=color_buckling)
+
+                    gweb = round(buckling['Local buckling']['Girder'][0],3)*1000
+                    gfl = round(buckling['Local buckling']['Girder'][1],3)*1000
                     self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+6)*dy) * 1],
-                                               text=str(round(buckling['Local buckling']['Girder'][0],3)) + ' - ' +
-                                                        str(round(buckling['Local buckling']['Girder'][1],3)),
+                                               text=str(gweb),
                                                     font=self._text_size["Text 9"],
-                                               anchor='nw',fill=color_buckling)
+                                               anchor='nw',fill='black' if obj_scnt_calc_girder is None else 'red' if obj_scnt_calc_girder.hw > gweb else 'green')
+                    self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+7)*dy) * 1],
+                                               text=str(gfl),
+                                                    font=self._text_size["Text 9"],
+                                               anchor='nw',fill='black' if obj_scnt_calc_girder is None else 'red' if obj_scnt_calc_girder.b > gfl else 'green')
+
+                    #
+                    # self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+7)*dy) * 1],
+                    #                            text=str(round(buckling['Local buckling']['Girder'][1],3)),
+                    #                                 font=self._text_size["Text 9"],
+                    #                            anchor='nw',fill=color_buckling)
+
 
                 elif self._new_buckling_method.get() == 'ML-CL (PULS based)':
 
@@ -4337,7 +4381,7 @@ class Application():
 
                 # fatigue results
 
-                self._result_canvas.create_text([x * 1, (y+(start_y+9)*dy) * 1],
+                self._result_canvas.create_text([x * 1, (y+(start_y+8)*dy) * 1],
                                                 text='Fatigue results (DNVGL-RP-C203): ',
                                                 font=self._text_size["Text 9 bold"], anchor='nw', fill = self._color_text)
 
@@ -4345,19 +4389,19 @@ class Application():
                     if state['fatigue'][current_line]['damage'] is not None:
                         damage = state['fatigue'][current_line]['damage']
                         dff = state['fatigue'][current_line]['dff']
-                        self._result_canvas.create_text([x * 1, (y + (start_y+10) * dy) * 1],
+                        self._result_canvas.create_text([x * 1, (y + (start_y+9) * dy) * 1],
                                                         text='Total damage (DFF not included): '+str(round(damage,3)) +
                                                              '  |  With DFF = '+str(dff)+' --> Damage: '+
                                                              str(round(damage*dff,3)),
                                                         font=self._text_size["Text 9 bold"], anchor='nw',
                                                         fill=color_fatigue)
                     else:
-                        self._result_canvas.create_text([x * 1, (y + (start_y+10) * dy) * 1],
+                        self._result_canvas.create_text([x * 1, (y + (start_y+9) * dy) * 1],
                                                         text='Total damage: NO RESULTS ',
                                                         font=self._text_size["Text 9 bold"],
                                                         anchor='nw', fill = self._color_text)
                 else:
-                    self._result_canvas.create_text([x * 1, (y + (start_y+10) * dy) * 1],
+                    self._result_canvas.create_text([x * 1, (y + (start_y+9) * dy) * 1],
                                                     text='Total damage: NO RESULTS ',
                                                     font=self._text_size["Text 9 bold"],
                                                     anchor='nw', fill = self._color_text)
@@ -6986,7 +7030,7 @@ if __name__ == '__main__':
     # root.tk.call("source", "sun-valley.tcl")
     # root.tk.call("set_theme", "light")
     width = int(root.winfo_screenwidth()*1)
-    height = int(root.winfo_screenheight()*1)
+    height = int(root.winfo_screenheight()*0.95)
     root.geometry(f'{width}x{height}')
     my_app = Application(root)
     root.mainloop()
