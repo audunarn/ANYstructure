@@ -22,12 +22,16 @@ class CreateFatigueWindow():
             self._initial_fatigue_obj = test.get_fatigue_object()
 
         else:
+            if app._line_to_struc[app._active_line][0] is None:
+                return
+            elif app._line_to_struc[app._active_line][0].Stiffener is None:
+                return
             self.app = app
             self.active_line = app._active_line
             points = app._line_dict[self.active_line]
             coords = (app._point_dict['point'+str(points[0])], app._point_dict['point'+str(points[1])])
             self.pressure_coords = self.get_pressure_point_coord_from_two_points(coords[0], coords[1])
-            self._initial_structure_obj = app._line_to_struc[app._active_line][0]
+            self._initial_structure_obj = app._line_to_struc[app._active_line][0].Stiffener
             self.load_objects = app._line_to_struc[app._active_line][3]
 
             self.comp_objects = [app._tank_dict['comp'+str(comp_i)] for comp_i in

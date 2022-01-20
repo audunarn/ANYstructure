@@ -1,4 +1,5 @@
  # -*- coding: utf-8 -*-
+import copy
 import time, datetime
 import tkinter as tk
 from tkinter import ttk
@@ -786,29 +787,36 @@ class Application():
         self._flat_gui_lab_plate = [self._lab_span, self._lab_s, self._lab_pl_thk, self._lab_girder_length_LG,
                                     self._lab_gpanel_length_Lp]
 
+        self._btn_flat_stf_section = ttk.Button(self._tab_prop, text='Stiffener',
+                                                    command= lambda id= "flat stf": self.on_open_structure_window(id))
         self._ent_stf_type = ttk.OptionMenu(self._tab_prop, self._new_stf_type, 'T', *['T', 'FB', 'L', 'L-bulb'])
         self._ent_stf_web_h = ttk.Entry(self._tab_prop, textvariable=self._new_stf_web_h, width = int(10))
         self._ent_stf_web_t = ttk.Entry(self._tab_prop, textvariable=self._new_stf_web_t, width = int(10))
         self._ent_stf_fl_w = ttk.Entry(self._tab_prop, textvariable=self._new_stf_fl_w, width = int(10))
         self._ent_str_fl_t = ttk.Entry(self._tab_prop, textvariable=self._new_stf_fl_t, width = int(10))
 
+        self._lab_stf_section = ttk.Label(self._tab_prop, text='')
         self._lab_stf_type = ttk.Label(self._tab_prop, text='Stiffener/girder type')
         self._lab_web_h = ttk.Label(self._tab_prop, text='Web height, hw', )
         self._lab_web_thk = ttk.Label(self._tab_prop, text='Web thickness, tw', )
         self._lab_fl_w= ttk.Label(self._tab_prop, text='Flange width, b', )
         self._lab_fl_thk = ttk.Label(self._tab_prop, text='Flange thickeness, tf', )
 
-        self._flat_gui_stf = [self._ent_stf_type, self._ent_stf_web_h, self._ent_stf_web_t,
+        self._flat_gui_stf = [self._btn_flat_stf_section, self._ent_stf_type, self._ent_stf_web_h, self._ent_stf_web_t,
                               self._ent_stf_fl_w,self._ent_str_fl_t]
-        self._flat_gui_lab_stf = [self._lab_stf_type,self._lab_web_h,self._lab_web_thk, self._lab_fl_w,self._lab_fl_thk]
+        self._flat_gui_lab_stf = [self._lab_stf_section,self._lab_stf_type,self._lab_web_h,self._lab_web_thk,
+                                  self._lab_fl_w, self._lab_fl_thk]
 
+        self._btn_flat_girder_section = ttk.Button(self._tab_prop, text='Girder',
+                                                    command= lambda id= "flat girder": self.on_open_structure_window(id))
         self._ent_girder_type = ttk.OptionMenu(self._tab_prop, self._new_girder_type, 'T', *['T', 'FB', 'L', 'L-bulb'])
         self._ent_girder_web_h = ttk.Entry(self._tab_prop, textvariable=self._new_girder_web_h, width = int(10))
         self._ent_girder_web_t = ttk.Entry(self._tab_prop, textvariable=self._new_girder_web_t, width = int(10))
         self._ent_girder_fl_w = ttk.Entry(self._tab_prop, textvariable=self._new_girder_fl_w, width = int(10))
-        self._ent_str_fl_t = ttk.Entry(self._tab_prop, textvariable=self._new_girder_fl_t, width = int(10))
-        self._flat_gui_girder = [self._ent_girder_type, self._ent_girder_web_h, self._ent_girder_web_t,
-                              self._ent_girder_fl_w,self._ent_str_fl_t]
+        self._ent_girder_fl_t = ttk.Entry(self._tab_prop, textvariable=self._new_girder_fl_t, width = int(10))
+        self._flat_gui_girder = [self._btn_flat_girder_section, self._ent_girder_type, self._ent_girder_web_h,
+                                 self._ent_girder_web_t,
+                              self._ent_girder_fl_w,self._ent_girder_fl_t]
 
         self._ent_plate_kpp = ttk.Entry(self._tab_prop, textvariable=self._new_plate_kpp, width = int(5*1))
         self._ent_plate_kps = ttk.Entry(self._tab_prop, textvariable=self._new_stf_kps, width = int(5*1))
@@ -1045,12 +1053,12 @@ class Application():
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
             self._stf_button = tk.Button(self._tab_prop, image=photo,
-                                         command= lambda id= "flat long stf": self.on_open_structure_window(id))
+                                         command= self.on_open_structure_window)
             self._stf_button.image = photo
 
         except TclError:
             self._stf_button = tk.Button(self._tab_prop, text='STF.',
-                                         command= lambda id= "flat long stf": self.on_open_structure_window(id),
+                                         command= self.on_open_structure_window,
                                          bg=self._button_bg_color, fg=self._button_fg_color)
 
         try:
@@ -1087,8 +1095,6 @@ class Application():
                                                             'to the selected line. Sets all\n'
                                                             'basic structural information.', command=self.new_structure,
                                        style = "Bold.TButton")
-
-
 
 
         ''' Start shell input '''
@@ -1157,7 +1163,8 @@ class Application():
         self._lab_shell_long_stiffener =  ttk.Label(self._tab_prop, text='Longitudinal stiffener properties [mm]',
 
                                       )
-        self._btn_shell_stf_section_long_stf = ttk.Button(self._tab_prop, text='STF',command= lambda id= "long stf": self.on_open_structure_window(id))
+        self._btn_shell_stf_section_long_stf = ttk.Button(self._tab_prop, text='STF',
+                                                          command= lambda id= "long stf": self.on_open_structure_window(id))
 
         self._shell_long_stf_gui_items = [self._lab_shell_long_stiffener ,self._ent_stf_web_h, self._ent_stf_web_t,
                                           self._ent_stf_fl_w, self._ent_str_fl_t, self._ent_stf_spacing,
@@ -1761,11 +1768,11 @@ class Application():
                 pl_ent.place(relx=hor_start + 3*delta_x, rely=vert_start + idx * delta_y)
                 idx += 1
 
-            if flat_panel_stf_girder:
-                self._flat_gui_headlines[2].place(relx=hor_start + 5 * delta_x, rely=vert_start + idx * delta_y)
-            if flat_stf:
-                self._flat_gui_headlines[1].place(relx=hor_start + 3*delta_x, rely=vert_start + idx * delta_y)
-                idx += 1
+            # if flat_panel_stf_girder:
+            #     self._flat_gui_headlines[2].place(relx=hor_start + 5 * delta_x, rely=vert_start + idx * delta_y)
+            # if flat_stf:
+            #     self._flat_gui_headlines[1].place(relx=hor_start + 3*delta_x, rely=vert_start + idx * delta_y)
+            #     idx += 1
             for stf_lab, stf_ent, girder_ent in zip(self._flat_gui_lab_stf, self._flat_gui_stf, self._flat_gui_girder):
                 if flat_panel_stf_girder:
                     girder_ent.place(relx=hor_start + 5 * delta_x, rely=vert_start + idx * delta_y)
@@ -2681,15 +2688,6 @@ class Application():
                 all_obj.lat_press = design_pressure/1000
                 buckling = all_obj.plate_buckling()
 
-                # if current_line == 'line7':
-                #     print('Line:', current_line, 'Pressure', design_pressure/1000, buckling)
-                #     for key, val in self._line_to_struc[current_line][0].get_main_properties().items():
-                #         print(key, val)
-                #     buckling = all_obj.plate_buckling()
-                # else:
-                #     buckling =  {'Plate': {'Plate buckling': 0.6008375683848213}, 'Stiffener': {'Overpressure plate side': 0.1, 'Overpressure stiffener side': 0.1, 'Resistance between stiffeners': 0.8819819808767574, 'Shear capacity': 0.6480527944404696}, 'Girder': {'Overpressure plate side': 0, 'Overpressure girder side': 0, 'Shear capacity': 0}, 'Local buckling': {'stiffener': [410.06272278728085, 136.68757426242695], 'girder': [0, 0]}}
-
-
                 all_buckling_uf_list = list()
                 for buc_domain, domain_results in buckling.items():
                     for uf_text, uf_num in domain_results.items():
@@ -2798,11 +2796,17 @@ class Application():
                         if geo_problem:
                             loc_geom = 'red'
                         else:
-                            loc_label = 'Local geom req (PULS validity limits)' if \
-                                obj_scnt_calc_stf.get_puls_sp_or_up() == 'SP' else 'Geom. Req (PULS validity limits)'
+                            if obj_scnt_calc_stf is None:
+                                loc_label = 'Geom. Req (PULS validity limits)'
+                            else:
+                                loc_label = 'Local geom req (PULS validity limits)' if \
+                                    obj_scnt_calc_stf.get_puls_sp_or_up() == 'SP' else 'Geom. Req (PULS validity limits)'
                             loc_geom = 'green' if all([val[0] == 'Ok' for val in res[loc_label].values()]) else 'red'
-                        csr_label = 'CSR-Tank requirements (primary stiffeners)' if \
-                            obj_scnt_calc_stf.get_puls_sp_or_up() == 'SP' else'CSR-Tank req'
+                        if obj_scnt_calc_stf is None:
+                            csr_label = 'CSR-Tank req'
+                        else:
+                            csr_label = 'CSR-Tank requirements (primary stiffeners)' if \
+                                obj_scnt_calc_stf.get_puls_sp_or_up() == 'SP' else'CSR-Tank req'
 
                         csr_geom = 'green' if all([val[0] in ['Ok', '-'] for val in res[csr_label].values()]) else 'red'
                         return_dict['PULS colors'][current_line] = {'ultimate': col_ult, 'buckling': col_buc,
@@ -3890,6 +3894,23 @@ class Application():
                                              font=self._text_size["Text 10 bold"], fill='red')
 
 
+                if all([self._line_to_struc[self._active_line][0].Stiffener is None,
+                        self._line_to_struc[self._active_line][0].Girder is None]):
+                    structure_obj = self._line_to_struc[self._active_line][0].Plate
+                    spacing = structure_obj.get_s() * self._prop_canvas_scale * 3
+                    plate_thk = structure_obj.get_pl_thk() * self._prop_canvas_scale * 3
+                    startx = 20
+                    starty = 225
+                    self._prop_canvas.create_text([startx + 100, 50],
+                                                  text='Plate with thickness ' +
+                                                       str(structure_obj.get_pl_thk()*1000) + ' mm' ,
+                                                  font=self._text_size["Text 10 bold"], fill='Black')
+                    self._prop_canvas.create_rectangle(startx + spacing,
+                                                       starty,
+                                                       startx + spacing + spacing,
+                                                       starty - plate_thk,
+                                                       fill='grey', activefill='yellow')
+
                 for idx, structure_obj in enumerate([self._line_to_struc[self._active_line][0].Stiffener,
                                                      self._line_to_struc[self._active_line][0].Girder]):
                     mult = 1 if self._line_to_struc[self._active_line][0].Girder is not None else 2  # *(400/max_web)
@@ -4741,7 +4762,6 @@ class Application():
             elif toggle_multi is not None:
                 prop_dict = toggle_multi
             elif pasted_structure is None:
-
                 calc_dom = self._new_calculation_domain.get()
                 obj_dict = {'mat_yield': [self._new_material.get()*1e6, 'Pa'],
                             'mat_factor': [self._new_material_factor.get(), ''],
@@ -4781,7 +4801,7 @@ class Application():
                 obj_dict_girder['stf_web_height'] =  [self._new_girder_web_h.get()/1000, 'm']
                 obj_dict_girder['stf_web_thk'] = [self._new_girder_web_t.get() / 1000, 'm']
                 obj_dict_girder['stf_flange_width'] = [self._new_girder_fl_w.get() / 1000, 'm']
-                obj_dict_girder['stf_flange_thk]'] =  [self._new_girder_fl_t.get() / 1000, 'm']
+                obj_dict_girder['stf_flange_thk'] =  [self._new_girder_fl_t.get() / 1000, 'm'] # TODO thickenss not being set!
                 obj_dict_girder['stf_type'] = [self._new_girder_type.get(), '']
                 
                 main_dict = dict()
@@ -4960,6 +4980,7 @@ class Application():
             else:
                 prop_dict = pasted_structure.get_main_properties()
 
+
             if self._active_line not in self._line_to_struc.keys() :
                 self._line_to_struc[self._active_line] = [None, None, None, [None], {}, None]
                 # First entry
@@ -4999,7 +5020,6 @@ class Application():
                 #cdom = self._line_to_struc[self._active_line][0].calculation_domain
                 #prev_calc_obj = copy.deepcopy(self._line_to_struc[self._active_line][1])
                 prev_all_obj = copy.deepcopy(self._line_to_struc[self._active_line][0])
-
                 self._line_to_struc[self._active_line][0].set_main_properties(prop_dict)
 
                 if self._new_scale_stresses.get() and prev_all_obj.Plate.get_tuple() != \
@@ -6245,7 +6265,8 @@ class Application():
                 lines_prop['panel or shell'] = 'panel'
                 #lines_prop['tension field'] = 'allowed'
                 self._line_to_struc[line][0] = AllStructure(Plate=CalcScantlings(lines_prop),
-                                                            Stiffener=CalcScantlings(lines_prop),
+                                                            Stiffener=None if dom == 'Flat plate, unstiffened'
+                                                            else CalcScantlings(lines_prop),
                                                             Girder=None, main_dict=main_dict)
 
                 if imported['fatigue_properties'][line] is not None:
@@ -6782,10 +6803,10 @@ class Application():
                                           self._ent_shell_ring_stf_type, self._chk_shell_ring_frame_exclude,
                                           self._btn_shell_stf_section_ring_stf]
         '''
-        clicked_button = returned_structure[7] #["long stf", "ring stf", "ring frame", "flat long stf"]
+        clicked_button = returned_structure[7] #["long stf", "ring stf", "ring frame", "flat long stf", 'flat stf', 'flat girder']
 
 
-        if clicked_button in ["long stf", "flat long stf"]:
+        if clicked_button in ["long stf", "flat long stf", 'flat stf']:
             self._new_stf_spacing.set(returned_structure[0])
             self._new_plate_thk.set(returned_structure[1])
             self._new_stf_web_h.set(returned_structure[2])
@@ -6793,6 +6814,12 @@ class Application():
             self._new_stf_fl_w.set(returned_structure[4])
             self._new_stf_fl_t.set(returned_structure[5])
             self._new_stf_type.set(returned_structure[6])
+        elif clicked_button == 'flat girder':
+            self._new_girder_web_h.set(returned_structure[2])
+            self._new_girder_web_t.set(returned_structure[3])
+            self._new_girder_fl_w.set(returned_structure[4])
+            self._new_girder_fl_t.set(returned_structure[5])
+            self._new_girder_type.set(returned_structure[6])
         elif clicked_button == "ring stf":
             self._new_shell_ring_stf_hw.set(returned_structure[2])
             self._new_shell_ring_stf_tw.set(returned_structure[3])

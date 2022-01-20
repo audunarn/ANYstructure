@@ -2136,7 +2136,7 @@ class AllStructure():
         E = self._E / 1e6
         v = self._v
         G = E/(2*(1+v))
-        fy = self._yield
+        fy = self._yield/1e6
         gammaM = self._Plate.get_mat_factor()
         t = self._Plate.t
         s = self._Plate.s
@@ -2145,8 +2145,7 @@ class AllStructure():
 
         tsd = self._Plate.get_tau_xy() * self._stress_load_factor
         psd = self._lat_press
-        shear_ratio_long = 1
-        shear_ratio_trans = 1
+
 
         sig_x1 = self._Plate.get_sigma_x1() * self._stress_load_factor
         sig_x2 = self._Plate.get_sigma_x2() * self._stress_load_factor
@@ -2323,6 +2322,8 @@ class AllStructure():
                 mu = 0 if ie == 0 else (0.34 + 0.08 * zt / ie) * (alpha - 0.2)
             else:
                 fr = fy
+                if fE == 0:
+                    print('hi')
                 alpha = math.sqrt(fr / fE)
                 mu = 0 if ie == 0 else (0.34 + 0.08 * zp / ie) * (alpha - 0.2)
             fr_dict[lT] = fr
@@ -2377,6 +2378,7 @@ class AllStructure():
             max_uf_simp_stiffener = max([0,uf_7_60,uf_7_61]) if CHK_qSd_NSd else max([0,uf_7_60,uf_7_61, uf_7_62,uf_7_63])
             girder_data['UF Simplified girder side'] = max_uf_simp_stiffener
         else:
+            u = 0
             girder_data['UF Simplified girder side'] = 0
             girder_data['UF Simplified plate side'] = 0
             #7.7.1 Continuous stiffeners
@@ -4459,12 +4461,12 @@ if __name__ == '__main__':
     # print(my_cyl.get_utilization_factors())
 
     # Prescriptive buckling UPDATED
-    Plate = CalcScantlings(ex.obj_dict_L)
-    Stiffener = CalcScantlings(ex.obj_dict_L)
-    Girder = None#CalcScantlings(ex.obj_dict_heavy)
+    Plate = CalcScantlings(ex.obj_dict)
+    Stiffener = CalcScantlings(ex.obj_dict)
+    Girder = CalcScantlings(ex.obj_dict_heavy)
     PreBuc = AllStructure(Plate = Plate, Stiffener = Stiffener, Girder = Girder,
                                   main_dict=ex.prescriptive_main_dict)
-    PreBuc.lat_press = 0.321695
+    PreBuc.lat_press = 0.398986
     #print(Plate)
     # print(Plate)
     #print(Stiffener)

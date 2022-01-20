@@ -11,15 +11,16 @@ structure_types = {'vertical': ['BBS', 'SIDE_SHELL', 'SSS'],
                          'internals': ['INNER_SIDE', 'FRAME_WT', 'GENERAL_INTERNAL_WT',
                                        'INTERNAL_ZERO_STRESS_WT', 'INTERNAL_LOW_STRESS_WT']}
 
-obj_dict = {'mat_yield': [355e6, 'Pa'], 'mat_factor': [1.15, ''],'span': [3.6, 'm'], 'spacing': [0.75, 'm'],
+obj_dict = {'mat_yield': [355e6, 'Pa'], 'mat_factor': [1.15, ''],'span': [3.7, 'm'], 'spacing': [0.75, 'm'],
             'plate_thk': [0.018, 'm'],
             'stf_web_height': [0.4, 'm'], 'stf_web_thk': [0.012, 'm'], 'stf_flange_width': [0.25, 'm'],
-            'stf_flange_thk': [0.012, 'm'], 'structure_type': ['BOTTOM', ''], 'plate_kpp': [1, ''],
+            'stf_flange_thk': [0.014, 'm'], 'structure_type': ['BOTTOM', ''], 'plate_kpp': [1, ''],
             'stf_kps': [1, ''], 'stf_km1': [12, ''], 'stf_km2': [24, ''], 'stf_km3': [12, ''],
-            'sigma_y1': [100, 'MPa'], 'sigma_y2': [100, 'MPa'], 'sigma_x2': [101.5, 'MPa'], 'sigma_x1': [101.5, 'MPa'], 'tau_xy': [5, 'MPa'],
+            'sigma_y1': [100, 'MPa'], 'sigma_y2': [100, 'MPa'], 'sigma_x2': [102.7, 'MPa'], 'sigma_x1': [102.7, 'MPa'], 'tau_xy': [5, 'MPa'],
             'stf_type': ['T', ''], 'structure_types': [structure_types, ''], 'zstar_optimization': [True, ''],
             'puls buckling method':[1,''], 'puls boundary':['Int',''], 'puls stiffener end':['C',''],
-            'puls sp or up':['SP',''], 'puls up boundary' :['SSSS',''], 'panel or shell': ['panel', ''] }
+            'puls sp or up':['SP',''], 'puls up boundary' :['SSSS',''], 'panel or shell': ['panel', ''],
+            'pressure side': ['both sides', ''] }
 
 obj_dict_cyl_long = {'mat_yield': [355e6, 'Pa'], 'mat_factor': [1.15, ''],'span': [5, 'm'], 'spacing': [0.6, 'm'],
                     'plate_thk': [0.015, 'm'],
@@ -82,15 +83,16 @@ obj_dict_cyl_heavy_ring2 = {'mat_yield': [355e6, 'Pa'], 'mat_factor': [1.15, '']
                     'puls sp or up':['SP',''], 'puls up boundary' :['SSSS',''] , 'panel or shell': ['shell', ''] }
 
 
-obj_dict_heavy = {'mat_yield': [355e6, 'Pa'], 'mat_factor': [1.15, ''],'span': [4, 'm'], 'spacing': [0.75, 'm'],
-            'plate_thk': [0.015, 'm'],
-            'stf_web_height': [0.470, 'm'], 'stf_web_thk': [0.025, 'm'], 'stf_flange_width': [0.2, 'm'],
+obj_dict_heavy = {'mat_yield': [355e6, 'Pa'], 'mat_factor': [1.15, ''],'span': [3700, 'm'], 'spacing': [0.75, 'm'],
+            'plate_thk': [0.018, 'm'],
+            'stf_web_height': [0.800, 'm'], 'stf_web_thk': [0.020, 'm'], 'stf_flange_width': [0.2, 'm'],
             'stf_flange_thk': [0.03, 'm'], 'structure_type': ['BOTTOM', ''], 'plate_kpp': [1, ''],
             'stf_kps': [1, ''], 'stf_km1': [12, ''], 'stf_km2': [24, ''], 'stf_km3': [12, ''],
             'sigma_y1': [80, 'MPa'], 'sigma_y2': [80, 'MPa'], 'sigma_x2': [80, 'MPa'], 'sigma_x1': [80, 'MPa'], 'tau_xy': [5, 'MPa'],
             'stf_type': ['T', ''], 'structure_types': [structure_types, ''], 'zstar_optimization': [True, ''],
                   'puls buckling method':[2,''], 'puls boundary':['Int',''], 'puls stiffener end':['C',''],
-            'puls sp or up':['SP',''], 'puls up boundary' :['SSSS',''] }
+            'puls sp or up':['SP',''], 'puls up boundary' :['SSSS',''], 'panel or shell': ['panel', ''],
+            'pressure side': ['both sides', '']}
 
 obj_dict2 = {'mat_yield': [355e6, 'Pa'], 'mat_factor': [1.15, ''],'span': [4, 'm'], 'spacing': [0.7, 'm'],
             'plate_thk': [0.018, 'm'],
@@ -306,10 +308,10 @@ prescriptive_main_dict['km2']  = [24, '']  # 24
 prescriptive_main_dict['girder distance between lateral support']  = [None, '']
 prescriptive_main_dict['kgirder']  = [None, '']
 prescriptive_main_dict['panel length, Lp']  = [None, '']
-prescriptive_main_dict['pressure side']  = ['both', '']# either 'stiffener', 'plate', 'both'
+prescriptive_main_dict['pressure side']  = ['both sides', '']# either 'stiffener', 'plate', 'both'
 prescriptive_main_dict['fabrication method stiffener'] =  ['welded', '']
 prescriptive_main_dict['fabrication method girder'] =   ['welded', '']
-prescriptive_main_dict['calculation domain'] =   ['Flat plate, stiffened', '']
+prescriptive_main_dict['calculation domain'] = ['Flat plate, stiffened', '']
 
 def get_slamming_pressure():
     return 1000000

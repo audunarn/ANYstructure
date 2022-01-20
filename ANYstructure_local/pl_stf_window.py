@@ -36,16 +36,29 @@ class CreateStructureWindow():
                 # m = self._ent_section_list.children['menu']
                 # m.add_command(label=SecObj.__str__(), command=self.section_choose)
 
-            self._clicked_button = ["long stf", "ring stf", "ring frame", "flat long stf"][0]
+            self._clicked_button = ["long stf", "ring stf", "ring frame", "flat long stf", 'flat stf', 'flat girder'][0]
         else:
             self.app = app
+            self._clicked_button = app._clicked_section_create# if app._line_is_active else None
             try:
-                self._initial_structure_obj =  self.app._line_to_struc[app._active_line][0]
+                if self._clicked_button in ['flat stf', "flat long stf"]:
+                    self._initial_structure_obj =  self.app._line_to_struc[app._active_line][0].Stiffener
+                elif self._clicked_button == 'flat girder':
+                    self._initial_structure_obj = self.app._line_to_struc[app._active_line][5].Girder
+                elif self._clicked_button in ["long stf"]:
+                    self._initial_structure_obj =  self.app._line_to_struc[app._active_line][5].LongStfObj
+                elif self._clicked_button == "ring stf":
+                    self._initial_structure_obj = self.app._line_to_struc[app._active_line][5].RingStfObj
+                elif self._clicked_button == "ring frame":
+                    self._initial_structure_obj = self.app._line_to_struc[app._active_line][0].RingFrameObj
+                else:
+                    self._initial_structure_obj = None
+
             except KeyError:
                 self._initial_structure_obj = None
             self._section_list = [section.__str__() for section in app._sections]
             self._section_objects = app._sections
-            self._clicked_button = app._clicked_section_create if app._line_is_active else None
+
 
         image_dir = os.path.dirname(__file__) + '\\images\\'
         self._opt_runned = False
@@ -146,8 +159,6 @@ class CreateStructureWindow():
             self._new_web_thk.set(self._initial_structure_obj.get_web_thk()*1000)
             self._new_fl_w.set(self._initial_structure_obj.get_fl_w()*1000)
             self._new_fl_thk.set(self._initial_structure_obj.get_fl_thk()*1000)
-
-
         else:
             self._new_spacing.set(0)
             self._new_pl_thk.set(0)
@@ -209,7 +220,7 @@ class CreateStructureWindow():
             label.place(x=270, y=50)
         except TclError:
             pass
-
+        print(self._clicked_button )
         # Close and save depending on input
         # "long stf", "ring stf", "ring frame", "flat long stf"
         if self._clicked_button is not None:

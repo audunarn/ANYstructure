@@ -161,6 +161,7 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
     :return:
     '''
     initial_structure_obj.lat_press = lateral_pressure
+    print(type(initial_structure_obj))
 
     if predefiened_stiffener_iter is None:
         structure_to_check = any_get_all_combs(min_var, max_var, deltas)
@@ -799,7 +800,8 @@ def create_new_calc_obj(init_obj,x, fat_dict=None, fdwn = 1, fup = 0.5):
                  'puls boundary':[init_obj.get_puls_boundary(),''],
                  'puls stiffener end':[init_obj.get_puls_stf_end(),''],
                  'puls sp or up':[init_obj.get_puls_sp_or_up(),''],
-                 'puls up boundary':[init_obj.get_puls_up_boundary(),'']}
+                 'puls up boundary':[init_obj.get_puls_up_boundary(),''],
+                 'panel or shell': [init_obj.panel_or_shell, '']}
     if fat_dict == None:
         return calc.CalcScantlings(main_dict), None
     else:

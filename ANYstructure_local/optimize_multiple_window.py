@@ -3,6 +3,7 @@ import tkinter as tk
 from _tkinter import TclError
 from tkinter.ttk import Progressbar
 import ANYstructure_local.optimize as op
+import ANYstructure_local.calc_structure as calc
 import numpy as np
 import time, os
 from tkinter import messagebox
@@ -596,7 +597,7 @@ class CreateOptimizeMultipleWindow():
         counter = 0
         found_files = self._filez
         for line in self._active_lines:
-            init_obj = self._line_to_struc[line][1]
+            init_obj = self._line_to_struc[line][0]
 
             if __name__ == '__main__':
                 lateral_press = 200 #for testing
@@ -626,7 +627,7 @@ class CreateOptimizeMultipleWindow():
                                                           lateral_press,self.get_deltas(),
                                                           algorithm=self._new_algorithm.get(),
                                                           trials=self._new_algorithm_random_trials.get(),
-                                                          side=init_obj.get_side(),
+                                                          side=init_obj.Plate.get_side(),
                                                           const_chk=contraints,
                                                           pso_options=self.pso_parameters,
                                                           fatigue_obj=fat_obj,
@@ -691,7 +692,7 @@ class CreateOptimizeMultipleWindow():
                                          'fatigue pressure': input_pressures['fatigue pressure'],
                                          'fatigue object':input_pressures['fatigue object'],
                                          'slamming pressure':input_pressures['slamming pressure'],
-                                         'chk_calc_obj': self._opt_results[slave_line][1], 'ML-CL': [0,0],
+                                         'chk_calc_obj': self._opt_results[slave_line][0], 'ML-CL': [0,0],
                                          'fup': self._new_fup.get(), 'fdwn': self._new_fdwn.get()}
         iter_run_info['lines'] = list(self._opt_results.keys())
         iter_run_info['checks'] = to_check
@@ -713,13 +714,23 @@ class CreateOptimizeMultipleWindow():
                     chk_calc_obj = iter_run_info[slave_line]['chk_calc_obj']
                     master_x = list(x_and_info['x'])
                     if iter_run_info['keep spacing']:
-                        x = [chk_calc_obj.get_s()] + master_x[1:] + [chk_calc_obj.get_span(), chk_calc_obj.get_lg()]
+                        x = [chk_calc_obj.Plate.get_s()] + master_x[1:] + [chk_calc_obj.Plate.get_span(), chk_calc_obj.Plate.get_lg()]
                     else:
-                        x = master_x + [chk_calc_obj.get_span(), chk_calc_obj.get_lg()]
+                        x = master_x + [chk_calc_obj.Plate.get_span(), chk_calc_obj.Plate.get_lg()]
                     fdwn = self._new_fdwn.get()
                     fup = self._new_fdwn.get()
                     calc_object = op.create_new_calc_obj(chk_calc_obj, x, fat_obj.get_fatigue_properties(), fdwn=fdwn,
                                                          fup=fup)
+
+                    calc_object_stf = op.create_new_calc_obj(chk_calc_obj.Stiffener, x,
+                                                             fat_obj.get_fatigue_properties(), fdwn=fdwn, fup=fup)
+                    calc_object_pl = op.create_new_calc_obj(chk_calc_obj.Plate, x, fat_obj.get_fatigue_properties(),
+                                                            fdwn=fdwn, fup=fup)
+                    calc_object = [calc.AllStructure(Plate=calc_object_pl[0], Stiffener=calc_object_stf[0], Girder=None,
+                                                     main_dict=chk_calc_obj.get_main_properties()['main dict']),
+                                   calc_object_pl[1]]
+                    calc_object[0].lat_press = lateral_press
+
                     to_run.append((calc_object, x, lateral_press))
 
             # ML-CL to be used.
@@ -732,19 +743,18 @@ class CreateOptimizeMultipleWindow():
             for calc_object, x, lat_press in to_run:
                 idx_count += 1
 
-                if calc_object[0].get_puls_sp_or_up() == 'UP':
-                    if calc_object[0].get_puls_boundary() == 'Int':
-                        up_int.append(calc_object[0].get_buckling_ml_input(lat_press, alone=False))
+                if calc_object[0].Plate.get_puls_sp_or_up() == 'UP':
+                    if calc_object[0].Plate.get_puls_boundary() == 'Int':
+                        up_int.append(calc_object[0].Stiffener.get_buckling_ml_input(lat_press, alone=False))
                         up_int_idx.append(idx_count-1)
                     else:
-                        up_gl_gt.append(calc_object[0].get_buckling_ml_input(lat_press, alone=False))
                         up_gl_gt_idx.append(idx_count-1)
                 else:
-                    if calc_object[0].get_puls_boundary() == 'Int':
-                        sp_int.append(calc_object[0].get_buckling_ml_input(lat_press, alone=False))
+                    if calc_object[0].Stiffener.get_puls_boundary() == 'Int':
+                        sp_int.append(calc_object[0].Stiffener.get_buckling_ml_input(lat_press, alone=False))
                         sp_int_idx.append(idx_count-1)
                     else:
-                        sp_gl_gt.append(calc_object[0].get_buckling_ml_input(lat_press, alone=False))
+                        sp_gl_gt.append(calc_object[0].Stiffener.get_buckling_ml_input(lat_press, alone=False))
                         sp_gl_gt_idx.append(idx_count-1)
 
             # Predict
@@ -804,14 +814,20 @@ class CreateOptimizeMultipleWindow():
         if lowest_area != float('inf'):
             for line in self._opt_results.keys():
                 if self._keep_spacing:
-                    this_x = [self._line_to_struc[line][0].get_s()] + list(lowest_x)[1:] + \
-                             [self._line_to_struc[line][0].get_span(), self._line_to_struc[line][0].get_lg()]
+                    this_x = [self._line_to_struc[line][0].Plate.get_s()] + list(lowest_x)[1:] + \
+                             [self._line_to_struc[line][0].Plate.get_span(), self._line_to_struc[line][0].Plate.get_lg()]
                 else:
-                    this_x = list(lowest_x) + [self._line_to_struc[line][0].get_span(),
-                                               self._line_to_struc[line][0].get_lg()]
+                    this_x = list(lowest_x) + [self._line_to_struc[line][0].Plate.get_span(),
+                                               self._line_to_struc[line][0].Plate.get_lg()]
 
-                self._opt_results[line][0] = opt.create_new_structure_obj(self._line_to_struc[line][0], this_x)
-                self._opt_results[line][1] = opt.create_new_calc_obj(self._line_to_struc[line][1], this_x)[0]
+                calc_object_stf = op.create_new_calc_obj(self._line_to_struc[line][0].Plate, this_x,
+                                                         fat_obj.get_fatigue_properties(), fdwn=fdwn, fup=fup)
+                calc_object_pl = op.create_new_calc_obj(self._line_to_struc[line][0].Stiffener, this_x,
+                                                         fat_obj.get_fatigue_properties(), fdwn=fdwn, fup=fup)
+                self._opt_results[line][0] = [calc.AllStructure(Plate=calc_object_pl[0], Stiffener=calc_object_stf[0], Girder=None,
+                                                 main_dict=chk_calc_obj.get_main_properties()['main dict']),
+                               calc_object_pl[1]]
+
                 if self._line_to_struc[line][2] != None:
                     self._opt_results[line][2] = opt.create_new_calc_obj(init_obj= self._line_to_struc[line][1],
                                                                          x = this_x,
@@ -823,7 +839,7 @@ class CreateOptimizeMultipleWindow():
         else:
             for line in self._opt_results.keys():
                 self._opt_results[line][0] = None
-                self._opt_results[line][1] = None
+
             return False
 
     def opt_harmonizer(self):
@@ -839,10 +855,11 @@ class CreateOptimizeMultipleWindow():
                       self._new_check_fatigue.get(), self._new_check_slamming.get(),
                       self._new_check_local_buckling.get())
         for master_line in self._opt_results.keys():
-            master_obj = self._opt_results[master_line][1]
-            master_x = [master_obj.get_s(), master_obj.get_pl_thk(), master_obj.get_web_h(),
-                        master_obj.get_web_thk(), master_obj.get_fl_w(), master_obj.get_fl_thk(),
-                        master_obj.get_span(),master_obj.get_lg()]
+            master_obj = self._opt_results[master_line][0]
+            master_x = [master_obj.Plate.get_s(), master_obj.Plate.get_pl_thk(), master_obj.Stiffener.get_web_h(),
+                        master_obj.Stiffener.get_web_thk(), master_obj.Stiffener.get_fl_w(),
+                        master_obj.Stiffener.get_fl_thk(),
+                        master_obj.Plate.get_span(),master_obj.Plate.get_lg()]
             harm_res[master_line] = []
             for slave_line in self._opt_results.keys():
                 input_pressures = self.get_pressure_input(slave_line)
@@ -853,12 +870,14 @@ class CreateOptimizeMultipleWindow():
                 chk_calc_obj = self._opt_results[slave_line][1]
 
                 chk_result = list(op.run_optmizataion(chk_calc_obj,
-                                                      master_x[0:6]+[chk_calc_obj.get_span(),chk_calc_obj.get_lg()],
-                                                      master_x[0:6]+[chk_calc_obj.get_span(),chk_calc_obj.get_lg()],
+                                                      master_x[0:6]+[chk_calc_obj.Plate.get_span(),
+                                                                     chk_calc_obj.Plate.get_lg()],
+                                                      master_x[0:6]+[chk_calc_obj.Plate.get_span(),
+                                                                     chk_calc_obj.Plate.get_lg()],
                                                       lateral_press,self.get_deltas(),
                                                       algorithm=self._new_algorithm.get(),
                                                       trials=self._new_algorithm_random_trials.get(),
-                                                      side=chk_calc_obj.get_side(), const_chk=chk,
+                                                      side=chk_calc_obj.Plate.get_side(), const_chk=chk,
                                                       pso_options=self.pso_parameters,fatigue_obj=fat_obj,
                                                       fat_press_ext_int=fat_press, slamming_press=slamming_pressure,
                                                       predefined_stiffener_iter = None,
@@ -871,20 +890,28 @@ class CreateOptimizeMultipleWindow():
         harmonized_area, harmonized_line =float('inf'), None
         for master_line, all_slave_res in harm_res.items():
             if all([slave_line_res[-1] for slave_line_res in all_slave_res]):
-                master_obj = self._opt_results[master_line][1]
-                master_area = sum(op.get_field_tot_area([master_obj.get_s(), master_obj.get_pl_thk(),
-                                                         master_obj.get_web_h(), master_obj.get_web_thk(),
-                                                         master_obj.get_fl_w(), master_obj.get_fl_thk(),
-                                                         master_obj.get_span(),master_obj.get_lg()]))
+                master_obj = self._opt_results[master_line][0]
+                master_area = sum(op.get_field_tot_area([master_obj.Plate.get_s(), master_obj.Plate.get_pl_thk(),
+                                                         master_obj.Stiffener.get_web_h(), master_obj.Stiffener.get_web_thk(),
+                                                         master_obj.Stiffener.get_fl_w(), master_obj.Stiffener.get_fl_thk(),
+                                                         master_obj.Plate.get_span(),master_obj.Plate.get_lg()]))
                 if master_area < harmonized_area:
                     harmonized_area = master_area
                     harmonized_line = master_line
 
         if harmonized_area != 0 and harmonized_line is not None:
-            harmonized_x = self._opt_results[harmonized_line][1].get_tuple()
+            harmonized_x_pl = self._opt_results[harmonized_line][0].Plate.get_tuple()
+            harmonized_x_stf = self._opt_results[harmonized_line][0].Stiffener.get_tuple()
+            harmonized_x = harmonized_x_pl[0:2] + harmonized_x_stf[2:]
             for line in self._opt_results.keys():
                 self._opt_results[line][0] = opt.create_new_structure_obj(self._line_to_struc[line][0], harmonized_x)
-                self._opt_results[line][1] = opt.create_new_calc_obj(self._line_to_struc[line][1], harmonized_x)[0]
+
+                calc_object_stf = op.create_new_calc_obj(self._line_to_struc[line][0].Plate, harmonized_x)
+                calc_object_pl = op.create_new_calc_obj(self._line_to_struc[line][0].Stiffener,harmonized_x)
+                self._opt_results[line][0] = [calc.AllStructure(Plate=calc_object_pl[0], Stiffener=calc_object_stf[0],
+                                                                Girder=None, main_dict=chk_calc_obj.get_main_properties()['main dict']),
+                               calc_object_pl[1]]
+
                 if self._line_to_struc[line][2] != None:
                     self._opt_results[line][2] = opt.create_new_calc_obj(init_obj= self._line_to_struc[line][1],
                                                                          x = harmonized_x,
@@ -955,13 +982,13 @@ class CreateOptimizeMultipleWindow():
         :return: 
         '''
         if self._keep_spacing:
-            spacing = obj.get_s()
+            spacing = obj.Plate.get_s()
         else:
             spacing = self._new_spacing_lower.get() / 1000
         return np.array([spacing, self._new_pl_thk_upper.get() / 1000,
                          self._new_web_h_upper.get() / 1000, self._new_web_thk_upper.get() / 1000,
                          self._new_fl_w_upper.get() / 1000, self._new_fl_thk_upper.get() / 1000,
-                         obj.get_span(), obj.get_lg()])
+                         obj.Plate.get_span(), obj.Plate.get_lg()])
 
     def get_lower_bounds(self,obj):
         '''
@@ -969,13 +996,13 @@ class CreateOptimizeMultipleWindow():
         :return: 
         '''
         if self._keep_spacing:
-            spacing = obj.get_s()
+            spacing = obj.Plate.get_s()
         else:
             spacing = self._new_spacing_lower.get() / 1000
         return np.array([spacing, self._new_pl_thk_lower.get() / 1000,
                          self._new_web_h_lower.get() / 1000, self._new_web_thk_lower.get() / 1000,
                          self._new_fl_w_lower.get() / 1000, self._new_fl_thk_lower.get() / 1000,
-                         obj.get_span(), obj.get_lg()])
+                         obj.Plate.get_span(), obj.Plate.get_lg()])
 
     def checkered(self, line_distance):
         '''
@@ -1007,92 +1034,93 @@ class CreateOptimizeMultipleWindow():
 
             self._canvas_opt.create_rectangle(0, 0, self._prop_canvas_dim[0] + 10, 80, fill='white')
             self._canvas_opt.create_line(10, 10, 30, 10, fill=init_color, width=5)
-            self._canvas_opt.create_text(270, 10, text='Initial    - Pl.: ' + str(init_obj.get_s() * 1000) + 'x' + str(
-                init_obj.get_pl_thk() * 1000) +
-                                                      ' Stf.: ' + str(init_obj.get_web_h() * 1000) + 'x' + str(
-                init_obj.get_web_thk() * 1000) + '+' +
-                                                      str(init_obj.get_fl_w() * 1000) + 'x' + str(init_obj.get_fl_thk() * 1000),
+            self._canvas_opt.create_text(270, 10, text='Initial    - Pl.: ' + str(init_obj.Plate.get_s() * 1000) + 'x' + str(
+                init_obj.Plate.get_pl_thk() * 1000) +
+                                                      ' Stf.: ' + str(init_obj.Stiffener.get_web_h() * 1000) + 'x' + str(
+                init_obj.Stiffener.get_web_thk() * 1000) + '+' +
+                                                      str(init_obj.Stiffener.get_fl_w() * 1000) + 'x' +
+                                                       str(init_obj.Stiffener.get_fl_thk() * 1000),
                                         font='Verdana 8',
                                         fill=init_color)
             self._canvas_opt.create_text(120, 30, text='Weight (per Lg width): ' +
-                                                      str(int(op.calc_weight([init_obj.get_s(),
-                                                                              init_obj.get_pl_thk(),
-                                                                              init_obj.get_web_h(),
-                                                                              init_obj.get_web_thk(),
-                                                                              init_obj.get_fl_w(),
-                                                                              init_obj.get_fl_thk(),
-                                                                              init_obj.get_span(),
-                                                                              init_obj.get_lg()]))),
+                                                      str(int(op.calc_weight([init_obj.Plate.get_s(),
+                                                                              init_obj.Plate.get_pl_thk(),
+                                                                              init_obj.Stiffener.get_web_h(),
+                                                                              init_obj.Stiffener.get_web_thk(),
+                                                                              init_obj.Stiffener.get_fl_w(),
+                                                                              init_obj.Stiffener.get_fl_thk(),
+                                                                              init_obj.Stiffener.get_span(),
+                                                                              init_obj.Stiffener.get_lg()]))),
                                         font='Verdana 8', fill=init_color)
     
-            self._canvas_opt.create_rectangle(ctr_x - m * init_obj.get_s() / 2, ctr_y, ctr_x + m * init_obj.get_s() / 2,
-                                             ctr_y - m * init_obj.get_pl_thk(), fill=init_color, stipple=init_stipple)
-            self._canvas_opt.create_rectangle(ctr_x - m * init_obj.get_web_thk() / 2, ctr_y - m * init_obj.get_pl_thk(),
-                                             ctr_x + m * init_obj.get_web_thk() / 2, ctr_y - m * (init_obj.get_web_h() + init_obj.get_pl_thk())
+            self._canvas_opt.create_rectangle(ctr_x - m * init_obj.Plate.get_s() / 2, ctr_y, ctr_x + m * init_obj.Plate.get_s() / 2,
+                                             ctr_y - m * init_obj.Plate.get_pl_thk(), fill=init_color, stipple=init_stipple)
+            self._canvas_opt.create_rectangle(ctr_x - m * init_obj.Stiffener.get_web_thk() / 2, ctr_y - m * init_obj.Stiffener.get_pl_thk(),
+                                             ctr_x + m * init_obj.Stiffener.get_web_thk() / 2, ctr_y - m * (init_obj.Stiffener.get_web_h() + init_obj.Stiffener.get_pl_thk())
                                              , fill=init_color, stipple=init_stipple)
-            if init_obj.get_stiffener_type() not in ['L', 'L-bulb']:
-                self._canvas_opt.create_rectangle(ctr_x - m * init_obj.get_fl_w() / 2, ctr_y - m * (init_obj.get_pl_thk() + init_obj.get_web_h()),
-                                                 ctr_x + m * init_obj.get_fl_w() / 2,
-                                                 ctr_y - m * (init_obj.get_pl_thk() + init_obj.get_web_h() + init_obj.get_fl_thk()),
+            if init_obj.Stiffener.get_stiffener_type() not in ['L', 'L-bulb']:
+                self._canvas_opt.create_rectangle(ctr_x - m * init_obj.Stiffener.get_fl_w() / 2, ctr_y - m * (init_obj.Plate.get_pl_thk() + init_obj.Stiffener.get_web_h()),
+                                                 ctr_x + m * init_obj.Stiffener.get_fl_w() / 2,
+                                                 ctr_y - m * (init_obj.Plate.get_pl_thk() + init_obj.Stiffener.get_web_h() + init_obj.Stiffener.get_fl_thk()),
                                                  fill=init_color, stipple=init_stipple)
             else:
-                self._canvas_opt.create_rectangle(ctr_x - m * init_obj.get_web_thk() / 2,
-                                                 ctr_y - m * (init_obj.get_pl_thk() + init_obj.get_web_h()),
-                                                 ctr_x + m * init_obj.get_fl_w(),
-                                                 ctr_y - m * (init_obj.get_pl_thk() + init_obj.get_web_h() + init_obj.get_fl_thk()),
+                self._canvas_opt.create_rectangle(ctr_x - m * init_obj.Stiffener.get_web_thk() / 2,
+                                                 ctr_y - m * (init_obj.Plate.get_pl_thk() + init_obj.Stiffener.get_web_h()),
+                                                 ctr_x + m * init_obj.Stiffener.get_fl_w(),
+                                                 ctr_y - m * (init_obj.Plate.get_pl_thk() + init_obj.Stiffener.get_web_h() + init_obj.Stiffener.get_fl_thk()),
                                                  fill=init_color, stipple=init_stipple)
     
         if opt_obj != None:
             # [0.6, 0.012, 0.25, 0.01, 0.1, 0.01]
             self._canvas_opt.config(bg = 'palegreen')
-            self._canvas_opt.create_rectangle(ctr_x - m * opt_obj.get_s() / 2, ctr_y,
-                                             ctr_x + m * opt_obj.get_s() / 2,
-                                             ctr_y - m * opt_obj.get_pl_thk(), fill=opt_color,
+            self._canvas_opt.create_rectangle(ctr_x - m * opt_obj.Plate.get_s() / 2, ctr_y,
+                                             ctr_x + m * opt_obj.Plate.get_s() / 2,
+                                             ctr_y - m * opt_obj.Plate.get_pl_thk(), fill=opt_color,
                                              stipple=opt_stippe)
 
-            self._canvas_opt.create_rectangle(ctr_x - m * opt_obj.get_web_thk() / 2, ctr_y -
-                                             m * opt_obj.get_pl_thk(),
-                                             ctr_x + m * opt_obj.get_web_thk() / 2,
+            self._canvas_opt.create_rectangle(ctr_x - m * opt_obj.Stiffener.get_web_thk() / 2, ctr_y -
+                                             m * opt_obj.Plate.get_pl_thk(),
+                                             ctr_x + m * opt_obj.Stiffener.get_web_thk() / 2,
                                              ctr_y - m * (
-                                             opt_obj.get_web_h() + opt_obj.get_pl_thk())
+                                             opt_obj.Stiffener.get_web_h() + opt_obj.Plate.get_pl_thk())
                                              , fill=opt_color, stipple=opt_stippe)
             if init_obj.get_stiffener_type() not in ['L', 'L-bulb']:
-                self._canvas_opt.create_rectangle(ctr_x - m * opt_obj.get_fl_w() / 2, ctr_y
+                self._canvas_opt.create_rectangle(ctr_x - m * opt_obj.Stiffener.get_fl_w() / 2, ctr_y
                                                  - m * (
-                                                 opt_obj.get_pl_thk() + opt_obj.get_web_h()),
-                                                 ctr_x + m * opt_obj.get_fl_w() / 2, ctr_y -
+                                                 opt_obj.Plate.get_pl_thk() + opt_obj.Stiffener.get_web_h()),
+                                                 ctr_x + m * opt_obj.Stiffener.get_fl_w() / 2, ctr_y -
                                                  m * (
-                                                 opt_obj.get_pl_thk() + opt_obj.get_web_h() +
-                                                 opt_obj.get_fl_thk()),
+                                                 opt_obj.Plate.get_pl_thk() + opt_obj.Stiffener.get_web_h() +
+                                                 opt_obj.Stiffener.get_fl_thk()),
                                                  fill=opt_color, stipple=opt_stippe)
             else:
-                self._canvas_opt.create_rectangle(ctr_x - m * opt_obj.get_web_thk() / 2, ctr_y
+                self._canvas_opt.create_rectangle(ctr_x - m * opt_obj.Stiffener.get_web_thk() / 2, ctr_y
                                                  - m * (
-                                                 opt_obj.get_pl_thk() + opt_obj.get_web_h()),
-                                                 ctr_x + m * opt_obj.get_fl_w(), ctr_y -
+                                                 opt_obj.Plate.get_pl_thk() + opt_obj.Stiffener.get_web_h()),
+                                                 ctr_x + m * opt_obj.Stiffener.get_fl_w(), ctr_y -
                                                  m * (
-                                                 opt_obj.get_pl_thk() + opt_obj.get_web_h() +
-                                                 opt_obj.get_fl_thk()),
+                                                 opt_obj.Plate.get_pl_thk() + opt_obj.Stiffener.get_web_h() +
+                                                 opt_obj.Stiffener.get_fl_thk()),
                                                  fill=opt_color, stipple=opt_stippe)
 
             self._canvas_opt.create_line(10, 50, 30, 50, fill=opt_color, width=5)
             self._canvas_opt.create_text(270, 50,
                                         text='Optimized - Pl.: ' + str(round(opt_obj.get_s() * 1000,1)) + 'x' +
-                                             str(round(opt_obj.get_pl_thk() * 1000,1)) + ' Stf.: '
-                                             + str(round(opt_obj.get_web_h() * 1000,1)) +
-                                             'x' + str(round(opt_obj.get_web_thk() * 1000,1)) + '+' +
-                                             str(round(opt_obj.get_fl_w() * 1000,1)) +
-                                             'x' + str(round(opt_obj.get_fl_thk() * 1000,1)),
+                                             str(round(opt_obj.Plate.get_pl_thk() * 1000,1)) + ' Stf.: '
+                                             + str(round(opt_obj.Stiffener.get_web_h() * 1000,1)) +
+                                             'x' + str(round(opt_obj.Stiffener.get_web_thk() * 1000,1)) + '+' +
+                                             str(round(opt_obj.Stiffener.get_fl_w() * 1000,1)) +
+                                             'x' + str(round(opt_obj.Stiffener.get_fl_thk() * 1000,1)),
                                         font='Verdana 8', fill=opt_color)
             self._canvas_opt.create_text(120, 70, text='Weight (per Lg width): '
                                                       + str(int(op.calc_weight([opt_obj.get_s(),
                                                                                 opt_obj.get_pl_thk(),
-                                                                                opt_obj.get_web_h(),
-                                                                                opt_obj.get_web_thk(),
-                                                                                opt_obj.get_fl_w(),
-                                                                                opt_obj.get_fl_thk(),
-                                                                                opt_obj.get_span(),
-                                                                                opt_obj.get_lg()]))),
+                                                                                opt_obj.Stiffener.get_web_h(),
+                                                                                opt_obj.Stiffener.get_web_thk(),
+                                                                                opt_obj.Stiffener.get_fl_w(),
+                                                                                opt_obj.Stiffener.get_fl_thk(),
+                                                                                opt_obj.Plate.get_span(),
+                                                                                opt_obj.Plate.get_lg()]))),
                                         font='Verdana 8', fill=opt_color)
 
         elif self._opt_results != {}:
@@ -1383,7 +1411,7 @@ class CreateOptimizeMultipleWindow():
         else:
             to_return = {}
             for line in self._active_lines:
-                if self._opt_results[line][1] is not None:
+                if self._opt_results[line][0] is not None:
                     to_return[line] = self._opt_results[line]
                 else:
                     messagebox.showinfo(title='None in results, cannot return', message='None in results, c'
@@ -1405,7 +1433,7 @@ class CreateOptimizeMultipleWindow():
         '''
         if iterating:
             if found_files is not None:
-                predefined_structure = hlp.helper_read_section_file(files=found_files, obj=obj)
+                predefined_structure = hlp.helper_read_section_file(files=found_files, obj=obj.Plate)
         else:
             predefined_structure = None
             if self._toggle_btn.config('relief')[-1] == 'sunken':
