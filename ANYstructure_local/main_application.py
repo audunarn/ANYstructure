@@ -5033,6 +5033,7 @@ class Application():
                 self._line_to_struc[self._active_line][0].need_recalc = True
 
                 if self._line_to_struc[self._active_line][2] is not None:
+                    calc_dom = self._line_to_struc[self._active_line][0].calculation_domain
                     if calc_dom == 'Flat plate, unstiffened':
                         self._line_to_struc[self._active_line][2] = None
                     else:
@@ -5980,6 +5981,8 @@ class Application():
         self.update_frame()
         self._combination_slider.set(1)
         if self._line_is_active:
+            self._tabControl.select(self._tab_prop)
+
             try:
                 self.gui_load_combinations(self._combination_slider.get())
             except (KeyError, AttributeError):

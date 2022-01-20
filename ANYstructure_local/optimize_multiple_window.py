@@ -543,7 +543,7 @@ class CreateOptimizeMultipleWindow():
             slamming_pressure = self._slamming_pressure
             fat_obj = self._fatigue_object
         else:
-            lateral_press = self.app.get_highest_pressure(line)['normal'] / 1000
+            lateral_press = self.app.get_highest_pressure(line)['normal'] / 1e6
 
             fat_obj = self.app._line_to_struc[line][2]
             if fat_obj is not None:
@@ -636,10 +636,9 @@ class CreateOptimizeMultipleWindow():
                                                           predefined_stiffener_iter = predefined_stiffener_iter,
                                                           processes=self._new_processes.get(),
                                                           min_max_span=max_min_span, use_weight_filter=False,
-                                                               fdwn = self._new_fdwn.get(), fup = self._new_fdwn.get(),
-                                                               ml_algo=self._ML_buckling))
+                                                           fdwn = self._new_fdwn.get(), fup = self._new_fdwn.get(),
+                                                           ml_algo=self._ML_buckling))
             self._harmonizer_data[line] = {}
-
             counter += 1
             self.progress_count.set(counter)
             self.progress_bar.update_idletasks()
@@ -1084,7 +1083,7 @@ class CreateOptimizeMultipleWindow():
                                              ctr_y - m * (
                                              opt_obj.Stiffener.get_web_h() + opt_obj.Plate.get_pl_thk())
                                              , fill=opt_color, stipple=opt_stippe)
-            if init_obj.get_stiffener_type() not in ['L', 'L-bulb']:
+            if init_obj.Stiffener.get_stiffener_type() not in ['L', 'L-bulb']:
                 self._canvas_opt.create_rectangle(ctr_x - m * opt_obj.Stiffener.get_fl_w() / 2, ctr_y
                                                  - m * (
                                                  opt_obj.Plate.get_pl_thk() + opt_obj.Stiffener.get_web_h()),
@@ -1105,7 +1104,7 @@ class CreateOptimizeMultipleWindow():
 
             self._canvas_opt.create_line(10, 50, 30, 50, fill=opt_color, width=5)
             self._canvas_opt.create_text(270, 50,
-                                        text='Optimized - Pl.: ' + str(round(opt_obj.get_s() * 1000,1)) + 'x' +
+                                        text='Optimized - Pl.: ' + str(round(opt_obj.Plate.get_s() * 1000,1)) + 'x' +
                                              str(round(opt_obj.Plate.get_pl_thk() * 1000,1)) + ' Stf.: '
                                              + str(round(opt_obj.Stiffener.get_web_h() * 1000,1)) +
                                              'x' + str(round(opt_obj.Stiffener.get_web_thk() * 1000,1)) + '+' +
@@ -1113,8 +1112,8 @@ class CreateOptimizeMultipleWindow():
                                              'x' + str(round(opt_obj.Stiffener.get_fl_thk() * 1000,1)),
                                         font='Verdana 8', fill=opt_color)
             self._canvas_opt.create_text(120, 70, text='Weight (per Lg width): '
-                                                      + str(int(op.calc_weight([opt_obj.get_s(),
-                                                                                opt_obj.get_pl_thk(),
+                                                      + str(int(op.calc_weight([opt_obj.Plate.get_s(),
+                                                                                opt_obj.Plate.get_pl_thk(),
                                                                                 opt_obj.Stiffener.get_web_h(),
                                                                                 opt_obj.Stiffener.get_web_thk(),
                                                                                 opt_obj.Stiffener.get_fl_w(),

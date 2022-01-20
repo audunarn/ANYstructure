@@ -161,7 +161,6 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
     :return:
     '''
     initial_structure_obj.lat_press = lateral_pressure
-    print(type(initial_structure_obj))
 
     if predefiened_stiffener_iter is None:
         structure_to_check = any_get_all_combs(min_var, max_var, deltas)
@@ -194,11 +193,20 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
     else:
         ass_var = [round(item, 10) for item in ass_var[0:8]] + [ass_var[8]]
 
-    initial_structure_obj.Plate = create_new_structure_obj(initial_structure_obj.Plate, ass_var,
-                                                           fdwn = fdwn, fup = fup)
-    initial_structure_obj.Stiffener = create_new_structure_obj(initial_structure_obj.Stiffener, ass_var,
-                                                               fdwn=fdwn, fup=fup)
-    return initial_structure_obj, fat_dict, True, main_fail
+    # initial_structure_obj.Plate = create_new_structure_obj(initial_structure_obj.Plate, ass_var,
+    #                                                        fdwn = fdwn, fup = fup)
+    # initial_structure_obj.Stiffener = create_new_structure_obj(initial_structure_obj.Stiffener, ass_var,
+    #                                                            fdwn=fdwn, fup=fup)
+
+    calc_object_stf = create_new_calc_obj(initial_structure_obj.Stiffener, ass_var,
+                                             fat_dict, fdwn=fdwn, fup=fup)
+    calc_object_pl = create_new_calc_obj(initial_structure_obj.Plate, ass_var, fat_dict,
+                                            fdwn=fdwn, fup=fup)
+    calc_object = calc.AllStructure(Plate=calc_object_pl[0], Stiffener=calc_object_stf[0], Girder=None,
+                                     main_dict=initial_structure_obj.get_main_properties()['main dict'])
+    calc_object.lat_press = lateral_pressure
+
+    return calc_object, fat_dict, True, main_fail
 
 def any_smart_loop_cylinder(min_var,max_var,deltas,initial_structure_obj,lateral_pressure = None, init_filter = float('inf'),
                    side='p',const_chk=(True,True,True,True,True,True,True, False, False,False), fat_dict = None,
@@ -599,7 +607,6 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
 
     this_weight = calc_weight(x)
 
-
     if this_weight > init_weight:
         weigt_frac = this_weight / init_weight
         if print_result:
@@ -614,6 +621,7 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
         section_modulus = min(calc_object[0].Stiffener.get_section_modulus())
         min_section_modulus = calc_object[0].Stiffener.get_dnv_min_section_modulus(lat_press*1000)
         section_frac = section_modulus / min_section_modulus
+        #print(section_modulus, min_section_modulus, section_frac, lat_press)
         all_checks[1] = section_frac
         if not section_modulus > min_section_modulus :
             if print_result:
@@ -645,12 +653,14 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
                            'Shear capacity': girder_shear_capacity},
                 'Local buckling': local_buckling}
                 '''
-
         buckling_results = calc_object[0].plate_buckling(optimizing=True)
         res = [buckling_results['Plate']['Plate buckling'],]
         for val in buckling_results['Stiffener'].values():
             res.append(val)
+        for val in buckling_results['Girder'].values():
+            res.append(val)
         buckling_results = res
+        # print(buckling_results)
         all_checks[3] = max(buckling_results)
         if not all([uf<=1 for uf in buckling_results]):
             if print_result:
