@@ -1561,7 +1561,7 @@ class AllStructure():
                            max([unstf_pl['UF Longitudinal stress'],  unstf_pl['UF transverse stresses'],
                                 unstf_pl['UF Shear stresses'], unstf_pl['UF Combined stresses']])
                            if all([self._Girder is None, self._Stiffener is None]) else 0])
-        if optimizing and up_buckling > 0:
+        if optimizing and up_buckling > 1:
             return_dummy['Plate']['Plate buckling'] = up_buckling
             return return_dummy
 
@@ -1606,7 +1606,7 @@ class AllStructure():
                 'Girder': {'Overpressure plate side': girder_buckling_pl_side,
                            'Overpressure girder side': girder_buckling_girder_side,
                            'Shear capacity': girder_shear_capacity},
-                'Local buckling': local_buckling}
+                'Local buckling': 0 if optimizing else local_buckling}
 
     def unstiffened_plate_buckling(self, optimizing = False):
 
@@ -1860,14 +1860,10 @@ class AllStructure():
                 ci = 0 if t == 0 else 1-s / 120 / t
             else:
                 ci = 0
-            try:
-                Cys = math.sqrt(1 - math.pow(sysd / syR, 2) + ci * ((sxsd * sysd) / (Cxs * fy * syR)))
-            except ValueError:
-                print(self._Stiffener)
-                print(self._Plate)
-                print(1,sysd,syR,ci,sxsd,sysd,Cxs,syR)
 
-                Cys = math.sqrt(1 - math.pow(sysd / syR, 2) + ci * ((sxsd * sysd) / (Cxs * fy * syR)))
+            cys_chk = 1 - math.pow(sysd / syR, 2) + ci * ((sxsd * sysd) / (Cxs * fy * syR))
+            Cys =0 if cys_chk < 0 else math.sqrt(cys_chk)
+
             stf_pl_data['Cys_comp'] = Cys
 
         se_div_s = Cxs * Cys
