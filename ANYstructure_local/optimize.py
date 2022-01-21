@@ -198,12 +198,15 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
     # initial_structure_obj.Stiffener = create_new_structure_obj(initial_structure_obj.Stiffener, ass_var,
     #                                                            fdwn=fdwn, fup=fup)
 
-    calc_object_stf = create_new_calc_obj(initial_structure_obj.Stiffener, ass_var,
+    calc_object_stf = None if initial_structure_obj.Stiffener is None \
+        else create_new_calc_obj(initial_structure_obj.Stiffener, ass_var,
                                              fat_dict, fdwn=fdwn, fup=fup)
     calc_object_pl = create_new_calc_obj(initial_structure_obj.Plate, ass_var, fat_dict,
                                             fdwn=fdwn, fup=fup)
-    calc_object = calc.AllStructure(Plate=calc_object_pl[0], Stiffener=calc_object_stf[0], Girder=None,
-                                     main_dict=initial_structure_obj.get_main_properties()['main dict'])
+    calc_object = calc.AllStructure(Plate=calc_object_pl[0],
+                                    Stiffener=None if initial_structure_obj.Stiffener is None else calc_object_stf[0],
+                                    Girder=None,
+                                    main_dict=initial_structure_obj.get_main_properties()['main dict'])
     calc_object.lat_press = lateral_pressure
 
     return calc_object, fat_dict, True, main_fail
@@ -572,9 +575,10 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
 
     all_checks = [0,0,0,0,0,0,0,0,0,0,0]
     print_result = False
-    calc_object_stf = create_new_calc_obj(obj.Stiffener, x, fat_dict, fdwn = fdwn, fup = fup)
+    calc_object_stf = None if obj.Stiffener is None else create_new_calc_obj(obj.Stiffener, x, fat_dict, fdwn = fdwn, fup = fup)
     calc_object_pl = create_new_calc_obj(obj.Plate, x, fat_dict, fdwn=fdwn, fup=fup)
-    calc_object = [calc.AllStructure(Plate=calc_object_pl[0], Stiffener=calc_object_stf[0], Girder=None,
+    calc_object = [calc.AllStructure(Plate=calc_object_pl[0],
+                                     Stiffener=None if obj.Stiffener is None else calc_object_stf[0], Girder=None,
                                      main_dict=obj.get_main_properties()['main dict']), calc_object_pl[1]]
     calc_object[0].lat_press = lat_press
 
@@ -617,7 +621,7 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
         return False, 'Weight filter', x, all_checks
 
     # Section modulus
-    if chk[0]:
+    if chk[0] and calc_object[0].Stiffener is not None:
         section_modulus = min(calc_object[0].Stiffener.get_section_modulus())
         min_section_modulus = calc_object[0].Stiffener.get_dnv_min_section_modulus(lat_press*1000)
         section_frac = section_modulus / min_section_modulus
@@ -630,7 +634,7 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
 
 
     # Local stiffener buckling
-    if chk[6]:
+    if chk[6] and calc_object[0].Stiffener is not None:
         buckling_local = calc_object[0].local_buckling(optimizing=True)
         check = all([buckling_local['Stiffener'][0] < calc_object[0].Stiffener.hw,
                      buckling_local['Stiffener'][1] < calc_object[0].Stiffener.b])
@@ -657,8 +661,8 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
         res = [buckling_results['Plate']['Plate buckling'],]
         for val in buckling_results['Stiffener'].values():
             res.append(val)
-        for val in buckling_results['Girder'].values():
-            res.append(val)
+        # for val in buckling_results['Girder'].values():
+        #     res.append(val)
         buckling_results = res
         # print(buckling_results)
         all_checks[3] = max(buckling_results)
@@ -704,7 +708,7 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
 
     # Slamming
 
-    if chk[5] and slamming_press != 0:
+    if chk[5] and slamming_press != 0 and calc_object[0].Stiffener is not None:
         slam_check = calc_object[0].Stiffener.check_all_slamming(slamming_press)
         all_checks[7] = slam_check[1]
         if slam_check[0] is False:

@@ -1389,7 +1389,7 @@ class Application():
                                                anchor=tk.NW)
         self._ent_calculation_domain.place(rely=prop_vert_start, relx=types_start + delta_x*5)
 
-        self.gui_structural_properties() # Initiating the flat panel structural properties
+
 
         # --- Compartment/tank load input and information ---
         load_vert_start = 0.05#frame_horizontal -0.03
@@ -1640,10 +1640,18 @@ class Application():
                                            style = "Bold.TButton")
         self._opt_button_span.place(relx=lc_x + 0.167,rely=lc_y - 6 * lc_y_delta, relheight = 0.04,
                                     relwidth = 0.04)
-        self._optimization_buttons = {'panel': [self._opt_button, self._opt_button_mult, self._opt_button_span],
-                                   'panel place': [[lc_x, lc_y - 6 * lc_y_delta, 0.04, 0.098],
+
+
+        self._optimization_buttons = {'Flat plate, stiffened': [self._opt_button, self._opt_button_mult,
+                                                                self._opt_button_span],
+                                      'Flat plate, stiffened place': [[lc_x, lc_y - 6 * lc_y_delta, 0.04, 0.098],
                                                    [lc_x+0.1, lc_y - 6 * lc_y_delta, 0.04, 0.065],
                                                    [lc_x + 0.167, lc_y - 6 * lc_y_delta, 0.04, 0.04]],
+                                      'Flat plate, unstiffened': [],
+                                      'Flat plate, unstiffened place': [],
+                                      'Flat plate, stiffened with girder': [],
+                                      'Flat plate, stiffened with girder place': [],
+
                                    'cylinder': [self._opt_cylinder],
                                    'cylinder place' : [[lc_x, lc_y - 6 * lc_y_delta, 0.04, 0.175]]}
 
@@ -1664,10 +1672,12 @@ class Application():
         self._weight_button = ttk.Button(self._main_fr, text='Weights',
                                                   command=self.on_plot_cog_dev,style = "Bold.TButton")
         self._weight_button.place(relx=0.9525,rely=0.7, relwidth = 0.038)
-
+        self.gui_structural_properties()  # Initiating the flat panel structural properties
         self.set_colors('default')  # Setting colors theme
+        self._current_theme = 'default'
 
     def set_colors(self, theme):
+        self._current_theme = theme
         if theme == 'light':
             self._general_color = 'alice blue'
             self._color_text = 'black'
@@ -1768,11 +1778,6 @@ class Application():
                 pl_ent.place(relx=hor_start + 3*delta_x, rely=vert_start + idx * delta_y)
                 idx += 1
 
-            # if flat_panel_stf_girder:
-            #     self._flat_gui_headlines[2].place(relx=hor_start + 5 * delta_x, rely=vert_start + idx * delta_y)
-            # if flat_stf:
-            #     self._flat_gui_headlines[1].place(relx=hor_start + 3*delta_x, rely=vert_start + idx * delta_y)
-            #     idx += 1
             for stf_lab, stf_ent, girder_ent in zip(self._flat_gui_lab_stf, self._flat_gui_stf, self._flat_gui_girder):
                 if flat_panel_stf_girder:
                     girder_ent.place(relx=hor_start + 5 * delta_x, rely=vert_start + idx * delta_y)
@@ -1839,6 +1844,18 @@ class Application():
                 idx += 1
 
             self._puls_run_all.place(relx=hor_start + 6 * delta_x, rely=vert_start + (idx-2) * delta_y)
+
+            # optimize buttons
+
+            for dom in ['Flat plate, unstiffened', 'Flat plate, stiffened', 'Flat plate, stiffened with girder',
+                        'cylinder']:
+                for btn, placement in zip(self._optimization_buttons[dom],
+                                          self._optimization_buttons[dom + ' place']):
+                    btn.place_forget()
+
+            for btn, placement in zip(self._optimization_buttons[self._new_calculation_domain.get()],
+                                      self._optimization_buttons[self._new_calculation_domain.get() + ' place']):
+                btn.place(relx=placement[0], rely=placement[1], relheight=placement[2], relwidth=placement[3])
 
         if shell:
             '''
@@ -1966,6 +1983,7 @@ class Application():
                 self._ent_shell_fab_ring_stf.place(relx = hor_start + 6  * delta_x,
                                                    rely=ent_geo_y + delta_y*4, relwidth=geo_ent_width*1.9)
                 other_count += 1
+
             if ring_frame:
                 self._lab_shell_fab_frame.place(relx=hor_start + 4  * delta_x,
                                                    rely=ent_geo_y + delta_y*5)
@@ -2021,6 +2039,16 @@ class Application():
                 lab.place(relx=hor_start + 2.5*delta_x,
                           rely=ent_geo_y + (idx+1)*delta_y)
                 self._unit_informations_dimensions.append(lab)
+
+            for dom in ['Flat plate, unstiffened', 'Flat plate, stiffened', 'Flat plate, stiffened with girder']:
+                for btn, placement in zip(self._optimization_buttons[dom],
+                                          self._optimization_buttons[dom + ' place']):
+                    btn.place_forget()
+
+            for btn, placement in zip(self._optimization_buttons['cylinder'],
+                                      self._optimization_buttons['cylinder' + ' place']):
+                btn.place(relx=placement[0], rely=placement[1], relheight=placement[2], relwidth=placement[3])
+
 
     def calculation_domain_selected(self, event = None):
         '''
@@ -4104,25 +4132,25 @@ class Application():
                 self._result_canvas.create_text([x+0*dx, (y+0*dy)*1],
                                                 text= 'Special provisions - DNV-OS-C101 - checks for section, '
                                                       'web thickness and plate thickness.',
-                                                font=self._text_size["Text 9 bold"],anchor='nw', fill='Black')
+                                                font=self._text_size["Text 9 bold"],anchor='nw', fill=self._color_text)
                 self._result_canvas.create_text([x+0*dx, (y+2*dy)*1],
                                                 text= 'Section modulus check',
-                                                font=self._text_size["Text 9"],anchor='nw', fill='Black')
+                                                font=self._text_size["Text 9"],anchor='nw', fill=self._color_text)
                 self._result_canvas.create_text([x+0*dx, (y+3*dy)*1],
                                                 text= 'Shear area check',
-                                                font=self._text_size["Text 9"],anchor='nw', fill='Black')
+                                                font=self._text_size["Text 9"],anchor='nw', fill=self._color_text)
                 self._result_canvas.create_text([x+0*dx, (y+4*dy)*1],
                                                 text= 'Plate thickness check',
-                                                font=self._text_size["Text 9"],anchor='nw', fill='Black')
+                                                font=self._text_size["Text 9"],anchor='nw', fill=self._color_text)
                 self._result_canvas.create_text([x + x1*dx, (y+1*dy)*1],
                                                 text= 'Minimum value',
-                                                font=self._text_size["Text 9"],anchor='nw', fill='Black')
+                                                font=self._text_size["Text 9"],anchor='nw', fill=self._color_text)
                 self._result_canvas.create_text([x+ x2*dx, (y+1*dy)*1],
                                                 text= 'Actual value',
-                                                font=self._text_size["Text 9"],anchor='nw', fill='Black')
+                                                font=self._text_size["Text 9"],anchor='nw', fill=self._color_text)
                 self._result_canvas.create_text([x+ x3*dx, (y+1*dy)*1],
                                                 text= 'Accepted?',
-                                                font=self._text_size["Text 9"],anchor='nw', fill='Black')
+                                                font=self._text_size["Text 9"],anchor='nw', fill=self._color_text)
 
                 if state['slamming'][current_line]['state'] and slm_text_min_zpl is False:
                     text = '(shear issue, change thickness or web height)'
@@ -4262,24 +4290,24 @@ class Application():
 
                     self._result_canvas.create_text([x + dx*0, (y+(start_y+2)*dy) * 1],
                                                text='Overpressure plate side',font=self._text_size["Text 9"],
-                                               anchor='nw',fill='black')
+                                               anchor='nw',fill=self._color_text)
                     self._result_canvas.create_text([x + dx*0, (y+(start_y+3)*dy) * 1],
                                                text='Overpressure stiffener side',font=self._text_size["Text 9"],
-                                               anchor='nw',fill='black')
+                                               anchor='nw',fill=self._color_text)
                     self._result_canvas.create_text([x + dx*0, (y+(start_y+4)*dy) * 1],
                                                text='Resistance between stiffeners',font=self._text_size["Text 9"],
-                                               anchor='nw',fill='black')
+                                               anchor='nw',fill=self._color_text)
                     self._result_canvas.create_text([x + dx*0, (y+(start_y+5)*dy) * 1],
                                                text='Shear capacity',font=self._text_size["Text 9"],
-                                               anchor='nw',fill='black')
+                                               anchor='nw',fill=self._color_text)
                     self._result_canvas.create_text([x + dx*0, (y+(start_y+6)*dy) * 1],
                                                text='Maximum web height [mm]',
                                                     font=self._text_size["Text 9"],
-                                               anchor='nw',fill='black')
+                                               anchor='nw',fill=self._color_text)
                     self._result_canvas.create_text([x + dx*0, (y+(start_y+7)*dy) * 1],
                                                text='Maximum flange width [mm]',
                                                     font=self._text_size["Text 9"],
-                                               anchor='nw',fill='black')
+                                               anchor='nw',fill=self._color_text)
 
                     #'Local buckling'
                     x1, x2, x3 = 15,25,35
@@ -4325,12 +4353,12 @@ class Application():
                     self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+6)*dy) * 1],
                                                text=str(stfweb),
                                                     font=self._text_size["Text 9"],
-                                               anchor='nw',fill='black' if obj_scnt_calc_stf is None else 'red'
+                                               anchor='nw',fill=self._color_text if obj_scnt_calc_stf is None else 'red'
                                                     if obj_scnt_calc_stf.hw > stfweb else 'green')
                     self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+7)*dy) * 1],
                                                text=str(stffl),
                                                     font=self._text_size["Text 9"],
-                                               anchor='nw',fill='black' if obj_scnt_calc_stf is None else 'red'
+                                               anchor='nw',fill=self._color_text if obj_scnt_calc_stf is None else 'red'
                                                     if obj_scnt_calc_stf.b > stffl else 'green')
                     x_mult = x3
                     self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+2)*dy) * 1],
@@ -4351,11 +4379,13 @@ class Application():
                     self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+6)*dy) * 1],
                                                text=str(gweb),
                                                     font=self._text_size["Text 9"],
-                                               anchor='nw',fill='black' if obj_scnt_calc_girder is None else 'red' if obj_scnt_calc_girder.hw > gweb else 'green')
+                                               anchor='nw',fill=self._color_text if obj_scnt_calc_girder is None else
+                        'red' if obj_scnt_calc_girder.hw > gweb else 'green')
                     self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+7)*dy) * 1],
                                                text=str(gfl),
                                                     font=self._text_size["Text 9"],
-                                               anchor='nw',fill='black' if obj_scnt_calc_girder is None else 'red' if obj_scnt_calc_girder.b > gfl else 'green')
+                                               anchor='nw',fill=self._color_text if obj_scnt_calc_girder is None else
+                        'red' if obj_scnt_calc_girder.b > gfl else 'green')
 
                     #
                     # self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+7)*dy) * 1],
@@ -4366,15 +4396,15 @@ class Application():
 
                 elif self._new_buckling_method.get() == 'ML-CL (PULS based)':
 
-                    self._result_canvas.create_text([x * 1, (y + 9 * dy) * 1],
+                    self._result_canvas.create_text([x * 1, (y+(start_y+0)*dy) * 1],
                                                     text='Buckling results ANYstructure ML algorithm:',
                                                     font=self._text_size["Text 9 bold"], anchor='nw',
                                                     fill = self._color_text)
-                    self._result_canvas.create_text([x * 1, (y + 10 * dy) * 1],
+                    self._result_canvas.create_text([x * 1, (y+(start_y+1)*dy) * 1],
                                                     text='Buckling: ' + self._ML_classes[state['ML buckling class'][current_line]['buckling']],
                                                     font=self._text_size["Text 9 bold"],
                                                     anchor='nw', fill=state['ML buckling colors'][current_line]['buckling'])
-                    self._result_canvas.create_text([x * 1, (y + 11 * dy) * 1],
+                    self._result_canvas.create_text([x * 1, (y+(start_y+2)*dy) * 1],
                                                     text='Ultimate: ' +self._ML_classes[state['ML buckling class'][current_line]['ultimate']],
                                                     font=self._text_size["Text 9 bold"],
                                                     anchor='nw', fill=state['ML buckling colors'][current_line]['ultimate'])
@@ -4382,7 +4412,7 @@ class Application():
                         csr = state['ML buckling class'][current_line]['CSR']
                         csr_str = ['Ok' if csr[0] == 1 else 'Not ok', 'Ok' if csr[1] == 1 else 'Not ok',
                                    'Ok' if csr[2] == 1 else 'Not ok', 'Ok' if csr[3] == 1 else 'Not ok']
-                        self._result_canvas.create_text([x * 1, (y + 12.5 * dy) * 1],
+                        self._result_canvas.create_text([x * 1, (y+(start_y+3)*dy) * 1],
                                                         text='CSR requirements (stiffener):  plate-'+ csr_str[0]+ ' web-'+
                                                              csr_str[1] + ' web/flange ratio-'+ csr_str[2] +
                                                              ' flange-'+ csr_str[3] ,
@@ -4392,7 +4422,7 @@ class Application():
                     else:
                         csr = state['ML buckling class'][current_line]['CSR']
                         csr_str = 'Ok' if csr[0] == 1 else 'Not ok'
-                        self._result_canvas.create_text([x * 1, (y + 12.5 * dy) * 1],
+                        self._result_canvas.create_text([x * 1, (y+(start_y+3)*dy) * 1],
                                                         text='CSR requirements (stiffener):  Plate slenderness -'+
                                                              csr_str,
                                                         font=self._text_size["Text 9"],
@@ -6000,9 +6030,11 @@ class Application():
                 self._new_shell_exclude_ring_frame.set(self._line_to_struc[self._active_line][5]._ring_frame_excluded)
                 self.calculation_domain_selected()
                 # Setting the correct optmization buttons
-                for btn, placement in zip(self._optimization_buttons['panel'],
-                                          self._optimization_buttons['panel place']):
-                    btn.place_forget()
+                #'Flat plate, unstiffened', 'Flat plate, stiffened', 'Flat plate, stiffened with girder'
+                for dom in ['Flat plate, unstiffened', 'Flat plate, stiffened', 'Flat plate, stiffened with girder']:
+                    for btn, placement in zip(self._optimization_buttons[dom],
+                                              self._optimization_buttons[dom + ' place']):
+                        btn.place_forget()
                 for btn, placement in zip(self._optimization_buttons['cylinder'],
                                           self._optimization_buttons['cylinder place']):
 
@@ -6011,12 +6043,13 @@ class Application():
             else:
                 self._new_calculation_domain.set(self._line_to_struc[self._active_line][0].calculation_domain)
                 self.calculation_domain_selected()
-
+                dom = self._line_to_struc[self._active_line][0].calculation_domain
                 for btn, placement in zip(self._optimization_buttons['cylinder'],
                                           self._optimization_buttons['cylinder place']):
                     btn.place_forget()
-                for btn, placement in zip(self._optimization_buttons['panel'],
-                                          self._optimization_buttons['panel place']):
+
+                for btn, placement in zip(self._optimization_buttons[dom],
+                                          self._optimization_buttons[dom + ' place']):
                     btn.place(relx = placement[0], rely= placement[1],relheight = placement[2], relwidth = placement[3] )
 
     def button_1_click_comp_box(self,event):
@@ -6149,6 +6182,7 @@ class Application():
         export_all = {}
 
         export_all['project information'] = self._project_information.get('1.0', tk.END)
+        export_all['theme'] = self._current_theme
         export_all['point_dict'] = self._point_dict
         export_all['line_dict'] = self._line_dict
         export_all['structure_properties'] = structure_properties
@@ -6204,6 +6238,9 @@ class Application():
             self._new_shift_viz_coord_ver.set(imported['shifting']['shift ver'])
         else:
             pass
+
+        if 'theme' in imported.keys():
+            self.set_colors(imported['theme'])
 
         self._point_dict = imported['point_dict']
         self._line_dict = imported['line_dict']

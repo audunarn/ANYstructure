@@ -22,7 +22,7 @@ class CreateOptimizeWindow():
         if __name__ == '__main__':
             import pickle
             Plate = CalcScantlings(ex.obj_dict)
-            Stiffener = CalcScantlings(ex.obj_dict)
+            Stiffener = None#CalcScantlings(ex.obj_dict)
             Girder = None  # CalcScantlings(ex.obj_dict_heavy)
             self._initial_calc_obj  = AllStructure(Plate=Plate, Stiffener=Stiffener, Girder=Girder,
                                   main_dict=ex.prescriptive_main_dict)
@@ -138,12 +138,20 @@ class CreateOptimizeWindow():
 
         tk.Label(self._frame,text='-- Structural optimizer --',font='Verdana 15 bold').place(x=10,y=10)
 
-        self._spacing = self._initial_calc_obj.Stiffener.get_s()
-        self._pl_thk = self._initial_calc_obj.Plate.get_pl_thk()
-        self._stf_web_h = self._initial_calc_obj.Stiffener.get_web_h()
-        self._stf_web_thk =self._initial_calc_obj.Stiffener.get_web_thk()
-        self._fl_w = self._initial_calc_obj.Stiffener.get_fl_w()
-        self._fl_thk =self._initial_calc_obj.Stiffener.get_fl_thk()
+        if self._initial_calc_obj.Stiffener is not None:
+            self._spacing = self._initial_calc_obj.Plate.get_s()
+            self._pl_thk = self._initial_calc_obj.Plate.get_pl_thk()
+            self._stf_web_h = self._initial_calc_obj.Stiffener.get_web_h()
+            self._stf_web_thk =self._initial_calc_obj.Stiffener.get_web_thk()
+            self._fl_w = self._initial_calc_obj.Stiffener.get_fl_w()
+            self._fl_thk =self._initial_calc_obj.Stiffener.get_fl_thk()
+        else:
+            self._spacing = self._initial_calc_obj.Plate.get_s()
+            self._pl_thk = self._initial_calc_obj.Plate.get_pl_thk()
+            self._stf_web_h = 0
+            self._stf_web_thk =0
+            self._fl_w = 0
+            self._fl_thk =0
 
         # upper and lower bounds for optimization
         #[0.6, 0.012, 0.3, 0.01, 0.1, 0.01]
@@ -441,11 +449,13 @@ class CreateOptimizeWindow():
         self._new_web_h_lower.set(round(max(self._stf_web_h*1000-100,100),5))
         self._new_web_thk_upper.set(round(self._stf_web_thk*1000+10,5))
         self._new_web_thk_lower.set(round(max(self._stf_web_thk*1000-10,float(10)),5))
-        if self._initial_calc_obj.Stiffener.get_stiffener_type() != 'FB':
-            self._new_fl_w_upper.set(min(round(self._fl_w*1000+100,5), 200))
-            self._new_fl_w_lower.set(round(max(self._fl_w*1000-100,100),5))
-            self._new_fl_thk_upper.set(round(self._fl_thk*1000+10,15))
-            self._new_fl_thk_lower.set(round(max(self._fl_thk*1000-10,10),15))
+        if self._initial_calc_obj.Stiffener is not None:
+            if self._initial_calc_obj.Stiffener.get_stiffener_type() != 'FB':
+                self._new_fl_w_upper.set(min(round(self._fl_w*1000+100,5), 200))
+                self._new_fl_w_lower.set(round(max(self._fl_w*1000-100,100),5))
+                self._new_fl_thk_upper.set(round(self._fl_thk*1000+10,15))
+                self._new_fl_thk_lower.set(round(max(self._fl_thk*1000-10,10),15))
+
         else:
             self._new_fl_w_upper.set(0)
             self._new_fl_w_lower.set(0)
@@ -743,20 +753,26 @@ class CreateOptimizeWindow():
                                                      +str(round((time.time()-t_start)/60,4))+' min')
             self._opt_actual_running_time.update()
             self._opt_runned = True
-            self._result_label.config(text='Optimization result | Spacing: '+
-                                           str(round(self._opt_results[0].Stiffener.get_s(),10)*1000)+
-                                          ' Plate thickness: '+str(round(self._opt_results[0].Stiffener.get_pl_thk()*1000,10))+
-                                          ' Stiffener - T'+str(round(self._opt_results[0].Stiffener.get_web_h()*1000,10))+'x'
-                                          +str(round(self._opt_results[0].Stiffener.get_web_thk()*1000,10))+
-                                          '+'+str(round(self._opt_results[0].Stiffener.get_fl_w()*1000,10))+'x'
-                                          +str(round(self._opt_results[0].Stiffener.get_fl_thk()*1000,10)))
+            if self._opt_results[0].Stiffener is not None:
+                text = 'Optimization result | Spacing: ' + str(round(self._opt_results[0].Plate.get_s(), 10) * 1000) +\
+                ' Plate thickness: ' + str(round(self._opt_results[0].Plate.get_pl_thk() * 1000, 10)) +\
+                ' Stiffener - T' + str(round(self._opt_results[0].Stiffener.get_web_h() * 1000, 10)) + 'x'\
+                +str(round(self._opt_results[0].Stiffener.get_web_thk() * 1000, 10)) +\
+                '+' + str(round(self._opt_results[0].Stiffener.get_fl_w() * 1000, 10)) + 'x'\
+                +str(round(self._opt_results[0].Stiffener.get_fl_thk() * 1000, 10))
+            else:
+                text = 'Optimization result | Spacing: ' + str(round(self._opt_results[0].Plate.get_s(), 10) * 1000) +\
+                ' Plate thickness: ' + str(round(self._opt_results[0].Plate.get_pl_thk() * 1000, 10))
 
-            self._new_opt_spacing.set(round(self._opt_results[0].Stiffener.get_s(),5))
-            self._new_opt_pl_thk.set(round(self._opt_results[0].Stiffener.get_pl_thk(),5))
-            self._new_opt_web_h.set(round(self._opt_results[0].Stiffener.get_web_h(),5))
-            self._new_opt_web_thk.set(round(self._opt_results[0].Stiffener.get_web_thk(),5))
-            self._new_opt_fl_w.set(round(self._opt_results[0].Stiffener.get_fl_w(),5))
-            self._new_opt_fl_thk.set(round(self._opt_results[0].Stiffener.get_fl_thk(),5))
+            self._result_label.config(text= text)
+
+            self._new_opt_spacing.set(round(self._opt_results[0].Plate.get_s(),5))
+            self._new_opt_pl_thk.set(round(self._opt_results[0].Plate.get_pl_thk(),5))
+            if self._opt_results[0].Stiffener is not None:
+                self._new_opt_web_h.set(round(self._opt_results[0].Stiffener.get_web_h(),5))
+                self._new_opt_web_thk.set(round(self._opt_results[0].Stiffener.get_web_thk(),5))
+                self._new_opt_fl_w.set(round(self._opt_results[0].Stiffener.get_fl_w(),5))
+                self._new_opt_fl_thk.set(round(self._opt_results[0].Stiffener.get_fl_thk(),5))
             self.draw_properties()
         else:
             messagebox.showinfo(title='Nothing found', message='No better alternatives found. Modify input.\n'
@@ -897,6 +913,9 @@ class CreateOptimizeWindow():
         self._canvas_opt.create_rectangle(ctr_x - m * self._stf_web_thk / 2, ctr_y-m* self._pl_thk,
                                          ctr_x + m * self._stf_web_thk / 2, ctr_y - m *(self._stf_web_h+self._pl_thk)
                                          , fill=init_color, stipple=init_stipple )
+        if self._initial_calc_obj.Stiffener is None:
+            return
+
         if self._initial_calc_obj.Stiffener.get_stiffener_type() not in ['L', 'L-bulb']:
             self._canvas_opt.create_rectangle(ctr_x-m*self._fl_w/2, ctr_y-m*(self._pl_thk+self._stf_web_h),
                                              ctr_x+m*self._fl_w/2, ctr_y-m*(self._pl_thk+self._stf_web_h+self._fl_thk),
