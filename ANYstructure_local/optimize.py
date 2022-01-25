@@ -431,7 +431,8 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                 #     print('')
         for no_of_fractions, struc_objects in working_objects.items():
             for struc_obj in struc_objects:
-                struc_obj.set_span(tot_len/no_of_fractions)
+                struc_obj.Plate.set_span(tot_len/no_of_fractions)
+                struc_obj.Stiffener.set_span(tot_len / no_of_fractions)
 
         solution_found, iterations = False, 0
 
@@ -470,8 +471,10 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                 obj = opt[0]
 
                 if opt[3]:
-                    weigth_to_add = calc_weight((obj.get_s(),obj.get_pl_thk(),obj.get_web_h(),obj.get_web_thk(),
-                                               obj.get_fl_w(),obj.get_fl_thk(),obj.get_span(),width), prt=False)
+                    weigth_to_add = calc_weight((obj.Plate.get_s(),obj.Plate.get_pl_thk(),obj.Stiffener.get_web_h(),
+                                                 obj.Stiffener.get_web_thk(),
+                                               obj.Stiffener.get_fl_w(),obj.Stiffener.get_fl_thk(),
+                                                 obj.Plate.get_span(),width), prt=False)
                     tot_weight += weigth_to_add
                     weight_details['objects'].append(weigth_to_add)
                     if frame_spacings[count // 2] is None:
@@ -925,8 +928,9 @@ def calc_weight_pso_section(x,*args):
     count = 0
     for stru_object in stru_objects:
         span = tot_length*x[count]
-        stru_object.set_span(span)
-        tot_weight += stru_object.get_weight_width_lg()
+        stru_object.Plate.set_span(span)
+        stru_object.Stiffener.set_span(span)
+        tot_weight += stru_object.Stiffener.get_weight_width_lg()
 
     return tot_weight
 

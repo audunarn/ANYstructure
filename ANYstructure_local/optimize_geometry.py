@@ -792,7 +792,7 @@ class CreateOptGeoWindow():
         objects = [copy.deepcopy(x) if x != None else None for x in
                    self._line_to_struc[self.opt_find_closest_orig_line(point)]]
 
-        objects[0].set_span(dist(pt1,pt2))
+        objects[0].Plate.set_span(dist(pt1,pt2))
 
         return objects
 
@@ -812,7 +812,7 @@ class CreateOptGeoWindow():
                 current[0] += (vector[0]/distance) * delta
                 current[1] += (vector[1]/distance) * delta
                 if dist(coord,current) <= 0.1:
-                    if self._line_to_struc[key][0].get_structure_type() not in ('GENERAL_INTERNAL_NONWT', 'FRAME'):
+                    if self._line_to_struc[key][0].Plate.get_structure_type() not in ('GENERAL_INTERNAL_NONWT', 'FRAME'):
                         return key
                     else:
                         return None
@@ -1113,9 +1113,9 @@ class CreateOptGeoWindow():
 
         if line != None:
             if __name__ == '__main__':
-                lateral_press = 200  # for testing
+                lateral_press = 0.2  # for testing
             else:
-                lateral_press = self.app.get_highest_pressure(line)['normal'] / 1000
+                lateral_press = self.app.get_highest_pressure(line)['normal'] /1e6
             self._canvas_opt.create_text(250, self._prop_canvas_dim[1] - 10,
                                          text='Lateral pressure: ' + str(lateral_press) + ' kPa',
                                          font='Verdana 10 bold', fill='red')
@@ -1154,7 +1154,7 @@ class CreateOptGeoWindow():
                     coord2 = self.get_point_canvas_coord('point' + str(value[1]))
                     vector = [coord2[0] - coord1[0], coord2[1] - coord1[1]]
                     # drawing a bold line if it is selected
-                    if self._line_to_struc[line][0].get_structure_type() not in ('GENERAL_INTERNAL_NONWT','FRAME'):
+                    if self._line_to_struc[line][0].Plate.get_structure_type() not in ('GENERAL_INTERNAL_NONWT','FRAME'):
 
                         if line in self._active_lines:
                             self._canvas_select.create_line(coord1, coord2, width=6, fill=color,stipple='gray50')
