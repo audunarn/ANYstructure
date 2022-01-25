@@ -620,7 +620,7 @@ class CreateOptGeoWindow():
 
             if __name__ == '__main__':
                 import ANYstructure_local.example_data as ex
-                lateral_press.append(200)  # for testing
+                lateral_press.append(0.2)  # for testing
                 slamming_press.append(0)
                 fatigue_objects.append(ex.get_fatigue_object())
                 for pressure in ex.get_geo_opt_fat_press():

@@ -478,7 +478,7 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                     tot_weight += weigth_to_add
                     weight_details['objects'].append(weigth_to_add)
                     if frame_spacings[count // 2] is None:
-                        frame_spacings[count // 2] = obj.get_s()
+                        frame_spacings[count // 2] = obj.Plate.get_s()
                     #print('added normal weight', weigth_to_add)
 
                 else:
@@ -566,7 +566,7 @@ def any_constraints_cylinder(x,obj: calc.CylinderAndCurvedPlate,init_weight, lat
 def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True,True, True, True, True, False,
                                                                   False, False),
                         fat_dict = None, fat_press = None, slamming_press = 0, PULSrun: calc.PULSpanel = None,
-                        print_result = False, fdwn = 1, fup = 0.5, ml_results = None):
+                        print_result = False, fdwn = 1, fup = 0.5, ml_results = None, random_result_return = False):
     '''
     Checking all constraints defined.
 
@@ -575,7 +575,12 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
     :param x:
     :return:
     '''
-
+    if random_result_return:
+        # Skip all calculations
+        if random.choice([True,False,False,False,False,False,False]):
+            return True, 'Check OK', x, [0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5]
+        else:
+            return False, 'Random result', x, [1.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5]
     all_checks = [0,0,0,0,0,0,0,0,0,0,0]
     print_result = False
     calc_object_stf = None if obj.Stiffener is None else create_new_calc_obj(obj.Stiffener, x, fat_dict, fdwn = fdwn, fup = fup)

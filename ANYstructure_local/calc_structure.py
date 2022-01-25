@@ -2428,6 +2428,12 @@ class AllStructure():
 
         return {'Stiffener': [max_web_stf, max_flange_stf], 'Girder': [max_web_girder, max_flange_girder]}
 
+    def get_tuple(self):
+        ''' Return a tuple of the plate stiffener'''
+        return (self.Plate.get_s(), self.Plate.get_pl_thk(), self.Stiffener.get_web_thk(), self.Stiffener.get_web_thk(),
+                self.Stiffener.get_fl_w(), self.Stiffener.get_fl_thk(), self.Plate.get_span(), self.Plate.get_lg(),
+                self.Plate.get_stiffener_type())
+
 class Shell():
     '''
     Small class to contain shell properties.
@@ -3868,6 +3874,7 @@ class CylinderAndCurvedPlate():
         provide_data['Column stability check'] = stab_chk
 
         return provide_data
+
 
     def get_all_properties(self):
         all_data = {'Main class': self.get_main_properties(),

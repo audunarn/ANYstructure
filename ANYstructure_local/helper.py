@@ -353,7 +353,7 @@ def helper_read_section_file(files, obj = None, to_json = False, to_csv = None):
         if obj is not None:  # This will return a modified object.
             for idx, iter_obj in enumerate(obj):
                 new_obj = copy.deepcopy(iter_obj)
-                new_obj_prop = new_obj.get_structure_prop()
+                new_obj_prop = new_obj.get_main_properties()
                 for prop_name, prop_val in value.items():
                     new_obj_prop[prop_name] = prop_val
                 new_obj.set_main_properties(new_obj_prop)
