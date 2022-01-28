@@ -325,11 +325,18 @@ def helper_read_section_file(files, obj = None, to_json = False, to_csv = None):
             with open(file, 'r') as csv_file:
                 csv_reader = csv.reader(csv_file, delimiter=',')
                 for idx, section in enumerate(csv_reader):
-                    to_return[str(idx)] = {'stf_web_height': [float(section[0]), 'm'],
-                                           'stf_web_thk': [float(section[1]),'m'],
-                                           'stf_flange_width': [float(section[2]),'m'],
-                                           'stf_flange_thk': [float(section[3]), 'm'],
-                                           'stf_type': [section[4], '']}
+                    if section[4] in ['L-bulb', 'bulb', 'hp']:
+                        to_return[str(idx)] = {'stf_web_height': [float(section[0]) - float(section[3]), 'm'],
+                                               'stf_web_thk': [float(section[1]),'m'],
+                                               'stf_flange_width': [float(section[2]),'m'],
+                                               'stf_flange_thk': [float(section[3]), 'm'],
+                                               'stf_type': [section[4], '']}
+                    else:
+                        to_return[str(idx)] = {'stf_web_height': [float(section[0]), 'm'],
+                                               'stf_web_thk': [float(section[1]),'m'],
+                                               'stf_flange_width': [float(section[2]),'m'],
+                                               'stf_flange_thk': [float(section[3]), 'm'],
+                                               'stf_type': [section[4], '']}
 
     if to_json:
         with open('sections.json', 'w') as file:
