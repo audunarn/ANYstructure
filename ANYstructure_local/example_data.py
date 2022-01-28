@@ -306,6 +306,7 @@ prescriptive_main_dict['buckling length factor girder']  = [None, '']
 prescriptive_main_dict['km3']  = [12, '']  # 12
 prescriptive_main_dict['km2']  = [24, '']  # 24
 prescriptive_main_dict['girder distance between lateral support']  = [None, '']
+prescriptive_main_dict['stiffener distance between lateral support']  = [None, '']
 prescriptive_main_dict['kgirder']  = [None, '']
 prescriptive_main_dict['panel length, Lp']  = [None, '']
 prescriptive_main_dict['pressure side']  = ['both sides', '']# either 'stiffener', 'plate', 'both'

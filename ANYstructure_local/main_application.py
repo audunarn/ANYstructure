@@ -1991,7 +1991,7 @@ class Application():
                                                    rely=ent_geo_y + delta_y*5, relwidth=geo_ent_width*1.9)
                 other_count += 1
 
-            if self._shell_geometries_map[self._new_calculation_domain.get()] in [1,2]: # TODO check end cap pressure
+            if self._shell_geometries_map[self._new_calculation_domain.get()] in [1,5]:
                 other_count += 1
                 self._lab_shell_en_cap_pressure.place(relx=hor_start+ 5.5  * delta_x- delta_x*other_text_shift,
                                                                 rely= ent_geo_y + delta_y*other_count*other_dy,
@@ -2187,7 +2187,11 @@ class Application():
             current_button = self._puls_run_all
             for line, data in self._line_to_struc.items():
                 if line not in result_lines:
-                    dict_to_run[line] = data[0].Plate.get_puls_input() #TODO both plate and stiffener
+                    data[0].Plate.hw = data[0].Stiffener.hw
+                    data[0].Plate.tw = data[0].Stiffener.tw
+                    data[0].Plate.tw = data[0].Stiffener.b
+                    data[0].Plate.tw = data[0].Stiffener.tf
+                    dict_to_run[line] = data[0].Plate.get_puls_input()
                     dict_to_run[line]['Identification'] = line
                     dict_to_run[line]['Pressure (fixed)'] = self.get_highest_pressure(line)['normal']/1e6
         else:
@@ -4829,7 +4833,7 @@ class Application():
                 obj_dict_girder['stf_web_height'] =  [self._new_girder_web_h.get()/1000, 'm']
                 obj_dict_girder['stf_web_thk'] = [self._new_girder_web_t.get() / 1000, 'm']
                 obj_dict_girder['stf_flange_width'] = [self._new_girder_fl_w.get() / 1000, 'm']
-                obj_dict_girder['stf_flange_thk'] =  [self._new_girder_fl_t.get() / 1000, 'm'] # TODO thickenss not being set!
+                obj_dict_girder['stf_flange_thk'] =  [self._new_girder_fl_t.get() / 1000, 'm']
                 obj_dict_girder['stf_type'] = [self._new_girder_type.get(), '']
                 
                 main_dict = dict()
@@ -4847,6 +4851,7 @@ class Application():
                 main_dict['km3'] = [self._new_buckling_km3.get(), '']  # 12
                 main_dict['km2'] = [self._new_buckling_km2.get(), '']  # 24
                 main_dict['girder distance between lateral support'] = [self._new_buckling_girder_dist_bet_lat_supp, '']
+                main_dict['stiffener distance between lateral support'] = [self._new_buckling_stf_dist_bet_lat_supp, '']
                 main_dict['panel length, Lp'] = [self._new_panel_length_Lp.get(), '']
                 main_dict['pressure side'] = [self._new_pressure_side.get(), '']  # either 'stiffener', 'plate', 'both'
                 main_dict['fabrication method stiffener'] = [self._new_buckling_fab_method_stf.get(), '']
@@ -5467,7 +5472,7 @@ class Application():
             self._new_buckling_length_factor_girder.set(main_dict['buckling length factor girder'][0])
             self._new_buckling_km3.set(main_dict['km3'][0])
             self._new_buckling_km2.set(main_dict['km2'][0])
-            #self._new_buckling_stf_dist_bet_lat_supp.set(tk.DoubleVar[0]) TODO tripping brackets of stiffeners.
+            self._new_buckling_stf_dist_bet_lat_supp.set(main_dict['stiffener distance between lateral support'][0])
             self._new_buckling_girder_dist_bet_lat_supp.set(main_dict['girder distance between lateral support'][0])
             self._new_buckling_fab_method_stf.set(main_dict['fabrication method stiffener'][0])
             self._new_buckling_fab_method_girder.set(main_dict['fabrication method girder'][0])
@@ -6793,7 +6798,7 @@ class Application():
         :return:
         '''
 
-        self.new_structure(multi_return = returned_object[0:2]) #TODO return have been reduced
+        self.new_structure(multi_return = returned_object[0:2])
         # self._line_to_struc[self._active_line][1]=returned_objects[0]
         # self._line_to_struc[self._active_line][1]=returned_objects[1]
         # self._line_to_struc[self._active_line][0].need_recalc = True
