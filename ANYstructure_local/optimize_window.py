@@ -2,7 +2,7 @@
 import tkinter as tk
 from _tkinter import TclError
 from ANYstructure_local.calc_structure import CalcScantlings, AllStructure
-import example_data as ex
+import ANYstructure_local.example_data as ex
 import ANYstructure_local.optimize as op
 import numpy as np
 import time, os, datetime

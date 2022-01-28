@@ -9,7 +9,7 @@ root = tk.Tk()
 my_app = main_application.Application(root)
 my_dict = my_app.__dict__
 
-my_dict["_new_field_len"].set(4)
+my_dict["_new_field_len"].set(4000)
 my_dict["_new_stf_spacing"].set(700)
 my_dict["_new_plate_thk"].set(20)
 my_dict["_new_stf_web_h"].set(400)

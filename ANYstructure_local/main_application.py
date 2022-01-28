@@ -2058,17 +2058,15 @@ class Application():
         'Orthogonally Stiffened shell (Force input)', 'Orthogonally Stiffened panel (Stress input)']
         '''
 
-        to_process = [self._puls_run_all, self._chk_cc_spacing, self._zstar_chk, self._lab_buckling_method,
+        to_process = [self._puls_run_all, self._lab_buckling_method,
                       self._buckling_method, self._lab_yield,
                       self._lab_mat_fac,self._structure_types_label, self._button_str_type, self._ent_structure_type,
                       self._lab_structure_type, self._lab_kpp, self._lab_kps, self._lab_km1, self._lab_km2,
                       self._lab_stf_type, self._lab_press_side, self._ent_pressure_side,
                       self._lab_puls_input, self._lab_puls_up_supp, self._lab_puls_acceptance,
                       self._lab_puls_uf, self._lab_puls_int_gt, self._lab_puls_cont_sniped, self._lab_span, self._lab_s,
-                      self._chk_button_sigmax1, self._chk_button_sigmay1, self._chk_button_sigmay2,
-                      self._chk_button_tauxy, self._chk_button_structure_type,
                       self._ent_puls_sp_or_up, self._ent_puls_method, self._ent_puls_uf, self._ent_puls_panel_boundary,
-                      self._ent_puls_stf_end_type, self._chk_button_puls_acceptance, self._chk_button_puls_spup,
+                      self._ent_puls_stf_end_type,
                       self._stf_button, self._stress_button,self._fls_button]
 
         to_process = to_process+self._shell_gui_items+self._shell_long_stf_gui_items+self._shell_ring_stf_gui_items+\
@@ -3437,7 +3435,7 @@ class Application():
                                                      fill = 'red')
                 else:
                     if line not in self._line_to_struc.keys():
-                        self._main_canvas.create_line(coord1, coord2, width=3, ill=self._color_text)
+                        self._main_canvas.create_line(coord1, coord2, width=3, fill=self._color_text)
                     elif self._line_to_struc[line][5] is not None:
                         self._main_canvas.create_line(coord1, coord2, width=6, fill = color, stipple = 'gray50')
                     else:
