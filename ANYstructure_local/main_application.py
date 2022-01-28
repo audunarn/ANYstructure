@@ -2755,16 +2755,18 @@ class Application():
                         fatigue_obj, p_int, p_ext, damage, dff = [None for dummy in range(5)]
                         color_fatigue = 'green'
 
-                    color_sec = 'green' if obj_scnt_calc_stf.is_acceptable_sec_mod(sec_mod, design_pressure) else 'red'
-                    color_shear = 'green' if obj_scnt_calc_stf.is_acceptable_shear_area(shear_area, design_pressure) else 'red'
+                    color_sec = 'green' if obj_scnt_calc_stf.is_acceptable_sec_mod(sec_mod, design_pressure) \
+                        else 'red'
+                    color_shear = 'green' if obj_scnt_calc_stf.is_acceptable_shear_area(shear_area, design_pressure) \
+                        else 'red'
                 else:
                     sec_mod = [0,0]
                     rec_for_color[current_line]['section modulus'] = 0.0
                     rec_for_color[current_line]['shear'] = 0
                     return_dict['slamming'][current_line] = dict()
                     fatigue_obj, p_int, p_ext, damage, dff = [None for dummy in range(5)]
-                    color_sec = 'black'
-                    color_shear = 'black'
+                    color_sec = 'green' if all_obj.Stiffener is None else 'black'
+                    color_shear = 'green' if all_obj.Stiffener is None else'black'
                     return_dict['slamming'][current_line]['state'] = False
 
                 if slamming_pressure is not None and slamming_pressure > 0 and obj_scnt_calc_stf is not None:
@@ -3397,6 +3399,7 @@ class Application():
                                 if color == 'green':
                                     color = 'green' if all([state['colors'][line][key] == 'green' for key in
                                                             ['fatigue', 'section', 'shear','thickness']]) else 'red'
+
                         elif self._new_buckling_method.get() == 'DNV-RP-C201 - prescriptive':
                             color = 'red' if 'red' in state['colors'][line].values() else 'green'
                         elif self._new_buckling_method.get() == 'ML-CL (PULS based)':
@@ -4164,20 +4167,19 @@ class Application():
 
                 # printing the calculated sectiton modulus
                 if state['slamming'][current_line]['state'] and slm_text_min_zpl is False:
-                    text = 'tw issue - slamming'
+                    text = ''
                 else:
                     text = str('%.4E' % decimal.Decimal(min(sec_mod[1], sec_mod[0])*m3_to_mm3))+ ' [mm^3]' \
                         if not slm_text_min_zpl else str(slm_zpl)+'- zpl [cm^3]'
                 self._result_canvas.create_text([x + x2*dx, (y+2*dy)*1],
                                                text=text,font=self._text_size['Text 9 bold'],anchor='nw',
                                                 fill = color_sec)
-
-                self._result_canvas.create_text([x + x3*dx, (y+2*dy)*1],
-                                               text='Ok' if min(sec_mod[1], sec_mod[0])*m3_to_mm3 >
-                                                            min_sec_mod * m3_to_mm3 else 'Not ok',
-                                                font=self._text_size['Text 9 bold'],anchor='nw',
-                                                fill=color_sec)
-
+                if not state['slamming'][current_line]['state']:
+                    self._result_canvas.create_text([x + x3*dx, (y+2*dy)*1],
+                                                   text='Ok' if min(sec_mod[1], sec_mod[0])*m3_to_mm3 >=
+                                                                min_sec_mod * m3_to_mm3 else 'Not ok',
+                                                    font=self._text_size['Text 9 bold'],anchor='nw',
+                                                    fill=color_sec)
                 #minimum shear area
                 text = str('%.4E' % decimal.Decimal(min_shear * m2_to_mm2))+' [mm^2] ' \
                     if not slm_text_min_web_thk else str(round(slm_min_web_thk,1))+' [mm]'
@@ -4189,22 +4191,28 @@ class Application():
                 self._result_canvas.create_text([x + x2*dx, (y+3*dy)*1],
                                                text= text,
                                                font=self._text_size["Text 9 bold"],anchor='nw', fill=color_shear)
-                self._result_canvas.create_text([x + x3*dx, (y+3*dy)*1],
-                                               text= 'Ok' if shear_area * m2_to_mm2 > min_shear * m2_to_mm2 else 'Not ok',
-                                               font=self._text_size["Text 9 bold"],anchor='nw', fill=color_shear)
+                if not state['slamming'][current_line]['state']:
+                    self._result_canvas.create_text([x + x3*dx, (y+3*dy)*1],
+                                                   text= 'Ok' if shear_area * m2_to_mm2 >= min_shear * m2_to_mm2 else
+                                                   'Not ok',
+                                                   font=self._text_size["Text 9 bold"],anchor='nw', fill=color_shear)
 
                 #minimum thickness for plate
-                text = str(round(min_thk,1)) + ' [mm]' if not slm_text_pl_thk \
-                    else 'SLAMMING'+str(slm_min_pl_thk)+' [mm]'
+                text = str(round(min_thk,1)) + ' [mm]' if not state['slamming'][current_line]['state'] else \
+                    'Slamming minimum thickness: '+str(round(slm_min_pl_thk,2))+' [mm]'
                 self._result_canvas.create_text([x + x1*dx, (y+4*dy)*1],
                                                text=text,
                                                font=self._text_size["Text 9 bold"],anchor='nw', fill=self._color_text)
-                self._result_canvas.create_text([x + x2*dx, (y+4*dy)*1],
-                                               text=str(obj_scnt_calc_pl.get_pl_thk()*1000)+' [mm] ',
-                                               font=self._text_size["Text 9 bold"],anchor='nw', fill=color_shear)
-                self._result_canvas.create_text([x + x3*dx, (y+4*dy)*1],
-                                               text='Ok' if obj_scnt_calc_pl.get_pl_thk()*1000 > min_thk else 'Not ok',
-                                               font=self._text_size["Text 9 bold"],anchor='nw', fill=color_shear)
+
+                if not state['slamming'][current_line]['state']:
+                    self._result_canvas.create_text([x + x2*dx, (y+4*dy)*1],
+                                                   text=str(obj_scnt_calc_pl.get_pl_thk()*1000)+' [mm] ',
+                                                   font=self._text_size["Text 9 bold"],anchor='nw', fill=color_shear)
+
+                    self._result_canvas.create_text([x + x3*dx, (y+4*dy)*1],
+                                                   text='Ok' if obj_scnt_calc_pl.get_pl_thk()*1000 > min_thk
+                                                   else 'Not ok',
+                                                   font=self._text_size["Text 9 bold"],anchor='nw', fill=color_shear)
 
 
                 # buckling results
@@ -4229,9 +4237,9 @@ class Application():
                             buc_text = 'Buckling capacity usage factor:  None - geometric issue'
 
                         loc_label = 'Local geom req (PULS validity limits)' if \
-                            obj_scnt_calc_stf.get_puls_sp_or_up() == 'SP' else 'Geom. Req (PULS validity limits)'
+                            obj_scnt_calc_pl.get_puls_sp_or_up() == 'SP' else 'Geom. Req (PULS validity limits)'
                         csr_label = 'CSR-Tank requirements (primary stiffeners)' if \
-                            obj_scnt_calc_stf.get_puls_sp_or_up() == 'SP' else 'CSR-Tank req'
+                            obj_scnt_calc_pl.get_puls_sp_or_up() == 'SP' else 'CSR-Tank req'
                         if geo_problem:
                             loc_geom = 'Not ok: '
                             for key, value in puls_res[loc_label].items():
