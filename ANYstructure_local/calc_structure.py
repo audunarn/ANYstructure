@@ -2036,7 +2036,7 @@ class AllStructure():
 
         b = max([self._Girder.b, self._Girder.tw])
         C = 0.55 if self._Girder.get_stiffener_type() in ['T', 'FB'] else 1.1
-        LGT0 = b*C*math.sqrt(E*Af/(fy*(Af+Aw/3)))
+        LGT0 = b*C*math.sqrt(E*Af/(fy*(Af+Aw/3))) #TODO can add a automatic check/message if torsional buckling shall be considered
 
         def lt_params(LTG):
             fETG = math.pow(math.pi, 2)*E*Iz/((Af+Aw/3)*math.pow(LTG, 2))
@@ -2049,7 +2049,7 @@ class AllStructure():
 
         fk_dict = dict()
         fr_dict = dict()
-        for lT in ['plate', Lg, 0.4*Lg, 0.8*Lg]:
+        for lT in ['plate', Ltg, 0.4*Lg, 0.8*Lg]:
             if lT != 'plate':
                 params = lt_params(lT)
                 fr = params['fT'] if params['alphaT']>0.6 else fy

@@ -4850,8 +4850,8 @@ class Application():
                 main_dict['buckling length factor girder'] = [self._new_buckling_length_factor_stf.get(), '']
                 main_dict['km3'] = [self._new_buckling_km3.get(), '']  # 12
                 main_dict['km2'] = [self._new_buckling_km2.get(), '']  # 24
-                main_dict['girder distance between lateral support'] = [self._new_buckling_girder_dist_bet_lat_supp, '']
-                main_dict['stiffener distance between lateral support'] = [self._new_buckling_stf_dist_bet_lat_supp, '']
+                main_dict['girder distance between lateral support'] = [self._new_buckling_girder_dist_bet_lat_supp.get(), '']
+                main_dict['stiffener distance between lateral support'] = [self._new_buckling_stf_dist_bet_lat_supp.get(), '']
                 main_dict['panel length, Lp'] = [self._new_panel_length_Lp.get(), '']
                 main_dict['pressure side'] = [self._new_pressure_side.get(), '']  # either 'stiffener', 'plate', 'both'
                 main_dict['fabrication method stiffener'] = [self._new_buckling_fab_method_stf.get(), '']
