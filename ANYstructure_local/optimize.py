@@ -448,7 +448,7 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                     with open('geo_opt_2.pickle', 'rb') as file:
                         opt_objects = pickle.load(file)[no_of_fractions][1]
                 else:
-                    print(working_lateral[no_of_fractions])
+
                     opt_objects = any_smart_loop_geometric(min_var=min_var,max_var=max_var,deltas=deltas,
                                                            initial_structure_obj=working_objects[no_of_fractions],
                                                            lateral_pressure=working_lateral[no_of_fractions],

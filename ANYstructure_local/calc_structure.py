@@ -1424,10 +1424,9 @@ class AllStructure():
         self._girder_dist_between_lateral_supp = None if main_dict['girder distance between lateral support'][0] == 0 \
             else main_dict['girder distance between lateral support'][0]
         self._panel_length_Lp = None if main_dict['panel length, Lp'][0] == 0 else main_dict['panel length, Lp'][0]
-        self._overpressure_side = main_dict['pressure side'][0] # either 'stiffener', 'plate', 'both'
+        self._overpressure_side = main_dict['pressure side'][0] # either 'stiffener side', 'plate side', 'both sides'
         self._fab_method_stiffener = main_dict['fabrication method stiffener'][0]#'welded'
         self._fab_method_girder = main_dict['fabrication method girder'][0]#'welded'
-        
         self._calculation_domain = main_dict['calculation domain'][0]
         self._need_recalc = True
 
@@ -1469,7 +1468,14 @@ class AllStructure():
     @Girder.setter
     def Girder(self, val):
         self._Girder = val
-        
+    
+    @property
+    def overpressure_side(self):
+        return self._overpressure_side
+    @overpressure_side.setter
+    def overpressure_side(self, val):
+        self._overpressure_side = val
+    
     @property
     def calculation_domain(self):
         return self._calculation_domain
@@ -2432,7 +2438,20 @@ class AllStructure():
         ''' Return a tuple of the plate stiffener'''
         return (self.Plate.get_s(), self.Plate.get_pl_thk(), self.Stiffener.get_web_thk(), self.Stiffener.get_web_thk(),
                 self.Stiffener.get_fl_w(), self.Stiffener.get_fl_thk(), self.Plate.get_span(), self.Plate.get_lg(),
-                self.Plate.get_stiffener_type())
+                self.Stiffener.get_stiffener_type())
+
+    def get_one_line_string_mixed(self):
+        ''' Returning a one line string. '''
+        return 'pl_'+str(round(self.Plate.s, 1))+'x'+str(round(self.Plate.t,1))+' stf_'+\
+               self.Stiffener.get_stiffener_type()+\
+               str(round(self.Stiffener.hw,1))+'x'+str(round(self.Stiffener.tw,1))+'+'\
+               +str(round(self.Stiffener.b,1))+'x'+\
+               str(round(self.Stiffener.tf,1))
+
+    def get_extended_string_mixed(self):
+        ''' Some more information returned. '''
+        return 'span: '+str(round(self.Plate.get_span(),4))+' structure type: '+ self.Stiffener.get_structure_type() + ' stf. type: ' + \
+               self.Stiffener.get_stiffener_type() + ' pressure side: ' + self.Plate.overpressure_side
 
 class Shell():
     '''

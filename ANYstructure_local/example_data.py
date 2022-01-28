@@ -340,9 +340,9 @@ def get_object_dictionary():
 
 def get_structure_object(line=None):
     if line in ('line12','line13','line11','line4'):
-        return calc_structure.Structure(obj_dict_fr)
+        return calc_structure.CalcScantlings(obj_dict_fr)
     else:
-        return calc_structure.Structure(obj_dict)
+        return calc_structure.CalcScantlings(obj_dict)
 
 def get_structure_calc_object(line=None, heavy = False):
     if line in ('line12','line13','line11','line4'):
@@ -363,7 +363,7 @@ def get_line_to_struc(geo = False):
     to_return = {}
     for line in line_dict.keys():
         Plate = get_structure_object(line)
-        Stiffener = get_structure_object(line),
+        Stiffener = get_structure_object(line)
         Girder = None  # CalcScantlings(ex.obj_dict_heavy)
         initial_calc_obj = calc_structure.AllStructure(Plate=Plate, Stiffener=Stiffener, Girder=Girder,
                                               main_dict=prescriptive_main_dict)
