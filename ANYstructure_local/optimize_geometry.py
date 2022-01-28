@@ -7,7 +7,9 @@ import numpy as np
 import time, os
 from tkinter import messagebox
 import ANYstructure_local.example_data as test
+from ANYstructure_local.calc_structure import *
 from ANYstructure_local.helper import *
+import ANYstructure_local.example_data as ex
 import copy, pickle
 import ANYstructure_local.calc_structure
 import ANYstructure_local.helper as hlp
@@ -30,6 +32,8 @@ class CreateOptGeoWindow():
             self._load_count = 0
             self._point_dict = test.get_point_dict()
             self._canvas_scale = 20
+
+
             self._line_to_struc = test.get_line_to_struc()
             self._opt_frames = {}
             self._active_points = ['point1','point4','point8','point5']
@@ -291,8 +295,8 @@ class CreateOptGeoWindow():
         self._ent_fl_thk_lower.place(x=start_x + dx * 7, y=start_y + 2 * dy)
 
         # setting default values
-        init_dim = float(50)  # mm
-        init_thk = float(2)  # mm
+        init_dim = float(100)  # mm
+        init_thk = float(5)  # mm
         self._new_delta_spacing.set(init_dim)
         self._new_delta_pl_thk.set(init_thk)
         self._new_delta_web_h.set(init_dim)
@@ -305,7 +309,7 @@ class CreateOptGeoWindow():
         self._new_pl_thk_lower.set(round(10, 5))
         self._new_web_h_upper.set(round(500, 5))
         self._new_web_h_lower.set(round(300, 5))
-        self._new_web_thk_upper.set(round(22, 5))
+        self._new_web_thk_upper.set(round(25, 5))
         self._new_web_thk_lower.set(round(10, 5))
         self._new_fl_w_upper.set(round(250, 5))
         self._new_fl_w_lower.set(round(50, 5))
@@ -643,7 +647,7 @@ class CreateOptGeoWindow():
                 closet_line = self.opt_find_closest_orig_line(to_find)
                 #print('Closest line', closet_line, p1, p2, to_find)
                 gotten_lat_press = self.app.get_highest_pressure(closet_line)
-                lateral_press.append(gotten_lat_press['normal'] / 1000)
+                lateral_press.append(gotten_lat_press['normal'] / 1e6)
                 slamming_press.append(gotten_lat_press['slamming'])
                 if fat_obj_single is not None:
                     fat_press_single = self.app.get_fatigue_pressures(closet_line, fat_obj_single.get_accelerations())
@@ -793,6 +797,7 @@ class CreateOptGeoWindow():
                    self._line_to_struc[self.opt_find_closest_orig_line(point)]]
 
         objects[0].Plate.set_span(dist(pt1,pt2))
+        objects[0].Stiffener.set_span(dist(pt1, pt2))
 
         return objects
 
@@ -1347,8 +1352,8 @@ class CreateOptGeoWindow():
 
             self._canvas_opt.create_text([start_x + 120, y_loc ], text=str('No results\n' if
                                                                            self._geo_results[key][1][0][0] is None else
-                                                                           round(self._geo_results[key][1][0][0]
-                                                                                 .get_span(),4)),
+                                                                           round(self._geo_results[key][1][0][0].
+                                                                                 Plate.get_span(),4)),
                                          anchor='w', font=text_type)
             self._canvas_opt.create_text([start_x + 220, y_loc ],
                                          text=str(round(self._geo_results[key][0] / max_weight, 3))
@@ -1359,13 +1364,13 @@ class CreateOptGeoWindow():
 
             if save_to_file is not None:
                 save_file.write(str(len(check_ok))+ ' ' + 'No results\n' if self._geo_results[key][1][0][0] is None
-                                                             else str(round(self._geo_results[key][1][0][0].get_span(),
+                                                             else str(round(self._geo_results[key][1][0][0].Plate.get_span(),
                                                                             4)) + ' ' +
                                                                   str(round(self._geo_results[key][0] / max_weight, 3))
                                                                   + '\n' if max_weight != 0 else
                 '' + ' ' + str(all(check_ok))+'\n')
             if self._geo_results[key][1][0][0] is not None:
-                xplot.append(round(self._geo_results[key][1][0][0].get_span(),4))
+                xplot.append(round(self._geo_results[key][1][0][0].Plate.get_span(),4))
                 yplot.append(round(self._geo_results[key][0] / max_weight, 4))
 
         if save_to_file is not None:

@@ -362,7 +362,12 @@ def get_tank_object():
 def get_line_to_struc(geo = False):
     to_return = {}
     for line in line_dict.keys():
-        to_return[line]=[get_structure_object(line), get_structure_calc_object(), None, [None], {}]
+        Plate = get_structure_object(line)
+        Stiffener = get_structure_object(line),
+        Girder = None  # CalcScantlings(ex.obj_dict_heavy)
+        initial_calc_obj = calc_structure.AllStructure(Plate=Plate, Stiffener=Stiffener, Girder=Girder,
+                                              main_dict=prescriptive_main_dict)
+        to_return[line]=[initial_calc_obj, None, None, [None], {}]
     return to_return
 
 def get_default_stresses():
