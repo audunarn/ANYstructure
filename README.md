@@ -1,47 +1,38 @@
 # ANYstructure #
+ANYstructure is the ultimate steel structure design tool for plate fields and cylinders! 
+Weight optimization for all structures with machine learning capabilities. 
+Calculations are based on DNV standards and rules.
+
+### What's new in 3.4 ###
+* Cylinder design and optimization
+* Flat plate prescriptive buckling improved. Girder calculation added.
+* Updated GUI with color themes.
 ### What's new in 3.3 ###
 * Extremely efficient Machine Learning version of PULS called ML-CL. Implemented for all optimizer options.
 * Calculation of Center of Gravity and Center of Buoyancy.
 * Reporting of weights and COG.
 * Lots of bug fixes.
-### What's new in 3.2 ###
-* Shifting of coordinates for visualization.
-* Color coding of span.
-* Move line.
-* Bug fixes.
-### What's new in 3.1 ###
-* Span optimization harmonizer added. Fixed bug related to applied loads.
-* Table report added.
-* Slamming pressure option added to scale stresses on plates and stiffeners.
-* Bug fixes.
-* Smaller install file.
-### What's new in 3.0 ###
-* This version includes lots of minor bug fixing (color coding, manual pressure only, span optimizer...).
-* More control over scaling of stresses during optimization and modification of properties.
-* This version shall be used for documenatation of MSA (Main Scantling Approval).
 
 ------------------------------------------------------------------------
 
-GUI based steel structure calculation tool.
- 
 ## The following is calculated: ##
-* Minimum plate thickness (DNVGL-OS-C101)
+* Minimum plate thickness (DNV-OS-C101)
 * Minimum section modulus of stiffener/plate (DNVGL-OS-C101)
 * Minimum shear area (DNVGL-OS-C101)
 * Buckling (DNVGL-RP-C201)or PULS (licenced DNV software)
+* Buckling strength of shells DNV-RP-C202
 * PULS buckling (DNV license needed)
+* Machine learning buckling, PULS based
 * Fatigue for plate/stiffener connection (DNVGL-RP-C203)
 
 Compartments (tank pressures) are created automatically.
 
 Pressures on external hull (or any other generic location) is defined by specifying equations.
 
-You can optimize single plate/stiffener field or multiple. Gemetry of double bottom can be optimized.
+You can optimize cylinders, single plate/stiffener field or multiple. Geometry of double bottom can be optimized.
 
-PLEASE CONTRIBUTE. 
+PLEASE CONTRIBUTE. REPORT BUGS ERRORS ETC.
 For windows executable (.exe) version for non-coders, use the link below.
-Note that I am looking for contributions. Non-coders can verify, make documentation, suggest improvements etc. Point
-is: please do more than just use the tool and stay silent :)
 
 Feedback: audunarn@gmail.com or discuss on github.
 
