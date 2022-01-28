@@ -584,7 +584,7 @@ class CreateOptGeoWindow():
         #         return
         self.draw_select_canvas(opt_results=self._geo_results)
 
-    def run_optimizaion(self, load_pre = True, save_results = False, harmonize = False):
+    def run_optimizaion(self, load_pre = False, save_results = False, harmonize = False):
         '''
         Function when pressing the optimization botton inside this window.
         :return:

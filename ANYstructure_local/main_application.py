@@ -69,7 +69,7 @@ class Application():
         self._style.configure("TNotebook", tabmargins=0)
 
         # tabbed frames
-        self._tabControl = ttk.Notebook(root)
+        self._tabControl = ttk.Notebook(parent)
         self._tab_geo = ttk.Frame(self._tabControl, relief = 'flat')
         self._tab_prop = ttk.Frame(self._tabControl, relief = 'flat')
         self._tab_comp = ttk.Frame(self._tabControl, relief='flat')
@@ -138,9 +138,9 @@ class Application():
 
         sub_report = tk.Menu(menu)
         menu.add_cascade(label = 'Reporting', menu = sub_report)
-        sub_report.add_command(label = 'Generate PDF report', command = self.report_generate)
-        sub_report.add_command(label='Generate PDF result table', command=self.table_generate)
-        sub_report.add_command(label='Weight development, plates and beams', command=self.on_plot_cog_dev)
+        sub_report.add_command(label = 'Stiffened flat plate - Generate PDF report', command = self.report_generate)
+        sub_report.add_command(label='Stiffened flat plate - Generate PDF result table', command=self.table_generate)
+        sub_report.add_command(label='Stiffened flat plate - Weight development, plates and beams', command=self.on_plot_cog_dev)
 
         sub_sesam = tk.Menu(menu)
         menu.add_cascade(label = 'SESAM interface', menu = sub_sesam)
