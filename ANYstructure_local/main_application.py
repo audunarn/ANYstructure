@@ -6335,7 +6335,8 @@ class Application():
                 else:
                     self._line_to_struc[line][2] = None
                 #  Recording sections.
-                self._sections = add_new_section(self._sections, struc.Section(lines_prop['Stiffener']))
+                if self._line_to_struc[line][0].Stiffener is not None:
+                    self._sections = add_new_section(self._sections, struc.Section(lines_prop['Stiffener']))
 
             if 'shell structure properties' in imported.keys():
                 if imported['shell structure properties'][line] is not None:
