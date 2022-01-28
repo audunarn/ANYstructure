@@ -1256,9 +1256,9 @@ class AllStructure():
             main_dict['buckling length factor girder'][0]
         self._km3 = main_dict['km3'][0]#12
         self._km2 = main_dict['km2'][0]#24
-        self._girder_dist_between_lateral_supp = None if main_dict['girder distance between lateral support'][0] else \
+        self._girder_dist_between_lateral_supp = None if main_dict['girder distance between lateral support'][0] in [0, None, ''] else \
             main_dict['girder distance between lateral support'][0]
-        self._stf_dist_between_lateral_supp = None if main_dict['stiffener distance between lateral support'][0] else \
+        self._stf_dist_between_lateral_supp = None if main_dict['stiffener distance between lateral support'][0]  in [0, None, ''] else \
             main_dict['stiffener distance between lateral support'][0]
         self._panel_length_Lp = None if main_dict['panel length, Lp'][0] == 0 else main_dict['panel length, Lp'][0]
         self._overpressure_side = main_dict['pressure side'][0] # either 'stiffener', 'plate', 'both'
@@ -1703,6 +1703,7 @@ class AllStructure():
             self._Stiffener.hw + self._Stiffener.tf / 2
 
         def lt_params(lT):
+
             if Ipo*lT>0:
                 fET = G*It/Ipo+math.pow(math.pi,2)*E*math.pow(hs,2)*Iz/(Ipo*math.pow(lT,2))
             else:
@@ -1758,9 +1759,9 @@ class AllStructure():
         fk_dict['plate'] = fk
         #Stiffener side
 
-        for lT in [l if self._stf_dist_between_lateral_supp is None else self._stf_dist_between_lateral_supp,
-                   0.4*l if self._stf_dist_between_lateral_supp is None else self._stf_dist_between_lateral_supp,
-                   0.8*l if self._stf_dist_between_lateral_supp is None else self._stf_dist_between_lateral_supp]:
+        for lT in [int(l if self._stf_dist_between_lateral_supp is None else self._stf_dist_between_lateral_supp),
+                   int(0.4*l if self._stf_dist_between_lateral_supp is None else self._stf_dist_between_lateral_supp),
+                   int(0.8*l if self._stf_dist_between_lateral_supp is None else self._stf_dist_between_lateral_supp)]:
             params = lt_params(lT)
             fr = params['fT'] if params['alphaT']>0.6 else fy
             fr_dict[lT] = fr
@@ -1774,12 +1775,13 @@ class AllStructure():
         #7.7.3  Resistance parameters for stiffeners
 
         NRd = 0.0001 if gammaM == 0 else Ae * (fy / gammaM)  # eq7.65, checked ok
-
-        NksRd = Ae * (fk_dict[l] / gammaM) #eq7.66
+        NksRd = Ae * (fk_dict[int(l if self._stf_dist_between_lateral_supp is None else self._stf_dist_between_lateral_supp)] / gammaM) #eq7.66
         NkpRd = Ae * (fk_dict['plate'] / gammaM)  # checked ok
 
-        Ms1Rd = Wes * (fr_dict[0.4*l] / gammaM)  # ok
-        Ms2Rd = Wes * (fr_dict[0.8*l] / gammaM)  # eq7.69 checked ok
+        Ms1Rd = Wes * (fr_dict[int(0.4*l if self._stf_dist_between_lateral_supp is None else
+                                   self._stf_dist_between_lateral_supp)] / gammaM)  # ok
+        Ms2Rd = Wes * (fr_dict[int(0.8*l if self._stf_dist_between_lateral_supp is None else
+                                   self._stf_dist_between_lateral_supp)] / gammaM)  # eq7.69 checked ok
 
         MstRd = Wes*(fy/gammaM) #eq7.70 checked ok
         MpRd = Wep*(fy/gammaM) #eq7.71 checked ok
@@ -2071,9 +2073,9 @@ class AllStructure():
 
         NRd = 0.0001 if gammaM == 0 else AeG * (fy / gammaM)  # eq7.65, checked ok
 
-        NksRd = AeG * (fk_dict[Lg] / gammaM) #eq7.66
+        NksRd = AeG * (fk_dict[Ltg] / gammaM) #eq7.66
         NkpRd = AeG * (fk_dict['plate'] / gammaM)  # checked ok
-        MsRd = WeG*fr_dict[Lg]/gammaM
+        MsRd = WeG*fr_dict[Ltg]/gammaM
         Ms1Rd = WeG * (fr_dict[0.4*Lg] / gammaM)  # ok
         Ms2Rd = WeG * (fr_dict[0.8*Lg] / gammaM)  # eq7.69 checked ok
 
