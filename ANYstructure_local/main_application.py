@@ -3954,7 +3954,7 @@ class Application():
                                                       font=self._text_size["Text 10 bold"], fill='Black')
                         if structure_obj is not None:
                             self._prop_canvas.create_text([100, 20],
-                                                          text='Thickness scale x 2' if idx == 0 else 'Girder',
+                                                          text='Thickness scale x 2',
                                                           font=self._text_size["Text 10 bold"], fill='grey')
                         # drawing stiffener
                         spacing = structure_obj.get_s()*self._prop_canvas_scale * mult
