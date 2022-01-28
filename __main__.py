@@ -11,7 +11,7 @@ def main(args=None):
     errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
     root = tk.Tk()
     width = root.winfo_screenwidth()
-    height = root.winfo_screenheight()
+    height = root.winfo_screenheight()*0.95
     root.geometry(f'{width}x{height}')
     my_app = Application(root)
     root.mainloop()

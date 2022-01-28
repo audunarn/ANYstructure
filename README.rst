@@ -4,21 +4,22 @@ ANYstructure
 
 Save cost and time by efficient optimization and reporting!
 
-ANYstructure is a GUI based steel dimension calculation and weight optimization tool intended for naval architects
-structural engineers. It is easy to used intended to provide an efficient way to dimension and optimize
-your floating structure.
+ANYstructure is the ultimate steel structure design tool for plate fields and cylinders!
+Weight optimization for all structures with machine learning capabilities.
+Calculations are based on DNV standards and rules.
 
-It is based on DNV-OS-C101 Design of offshore steel structures, general - LRFD method.
+It is based on DNV standards and recommended practices.
 
 The following is caluculated:
 
-* Minimum section module for stiffener
-* Minimum plate thickness
-* Buckling capacity (DNV-RP-C201 Buckling Strength of Plated Structures), PULS (licenced DNV software)
-  and Machine Learning buckling calculations.
-* Plate/stiffener connection fatigue (DNV-RP-C203: Fatigue Design of Offshore Steel Structures)
-* Bow slamming according to DNVGL ship rules
-* Weights, COG, COB. Development recorded for reporting.
+* Minimum plate thickness (DNV-OS-C101)
+* Minimum section modulus of stiffener/plate (DNVGL-OS-C101)
+* Minimum shear area (DNVGL-OS-C101)
+* Buckling (DNVGL-RP-C201)or PULS (licenced DNV software)
+* Buckling strength of shells DNV-RP-C202
+* PULS buckling (DNV license needed)
+* Machine learning buckling, PULS based
+* Fatigue for plate/stiffener connection (DNVGL-RP-C203)
 
 Loads are defined as follows:
 
