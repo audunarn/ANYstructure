@@ -371,7 +371,38 @@ class Application():
         point_x_start, point_start = 0.005208333, 0.13
 
         # ----------------------INITIATION OF THE SMALLER PARTS OF THE GUI STARTS HERE--------------------------
+        # Help tab
+        ttk.Label(self._tab_help, text='Buckling paramenter, flat plates', font="Text 10 bold", ) \
+            .place(relx=0.01, rely=0.05, )
+        try:
+            img_file_name = 'Panel_geometry_definitions.png'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = os.path.dirname(os.path.abspath(__file__)) + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
+            label = tk.Label(self._tab_help, image=photo)
+            label.image = photo  # keep a reference!
+            label.place(relx = 0.01, rely = 0.1)
+        except TclError:
+            pass
+        ttk.Label(self._tab_help, text='Buckling parameters, cylinders',font="Text 10 bold", )\
+            .place(relx=0.01, rely=0.55)
+        try:
+            img_file_name = 'Buckling_Strength_of_Shells.png'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = os.path.dirname(os.path.abspath(__file__)) + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
+            label = tk.Label(self._tab_help, image=photo)
+            label.image = photo  # keep a reference!
+            label.place(relx = 0.01, rely = 0.6)
+        except TclError:
+            pass
+
         # --- point input/output ----
+
         self._new_point_x = tk.DoubleVar()
         self._new_point_y = tk.DoubleVar()
         self._new_point_fix = tk.StringVar()

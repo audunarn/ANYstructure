@@ -220,7 +220,7 @@ class CreateStructureWindow():
             label.place(x=270, y=50)
         except TclError:
             pass
-        print(self._clicked_button )
+
         # Close and save depending on input
         # "long stf", "ring stf", "ring frame", "flat long stf"
         if self._clicked_button is not None:
@@ -441,6 +441,11 @@ class Section:
                    str(round(self.stf_web_thk*1000, 0))
         if self._stf_type == 'FB':
             ret_str = base_name
+        elif self._stf_type in ['L-bulb', 'bulb', 'hp']:
+            ret_str = 'Bulb'+str(int(self.stf_web_height*1000 + self.stf_flange_thk*1000))+'x'+\
+                      str(round(self.stf_web_thk*1000, 0))+ '__' +str(round(self.stf_web_height*1000, 0)) + 'x' + \
+                   str(round(self.stf_web_thk*1000, 0))+ str(round(self.stf_flange_width*1000, 0)) + 'x' + \
+                      str(round(self.stf_flange_thk*1000, 0))
         else:
             ret_str = base_name + '__' + str(round(self.stf_flange_width*1000, 0)) + 'x' + \
                       str(round(self.stf_flange_thk*1000, 0))

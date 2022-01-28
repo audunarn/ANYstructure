@@ -20,6 +20,8 @@ include ANYstructure_local\images\img_title.gif
 include ANYstructure_local\images\img_transverse_stress.gif
 include ANYstructure_local\images\ANYstructure_logo.jpg
 include ANYstructure_local\images\current_comps_NONE.png
+include ANYstructure_local\images\Buckling_Strength_of_Shells.png
+include ANYstructure_local\images\Panel_geometry_definitions.png
 include ANYstructure_local\ship_section_example.txt
 include ANYstructure_local\ANYstructure_documentation.pdf
 include ANYstructure_local\sections.csv

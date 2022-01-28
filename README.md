@@ -3,7 +3,7 @@ ANYstructure is the ultimate steel structure design tool for plate fields and cy
 Weight optimization for all structures with machine learning capabilities. 
 Calculations are based on DNV standards and rules.
 
-### What's new in 3.4 ###
+### What's new in 4.0 ###
 * Cylinder design and optimization
 * Flat plate prescriptive buckling improved. Girder calculation added.
 * Updated GUI with color themes.
