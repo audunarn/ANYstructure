@@ -69,7 +69,7 @@ class CreateCompartmentWindow():
         FULL = red
         :return:
         '''
-        # TODO make a better plot of the tanks
+
         def discrete_matshow(data):
             # get discrete colormap
             cmap = plt.get_cmap('RdBu', np.max(data) - np.min(data) + 1)

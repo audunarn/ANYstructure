@@ -85,10 +85,11 @@ class JSfile:
         Bm1.section = T_400_0x12_0__250_0x14_0;
         '''
         for line_name, line_prop in self._line_to_struc.items():
-            beam_name = 'ANYbm'+str(hlp.get_num(line_name))
-            self.output_lines.append(beam_name+' = Beam('+line_name+');\n')
-            section = plstf.Section(line_prop[0].get_structure_prop())
-            self.output_lines.append(beam_name + '.section = '+section.__str__()+';\n')
+            if line_prop[0].Stiffener is not None:
+                beam_name = 'ANYbm'+str(hlp.get_num(line_name))
+                self.output_lines.append(beam_name+' = Beam('+line_name+');\n')
+                section = plstf.Section(line_prop[0].Stiffener.get_structure_prop())
+                self.output_lines.append(beam_name + '.section = '+section.__str__()+';\n')
 
 if __name__ == '__main__':
     import ANYstructure_local.example_data as test

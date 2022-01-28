@@ -353,7 +353,7 @@ def helper_read_section_file(files, obj = None, to_json = False, to_csv = None):
         if obj is not None:  # This will return a modified object.
             for idx, iter_obj in enumerate(obj):
                 new_obj = copy.deepcopy(iter_obj)
-                new_obj_prop = new_obj.get_structure_prop()
+                new_obj_prop = new_obj.get_main_properties()
                 for prop_name, prop_val in value.items():
                     new_obj_prop[prop_name] = prop_val
                 new_obj.set_main_properties(new_obj_prop)
@@ -481,14 +481,134 @@ def plot_weights(time_stamp = None, cog = None, structure = None, weight = None)
     plt.tight_layout()
     plt.show()
 
+def helper_cylinder_stress_to_force_to_stress(stresses = None, forces = None, geometry = None, shell_t = 0,
+                                              shell_radius = 0, shell_spacing = 0,
+                                              hw = 0, tw = 0, b = 0, tf = 0, CylinderAndCurvedPlate = None,
+                                              conical = False, psd = 0, cone_r1 = 0, cone_r2 = 0, cone_alpha = 0,
+                                              shell_lenght_l = 0):
+    
+    
+    A = 0 if geometry in [1, 2] else hw * tw + b * tf
+    eq_thk = shell_t if geometry in [1, 2] else shell_t + A/shell_spacing
+
+    Itot = CylinderAndCurvedPlate.get_Itot(hw=0 if geometry in [1, 2] else hw,
+                                           tw=0 if geometry in [1, 2] else tw,
+                                           b=0 if geometry in [1, 2] else b,
+                                           tf=0 if geometry in [1, 2] else tf,
+                                           r=shell_radius,
+                                           s=shell_spacing,
+                                           t=shell_t)
+
+    if forces is not None and stresses is None:
+        if not conical:
+            Nsd, Msd, Tsd, Qsd = forces
+            sasd = (Nsd / 2) / (math.pi * shell_radius * eq_thk) * 1000
+            smsd = (Msd/ Itot) * \
+                   (shell_radius + shell_t / 2) * 1000000
+            tTsd = (Tsd* 10 ** 6) / (2 * math.pi * shell_t * math.pow(shell_radius, 2))
+            tQsd = Qsd / (math.pi * shell_radius * shell_t) * 1000
+            shsd = 0
+            return sasd, smsd, tTsd, tQsd, shsd
+        else:
+            Nsd, M1sd, M2sd, Tsd, Q1sd, Q2sd = forces
+            re = (cone_r1+cone_r2) / (2*math.cos(math.radians(cone_alpha)))
+            le = shell_lenght_l / math.cos(math.radians(cone_alpha))
+            te = shell_t *math.cos(math.radians(cone_alpha))
+            sasd = psd*re/2*te + Nsd/(2*math.pi*re*te) * 1000
+            smsd = ((M1sd*math.sin(math.radians(cone_alpha)) / (math.pi*math.pow(re,2)*te)) + \
+                   (M2sd*math.cos(math.radians(cone_alpha)) / (math.pi*math.pow(re,2)*te))) * 1000000
+            shsd = psd*re/te
+            tTsd = Tsd/(2*math.pi*math.pow(re,2)*te)
+            tQsd = -(Q1sd*math.cos(math.radians(cone_alpha)) / (math.pi*re*te)) + \
+                   (Q2sd*math.sin(math.radians(cone_alpha)) / (math.pi*re*te))
+            return sasd, smsd, tTsd, tQsd, shsd
+
+    else:
+        if not conical:
+            sasd, smsd, tTsd, tQsd, shsd = stresses
+            Nsd = (sasd * 2 * math.pi * shell_radius * eq_thk) / 1000
+            Msd = (smsd / (shell_radius * shell_t / 2)) * Itot / 1000000
+            Tsd = tTsd * 2 * math.pi * shell_t * math.pow(shell_radius, 2) / 1000000
+            Qsd = tQsd * math.pi * shell_radius * shell_t / 1000
+        else:
+            re = (cone_r1+cone_r2) / (2*math.cos(math.radians(cone_alpha)))
+            le = shell_lenght_l / math.cos(math.radians(cone_alpha))
+            te = shell_t *math.cos(math.radians(cone_alpha))
+            Itot = CylinderAndCurvedPlate.get_Itot(hw=0,
+                                                   tw=0 ,
+                                                   b=0 ,
+                                                   tf=0,
+                                                   r=re,
+                                                   s=shell_spacing,
+                                                   t=te)
+            sasd, smsd, tTsd, tQsd, shsd = stresses
+            Nsd = (sasd * 2 * math.pi * re * te) / 1000
+            Msd = (smsd / (re * te / 2)) * Itot / 1000000
+            Tsd = tTsd * 2 * math.pi * te * math.pow(re, 2) / 1000000
+            Qsd = tQsd * math.pi * re * te/ 1000
+
+        return Nsd, Msd, Tsd, Qsd, shsd
+
 
 if __name__ == '__main__':
-    import ANYstructure_local.example_data as ex
-    from pathlib import Path
-    #file = Path('C:\\Program Files\\DNVGL\\GeniE V8.0-21\\Libraries\\tbar.xml')
-    # all_returned = helper_read_section_file('C:\\Program Files\\DNVGL\\GeniE V8.0-21\\Libraries\\tbar.xml', to_csv='tbar.csv')
-    #
-    # import random
-    #
-    # print(all_returned)
-    plot_weights()
+    from tkinter import *
+
+
+
+    class AllTkinterWidgets:
+        def __init__(self, master):
+            frame = Frame(master, width=500, height=400, bd=1)
+            frame.pack()
+
+            iframe5 = Frame(frame, bd=2, relief=RAISED)
+            iframe5.pack(expand=1, fill=X, pady=10, padx=5)
+            c = Canvas(iframe5, bg='white', width=340, height=200)
+            c.pack()
+
+            height = 150
+            radius = 150
+            offset_oval = 30
+            start_x_cyl = 150
+            start_y_cyl = 20
+            coord1 = start_x_cyl, start_y_cyl, start_x_cyl + radius, offset_oval
+            coord2 = start_x_cyl, start_y_cyl + height, start_x_cyl + radius, offset_oval+ height
+
+            arc_1 = c.create_oval(coord1, width = 5, fill = 'grey90')
+            arc_2 = c.create_arc(coord2, extent = 180, start = 180,style=ARC, width = 3)
+
+            line1 = c.create_line(coord1[0], coord1[1]+offset_oval/4,
+                                  coord1[0], coord1[1]+height+offset_oval/4,
+                                  width = 3)
+            line2 = c.create_line(coord1[0]+radius, coord1[1]+offset_oval/4,
+                                  coord1[0]+radius, coord1[1]+height+offset_oval/4,
+                                  width = 3)
+            num_stf = 10
+            for line_num in range(1,num_stf,1):
+                angle = 180 - 180/(num_stf) *line_num
+                arc_x, arc_y = 1*math.cos(math.radians(angle)), 0.5*math.sin(math.radians(angle))
+                arc_x = (arc_x + 1)/2
+
+                line1 = c.create_line(coord1[0] + radius*arc_x,
+                                      coord1[1] +2*arc_y*offset_oval/3,
+                                      coord1[0] + radius*arc_x,
+                                      coord1[1] + height +2*arc_y*offset_oval/3,fill = 'blue')
+            num_ring_stiff = 5
+            for ring_stf in range(1,num_ring_stiff+1,1):
+                coord3 = coord1[0], coord1[1]+(height/(num_ring_stiff+1))*ring_stf,  \
+                         start_x_cyl +radius, coord1[3]+ (height/(num_ring_stiff+1))*ring_stf,
+                arc_2 = c.create_arc(coord3, extent=180, start=180, style=ARC, width=2,fill = 'orange', outline = 'orange')
+
+            num_ring_girder = 1
+            for ring_girder in range(1, num_ring_girder+1,1):
+                coord3 = coord1[0], coord1[1]+(height/(num_ring_girder+1))*ring_girder,  \
+                         start_x_cyl+ radius, coord1[3]+ (height/(num_ring_girder+1))*ring_girder,
+                arc_2 = c.create_arc(coord3, extent=180, start=180, style=ARC, width=4, fill = 'grey', outline = 'grey')
+
+            iframe5.pack(expand=1, fill=X, pady=10, padx=5)
+
+
+    root = Tk()
+    # root.option_add('*font', ('verdana', 10, 'bold'))
+    all = AllTkinterWidgets(root)
+    root.title('Tkinter Widgets')
+    root.mainloop()

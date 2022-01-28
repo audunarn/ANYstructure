@@ -1,6 +1,8 @@
  # -*- coding: utf-8 -*-
+import copy
 import time, datetime
 import tkinter as tk
+from tkinter import ttk
 from tkinter import filedialog
 from tkinter import messagebox
 from ANYstructure_local.calc_loads import *
@@ -12,6 +14,7 @@ from ANYstructure_local.helper import *
 import math, decimal
 import ANYstructure_local.optimize as op
 import ANYstructure_local.optimize_window as opw
+import ANYstructure_local.optimize_cylinder as opc
 import ANYstructure_local.optimize_multiple_window as opwmult
 import ANYstructure_local.optimize_geometry as optgeo
 import ANYstructure_local.pl_stf_window as struc
@@ -45,18 +48,46 @@ class Application():
         parent.protocol("WM_DELETE_WINDOW", self.close_main_window)
         parent.bind("<Configure>", self.resize)
 
+        self._root_dir = os.path.dirname(os.path.abspath(__file__))
+        # Main frame for the application
+        self._main_fr = ttk.Frame(parent)
+        self._main_fr.place(in_=parent, relwidth=1, relheight = 0.99)
+
         # Definng general colors
-        self._general_color = 'azure2'  # Color for backgrounds.
+        self._general_color = 'alice blue'#"'azure2'  # Color for backgrounds.
         self._entry_color = 'white'  # Entry fields color.
         self._entry_text_color = 'black'  # Entry field tex color
         self._button_bg_color = 'LightBlue1'
         self._button_fg_color = 'black'
+        self._color_text = 'white'
 
-        self._root_dir = os.path.dirname(os.path.abspath(__file__))
-        # Main frame for the application
-        self._main_fr = tk.Frame(parent,
-                                 background=self._general_color)
-        self._main_fr.place(in_=parent, relwidth=1, relheight = 0.99)
+        ''' Setting the style of ttk'''
+        #
+        self._style = ttk.Style(parent)
+        self._style.theme_use('vista')
+        self._style.layout("TNotebook", [])
+        self._style.configure("TNotebook", tabmargins=0)
+
+        # tabbed frames
+        self._tabControl = ttk.Notebook(parent)
+        self._tab_geo = ttk.Frame(self._tabControl, relief = 'flat')
+        self._tab_prop = ttk.Frame(self._tabControl, relief = 'flat')
+        self._tab_comp = ttk.Frame(self._tabControl, relief='flat')
+        self._tab_prop_tools = ttk.Frame(self._tabControl, relief='flat')
+        self._tab_information = ttk.Frame(self._tabControl, relief='flat')
+        self._tab_help = ttk.Frame(self._tabControl, relief='flat')
+
+        self._tabControl.add(self._tab_geo, text='Geometry')
+        self._tabControl.add(self._tab_prop, text='Line properties')
+        self._tabControl.add(self._tab_prop_tools, text='Properties tools')
+        self._tabControl.add(self._tab_comp, text='Compartments and loads')
+        self._tabControl.add(self._tab_information, text='Information')
+        self._tabControl.add(self._tab_help, text='Help')
+
+        self._tabControl.place(relwidth=0.2585, relheight = 0.99)
+        #self._tabControl.select(self._tab2)
+
+
         # Top open/save/new
         menu = tk.Menu(parent)
         parent.config(menu=menu)
@@ -83,6 +114,9 @@ class Application():
                               'Arrows up/down - previous/next point'
 
 
+
+        ''' END style setting'''
+
         undo_redo = tk.Menu(menu)
         menu.add_cascade(label='Geometry', menu=undo_redo)
         undo_redo.add_command(label='Undo geometry action (CTRL-Z)', command=self.undo)
@@ -104,9 +138,9 @@ class Application():
 
         sub_report = tk.Menu(menu)
         menu.add_cascade(label = 'Reporting', menu = sub_report)
-        sub_report.add_command(label = 'Generate PDF report', command = self.report_generate)
-        sub_report.add_command(label='Generate PDF result table', command=self.table_generate)
-        sub_report.add_command(label='Weight development, plates and beams', command=self.on_plot_cog_dev)
+        sub_report.add_command(label = 'Stiffened flat plate - Generate PDF report', command = self.report_generate)
+        sub_report.add_command(label='Stiffened flat plate - Generate PDF result table', command=self.table_generate)
+        sub_report.add_command(label='Stiffened flat plate - Weight development, plates and beams', command=self.on_plot_cog_dev)
 
         sub_sesam = tk.Menu(menu)
         menu.add_cascade(label = 'SESAM interface', menu = sub_sesam)
@@ -114,9 +148,22 @@ class Application():
 
         sub_help = tk.Menu(menu)
         menu.add_cascade(label='Help', menu = sub_help)
-        sub_help.add_command(label = 'Open documentation', command = self.open_documentation)
+        sub_help.add_command(label = 'Open website (documentation etc.)', command = self.open_documentation)
+        sub_help.add_command(label='Open documentation pdf', command=self.open_documentation_pdf)
+        sub_help.add_command(label='Donate!', command=self.open_donate)
         sub_help.add_command(label = 'Open example file', command = self.open_example)
         sub_help.add_command(label='About ANYstructure', command=self.open_about)
+
+        sub_colors = tk.Menu(menu)
+        menu.add_cascade(label='GUI', menu = sub_colors)
+        sub_colors.add_command(label='Colors - Default', command=lambda id="default": self.set_colors(id))
+        sub_colors.add_command(label = 'Colors - Light', command = lambda id = "light": self.set_colors(id))
+        sub_colors.add_command(label='Colors - Grey', command = lambda id = "grey": self.set_colors(id))
+        sub_colors.add_command(label='Colors - Dark', command = lambda id = "dark": self.set_colors(id))
+        sub_colors.add_command(label='Colors - Unicorn', command=lambda id="pink": self.set_colors(id))
+        sub_colors.add_command(label='Functional - All items', command=lambda id="all items": self.set_colors(id))
+        sub_colors.add_command(label='Functional - Modelling', command=lambda id="modelling": self.set_colors(id))
+
         #base_mult = 1.2
         #base_canvas_dim = [int(1000 * base_mult),int(720*base_mult)]  #do not modify this, sets the "orignal" canvas dimensions.
         base_canvas_dim = [1000,720]  #do not modify this, sets the "orignal" canvas dimensions.
@@ -147,25 +194,34 @@ class Application():
 
         self._canvas_scale = 20 # Used for slider and can change
         self._base_scale_factor = 10 # Used for grid and will not change, 10 is default
+        self._prop_canvas_scale = 100 # Scrolling for property canvas
+        # self._prop_canvas_x_base =
+        # self._prop_canvas_y_base =
 
-        # Creating the various canvas next.
+        # # Creating the various canvas next.
         self._main_canvas = tk.Canvas(self._main_fr,
-                                      background=self._general_color, bd=0, highlightthickness=0, relief='ridge')
+                                      background=self._style.lookup('TFrame', 'background'), bd=0,
+                                      highlightthickness=0, relief='ridge')
         self._prop_canvas = tk.Canvas(self._main_fr,
-                                     background=self._general_color, bd=0, highlightthickness=0, relief='ridge')
+                                     background=self._style.lookup('TFrame', 'background'), bd=0,
+                                      highlightthickness=0, relief='ridge')
         self._result_canvas = tk.Canvas(self._main_fr,
-                                       background=self._general_color, bd=0, highlightthickness=0, relief='ridge')
+                                       background=self._style.lookup('TFrame', 'background'), bd=0,
+                                        highlightthickness=0, relief='ridge')
+
+        # # These frames are just visual separations in the GUI.
+        # frame_horizontal, frame_vertical = 0.73, 0.258
+        # self._frame_viz_hor = tk.Frame(self._main_fr, height=3, bg="black", colormap="new")
+        # self._frame_viz_hor.place(relx=0, rely=frame_horizontal, relwidth=1)
+        # self._frame_viz_ver = tk.Frame(self._main_fr, width=3, bg="black", colormap="new")
+        # self._frame_viz_ver.place(relx=frame_vertical,rely=0 * 1, relheight=1)
+
         x_canvas_place = 0.26
         self._main_canvas.place(relx=x_canvas_place, rely=0,relwidth=0.523, relheight = 0.73)
         self._prop_canvas.place(relx=x_canvas_place, rely=0.73, relwidth=0.38, relheight = 0.27)
         self._result_canvas.place(relx=x_canvas_place+0.38, rely=0.73, relwidth=0.36, relheight = 0.27)
 
-        # These frames are just visual separations in the GUI.
-        frame_horizontal, frame_vertical = 0.73, 0.258
-        tk.Frame(self._main_fr, height=3, bg="black", colormap="new")\
-            .place(relx=0, rely=frame_horizontal, relwidth=1)
-        tk.Frame(self._main_fr, width=3, bg="black", colormap="new")\
-            .place(relx=frame_vertical,rely=0 * 1, relheight=1)
+
 
         # Point frame
         self._pt_frame = tk.Frame(self._main_canvas, width=100, height=100, bg="black", relief='raised')
@@ -200,12 +256,12 @@ class Application():
         self._load_factors_dict = {'dnva':[1.3,1.2,0.7], 'dnvb':[1,1,1.2], 'tanktest':[1,1,0]} # DNV  loads factors
         self._accelerations_dict = {'static':9.81, 'dyn_loaded':0, 'dyn_ballast':0} # Vertical acclerations
         self._load_conditions = ['loaded','ballast','tanktest', 'part','slamming'] # Should not be modified. Load conditions.
-        self._tank_options = {'crude_oil': 900, 'diesel': 850 , 'slop': 1050, 'ballast': 1025, 'fresh water': 1000} # Should not be modified.
-        self._default_stresses = {'BOTTOM':(100,100,50,5), 'BBS':(70,70,30,3), 'BBT':(80,80,30,3), 'HOPPER':(70,70,50,3),
-                                 'SIDE_SHELL':(100,100,40,3),'INNER_SIDE':(80,80,40,5), 'FRAME':(70,70,60,10),
-                                 'FRAME_WT':(70,70,60,10),'SSS':(100,100,50,20), 'MD':(70,70,40,3),
-                                 'GENERAL_INTERNAL_WT':(90,90,40,5),'GENERAL_INTERNAL_NONWT':(70,70,30,3),
-                                  'INTERNAL_1_MPA':(1,1,1,1), 'INTERNAL_LOW_STRESS_WT':(40,40,20,5)}
+        self._tank_options = {'ballast': 1025, 'crude_oil': 900, 'diesel': 850 , 'slop': 1050, 'fresh water': 1000} # Should not be modified.
+        self._default_stresses = {'BOTTOM':(100,100,50,50,5), 'BBS':(70,70,30,30,3), 'BBT':(80,80,30,3), 'HOPPER':(70,70,50,50,3),
+                                 'SIDE_SHELL':(100,100,40,40,3),'INNER_SIDE':(80,80,40,40,5), 'FRAME':(70,70,60,0,10),
+                                 'FRAME_WT':(70,70,60,0,10),'SSS':(100,100,50,50,20), 'MD':(70,70,4,40,3),
+                                 'GENERAL_INTERNAL_WT':(90,90,40,40,5),'GENERAL_INTERNAL_NONWT':(70,70,30,30,3),
+                                  'INTERNAL_1_MPA':(1,1,1,1,1), 'INTERNAL_LOW_STRESS_WT':(40,40,20,20,5)}
                                 # The default stresses are used for buckling calculations.
         self._structure_types = {'vertical':['BBS', 'SIDE_SHELL', 'SSS'],
                                  'horizontal': ['BOTTOM', 'BBT', 'HOPPER', 'MD'],
@@ -255,13 +311,20 @@ class Application():
                                     "CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_predictor",
                                     "CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_SP_scaler"]):
             self._ML_buckling[name] = None
+
             if os.path.isfile(file_base + '.pickle'):
                 file = open(file_base + '.pickle', 'rb')
                 from sklearn.neural_network import MLPClassifier
                 from sklearn.preprocessing import StandardScaler
                 self._ML_buckling[name] = pickle.load(file)
                 file.close()
-        print(self._ML_buckling)
+            else:
+                file = open(self._root_dir +'\\' + file_base + '.pickle', 'rb')
+                from sklearn.neural_network import MLPClassifier
+                from sklearn.preprocessing import StandardScaler
+                self._ML_buckling[name] = pickle.load(file)
+                file.close()
+
         self._ML_classes ={0: 'N/A',
                            1: 'A negative utilisation factor is found.',
                            2: 'At least one of the in-plane loads must be non-zero.',
@@ -276,7 +339,7 @@ class Application():
         self._stuctural_definition = ['mat_yield','mat_factor', 'span', 'spacing', 'plate_thk', 'stf_web_height',
                                       'stf_web_thk',
                                        'stf_flange_width', 'stf_flange_thk', 'structure_type', 'stf_type',
-                                       'sigma_y1', 'sigma_y2', 'sigma_x', 'tau_xy', 'plate_kpp', 'stf_kps','stf_km1',
+                                       'sigma_y1', 'sigma_y2', 'sigma_x1','sigma_x2', 'tau_xy', 'plate_kpp', 'stf_kps','stf_km1',
                                        'stf_km2', 'stf_km3', 'press_side', 'zstar_optimization',
                                       'puls buckling method', 'puls boundary', 'puls stiffener end', 'puls sp or up',
                                       'puls up boundary']
@@ -298,11 +361,14 @@ class Application():
         self._main_grid  = grid.Grid(self._grid_dimensions[0], self._grid_dimensions[1])
         self._grid_calc = None
         self.text_widget = None
+        self._clicked_section_create= None # Identifiation of the button clicked. Sections.
+        self._gui_functional_look = 'all items' # used to change size and location of frames, canvas etc.
 
         # These sets the location where entries are placed.
-        ent_x = 0.09375
-        delta_y = 0.022
-        delta_x = 0.026041667
+        ent_x = 0.4
+        delta_y = 0.025
+        delta_x = 0.1
+        point_x_start, point_start = 0.005208333, 0.13
 
         # ----------------------INITIATION OF THE SMALLER PARTS OF THE GUI STARTS HERE--------------------------
         # --- point input/output ----
@@ -311,45 +377,51 @@ class Application():
         self._new_point_fix = tk.StringVar()
         self._new_zstar_optimization = tk.BooleanVar()
         self._new_zstar_optimization.set(True)
-        self._new_project_infomation = tk.StringVar()
-        self._new_project_infomation.set('No information on project provided. Input here.')
-        point_x_start, point_start = 0.005208333, 0.055
         ent_width = 6  # width of entries
 
-        tk.Entry(self._main_fr, textvariable=self._new_project_infomation,
-                 bg = self._button_bg_color, fg = self._entry_text_color)\
-            .place(relx=0.005, rely=0.005, relwidth = 0.25)
+        self._project_information = tk.Text(self._tab_geo, wrap = tk.WORD, relief = tk.FLAT)
+        self._project_information.place(relx=0.005, rely=0.005, relwidth = 0.95, relheight = 0.1)
 
-        tk.Label(self._main_fr, text='Input point coordinates [mm]', font=self._text_size['Text 9 bold'],
-                 bg = self._general_color)\
-            .place(rely=point_start - 0.027777778, relx=point_x_start, anchor = tk.NW)
-        tk.Label(self._main_fr, text='Point x (horizontal) [mm]:',font="Text 9", bg = self._general_color)\
-            .place(relx=point_x_start, rely=point_start)
-        tk.Label(self._main_fr, text='Point y (vertical)   [mm]:',font="Text 9", bg = self._general_color)\
-            .place(relx=point_x_start, rely=point_start + delta_y)
+        self._project_information.insert(1.0, 'No information on project provided. Input here.')
 
-        tk.Entry(self._main_fr, textvariable=self._new_point_x, width = int(ent_width * 1.5),
-                 bg = self._entry_color, fg = self._entry_text_color)\
-            .place(relx=ent_x, rely=point_start)
-        tk.Entry(self._main_fr, textvariable=self._new_point_y, width = int(ent_width * 1.5),
-                 bg = self._entry_color, fg = self._entry_text_color)\
-            .place(relx=ent_x, rely=point_start + delta_y)
-        tk.Button(self._main_fr, text='Add point (coords)', command=self.new_point,
-                  bg = self._button_bg_color, fg = self._button_fg_color,
-                  font = self._text_size['Text 9 bold']).place(relx=ent_x + 2 * delta_x, rely=point_start-1*delta_y,
-                                                               relwidth = 0.08)
-        tk.Button(self._main_fr, text='Copy point (relative)', command=self.copy_point,
-                  bg = self._button_bg_color, fg = self._button_fg_color,
-                  font = self._text_size['Text 9 bold']).place(relx=ent_x + 2 * delta_x, rely=point_start+0.1*delta_y,
-                                                               relwidth = 0.08)
-        tk.Button(self._main_fr, text='Move point', command=self.move_point,
-                  bg = self._button_bg_color, fg = self._button_fg_color,
-                  font = self._text_size['Text 9 bold']).place(relx=ent_x + 2 * delta_x, rely=point_start+1.2*delta_y,
-                                                               relwidth = 0.04)
-        tk.Button(self._main_fr, text='Move line', command=self.move_line,
-                  bg = self._button_bg_color, fg = self._button_fg_color,
-                  font = self._text_size['Text 9 bold']).place(relx=ent_x + 3.55 * delta_x, rely=point_start+1.2*delta_y,
-                                                               relwidth = 0.04)
+        ttk.Label(self._tab_geo, text='Input point coordinates [mm]', font=self._text_size['Text 9 bold'],
+                 )\
+            .place(rely=point_start, relx=point_x_start, anchor = tk.NW)
+        ttk.Label(self._tab_geo, text='Point x (horizontal) [mm]:',font="Text 9", )\
+            .place(relx=point_x_start, rely=point_start+ delta_y,)
+        ttk.Label(self._tab_geo, text='Point y (vertical)   [mm]:',font="Text 9", )\
+            .place(relx=point_x_start, rely=point_start + delta_y*2)
+
+        ttk.Entry(self._tab_geo, textvariable=self._new_point_x, width = int(ent_width * 1.5))\
+            .place(relx=ent_x, rely=point_start+ delta_y)
+        ttk.Entry(self._tab_geo, textvariable=self._new_point_y, width = int(ent_width * 1.5))\
+            .place(relx=ent_x, rely=point_start + delta_y*2)
+
+        ttk.Button(self._tab_geo, text='Add point (coords)', command=self.new_point,style = "Bold.TButton")\
+            .place(relx=ent_x + 2 * delta_x, rely=point_start+1*delta_y, relwidth = 0.3)
+        ttk.Button(self._tab_geo, text='Copy point (relative)', command=self.copy_point,style = "Bold.TButton")\
+            .place(relx=ent_x + 2 * delta_x, rely=point_start+2*delta_y,relwidth = 0.3)
+        ttk.Button(self._tab_geo, text='Move point', command=self.move_point,style = "Bold.TButton")\
+            .place(relx=ent_x + 2 * delta_x, rely=point_start+3*delta_y, relwidth = 0.3)
+        ttk.Button(self._tab_geo, text='Move line', command=self.move_line,style = "Bold.TButton")\
+            .place(relx=ent_x + 2 * delta_x,rely=point_start+4*delta_y, relwidth = 0.3)
+
+        self._new_draw_point_name = tk.BooleanVar()
+        self._new_draw_point_name.set(False)
+        ttk.Label(self._tab_geo, text='Show point names in GUI', font="Text 9")\
+            .place(relx=point_x_start, rely=point_start+3*delta_y)
+        ttk.Checkbutton(self._tab_geo, variable = self._new_draw_point_name, command = self.on_color_code_check)\
+            .place(relx=ent_x, rely=point_start+3*delta_y)
+
+        line_start, line_x = point_start+0.2, 0.0055
+        ttk.Label(self._tab_geo, text='Input line from "point number" to "point number"',
+                 font=self._text_size['Text 9 bold'], )\
+            .place(rely=line_start, relx=line_x, anchor = tk.NW)
+        ttk.Label(self._tab_geo, text='Line from point:',font="Text 9", )\
+            .place(relx=line_x, rely=line_start+delta_y)
+        ttk.Label(self._tab_geo, text='Line to point:',font="Text 9", )\
+            .place(relx=line_x, rely=line_start+2*delta_y)
+
 
         # --- line input/output ---
         self._new_line_p1 = tk.IntVar()
@@ -366,8 +438,6 @@ class Application():
         self._new_colorcode_plates.set(False)
         self._new_colorcode_utilization = tk.BooleanVar()
         self._new_colorcode_utilization.set(False)
-        self._new_draw_point_name = tk.BooleanVar()
-        self._new_draw_point_name.set(False)
         self._new_label_color_coding = tk.BooleanVar()
         self._new_label_color_coding.set(False)
         self._new_line_name = tk.BooleanVar()
@@ -395,6 +465,7 @@ class Application():
         self._new_colorcode_spacing= tk.BooleanVar()
         self._new_colorcode_spacing.set(False)
         self._new_toggle_var = tk.StringVar()
+        self._new_toggle_select_multiple = tk.BooleanVar()
         self._new_toggle_puls = tk.BooleanVar()
         self._new_toggle_puls.set(False)
         self._new_puls_uf = tk.DoubleVar()
@@ -407,110 +478,93 @@ class Application():
         self._new_fdwn.set(1)
         self._new_shifted_coords = tk.BooleanVar()
         self._new_shifted_coords.set(False)
-        self._new_buckling_slider = tk.IntVar()
-        self._new_buckling_slider.set(1)
         self._new_show_cog = tk.BooleanVar()
         self._new_show_cog.set(False)
         self._new_content_type = tk.StringVar()
         self._new_content_type.set('ballast')
+        self._new_panel_or_shell = tk.StringVar()
+        self._new_panel_or_shell.set('panel')
+        self._new_shift_viz_coord_ver = tk.DoubleVar()
+        self._new_shift_viz_coord_ver.set(0)
+        self._new_shift_viz_coord_hor = tk.DoubleVar()
+        self._new_shift_viz_coord_hor.set(0)
 
-        line_start, line_x = point_start+0.08, 0.005208333
-        tk.Label(self._main_fr, text='Input line from "point number" to "point number"',
-                 font=self._text_size['Text 9 bold'], bg = self._general_color)\
-            .place(rely=line_start - 0.025, relx=line_x, anchor = tk.NW)
-        tk.Label(self._main_fr, text='From point number:',font="Text 9", bg = self._general_color)\
-            .place(relx=line_x, rely=line_start)
-        tk.Label(self._main_fr, text='To point number:',font="Text 9", bg = self._general_color)\
-            .place(relx=line_x, rely=line_start + delta_y)
-        tk.Checkbutton(self._main_fr, variable = self._new_shortcut_backdrop, command = self.update_frame)\
-            .place(relx = 0.26, y=0)
-        tk.Label(self._main_fr, text='Color coding',font="Text 9", bg = self._general_color)\
-            .place(relx = 0.26, y=20)
-        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_beams, command = self.on_color_code_check)\
-            .place(relx = 0.26, y=40)
-        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_plates, command = self.on_color_code_check)\
-            .place(relx = 0.26, y=60)
-        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_pressure, command = self.on_color_code_check)\
-            .place(relx = 0.26, y=80)
-        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_utilization, command = self.on_color_code_check)\
-            .place(relx = 0.26, y=100)
-        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_section_modulus, command = self.on_color_code_check)\
-            .place(relx = 0.26, y=120)
-        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_fatigue, command = self.on_color_code_check)\
-            .place(relx = 0.26, y=140)
-        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_total, command = self.on_color_code_check)\
-            .place(relx = 0.26, y=160)
-        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_spacing, command = self.on_color_code_check)\
-            .place(relx = 0.095, rely=0.29)
+        line_start, line_x = point_start+0.2, 0.0055
 
+        ttk.Spinbox(self._tab_geo, textvariable=self._new_line_p1, width=int(ent_width * 1), from_ = 0,
+                    to = float('inf')).place(relx=ent_x, rely=line_start+1*delta_y)
+        ttk.Spinbox(self._tab_geo, textvariable=self._new_line_p2, width=int(ent_width * 1),
+                    from_ = 0, to = float('inf')).place(relx=ent_x, rely=line_start+2*delta_y)
 
-        tk.Label(self._main_fr, text='Check to see avaliable shortcuts', font="Text 9").place(relx = 0.27, y=0)
-        tk.Label(self._main_fr, text='Beam prop.', font="Text 9").place(relx = 0.27, y=40)
-        tk.Label(self._main_fr, text='Plate thk.', font="Text 9").place(relx = 0.27, y=60)
-        tk.Label(self._main_fr, text='Pressure', font="Text 9").place(relx = 0.27, y=80)
-        tk.Label(self._main_fr, text='Buckling UF', font="Text 9").place(relx = 0.27, y=100)
-        tk.Label(self._main_fr, text='Sec. mod. UF', font="Text 9").place(relx=0.27, y=120)
-        tk.Label(self._main_fr, text='Fatigue UF', font="Text 9").place(relx=0.27, y=140)
-        tk.Label(self._main_fr, text='Total UF', font="Text 9").place(relx=0.27, y=160)
-
-        tk.Entry(self._main_fr, textvariable=self._new_line_p1, width=int(ent_width * 1),
-                 bg = self._entry_color, fg = self._entry_text_color)\
-            .place(relx=ent_x, rely=line_start)
-        tk.Entry(self._main_fr, textvariable=self._new_line_p2, width=int(ent_width * 1),
-                 bg = self._entry_color, fg = self._entry_text_color)\
-            .place(relx=ent_x, rely=line_start + delta_y)
-        tk.Button(self._main_fr, text='Add line', command=self.new_line,
-                  bg = self._button_bg_color, fg = self._button_fg_color,
-                  font = self._text_size['Text 9 bold']).place(relx=ent_x+2*delta_x, rely=line_start-delta_y*0.05,
-                                                               relwidth = 0.05)
-        # tk.Button(self._main_fr, text='Move line', command=self.new_line,
-        #           bg = self._button_bg_color, fg = self._button_fg_color,
-        #           font = self._text_size['Text 9 bold']).place(relx=ent_x+2*delta_x, rely=line_start+delta_y*1.05,
-        #                                                        relwidth = 0.05)
+        ttk.Button(self._tab_geo, text='Add line', command=self.new_line,style = "Bold.TButton")\
+            .place(relx=ent_x + 2 * delta_x, rely=line_start+delta_y, relwidth = 0.3)
 
         # --- delete points and lines ---
         self._new_delete_line = tk.IntVar()
         self._new_delete_point = tk.IntVar()
-        del_start, del_x = line_start + 0.075,0.005208333
-        tk.Label(self._main_fr, text='Delete lines and points (or left/right click and use "Delete key")',
-                 font=self._text_size['Text 9 bold'], bg = self._general_color)\
-            .place(rely=del_start - 0.027777778*1,relx=del_x, anchor = tk.NW)
-        self._ent_delete_line = tk.Entry(self._main_fr, textvariable=self._new_delete_line,
-                                        width=int(ent_width * 1),
-                                         bg = self._entry_color, fg = self._entry_text_color)
-        self._ent_delete_line.place(relx=ent_x, rely=del_start)
+        del_start, del_x = line_start + 0.2,0.005208333
+        ttk.Label(self._tab_geo, text='Delete lines and points (or left/right click and use "Delete key")',
+                 font=self._text_size['Text 9 bold'], )\
+            .place(rely=del_start - 0.02,relx=del_x, anchor = tk.NW)
+        self._ent_delete_line = ttk.Spinbox(self._tab_geo, textvariable=self._new_delete_line,
+                                            from_ = 0, to = float('inf'),
+                                        width=int(ent_width * 1))
+        self._ent_delete_line.place(relx=ent_x, rely=del_start + delta_y)
 
-        self._ent_delete_point = tk.Entry(self._main_fr, textvariable=self._new_delete_point,
-                                         width=int(ent_width * 1),
-                                          bg = self._entry_color, fg = self._entry_text_color)
-        self._ent_delete_point.place(relx=ent_x, rely=del_start + delta_y)
+        self._ent_delete_point = ttk.Spinbox(self._tab_geo, textvariable=self._new_delete_point,
+                                             from_ = 0, to = float('inf'),
+                                         width=int(ent_width * 1))
+        self._ent_delete_point.place(relx=ent_x, rely=del_start + delta_y*2)
 
-        tk.Label(self._main_fr, text='Line number (left click):',font="Text 9", bg = self._general_color)\
-            .place(relx=del_x, rely=del_start)
-        tk.Label(self._main_fr, text='Point number (right click):',font="Text 9", bg = self._general_color)\
+        ttk.Label(self._tab_geo, text='Line number (left click):',font="Text 9")\
             .place(relx=del_x, rely=del_start+ delta_y)
+        ttk.Label(self._tab_geo, text='Point number (right click):',font="Text 9", )\
+            .place(relx=del_x, rely=del_start+ delta_y*2)
 
-        tk.Button(self._main_fr, text='Delete line',bg = self._button_bg_color, fg = self._button_fg_color,
-                                         font=self._text_size['Text 9 bold'],command=self.delete_line,
-                                         ).place(relx=ent_x+delta_x*2, rely=del_start-0.002,
-                                                                                    relwidth = 0.05)
-        tk.Button(self._main_fr, text='Delete prop.',bg = self._button_bg_color, fg = self._button_fg_color,
-                                         font=self._text_size['Text 9 bold'],command=self.delete_properties_pressed,
-                                         ).place(relx=ent_x+delta_x*4, rely=del_start-0.002,
-                                                                                    relwidth = 0.05)
+        ttk.Button(self._tab_geo, text='Delete line',command=self.delete_line,style = "Bold.TButton"
+                                         ).place(relx=ent_x+delta_x*2, rely=del_start + delta_y,
+                                                                                    relwidth = 0.3)
+        ttk.Button(self._tab_geo, text='Delete prop.',command=self.delete_properties_pressed,style = "Bold.TButton"
+                                         ).place(relx=ent_x+delta_x*2, rely=del_start + delta_y*2,
+                                                                                    relwidth = 0.3)
 
-        tk.Button(self._main_fr, text='Delete point',bg = self._button_bg_color, fg = self._button_fg_color,
-                                          font=self._text_size['Text 9 bold'],command=self.delete_point,
-                                          ).place(relx=ent_x+2*delta_x, rely=del_start + delta_y +0.004-0.002,
-                                                                                     relwidth = 0.05)
+        ttk.Button(self._tab_geo, text='Delete point',command=self.delete_point,style = "Bold.TButton"
+                                          ).place(relx=ent_x+2*delta_x, rely=del_start + delta_y*3,
+                                                                                     relwidth = 0.3)
+        
+        # Shifing of coordinate display
+        shift_x = del_x
+        shift_y = del_start+0.2
+        ttk.Label(self._tab_geo, text='Shift coordinate labeling [mm]: ', font = self._text_size['Text 8 bold'])\
+            .place(relx=shift_x, rely=shift_y - delta_y*0.5)
+        ttk.Label(self._tab_geo, text='Used if you want a different origin of the repoted coordinates. \n'
+                                   'Does not affect loads.', font = self._text_size['Text 8'])\
+            .place(relx=shift_x, rely=shift_y + delta_y*0.5)
+
+        ttk.Label(self._tab_geo, text='y shift', font = self._text_size['Text 8'],
+                 ).place(relx=shift_x, rely=shift_y + delta_y * 2)
+        ttk.Label(self._tab_geo, text='x shift ', font = self._text_size['Text 8'],
+                 ).place(relx=shift_x, rely=shift_y + delta_y * 3)
+
+        self._ent_shift_hor = ttk.Entry(self._tab_geo, textvariable = self._new_shift_viz_coord_hor,
+                                       width = ent_width )
+
+        self._ent_shift_hor.bind('<FocusOut>', self.trace_shift_change)
+        self._ent_shift_ver = ttk.Entry(self._tab_geo, textvariable = self._new_shift_viz_coord_ver,
+                                       width = ent_width,
+                                       )
+        self._ent_shift_ver.bind('<FocusOut>', self.trace_shift_change)
+        #self._ent_shift_ver.trace('w', self.trace_shift_change)
+        self._ent_shift_hor.place(relx=ent_x, rely=shift_y + delta_y * 2)
+        self._ent_shift_ver.place(relx=ent_x, rely=shift_y + delta_y * 3)
+
+        ttk.Label(self._tab_geo, text='Use shifted coordinates', font="Text 9")\
+            .place(relx=shift_x, rely=shift_y + delta_y * 4)
+        ttk.Checkbutton(self._tab_geo, variable = self._new_shifted_coords, command = self.update_frame)\
+            .place(relx=ent_x, rely=shift_y + delta_y * 4)
 
         # --- structure type information ---
-        prop_vert_start = 0.29
-        types_start = 0.005208333
-        tk.Label(self._main_fr, text='Structural and calculation properties input below:',
-                 font=self._text_size['Text 9 bold'],
-                 bg = self._general_color ).place(rely=prop_vert_start-delta_y,relx=types_start,
-                                                  anchor = tk.NW)
+
         def show_message():
             messagebox.showinfo(title='Structure type',message='Types - sets default stresses (sigy1/sigy2/sigx/tauxy)'
                                                                '\n FOR DYNAMIC EQUATION THE FOLLOWING APPLIES'
@@ -538,96 +592,46 @@ class Application():
 
 
 
-        tk.Label(self._main_fr, text='Show line names in GUI', font="Text 9")\
-            .place(relx=0.38, rely=0)
-        tk.Label(self._main_fr, text='Show point names in GUI', font="Text 9")\
-            .place(relx=0.47, rely=0)
-        tk.Label(self._main_fr, text='Label color code', font="Text 9")\
-            .place(relx=0.565, rely=0)
-        tk.Label(self._main_fr, text='Use shifted coordinates', font="Text 9")\
-            .place(relx=0.635, rely=0)
-        tk.Label(self._main_fr, text='Show COG/COB', font="Text 9")\
-            .place(relx=0.733, rely=0)
-        tk.Checkbutton(self._main_fr, variable = self._new_line_name, command = self.on_color_code_check)\
-            .place(relx=0.366, rely=0)
-        tk.Checkbutton(self._main_fr, variable = self._new_draw_point_name, command = self.on_color_code_check)\
-            .place(relx=0.455, rely=0)
-        tk.Checkbutton(self._main_fr, variable = self._new_label_color_coding, command = self.on_color_code_check)\
-            .place(relx=0.55, rely=0)
-        tk.Checkbutton(self._main_fr, variable = self._new_shifted_coords, command = self.update_frame)\
-            .place(relx=0.62, rely=0)
-        tk.Checkbutton(self._main_fr, variable = self._new_show_cog, command = self.update_frame)\
-            .place(relx=0.72, rely=0)
+        vert_start = 0.1
+        hor_start = 0.02
 
-
-
-        self.add_stucture = tk.Button(self._main_fr, text='Add structure/properties to line \n'
-                                                          '-- new or replace existing --', command=self.new_structure,
-                                      font = self._text_size['Text 10 bold'],
-                                      bg = self._button_bg_color, fg = self._button_fg_color)
-        self.add_stucture.place(relx=types_start+ delta_x*4.2, rely=prop_vert_start+18*delta_y, relwidth = 0.14,
-                                relheight = 0.04)
-
-
-        tk.Checkbutton(self._main_fr, variable = self._new_scale_stresses, command = self.on_color_code_check)\
-            .place(relx = types_start+ delta_x*4.3, rely=prop_vert_start+16.9*delta_y)
-        tk.Label(self._main_fr, text='Scale stresses when\n changing prop.', font=self._text_size['Text 9'],
-                 bg = self._general_color)\
-            .place(relx = types_start+ delta_x*4.7, rely=prop_vert_start+16.6*delta_y, relwidth = 0.065)
-        tk.Label(self._main_fr, text='fup', font=self._text_size['Text 8'],
-                 bg = self._general_color)\
-            .place(relx = types_start+ delta_x*7.3, rely=prop_vert_start+17*delta_y)
-        ent_fup = tk.Entry(self._main_fr, textvariable=self._new_fup,
-                                         bg = self._entry_color, fg = self._entry_text_color)
-        ent_fup.place(relx = types_start+ delta_x*7.8, rely=prop_vert_start+17*delta_y, relwidth = 0.01)
-        tk.Label(self._main_fr, text='fdown', font=self._text_size['Text 8'],
-                 bg = self._general_color)\
-            .place(relx = types_start+ delta_x*8.3, rely=prop_vert_start+17*delta_y)
-        ent_fdwn = tk.Entry(self._main_fr, textvariable=self._new_fdwn,
-                                         bg = self._entry_color, fg = self._entry_text_color)
-        ent_fdwn.place(relx = types_start+ delta_x*9.1, rely=prop_vert_start+17*delta_y, relwidth = 0.01)
         # Toggle buttons
-        self._toggle_btn = tk.Button(self._main_fr, text="Toggle select\nmultiple", relief="raised",
-                                     command=self.toggle_select_multiple, bg = self._button_bg_color)
-        self._toggle_change_param = tk.Button(self._main_fr, text="Change multi.\nparameter", relief="raised",
-                                     command=self.toggle_set_variable, bg = self._button_bg_color)
+        ttk.Label(self._tab_prop_tools, text='Change one property for multiple lines here. \n'
+                                             '1. Press mulitple select button\n'
+                                             '2. Select parameter in option menu\n'
+                                             '3. Press Change parameters button', font=self._text_size['Text 9'])\
+            .place(relx = hor_start, rely=vert_start-1*delta_y)
+        self._toggle_btn = tk.Button(self._tab_prop_tools, text="Toggle select\nmultiple", relief="raised",
+                                     command=self.toggle_select_multiple, bg = '#E1E1E1', activebackground = '#E5F1FB' )
+        self._toggle_change_param = ttk.Button(self._tab_prop_tools, text="Change parameters",
+                                     command=self.toggle_set_variable)
         self._toggle_param_to_change = None
-        self._toggle_btn.place(relx=types_start+ delta_x*4.2, rely=prop_vert_start+15*delta_y, relwidth = 0.045,
-                                relheight = 0.035)
-        self._toggle_change_param.place(relx=types_start+ delta_x*6, rely=prop_vert_start+15*delta_y, relwidth = 0.045,
-                                relheight = 0.035)
+        self._toggle_btn.place(relx=hor_start, rely=vert_start+2*delta_y, relwidth = 0.2, relheight = 0.06)
 
-        self._toggle_choose = tk.OptionMenu(self._main_fr, self._new_toggle_var, *self._stuctural_definition,
+        self._toggle_change_param.place(relx=hor_start+ delta_x*6, rely=vert_start+2*delta_y, relwidth = 0.25)
+
+        self._toggle_choose = ttk.OptionMenu(self._tab_prop_tools, self._new_toggle_var,self._stuctural_definition[0],
+                                             *self._stuctural_definition,
                                             command = self.update_frame)
-        self._toggle_choose.place(relx=types_start+ delta_x*7.8, rely=prop_vert_start+15*delta_y, relwidth = 0.047,
-                                relheight = 0.035)
+        self._toggle_choose.place(relx=hor_start+ delta_x*3, rely=vert_start+2*delta_y, relwidth = 0.25)
 
-        # PULS interface
-        self._toggle_btn_puls = tk.Button(self._main_fr, text="Use PULS\n"
-                                                              "results", relief="raised",
-                                     command=self.toggle_puls_run, bg = self._button_bg_color)
-        self._puls_run_all = tk.Button(self._main_fr, text='Run PULS\nupdate results', relief="raised",
-                                     command=self.puls_run_all_lines, bg = self._button_bg_color)
-        # self._puls_run_one = tk.Button(self._main_fr, text="PULS\nRun one line", relief="raised",
-        #                              command=self.puls_run_one_line, bg = self._button_bg_color)
-        self._ent_puls_uf = tk.Entry(self._main_fr, textvariable=self._new_puls_uf,
-                                        width=int(ent_width * 1),
-                                         bg = self._entry_color, fg = self._entry_text_color)
-        self._new_puls_uf.trace('w', self.trace_acceptance_change)
+        ttk.Label(self._tab_prop_tools, text='Scale stresses when changing properties', font=self._text_size['Text 9'])\
+            .place(relx = hor_start + delta_x*1, rely=vert_start+6*delta_y)
 
-        # self._toggle_btn_puls.place(relx=types_start, rely=prop_vert_start+18*delta_y, relwidth = 0.043,
-        #                         relheight = 0.035)
+        ttk.Checkbutton(self._tab_prop_tools, variable = self._new_scale_stresses, command = self.on_color_code_check)\
+            .place(relx = hor_start + delta_x*0, rely=vert_start+6*delta_y)
 
-        self._puls_run_all.place(relx=types_start +0.065, rely=prop_vert_start+18*delta_y, relwidth = 0.045,
-                                relheight = 0.035)
+        ttk.Label(self._tab_prop_tools, text='Factor when scaling stresses up, fup', font=self._text_size['Text 8']).place(relx =hor_start + delta_x,
+                                                                                          rely=vert_start+7*delta_y)
+        ttk.Label(self._tab_prop_tools, text='Factor when scaling stresses down, fdown', font=self._text_size['Text 8']).place(relx =hor_start + delta_x,
+                                                                                  rely=vert_start+8*delta_y)
 
-        # Buckling slider
-        self._buckling_slider = tk.Scale(self._main_fr, from_=1, to=3, command=self.slider_buckling_used,length=200,
-                                           orient = 'horizontal', background=self._general_color,
-                                            label='RP-C201 | PULS | ML', #font=self._text_size['Text 7 bold'],
-                                            relief='groove')
-        self._buckling_slider.place(relx=types_start, rely=prop_vert_start+17.5*delta_y, relwidth = 0.065,
-                                    relheight = 0.055)
+        ent_fup = ttk.Entry(self._tab_prop_tools, textvariable=self._new_fup)
+        ent_fup.place(relx =hor_start, rely=vert_start+7*delta_y, relwidth = 0.1)
+
+        ent_fdwn = ttk.Entry(self._tab_prop_tools, textvariable=self._new_fdwn)
+        ent_fdwn.place(relx =hor_start, rely=vert_start+8*delta_y, relwidth = 0.1)
+
 
 
         # --- main variable to define the structural properties ---
@@ -637,14 +641,15 @@ class Application():
         self._new_stf_spacing = tk.DoubleVar()
         self._new_plate_thk = tk.DoubleVar()
         self._new_stf_web_h = tk.DoubleVar()
-        self._new_sft_web_t = tk.DoubleVar()
+        self._new_stf_web_t = tk.DoubleVar()
         self._new_stf_fl_w = tk.DoubleVar()
         self._new_stf_fl_t = tk.DoubleVar()
         self._new_stucture_type = tk.StringVar()
         self._new_stucture_type_label = tk.StringVar()
         self._new_sigma_y1 = tk.DoubleVar()
         self._new_sigma_y2 = tk.DoubleVar()
-        self._new_sigma_x = tk.DoubleVar()
+        self._new_sigma_x1 = tk.DoubleVar()
+        self._new_sigma_x2 = tk.DoubleVar()
         self._new_tauxy = tk.DoubleVar()
         self._new_stf_km1 = tk.DoubleVar()
         self._new_stf_km2 = tk.DoubleVar()
@@ -652,36 +657,73 @@ class Application():
         self._new_stf_kps = tk.DoubleVar()
         self._new_plate_kpp = tk.DoubleVar()
         self._new_stf_type = tk.StringVar()
+        
+        self._new_girder_web_h = tk.DoubleVar()
+        self._new_girder_web_t = tk.DoubleVar()
+        self._new_girder_fl_w = tk.DoubleVar()
+        self._new_girder_fl_t = tk.DoubleVar()
+        self._new_girder_type = tk.StringVar()
+        self._new_girder_length_LG = tk.DoubleVar()
+        self._new_panel_length_Lp = tk.DoubleVar()
+
         self._new_pressure_side = tk.StringVar()
         self._new_puls_method = tk.StringVar()
         self._new_puls_panel_boundary = tk.StringVar()
-        self._new_puls_stf_end_type = tk.StringVar()
         self._new_puls_sp_or_up = tk.StringVar()
         self._new_puls_up_boundary = tk.StringVar()
-        self._new_shift_viz_coord_hor = tk.DoubleVar()
-        self._new_shift_viz_coord_ver = tk.DoubleVar()
 
+        self._new_buckling_min_press_adj_spans = tk.DoubleVar()
+        self._new_buckling_lf_stresses = tk.DoubleVar()
+        self._new_buckling_stf_end_support = tk.StringVar()
+        self._new_buckling_girder_end_support = tk.StringVar()
+        self._new_buckling_tension_field = tk.StringVar()
+        self._new_buckling_effective_against_sigy = tk.StringVar()
+        self._new_buckling_length_factor_stf = tk.DoubleVar()
+        self._new_buckling_length_factor_girder = tk.DoubleVar()
+        self._new_buckling_km3 = tk.DoubleVar()
+        self._new_buckling_km2 = tk.DoubleVar()
+        self._new_buckling_stf_dist_bet_lat_supp = tk.DoubleVar()
+        self._new_buckling_girder_dist_bet_lat_supp = tk.DoubleVar()
+        self._new_buckling_fab_method_stf = tk.StringVar()
+        self._new_buckling_fab_method_girder = tk.StringVar()
+
+        self._new_buckling_lf_stresses.set(1)
+        self._new_buckling_stf_end_support.set('Continuous')
+        self._new_buckling_girder_end_support.set('Continuous')
+        self._new_buckling_tension_field.set('not allowed')
+        self._new_buckling_effective_against_sigy.set("Stf. pl. effective against sigma y")
+        self._new_buckling_km3.set(12)
+        self._new_buckling_km2.set(24)
+        self._new_buckling_fab_method_stf.set('welded')
+        self._new_buckling_fab_method_girder.set('welded')
 
         # Setting default values to tkinter variables
         self._new_material.set(355)
-        self._new_field_len.set(4)
+        self._new_field_len.set(4000)
         self._new_stf_spacing.set(750)
         self._new_plate_thk.set(18)
         self._new_stf_web_h.set(400)
-        self._new_sft_web_t.set(12)
+        self._new_stf_web_t.set(12)
         self._new_stf_fl_w.set(150)
         self._new_stf_fl_t.set(20)
+
+        self._new_girder_web_h.set(800)
+        self._new_girder_web_t.set(20)
+        self._new_girder_fl_w.set(200)
+        self._new_girder_fl_t.set(30)
+        self._new_girder_length_LG.set(10000)
+        self._new_panel_length_Lp.set(0)
+
         self._new_sigma_y1.set(80)
         self._new_sigma_y2.set(80)
-        self._new_sigma_x.set(50)
+        self._new_sigma_x1.set(50)
+        self._new_sigma_x2.set(50)
         self._new_stf_km1.set(12)
         self._new_stf_km2.set(24)
         self._new_stf_km3.set(12)
         self._new_stf_kps.set(1)
         self._new_plate_kpp.set(1)
         self._new_material_factor.set(1.15)
-        self._new_shift_viz_coord_hor.set(0)
-        self._new_shift_viz_coord_ver.set(0)
 
         self._new_overpresure = tk.DoubleVar()
         self._new_overpresure.set(25000)
@@ -689,248 +731,320 @@ class Application():
         self._new_density.set(1025)
         self._new_max_el = tk.DoubleVar()
         self._new_min_el = tk.DoubleVar()
+        self._new_calculation_domain = tk.StringVar()
 
         self._new_stucture_type.set('GENERAL_INTERNAL_WT')
         self.option_meny_structure_type_trace(event='GENERAL_INTERNAL_WT')
         self._new_stf_type.set('T')
-        self._new_pressure_side.set('p')
+        self._new_pressure_side.set('both sides')
         self._new_puls_method.set('ultimate')
         self._new_puls_panel_boundary.set('Int')
-        self._new_puls_stf_end_type.set('C')
         self._new_puls_sp_or_up.set('SP')
         self._new_puls_up_boundary.set('SSSS')
+        #self._new_calculation_domain.set('Stiffened panel, flat')
+        self._new_calculation_domain.set('Flat plate, stiffened')
 
         #self._new_material_factor.trace('w', self.trace_material_factor)
         # --- main entries and labels to define the structural properties ---
         ent_width = 12 #width of entries
-        tk.Label(self._main_fr, text='Yield [MPa]:', font = self._text_size['Text 9'],
-                 bg = self._general_color)\
-            .place(relx=0.185, rely=prop_vert_start + 2.6 * delta_y)
-        tk.Label(self._main_fr, text='Mat. factor', font = self._text_size['Text 9'],
-                 bg = self._general_color)\
-            .place(relx=0.221, rely=prop_vert_start + 2.6 * delta_y)
 
-        self._ent_mat = tk.Entry(self._main_fr, textvariable=self._new_material, bg = self._entry_color,
-                                 fg = self._entry_text_color)
-        self._ent_mat_factor = tk.Entry(self._main_fr, textvariable=self._new_material_factor, bg = self._entry_color,
-                                 fg = self._entry_text_color)
-        self._ent_field_len = tk.Entry(self._main_fr, textvariable=self._new_field_len, bg = self._entry_color,
-                                       fg = self._entry_text_color)
-        self._ent_stf_spacing = tk.Entry(self._main_fr, textvariable=self._new_stf_spacing, bg = self._entry_color,
-                                         fg = self._entry_text_color)
-        self._ent_plate_thk = tk.Entry(self._main_fr, textvariable=self._new_plate_thk, bg = self._entry_color,
-                                       fg = self._entry_text_color)
-        self._ent_stf_web_h = tk.Entry(self._main_fr, textvariable=self._new_stf_web_h,
-                                      width = int(5*1), bg = self._entry_color,
-                                       fg = self._entry_text_color)
-        self._ent_stf_web_t = tk.Entry(self._main_fr, textvariable=self._new_sft_web_t, bg = self._entry_color,
-                                       fg = self._entry_text_color)
-        self._ent_stf_fl_w = tk.Entry(self._main_fr, textvariable=self._new_stf_fl_w, bg = self._entry_color,
-                                      fg = self._entry_text_color)
-        self._ent_str_fl_t = tk.Entry(self._main_fr, textvariable=self._new_stf_fl_t, bg = self._entry_color,
-                                      fg = self._entry_text_color)
+        '''
+        Flat plate input
+        '''
+
+        self._flat_gui_headlines = [ttk.Label(self._tab_prop, text='Plate input',
+                                              font = self._text_size['Text 8 bold']),
+                                    ttk.Label(self._tab_prop, text='Stiffener',
+                                              font = self._text_size['Text 8 bold']),
+                                    ttk.Label(self._tab_prop, text='Girder',
+                                              font = self._text_size['Text 8 bold']),
+                                    ttk.Label(self._tab_prop, text='Load/stresses input',
+                                              font = self._text_size['Text 8 bold']),
+                                    ttk.Label(self._tab_prop, text='Special provitions input',
+                                              font = self._text_size['Text 8 bold']),
+                                    ttk.Label(self._tab_prop, text='Buckling input',
+                                              font = self._text_size['Text 8 bold']),
+                                    ttk.Label(self._tab_prop, text='Stiffener',
+                                              font=self._text_size['Text 8 bold']),
+                                    ttk.Label(self._tab_prop, text='Girder',
+                                              font=self._text_size['Text 8 bold']),
+                                    ]
+
+        self._ent_field_len = ttk.Entry(self._tab_prop, textvariable=self._new_field_len, width = int(10))
+        self._ent_stf_spacing = ttk.Entry(self._tab_prop, textvariable=self._new_stf_spacing, width = int(10))
+        self._ent_plate_thk = ttk.Entry(self._tab_prop, textvariable=self._new_plate_thk, width = int(10))
+        self._ent_girder_length = ttk.Entry(self._tab_prop, textvariable=self._new_girder_length_LG, width = int(10))
+        self._ent_panel_length = ttk.Entry(self._tab_prop, textvariable=self._new_panel_length_Lp, width = int(10))
+
+        self._lab_span = ttk.Label(self._tab_prop, text='Stiffener/plate length', )
+        self._lab_s = ttk.Label(self._tab_prop, text='Stiffener spacing/plate width', )
+        self._lab_pl_thk = ttk.Label(self._tab_prop, text='Plate thickness', )
+        self._lab_girder_length_LG = ttk.Label(self._tab_prop, text='Girder length, LG')
+        self._lab_gpanel_length_Lp = ttk.Label(self._tab_prop, text='Panel length, Lp')
+
+        self._flat_gui_plate = [self._ent_field_len, self._ent_stf_spacing, self._ent_plate_thk,
+                                self._ent_girder_length, self._ent_panel_length]
+        self._flat_gui_lab_plate = [self._lab_span, self._lab_s, self._lab_pl_thk, self._lab_girder_length_LG,
+                                    self._lab_gpanel_length_Lp]
+
+        self._btn_flat_stf_section = ttk.Button(self._tab_prop, text='Stiffener',
+                                                    command= lambda id= "flat stf": self.on_open_structure_window(id))
+        self._ent_stf_type = ttk.OptionMenu(self._tab_prop, self._new_stf_type, 'T', *['T', 'FB', 'L', 'L-bulb'])
+        self._ent_stf_web_h = ttk.Entry(self._tab_prop, textvariable=self._new_stf_web_h, width = int(10))
+        self._ent_stf_web_t = ttk.Entry(self._tab_prop, textvariable=self._new_stf_web_t, width = int(10))
+        self._ent_stf_fl_w = ttk.Entry(self._tab_prop, textvariable=self._new_stf_fl_w, width = int(10))
+        self._ent_str_fl_t = ttk.Entry(self._tab_prop, textvariable=self._new_stf_fl_t, width = int(10))
+
+        self._lab_stf_section = ttk.Label(self._tab_prop, text='')
+        self._lab_stf_type = ttk.Label(self._tab_prop, text='Stiffener/girder type')
+        self._lab_web_h = ttk.Label(self._tab_prop, text='Web height, hw', )
+        self._lab_web_thk = ttk.Label(self._tab_prop, text='Web thickness, tw', )
+        self._lab_fl_w= ttk.Label(self._tab_prop, text='Flange width, b', )
+        self._lab_fl_thk = ttk.Label(self._tab_prop, text='Flange thickeness, tf', )
+
+        self._flat_gui_stf = [self._btn_flat_stf_section, self._ent_stf_type, self._ent_stf_web_h, self._ent_stf_web_t,
+                              self._ent_stf_fl_w,self._ent_str_fl_t]
+        self._flat_gui_lab_stf = [self._lab_stf_section,self._lab_stf_type,self._lab_web_h,self._lab_web_thk,
+                                  self._lab_fl_w, self._lab_fl_thk]
+
+        self._btn_flat_girder_section = ttk.Button(self._tab_prop, text='Girder',
+                                                    command= lambda id= "flat girder": self.on_open_structure_window(id))
+        self._ent_girder_type = ttk.OptionMenu(self._tab_prop, self._new_girder_type, 'T', *['T', 'FB', 'L', 'L-bulb'])
+        self._ent_girder_web_h = ttk.Entry(self._tab_prop, textvariable=self._new_girder_web_h, width = int(10))
+        self._ent_girder_web_t = ttk.Entry(self._tab_prop, textvariable=self._new_girder_web_t, width = int(10))
+        self._ent_girder_fl_w = ttk.Entry(self._tab_prop, textvariable=self._new_girder_fl_w, width = int(10))
+        self._ent_girder_fl_t = ttk.Entry(self._tab_prop, textvariable=self._new_girder_fl_t, width = int(10))
+        self._flat_gui_girder = [self._btn_flat_girder_section, self._ent_girder_type, self._ent_girder_web_h,
+                                 self._ent_girder_web_t,
+                              self._ent_girder_fl_w,self._ent_girder_fl_t]
+
+        self._ent_plate_kpp = ttk.Entry(self._tab_prop, textvariable=self._new_plate_kpp, width = int(5*1))
+        self._ent_plate_kps = ttk.Entry(self._tab_prop, textvariable=self._new_stf_kps, width = int(5*1))
+        self._ent_stf_km1 = ttk.Entry(self._tab_prop, textvariable=self._new_stf_km1, width = int(5*1))
+        self._ent_stf_km2 = ttk.Entry(self._tab_prop, textvariable=self._new_stf_km2,width = int(5*1))
+        self._ent_stf_km3 = ttk.Entry(self._tab_prop, textvariable=self._new_stf_km3, width = int(5*1))
+        self._lab_kpp = ttk.Label(self._tab_prop,text='kpp', )
+        self._lab_kps = ttk.Label(self._tab_prop, text='kps', )
+        self._lab_km1 = ttk.Label(self._tab_prop, text='km1', )
+        self._lab_km2 = ttk.Label(self._tab_prop, text='km2', )
+        self._lab_km3 = ttk.Label(self._tab_prop, text='km3', )
+        self._flat_gui_os_c101_provisions = [self._ent_plate_kpp, self._ent_plate_kps, self._ent_stf_km1,
+                                             self._ent_stf_km2, self._ent_stf_km3]
+        self._flat_gui_lab_os_c101_provisions = [self._lab_kpp, self._lab_kps, self._lab_km1,self._lab_km2,
+                                                 self._lab_km3]
+
+        self._ent_pressure_side = ttk.OptionMenu(self._tab_prop,self._new_pressure_side,('both sides','plate side',
+                                                                                         'stiffener side')[0],
+                                                 *('both sides','plate side','stiffener side'))
+        self._ent_sigma_y1= ttk.Entry(self._tab_prop, textvariable=self._new_sigma_y1,  width = int(10))
+        self._ent_sigma_y2 = ttk.Entry(self._tab_prop, textvariable=self._new_sigma_y2, width=int(10))
+        self._ent_sigma_x1 = ttk.Entry(self._tab_prop, textvariable=self._new_sigma_x1, width=int(10))
+        self._ent_sigma_x2 = ttk.Entry(self._tab_prop, textvariable=self._new_sigma_x2, width=int(10))
+        self._ent_tauxy = ttk.Entry(self._tab_prop, textvariable=self._new_tauxy, width=int(10))
+        self._ent_mat = ttk.Entry(self._tab_prop, textvariable=self._new_material, width = int(10))
+        self._ent_mat_factor = ttk.Entry(self._tab_prop, textvariable=self._new_material_factor, width = int(10))
+        self._ent_structure_type = ttk.OptionMenu(self._tab_prop, self._new_stucture_type, self._options_type[0],
+                                                  *self._options_type,command = self.option_meny_structure_type_trace)
 
 
-        self._ent_plate_kpp = tk.Entry(self._main_fr, textvariable=self._new_plate_kpp,
-                                       width = int(5*1), bg = self._entry_color,
-                                       fg = self._entry_text_color)
-        self._ent_plate_kps = tk.Entry(self._main_fr, textvariable=self._new_stf_kps,
-                                       width = int(5*1), bg = self._entry_color,
-                                       fg = self._entry_text_color)
-        self._ent_stf_km1 = tk.Entry(self._main_fr, textvariable=self._new_stf_km1,
-                                     width = int(5*1), bg = self._entry_color,
-                                     fg = self._entry_text_color)
-        self._ent_stf_km2 = tk.Entry(self._main_fr, textvariable=self._new_stf_km2,
-                                     width = int(5*1), bg = self._entry_color,
-                                     fg = self._entry_text_color)
-        self._ent_stf_km3 = tk.Entry(self._main_fr, textvariable=self._new_stf_km3,
-                                     width = int(5*1), bg = self._entry_color,
-                                     fg = self._entry_text_color)
+        self._lab_press_side = ttk.Label(self._tab_prop, text='Overpressure side')
+        self._lab_sig_y1 = ttk.Label(self._tab_prop, text='Longitudinal compr. ,sig_y1')
+        self._lab_sig_y2 = ttk.Label(self._tab_prop, text='Longitudinal compr. ,sig_y2')
+        self._lab_sig_x1 = ttk.Label(self._tab_prop, text='Transverse compress.,sig_x1')
+        self._lab_sig_x2 = ttk.Label(self._tab_prop, text='Transverse compress.,sig_x2')
+        self._lab_tau_y1 = ttk.Label(self._tab_prop, text='Shear Stres,tau_y1')
+        self._lab_yield = ttk.Label(self._tab_prop, text='Yield [MPa]:', font = self._text_size['Text 9'])
+        self._lab_mat_fac = ttk.Label(self._tab_prop, text='Mat. factor', font = self._text_size['Text 9'])
+        self._lab_structure_type = ttk.Label(self._tab_prop, text='Select structure type:',
+                                             font=self._text_size['Text 9'])
 
-        self._ent_pressure_side = tk.OptionMenu(self._main_fr, self._new_pressure_side, *('p', 's'))
-        self._ent_sigma_y1= tk.Entry(self._main_fr, textvariable=self._new_sigma_y1, width = int(7*1),
-                                     bg = self._entry_color, fg = self._entry_text_color)
-        self._ent_sigma_y2 = tk.Entry(self._main_fr, textvariable=self._new_sigma_y2, width=int(7*1),
-                                      bg = self._entry_color, fg = self._entry_text_color)
-        self._ent_sigma_x = tk.Entry(self._main_fr, textvariable=self._new_sigma_x, width=int(7*1),
-                                     bg = self._entry_color, fg = self._entry_text_color)
-        self._ent_tauxy = tk.Entry(self._main_fr, textvariable=self._new_tauxy, width=int(7*1),
-                                   bg = self._entry_color, fg = self._entry_text_color)
-        # self._ent_stf_type = tk.Entry(self._main_fr, textvariable=self._new_stf_type, width=int(7*1),
-        #                               bg = self._entry_color, fg = self._entry_text_color)
-        self._ent_stf_type = tk.OptionMenu(self._main_fr, self._new_stf_type, *['T', 'FB', 'L', 'L-bulb'])
-        self._ent_structure_type = tk.OptionMenu(self._main_fr, self._new_stucture_type,
-                                                 command = self.option_meny_structure_type_trace, *self._options_type)
-        self._ent_puls_sp_or_up= tk.OptionMenu(self._main_fr, self._new_puls_sp_or_up,
-                                               command = self.trace_puls_up_or_sp, *['SP', 'UP'])
-        self._ent_puls_method = tk.OptionMenu(self._main_fr, self._new_puls_method, *['buckling', 'ultimate'])
-        self._ent_puls_panel_boundary = tk.OptionMenu(self._main_fr, self._new_puls_panel_boundary,
+        self._flat_gui_lab_loads = [self._lab_press_side ,self._lab_sig_y1, self._lab_sig_y2,self._lab_sig_x1,
+                                    self._lab_sig_x2, self._lab_tau_y1, self._lab_yield, self._lab_mat_fac,
+                                    self._lab_structure_type]
+        self._flat_gui_loads = [self._ent_pressure_side, self._ent_sigma_y1, self._ent_sigma_y2, self._ent_sigma_x1,
+                                self._ent_sigma_x2, self._ent_tauxy, self._ent_mat, self._ent_mat_factor,
+                                self._ent_structure_type]
+
+
+        self._new_buckling_method = tk.StringVar()
+        options = ['DNV-RP-C201 - prescriptive','DNV PULS','ML-CL (PULS based)']
+        self._lab_buckling_method = ttk.Label(self._tab_prop, text='Set buckling method')
+        self._buckling_method = ttk.OptionMenu(self._tab_prop, self._new_buckling_method, options[0], *options,
+                                               command=self.update_frame)
+
+        # PULS interface
+        self._puls_run_all = ttk.Button(self._tab_prop, text='Run PULS -\nupdate results',
+                                     command=self.puls_run_all_lines)
+        self._ent_puls_uf = ttk.Entry(self._tab_prop, textvariable=self._new_puls_uf, width=int(ent_width * 1))
+        self._new_puls_uf.trace('w', self.trace_acceptance_change)
+
+        self._ent_puls_sp_or_up= ttk.OptionMenu(self._tab_prop, self._new_puls_sp_or_up, 'SP', *['SP', 'UP'],
+                                                command = self.trace_puls_up_or_sp,)
+        self._ent_puls_method = ttk.OptionMenu(self._tab_prop, self._new_puls_method,'buckling',
+                                               *['buckling', 'ultimate'])
+        self._ent_puls_panel_boundary = ttk.OptionMenu(self._tab_prop, self._new_puls_panel_boundary,'Int',
                                                       *['Int', 'GL', 'GT'])
-        self._ent_puls_stf_end_type = tk.OptionMenu(self._main_fr, self._new_puls_stf_end_type,
-                                                      *['C', 'S'])
-        self._ent_puls_up_boundary = tk.Entry(self._main_fr, textvariable=self._new_puls_up_boundary, width=int(7*1),
-                                   bg = self._entry_color, fg = self._entry_text_color)
+        #self._ent_puls_stf_end_type = ttk.OptionMenu(self._tab_prop, self._new_buckling_stf_end_support,'C',*['C', 'S'])
+        self._ent_puls_stf_end_type = ttk.OptionMenu(self._tab_prop, self._new_buckling_stf_end_support, 'Continuous',
+                                                     *['Continuous', 'Sniped'])
+        self._ent_puls_up_boundary = ttk.Entry(self._tab_prop, textvariable=self._new_puls_up_boundary, width=int(7*1))
+        self._zstar_chk = ttk.Checkbutton(self._tab_prop, variable=self._new_zstar_optimization)
 
-        loc_y = -0.000185185
+        self._lab_puls_input =  ttk.Label(self._tab_prop, text='Buckling paramenters input',
+                                         font=self._text_size['Text 8 bold'])
 
+        self._flat_gui_buc_lab_stf_girder = [ttk.Label(self._tab_prop, text='End support'),
+                                             ttk.Label(self._tab_prop, text='Fabrication method'),
+                                             ttk.Label(self._tab_prop, text='Buckling length factor'),
+                                             ttk.Label(self._tab_prop, text='Distance between lateral support'),
+                                             ttk.Label(self._tab_prop, text='Tension field action:')]
 
-        ent_rely, ent_relx, drelx = prop_vert_start + 0.082, 0.059, 0.026
-        ent_geo_y, loc_y = ent_rely-0.06, 0.000740741
-        geo_ent_width, geo_dx = 0.026, 0.028
-        drely = 0.05
+        self._flat_gui_buc_stf_opt = [ttk.OptionMenu(self._tab_prop, self._new_buckling_stf_end_support,
+                                                     'Continuous', *['Continuous', 'Sniped']),
+                                      ttk.OptionMenu(self._tab_prop, self._new_buckling_fab_method_stf,
+                                                     'welded', *['welded', 'rolled']),
+                                      ttk.Entry(self._tab_prop, textvariable=self._new_buckling_length_factor_stf,
+                                                width=int(ent_width * 1)),
+                                      ttk.Entry(self._tab_prop, textvariable=self._new_buckling_stf_dist_bet_lat_supp
+                                                ,width=int(ent_width * 1)),
+                                      ttk.OptionMenu(self._tab_prop, self._new_buckling_tension_field,
+                                                     'not allowed', *['allowed', 'not allowed'])]
+        self._flat_gui_buc_girder_opt = [ttk.OptionMenu(self._tab_prop, self._new_buckling_girder_end_support,
+                                                        'Continuous', *['Continuous', 'Sniped']),
+                                         ttk.OptionMenu(self._tab_prop, self._new_buckling_fab_method_girder,
+                                                        'welded',*['welded', 'rolled']),
+                                         ttk.Entry(self._tab_prop, textvariable=self._new_buckling_length_factor_girder
+                                                   ,width=int(ent_width * 1)),
+                                         ttk.Entry(self._tab_prop,
+                                                   textvariable=self._new_buckling_girder_dist_bet_lat_supp,
+                                                   width=int(ent_width * 1)),
+                                         ttk.OptionMenu(self._tab_prop, self._new_buckling_effective_against_sigy,
+                                                        'Stf. pl. effective against sigma y',
+                                                        *['Stf. pl. effective against sigma y',
+                                                          'All sigma y to girder'])]
+        self._flat_gui_girder_moment_factor = [ ttk.Label(self._tab_prop, text='Girder moment factor at support/midspan'),
+                                                ttk.Entry(self._tab_prop, textvariable=self._new_buckling_km3,
+                                                   width=int(ent_width * 1)),
+                                                 ttk.Entry(self._tab_prop, textvariable=self._new_buckling_km2,
+                                                   width=int(ent_width * 1))]
+        self._flat_gui_buc_lab_common = [ttk.Label(self._tab_prop, text='Minimum pressure in adjacent spans'),
+                        ttk.Label(self._tab_prop, text='Load factor on stresses')]
+        self._flat_gui_buc_common_opt = [ttk.Entry(self._tab_prop, textvariable=self._new_buckling_min_press_adj_spans,
+                                                   width=int(ent_width * 1)),
+                                         ttk.Entry(self._tab_prop, textvariable=self._new_buckling_lf_stresses,
+                                                   width=int(ent_width * 1))]
 
-        self._ent_structure_type.place(relx=types_start + 3 * delta_x, rely=ent_rely + 2.3 * drely, relwidth=0.10)
-        tk.Label(self._main_fr, text='Select structure type:', font=self._text_size['Text 9 bold'],
-                 bg = self._general_color)\
-            .place(relx=types_start, rely=ent_rely + 2.5 * drely)
-        tk.Button(self._main_fr,text='Show structure types',command=show_message,
-                  bg = self._button_bg_color, fg = self._button_fg_color, font=self._text_size['Text 8'])\
-            .place(relx=types_start + 3 * delta_x+0.1, rely=ent_rely + 2.3 * drely,relwidth = 0.07)
-        self._structure_types_label = \
-            tk.Label(textvariable = self._new_stucture_type_label, font = self._text_size['Text 8'],
-                     bg = self._general_color)\
-                .place(relx=types_start + 2.8 * delta_x, rely=ent_rely + 2.8 * drely, relwidth = 0.11, relheight = 0.02)
+        self._lab_puls_acceptance=  ttk.Label(self._tab_prop, text='PULS acceptance')
+        self._lab_puls_uf =  ttk.Label(self._tab_prop, text='PULS utilization factor:')
+        self._lab_puls_int_gt =  ttk.Label(self._tab_prop, text='PULS Int-integrated GL-free left/right GT-free top/bottom')
+        self._lab_puls_cont_sniped =  ttk.Label(self._tab_prop, text='Continous or Sniped',
+                                                font = self._text_size['Text 8'])
+        self._lab_puls_up_supp =  ttk.Label(self._tab_prop, text='PULS UP support - left,right,upper,lower',
+                                           font = self._text_size['Text 8'])
+        # self._zstar_label = ttk.Label(self._tab_prop, text='z* optimization (buckling RP-C201)',
+        #                               font=self._text_size['Text 8'])
 
-        tk.Label(self._main_fr,text='kpp', bg = self._general_color).place(relx=ent_relx + 0*geo_dx,
-                                                                           rely=ent_rely-delta_y)
-        tk.Label(self._main_fr, text='kps', bg = self._general_color).place(relx=ent_relx + 1*geo_dx,
-                                                                            rely=ent_rely-delta_y)
-        tk.Label(self._main_fr, text='km1', bg = self._general_color).place(relx=ent_relx + 2*geo_dx,
-                                                                            rely=ent_rely-delta_y)
-        tk.Label(self._main_fr, text='km2', bg = self._general_color).place(relx=ent_relx + 3*geo_dx,
-                                                                            rely=ent_rely-delta_y)
-        tk.Label(self._main_fr, text='k3', bg = self._general_color).place(relx=ent_relx + 4*geo_dx,
-                                                                           rely=ent_rely-delta_y)
-        tk.Label(self._main_fr, text='sig_y1', bg=self._general_color).place(relx=ent_relx + 0*geo_dx,
-                                                                             rely=ent_rely+delta_y)
-        tk.Label(self._main_fr, text='sig_y2', bg=self._general_color).place(relx=ent_relx + 1*geo_dx,
-                                                                             rely=ent_rely+delta_y)
-        tk.Label(self._main_fr, text='sig_x', bg=self._general_color).place(relx=ent_relx + 2*geo_dx,
-                                                                            rely=ent_rely+delta_y)
-        tk.Label(self._main_fr, text='tau_y1', bg=self._general_color).place(relx=ent_relx + 3*geo_dx,
-                                                                             rely=ent_rely+delta_y)
-        tk.Label(self._main_fr, text='stiffener type', bg=self._general_color).place(relx=ent_relx + 4*geo_dx,
-                                                                               rely=ent_rely+delta_y)
+        self._flat_gui_buckling = [self._ent_puls_method, self._ent_puls_uf,
+                                   self._ent_puls_panel_boundary,
+                                   self._ent_puls_up_boundary]#, self._zstar_chk]
 
+        self._flat_gui_lab_buckling = [self._lab_puls_acceptance,  self._lab_puls_uf,
+                                       self._lab_puls_int_gt,
+                                       self._lab_puls_up_supp]#, self._zstar_label]
 
-        self._zstar_chk = tk.Checkbutton(self._main_fr, variable=self._new_zstar_optimization)\
-            .place(relx=types_start+delta_x*9,rely=prop_vert_start+11.5*delta_y)
-        tk.Label(self._main_fr, text='z* optimization (RP-C201)\n'
-                                     'for buckling \ncalculations', font=self._text_size['Text 8'],
-                 bg = self._general_color)\
-            .place(relx=types_start + 5.9*delta_x,rely=prop_vert_start+11.3*delta_y)
-        tk.Label(self._main_fr, text='Pressure side (p-plate, s-stf.):', bg=self._general_color) \
-            .place(relx=types_start + 5.4*delta_x,rely=prop_vert_start+13.2*delta_y, relheight = 0.025)
-        self._ent_pressure_side.place(relx=types_start+delta_x*8.5,rely=prop_vert_start+13.2*delta_y)
+        self._button_str_type = ttk.Button(self._tab_prop, text='Show structure types', command=show_message)
+        self._structure_types_label =  ttk.Label(textvariable = self._new_stucture_type_label,
+                                                font = self._text_size['Text 8'], )
 
+        #-------------Color coding-------------------
+        self._chk_cc_spacing = ttk.Checkbutton(self._tab_information, variable = self._new_colorcode_spacing,
+                                              command = self.on_color_code_check)
+        self._chk_button_sigmax1 = ttk.Checkbutton(self._tab_information, variable = self._new_colorcode_sigmax,
+                                                 command = self.on_color_code_check)
+        self._chk_button_sigmax2 = ttk.Checkbutton(self._tab_information, variable = self._new_colorcode_sigmax,
+                                                 command = self.on_color_code_check)
+        self._chk_button_sigmay1 = ttk.Checkbutton(self._tab_information, variable = self._new_colorcode_sigmay1,
+                                                  command = self.on_color_code_check)
+        self._chk_button_sigmay2 = ttk.Checkbutton(self._tab_information, variable = self._new_colorcode_sigmay2,
+                                                  command = self.on_color_code_check)
+        self._chk_button_tauxy = ttk.Checkbutton(self._tab_information, variable = self._new_colorcode_tauxy,
+                                                command = self.on_color_code_check)
+        self._chk_button_structure_type = ttk.Checkbutton(self._tab_information, variable = self._new_colorcode_structure_type,
+                                                         command = self.on_color_code_check)
 
-        tk.Label(self._main_fr, text='PULS input', bg=self._general_color, font=self._text_size['Text 8']) \
-            .place(relx=types_start, rely=prop_vert_start + 10.4 * delta_y)
-        tk.Label(self._main_fr, text='Siffened: SP Unstf. pl.: UP', bg=self._general_color, font=self._text_size['Text 7']) \
-            .place(relx=types_start, rely=prop_vert_start + 11.2 * delta_y)
-        tk.Label(self._main_fr, text='UP sup.left,right,upper,lower', bg=self._general_color, font=self._text_size['Text 7']) \
-            .place(relx=types_start, rely=prop_vert_start + 11.8 * delta_y)
-        tk.Label(self._main_fr, text='PULS acceptance', bg=self._general_color, font = self._text_size['Text 7'])\
-            .place(relx=types_start, rely=prop_vert_start + 13 * delta_y)
-        tk.Label(self._main_fr, text='PULS utilization factor:', font=self._text_size['Text 7'],
-                 bg = self._general_color).place(relx=types_start, rely=prop_vert_start + 14 * delta_y)
-        tk.Label(self._main_fr, text='Int-integrated GL-free left\n/right GT-free top/bottom',
-                 bg=self._general_color, font = self._text_size['Text 7'])\
-            .place(relx=types_start, rely=prop_vert_start + 15 * delta_y)
-        tk.Label(self._main_fr, text='Continous or Sniped', bg=self._general_color,
-                 font = self._text_size['Text 7'])\
-            .place(relx=types_start, rely=prop_vert_start + 16.5 * delta_y)
-
-
-        tk.Label(self._main_fr, text='span', bg = self._general_color).place(relx=ent_relx + 0*geo_dx,
-                                                                             rely=ent_geo_y-delta_y)
-        tk.Label(self._main_fr, text='s', bg = self._general_color).place(relx=ent_relx + 1*geo_dx,
-                                                                          rely=ent_geo_y-delta_y)
-        tk.Label(self._main_fr, text='pl_thk', bg = self._general_color).place(relx=ent_relx + 2*geo_dx,
-                                                                               rely=ent_geo_y-delta_y)
-        tk.Label(self._main_fr, text='web_h', bg = self._general_color).place(relx=ent_relx + 3*geo_dx,
-                                                                              rely=ent_geo_y-delta_y)
-        tk.Label(self._main_fr, text='web_thk', bg = self._general_color).place(relx=ent_relx + 4*geo_dx,
-                                                                                rely=ent_geo_y-delta_y)
-        tk.Label(self._main_fr, text='fl_w', bg = self._general_color).place(relx=ent_relx + 5*geo_dx,
-                                                                             rely=ent_geo_y-delta_y)
-        tk.Label(self._main_fr, text='fl_thk', bg = self._general_color).place(relx=ent_relx + 6*geo_dx,
-                                                                               rely=ent_geo_y-delta_y)
-
-        self._ent_field_len.place(relx=ent_relx + 0*geo_dx, rely=ent_geo_y, relwidth = geo_ent_width)
-        self._ent_stf_spacing.place(relx=ent_relx + 1*geo_dx, rely=ent_geo_y, relwidth = geo_ent_width)
-        self._ent_plate_thk.place(relx=ent_relx + 2*geo_dx, rely=ent_geo_y, relwidth = geo_ent_width)
-        self._ent_stf_web_h.place(relx=ent_relx + 3*geo_dx, rely=ent_geo_y, relwidth = geo_ent_width)
-        self._ent_stf_web_t.place(relx=ent_relx + 4*geo_dx, rely=ent_geo_y, relwidth = geo_ent_width)
-        self._ent_stf_fl_w.place(relx=ent_relx + 5*geo_dx, rely=ent_geo_y, relwidth = geo_ent_width)
-        self._ent_str_fl_t.place(relx=ent_relx + 6*geo_dx, rely=ent_geo_y, relwidth = geo_ent_width)
-
-        y_red = 0.8
-        tk.Label(self._main_fr, text='[m]', bg = self._general_color).place(relx=types_start + 2 * delta_x,
-                                                                            rely=ent_geo_y+delta_y*y_red)
-        tk.Label(self._main_fr, text='[mm]', bg = self._general_color).place(relx=types_start + 3*delta_x,
-                                                                             rely=ent_geo_y+delta_y*y_red)
-        tk.Label(self._main_fr, text='[mm]', bg = self._general_color).place(relx=types_start + 4*delta_x,
-                                                                             rely=ent_geo_y+delta_y*y_red)
-        tk.Label(self._main_fr, text='[mm]', bg = self._general_color).place(relx=types_start + 5*delta_x,
-                                                                             rely=ent_geo_y+delta_y*y_red)
-        tk.Label(self._main_fr, text='[mm]', bg = self._general_color).place(relx=types_start + 6*delta_x,
-                                                                             rely=ent_geo_y+delta_y*y_red)
-        tk.Label(self._main_fr, text='[mm]', bg = self._general_color).place(relx=types_start + 7*delta_x,
-                                                                             rely=ent_geo_y+delta_y*y_red)
-        tk.Label(self._main_fr, text='[mm]', bg = self._general_color).place(relx=types_start + 8*delta_x,
-                                                                             rely=ent_geo_y+delta_y*y_red)
-
-        self._ent_mat.place(relx=0.195, rely=ent_rely, relwidth = 0.025)
-        self._ent_mat_factor.place(relx=0.23, rely=ent_rely, relwidth=0.025)
-        self._ent_plate_kpp.place(relx = ent_relx , rely=ent_rely)
-        self._ent_plate_kps.place(relx=ent_relx + geo_dx, rely=ent_rely)
-        self._ent_stf_km1.place(relx=ent_relx + 2*geo_dx, rely=ent_rely)
-        self._ent_stf_km2.place(relx=ent_relx + 3*geo_dx, rely=ent_rely)
-        self._ent_stf_km3.place(relx=ent_relx + 4*geo_dx, rely=ent_rely)
-        
-        self._ent_sigma_y1.place(relx = ent_relx, rely=ent_rely+drely)
-        self._ent_sigma_y2.place(relx=ent_relx + geo_dx, rely=ent_rely+drely)
-        self._ent_sigma_x.place(relx=ent_relx + 2*geo_dx, rely=ent_rely+drely)
-        self._ent_tauxy.place(relx=ent_relx + 3*geo_dx, rely=ent_rely+drely)
-        self._ent_stf_type.place(relx=ent_relx + 4*geo_dx, rely=ent_rely+drely*0.8)
-
-        # Entries below goemetry and stress input.
-        shift_x = 2.9
-        self._ent_puls_sp_or_up.place(relx=types_start + shift_x  * delta_x, rely=prop_vert_start + 11.2 * delta_y,
-                                    relwidth=0.041)
-        tk.Checkbutton(self._main_fr, variable=self._new_colorcode_puls_sp_or_up, command=self.on_color_code_check)\
-            .place(relx=types_start + shift_x  * delta_x + 0.041, rely=prop_vert_start + 11.2 * delta_y)
-
-        self._ent_puls_method.place(relx=types_start+ shift_x *delta_x, rely=prop_vert_start + 12.5 * delta_y, relwidth = 0.041)
-        tk.Checkbutton(self._main_fr, variable=self._new_colorcode_puls_acceptance, command=self.on_color_code_check)\
-            .place(relx=types_start+ shift_x *delta_x + 0.041, rely=prop_vert_start + 12.5 * delta_y)
-
-        self._ent_puls_uf.place(relx=types_start+ shift_x *delta_x, rely=prop_vert_start + 13.9 * delta_y, relwidth = 0.02,
-                                relheight = 0.025)
-        self._ent_puls_panel_boundary.place(relx=types_start+ shift_x *delta_x,
-                                            rely=prop_vert_start + 15.2 * delta_y, relwidth = 0.025)
-        self._ent_puls_stf_end_type.place(relx=types_start+ shift_x *delta_x,
-                                          rely=prop_vert_start + 16.5 * delta_y, relwidth = 0.025)
+        self._chk_button_puls_spup = ttk.Checkbutton(self._tab_information, variable=self._new_colorcode_puls_sp_or_up,
+                                                    command=self.on_color_code_check)
+        self._chk_button_puls_acceptance =ttk.Checkbutton(self._tab_information, variable=self._new_colorcode_puls_acceptance,
+                                                         command=self.on_color_code_check)
 
 
-        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_sigmax, command = self.on_color_code_check)\
-            .place(relx=ent_relx + 2*geo_dx, rely=ent_rely+1.7*drely)
-        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_sigmay1, command = self.on_color_code_check)\
-            .place(relx=ent_relx + 0*geo_dx, rely=ent_rely+1.7*drely)
-        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_sigmay2, command = self.on_color_code_check)\
-            .place(relx=ent_relx + 1*geo_dx, rely=ent_rely+1.7*drely)
-        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_tauxy, command = self.on_color_code_check)\
-            .place(relx=ent_relx + 3*geo_dx, rely=ent_rely+1.7*drely)
-        tk.Checkbutton(self._main_fr, variable = self._new_colorcode_structure_type, command = self.on_color_code_check)\
-            .place(relx=ent_relx + 4*geo_dx, rely=ent_rely+1.7*drely)
-        # tk.Label(text='|    |   |   |   |', font=self._text_size['Text 7'],
-        #          bg=self._general_color).place(relx=ent_relx + 0*geo_dx, rely=ent_rely+1.46*drely, relwidth = 0.06,
-        #                                        relheight = 0.03)
-        tk.Label(text='<-- Color coding', font=self._text_size['Text 9'],
-                 bg=self._general_color).place(relx=ent_relx + 4.5*geo_dx, rely=ent_rely+1.46*drely, relwidth = 0.06,
-                                               relheight = 0.03)
+        chk_deltax = 0.1
+        chk_deltay = 0.025
+        self._information_gui_chk_structure = [ttk.Checkbutton(self._tab_information, variable = self._new_line_name,
+                                                               command = self.on_color_code_check),
+                                               ttk.Checkbutton(self._tab_information,
+                                                              variable = self._new_label_color_coding,
+                                                              command = self.on_color_code_check),
+                                              ttk.Checkbutton(self._tab_information,
+                                                              variable = self._new_show_cog,
+                                                              command = self.update_frame),
+                                              ttk.Checkbutton(self._tab_information,
+                                                                     variable = self._new_shortcut_backdrop,
+                                                                     command = self.update_frame),
+                                                ttk.Checkbutton(self._tab_information,
+                                                                variable = self._new_colorcode_beams,
+                                                                command = self.on_color_code_check),
+                                                ttk.Checkbutton(self._tab_information,
+                                                                variable = self._new_colorcode_plates,
+                                                                command = self.on_color_code_check),
+                                                ttk.Checkbutton(self._tab_information,
+                                                                variable = self._new_colorcode_pressure,
+                                                                command = self.on_color_code_check),
+                                                ttk.Checkbutton(self._tab_information,
+                                                                variable = self._new_colorcode_utilization,
+                                                                command = self.on_color_code_check),
+                                                ttk.Checkbutton(self._tab_information,
+                                                                variable = self._new_colorcode_section_modulus,
+                                                                command = self.on_color_code_check),
+                                                ttk.Checkbutton(self._tab_information,
+                                                                variable = self._new_colorcode_fatigue,
+                                                                command = self.on_color_code_check),
+                                                ttk.Checkbutton(self._tab_information,
+                                                                variable = self._new_colorcode_total,
+                                                                command = self.on_color_code_check),
+                                                    self._chk_cc_spacing, self._chk_button_sigmax1,
+                                                     self._chk_button_sigmax2,
+                                               self._chk_button_sigmay1, self._chk_button_sigmay2,
+                                               self._chk_button_tauxy,self._chk_button_structure_type ,
+                                               self._chk_button_puls_spup,
+                                               self._chk_button_puls_acceptance]
 
+        self._information_gui_lab_chk_structure = [ttk.Label(self._tab_information, text='Show line names in GUI', font="Text 9"),
+                                                   ttk.Label(self._tab_information, text='Label color code', font="Text 9"),
+                                                   ttk.Label(self._tab_information, text='Show COG/COB', font="Text 9"),
+                                                   ttk.Label(self._tab_information, text='Check to see avaliable shortcuts', font="Text 9"),
+                                                    ttk.Label(self._tab_information, text='Beam prop.', font="Text 9"),
+                                                    ttk.Label(self._tab_information, text='Plate thk.', font="Text 9"),
+                                                    ttk.Label(self._tab_information, text='Pressure', font="Text 9"),
+                                                    ttk.Label(self._tab_information, text='Buckling UF', font="Text 9"),
+                                                    ttk.Label(self._tab_information, text='Sec. mod. UF', font="Text 9"),
+                                                    ttk.Label(self._tab_information, text='Fatigue UF', font="Text 9"),
+                                                    ttk.Label(self._tab_information, text='Total UF', font="Text 9"),
+                                                    ttk.Label(self._tab_information, text='Stiffener spacing'),
+                                                   ttk.Label(self._tab_information, text='Stresses, sigma x1'),
+                                                   ttk.Label(self._tab_information, text='Stresses, sigma x2'),
+                                                   ttk.Label(self._tab_information, text='Stresses, sigma y1'),
+                                                   ttk.Label(self._tab_information, text='Stresses, sigma y2'),
+                                                   ttk.Label(self._tab_information, text='Stresses, sigma tauxy'),
+                                                   ttk.Label(self._tab_information, text='Structure type'),
+                                                   ttk.Label(self._tab_information, text='Buckling - SP or UP'),
+                                                   ttk.Label(self._tab_information, text='Buckling acceptance criteria')]
+        idx = 2
+        for lab, ent in zip(self._information_gui_chk_structure, self._information_gui_lab_chk_structure):
+            lab.place(relx=0.02, rely=idx*chk_deltay)
+            ent.place(relx=0.02 + chk_deltax, rely=idx*chk_deltay)
+            idx += 1
+            
         try:
             img_file_name = 'img_stf_button.gif'
             if os.path.isfile('images/' + img_file_name):
@@ -938,14 +1052,14 @@ class Application():
             else:
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
-            stf_button = tk.Button(self._main_fr,image = photo,command=self.on_open_structure_window,
-                                   bg = 'white', fg = self._button_fg_color,)
-            stf_button.image = photo
-            stf_button.place(relx=types_start,rely=prop_vert_start,relheight = 0.062, relwidth = 0.042)
+            self._stf_button = tk.Button(self._tab_prop, image=photo,
+                                         command= self.on_open_structure_window)
+            self._stf_button.image = photo
+
         except TclError:
-            tk.Button(self._main_fr, text='STF.', command=self.on_open_structure_window,
-                      bg = self._button_bg_color, fg = self._button_fg_color)\
-                .place(relx=types_start,rely=prop_vert_start,relheight = 0.062, relwidth = 0.042)
+            self._stf_button = tk.Button(self._tab_prop, text='STF.',
+                                         command= self.on_open_structure_window,
+                                         bg=self._button_bg_color, fg=self._button_fg_color)
 
         try:
             img_file_name = 'img_stress_button.gif'
@@ -954,14 +1068,13 @@ class Application():
             else:
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
-            stress_button = tk.Button(self._main_fr,image = photo,command=self.on_open_stresses_window,
-                                       fg = self._button_fg_color,  bg = 'white')
-            stress_button.image = photo
-            stress_button.place(relx=types_start,rely=prop_vert_start+3*delta_y,relheight = 0.062, relwidth = 0.042)
+            self._stress_button = tk.Button(self._tab_prop, image=photo, command=self.on_open_stresses_window,
+                                            fg=self._button_fg_color, bg='white')
+            self._stress_button.image = photo
+
         except TclError:
-            tk.Button(self._main_fr, text='STRESS', command=self.on_open_stresses_window,
-                      bg = self._button_bg_color, fg = self._button_fg_color)\
-                .place(relx=types_start,rely=prop_vert_start+3*delta_y,relheight = 0.062, relwidth = 0.042)
+            self._stress_button = tk.Button(self._tab_prop, text='STRESS', command=self.on_open_stresses_window,
+                                      bg=self._button_bg_color, fg=self._button_fg_color)
 
         try:
             img_file_name = 'fls_button.gif'
@@ -970,106 +1083,386 @@ class Application():
             else:
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
-            fls_button = tk.Button(self._main_fr,image = photo,command=self.on_open_fatigue_window,
-                                   bg = self._button_bg_color)
-            fls_button.image = photo
-            fls_button.place(relx=types_start,rely=prop_vert_start+6*delta_y,relheight = 0.062, relwidth = 0.042)
+            self._fls_button = tk.Button(self._tab_prop, image=photo, command=self.on_open_fatigue_window,
+                                         bg=self._button_bg_color)
+            self._fls_button.image = photo
+
         except TclError:
-            tk.Button(self._main_fr, text='FLS', command=self.on_open_fatigue_window,
-                      bg = self._button_bg_color, fg = self._button_fg_color,)\
-                .place(relx=types_start,rely=prop_vert_start+6*delta_y,relheight = 0.062, relwidth = 0.042)
+            self._fls_button = tk.Button(self._tab_prop, text='FLS', command=self.on_open_fatigue_window,
+                                         bg=self._button_bg_color, fg=self._button_fg_color, )
 
-        # --- tank load input and information ---
-        load_vert_start = frame_horizontal -0.03
+        self.add_stucture = ttk.Button(self._tab_prop, text='Press to add input properties\n'
+                                                            'to the selected line. Sets all\n'
+                                                            'basic structural information.', command=self.new_structure,
+                                       style = "Bold.TButton")
 
-        tk.Label(self._main_fr,text = 'Comp. no.:', font=self._text_size['Text 8 bold'], bg = self._general_color)\
-            .place(relx=types_start, rely=load_vert_start + 3.5*delta_y)
 
-        self._selected_tank = tk.Label(self._main_fr,text='',font = self._text_size['Text 12 bold'],fg='red',
-                                       bg = self._general_color)
-        self._selected_tank.place(relx=0.0625, rely=load_vert_start + 3.5*delta_y)
+        ''' Start shell input '''
 
-        self._compartments_listbox = tk.Listbox(self._main_fr, height = int(10 * 1),
+
+        ''' 
+        Shell input
+        '''
+        self._new_shell_thk = tk.DoubleVar()
+        self._new_shell_radius = tk.DoubleVar()
+        self._new_shell_dist_rings = tk.DoubleVar()
+        self._new_shell_length = tk.DoubleVar()
+        self._new_shell_tot_length= tk.DoubleVar()
+        self._new_shell_k_factor = tk.DoubleVar()
+        self._new_shell_yield = tk.DoubleVar()
+        self._new_shell_mat_factor = tk.DoubleVar()
+        self._new_shell_poisson = tk.DoubleVar()
+        self._new_shell_e_module = tk.DoubleVar()
+        self._new_shell_ring_stf_fab_method = tk.IntVar()
+        self._new_shell_ring_frame_fab_method = tk.IntVar()
+        self._new_shell_exclude_ring_stf = tk.BooleanVar()
+        self._new_shell_exclude_ring_frame = tk.BooleanVar()
+
+
+        self._new_shell_panel_spacing = tk.DoubleVar()
+        self._new_shell_thk.set(20)
+        self._new_shell_radius.set(5000)
+        self._new_shell_dist_rings.set(5000)
+        self._new_shell_length.set(5000)
+        self._new_shell_tot_length.set(5000)
+        self._new_shell_k_factor.set(1)
+        self._new_shell_yield.set(355)
+        self._new_shell_mat_factor.set(1.15)
+        self._new_shell_poisson.set(0.3)
+        self._new_shell_e_module.set(2.1e11)
+        self._new_shell_ring_stf_fab_method.set(1)
+        self._new_shell_ring_frame_fab_method.set(2)
+        self._new_shell_panel_spacing.set(2000)
+        self._new_shell_exclude_ring_stf.set(False)
+        self._new_shell_exclude_ring_frame.set(False)
+
+
+        self._shell_gui_items = list()
+        self._lab_shell =  ttk.Label(self._tab_prop, text='Shell and curved plate input [mm]')
+        self._ent_shell_plate_thk = ttk.Entry(self._tab_prop, textvariable=self._new_shell_thk)
+
+        self._ent_shell_radius = ttk.Entry(self._tab_prop, textvariable=self._new_shell_radius)
+        self._ent_shell_dist_rings = ttk.Entry(self._tab_prop, textvariable=self._new_shell_dist_rings)
+        self._ent_shell_length = ttk.Entry(self._tab_prop, textvariable=self._new_shell_length,width = int(5*1))
+        self._ent_shell_tot_length = ttk.Entry(self._tab_prop, textvariable=self._new_shell_tot_length,
+
+                                       )
+        self._ent_shell_k_factor= ttk.Entry(self._tab_prop, textvariable=self._new_shell_k_factor,
+                                      )
+        self._ent_shell_material_factor= ttk.Entry(self._tab_prop, textvariable=self._new_shell_mat_factor)
+
+        self._shell_gui_items = [self._lab_shell, self._ent_shell_plate_thk, self._ent_shell_radius,
+                                 self._ent_shell_dist_rings,
+                                 self._ent_shell_length,self._ent_shell_tot_length,self._ent_shell_k_factor,
+                                 self._ent_shell_material_factor]
+
+        '''
+        Shell, lognitudinal stiffeners
+        '''
+        # USING stiffeners for flat plates
+        self._lab_shell_long_stiffener =  ttk.Label(self._tab_prop, text='Longitudinal stiffener properties [mm]',
+
+                                      )
+        self._btn_shell_stf_section_long_stf = ttk.Button(self._tab_prop, text='STF',
+                                                          command= lambda id= "long stf": self.on_open_structure_window(id))
+
+        self._shell_long_stf_gui_items = [self._lab_shell_long_stiffener ,self._ent_stf_web_h, self._ent_stf_web_t,
+                                          self._ent_stf_fl_w, self._ent_str_fl_t, self._ent_stf_spacing,
+                                          self._ent_stf_type,self._btn_shell_stf_section_long_stf]
+
+        '''
+        Shell, ring stiffener
+        '''
+        self._lab_shell_ring_stiffener =  ttk.Label(self._tab_prop, text='Ring stiffener properties [mm]')
+        self._new_shell_ring_stf_hw = tk.DoubleVar()
+        self._new_shell_ring_stf_tw = tk.DoubleVar()
+        self._new_shell_ring_stf_b = tk.DoubleVar()
+        self._new_shell_ring_stf_tf = tk.DoubleVar()
+        self._new_shell_ring_stf_tripping_brackets = tk.DoubleVar()
+        self._new_shell_ring_stf_type = tk.StringVar()
+        self._new_shell_ring_stf_hw.set(300)
+        self._new_shell_ring_stf_tw.set(12)
+        self._new_shell_ring_stf_b.set(120)
+        self._new_shell_ring_stf_tf.set(20)
+        self._new_shell_ring_stf_tripping_brackets.set(0)
+        self._new_shell_ring_stf_type.set('T')
+
+        self._ent_shell_ring_stf_hw = ttk.Entry(self._tab_prop, textvariable=self._new_shell_ring_stf_hw,
+                                      width = int(5*1), )
+        self._ent_shell_ring_stf_tw = ttk.Entry(self._tab_prop, textvariable=self._new_shell_ring_stf_tw,
+                                               )
+        self._ent_shell_ring_stf_b = ttk.Entry(self._tab_prop, textvariable=self._new_shell_ring_stf_b,
+                                              )
+        self._ent_shell_ring_stf_tf = ttk.Entry(self._tab_prop, textvariable=self._new_shell_ring_stf_tf,
+                                               )
+        self._ent_shell_ring_stf_tripping_brackets = ttk.Entry(self._tab_prop,
+                                                              textvariable=self._new_shell_ring_stf_tripping_brackets,
+                                               )
+
+        self._ent_shell_ring_stf_type = ttk.OptionMenu(self._tab_prop, self._new_shell_ring_stf_type,'T',
+                                                      *['T', 'FB', 'L', 'L-bulb'])
+
+        self._chk_shell_ring_frame_exclude = ttk.Checkbutton(self._tab_prop,
+                                                            variable = self._new_shell_exclude_ring_stf,
+                                                            command = self.calculation_domain_selected)
+        self._btn_shell_stf_section_ring_stf = ttk.Button(self._tab_prop,text = 'STF',
+                                                          command= lambda id= "ring stf":
+                                                          self.on_open_structure_window(id))
+        self._shell_ring_stf_gui_items = [self._lab_shell_ring_stiffener,self._ent_shell_ring_stf_hw,
+                                          self._ent_shell_ring_stf_tw,self._ent_shell_ring_stf_b,
+                                          self._ent_shell_ring_stf_tf, self._ent_shell_ring_stf_tripping_brackets,
+                                          self._ent_shell_ring_stf_type, self._chk_shell_ring_frame_exclude,
+                                          self._btn_shell_stf_section_ring_stf]
+        '''
+        Shell ring girder/frame
+        '''
+        self._lab_shell_ring_frame = ttk.Label(self._tab_prop, text='Ring frame/girder properties [mm]',
+                                                   )
+        self._new_shell_ring_frame_hw = tk.DoubleVar()
+        self._new_shell_ring_frame_tw = tk.DoubleVar()
+        self._new_shell_ring_frame_b = tk.DoubleVar()
+        self._new_shell_ring_frame_tf = tk.DoubleVar()
+        self._new_shell_ring_frame_tripping_brackets = tk.DoubleVar()
+        self._new_shell_ring_frame_l_between_girders = tk.DoubleVar()
+        self._new_shell_ring_frame_type = tk.StringVar()
+        self._new_shell_ring_frame_hw.set(300)
+        self._new_shell_ring_frame_tw.set(12)
+        self._new_shell_ring_frame_b.set(120)
+        self._new_shell_ring_frame_tf.set(20)
+        self._new_shell_ring_frame_tripping_brackets.set(0)
+        self._new_shell_ring_frame_type.set('T')
+        self._new_shell_ring_frame_length_between_girders = tk.DoubleVar()
+        self._new_shell_ring_frame_length_between_girders.set(2500)
+
+        self._ent_shell_ring_frame_hw = ttk.Entry(self._tab_prop, textvariable=self._new_shell_ring_frame_hw,
+                                               width=int(5 * 1), )
+        self._ent_shell_ring_frame_tw = ttk.Entry(self._tab_prop, textvariable=self._new_shell_ring_frame_tw,
+                                               )
+        self._ent_shell_ring_frame_b = ttk.Entry(self._tab_prop, textvariable=self._new_shell_ring_frame_b,
+                                              )
+        self._ent_shell_ring_frame_tf = ttk.Entry(self._tab_prop, textvariable=self._new_shell_ring_frame_tf,
+                                               )
+        self._ent_shell_ring_frame_tripping_brackets = ttk.Entry(self._tab_prop,
+                                                              textvariable=self._new_shell_ring_frame_tripping_brackets,
+                                                              )
+        self._ent_shell_ring_frame_l_between_girders = ttk.Entry(self._tab_prop,
+                                                              textvariable=self._new_shell_ring_frame_length_between_girders,
+                                                              )
+        self._ent_shell_ring_stf_type = ttk.OptionMenu(self._tab_prop, self._new_shell_ring_frame_type,'T',
+                                                      *['T', 'FB', 'L', 'L-bulb'])
+        self._chk_shell_ring_frame_exclude = ttk.Checkbutton(self._tab_prop,
+                                                            variable = self._new_shell_exclude_ring_frame,
+                                                            command = self.calculation_domain_selected)
+        self._btn_shell_stf_section_ring_frame = ttk.Button(self._tab_prop, text='STF',command= lambda id= "ring frame": self.on_open_structure_window(id))
+        self._shell_ring_frame_gui_items = [self._lab_shell_ring_stiffener, self._ent_shell_ring_frame_hw,
+                                          self._ent_shell_ring_frame_tw, self._ent_shell_ring_frame_b,
+                                          self._ent_shell_ring_frame_tf, self._ent_shell_ring_frame_tripping_brackets,
+                                            self._ent_shell_ring_frame_l_between_girders,
+                                            self._ent_shell_ring_stf_type, self._chk_shell_ring_frame_exclude,
+                                            self._btn_shell_stf_section_ring_frame]
+
+        '''
+        Shell/panel load data
+        '''
+
+        self._lab_shell_loads =  ttk.Label(self._tab_prop, text='Load data, compression pressure,\n stresses and '
+                                                              'forces negative.',
+                                                   )
+        self._new_shell_stress_or_force = tk.IntVar()
+        self._new_shell_stress_or_force.set(1)
+
+        self._ent_shell_force_input = ttk.Radiobutton(self._tab_prop, text="Force input",
+                                                     variable=self._new_shell_stress_or_force, value=1,
+                                                     command = self.calculation_domain_selected)
+        self._ent_shell_stress_input = ttk.Radiobutton(self._tab_prop, text="Stress input",
+                                                      variable=self._new_shell_stress_or_force, value=2,
+                                                      command = self.calculation_domain_selected)
+
+        self._new_shell_Nsd = tk.DoubleVar()
+        self._new_shell_Msd = tk.DoubleVar()
+        self._new_shell_Tsd = tk.DoubleVar()
+        self._new_shell_Qsd = tk.DoubleVar()
+        self._new_shell_psd = tk.DoubleVar()
+        self._new_shell_Nsd.set(500000)
+        self._new_shell_Msd.set(500000)
+        self._new_shell_Tsd.set(40000)
+        self._new_shell_Qsd.set(1500)
+        self._new_shell_psd.set(-0.2)
+
+        self._new_shell_uls_or_als = tk.StringVar()
+        self._new_shell_end_cap_pressure_included = tk.StringVar()
+        self._new_shell_fab_ring_stf = tk.StringVar()
+        self._new_shell_fab_ring_frame = tk.StringVar()
+        self._new_shell_uls_or_als.set('ULS')
+        self._new_shell_end_cap_pressure_included.set('not included in axial force')
+
+        self._new_shell_fab_ring_stf.set('Fabricated')
+        self._new_shell_fab_ring_frame.set('Cold formed')
+
+        self._lab_shell_limit_state =  ttk.Label(self._tab_prop, text='Limit state:', font=self._text_size['Text 9 bold'],
+                                                )
+        self._lab_shell_en_cap_pressure =  ttk.Label(self._tab_prop, text='End cap pressure is', font=self._text_size['Text 8'],
+                                                )
+        self._lab_shell_fab_stf =  ttk.Label(self._tab_prop, text='Fab. method ring stf.:', font=self._text_size['Text 8'],
+                                                )
+        self._lab_shell_fab_frame =  ttk.Label(self._tab_prop, text='Fab. method ring gird.:', font=self._text_size['Text 8'],
+                                                )
+
+        self._new_shell_sasd = tk.DoubleVar()
+        self._new_shell_smsd = tk.DoubleVar()
+        self._new_shell_tTsd = tk.DoubleVar()
+        self._new_shell_tQsd = tk.DoubleVar()
+        self._new_shell_shsd = tk.DoubleVar()
+
+        self._ent_shell_uls_or_als = ttk.OptionMenu(self._tab_prop, self._new_shell_uls_or_als,'ULS', *['ULS', 'ALS'])
+        self._ent_shell_end_cap_pressure_included = ttk.OptionMenu(self._tab_prop,
+                                                                  self._new_shell_end_cap_pressure_included,
+                                                                   'included in axial force',
+                                                                  *['not included in axial force',
+                                                                    'included in axial force'])
+        self._ent_shell_fab_ring_stf = ttk.OptionMenu(self._tab_prop, self._new_shell_fab_ring_stf,'Fabricated',
+                                                     *['Fabricated', 'Cold formed'])
+        self._ent_shell_fab_ring_frame = ttk.OptionMenu(self._tab_prop, self._new_shell_fab_ring_frame,'Fabricated',
+                                                       *['Fabricated', 'Cold formed'])
+        self._ent_shell_yield = ttk.Entry(self._tab_prop, textvariable=self._new_shell_yield,
+                                               )
+
+        self._ent_shell_Nsd = ttk.Entry(self._tab_prop, textvariable=self._new_shell_Nsd,
+                                               width=int(5 * 1), )
+        self._ent_shell_Msd = ttk.Entry(self._tab_prop, textvariable=self._new_shell_Msd,
+                                               width=int(5 * 1), )
+        self._ent_shell_Tsd  = ttk.Entry(self._tab_prop, textvariable=self._new_shell_Tsd,
+                                               width=int(5 * 1), )
+        self._ent_shell_Qsd = ttk.Entry(self._tab_prop, textvariable=self._new_shell_Qsd,
+                                               width=int(5 * 1), )
+        self._ent_shell_psd = ttk.Entry(self._tab_prop, textvariable=self._new_shell_psd,
+                                               width=int(5 * 1), )
+
+        self._ent_shell_sasd = ttk.Entry(self._tab_prop, textvariable=self._new_shell_sasd,
+                                               width=int(5 * 1), )
+        self._ent_shell_smsd = ttk.Entry(self._tab_prop, textvariable=self._new_shell_smsd,
+                                               width=int(5 * 1), )
+        self._ent_shell_tTsd  = ttk.Entry(self._tab_prop, textvariable=self._new_shell_tTsd,
+                                               width=int(5 * 1), )
+        self._ent_shell_tQsd = ttk.Entry(self._tab_prop, textvariable=self._new_shell_tQsd,
+                                               width=int(5 * 1), )
+        self._new_shell_psd = self._new_shell_psd
+        self._ent_shell_shsd = ttk.Entry(self._tab_prop, textvariable=self._new_shell_shsd,
+                                               width=int(5 * 1), )
+
+        self._shell_loads_other_gui_items = [self._lab_shell_loads, self._ent_shell_force_input,
+                                              self._ent_shell_stress_input]
+        self._shell_loads_forces_gui_items = [self._ent_shell_Nsd, self._ent_shell_Msd,
+                                              self._ent_shell_Tsd, self._ent_shell_Qsd, self._ent_shell_psd]
+        self._shell_loads_stress_gui_items = [self._ent_shell_sasd, self._ent_shell_smsd,self._ent_shell_tTsd,
+                                              self._ent_shell_tQsd, self._ent_shell_psd,self._ent_shell_shsd]
+        self._shell_other_gui_items = [self._ent_shell_end_cap_pressure_included, self._ent_shell_uls_or_als,
+                                       self._ent_shell_fab_ring_stf, self._ent_shell_fab_ring_frame,
+                                       self._lab_shell_limit_state,
+                                       self._lab_shell_en_cap_pressure,self._lab_shell_fab_stf,
+                                       self._lab_shell_fab_frame,self._ent_shell_yield,self._lab_yield]
+
+        self._shell_exclude_ring_stf = tk.Frame(self._tab_prop, height=10, bg="black", colormap="new", )
+        self._shell_exclude_ring_frame = tk.Frame(self._tab_prop, height=10, bg="black", colormap="new")
+
+        ''' END shell input '''
+
+
+        prop_vert_start = 0.01
+        types_start = 0.005208333
+
+        options = list(CylinderAndCurvedPlate.geomeries.values()) # Shell geometry selection [string]
+        self._shell_geometries_map = CylinderAndCurvedPlate.geomeries_map  # Shell geometry selection string : int
+        self._current_calculation_domain = 'Flat plate, stiffened'
+        self._unit_informations_dimensions = list()
+
+        self._ent_calculation_domain = ttk.OptionMenu(self._tab_prop, self._new_calculation_domain,options[0], *options,
+                                                     command=self.calculation_domain_selected)
+
+        ttk.Label(self._tab_prop, text='Structural and calculation properties input below:',
+                 font=self._text_size['Text 9 bold'],
+                  ).place(rely=prop_vert_start-delta_y*2.1,relx=types_start,
+                                                  anchor = tk.NW)
+        ttk.Label(self._tab_prop, text='Select calculation domain ->',
+                 font=self._text_size['Text 10 bold'],
+                 ).place(rely=prop_vert_start, relx=types_start,
+                                               anchor=tk.NW)
+        self._ent_calculation_domain.place(rely=prop_vert_start, relx=types_start + delta_x*5)
+
+
+
+        # --- Compartment/tank load input and information ---
+        load_vert_start = 0.05#frame_horizontal -0.03
+
+        ttk.Label(self._tab_comp,text = 'Selected compartment from box below:',  )\
+            .place(relx=types_start, rely=load_vert_start + 8*delta_y)
+
+        self._selected_tank = ttk.Label(self._tab_comp,text='', font = 'Verdana 20 bold')
+        self._selected_tank.place(relx=0.3, rely=load_vert_start + 10*delta_y)
+
+        self._compartments_listbox = tk.Listbox(self._tab_comp, height = int(10 * 1),
                                                width = int(5 * 1),
                                                font=self._text_size["Text 10 bold"]
-                                               ,background=self._general_color, selectmode = 'extended' )
-        self._compartments_listbox.place(relx=types_start, rely=load_vert_start + 4.2*delta_y)
+                                               ,
+                                                selectmode = 'extended' )
+        self._compartments_listbox.place(relx=types_start, rely=load_vert_start + 10*delta_y)
         self._compartments_listbox.bind('<<ListboxSelect>>', self.button_1_click_comp_box)
 
 
-        tk.Button(self._main_fr, text="Set compartment\n""properties.",command = self.update_tank,
-                                            font=self._text_size['Text 9 bold'],
-                  bg = self._button_bg_color, fg = self._button_fg_color)\
-            .place(relx=ent_x+delta_x*3, rely=load_vert_start + delta_y * 6.5, relwidth = 0.08)
+        ttk.Button(self._tab_comp, text="Set compartment\n""properties.",command = self.update_tank,
+                  style = "Bold.TButton")\
+            .place(relx=types_start + delta_x*4, rely=load_vert_start + delta_y * 10, relwidth = 0.3)
 
-        tk.Button(self._main_fr, text="Delete all tanks", command=self.delete_all_tanks,
-                  font=self._text_size['Text 9 bold'],bg = self._button_bg_color, fg = self._button_fg_color
-                  ).place(relx=ent_x+delta_x*3, rely=load_vert_start + delta_y * 8.5, relwidth = 0.08)
+        ttk.Button(self._tab_comp, text="Delete all tanks", command=self.delete_all_tanks,
+                  style = "Bold.TButton").place(relx=types_start + delta_x*4, rely=load_vert_start + delta_y * 12,
+                                                relwidth = 0.3)
 
 
-        self._ent_content_type = tk.OptionMenu(self._main_fr, self._new_content_type, *list(self._tank_options.keys()),
+        self._ent_content_type = ttk.OptionMenu(self._tab_comp, self._new_content_type, list(self._tank_options.keys())[0],*list(self._tank_options.keys()),
                                                command=self.tank_density_trace)
         ent_width = 10
 
-        self._ent_overpressure = tk.Entry(self._main_fr, textvariable = self._new_overpresure,
+        self._ent_overpressure = ttk.Entry(self._tab_comp, textvariable = self._new_overpresure,
                                          width = int(ent_width * 1),
-                                          bg = self._entry_color, fg = self._entry_text_color)
+                                          )
 
-        self._ent_density = tk.Entry(self._main_fr, textvariable = self._new_density,
+        self._ent_density = ttk.Entry(self._tab_comp, textvariable = self._new_density,
                                     width = int(ent_width * 1),
-                                     bg = self._entry_color, fg = self._entry_text_color)
+                                     )
 
-        self._ent_max_el = tk.Entry(self._main_fr, textvariable=self._new_max_el,
+        self._ent_max_el = ttk.Entry(self._tab_comp, textvariable=self._new_max_el,
                                    width=int(ent_width * 1),
-                                    bg = self._entry_color, fg = self._entry_text_color)
+                                    )
 
-        self._ent_min_el = tk.Entry(self._main_fr, textvariable=self._new_min_el,
+        self._ent_min_el = ttk.Entry(self._tab_comp, textvariable=self._new_min_el,
                                    width=int(ent_width * 1),
-                                    bg = self._entry_color, fg = self._entry_text_color)
-        tk.Label(self._main_fr, text = '', font = self._text_size["Text 12 bold"], bg = self._general_color)\
-            .place(relx=0.052083333, rely=load_vert_start + 3.4*delta_y)
-        tk.Label(self._main_fr, text='Tank content :', font = self._text_size['Text 8'], bg = self._general_color)\
-            .place(relx=ent_x-2*delta_x, rely=load_vert_start + delta_y * 4.5)
-        self._ent_content_type.place(relx= ent_x+0.35*delta_x, rely=load_vert_start + delta_y * 4.5)
-        tk.Label(self._main_fr, text='Tank density :', font = self._text_size['Text 8'], bg = self._general_color)\
-            .place(relx=ent_x-2*delta_x, rely=load_vert_start + delta_y * 6)
-        self._ent_density.place(relx=ent_x+0.4*delta_x, rely=load_vert_start + delta_y * 6)
-        tk.Label(self._main_fr,text='[kg/m^3]', font = self._text_size['Text 8'], bg = self._general_color)\
-            .place(relx= ent_x+delta_x*1.5, rely=load_vert_start + delta_y * 6)
-        tk.Label(self._main_fr, text='Overpressure :', font = self._text_size['Text 8'], bg = self._general_color)\
-            .place(relx=ent_x-2*delta_x, rely=load_vert_start + delta_y * 7)
-        self._ent_overpressure.place(relx=ent_x+0.4*delta_x, rely=load_vert_start + delta_y * 7)
-        tk.Label(self._main_fr,text='[Pa]', font = self._text_size['Text 8'], bg = self._general_color)\
-            .place(relx= ent_x+delta_x*1.5, rely=load_vert_start + delta_y * 7)
-        tk.Label(self._main_fr, text='Max elevation :', font = self._text_size['Text 8'], bg = self._general_color)\
-            .place(relx=ent_x-2*delta_x, rely=load_vert_start + delta_y * 8)
-        self._ent_max_el.place(relx=ent_x+0.4*delta_x, rely=load_vert_start + delta_y * 8)
-        tk.Label(self._main_fr, text='Min elevation :', font = self._text_size['Text 8'], bg = self._general_color)\
-            .place(relx=ent_x-2*delta_x, rely=load_vert_start + delta_y * 9)
-        self._ent_min_el.place(relx=ent_x+0.4*delta_x, rely=load_vert_start + delta_y * 9)
-        self._tank_acc_label = tk.Label(self._main_fr, text = 'Acceleration [m/s^2]: ',
-                                        font = self._text_size['Text 8'], bg = self._general_color)
-        self._tank_acc_label.place(relx=ent_x-2*delta_x, rely=load_vert_start + delta_y * 10)
+                                    )
 
-        # Shifing of coordinate display
-        tk.Label(self._main_fr, text='Shift coordinate labeling [mm]:', font = self._text_size['Text 8'],
-                 bg = self._general_color).place(relx=types_start, rely=load_vert_start + delta_y * 12.5)
-        tk.Label(self._main_fr, text='y - ', font = self._text_size['Text 8'],
-                 bg = self._general_color).place(relx=types_start+ delta_x*5.5, rely=load_vert_start + delta_y * 12.5)
-        tk.Label(self._main_fr, text='x - ', font = self._text_size['Text 8'],
-                 bg = self._general_color).place(relx=types_start+ delta_x*4, rely=load_vert_start + delta_y * 12.5)
+        comp_dx = delta_x
+        comp_dy = delta_y
+        comp_ent_x = ent_x
+        comp_ent_y = 0.4
+        ttk.Label(self._tab_comp, text = '',  )\
+            .place(relx=0.052083333, rely=comp_ent_y + 3.4*comp_dy)
+        ttk.Label(self._tab_comp, text='Tank content :', font = self._text_size['Text 8'], )\
+            .place(relx=hor_start, rely=comp_ent_y + comp_dy * 4.5)
+        self._ent_content_type.place(relx= comp_ent_x+0.35*comp_dx, rely=comp_ent_y + comp_dy * 4.5)
+        ttk.Label(self._tab_comp, text='Tank density [kg/m^3]:', font = self._text_size['Text 8'], )\
+            .place(relx=hor_start, rely=comp_ent_y + comp_dy * 6)
+        self._ent_density.place(relx=comp_ent_x+0.4*comp_dx, rely=comp_ent_y + comp_dy * 6)
+        ttk.Label(self._tab_comp, text='Overpressure [Pa]:', font = self._text_size['Text 8'], )\
+            .place(relx=hor_start, rely=comp_ent_y + comp_dy * 7)
+        self._ent_overpressure.place(relx=comp_ent_x+0.4*comp_dx, rely=comp_ent_y + comp_dy * 7)
+        ttk.Label(self._tab_comp, text='Max elevation [m]:', font = self._text_size['Text 8'], )\
+            .place(relx=hor_start, rely=comp_ent_y + comp_dy * 8)
+        self._ent_max_el.place(relx=comp_ent_x+0.4*comp_dx, rely=comp_ent_y + comp_dy * 8)
+        ttk.Label(self._tab_comp, text='Min elevation [m]:', font = self._text_size['Text 8'], )\
+            .place(relx=hor_start, rely=comp_ent_y + comp_dy * 9)
+        self._ent_min_el.place(relx=comp_ent_x+0.4*comp_dx, rely=comp_ent_y + comp_dy * 9)
+        self._tank_acc_label = ttk.Label(self._tab_comp, text = 'Acceleration [m/s^2]: ',
+                                        font = self._text_size['Text 8'], )
+        self._tank_acc_label.place(relx=hor_start, rely=comp_ent_y + comp_dy * 10)
 
-        self._ent_shift_hor = tk.Entry(self._main_fr, textvariable = self._new_shift_viz_coord_hor,
-                                       width = int(ent_width * 0.6), bg = self._entry_color, fg = self._entry_text_color)
-
-        self._ent_shift_hor.bind('<FocusOut>', self.trace_shift_change)
-        self._ent_shift_ver = tk.Entry(self._main_fr, textvariable = self._new_shift_viz_coord_ver,
-                                       width = int(ent_width * 0.6), bg = self._entry_color,
-                                       fg = self._entry_text_color)
-        self._ent_shift_ver.bind('<FocusOut>', self.trace_shift_change)
-        #self._ent_shift_ver.trace('w', self.trace_shift_change)
-        self._ent_shift_hor.place(relx=types_start+delta_x*4.5, rely=load_vert_start + delta_y * 12.5)
-        self._ent_shift_ver.place(relx=types_start+ delta_x*6, rely=load_vert_start + delta_y * 12.5)
 
         # --- button to create compartments and define external pressures ---
 
@@ -1080,20 +1473,21 @@ class Application():
             else:
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
-            self._int_button = tk.Button(self._main_fr,image = photo,command=self.grid_find_tanks, bg = 'white')
+            self._int_button = tk.Button(self._tab_comp,image = photo,command=self.grid_find_tanks, bg = 'white')
             self._int_button.image = photo
-            self._int_button.place(relx=types_start, rely=load_vert_start+1.5*delta_y,
-                                   relheight = 0.044, relwidth = 0.12)
+            self._int_button.place(relx=types_start  +delta_x, rely=load_vert_start + delta_y*3,
+                                   relheight = 0.07, relwidth = 0.6)
         except TclError:
-            tk.Button(self._main_fr, text='New tanks - start search \n'
+            tk.Button(self._tab_comp, text='New tanks - start search \n'
                                   'to find compartments', command=self.grid_find_tanks,
-                      bg = self._button_bg_color, fg = self._button_fg_color, font=self._text_size['Text 8 bold']) \
-                .place(relx=types_start, rely=load_vert_start + 0 * delta_y, relheight = 0.044, relwidth = 0.12)
+                      bg = self._button_bg_color, fg = self._button_fg_color, ) \
+                .place(relx=types_start, rely=load_vert_start + 1.55 * delta_y,
+                       relheight=0.044, relwidth=0.3)
 
-        show_compartment = tk.Button(self._main_fr, text='Display current\n compartments', command=self.grid_display_tanks,
-                                  bg = self._button_bg_color, fg = self._button_fg_color,
-                                     font=self._text_size['Text 9 bold'])
-        show_compartment.place(relx=ent_x+delta_x*3, rely=load_vert_start + delta_y * 4.5, relwidth = 0.08)
+        show_compartment = ttk.Button(self._tab_comp, text='Display current\n compartments',
+                                     command=self.grid_display_tanks,
+                                  style = "Bold.TButton")
+        show_compartment.place(relx=types_start + delta_x*4, rely=load_vert_start + delta_y * 14, relwidth = 0.3)
 
         try:
             img_file_name = 'img_ext_pressure_button.gif'
@@ -1103,96 +1497,96 @@ class Application():
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
 
-            self._ext_button = tk.Button(self._main_fr,image=photo, command = self.on_show_loads,
+            self._ext_button = tk.Button(self._tab_comp,image=photo, command = self.on_show_loads,
                                          bg = 'white')
             self._ext_button.image = photo
-            self._ext_button.place(relx=ent_x+delta_x*1.5, rely=load_vert_start+1.5*delta_y,
-                                   relheight = 0.044, relwidth = 0.11)
+            self._ext_button.place(relx=types_start + delta_x, rely=load_vert_start,
+                                   relheight = 0.07, relwidth = 0.6)
         except TclError:
-            tk.Button(self._main_fr, text='New external load window \nsea - static/dynamic',
-                      command=self.on_show_loads, bg = self._button_bg_color, fg = self._button_fg_color,
-                      font=self._text_size['Text 8 bold'])\
-                .place(relx=ent_x+delta_x*2, rely=load_vert_start+0*delta_y, relheight = 0.044, relwidth = 0.11)
+            tk.Button(self._tab_comp, text='New external load window \nsea - static/dynamic',
+                      command=self.on_show_loads
+                      )\
+                .place(relx=ent_x+delta_x*1.5, rely=load_vert_start+1.55*delta_y,
+                                   relheight = 0.044, relwidth = 0.11)
 
         lc_x, lc_x_delta, lc_y, lc_y_delta = 0.786458333, 0.015625, 0.12037037, 0.023148148
 
         # --- infomation on accelerations ----
-        tk.Label(self._main_fr,text='Static and dynamic accelerations',
-                 font = self._text_size["Text 9 bold"], fg = 'black', bg = self._general_color)\
+        ttk.Label(self._main_fr,text='Static and dynamic accelerations',
+                  )\
             .place(relx=lc_x, rely=lc_y - 5 * lc_y_delta)
-        tk.Label(self._main_fr,text='Static acceleration [m/s^2]: ', font = self._text_size["Text 9"],
-                 bg = self._general_color )\
+        ttk.Label(self._main_fr,text='Static acceleration [m/s^2]: ',
+                  )\
             .place(relx=lc_x, rely=lc_y - 4 * lc_y_delta)
-        tk.Label(self._main_fr,text='Dyn. acc. loaded [m/s^2]:', font = self._text_size["Text 9"],
-                 bg = self._general_color)\
+        ttk.Label(self._main_fr,text='Dyn. acc. loaded [m/s^2]:',
+                 )\
             .place(relx=lc_x, rely=lc_y - 3 * lc_y_delta)
-        tk.Label(self._main_fr,text='Dyn. acc. ballast [m/s^2]:', font = self._text_size["Text 9"],
-                 bg = self._general_color)\
+        ttk.Label(self._main_fr,text='Dyn. acc. ballast [m/s^2]:',
+                 )\
             .place(relx=lc_x, rely=lc_y - 2 * lc_y_delta)
         self._new_dyn_acc_loaded = tk.DoubleVar()
         self._new_dyn_acc_ballast = tk.DoubleVar()
         self._new_static_acc = tk.DoubleVar()
         self._new_static_acc.set(9.81), self._new_dyn_acc_loaded.set(0), self._new_dyn_acc_ballast.set(0)
-        tk.Entry(self._main_fr, textvariable = self._new_static_acc,width = 10,
-                 bg = self._entry_color, fg = self._entry_text_color)\
-            .place(relx=lc_x + delta_x*4.2, rely=lc_y - 4 * lc_y_delta)
-        tk.Entry(self._main_fr, textvariable = self._new_dyn_acc_loaded,width = 10,
-                 bg = self._entry_color, fg = self._entry_text_color)\
-            .place(relx=lc_x + delta_x*4.2, rely=lc_y - 3 * lc_y_delta)
-        tk.Entry(self._main_fr, textvariable = self._new_dyn_acc_ballast,width = 10,
-                 bg = self._entry_color, fg = self._entry_text_color)\
-            .place(relx=lc_x + delta_x*4.2, rely=lc_y - 2 * lc_y_delta)
-        tk.Button(self._main_fr, text = 'Set\naccelerations', command = self.create_accelerations,
-                  font = self._text_size['Text 8 bold'],
-                  bg = self._button_bg_color, fg = self._button_fg_color)\
-            .place(relx=lc_x + delta_x*6, rely=lc_y - 3 * lc_y_delta)
+        shift_x_acc = 0.08
+        ttk.Entry(self._main_fr, textvariable = self._new_static_acc,width = 10,
+                 )\
+            .place(relx=lc_x+shift_x_acc, rely=lc_y - 4 * lc_y_delta)
+        ttk.Entry(self._main_fr, textvariable = self._new_dyn_acc_loaded,width = 10,
+                 )\
+            .place(relx=lc_x+shift_x_acc , rely=lc_y - 3 * lc_y_delta)
+        ttk.Entry(self._main_fr, textvariable = self._new_dyn_acc_ballast,width = 10,
+                 )\
+            .place(relx=lc_x+shift_x_acc , rely=lc_y - 2 * lc_y_delta)
+        ttk.Button(self._main_fr, text = 'Set\naccelerations', command = self.create_accelerations,
+                   style = "Bold.TButton")\
+            .place(relx=lc_x +shift_x_acc*1.5, rely=lc_y - 4 * lc_y_delta)
 
         # --- checkbuttons and labels ---
         self._dnv_a_chk,self._dnv_b_chk  = tk.IntVar(),tk.IntVar()
         self._tank_test_chk,self._manual_chk = tk.IntVar(),tk.IntVar()
         self._check_button_load_comb = [self._dnv_a_chk,self._dnv_b_chk, self._tank_test_chk, self._manual_chk]
-        self._active_label = tk.Label(self._main_fr, text = '', font = self._text_size["Text 12 bold"], fg = 'blue',
-                                      bg = self._general_color)
+        self._active_label = ttk.Label(self._main_fr, text = '',
+                                      )
         self._active_label.place(relx=lc_x+lc_x_delta*10,rely=lc_y-lc_y_delta*5)
-        tk.Label(self._main_fr, text='Combination for line (select line). Change with slider.: ',
-                 font=self._text_size["Text 8 bold"], fg='black', bg = self._general_color)\
+        ttk.Label(self._main_fr, text='Combination for line (select line). Change with slider.: ',
+                   )\
             .place(relx=lc_x, rely=lc_y + 2.5*delta_y)
 
         lc_y += 0.148148148
-        self._combination_slider = tk.Scale(self._main_fr, from_=1, to=3, command=self.gui_load_combinations,length=400,
-                                           orient = 'horizontal', background=self._general_color,
-                                            label='OS-C101 Table 1    1: DNV a)    2: DNV b)    3: TankTest',
-                                            relief='groove')
-
-
+        self._combination_slider = ttk.Scale(self._main_fr, from_=1, to=4, command=self.gui_load_combinations,length=400,
+                                           orient = 'horizontal')
+        ttk.Label(self._main_fr, text='1: DNV a)                    2: DNV b)                    3: TankTest        '
+                                      '            4: Cylinder')\
+            .place(relx=lc_x +0*lc_x_delta, rely=lc_y - 2*lc_y_delta)
 
         self._combination_slider.place(relx=lc_x +0*lc_x_delta, rely=lc_y - 3*lc_y_delta)
-        self._combination_slider_map = {1:'dnva',2:'dnvb',3:'tanktest'}
-        tk.Label(self._main_fr, text='Name:', font = self._text_size['Text 7'], bg = self._general_color)\
+        self._combination_slider_map = {1:'dnva',2:'dnvb',3:'tanktest', 4: 'Cylinder'}
+        ttk.Label(self._main_fr, text='Name:', )\
             .place(relx=lc_x + 0 * lc_x_delta, rely=lc_y)
-        tk.Label(self._main_fr, text='Stat LF', font = self._text_size['Text 7'], bg = self._general_color)\
+        ttk.Label(self._main_fr, text='Stat LF', )\
             .place(relx=lc_x + 8.5 * lc_x_delta, rely=lc_y)
-        tk.Label(self._main_fr, text='Dyn LF', font = self._text_size['Text 7'], bg = self._general_color)\
+        ttk.Label(self._main_fr, text='Dyn LF', )\
             .place(relx=lc_x + 10.2 * lc_x_delta, rely=lc_y)
-        tk.Label(self._main_fr, text='Include?',font = self._text_size['Text 7'], bg = self._general_color)\
+        ttk.Label(self._main_fr, text='Include?',font = self._text_size['Text 7'], )\
             .place(relx=lc_x + 11.8 * lc_x_delta, rely=lc_y)
 
-        self._result_label_dnva = tk.Label(self._main_fr, text='DNV a [Pa]: ',font='Text 8', bg = self._general_color)
-        self._result_label_dnvb = tk.Label(self._main_fr, text='DNV b [Pa]: ',font=self._text_size["Text 8"],
-                                           bg = self._general_color)
-        self._result_label_tanktest = tk.Label(self._main_fr, text='Tank test [Pa]: ',font=self._text_size["Text 8"],
-                                               bg = self._general_color)
-        self._result_label_manual = tk.Label(self._main_fr, text='Manual [Pa]: ',font=self._text_size["Text 8"],
-                                             bg = self._general_color)
+        self._result_label_dnva = ttk.Label(self._main_fr, text='DNV a [Pa]: ',font='Text 8', )
+        self._result_label_dnvb = ttk.Label(self._main_fr, text='DNV b [Pa]: ',font=self._text_size["Text 8"],
+                                           )
+        self._result_label_tanktest = ttk.Label(self._main_fr, text='Tank test [Pa]: ',font=self._text_size["Text 8"],
+                                               )
+        self._result_label_manual = ttk.Label(self._main_fr, text='Manual [Pa]: ',font=self._text_size["Text 8"],
+                                             )
         self.results_gui_start = 0.6
-        tk.Label(self._main_fr, text = 'Pressures for this line: \n(DNV a/b [loaded/ballast], tank test, manual)\n'
+        self._lab_pressure = ttk.Label(self._main_fr, text = 'Pressures for this line: \n(DNV a/b [loaded/ballast], tank test, manual)\n'
                                'Note that ch. 4.3.7 and 4.3.8 is accounted for.',font=self._text_size["Text 10"],
-                 bg = self._general_color)\
-            .place(relx= lc_x, rely= self.results_gui_start)
+                 )
+        self._lab_pressure.place(relx= 0.786458333, rely= self.results_gui_start)
 
         # --- optimize button ---
-        tk.Label(self._main_fr,text='Optimize selected line/structure (right click line):',
-                 font = self._text_size['Text 9 bold'],fg='black', bg = self._general_color)\
+        ttk.Label(self._main_fr,text='Optimize selected line/structure (right click line):',
+                 font = self._text_size['Text 9 bold'], )\
             .place(relx=lc_x, rely=lc_y - 7 * lc_y_delta)
         try:
             img_file_name = 'img_optimize.gif'
@@ -1201,14 +1595,14 @@ class Application():
             else:
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
-            opt_button = tk.Button(self._main_fr,image=photo, command = self.on_optimize,
+            self._opt_button = tk.Button(self._main_fr,image=photo, command = self.on_optimize,
                                    bg = 'white', fg = self._button_fg_color)
-            opt_button.image = photo
-            opt_button.place(relx=lc_x, rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.098)
+            self._opt_button.image = photo
+            self._opt_button.place(relx=lc_x, rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.098)
         except TclError:
-            tk.Button(self._main_fr, text='Optimize', command=self.on_optimize_multiple,
-                      bg = self._button_bg_color, fg = self._button_fg_color)\
-                .place(relx=lc_x, rely=lc_y - 6 * lc_y_delta)
+            self._opt_button =tk.Button(self._main_fr, text='Optimize', command=self.on_optimize,
+                      bg = self._button_bg_color, fg = self._button_fg_color)
+            self._opt_button.place(relx=lc_x, rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.098)
         try:
             img_file_name = 'img_multi_opt.gif'
             if os.path.isfile('images/' + img_file_name):
@@ -1216,66 +1610,559 @@ class Application():
             else:
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
-            opt_button_mult = tk.Button(self._main_fr,image=photo, command = self.on_optimize_multiple,
+            self._opt_button_mult = tk.Button(self._main_fr,image=photo, command = self.on_optimize_multiple,
                                         bg = self._button_bg_color, fg = self._button_fg_color)
-            opt_button_mult.image = photo
-            opt_button_mult.place(relx=lc_x+delta_x*3.8, rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.065)
+            self._opt_button_mult.image = photo
+            self._opt_button_mult.place(relx=lc_x+0.1, rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.065)
         except TclError:
-            tk.Button(self._main_fr, text='MultiOpt', command=self.on_optimize_multiple,
-                      bg = self._button_bg_color, fg = self._button_fg_color).place(relx=lc_x + delta_x*7,
-                                                                                               rely=lc_y - 6 * lc_y_delta)
+            self._opt_button_mult= tk.Button(self._main_fr, text='MultiOpt', command=self.on_optimize_multiple,
+                      bg = self._button_bg_color, fg = self._button_fg_color)
+            self._opt_button_mult.place(relx=lc_x+0.1, rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.065)
 
-        tk.Button(self._main_fr, text='SPAN', command=self.on_geometry_optimize,
-                 font = self._text_size['Text 14 bold'],
-                  bg = self._button_bg_color, fg = self._button_fg_color)\
-           .place(relx=lc_x + delta_x * 6.4,rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.04)
+
+        try:
+            img_file_name = 'cylinder_opt.png'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
+            self._opt_cylinder = tk.Button(self._main_fr,image=photo, command = self.on_optimize_cylinder,
+                                        bg = 'white', fg = 'white')
+            self._opt_cylinder.image = photo
+        except TclError:
+            self._opt_cylinder = tk.Button(self._main_fr, text='Cylinder optimization',
+                                           command=self.on_optimize_cylinder,
+                      bg = self._button_bg_color, fg = self._button_fg_color)
+
+
+        self._opt_button_span = ttk.Button(self._main_fr, text='SPAN', command=self.on_geometry_optimize,
+                                           style = "Bold.TButton")
+        self._opt_button_span.place(relx=lc_x + 0.167,rely=lc_y - 6 * lc_y_delta, relheight = 0.04,
+                                    relwidth = 0.04)
+
+
+        self._optimization_buttons = {'Flat plate, stiffened': [self._opt_button, self._opt_button_mult,
+                                                                self._opt_button_span],
+                                      'Flat plate, stiffened place': [[lc_x, lc_y - 6 * lc_y_delta, 0.04, 0.098],
+                                                   [lc_x+0.1, lc_y - 6 * lc_y_delta, 0.04, 0.065],
+                                                   [lc_x + 0.167, lc_y - 6 * lc_y_delta, 0.04, 0.04]],
+                                      'Flat plate, unstiffened': [],
+                                      'Flat plate, unstiffened place': [],
+                                      'Flat plate, stiffened with girder': [],
+                                      'Flat plate, stiffened with girder place': [],
+
+                                   'cylinder': [self._opt_cylinder],
+                                   'cylinder place' : [[lc_x, lc_y - 6 * lc_y_delta, 0.04, 0.175]]}
 
         # Load information button
-        tk.Button(self._main_fr, text='Load info', command=self.button_load_info_click,
-                 font = self._text_size['Text 9 bold'], height = 1,
-                  bg = self._button_bg_color, fg = self._button_fg_color)\
-           .place(relx=lc_x + delta_x * 6.4,rely=lc_y + delta_y*19.5, relwidth = 0.04)
+        ttk.Button(self._main_fr, text='Load info', command=self.button_load_info_click,style = "Bold.TButton")\
+           .place(relx=0.78,rely=0.7, relwidth = 0.04)
 
         # Load information button
-        tk.Button(self._main_fr, text='Load factors', command=self.on_open_load_factor_window,
-                 font = self._text_size['Text 9 bold'], height = 1,
-                  bg = self._button_bg_color, fg = self._button_fg_color)\
-           .place(relx=lc_x + delta_x * 4.4,rely=lc_y + delta_y*19.5, relwidth = 0.05)
+        ttk.Button(self._main_fr, text='Load factors', command=self.on_open_load_factor_window,style = "Bold.TButton")\
+           .place(relx=0.8225,rely=0.7, relwidth = 0.05)
 
         # PULS result information
-        self._puls_information_button = tk.Button(self._main_fr, text='PULS results for line',
-                                                  command=self.on_puls_results_for_line,
-                 font = self._text_size['Text 9 bold'], height = 1,
-                  bg = self._button_bg_color, fg = self._button_fg_color)
-        self._puls_information_button.place(relx=lc_x + delta_x * 0,rely=lc_y + delta_y*19.5, relwidth = 0.075)
+        self._puls_information_button = ttk.Button(self._main_fr, text='PULS results for line',
+                                                  command=self.on_puls_results_for_line,style = "Bold.TButton")
+        self._puls_information_button.place(relx=0.875,rely=0.7, relwidth = 0.075)
 
         # Wight developement plot
-        self._weight_button = tk.Button(self._main_fr, text='Weights',
-                                                  command=self.on_plot_cog_dev,
-                 font = self._text_size['Text 9 bold'], height = 1,
-                  bg = self._button_bg_color, fg = self._button_fg_color)
-        self._weight_button.place(relx=lc_x + delta_x * 2.9,rely=lc_y + delta_y*19.5, relwidth = 0.038)
+        self._weight_button = ttk.Button(self._main_fr, text='Weights',
+                                                  command=self.on_plot_cog_dev,style = "Bold.TButton")
+        self._weight_button.place(relx=0.9525,rely=0.7, relwidth = 0.038)
+        self.gui_structural_properties()  # Initiating the flat panel structural properties
+        self.set_colors('default')  # Setting colors theme
+        self._current_theme = 'default'
+
+    def set_colors(self, theme):
+        self._current_theme = theme
+        if theme == 'light':
+            self._general_color = 'alice blue'
+            self._color_text = 'black'
+            ent_bg = '#FFFFFF'
+        elif theme == 'grey':
+            self._general_color = 'light grey'
+            self._color_text = 'black'
+            ent_bg = '#FFFFFF'
+        elif theme == 'dark':
+            self._general_color = '#2B2B2B'
+            self._color_text = 'light grey'
+            ent_bg = '#FFFFFF'
+        elif theme == 'default':
+            self._general_color = '#F0F0F0'
+            self._color_text = 'black'
+            ent_bg = '#FFFFFF'
+        elif theme == 'pink':
+            self._general_color = '#FFD3F6'
+            self._color_text = 'black'
+            ent_bg = 'white'
+            #relx=x_canvas_place, rely=0,relwidth=0.523, relheight = 0.73
+        elif theme == 'modelling':
+            self._main_canvas.place_forget()
+            x_canvas_place = 0.26
+            self._main_canvas.place(relx=x_canvas_place, rely=0,relwidth=0.74, relheight = 0.99)
+            tk.Misc.lift(self._main_canvas)
+            self._gui_functional_look = 'modelling'
+        elif theme == 'all items':
+            self._gui_functional_look = 'all items'
+            self._main_canvas.place_forget()
+            x_canvas_place = 0.26
+            self._main_canvas.place(relx=x_canvas_place, rely=0, relwidth=0.523, relheight=0.73)
+
+        if theme not in ['modelling', 'all items']:
+            self._style.configure("Bold.TButton", font=('Sans', '10', 'bold'))
+            self._style.configure('TCheckbutton', background=self._general_color)
+            self._style.configure('TFrame', background=self._general_color)
+            self._style.configure('TLabel', background=self._general_color, foreground = self._color_text)
+            self._style.configure('TScale', background=self._general_color)
+            self._style.configure('TEntry', background=ent_bg)
+            self._style.configure('TOptionMenu', background=ent_bg)
+            self._style.configure("TMenubutton", background=ent_bg)
+            self._style.configure('TRadiobutton', background=self._general_color, foreground='black')
+
+            self._prop_canvas.configure(bg = self._general_color)
+            self._main_canvas.configure(bg = self._general_color)
+            self._result_canvas.configure(bg = self._general_color)
+
+        # self._frame_viz_hor.configure(bg =self._color_text)
+        # self._frame_viz_ver.configure(bg=self._color_text)
 
         self.update_frame()
 
-    def toggle_puls_run(self):
-        if self._toggle_btn_puls.config('relief')[-1] == 'sunken':
-            self._toggle_btn_puls.config(relief="raised")
-            self._toggle_btn_puls.config(bg=self._button_bg_color)
-            self._toggle_btn_puls.config(text='Use PULS\n'
-                                         'results')
-            self._new_toggle_puls.set(False)
-        else:
-            self._toggle_btn_puls.config(relief="sunken")
-            self._toggle_btn_puls.config(bg='orange')
-            self._toggle_btn_puls.config(text = 'PULS result\n'
-                                           'override set')
-            self._new_toggle_puls.set(True)
+    def gui_structural_properties(self, flat_panel_stf_girder = False, flat_unstf = False, flat_stf = True,
+                                  shell = False, long_stf = False, ring_stf = False,
+                                  ring_frame = False, force_input = False, stress_input = False):
+        vert_start = 0.04
+        hor_start = 0.02
 
-        self.update_frame()
+        delta_y = 0.024
+        delta_x = 0.13
+
+        ent_relx = hor_start + 6*delta_x
+
+        geo_ent_width = 0.1
+        ent_geo_y = 0.1
+
+        opt_width = 0.2
+
+        self._unit_informations_dimensions = list()
+        if any([flat_unstf, flat_stf, flat_panel_stf_girder]):
+
+            '''
+                    self._flat_gui_headlines = [ttk.Label(self._tab_prop, text='Plate input'), 
+                                    ttk.Label(self._tab_prop, text='Stiffener'),
+                                    ttk.Label(self._tab_prop, text='Girder'),
+                                    ttk.Label(self._tab_prop, text='Load/stresses input'),
+                                    ttk.Label(self._tab_prop, text='Special provitions input'),
+                                    ttk.Label(self._tab_prop, text='Buckling input')]
+            '''
+            # Top buttons
+            top_button_shift = 0.2
+            self._stf_button.place(relx=hor_start, rely=vert_start+ top_button_shift * delta_y)
+            self._stress_button.place(relx=hor_start + delta_x*1.5, rely=vert_start+ top_button_shift * delta_y)
+            self._fls_button.place(relx=hor_start + delta_x*3, rely=vert_start+ top_button_shift * delta_y)
+            self.add_stucture.place(relx=hor_start + delta_x*4.5, rely=vert_start+ top_button_shift * delta_y,
+                                    relheight = 0.065, relwidth = 0.39)
+
+            # Input fields
+            if any([shell, long_stf, ring_stf, ring_frame, force_input, stress_input]):
+                return
+
+            self._flat_gui_headlines[0].place(relx=hor_start, rely=vert_start + 3 * delta_y)
+
+            idx = 4
+            for pl_lab, pl_ent in zip(self._flat_gui_lab_plate, self._flat_gui_plate):
+                pl_lab.place(relx=hor_start, rely=vert_start + idx * delta_y)
+                pl_ent.place(relx=hor_start + 3*delta_x, rely=vert_start + idx * delta_y)
+                idx += 1
+
+            for stf_lab, stf_ent, girder_ent in zip(self._flat_gui_lab_stf, self._flat_gui_stf, self._flat_gui_girder):
+                if flat_panel_stf_girder:
+                    girder_ent.place(relx=hor_start + 5 * delta_x, rely=vert_start + idx * delta_y)
+                if flat_stf:
+                    stf_lab.place(relx=hor_start, rely=vert_start + idx * delta_y)
+                    stf_ent.place(relx=hor_start + 3 * delta_x, rely=vert_start + idx * delta_y)
+                    idx += 1
+
+            self._flat_gui_headlines[3].place(relx=hor_start + 0 * delta_x, rely=vert_start + idx * delta_y)
+            idx += 1
+            this_count = 1
+            for load_lab, load_ent in zip(self._flat_gui_lab_loads, self._flat_gui_loads):
+                load_lab.place(relx=hor_start, rely=vert_start + idx * delta_y)
+                load_ent.place(relx=hor_start + 3*delta_x, rely=vert_start + idx * delta_y)
+                idx += 1
+                this_count += 1
+            idx_now = idx
+            idx -= this_count
+            self._flat_gui_headlines[4].place(relx=hor_start + 5 * delta_x, rely=vert_start + idx * delta_y)
+            idx += 1
+            for prov_lab, prov_ent in zip(self._flat_gui_lab_os_c101_provisions, self._flat_gui_os_c101_provisions):
+                prov_lab.place(relx=hor_start + 5 * delta_x, rely=vert_start + idx * delta_y)
+                prov_ent.place(relx=hor_start + 6.5 * delta_x, rely=vert_start + idx * delta_y)
+                idx += 1
+
+            idx = idx_now
+            self._flat_gui_headlines[5].place(relx=hor_start + 0 * delta_x, rely=vert_start + idx * delta_y)
+            idx += 1
+            self._lab_buckling_method.place(relx=hor_start + 0 * delta_x, rely=vert_start + idx * delta_y)
+            self._buckling_method.place(relx=hor_start + 4 * delta_x, rely=vert_start + idx * delta_y)
+            idx += 1
+            if flat_panel_stf_girder:
+                self._flat_gui_headlines[7].place(relx=hor_start + 6 * delta_x, rely=vert_start + idx * delta_y)
+            if flat_stf:
+                self._flat_gui_headlines[6].place(relx=hor_start + 4*delta_x, rely=vert_start + idx * delta_y)
+                idx += 1
+
+            for buckling_lab, buckling_stf_ent, buckling_girder_ent in zip(self._flat_gui_buc_lab_stf_girder,
+                                                                           self._flat_gui_buc_stf_opt,
+                                                                           self._flat_gui_buc_girder_opt):
+                if flat_panel_stf_girder:
+                    buckling_girder_ent.place(relx=hor_start + 6 * delta_x, rely=vert_start + idx * delta_y)
+                if flat_stf:
+                    buckling_lab.place(relx=hor_start, rely=vert_start + idx * delta_y)
+                    buckling_stf_ent.place(relx=hor_start + 4 * delta_x, rely=vert_start + idx * delta_y)
+                    idx += 1
+
+
+            if flat_panel_stf_girder:
+                self._flat_gui_girder_moment_factor[0].place(relx=hor_start + 0 * delta_x, rely=vert_start + idx * delta_y)
+                self._flat_gui_girder_moment_factor[1].place(relx=hor_start + 6 * delta_x, rely=vert_start + idx * delta_y,
+                                                             relwidth = 0.08)
+                self._flat_gui_girder_moment_factor[2].place(relx=hor_start + 7 * delta_x, rely=vert_start + idx * delta_y,
+                                                             relwidth = 0.08)
+                idx += 1
+
+            for buckling_lab, buckling_ent in zip(self._flat_gui_buc_lab_common, self._flat_gui_buc_common_opt):
+                buckling_lab.place(relx=hor_start, rely=vert_start + idx * delta_y)
+                buckling_ent.place(relx=hor_start + 5 * delta_x, rely=vert_start + idx * delta_y)
+                idx += 1
+            for buckling_lab, buckling_ent in zip(self._flat_gui_lab_buckling, self._flat_gui_buckling):
+                buckling_lab.place(relx=hor_start, rely=vert_start + idx * delta_y)
+                buckling_ent.place(relx=hor_start + 5 * delta_x, rely=vert_start + idx * delta_y)
+                idx += 1
+
+            self._puls_run_all.place(relx=hor_start + 6 * delta_x, rely=vert_start + (idx-2) * delta_y)
+
+            # optimize buttons
+
+            for dom in ['Flat plate, unstiffened', 'Flat plate, stiffened', 'Flat plate, stiffened with girder',
+                        'cylinder']:
+                for btn, placement in zip(self._optimization_buttons[dom],
+                                          self._optimization_buttons[dom + ' place']):
+                    btn.place_forget()
+
+            for btn, placement in zip(self._optimization_buttons[self._new_calculation_domain.get()],
+                                      self._optimization_buttons[self._new_calculation_domain.get() + ' place']):
+                btn.place(relx=placement[0], rely=placement[1], relheight=placement[2], relwidth=placement[3])
+
+        if shell:
+            '''
+            self._shell_gui_items = [self._lab_shell, self._ent_shell_plate_thk, self._ent_shell_radius,
+                                     self._ent_shell_dist_rings,
+                                     self._ent_shell_length,self._ent_shell_tot_length,self._ent_shell_k_factor]
+            '''
+            ent_geo_y -= delta_y
+            self._lab_shell.place(relx=hor_start, rely=ent_geo_y+ delta_y)
+
+            tmp_unit_info = list()
+            for lab in ['Thickness, t', 'Radius, r', 'Ring dist., l', 'Shell len., L', 'Tot len., Lc', 'k-factor, k',
+                        'Material factor']:
+                tmp_unit_info.append(ttk.Label(self._tab_prop, text=lab))
+
+            for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
+                lab.place(relx=hor_start + idx * delta_x,rely=ent_geo_y+ delta_y*2)
+                self._unit_informations_dimensions.append(lab)
+
+            for idx, entry in enumerate(self._shell_gui_items[1:]):
+
+                entry.place(relx=hor_start + idx * delta_x, rely=ent_geo_y + delta_y*3, relwidth=geo_ent_width)
+
+            ent_geo_y += delta_y*3
+
+        if long_stf:
+
+            self._lab_shell_long_stiffener.place(relx=hor_start, rely=ent_geo_y+ delta_y)
+
+            tmp_unit_info = list()
+            for lab in ['Web, hw', 'Web, tw', 'Flange b', 'Flange, tw', 'Spacing, s', 'Stf. type', 'Load section']:
+                tmp_unit_info.append(ttk.Label(self._tab_prop, text=lab))
+
+            for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
+                lab.place(relx=hor_start + idx * delta_x,rely=ent_geo_y+ delta_y*2)
+                self._unit_informations_dimensions.append(lab)
+
+            for idx, entry in enumerate(self._shell_long_stf_gui_items[1:]):
+                entry.place(relx=hor_start + idx * delta_x, rely=ent_geo_y+ delta_y*3, relwidth=geo_ent_width)
+
+            self._unit_informations_dimensions.append(self._lab_shell_long_stiffener)
+            ent_geo_y += delta_y*3
+
+        if ring_stf:
+            self._lab_shell_ring_stiffener.place(relx=hor_start, rely=ent_geo_y+ delta_y*1)
+            tmp_unit_info = list()
+            for lab in ['Web, hw', 'Web, tw', 'Flange, b', 'Flange, tw','tr. br. dist', 'Stf. type',
+                        'Exclude', 'Load section prop.']:
+                tmp_unit_info.append(ttk.Label(self._tab_prop, text=lab))
+
+            for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
+
+                if idx in [6,7]:
+                    lab.place(relx=hor_start + (idx-6) * delta_x*3, rely=ent_geo_y + delta_y * 4)
+                else:
+                    lab.place(relx=hor_start + idx * delta_x,rely=ent_geo_y+ delta_y*2)
+                self._unit_informations_dimensions.append(lab)
+            self._unit_informations_dimensions.append(self._lab_shell_ring_stiffener)
+
+            for idx, entry in enumerate(self._shell_ring_stf_gui_items[1:]):
+                if idx in [6,7]:
+                    entry.place(relx=hor_start + (idx-6) * delta_x*4 + delta_x, rely=ent_geo_y+ delta_y*4, relwidth=geo_ent_width)
+                else:
+                    entry.place(relx=hor_start + idx * delta_x, rely=ent_geo_y+ delta_y*3, relwidth=geo_ent_width)
+
+            if self._new_shell_exclude_ring_stf.get():
+                self._shell_exclude_ring_stf.place(relx=0.005, rely=ent_geo_y+ delta_y*3.15, relwidth=0.9)
+                self._unit_informations_dimensions.append(self._shell_exclude_ring_stf)
+
+            ent_geo_y += delta_y*4
+
+        if ring_frame:
+            self._lab_shell_ring_frame.place(relx=hor_start, rely=ent_geo_y+ delta_y*1)
+
+            for idx, entry in enumerate(self._shell_ring_frame_gui_items[1:]):
+                if idx in [7, 8]:
+                    entry.place(relx=hor_start + (idx - 7) * delta_x * 4 + delta_x, rely=ent_geo_y + delta_y * 4,
+                                relwidth=geo_ent_width)
+                else:
+                    entry.place(relx=hor_start + idx * delta_x, rely=ent_geo_y + delta_y * 3, relwidth=geo_ent_width)
+
+            tmp_unit_info = list()
+            for lab in ['Web, hw', 'Web, tw', 'Flange, b', 'Flange, tw', 'tr. br. dist', 'L bet. Gird.',
+                        'Stf. type', 'Exclude', 'Load section prop.']:
+                tmp_unit_info.append(ttk.Label(self._tab_prop, text=lab))
+
+            for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
+                if idx in [7,8]:
+                    lab.place(relx=hor_start + (idx-7) * delta_x*3, rely=ent_geo_y + delta_y * 4)
+                else:
+                    lab.place(relx=hor_start + idx * delta_x,rely=ent_geo_y+ delta_y*2)
+
+                self._unit_informations_dimensions.append(lab)
+            self._unit_informations_dimensions.append(self._lab_shell_ring_frame)
+            if self._new_shell_exclude_ring_frame.get():
+                self._shell_exclude_ring_frame.place(relx=0.005, rely=ent_geo_y+ delta_y*3.15, relwidth=0.9)
+                self._unit_informations_dimensions.append(self._shell_exclude_ring_frame)
+
+            ent_geo_y += delta_y*3
+
+        if not any([flat_panel_stf_girder, flat_stf, flat_unstf]):
+            # Other data
+            '''
+                self._shell_other_gui_items = [self._ent_shell_end_cap_pressure_included, self._ent_shell_uls_or_als,
+                                   self._ent_shell_fab_ring_stf, self._ent_shell_fab_ring_frame]
+            '''
+            other_count = 2
+            other_dy = 1.25
+            other_x = 5.8
+            other_text_shift = 2.5
+            self._lab_shell_limit_state.place(relx=hor_start,
+                                             rely=ent_geo_y + delta_y*2.2)
+            self._ent_shell_uls_or_als.place(relx=hor_start+ 1.6  * delta_x,
+                                             rely=ent_geo_y + delta_y*2.2,
+                                             relwidth=geo_ent_width*2)
+
+            self._lab_yield.place(relx=hor_start + 4  * delta_x,
+                                             rely=ent_geo_y + delta_y*3)
+            self._ent_shell_yield.place(relx=hor_start+ 6  * delta_x,
+                                             rely=ent_geo_y + delta_y*3, relwidth=geo_ent_width)
+            other_count+= 1
+            if ring_stf:
+                self._lab_shell_fab_stf.place(relx=hor_start + 4  * delta_x,
+                                                   rely=ent_geo_y + delta_y*4)
+                self._ent_shell_fab_ring_stf.place(relx = hor_start + 6  * delta_x,
+                                                   rely=ent_geo_y + delta_y*4, relwidth=geo_ent_width*1.9)
+                other_count += 1
+
+            if ring_frame:
+                self._lab_shell_fab_frame.place(relx=hor_start + 4  * delta_x,
+                                                   rely=ent_geo_y + delta_y*5)
+                self._ent_shell_fab_ring_frame.place(relx=hor_start + 6  * delta_x,
+                                                   rely=ent_geo_y + delta_y*5, relwidth=geo_ent_width*1.9)
+                other_count += 1
+
+            if self._shell_geometries_map[self._new_calculation_domain.get()] in [1,5]:
+                other_count += 1
+                self._lab_shell_en_cap_pressure.place(relx=hor_start+ 5.5  * delta_x- delta_x*other_text_shift,
+                                                                rely= ent_geo_y + delta_y*other_count*other_dy,
+                                                                relwidth=0.09)
+                self._ent_shell_end_cap_pressure_included.place(relx=hor_start+ other_x  * delta_x,
+                                                                rely= ent_geo_y + delta_y*other_count*other_dy,
+                                                                relwidth=0.09)
+
+            # Load data
+            ent_geo_y += 3.3 * delta_y
+            #self._lab_shell_loads.place(relx=hor_start, rely=ent_geo_y - delta_y*1.5)
+            self._ent_shell_stress_input.place(relx=hor_start, rely=ent_geo_y)
+            if 'shell' in self._new_calculation_domain.get():
+                self._ent_shell_force_input.place(relx=hor_start + 2 * delta_x, rely=ent_geo_y)
+            else:
+                self._new_shell_stress_or_force.set(2)
+
+            lab_force = ['Axial', 'Bending', 'Torsional','Shear', 'Lateral']
+            lab_force_unit = ['kN', 'kNm', 'kNm', 'kN', 'N/mm2']
+            lab_stress = ['Axial', 'Bending', 'Torsional', 'Shear',
+                          'Lateral', 'Add hoop']
+            lab_stress_unit = ['N/mm2', 'N/mm2', 'N/mm2', 'N/mm2', 'N/mm2', 'N/mm2']
+            to_use = self._shell_loads_forces_gui_items if self._new_shell_stress_or_force.get() == 1 \
+                else self._shell_loads_stress_gui_items
+
+            lab_to_use =  [lab_force, lab_force_unit] if self._new_shell_stress_or_force.get() == 1\
+                else [lab_stress, lab_stress_unit]
+
+            tmp_unit_info = list()
+            tmp_unit_info_unit = list()
+            [tmp_unit_info.append(ttk.Label(self._tab_prop, text=val))
+             for val in lab_to_use[0]]
+            [tmp_unit_info_unit.append(ttk.Label(self._tab_prop, text=val))
+             for val in lab_to_use[1]]
+
+            for idx,lab in enumerate(tmp_unit_info):
+                lab.place(relx=hor_start, rely=ent_geo_y + (idx+1)*delta_y)
+                self._unit_informations_dimensions.append(lab)
+
+            for idx, entry in enumerate(to_use):
+                entry.place(relx=hor_start + 1.5*delta_x,
+                            rely=ent_geo_y + (idx+1)*delta_y, relwidth=geo_ent_width)
+
+            for idx, lab in enumerate(tmp_unit_info_unit):
+                lab.place(relx=hor_start + 2.5*delta_x,
+                          rely=ent_geo_y + (idx+1)*delta_y)
+                self._unit_informations_dimensions.append(lab)
+
+            for dom in ['Flat plate, unstiffened', 'Flat plate, stiffened', 'Flat plate, stiffened with girder']:
+                for btn, placement in zip(self._optimization_buttons[dom],
+                                          self._optimization_buttons[dom + ' place']):
+                    btn.place_forget()
+
+            for btn, placement in zip(self._optimization_buttons['cylinder'],
+                                      self._optimization_buttons['cylinder' + ' place']):
+                btn.place(relx=placement[0], rely=placement[1], relheight=placement[2], relwidth=placement[3])
+
+
+    def calculation_domain_selected(self, event = None):
+        '''
+        ['Stiffened panel, flat', 'Unstiffened shell (Force input)', 'Unstiffened panel (Stress input)',
+        'Longitudinal Stiffened shell  (Force input)', 'Longitudinal Stiffened panel (Stress input)',
+        'Ring Stiffened shell (Force input)', 'Ring Stiffened panel (Stress input)',
+        'Orthogonally Stiffened shell (Force input)', 'Orthogonally Stiffened panel (Stress input)']
+        '''
+
+        to_process = [self._puls_run_all, self._lab_buckling_method,
+                      self._buckling_method, self._lab_yield,
+                      self._lab_mat_fac,self._structure_types_label, self._button_str_type, self._ent_structure_type,
+                      self._lab_structure_type, self._lab_kpp, self._lab_kps, self._lab_km1, self._lab_km2,
+                      self._lab_stf_type, self._lab_press_side, self._ent_pressure_side,
+                      self._lab_puls_input, self._lab_puls_up_supp, self._lab_puls_acceptance,
+                      self._lab_puls_uf, self._lab_puls_int_gt, self._lab_puls_cont_sniped, self._lab_span, self._lab_s,
+                      self._ent_puls_sp_or_up, self._ent_puls_method, self._ent_puls_uf, self._ent_puls_panel_boundary,
+                      self._ent_puls_stf_end_type,
+                      self._stf_button, self._stress_button,self._fls_button]
+
+        to_process = to_process+self._shell_gui_items+self._shell_long_stf_gui_items+self._shell_ring_stf_gui_items+\
+                     self._shell_ring_frame_gui_items+self._shell_loads_other_gui_items+\
+                     self._shell_loads_forces_gui_items+self._shell_loads_stress_gui_items+\
+                     self._unit_informations_dimensions + self._shell_other_gui_items+ self._flat_gui_plate + \
+                     self._flat_gui_lab_plate + self._flat_gui_lab_stf+self._flat_gui_stf + self._flat_gui_girder + \
+                     self._flat_gui_lab_loads + self._flat_gui_loads  + self._flat_gui_lab_os_c101_provisions + \
+                     self._flat_gui_os_c101_provisions + \
+                     self._flat_gui_lab_buckling + self._flat_gui_buckling + self._flat_gui_headlines + \
+                     self._flat_gui_buc_lab_common+ self._flat_gui_buc_common_opt+ self._flat_gui_buc_girder_opt+\
+                     self._flat_gui_buc_lab_stf_girder+ self._flat_gui_buc_stf_opt+ self._flat_gui_girder_moment_factor
+        for item in to_process:
+            item.place_forget()
+
+        if event is not None:
+            self._new_shell_exclude_ring_stf.set(False)
+            self._new_shell_exclude_ring_frame.set(False)
+        '''
+            geomeries = {1:'Unstiffened shell (Force input)', 
+                    2:'Unstiffened panel (Stress input)',
+                    3:'Longitudinal Stiffened shell  (Force input)',
+                    4:'Longitudinal Stiffened panel (Stress input)',
+                    5:'Ring Stiffened shell (Force input)',
+                    6:'Ring Stiffened panel (Stress input)',
+                    7:'Orthogonally Stiffened shell (Force input)',
+                    8:'Orthogonally Stiffened panel (Stress input)'}
+        '''
+        if self._new_calculation_domain.get() == 'Flat plate, unstiffened':
+            self._new_puls_sp_or_up.set('UP')
+            self.gui_structural_properties(flat_unstf = True, flat_stf = False)
+
+        elif self._new_calculation_domain.get() == 'Flat plate, stiffened':
+            self._new_puls_sp_or_up.set('SP')
+            self.gui_structural_properties(flat_stf = True)
+
+        elif self._new_calculation_domain.get() == 'Flat plate, stiffened with girder':
+            self._new_puls_sp_or_up.set('SP')
+            self.gui_structural_properties(flat_panel_stf_girder = True, flat_stf = True)
+
+        elif self._new_calculation_domain.get() in ['Unstiffened shell (Force input)',
+                                                    'Unstiffened panel (Stress input)']:
+            self.gui_structural_properties(flat_unstf=False, flat_stf = False, flat_panel_stf_girder = False,
+                                           shell=True, long_stf=False, ring_stf=False, ring_frame=False)
+        elif self._new_calculation_domain.get() in ['Longitudinal Stiffened shell  (Force input)',
+                                                    'Longitudinal Stiffened panel (Stress input)']:
+            self.gui_structural_properties(flat_unstf=False, flat_stf = False, flat_panel_stf_girder = False,
+                                           shell=True, long_stf=True, ring_stf=False, ring_frame=False)
+        elif self._new_calculation_domain.get() in ['Ring Stiffened shell (Force input)',
+                                                    'Ring Stiffened panel (Stress input)']:
+            self.gui_structural_properties(flat_unstf=False, flat_stf = False, flat_panel_stf_girder = False,
+                                           shell=True, long_stf=False, ring_stf=True, ring_frame=True)
+        elif self._new_calculation_domain.get() in ['Orthogonally Stiffened shell (Force input)',
+                                                    'Orthogonally Stiffened panel (Stress input)']:
+            self.gui_structural_properties(flat_unstf=False, flat_stf = False, flat_panel_stf_girder = False,
+                                           shell=True, long_stf=True, ring_stf=True, ring_frame=True)
+
+        if self._line_is_active and self._active_line in self._line_to_struc.keys():
+            if event == None and self._line_to_struc[self._active_line][5] is not None:
+                mapper ={1: 'Force', 2: 'Stress'}
+                load = mapper[self._new_shell_stress_or_force.get()]
+                struc_obj = self._line_to_struc[self._active_line][5]
+                if self._new_shell_stress_or_force.get() == 1:
+                    forces = [self._new_shell_Nsd.get(), self._new_shell_Msd.get(), \
+                              self._new_shell_Tsd.get(), self._new_shell_Qsd.get()]
+                    sasd, smsd, tTsd, tQsd, shsd = hlp.helper_cylinder_stress_to_force_to_stress(
+                        stresses=None, forces=forces, geometry=struc_obj.geometry, shell_t=self._new_shell_thk.get(),
+                        shell_radius=self._new_shell_radius.get(), shell_spacing=self._new_stf_spacing.get(),
+                        hw=self._new_stf_web_h.get(), tw=self._new_stf_web_t.get(), b=self._new_stf_fl_w.get(),
+                        tf=self._new_stf_fl_t.get(), CylinderAndCurvedPlate=CylinderAndCurvedPlate)
+                    self._new_shell_sasd.set(sasd)
+                    self._new_shell_smsd.set(smsd)
+                    self._new_shell_tTsd.set(tTsd)
+                    self._new_shell_tQsd.set(tQsd)
+                    # self._new_shell_shsd.set(0)
+                else:
+                    stresses = [self._new_shell_sasd.get(), self._new_shell_smsd.get(), self._new_shell_tTsd.get(),
+                                self._new_shell_tQsd.get(), self._new_shell_shsd.get()]
+                    sasd, smsd, tTsd, tQsd, shsd = stresses
+                    Nsd, Msd, Tsd, Qsd, shsd = hlp.helper_cylinder_stress_to_force_to_stress(
+                        stresses=stresses, geometry=struc_obj.geometry, shell_t=self._new_shell_thk.get(),
+                        shell_radius=self._new_shell_radius.get(), shell_spacing=self._new_stf_spacing.get(),
+                        hw=self._new_stf_web_h.get(), tw=self._new_stf_web_t.get(), b=self._new_stf_fl_w.get(),
+                        tf=self._new_stf_fl_t.get(), CylinderAndCurvedPlate=CylinderAndCurvedPlate)
+                    self._new_shell_Nsd.set(Nsd)
+                    self._new_shell_Msd.set(Msd)
+                    self._new_shell_Tsd.set(Tsd)
+                    self._new_shell_Qsd.set(Qsd)
+
+        self._current_calculation_domain = self._new_calculation_domain.get()
+        # Setting the correct optmization buttons
 
     def puls_run_all_lines(self, line_given = None):
-
+        progress = ttk.Progressbar(self._tab_prop, mode='indeterminate')
+        progress.place(relx = 0.85, rely = 0.9, relwidth = 0.1)
+        progress.start()
         if self._PULS_results is None:
             self._PULS_results = PULSpanel()
         if self._PULS_results.puls_sheet_location is None or not os.path.isfile(self._PULS_results.puls_sheet_location):
@@ -1300,7 +2187,11 @@ class Application():
             current_button = self._puls_run_all
             for line, data in self._line_to_struc.items():
                 if line not in result_lines:
-                    dict_to_run[line] = data[1].get_puls_input()
+                    data[0].Plate.hw = data[0].Stiffener.hw
+                    data[0].Plate.tw = data[0].Stiffener.tw
+                    data[0].Plate.tw = data[0].Stiffener.b
+                    data[0].Plate.tw = data[0].Stiffener.tf
+                    dict_to_run[line] = data[0].Plate.get_puls_input()
                     dict_to_run[line]['Identification'] = line
                     dict_to_run[line]['Pressure (fixed)'] = self.get_highest_pressure(line)['normal']/1e6
         else:
@@ -1308,27 +2199,29 @@ class Application():
             if line_given == '':
                 return
             if line_given not in result_lines:
-                dict_to_run[line_given] = self._line_to_struc[line_given][1].get_puls_input()
+                dict_to_run[line_given] = self._line_to_struc[line_given][0].Plate.get_puls_input()
                 dict_to_run[line_given]['Identification'] = line_given
                 dict_to_run[line_given]['Pressure (fixed)'] = self.get_highest_pressure(line_given)['normal'] / 1e6
 
 
         if len(dict_to_run) > 0:
 
-            current_button.config(relief = 'sunken')
+            #current_button.config(relief = 'sunken')
             self._PULS_results.set_all_to_run(dict_to_run)
             self._PULS_results.run_all()
-            current_button.config(relief='raised')
+            #current_button.config(relief='raised')
             current_button.config(text='PULS run or\nupdate all lines' if line_given == None else 'PULS\nRun one line')
-            current_button.config(bg=self._button_bg_color)
+            #current_button.config(bg=self._button_bg_color)
             for key, value in self._line_to_struc.items():
-                value[1].need_recalc = True
+                value[0].need_recalc = True
         else:
             tk.messagebox.showinfo('Results avaliable', 'PULS results is already avaliable for this line or no '
                                                         'lines need update.')
 
+        progress.stop()
+        progress.destroy()
         self.update_frame()
-        
+
     def trace_puls_uf(self, *args):
         if self._PULS_results is not None:
             pass
@@ -1341,12 +2234,19 @@ class Application():
 
     def trace_puls_up_or_sp(self, event = None):
         if self._new_puls_sp_or_up.get() == 'UP':
-            delta_y = 0.022
-            delta_x = 0.026041667
-            prop_vert_start = 0.29
-            types_start = 0.005208333
-            self._ent_puls_up_boundary.place(relx=types_start + 5.05 * delta_x, rely=prop_vert_start + 11.4 * delta_y,
-                                         relwidth=0.02)
+            vert_start = 0.1
+            hor_start = 0.02
+            delta_y = 0.04
+            delta_x = 0.13
+            ent_relx = hor_start + 6 * delta_x
+            geo_ent_width = 0.05
+            ent_geo_y = vert_start
+            opt_width = 0.2
+            shift_x = delta_x * 4
+            lab_place = delta_y * 13
+
+            self._ent_puls_up_boundary.place(relx=hor_start + shift_x, rely=vert_start + lab_place+ 2*delta_y,
+                                        relwidth=opt_width)
         else:
             self._ent_puls_up_boundary.place_forget()
 
@@ -1355,7 +2255,7 @@ class Application():
         self.update_frame()
 
     def resize(self, event):
-        self.text_scale = self._main_fr.winfo_width()/1920
+        self.text_scale = 1#self._main_fr.winfo_width()/1920
         self._text_size = {'Text 14 bold': 'Verdana '+str(int(14*self.text_scale))+' bold',
                            'Text 16 bold': 'Verdana ' + str(int(16 * self.text_scale)) + ' bold',
                            'Text 18 bold': 'Verdana ' + str(int(18 * self.text_scale)) + ' bold',
@@ -1373,13 +2273,13 @@ class Application():
     def toggle_select_multiple(self, event = None):
         if self._toggle_btn.config('relief')[-1] == 'sunken':
             self._toggle_btn.config(relief="raised")
-            self._toggle_btn.config(bg=self._button_bg_color)
+            self._toggle_btn.config(bg='#E1E1E1')
             self._multiselect_lines = []
             self._toggle_btn.config(text='Toggle select\n'
                                          'multiple')
         else:
             self._toggle_btn.config(relief="sunken")
-            self._toggle_btn.config(bg='orange')
+            self._toggle_btn.config(bg=self._general_color)
             self._toggle_btn.config(text = 'select lines')
         self.update_frame()
 
@@ -1404,14 +2304,15 @@ class Application():
                     'spacing': self._new_stf_spacing.get,
                     'plate_thk': self._new_plate_thk.get,
                     'stf_web_height': self._new_stf_web_h.get,
-                    'stf_web_thk': self._new_sft_web_t.get,
+                    'stf_web_thk': self._new_stf_web_t.get,
                     'stf_flange_width': self._new_stf_fl_w.get,
                     'stf_flange_thk': self._new_stf_fl_t.get,
                     'structure_type': self._new_stucture_type.get,
                     'stf_type': self._new_stf_type.get,
                     'sigma_y1': self._new_sigma_y1.get,
                     'sigma_y2': self._new_sigma_y2.get,
-                    'sigma_x': self._new_sigma_x.get,
+                    'sigma_x1': self._new_sigma_x1.get,
+                    'sigma_x2': self._new_sigma_x2.get,
                     'tau_xy': self._new_tauxy.get,
                     'plate_kpp': self._new_plate_kpp,
                     'stf_kps': self._new_stf_kps.get,
@@ -1423,7 +2324,7 @@ class Application():
                     'zstar_optimization': self._new_zstar_optimization.get,
                     'puls buckling method': self._new_puls_method.get,
                     'puls boundary': self._new_puls_panel_boundary.get,
-                    'puls stiffener end': self._new_puls_stf_end_type.get,
+                    'puls stiffener end': self._new_buckling_stf_end_support.get,
                     'puls sp or up': self._new_puls_sp_or_up.get,
                     'puls up boundary': self._new_puls_up_boundary.get}
 
@@ -1432,32 +2333,24 @@ class Application():
         if var_to_set == 'mat_yield':
             set_var = set_var* 1e6
         elif var_to_set in ['spacing','plate_thk','stf_web_height','stf_web_thk',
-                            'stf_flange_width','stf_flange_thk']:
+                            'stf_flange_width','stf_flange_thk', 'span']:
             set_var = set_var/1000
         no_of_lines = len(self._multiselect_lines)
         for idx, line in enumerate(self._multiselect_lines):
             self._active_line = line
             self._line_is_active = True
             if self._active_line in self._line_to_struc.keys():
-                dict = self._line_to_struc[self._active_line][1].get_structure_prop()
-                dict[var_to_set][0] = set_var
+                # if self._active_line[self._active_line][0].Stiffener is not None:
+                #     dict = self._line_to_struc[self._active_line][0].Stiffener.get_structure_prop()
+                # else:
+                #     dict = self._line_to_struc[self._active_line][0].Plate.get_structure_prop()
+                prop_dict = self._line_to_struc[self._active_line][0].get_main_properties()
 
-                self.new_structure(toggle_multi=dict, suspend_recalc=True if (idx+1) != no_of_lines else False)
+                prop_dict['Plate'][var_to_set][0] = set_var
+                prop_dict['Stiffener'][var_to_set][0] = set_var
 
-    def slider_buckling_used(self, event):
-
-        if self._buckling_slider.get() == 1:
-            self._new_buckling_slider.set(1)
-            self._ent_puls_uf.config(bg = 'white')
-        elif self._buckling_slider.get() == 2:
-            self._new_buckling_slider.set(2)
-            self._ent_puls_uf.config(bg='white')
-        elif self._buckling_slider.get() == 3:
-            self._new_buckling_slider.set(3)
-            self._ent_puls_uf.config(bg = 'red')
-        else:
-            pass
-        self.update_frame()
+                #dict[var_to_set][0] = set_var
+                self.new_structure(toggle_multi=prop_dict, suspend_recalc=True if (idx+1) != no_of_lines else False)
 
     def gui_load_combinations(self,event):
         '''
@@ -1466,23 +2359,25 @@ class Application():
         :return:
         '''
 
-        if self._line_is_active and self._active_line in self._line_to_struc.keys():
+        if all([self._line_is_active,self._active_line in self._line_to_struc.keys(),
+                self._gui_functional_look == 'all items']):
             lc_x, lc_x_delta, lc_y, lc_y_delta = 0.791666667, 0.026041667, 0.287037037, 0.023148148
 
-            self._active_label.config(text=self._active_line)
-            combination = self._combination_slider_map[self._combination_slider.get()]
+            #self._active_label.config(text=self._active_line)
+            combination = self._combination_slider_map[int(self._combination_slider.get())]
 
             # removing label, checkbox and entry. setting created items to empty list.
             [[item.destroy() for item in items] for items in
              [self._lc_comb_created,self._comp_comb_created,self._manual_created, self._info_created]]
             self._lc_comb_created, self._comp_comb_created, self._manual_created, self._info_created= [], [], [], []
 
-            if self._line_to_struc[self._active_line][0].get_structure_type() == '':
-                self._info_created.append(tk.Label(self._main_fr, text='No structure type selected',
-                                               font=self._text_size["Text 10 bold"], bg = self._general_color))
+            if self._line_to_struc[self._active_line][0].Plate.get_structure_type() == '':
+                self._info_created.append(ttk.Label(self._main_fr, text='No structure type selected',
+                                               font=self._text_size["Text 10 bold"], ))
                 self._info_created[0].place(relx=lc_x , y = lc_y + 3*lc_y_delta)
-
-            else:
+            elif self._line_to_struc[self._active_line][5] is not None:
+                pass
+            elif combination != 'Cylinder':
                 # creating new label, checkbox and entry. creating new list of created items.
                 # finding loads applied to lines
                 counter = 0
@@ -1491,18 +2386,18 @@ class Application():
                     for load, data in self._load_dict.items():
                         if self._active_line in self._load_dict[load][1] and data[0].get_limit_state() == 'ULS':
                             name = (combination,self._active_line,str(load)) #tuple to identify combinations on line
-                            self._lc_comb_created.append(tk.Label(self._main_fr, text = load,
+                            self._lc_comb_created.append(ttk.Label(self._main_fr, text = load,
                                                                  font = self._text_size['Text 8 bold'],
-                                                                  bg = self._general_color))
-                            self._lc_comb_created.append(tk.Entry(self._main_fr,
+                                                                  ))
+                            self._lc_comb_created.append(ttk.Entry(self._main_fr,
                                                                  textvariable =self._new_load_comb_dict[name][0],
-                                                                  width=5, bg = self._entry_color,
-                                                                  fg = self._entry_text_color))
-                            self._lc_comb_created.append(tk.Entry(self._main_fr,
+                                                                  width=5,
+                                                                  ))
+                            self._lc_comb_created.append(ttk.Entry(self._main_fr,
                                                                  textvariable=self._new_load_comb_dict[name][1],
-                                                                 width=5, bg = self._entry_color,
-                                                                  fg = self._entry_text_color))
-                            self._lc_comb_created.append(tk.Checkbutton(self._main_fr,
+                                                                 width=5,
+                                                                  ))
+                            self._lc_comb_created.append(ttk.Checkbutton(self._main_fr,
                                                                        variable =self._new_load_comb_dict[name][2]))
 
                     for load_no in range(int(len(self._lc_comb_created)/4)):
@@ -1518,17 +2413,17 @@ class Application():
                 if len(self._tank_dict) != 0 and combination !='manual':
                     for compartment in self.get_compartments_for_line(self._active_line):
                         name = (combination,self._active_line,'comp' + str(compartment)) #tuple to identify combinations on line
-                        self._comp_comb_created.append(tk.Label(self._main_fr, text='Compartment'+str(compartment),
-                                                               font=self._text_size['Text 8 bold']))
-                        self._comp_comb_created.append(tk.Entry(self._main_fr,
+                        self._comp_comb_created.append(ttk.Label(self._main_fr, text='Compartment'+str(compartment),
+                                                               ))
+                        self._comp_comb_created.append(ttk.Entry(self._main_fr,
                                                                textvariable=self._new_load_comb_dict[name][0],
-                                                                width=5, bg = self._entry_color,
-                                                                fg = self._entry_text_color))
-                        self._comp_comb_created.append(tk.Entry(self._main_fr,
+                                                                width=5,
+                                                                ))
+                        self._comp_comb_created.append(ttk.Entry(self._main_fr,
                                                                textvariable=self._new_load_comb_dict[name][1],
-                                                                width=5, bg = self._entry_color,
-                                                                fg = self._entry_text_color))
-                        self._comp_comb_created.append(tk.Checkbutton(self._main_fr,
+                                                                width=5,
+                                                                ))
+                        self._comp_comb_created.append(ttk.Checkbutton(self._main_fr,
                                                                      variable = self._new_load_comb_dict[name][2]))
 
                     for comp_no in range(int(len(self._comp_comb_created)/4)):
@@ -1543,44 +2438,45 @@ class Application():
 
                 name = ('manual', self._active_line, 'manual')  # tuple to identify combinations on line
                 if name in self._new_load_comb_dict.keys():
-                    self._manual_created.append(tk.Label(self._main_fr, text='Manual (pressure/LF)',
-                                                        font=self._text_size['Text 8 bold'],
-                                                         bg = self._general_color))
+                    self._manual_created.append(ttk.Label(self._main_fr, text='Manual (pressure/LF)',
+
+                                                         ))
                     self._manual_created.append(
-                        tk.Entry(self._main_fr, textvariable=self._new_load_comb_dict[name][0], width=15,
-                                 bg = self._entry_color, fg = self._entry_text_color))
+                        ttk.Entry(self._main_fr, textvariable=self._new_load_comb_dict[name][0], width=15,
+                                 ))
                     self._manual_created.append(
-                        tk.Entry(self._main_fr, textvariable=self._new_load_comb_dict[name][1], width=6,
-                                 bg = self._entry_color, fg = self._entry_text_color))
-                    self._manual_created.append(tk.Checkbutton(self._main_fr, variable=self._new_load_comb_dict[name][2]))
+                        ttk.Entry(self._main_fr, textvariable=self._new_load_comb_dict[name][1], width=6,
+                                 ))
+                    self._manual_created.append(ttk.Checkbutton(self._main_fr, variable=self._new_load_comb_dict[name][2]))
                     self._manual_created[0].place(relx=lc_x, rely=lc_y)
                     self._manual_created[1].place(relx=lc_x + 4 * lc_x_delta, rely=lc_y)
                     self._manual_created[2].place(relx=lc_x + 6 * lc_x_delta, rely=lc_y)
                     self._manual_created[3].place(relx=lc_x + 7 * lc_x_delta, rely=lc_y)
 
-            #printing the results
+            if self._line_to_struc[self._active_line][5] is None:
+                results = self.calculate_all_load_combinations_for_line(self._active_line)
 
-            #try:
-            # TODO the reason manual does not show is because it others do noe exist in line_comb_dict. FIX.
-            results = self.calculate_all_load_combinations_for_line(self._active_line)
-
-            self._result_label_dnva.config(text = 'DNV a [Pa]: ' + str(results['dnva']),
-                                          font = self._text_size['Text 8'])
-            self._result_label_dnvb.config(text = 'DNV b [Pa]: ' + str(results['dnvb']),
-                                          font = self._text_size['Text 8'])
-            self._result_label_tanktest.config(text = 'TT [Pa]: ' + str(results['tanktest']),
+                self._result_label_dnva.config(text = 'DNV a [Pa]: ' + str(results['dnva']),
                                               font = self._text_size['Text 8'])
+                self._result_label_dnvb.config(text = 'DNV b [Pa]: ' + str(results['dnvb']),
+                                              font = self._text_size['Text 8'])
+                self._result_label_tanktest.config(text = 'TT [Pa]: ' + str(results['tanktest']),
+                                                  font = self._text_size['Text 8'])
 
-            self._result_label_manual.config(text = 'Manual [Pa]: ' + str(results['manual']))
+                self._result_label_manual.config(text = 'Manual [Pa]: ' + str(results['manual']))
 
-            lc_y = self.results_gui_start+0.018518519
-            self._result_label_dnva.place(relx = lc_x+0*lc_x_delta, rely = lc_y+lc_y_delta*1.5)
-            self._result_label_dnvb.place(relx=lc_x+4*lc_x_delta, rely=lc_y+lc_y_delta*1.5)
-            self._result_label_tanktest.place(relx=lc_x+0*lc_x_delta, rely=lc_y+2.4*lc_y_delta)
+                lc_y = self.results_gui_start+0.018518519
+                self._result_label_dnva.place(relx = lc_x+0*lc_x_delta, rely = lc_y+lc_y_delta*1.5)
+                self._result_label_dnvb.place(relx=lc_x+4*lc_x_delta, rely=lc_y+lc_y_delta*1.5)
+                self._result_label_tanktest.place(relx=lc_x+0*lc_x_delta, rely=lc_y+2.4*lc_y_delta)
 
-            self._result_label_manual.place(relx=lc_x+4*lc_x_delta, rely=lc_y+2.4*lc_y_delta)
-            # except KeyError:
-            #     pass
+                self._result_label_manual.place(relx=lc_x+4*lc_x_delta, rely=lc_y+2.4*lc_y_delta)
+                self._lab_pressure.place(relx=0.786458333, rely=self.results_gui_start)
+            else:
+                for item in [self._result_label_dnva,self._result_label_dnvb,
+                             self._result_label_tanktest,self._result_label_manual,self._lab_pressure ]:
+                    item.place_forget()
+                    #self._combination_slider.set(4)
 
     def slider_used(self, event):
         '''
@@ -1596,7 +2492,7 @@ class Application():
         :return:
         '''
         try:
-            if self._line_to_struc[line][0].get_structure_type() not in ('GENERAL_INTERNAL_NONWT','FRAME'):
+            if self._line_to_struc[line][0].Plate.get_structure_type() not in ('GENERAL_INTERNAL_NONWT','FRAME'):
                 self._pending_grid_draw[line] = coordinates
         except KeyError:
             pass
@@ -1753,7 +2649,7 @@ class Application():
         try:
             self.update_frame()
             for key, val in self._line_to_struc.items():
-                val[1].need_recalc = True
+                val[0].need_recalc = True
         except (TclError, ZeroDivisionError):
             pass
 
@@ -1763,7 +2659,7 @@ class Application():
         self.draw_results(state=state)
         self.draw_canvas(state=state)
         self.draw_prop()
-        self.trace_puls_up_or_sp()
+        #self.trace_puls_up_or_sp()
 
         return state
 
@@ -1772,9 +2668,9 @@ class Application():
 
         return_dict = {'colors': {}, 'section_modulus': {}, 'thickness': {}, 'shear_area': {}, 'buckling': {},
                        'fatigue': {}, 'pressure_uls': {}, 'pressure_fls': {},
-                       'struc_obj': {}, 'scant_calc_obj': {}, 'fatigue_obj': {}, 'utilization': {}, 'slamming': {},
+                       'all_obj': {}, 'scant_calc_obj': {}, 'fatigue_obj': {}, 'utilization': {}, 'slamming': {},
                        'color code': {}, 'PULS colors': {}, 'ML buckling colors' : {}, 'ML buckling class' : {},
-                       'weights': {}}
+                       'weights': {}, 'cylinder': {}}
 
         return_dict['slamming'][current_line] = {}
 
@@ -1793,9 +2689,15 @@ class Application():
             rec_for_color[current_line]  = {}
             slamming_pressure = 0
             if current_line in self._line_to_struc.keys():
-                obj_structure = self._line_to_struc[current_line][0]
-                obj_scnt_calc = self._line_to_struc[current_line][1]
-                if obj_scnt_calc.need_recalc is False:
+                all_obj = self._line_to_struc[current_line][0]
+
+                obj_scnt_calc_pl = all_obj.Plate #self._line_to_struc[current_line][1]
+                obj_scnt_calc_stf = all_obj.Stiffener  # self._line_to_struc[current_line][1]
+                obj_scnt_calc_girder = all_obj.Girder  # self._line_to_struc[current_line][1]
+
+                return_dict['all_obj'][current_line] = all_obj
+
+                if all_obj.need_recalc is False:
                     return self._state_logger[current_line]
                 try:
                     norm_and_slam = self.get_highest_pressure(current_line)
@@ -1807,72 +2709,82 @@ class Application():
                         slamming_pressure = slamming_dict['slamming']
                         slamming_red_fac_pl = slamming_dict['slamming plate reduction factor']
                         slamming_red_fac_stf = slamming_dict['slamming stf reduction factor']
-
-
                 except KeyError:
                     design_pressure = 0
 
-                sec_mod = [obj_scnt_calc.get_section_modulus()[0],
-                           obj_scnt_calc.get_section_modulus()[1]]
+                min_thk = obj_scnt_calc_pl.get_dnv_min_thickness(design_pressure)
+                color_thk = 'green' if obj_scnt_calc_pl.is_acceptable_pl_thk(design_pressure) else 'red'
+                rec_for_color[current_line]['plate thickness'] = (min_thk / 1000) / obj_scnt_calc_pl.get_pl_thk()
+                all_obj.lat_press = design_pressure/1000
+                buckling = all_obj.plate_buckling()
 
-                shear_area = obj_scnt_calc.get_shear_area()
-                min_shear = obj_scnt_calc.get_minimum_shear_area(design_pressure)
-                min_sec_mod = obj_scnt_calc.get_dnv_min_section_modulus(design_pressure)
-                min_thk = obj_scnt_calc.get_dnv_min_thickness(design_pressure)
-                buckling = [round(res, 2) for res in obj_scnt_calc.calculate_buckling_all(
-                    design_lat_press=design_pressure,
-                    checked_side=obj_scnt_calc.get_side())]
+                all_buckling_uf_list = list()
+                for buc_domain, domain_results in buckling.items():
+                    for uf_text, uf_num in domain_results.items():
+                        if buc_domain != 'Local buckling':
+                            all_buckling_uf_list.append(uf_num)
+                color_buckling = 'green' if all([uf <= 1 for uf in all_buckling_uf_list]) \
+                    else 'red'
+                rec_for_color[current_line]['rp buckling'] = max(all_buckling_uf_list)
+                if obj_scnt_calc_stf is not None:
+                    sec_mod = [obj_scnt_calc_stf.get_section_modulus()[0],
+                               obj_scnt_calc_stf.get_section_modulus ()[1]]
 
-                rec_for_color[current_line]['section modulus'] = min_sec_mod/min(sec_mod)
+                    shear_area = obj_scnt_calc_stf.get_shear_area()
+                    min_shear = obj_scnt_calc_stf.get_minimum_shear_area(design_pressure)
+                    min_sec_mod = obj_scnt_calc_stf.get_dnv_min_section_modulus(design_pressure)
+                    rec_for_color[current_line]['section modulus'] = min_sec_mod / min(sec_mod)
+                    rec_for_color[current_line]['shear'] = min_shear/shear_area
+                    return_dict['slamming'][current_line] = dict()
+                    if slamming_pressure is not None and slamming_pressure > 0:
+                        return_dict['slamming'][current_line]['state'] = True
+                    else:
+                        return_dict['slamming'][current_line]['state'] = False
 
-                rec_for_color[current_line]['plate thickness'] = (min_thk/1000)/obj_scnt_calc.get_pl_thk()
-                rec_for_color[current_line]['rp buckling'] = max(buckling)
+                    try:
+                        fatigue_obj = self._line_to_struc[current_line][2]
+                        p_int = self.get_fatigue_pressures(current_line, fatigue_obj.get_accelerations())['p_int']
+                        p_ext = self.get_fatigue_pressures(current_line, fatigue_obj.get_accelerations())['p_ext']
+                        damage = fatigue_obj.get_total_damage(int_press=(p_int['loaded'], p_int['ballast'],
+                                                                         p_int['part']), ext_press=(p_ext['loaded'],
+                                                                                                    p_ext['ballast'],
+                                                                                                    p_ext['part']))
+                        dff = fatigue_obj.get_dff()
+                        color_fatigue = 'green' if damage * dff <= 1 else 'red'
+                    except AttributeError:
+                        fatigue_obj, p_int, p_ext, damage, dff = [None for dummy in range(5)]
+                        color_fatigue = 'green'
 
-                rec_for_color[current_line]['shear'] = min_shear/shear_area
-                return_dict['slamming'][current_line] = dict()
-                if slamming_pressure is not None and slamming_pressure > 0:
-                    return_dict['slamming'][current_line]['state'] = True
+                    color_sec = 'green' if obj_scnt_calc_stf.is_acceptable_sec_mod(sec_mod, design_pressure) else 'red'
+                    color_shear = 'green' if obj_scnt_calc_stf.is_acceptable_shear_area(shear_area, design_pressure) else 'red'
                 else:
+                    sec_mod = [0,0]
+                    rec_for_color[current_line]['section modulus'] = 0.0
+                    rec_for_color[current_line]['shear'] = 0
+                    return_dict['slamming'][current_line] = dict()
+                    fatigue_obj, p_int, p_ext, damage, dff = [None for dummy in range(5)]
+                    color_sec = 'black'
+                    color_shear = 'black'
                     return_dict['slamming'][current_line]['state'] = False
 
-                try:
-                    fatigue_obj = self._line_to_struc[current_line][2]
-                    p_int = self.get_fatigue_pressures(current_line, fatigue_obj.get_accelerations())['p_int']
-                    p_ext = self.get_fatigue_pressures(current_line, fatigue_obj.get_accelerations())['p_ext']
-                    damage = fatigue_obj.get_total_damage(int_press=(p_int['loaded'], p_int['ballast'],
-                                                                     p_int['part']), ext_press=(p_ext['loaded'],
-                                                                                                p_ext['ballast'],
-                                                                                                p_ext['part']))
-                    dff = fatigue_obj.get_dff()
-                    color_fatigue = 'green' if damage * dff <= 1 else 'red'
-                except AttributeError:
-                    fatigue_obj, p_int, p_ext, damage, dff = [None for dummy in range(5)]
-                    color_fatigue = 'green'
-
-                color_sec = 'green' if obj_scnt_calc.is_acceptable_sec_mod(sec_mod, design_pressure) else 'red'
-                color_shear = 'green' if obj_scnt_calc.is_acceptable_shear_area(shear_area, design_pressure) else 'red'
-                color_thk = 'green' if obj_scnt_calc.is_acceptable_pl_thk(design_pressure) else 'red'
-                color_buckling = 'green' if all([uf <= 1 for uf in buckling]) \
-                    else 'red'
-
-                if slamming_pressure is not None and slamming_pressure > 0:
-                    slamming_res = obj_scnt_calc.calculate_slamming_stiffener(slamming_pressure,
+                if slamming_pressure is not None and slamming_pressure > 0 and obj_scnt_calc_stf is not None:
+                    slamming_res = obj_scnt_calc_stf.calculate_slamming_stiffener(slamming_pressure,
                                                                               red_fac=slamming_red_fac_pl)
-                    min_pl_slamming = obj_scnt_calc.calculate_slamming_plate(slamming_pressure,
+                    min_pl_slamming = obj_scnt_calc_stf.calculate_slamming_plate(slamming_pressure,
                                                                              red_fac=slamming_red_fac_stf)
 
                     if slamming_res['Zp_req'] is not None:
-                        zpl = obj_scnt_calc.get_net_effective_plastic_section_modulus()
+                        zpl = obj_scnt_calc_stf.get_net_effective_plastic_section_modulus()
                         zpl_req = slamming_res['Zp_req']
                         color_sec = 'green' if zpl >= zpl_req else 'red'
                     else:
-                        zpl = obj_scnt_calc.get_net_effective_plastic_section_modulus()
+                        zpl = obj_scnt_calc_stf.get_net_effective_plastic_section_modulus()
                         zpl_req = None
                         color_sec = 'red'
 
-                    color_shear = 'green' if round(obj_scnt_calc.get_web_thk()* 1000,1)  >= \
+                    color_shear = 'green' if round(obj_scnt_calc_stf.get_web_thk()* 1000,1)  >= \
                                              round(slamming_res['tw_req'],1) else 'red'
-                    color_thk = 'green' if round(obj_scnt_calc.get_pl_thk() * 1000,1) >= \
+                    color_thk = 'green' if round(obj_scnt_calc_stf.get_pl_thk() * 1000,1) >= \
                                            round(min_pl_slamming,1) else 'red'
 
                     return_dict['slamming'][current_line]['zpl'] = zpl
@@ -1883,6 +2795,14 @@ class Application():
                 return_dict['colors'][current_line] = {'buckling': color_buckling, 'fatigue': color_fatigue,
                                                        'section': color_sec, 'shear': color_shear,
                                                        'thickness': color_thk}
+                '''
+                Cylinder calculations
+                '''
+                if self._line_to_struc[current_line][5] is not None:
+                    cylinder_results = self._line_to_struc[current_line][5].get_utilization_factors()
+                    return_dict['cylinder'][current_line] = cylinder_results
+
+
                 '''
                 PULS calculations
                 '''
@@ -1906,11 +2826,17 @@ class Application():
                         if geo_problem:
                             loc_geom = 'red'
                         else:
-                            loc_label = 'Local geom req (PULS validity limits)' if \
-                                obj_scnt_calc.get_puls_sp_or_up() == 'SP' else 'Geom. Req (PULS validity limits)'
+                            if obj_scnt_calc_stf is None:
+                                loc_label = 'Geom. Req (PULS validity limits)'
+                            else:
+                                loc_label = 'Local geom req (PULS validity limits)' if \
+                                    obj_scnt_calc_stf.get_puls_sp_or_up() == 'SP' else 'Geom. Req (PULS validity limits)'
                             loc_geom = 'green' if all([val[0] == 'Ok' for val in res[loc_label].values()]) else 'red'
-                        csr_label = 'CSR-Tank requirements (primary stiffeners)' if \
-                            obj_scnt_calc.get_puls_sp_or_up() == 'SP' else'CSR-Tank req'
+                        if obj_scnt_calc_stf is None:
+                            csr_label = 'CSR-Tank req'
+                        else:
+                            csr_label = 'CSR-Tank requirements (primary stiffeners)' if \
+                                obj_scnt_calc_stf.get_puls_sp_or_up() == 'SP' else'CSR-Tank req'
 
                         csr_geom = 'green' if all([val[0] in ['Ok', '-'] for val in res[csr_label].values()]) else 'red'
                         return_dict['PULS colors'][current_line] = {'ultimate': col_ult, 'buckling': col_buc,
@@ -1930,10 +2856,10 @@ class Application():
                         'cl SP ult GLGT predictor', 'cl SP ult GLGT scaler']
                 '''
 
-                if obj_scnt_calc.get_puls_sp_or_up() == 'UP':
-                    buckling_ml_input = obj_scnt_calc.get_buckling_ml_input(design_lat_press=design_pressure)
+                if obj_scnt_calc_pl.get_puls_sp_or_up() == 'UP':
+                    buckling_ml_input = obj_scnt_calc_pl.get_buckling_ml_input(design_lat_press=design_pressure)
 
-                    if obj_scnt_calc.get_puls_boundary() == 'Int':
+                    if obj_scnt_calc_pl.get_puls_boundary() == 'Int':
                         if self._ML_buckling['cl UP buc int predictor'] != None:
                             x_buc = self._ML_buckling['cl UP buc int scaler'].transform(buckling_ml_input)
                             y_pred_buc = self._ML_buckling['cl UP buc int predictor'].predict(x_buc)[0]
@@ -1956,7 +2882,7 @@ class Application():
                         else:
                             y_pred_ult = 0
 
-                    x_csr = obj_scnt_calc.get_buckling_ml_input(design_lat_press=design_pressure, csr = True)
+                    x_csr = obj_scnt_calc_pl.get_buckling_ml_input(design_lat_press=design_pressure, csr = True)
                     x_csr = self._ML_buckling['CSR scaler UP'].transform(x_csr)
                     csr_pl = self._ML_buckling['CSR predictor UP'].predict(x_csr)[0]
 
@@ -1970,8 +2896,8 @@ class Application():
                                                                       'CSR': [csr_pl, float('inf'),
                                                                               float('inf'), float('inf')]}
                 else:
-                    buckling_ml_input = obj_scnt_calc.get_buckling_ml_input(design_lat_press=design_pressure)
-                    if obj_scnt_calc.get_puls_boundary() == 'Int':
+                    buckling_ml_input = obj_scnt_calc_stf.get_buckling_ml_input(design_lat_press=design_pressure)
+                    if obj_scnt_calc_stf.get_puls_boundary() == 'Int':
                         if self._ML_buckling['cl SP buc int predictor'] != None:
                             x_buc = self._ML_buckling['cl SP buc int scaler'].transform(buckling_ml_input)
                             y_pred_buc = self._ML_buckling['cl SP buc int predictor'].predict(x_buc)[0]
@@ -1994,7 +2920,8 @@ class Application():
                         else:
                             y_pred_ult = 0
 
-                    x_csr = obj_scnt_calc.get_buckling_ml_input(design_lat_press=design_pressure, csr = True)
+                    x_csr = obj_scnt_calc_stf.get_buckling_ml_input(design_lat_press=design_pressure, csr = True)
+
                     x_csr = self._ML_buckling['CSR scaler SP'].transform(x_csr)
                     csr_pl, csr_web, csr_web_fl, csr_fl = self._ML_buckling['CSR predictor SP'].predict(x_csr)[0]
 
@@ -2010,10 +2937,14 @@ class Application():
                 '''
                 Weight calculations for line.
                 '''
-                line_weight = op.calc_weight([obj_scnt_calc.get_s(), obj_scnt_calc.get_pl_thk(),
-                                              obj_scnt_calc.get_web_h(), obj_scnt_calc.get_web_thk(),
-                                              obj_scnt_calc.get_fl_w(), obj_scnt_calc.get_fl_thk(),
-                                              obj_scnt_calc.get_span(), obj_scnt_calc.get_lg()])
+                # TODO only works for stiffened panel!
+                if obj_scnt_calc_stf is not None:
+                    line_weight = op.calc_weight([obj_scnt_calc_stf.get_s(), obj_scnt_calc_stf.get_pl_thk(),
+                                                  obj_scnt_calc_stf.get_web_h(), obj_scnt_calc_stf.get_web_thk(),
+                                                  obj_scnt_calc_stf.get_fl_w(), obj_scnt_calc_stf.get_fl_thk(),
+                                                  obj_scnt_calc_stf.get_span(), obj_scnt_calc_stf.get_lg()])
+                else:
+                    line_weight = 0
                 points = self._line_dict[current_line]
                 p1 = self._point_dict['point' + str(points[0])]
                 p2 = self._point_dict['point' + str(points[1])]
@@ -2029,11 +2960,11 @@ class Application():
                 return_dict['buckling'][current_line] = buckling
                 return_dict['pressure_uls'][current_line] = design_pressure
                 return_dict['pressure_fls'][current_line] = {'p_int': p_int, 'p_ext': p_ext}
-                return_dict['section_modulus'][current_line] = {'sec_mod': sec_mod, 'min_sec_mod': min_sec_mod}
-                return_dict['shear_area'][current_line] = {'shear_area': shear_area, 'min_shear_area': min_shear}
-                return_dict['thickness'][current_line] = {'thk': obj_scnt_calc.get_plate_thk(), 'min_thk': min_thk}
-                return_dict['struc_obj'][current_line] = obj_structure
-                return_dict['scant_calc_obj'][current_line] = obj_scnt_calc
+                return_dict['section_modulus'][current_line] = {'sec_mod': sec_mod, 'min_sec_mod': 0} if \
+                    obj_scnt_calc_stf is None else {'sec_mod': sec_mod, 'min_sec_mod': min_sec_mod}
+                return_dict['shear_area'][current_line] = {'shear_area': 0, 'min_shear_area': 0} if \
+                    obj_scnt_calc_stf is None else{'shear_area': shear_area, 'min_shear_area': min_shear}
+                return_dict['thickness'][current_line] = {'thk': obj_scnt_calc_pl.get_pl_thk(), 'min_thk': min_thk}
                 return_dict['fatigue_obj'][current_line] = fatigue_obj
                 return_dict['color code'][current_line] = {}
 
@@ -2047,40 +2978,41 @@ class Application():
 
                 fat_util = 0 if damage is None else damage * dff
                 shear_util = 0 if shear_area == 0 else min_shear / shear_area
-                thk_util = 0 if obj_structure.get_plate_thk() == 0 else min_thk / (1000 * obj_structure.get_plate_thk())
+                thk_util = 0 if obj_scnt_calc_pl.get_pl_thk() == 0 else min_thk / (1000 * obj_scnt_calc_pl.get_pl_thk())
                 sec_util = 0 if min(sec_mod) == 0 else min_sec_mod / min(sec_mod)
-                buc_util = 1 if float('inf') in buckling else max(buckling[0:5])
-                rec_for_color[current_line]['rp buckling'] = max(buckling[0:5])
+                buc_util = 1 if float('inf') in buckling else max(all_buckling_uf_list)
+                rec_for_color[current_line]['rp buckling'] = max(all_buckling_uf_list)
                 return_dict['utilization'][current_line] = {'buckling': buc_util,
-                                                            'PULS buckling': buc_util, # TODO double check
+                                                            'PULS buckling': buc_util,
                                                             'fatigue': fat_util,
                                                             'section': sec_util,
                                                             'shear': shear_util,
                                                             'thickness': thk_util}
 
                 # Color coding state
-
                 self._state_logger[current_line] = return_dict #  Logging the current state of the line.
-                self._line_to_struc[current_line][1].need_recalc = False
+                self._line_to_struc[current_line][0].need_recalc = False
             else:
                 pass
 
         sec_in_model, idx, recorded_sections = dict(), 0, list()
         for data in self._line_to_struc.values():
-            if data[1].get_beam_string() not in recorded_sections:
-                sec_in_model[data[1].get_beam_string()] = idx
-                recorded_sections.append(data[1].get_beam_string())
-                idx += 1
+            if data[0].Stiffener is not None:
+                if data[0].Stiffener.get_beam_string() not in recorded_sections:
+                    sec_in_model[data[0].Stiffener.get_beam_string()] = idx
+                    recorded_sections.append(data[0].Stiffener.get_beam_string())
+                    idx += 1
         sec_in_model['length'] = len(recorded_sections)
 
         if self._line_to_struc != {}:
             sec_mod_map = np.arange(0,1.1,0.1)
             fat_map = np.arange(0,1.1,0.1)
-            all_thicknesses = [round(objs[0].get_pl_thk(), 5) for objs in self._line_to_struc.values()]
+            all_thicknesses = [round(objs[0].Plate.get_pl_thk(), 5) for objs in self._line_to_struc.values()]
             all_thicknesses = np.unique(all_thicknesses).tolist()
             thickest_plate = max(all_thicknesses)
             if len(all_thicknesses) > 1:
-                thk_map = np.arange(min(all_thicknesses), max(all_thicknesses) + (max(all_thicknesses) - min(all_thicknesses)) / 10,
+                thk_map = np.arange(min(all_thicknesses), max(all_thicknesses) + (max(all_thicknesses) -
+                                                                                  min(all_thicknesses)) / 10,
                                      (max(all_thicknesses) - min(all_thicknesses)) / 10)
             else:
                 thk_map = all_thicknesses
@@ -2106,10 +3038,7 @@ class Application():
                          for line in self._line_to_struc.keys()]
             all_utils = np.unique(all_utils).tolist()
             if len(all_utils) >1:
-                # util_map = np.arange(min(all_utils), max(all_utils) + (max(all_utils) - min(all_utils)) / 10,
-                #                      (max(all_utils) - min(all_utils)) / 10)
                 util_map =  np.arange(0, 1.1, 0.1)
-
             else:
                 util_map = all_utils
 
@@ -2117,44 +3046,49 @@ class Application():
                 #puls_util_map = self._PULS_results.all_uf
                 puls_util_map = list()
                 for key, val in self._line_to_struc.items():
-                    puls_util_map.append(self._PULS_results.get_utilization(key, val[0].get_puls_method(),
+                    puls_util_map.append(self._PULS_results.get_utilization(key, val[0].Plate.get_puls_method(),
                                                                             acceptance = self._new_puls_uf.get()))
-                # puls_util_map  = np.arange(min(puls_util_map), max(puls_util_map) + (max(puls_util_map) -
-                #                                                                      min(puls_util_map)) / 10,
-                #                      (max(puls_util_map) - min(puls_util_map)) / 10)
                 puls_util_map  = np.arange(0, 1.1, 0.1)
             else:
                 puls_util_map = None
 
-            sig_x = np.unique([self._line_to_struc[line][1].get_sigma_x() for line in self._line_to_struc.keys()]).tolist()
-            if len(sig_x) > 1:
+            sig_x = np.unique([self._line_to_struc[line][0].Plate.get_sigma_x1() for line in
+                               self._line_to_struc.keys()]).tolist()
+            if len(sig_x) > 1: # TODO color coding when using sig_x1 and sig_x2 (23.12.2021)
                 sig_x_map = np.arange(min(sig_x), max(sig_x) + (max(sig_x) - min(sig_x)) / 10,
                                       (max(sig_x) - min(sig_x)) / 10)
             else:
                 sig_x_map = sig_x
-            sig_y1 = np.unique([self._line_to_struc[line][1].get_sigma_y1() for line in self._line_to_struc.keys()]).tolist()
+            sig_y1 = np.unique([self._line_to_struc[line][0].Plate.get_sigma_y1() for line in
+                                self._line_to_struc.keys()]).tolist()
             if len(sig_y1) > 1:
                 sig_y1_map = np.arange(min(sig_y1), max(sig_y1) + (max(sig_y1) - min(sig_y1)) / 10,
                                        (max(sig_y1) - min(sig_y1)) / 10)
             else:
                 sig_y1_map = sig_y1
 
-            sig_y2 = np.unique([self._line_to_struc[line][1].get_sigma_y2() for line in self._line_to_struc.keys()]).tolist()
+            sig_y2 = np.unique([self._line_to_struc[line][0].Plate.get_sigma_y2() for line in
+                                self._line_to_struc.keys()]).tolist()
             if len(sig_y2) > 1:
 
                 sig_y2_map = np.arange(min(sig_y2), max(sig_y2) + (max(sig_y2) - min(sig_y2)) / 10,
                                        (max(sig_y2) - min(sig_y2)) / 10)
             else:
                 sig_y2_map = sig_y2
-            tau_xy = np.unique([self._line_to_struc[line][1].get_tau_xy() for line in self._line_to_struc.keys()]).tolist()
+            tau_xy = np.unique([self._line_to_struc[line][0].Plate.get_tau_xy() for line in
+                                self._line_to_struc.keys()]).tolist()
             if len(tau_xy) > 1:
                 tau_xy_map = np.arange(min(tau_xy), max(tau_xy) + (max(tau_xy) - min(tau_xy)) / 10,
                                        (max(tau_xy) - min(tau_xy)) / 10)
             else:
                 tau_xy_map = tau_xy
 
-            spacing = np.unique([self._line_to_struc[line][1].get_s() for line in self._line_to_struc.keys()]).tolist()
-            structure_type = [self._line_to_struc[line][1].get_structure_type() for line in
+            spacings = list()
+            for line in self._line_to_struc.keys():
+                if self._line_to_struc[line][0].Stiffener is not None:
+                    spacings.append(self._line_to_struc[line][0].Stiffener.get_s())
+            spacing = np.unique(spacings).tolist()
+            structure_type = [self._line_to_struc[line][0].Plate.get_structure_type() for line in
                               self._line_to_struc.keys()]
 
             return_dict['color code'] = {'thickest plate': thickest_plate, 'thickness map': thk_map,
@@ -2185,16 +3119,16 @@ class Application():
             for line, line_data in self._line_to_struc.items():
                 if self._PULS_results is None:
                     puls_color, buc_uf, puls_uf, puls_method, puls_sp_or_up = 'black', 0, 0, None, None
-                elif self._PULS_results.get_utilization(line, self._line_to_struc[line][1].get_puls_method(),
+                elif self._PULS_results.get_utilization(line, self._line_to_struc[line][0].Plate.get_puls_method(),
                                                         self._new_puls_uf.get()) == None:
                     puls_color, buc_uf, puls_uf, puls_method, puls_sp_or_up = 'black', 0,0, None, None
                 else:
-                    puls_method = self._line_to_struc[line][1].get_puls_method()
+                    puls_method = self._line_to_struc[line][0].Plate.get_puls_method()
                     puls_uf = self._PULS_results.get_utilization(
                                                    line, puls_method,
                                                    self._new_puls_uf.get())
                     puls_color = matplotlib.colors.rgb2hex(cmap_sections(puls_uf))
-                    puls_sp_or_up = self._line_to_struc[line][1].get_puls_sp_or_up()
+                    puls_sp_or_up = self._line_to_struc[line][0].Plate.get_puls_sp_or_up()
 
                 rp_uf = rec_for_color[line]['rp buckling']
 
@@ -2212,8 +3146,8 @@ class Application():
 
                 res = list()
                 for stress_list, this_stress in zip([sig_x, sig_y1, sig_y2, tau_xy],
-                                                     [line_data[1].get_sigma_x(), line_data[1].get_sigma_y1(),
-                                                      line_data[1].get_sigma_y2(), line_data[1].get_tau_xy()]):
+                                                     [line_data[0].Plate.get_sigma_x1(), line_data[0].Plate.get_sigma_y1(),
+                                                      line_data[0].Plate.get_sigma_y2(), line_data[0].Plate.get_tau_xy()]):
                     if len(stress_list) == 1:
                         res.append(1)
                     elif max(stress_list) == 0 and min(stress_list) == 0:
@@ -2226,17 +3160,18 @@ class Application():
                 sig_x_uf, sig_y1_uf, sig_y2_uf , tau_xy_uf = res
 
 
-                line_color_coding[line] = {'plate': matplotlib.colors.rgb2hex(cmap_sections(thk_sort_unique.index(round(line_data[1]
-                                                                              .get_pl_thk(),10))/len(thk_sort_unique))),
-                                           'spacing': matplotlib.colors.rgb2hex(
-                                               cmap_sections(spacing_sort_unique.index(round(line_data[1]
+                line_color_coding[line] = {'plate': matplotlib.colors.rgb2hex(cmap_sections(
+                    thk_sort_unique.index(round(line_data[0].Plate.get_pl_thk(),10))/len(thk_sort_unique))),
+                                           'spacing': 'black' if line_data[0].Stiffener is None else matplotlib.colors.rgb2hex(
+                                               cmap_sections(spacing_sort_unique.index(round(line_data[0].Stiffener
                                                                                          .get_s(), 10)) / len(
                                                    spacing_sort_unique))),
-                                           'section': matplotlib.colors.rgb2hex(cmap_sections(sec_in_model[line_data[1]
-                                                                                .get_beam_string()]
-                                                      /len(list(recorded_sections)))),
+                                           'section': 'black' if line_data[0].Stiffener is None else
+                                           matplotlib.colors.rgb2hex(cmap_sections(sec_in_model[line_data[0]
+                                                                                   .Stiffener.get_beam_string()]/
+                                                                                   len(list(recorded_sections)))),
                                            'structure type': matplotlib.colors.rgb2hex(
-                                               cmap_sections(structure_type_unique.index(line_data[1].get_structure_type())
+                                               cmap_sections(structure_type_unique.index(line_data[0].Plate.get_structure_type())
                                                              /len(structure_type_unique))),
                                            'pressure color': 'black' if all_pressures in [[0],[0,1]] else matplotlib.colors.rgb2hex(cmap_sections(
                                                this_pressure/highest_pressure)),
@@ -2304,12 +3239,12 @@ class Application():
         else:
             # Drawing lines at (0, 0)
             self._main_canvas.create_line(self._canvas_draw_origo[0], 0, self._canvas_draw_origo[0], self._canvas_dim[1]+500,
-                                         stipple= 'gray50')
+                                         stipple= 'gray50', fill=self._color_text)
             self._main_canvas.create_line(0, self._canvas_draw_origo[1], self._canvas_dim[0] +500, self._canvas_draw_origo[1],
-                                         stipple='gray50')
+                                         stipple='gray50', fill=self._color_text)
             self._main_canvas.create_text(self._canvas_draw_origo[0] - 30 * 1,
                                           self._canvas_draw_origo[1] + 12 * 1, text='(0,0)',
-                                          font='Text 10')
+                                          font='Text 10', fill = self._color_text)
 
         # Drawing COG and COB
         if self._new_show_cog.get():
@@ -2334,7 +3269,7 @@ class Application():
                 self._main_canvas.create_text(point_coord_x  + 5,
                                               point_coord_y - 14, text='steel COG: x=' + str(round(state['COG'][0], 2)) +
                                                                        ' y=' +str(round(state['COG'][1],2)),
-                                              font=self._text_size["Text 8 bold"], fill='black')
+                                            fill = self._color_text)
 
             if self._center_of_buoyancy != {}:
                 for draft, cob in self._center_of_buoyancy.items():
@@ -2377,7 +3312,7 @@ class Application():
             self._main_canvas.create_text(self._main_canvas.winfo_width()*0.87, self._main_canvas.winfo_height()*0.16,
                                           text = self._shortcut_text,
                                           font=self._text_size["Text 8"],
-                                          fill = 'black')
+                                          fill = self._color_text)
 
         # drawing the point dictionary
         pt_size = 3
@@ -2389,7 +3324,7 @@ class Application():
             else:
                 x_coord = round(self.get_point_actual_coord(key)[0], 3)
                 y_coord = round(self.get_point_actual_coord(key)[1], 3)
-                coord_color = 'black'
+                coord_color = self._color_text
 
             if self._point_is_active and key == self._active_point :
                 self._main_canvas.create_oval(self.get_point_canvas_coord(key)[0] - pt_size+2,
@@ -2418,7 +3353,7 @@ class Application():
                     #printing 'pt.#'
                     self._main_canvas.create_text(self.get_point_canvas_coord(key)[0] + 15,
                                                  self.get_point_canvas_coord(key)[1] - 10, text='pt.'+str(get_num(key)),
-                                                  font="Text 10")
+                                                  font="Text 10", fill = self._color_text)
                     #printing the coordinates of the point
                     self._main_canvas.create_text(self.get_point_canvas_coord(key)[0]+35,
                                                   self.get_point_canvas_coord(key)[1]+10 ,
@@ -2433,14 +3368,28 @@ class Application():
                 coord2 = self.get_point_canvas_coord('point' + str(value[1]))
                 if not chk_box_active and state != None:
                     try:
-                        if self._new_buckling_slider.get() == 2:
+                        if self._line_to_struc[line][5] is not None: # Cylinder
+                            cylinder_results = state['cylinder'][line]
+                            all_cyl_chks = list()
+                            for key, val in cylinder_results.items():
+                                if key in ['Unstiffened shell', 'Longitudinal stiffened shell',
+                                           'Ring stiffened shell', 'Heavy ring frame']:
+
+                                    all_cyl_chks.append(True if val is None else val < 1)
+                                elif key == 'Stiffener check' and val is not None:
+                                    for stf_key, stf_val in val.items():
+                                        if stf_val is not None:
+                                            all_cyl_chks.append(stf_val)
+                            color = 'green' if all(all_cyl_chks) else 'red'
+
+                        elif self._new_buckling_method.get() == 'DNV PULS':
                             if 'black' in state['PULS colors'][line].values():
                                 color = 'black'
                             else:
                                 col1, col2 = state['PULS colors'][line]['buckling'], \
                                              state['PULS colors'][line]['ultimate']
 
-                                if self._line_to_struc[line][1].get_puls_method() == 'buckling':
+                                if self._line_to_struc[line][0].Plate.get_puls_method() == 'buckling':
                                     color = 'red' if any([col1 == 'red', col2 == 'red']) else 'green'
                                 else:
                                     color = col2
@@ -2448,16 +3397,16 @@ class Application():
                                 if color == 'green':
                                     color = 'green' if all([state['colors'][line][key] == 'green' for key in
                                                             ['fatigue', 'section', 'shear','thickness']]) else 'red'
-                        elif self._new_buckling_slider.get() == 1:
+                        elif self._new_buckling_method.get() == 'DNV-RP-C201 - prescriptive':
                             color = 'red' if 'red' in state['colors'][line].values() else 'green'
-                        elif self._new_buckling_slider.get() == 3:
+                        elif self._new_buckling_method.get() == 'ML-CL (PULS based)':
                             if 'black' in state['ML buckling colors'][line].values():
                                 color = 'black'
                             else:
                                 col1, col2 = state['ML buckling colors'][line]['buckling'], \
                                              state['ML buckling colors'][line]['ultimate']
 
-                                if self._line_to_struc[line][1].get_puls_method() == 'buckling':
+                                if self._line_to_struc[line][0].Plate.get_puls_method() == 'buckling':
                                     color = col1
                                 else:
                                     color = col2
@@ -2475,22 +3424,34 @@ class Application():
 
                 vector = [coord2[0] - coord1[0], coord2[1] - coord1[1]]
                 # drawing a bold line if it is selected
-                if line == self._active_line and self._line_is_active:
-                    self._main_canvas.create_line(coord1, coord2, width=6, fill = color)
+
+                if all([line == self._active_line, self._line_is_active]):
+                    if line not in self._line_to_struc.keys():
+                        self._main_canvas.create_line(coord1, coord2, width=6, fill=self._color_text)
+                    elif self._line_to_struc[line][5] is not None:
+                        self._main_canvas.create_line(coord1, coord2, width=10, fill = color, stipple = 'gray50')
+                    else:
+                        self._main_canvas.create_line(coord1, coord2, width=6, fill=color)
                     if self._new_line_name.get():
                         self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2+10,
                                                      text='Line ' + str(get_num(line)),
                                                       font=self._text_size["Text 10 bold"],
                                                      fill = 'red')
                 else:
-                    self._main_canvas.create_line(coord1, coord2, width=3, fill = color)
+                    if line not in self._line_to_struc.keys():
+                        self._main_canvas.create_line(coord1, coord2, width=3, fill=self._color_text)
+                    elif self._line_to_struc[line][5] is not None:
+                        self._main_canvas.create_line(coord1, coord2, width=6, fill = color, stipple = 'gray50')
+                    else:
+                        self._main_canvas.create_line(coord1, coord2, width=3, fill = color)
                     if self._new_line_name.get():
                         self._main_canvas.create_text(coord1[0]-20 + vector[0] / 2 + 5, coord1[1] + vector[1] / 2+10,
-                                                     text='l.' + str(get_num(line)), font="Text 8", fill = 'black')
+                                                     text='l.' + str(get_num(line)), font="Text 8",
+                                                      fill = self._color_text)
                 if line in self._multiselect_lines:
                     self._main_canvas.create_text(coord1[0] + vector[0] / 2 +5, coord1[1] + vector[1] / 2 -10,
                                                   text=self._new_toggle_var.get(),
-                                                  font=self._text_size["Text 8 bold"],
+
                                                   fill='orange')
 
         # drawing waterline
@@ -2584,7 +3545,7 @@ class Application():
                                                                                            else press/highest_pressure)),
                                               anchor="nw")
         elif all([self._new_colorcode_utilization.get() == True,
-                  self._line_to_struc != {}, self._new_buckling_slider.get() != 2]):
+                  self._line_to_struc != {}, self._new_buckling_method.get() != 'DNV PULS']):
             all_utils = cc_state['utilization map']
             for idx, uf in enumerate(cc_state['utilization map']):
                 self._main_canvas.create_text(11, start_text_shift + 20 * idx, text=str('UF = ' +str(round(uf,1))),
@@ -2596,7 +3557,7 @@ class Application():
                                               fill=matplotlib.colors.rgb2hex(cmap_sections(uf/max(all_utils))),
                                               anchor="nw")
         elif all([self._new_colorcode_utilization.get() == True,
-                  self._line_to_struc != {}, self._new_buckling_slider.get() == 2]):
+                  self._line_to_struc != {}, self._new_buckling_method == 'DNV PULS']):
             all_utils = cc_state['PULS utilization map']
             for idx, uf in enumerate(cc_state['utilization map']):
                 self._main_canvas.create_text(11, start_text_shift + 20 * idx, text=str('UF = ' +str(round(uf,1))),
@@ -2617,8 +3578,8 @@ class Application():
                                               font=self._text_size["Text 10 bold"],
                                               fill='black' if cc_state['max sigma x']-cc_state['min sigma x'] == 0 else
                                               matplotlib.colors.rgb2hex(
-                                                  cmap_sections(0 if cc_state['max sigma x'] == 0 else 
-                                                                (value+ abs(cc_state['min sigma x'])) /  
+                                                  cmap_sections(0 if cc_state['max sigma x'] == 0 else
+                                                                (value+ abs(cc_state['min sigma x'])) /
                                                                 (cc_state['max sigma x']-cc_state['min sigma x']))),
                                               anchor="nw")
         elif self._new_colorcode_sigmay1.get() == True:
@@ -2631,8 +3592,8 @@ class Application():
                                               font=self._text_size["Text 10 bold"],
                                               fill='black' if cc_state['max sigma y1']-cc_state['min sigma y1'] == 0
                                               else matplotlib.colors.rgb2hex(
-                                                  cmap_sections(0 if cc_state['max sigma y1'] == 0 else 
-                                                                (value+ abs(cc_state['min sigma y1'])) /  
+                                                  cmap_sections(0 if cc_state['max sigma y1'] == 0 else
+                                                                (value+ abs(cc_state['min sigma y1'])) /
                                                                 (cc_state['max sigma y1']-cc_state['min sigma y1']))),
                                               anchor="nw")
         elif self._new_colorcode_sigmay2.get() == True:
@@ -2645,8 +3606,8 @@ class Application():
                                               font=self._text_size["Text 10 bold"],
                                               fill='black' if cc_state['max sigma y2']-cc_state['min sigma y2'] == 0 else
                                               matplotlib.colors.rgb2hex(
-                                                  cmap_sections(0 if cc_state['max sigma y2'] == 0 else 
-                                                                (value+ abs(cc_state['min sigma y2'])) /  
+                                                  cmap_sections(0 if cc_state['max sigma y2'] == 0 else
+                                                                (value+ abs(cc_state['min sigma y2'])) /
                                                                 (cc_state['max sigma y2']-cc_state['min sigma y2']))),
                                               anchor="nw")
         elif self._new_colorcode_tauxy.get() == True:
@@ -2659,8 +3620,8 @@ class Application():
                                               font=self._text_size["Text 10 bold"],
                                               fill='black' if cc_state['max tau xy']-cc_state['min tau xy'] == 0 else
                                               matplotlib.colors.rgb2hex(
-                                                  cmap_sections(0 if cc_state['max tau xy'] == 0 else 
-                                                                (value+ abs(cc_state['min tau xy'])) /  
+                                                  cmap_sections(0 if cc_state['max tau xy'] == 0 else
+                                                                (value+ abs(cc_state['min tau xy'])) /
                                                                 (cc_state['max tau xy']-cc_state['min tau xy']))),
                                               anchor="nw")
         elif self._new_colorcode_structure_type.get() == True:
@@ -2717,104 +3678,185 @@ class Application():
         if line not in state['color code']['lines'].keys():
             return 'black'
         if self._new_colorcode_beams.get() == True and line in list(self._line_to_struc.keys()):
-            color = state['color code']['lines'][line]['section']
+            if self._line_to_struc[line][5] is not None or self._line_to_struc[line][0].Stiffener is None:
+                color = 'grey'
+                this_text = 'N/A'
+            elif self._line_to_struc[line][0].Plate is not None:
+                color = state['color code']['lines'][line]['section']
+                this_text = self._line_to_struc[line][0].Plate.get_beam_string()
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                              text=self._line_to_struc[line][1].get_beam_string() ,
+                                              text=this_text ,
                                               font=self._text_size["Text 7"])
 
         elif self._new_colorcode_plates.get() == True and line in list(self._line_to_struc.keys()):
-            color = state['color code']['lines'][line]['plate']
+            if self._line_to_struc[line][5] is not None:
+                color = 'grey'
+                this_text = 'N/A'
+            else:
+                color = state['color code']['lines'][line]['plate']
+                this_text = str(self._line_to_struc[line][0].Plate.get_pl_thk()*1000)
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                              text=str(self._line_to_struc[line][1].get_pl_thk()*1000))
+                                              text=this_text)
+
         elif self._new_colorcode_spacing.get() == True and line in list(self._line_to_struc.keys()):
-            color = state['color code']['lines'][line]['spacing']
+            if self._line_to_struc[line][5] is not None or self._line_to_struc[line][0].Stiffener is None:
+                color = 'grey'
+                this_text = 'N/A'
+            else:
+                color = state['color code']['lines'][line]['spacing']
+                this_text = str(self._line_to_struc[line][0].Stiffener.get_s()*1000)
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                              text=str(self._line_to_struc[line][1].get_s()*1000))
+                                              text=this_text)
+
 
         elif self._new_colorcode_pressure.get() == True and line in list(self._line_to_struc.keys()):
-            if cc_state['all pressures'] == [0, 1]:
-                color = 'black'
+            if self._line_to_struc[line][5] is not None:
+                color = 'grey'
+                this_text = 'N/A'
             else:
-                color = state['color code']['lines'][line]['pressure color']
+                if cc_state['all pressures'] == [0, 1]:
+                    color = 'black'
+                else:
+                    color = state['color code']['lines'][line]['pressure color']
+                this_text = str(state['color code']['lines'][line]['pressure'])
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                              text=str(state['color code']['lines'][line]['pressure']))
+                                              text=this_text)
 
-        elif self._new_colorcode_utilization.get() == True and self._new_buckling_slider.get() == 1:
-            color = state['color code']['lines'][line]['rp uf color']
+        elif self._new_colorcode_utilization.get() == True and self._new_buckling_method.get() == 'DNV-RP-C201 - prescriptive':
+            if self._line_to_struc[line][5] is not None:
+                color = 'grey'
+                this_text = 'N/A'
+            else:
+                color = state['color code']['lines'][line]['rp uf color']
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                               text=round(state['color code']['lines'][line]['rp uf'],2))
 
-        elif self._new_colorcode_utilization.get() == True and self._new_buckling_slider.get() == 2:
-            color = state['color code']['lines'][line]['PULS uf color']
+        elif self._new_colorcode_utilization.get() == True and self._new_buckling_method.get() == 'DNV PULS':
+            if self._line_to_struc[line][5] is not None:
+                color = 'grey'
+                this_text = 'N/A'
+            else:
+                color = state['color code']['lines'][line]['PULS uf color']
+                this_text = round(state['color code']['lines'][line]['PULS uf'],2)
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                              text=round(state['color code']['lines'][line]['PULS uf'],2))
-        elif self._new_colorcode_utilization.get() == True and self._new_buckling_slider.get() == 3:
+                                              text=this_text)
+        elif self._new_colorcode_utilization.get() == True and self._new_buckling_method.get() == 'ML-CL (PULS based)':
             color = 'black'
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                               text='N/A')
 
         elif self._new_colorcode_sigmax.get() == True:
-            color = state['color code']['lines'][line]['sigma x']
+            if self._line_to_struc[line][5] is not None:
+                color = 'grey'
+                this_text = 'N/A'
+            else:
+                color = state['color code']['lines'][line]['sigma x']
+                this_text = str(self._line_to_struc[line][0].Plate.get_sigma_x1())
+
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                              text=str(self._line_to_struc[line][1].get_sigma_x()))
+                                              text=this_text)
 
         elif self._new_colorcode_sigmay1.get() == True:
-            color = state['color code']['lines'][line]['sigma y1']
+            if self._line_to_struc[line][5] is not None:
+                color = 'grey'
+                this_text = 'N/A'
+            else:
+                color = state['color code']['lines'][line]['sigma y1']
+                this_text = str(self._line_to_struc[line][0].Plate.get_sigma_y2())
+
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                              text=str(self._line_to_struc[line][1].get_sigma_y2()))
+                                              text=this_text)
 
         elif self._new_colorcode_sigmay2.get() == True:
-            color = state['color code']['lines'][line]['sigma y2']
+            if self._line_to_struc[line][5] is not None:
+                color = 'grey'
+                this_text = 'N/A'
+            else:
+                color = state['color code']['lines'][line]['sigma y2']
+                this_text = str(self._line_to_struc[line][0].Plate.get_sigma_y2())
+
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                              text=str(self._line_to_struc[line][1].get_sigma_y2()))
+                                              text=this_text)
 
         elif self._new_colorcode_tauxy.get() == True:
-            color = state['color code']['lines'][line]['tau xy']
+            if self._line_to_struc[line][5] is not None:
+                color = 'grey'
+                this_text = 'N/A'
+            else:
+                color = state['color code']['lines'][line]['tau xy']
+                this_text =round(self._line_to_struc[line][0].Plate.get_tau_xy(),2)
+
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                              text=round(self._line_to_struc[line][1].get_tau_xy(),2))
+                                              text=this_text)
 
         elif self._new_colorcode_structure_type.get() == True:
-            color = state['color code']['lines'][line]['structure type']
+            if self._line_to_struc[line][5] is not None:
+                color = 'grey'
+                this_text = 'N/A'
+            else:
+                color = state['color code']['lines'][line]['structure type']
+                this_text =self._line_to_struc[line][0].Plate.get_structure_type()
+
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                              text=self._line_to_struc[line][1].get_structure_type(),
+                                              text=this_text,
                                               font=self._text_size["Text 7"])
 
         elif self._new_colorcode_section_modulus.get() == True:
-            color = state['color code']['lines'][line]['section modulus color']
+            if self._line_to_struc[line][5] is not None:
+                color = 'grey'
+                this_text = 'N/A'
+            else:
+                color = state['color code']['lines'][line]['section modulus color']
+                this_text = round(state['color code']['lines'][line]['section uf'],2)
+
             if self._new_label_color_coding.get():
                     self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                                  text=round(state['color code']['lines'][line]['section uf'],2))
+                                                  text=this_text)
 
         elif self._new_colorcode_fatigue.get() == True:
-            color = state['color code']['lines'][line]['fatigue color']
+
+
+            if self._line_to_struc[line][5] is not None:
+                color = 'grey'
+                this_text = 'N/A'
+            else:
+                color = state['color code']['lines'][line]['fatigue color']
+                this_text = round(state['color code']['lines'][line]['fatigue uf'],2)
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                              text=round(state['color code']['lines'][line]['fatigue uf'],2))
+                                              text=this_text)
 
         elif self._new_colorcode_total.get() == True:
-            if self._new_buckling_slider.get() == 2:
+            if self._line_to_struc[line][5] is not None:
+                color = 'grey'
+                this_text = 'N/A'
+                if self._new_label_color_coding.get():
+                    self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                                  text=this_text)
+
+            elif self._new_buckling_method.get() == 'DNV PULS':
                 color = state['color code']['lines'][line]['Total uf color rp']
                 if self._new_label_color_coding.get():
                     self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                                   text=round(state['color code']['lines'][line]['Total uf puls'],2))
-            elif self._new_buckling_slider.get() == 1:
+            elif self._new_buckling_method.get() == 'DNV-RP-C201 - prescriptive':
                 color = state['color code']['lines'][line]['Total uf color puls']
                 if self._new_label_color_coding.get():
                     self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                                   text=round(state['color code']['lines'][line]['Total uf rp'],2))
-            elif self._new_buckling_slider.get() == 3:
+            elif self._new_buckling_method.get() == 'ML-CL (PULS based)':
                 color = 'black'
                 if self._new_label_color_coding.get():
                     self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
@@ -2840,7 +3882,7 @@ class Application():
 
         return color
 
-    def draw_prop(self):
+    def draw_prop(self, event = None):
         '''
         Prints the properties of the selected line to the bottom canvas.
 
@@ -2849,114 +3891,215 @@ class Application():
         name of line : [ Structure class, calc scantling class, calc fatigue class, [load classes] ]
 
         '''
+
         self._prop_canvas.delete('all')
         canvas_width = self._prop_canvas.winfo_width()
         canvas_height = self._prop_canvas.winfo_height()
+
+
+        def checkered(line_distance, canvas):
+            '''
+            Grid lines in the properties canvas.
+            :param line_distance:
+            :return:
+            '''
+            # vertical lines at an interval of "line_distance" pixel
+            for x in range(line_distance, canvas_width, line_distance):
+                canvas.create_line(x, 0, x, canvas_width, stipple='gray50', activestipple='gray75')
+            # horizontal lines at an interval of "line_distance" pixel
+            for y in range(line_distance, canvas_height, line_distance):
+                canvas.create_line(0, y, canvas_width, y, stipple='gray50', activestipple='gray75')
+
+
+
         if self._active_line in self._line_to_struc:
 
             # printing the properties to the active line
-            if self._line_is_active:
-                self._prop_canvas.create_text([canvas_width*0.239726027, canvas_height*0.446096654],
-                                             text=self._line_to_struc[self._active_line][0],
-                                             font = self._text_size["Text 9"])
-
-                # setting the input field to active line properties
+            if self._line_is_active and self._line_to_struc[self._active_line][5] is None:
+                #checkered(10, self._prop_canvas)
                 self.set_selected_variables(self._active_line)
-
-                # draw the plate and stiffener
-                mult = 200*1
-                thk_mult = 500*1
-                startx = 540*1
-                starty = 150*1
-                structure_obj = self._line_to_struc[self._active_line][0]
 
                 self._prop_canvas.create_text([canvas_width/2-canvas_width/20, canvas_height/20],
                                              text ='SELECTED: '+str(self._active_line),
                                              font=self._text_size["Text 10 bold"], fill='red')
-                spacing = structure_obj.get_s()*mult
-                stf_web_height = structure_obj.get_web_h()*mult
-                stf_flange_width = structure_obj.get_fl_w() * mult
-                plate_thk = structure_obj.get_pl_thk()*thk_mult
-                stf_web_thk = structure_obj.get_web_thk()*thk_mult
-                stf_flange_thk = structure_obj.get_fl_thk()*thk_mult
 
-                self._prop_canvas.create_line(startx,starty,startx+spacing,starty, width = plate_thk)
-                self._prop_canvas.create_line(startx+spacing*0.5,starty,startx+spacing*0.5,starty-stf_web_height,
-                                             width=stf_web_thk )
-                if structure_obj.get_stiffener_type() not in ['L', 'L-bulb']:
-                    self._prop_canvas.create_line(startx+spacing*0.5-stf_flange_width/2,starty-stf_web_height,
-                                             startx + spacing * 0.5 + stf_flange_width / 2, starty - stf_web_height,
-                                             width=stf_flange_thk)
-                else:
-                    self._prop_canvas.create_line(startx+spacing*0.5-stf_web_thk/2,starty-stf_web_height,
-                                             startx + spacing * 0.5 + stf_flange_width , starty - stf_web_height,
-                                             width=stf_flange_thk)
 
-                # load applied to this line
-                deltax = 160*1
-                stl_x = canvas_width*0.684931507
-                stl_y = canvas_height*0.63197026
+                if all([self._line_to_struc[self._active_line][0].Stiffener is None,
+                        self._line_to_struc[self._active_line][0].Girder is None]):
+                    structure_obj = self._line_to_struc[self._active_line][0].Plate
+                    spacing = structure_obj.get_s() * self._prop_canvas_scale * 3
+                    plate_thk = structure_obj.get_pl_thk() * self._prop_canvas_scale * 3
+                    startx = 20
+                    starty = 225
+                    self._prop_canvas.create_text([startx + 100, 50],
+                                                  text='Plate with thickness ' +
+                                                       str(structure_obj.get_pl_thk()*1000) + ' mm' ,
+                                                  font=self._text_size["Text 10 bold"], fill='Black')
+                    self._prop_canvas.create_rectangle(startx + spacing,
+                                                       starty,
+                                                       startx + spacing + spacing,
+                                                       starty - plate_thk,
+                                                       fill='grey', activefill='yellow')
 
-                self._prop_canvas.create_text([stl_x,stl_y], text='Applied static/dynamic loads:',
-                                             font=self._text_size["Text 7 bold"])
-                count = 0
-                for load, data in self._load_dict.items():
-                    if self._active_line in data[1]:
-                        self._prop_canvas.create_text([stl_x+deltax, stl_y+count], text = load,
-                                                     font=self._text_size['Text 7'])
-                        count += 10
+                for idx, structure_obj in enumerate([self._line_to_struc[self._active_line][0].Stiffener,
+                                                     self._line_to_struc[self._active_line][0].Girder]):
+                    mult = 1 if self._line_to_struc[self._active_line][0].Girder is not None else 2  # *(400/max_web)
+                    thk_mult = 2  # *(400/max_web)
+                    startx = 100 + 300 * idx
+                    starty = 225
 
-                # printing the tanks applied to this line
-                stt_x = stl_x
-                stt_y = 10
+                    if structure_obj is not None:
+                        self._prop_canvas.create_text([startx +40, 50],
+                                                      text='Stiffener' if idx == 0 else 'Girder',
+                                                      font=self._text_size["Text 10 bold"], fill='Black')
+                        if structure_obj is not None:
+                            self._prop_canvas.create_text([100, 20],
+                                                          text='Thickness scale x 2' if idx == 0 else 'Girder',
+                                                          font=self._text_size["Text 10 bold"], fill='grey')
+                        # drawing stiffener
+                        spacing = structure_obj.get_s()*self._prop_canvas_scale * mult
+                        stf_web_height = structure_obj.get_web_h()*self._prop_canvas_scale * mult
+                        stf_flange_width = structure_obj.get_fl_w() *self._prop_canvas_scale * mult
+                        plate_thk = structure_obj.get_pl_thk()*self._prop_canvas_scale*thk_mult * mult
+                        stf_web_thk = structure_obj.get_web_thk()*self._prop_canvas_scale*thk_mult * mult
+                        stf_flange_thk = structure_obj.get_fl_thk()*self._prop_canvas_scale*thk_mult * mult
 
-                if len(self._tank_dict) != 0:
-                    self._prop_canvas.create_text([stt_x, stt_y], text='Applied compartments: ',
-                                                 font=self._text_size["Text 7 bold"])
-                    count = 0
-                    for comp in self.get_compartments_for_line(self._active_line):
-                        self._prop_canvas.create_text([stt_x+deltax, stt_y+count], text = 'Compartment ' + str(comp),
-                                                     font=self._text_size["Text 7"])
-                        count += 10
-            else:
-                self._prop_canvas.create_text([canvas_width*0.4, height*0.185873606],
-                                             text='No line is selected. Click on a line to show properies',
-                                             font=self._text_size['Text 9 bold'])
+                        for count in [0,1,2] if idx == 0 else [0,]:
+
+                            self._prop_canvas.create_rectangle(startx + count*spacing,
+                                                               starty,
+                                                               startx+spacing+ count*spacing,
+                                                               starty- plate_thk ,
+                                                               fill = 'grey', activefill = 'yellow')
+                            self._prop_canvas.create_rectangle(startx+spacing*0.5+ count*spacing - stf_web_thk/2,
+                                                               starty - plate_thk,
+                                                               startx+spacing*0.5+ count*spacing + stf_web_thk/2,
+                                                               starty - stf_web_height - plate_thk,
+                                                               fill = 'grey', activefill = 'yellow')
+
+                            if structure_obj.get_stiffener_type() not in ['L', 'L-bulb']:
+
+                                self._prop_canvas.create_rectangle(startx+spacing*0.5-stf_flange_width/2+ count*spacing,
+                                                                   starty - stf_web_height - plate_thk,
+                                                                   startx + spacing * 0.5 + stf_flange_width / 2+ count*spacing,
+                                                                   starty - stf_web_height - plate_thk- stf_flange_thk,
+                                                                   fill = 'grey', activefill = 'yellow')
+                            else:
+                                self._prop_canvas.create_rectangle(startx+spacing*0.5-stf_web_thk/2+ count*spacing,
+                                                                   starty-stf_web_height - plate_thk,
+                                                                   startx + spacing * 0.5 + stf_flange_width + count*spacing,
+                                                                   starty - stf_web_height - plate_thk - stf_flange_thk,
+                                                                   fill = 'grey',
+                                                                   activefill = 'yellow')
+
+
+            elif self._line_is_active and self._line_to_struc[self._active_line][5] is not None:
+                self.draw_cylinder(canvas = self._prop_canvas,CylObj = self._line_to_struc[self._active_line][5],
+                                   height = 200, radius = 150, start_x_cyl = 500,start_y_cyl = 20,
+                                   text_color= self._color_text)
+
         else:
             pass
+
+    @staticmethod
+    def draw_cylinder(text_size = None, canvas = None, CylObj: CylinderAndCurvedPlate = None,
+                      height = 150, radius = 150,
+                      start_x_cyl = 500,start_y_cyl = 20, acceptance_color = False, text_x = 180, text_y = 130,
+                      text_color = 'black'):
+
+        canvas_width = canvas.winfo_width()
+        canvas_height = canvas.winfo_height()
+        if text_size == None:
+            text_size = 'Verdana 8'
+
+        canvas.create_text([text_x, text_y], text=CylObj, font=text_size,fill = text_color)
+        # setting the input field to active line properties
+        #self.set_selected_variables(self._active_line)
+
+        offset_oval = 30
+
+        coord1 = start_x_cyl, start_y_cyl, start_x_cyl + radius, start_y_cyl+offset_oval
+        coord2 = start_x_cyl, start_y_cyl + height, start_x_cyl + radius,start_y_cyl+ offset_oval + height
+
+        arc_1 = canvas.create_oval(coord1, width=5, fill='grey90')
+        arc_2 = canvas.create_arc(coord2, extent=180, start=180, style=tk.ARC, width=3)
+
+        line1 = canvas.create_line(coord1[0], coord1[1] + offset_oval / 2,
+                                              coord1[0], coord1[1] + height + offset_oval / 2,
+                                              width=3)
+        line2 = canvas.create_line(coord1[0] + radius, coord1[1] + offset_oval / 2,
+                                              coord1[0] + radius, coord1[1] + height + offset_oval / 2,
+                                              width=3)
+        if CylObj.LongStfObj is not None:
+            long_obj = CylObj.LongStfObj
+
+            num_stf = int(1000 * 2*math.pi*CylObj.ShellObj.radius / long_obj.s / 2)
+            for line_num in range(1, num_stf, 1):
+                angle = 180 - 180 / (num_stf) * line_num
+                arc_x, arc_y = 1 * math.cos(math.radians(angle)), 0.5 * math.sin(math.radians(angle))
+                arc_x = (arc_x + 1) / 2
+
+                line1 = canvas.create_line(coord1[0] + radius * arc_x,
+                                                      coord1[1] + 1 * arc_y * offset_oval+offset_oval/2,
+                                                      coord1[0] + radius * arc_x,
+                                                      coord1[1] + height + 1 * arc_y * offset_oval+offset_oval/2,
+                                                      fill='blue')
+
+        if CylObj.RingStfObj is not None:
+            num_ring_stiff = CylObj.ShellObj.length_of_shell / \
+                             CylObj.ShellObj._dist_between_rings
+            num_ring_stiff = int(num_ring_stiff)
+
+            for ring_stf in range(1, num_ring_stiff + 1, 1):
+                coord3 = coord1[0], coord1[1] + (height / (num_ring_stiff + 1)) * ring_stf, \
+                         start_x_cyl + radius, coord1[3] + (height / (num_ring_stiff + 1)) * ring_stf,
+                arc_2 = canvas.create_arc(coord3, extent=180, start=180, style=tk.ARC, width=2,
+                                                     fill='orange',
+                                                     outline='orange')
+        if CylObj.RingFrameObj is not None:
+            num_ring_girder = CylObj.ShellObj.length_of_shell / \
+                              CylObj.length_between_girders
+            num_ring_girder = int(num_ring_girder)
+            for ring_girder in range(1, num_ring_girder + 1, 1):
+                coord3 = coord1[0], coord1[1] + (height / (num_ring_girder + 1)) * ring_girder, \
+                         start_x_cyl + radius, coord1[3] + (height / (num_ring_girder + 1)) * ring_girder,
+                arc_2 = canvas.create_arc(coord3, extent=180, start=180, style=tk.ARC, width=4,
+                                                     fill='grey', outline='grey')
 
     def draw_results(self, state = None):
         '''
         The properties canvas is created here.
                 state =     {'colors': {}, 'section_modulus': {}, 'thickness': {}, 'shear_area': {}, 'buckling': {},
                             'fatigue': {}, 'pressure_uls': {}, 'pressure_fls': {},
-                            'struc_obj': {}, 'scant_calc_obj': {}, 'fatigue_obj': {}}
+                            'all_obj': {}, 'scant_calc_obj': {}, 'fatigue_obj': {}}
         :return:
         '''
 
         self._result_canvas.delete('all')
 
-        if state is None or self._active_line not in state['struc_obj'].keys():
+        if state is None or self._active_line not in state['all_obj'].keys():
             return
 
         if self._line_is_active:
-            x, y, dx, dy = 0, 15, 15, 14
+            x, y, dx, dy = 0, 5, 15, 17
 
-            if self._active_line in self._line_to_struc:
+            if self._active_line in self._line_to_struc and self._line_to_struc[self._active_line][5] is None:
 
                 m3_to_mm3 = float(math.pow(1000,3))
                 m2_to_mm2 = float(math.pow(1000, 2))
 
                 current_line = self._active_line
 
-                obj_structure = state['struc_obj'][current_line]
+                obj_scnt_calc_pl = state['all_obj'][current_line].Plate
+                obj_scnt_calc_stf = state['all_obj'][current_line].Stiffener
+                obj_scnt_calc_girder = state['all_obj'][current_line].Girder
                 sec_mod = [round(state['section_modulus'][current_line]['sec_mod'][0], 5),
                            round(state['section_modulus'][current_line]['sec_mod'][1], 5)]
                 shear_area = state['shear_area'][current_line]['shear_area']
                 min_shear = state['shear_area'][current_line]['min_shear_area']
                 min_sec_mod = state['section_modulus'][current_line]['min_sec_mod']
                 min_thk = state['thickness'][current_line]['min_thk']
-                buckling = [round(res, 2) for res in state['buckling'][current_line]]
+                buckling = state['buckling'][current_line]
 
                 if state['slamming'][current_line]['state']:
                     slamming = True
@@ -2966,10 +4109,10 @@ class Application():
                     slm_min_web_thk = state['slamming'][current_line]['min_web_thk']
 
                     slm_text_pl_thk = 'Minimum plate thickness (BOW SLAMMING): '+str(round(slm_min_pl_thk,1))+' [mm]' \
-                        if obj_structure.get_plate_thk() * 1000 < slm_min_pl_thk else None
+                        if obj_scnt_calc_stf.get_pl_thk() * 1000 < slm_min_pl_thk else None
 
                     slm_text_min_web_thk = 'Minimum web thickness (BOW SLAMMING): '+str(round(slm_min_web_thk,1))+' [mm]' \
-                        if obj_structure.get_web_thk()*1000 < slm_min_web_thk else None
+                        if obj_scnt_calc_stf.get_web_thk()*1000 < slm_min_web_thk else None
                     if slm_zpl_req is not None:
                         slm_text_min_zpl = 'Minimum section modulus (BOW SLAMMING): '+str(round(slm_zpl_req,1))+' [cm^3]' \
                             if slm_zpl < slm_zpl_req else None
@@ -2984,53 +4127,89 @@ class Application():
                 color_thk = state['colors'][current_line]['thickness']
                 color_buckling = state['colors'][current_line]['buckling']
 
-                # printing the calculated sectiton modulus
-                if state['slamming'][current_line]['state'] and slm_text_min_zpl is False:
-                    text = 'Slamming strength violation for web thickness.'
-                else:
-                    text = 'Section moduluses: ' + \
-                           'Wey1: '+ str('%.4E' % decimal.Decimal(sec_mod[1]*m3_to_mm3))+ ' [mm^3], '+\
-                           ' Wey2: ' + str('%.4E' % decimal.Decimal(sec_mod[0]*m3_to_mm3)) + ' [mm^3] ' \
-                        if not slm_text_min_zpl else 'Net effective plastic section modulus: ' +str(slm_zpl)+' [cm^3]'
-                self._result_canvas.create_text([x*1, y*1],
-                                               text=text,font=self._text_size['Text 9 bold'],anchor='nw')
+
                 #printing the minimum section modulus
+                x1, x2, x3 = 15,25,35
+
+                self._result_canvas.create_text([x+0*dx, (y+0*dy)*1],
+                                                text= 'Special provisions - DNV-OS-C101 - checks for section, '
+                                                      'web thickness and plate thickness.',
+                                                font=self._text_size["Text 9 bold"],anchor='nw', fill=self._color_text)
+                self._result_canvas.create_text([x+0*dx, (y+2*dy)*1],
+                                                text= 'Section modulus check',
+                                                font=self._text_size["Text 9"],anchor='nw', fill=self._color_text)
+                self._result_canvas.create_text([x+0*dx, (y+3*dy)*1],
+                                                text= 'Shear area check',
+                                                font=self._text_size["Text 9"],anchor='nw', fill=self._color_text)
+                self._result_canvas.create_text([x+0*dx, (y+4*dy)*1],
+                                                text= 'Plate thickness check',
+                                                font=self._text_size["Text 9"],anchor='nw', fill=self._color_text)
+                self._result_canvas.create_text([x + x1*dx, (y+1*dy)*1],
+                                                text= 'Minimum value',
+                                                font=self._text_size["Text 9"],anchor='nw', fill=self._color_text)
+                self._result_canvas.create_text([x+ x2*dx, (y+1*dy)*1],
+                                                text= 'Actual value',
+                                                font=self._text_size["Text 9"],anchor='nw', fill=self._color_text)
+                self._result_canvas.create_text([x+ x3*dx, (y+1*dy)*1],
+                                                text= 'Accepted?',
+                                                font=self._text_size["Text 9"],anchor='nw', fill=self._color_text)
+
                 if state['slamming'][current_line]['state'] and slm_text_min_zpl is False:
                     text = '(shear issue, change thickness or web height)'
                 else:
-                    text =  'Minimum section modulus: '+str('%.4E' % decimal.Decimal(min_sec_mod * m3_to_mm3)) +\
+                    text =  str('%.4E' % decimal.Decimal(min_sec_mod * m3_to_mm3)) +\
                             ' [mm^3] ' if not slm_text_min_zpl else slm_text_min_zpl
-                self._result_canvas.create_text([x*1, (y+dy)*1], text= text,
-                                                    font=self._text_size["Text 9 bold"],anchor='nw', fill=color_sec)
+                self._result_canvas.create_text([x + x1*dx, (y+2*dy)*1], text= text,
+                                                font=self._text_size["Text 9 bold"],anchor='nw', fill=self._color_text)
+
+                # printing the calculated sectiton modulus
+                if state['slamming'][current_line]['state'] and slm_text_min_zpl is False:
+                    text = 'tw issue - slamming'
+                else:
+                    text = str('%.4E' % decimal.Decimal(min(sec_mod[1], sec_mod[0])*m3_to_mm3))+ ' [mm^3]' \
+                        if not slm_text_min_zpl else str(slm_zpl)+'- zpl [cm^3]'
+                self._result_canvas.create_text([x + x2*dx, (y+2*dy)*1],
+                                               text=text,font=self._text_size['Text 9 bold'],anchor='nw',
+                                                fill = color_sec)
+
+                self._result_canvas.create_text([x + x3*dx, (y+2*dy)*1],
+                                               text='Ok' if min(sec_mod[1], sec_mod[0])*m3_to_mm3 >
+                                                            min_sec_mod * m3_to_mm3 else 'Not ok',
+                                                font=self._text_size['Text 9 bold'],anchor='nw',
+                                                fill=color_sec)
 
                 #minimum shear area
-                text = 'Shear area: '+str('%.4E' % decimal.Decimal(shear_area * m2_to_mm2 ))+' [mm^2]' \
-                    if not slm_text_min_web_thk else 'Stiffener web thickness: '+str(obj_structure.get_web_thk()*1000)+' [mm]'
-                self._result_canvas.create_text([x*1, (y+3*dy)*1],
-                                               text= text,
-                                               font=self._text_size["Text 9 bold"],anchor='nw')
-                text = 'Minimum shear area: '+str('%.4E' % decimal.Decimal(min_shear * m2_to_mm2))+' [mm^2] ' \
-                    if not slm_text_min_web_thk else 'Minimum stiffener web thickness due to SLAMMING: '+\
-                                                     str(round(slm_min_web_thk,1))+' [mm]'
-                self._result_canvas.create_text([x*1, (y+4*dy)*1],
+                text = str('%.4E' % decimal.Decimal(min_shear * m2_to_mm2))+' [mm^2] ' \
+                    if not slm_text_min_web_thk else str(round(slm_min_web_thk,1))+' [mm]'
+                self._result_canvas.create_text([x + x1*dx, (y+3*dy)*1],
                                                text = text,
+                                               font=self._text_size["Text 9 bold"],anchor='nw',fill=self._color_text)
+                text = str('%.4E' % decimal.Decimal(shear_area * m2_to_mm2 ))+' [mm^2]' \
+                    if not slm_text_min_web_thk else str(obj_scnt_calc_stf.get_web_thk()*1000)+' [mm]'
+                self._result_canvas.create_text([x + x2*dx, (y+3*dy)*1],
+                                               text= text,
+                                               font=self._text_size["Text 9 bold"],anchor='nw', fill=color_shear)
+                self._result_canvas.create_text([x + x3*dx, (y+3*dy)*1],
+                                               text= 'Ok' if shear_area * m2_to_mm2 > min_shear * m2_to_mm2 else 'Not ok',
                                                font=self._text_size["Text 9 bold"],anchor='nw', fill=color_shear)
 
                 #minimum thickness for plate
-
-                self._result_canvas.create_text([x*1, (y+6*dy)*1],
-                                               text='Plate thickness: '
-                                                    +str(obj_structure.get_plate_thk()*1000)+' [mm] ',
-                                               font=self._text_size["Text 9 bold"],anchor='nw')
-                text = 'Minimum plate thickness: '+str(round(min_thk,1)) + ' [mm]' if not slm_text_pl_thk \
-                    else 'Minimum plate thickness due to SLAMMING'+str(slm_min_pl_thk)+' [mm]'
-                self._result_canvas.create_text([x*1, (y+7*dy)*1],
+                text = str(round(min_thk,1)) + ' [mm]' if not slm_text_pl_thk \
+                    else 'SLAMMING'+str(slm_min_pl_thk)+' [mm]'
+                self._result_canvas.create_text([x + x1*dx, (y+4*dy)*1],
                                                text=text,
-                                               font=self._text_size["Text 9 bold"],anchor='nw', fill=color_thk)
+                                               font=self._text_size["Text 9 bold"],anchor='nw', fill=self._color_text)
+                self._result_canvas.create_text([x + x2*dx, (y+4*dy)*1],
+                                               text=str(obj_scnt_calc_pl.get_pl_thk()*1000)+' [mm] ',
+                                               font=self._text_size["Text 9 bold"],anchor='nw', fill=color_shear)
+                self._result_canvas.create_text([x + x3*dx, (y+4*dy)*1],
+                                               text='Ok' if obj_scnt_calc_pl.get_pl_thk()*1000 > min_thk else 'Not ok',
+                                               font=self._text_size["Text 9 bold"],anchor='nw', fill=color_shear)
+
 
                 # buckling results
-
-                if self._PULS_results != None and self._new_buckling_slider.get() == 2:
+                start_y, y = 5, 10
+                if self._PULS_results != None and self._new_buckling_method.get() == 'DNV PULS':
                     line_results = state['PULS colors'][self._active_line]
                     puls_res = self._PULS_results.get_puls_line_results(self._active_line)
                     if puls_res != None:
@@ -3050,9 +4229,9 @@ class Application():
                             buc_text = 'Buckling capacity usage factor:  None - geometric issue'
 
                         loc_label = 'Local geom req (PULS validity limits)' if \
-                            obj_structure.get_puls_sp_or_up() == 'SP' else 'Geom. Req (PULS validity limits)'
+                            obj_scnt_calc_stf.get_puls_sp_or_up() == 'SP' else 'Geom. Req (PULS validity limits)'
                         csr_label = 'CSR-Tank requirements (primary stiffeners)' if \
-                            obj_structure.get_puls_sp_or_up() == 'SP' else 'CSR-Tank req'
+                            obj_scnt_calc_stf.get_puls_sp_or_up() == 'SP' else 'CSR-Tank req'
                         if geo_problem:
                             loc_geom = 'Not ok: '
                             for key, value in puls_res[loc_label].items():
@@ -3067,76 +4246,175 @@ class Application():
                             .values()]) else 'Not ok'
                         loc_geom = loc_label + ':   ' + loc_geom
                         csr_geom = csr_label+':   ' + csr_geom
-                        self._result_canvas.create_text([x * 1, y + 8.5 * dy], text='PULS results',
+                        self._result_canvas.create_text([x * 1, y + (start_y+0) * dy], text='PULS results',
                                                         font=self._text_size['Text 9 bold'],
                                                         anchor='nw',
-                                                        fill='black')
-                        self._result_canvas.create_text([x * 1, y + 9.5 * dy], text=buc_text,
+                                                        fill = self._color_text)
+                        self._result_canvas.create_text([x * 1, y + (start_y+1) * dy], text=buc_text,
                                                         font=self._text_size['Text 9 bold'],
                                                         anchor='nw',
                                                         fill=line_results['buckling'])
-                        self._result_canvas.create_text([x * 1, y + 10.5 * dy], text=ult_text,
+                        self._result_canvas.create_text([x * 1, y + (start_y+2) * dy], text=ult_text,
                                                         font=self._text_size['Text 9 bold'],
                                                         anchor='nw',
                                                         fill=line_results['ultimate'])
-                        self._result_canvas.create_text([x * 1, y + 11.5 * dy], text=loc_geom,
+                        self._result_canvas.create_text([x * 1, y + (start_y+3) * dy], text=loc_geom,
                                                         font=self._text_size['Text 9 bold'],
                                                         anchor='nw',
                                                         fill=line_results['local geometry'])
-                        self._result_canvas.create_text([x * 1, y + 12.5 * dy], text=csr_geom,
+                        self._result_canvas.create_text([x * 1, y + (start_y+4) * dy], text=csr_geom,
                                                         font=self._text_size['Text 9 bold'],
                                                         anchor='nw',
                                                         fill=line_results['csr'])
                     else:
-                        self._result_canvas.create_text([x * 1, y + 9 * dy],
+                        self._result_canvas.create_text([x * 1, y + (start_y+0) * dy],
                                                         text='PULS results not avaliable for this line.\n'
                                                              'Run or update lines.',
                                                         font=self._text_size['Text 9 bold'],
                                                         anchor='nw',
                                                         fill='Orange')
-                elif self._new_buckling_slider.get() == 1:
-                    self._result_canvas.create_text([x * 1, (y+9*dy) * 1],
-                                                   text='Buckling results DNV-RP-C201:',
-                                                   font=self._text_size["Text 9 bold"], anchor='nw')
-                    if sum(buckling)==0:
-                        self._result_canvas.create_text([x * 1, (y+10*dy) * 1],
-                                                       text='No buckling results', font=self._text_size["Text 9 bold"],
-                                                       anchor='nw', fill=color_buckling)
-                    else:
-                        if buckling[0]==float('inf'):
-                            res_text = 'Plate resistance not ok (equation 6.12). '
-                        elif buckling[1] == float('inf'):
-                            res_text = 'Spacing/thickness aspect ratio error (equation eq 6.11 - ha < 0). '
-                        else:
-                            if obj_structure.get_side() == 'p':
-                                res_text = '|eq 7.19: '+str(buckling[0])+' |eq 7.50: '+str(buckling[1])+ ' |eq 7.51: '+ \
-                                             str(buckling[2])+' |7.52: '+str(buckling[3])+ '|eq 7.53: '+str(buckling[4])+\
-                                             ' |z*: '+str(buckling[5])
-                            elif obj_structure.get_side() == 's':
-                                res_text = '|eq 7.19: '+str(buckling[0])+' |eq 7.54: '+str(buckling[1])+' |eq 7.55: '+ \
-                                             str(buckling[2])+' |7.56: '+str(buckling[3])+ '|eq 7.57: '+str(buckling[4])+ \
-                                             ' |z*: '+str(buckling[5])
-                        self._result_canvas.create_text([x * 1, (y+10*dy) * 1],
-                                                   text=res_text,font=self._text_size["Text 9 bold"],
-                                                   anchor='nw',fill=color_buckling)
-                elif self._new_buckling_slider.get() == 3:
+                elif self._new_buckling_method.get() == 'DNV-RP-C201 - prescriptive':
+                    '''
+                            return {'Plate': {'Plate buckling': up_buckling}, 'Stiffener': {'Overpressure plate side': stf_buckling_pl_side,
+                                                    'Overpressure stiffener side': stf_buckling_stf_side, 
+                                                    'Resistance between stiffeners': stf_plate_resistance,
+                                                    'Shear capacity': stf_shear_capacity},
+                'Girder': {'Overpressure plate side': girder_buckling_pl_side,
+                           'Overpressure girder side': girder_buckling_girder_side,
+                           'Shear capacity': girder_shear_capacity},
+                'Local buckling': local_buckling}
+                    '''
 
-                    self._result_canvas.create_text([x * 1, (y + 9 * dy) * 1],
+                    self._result_canvas.create_text([x * 1, (y+(start_y+0)*dy) * 1],
+                                                   text='Buckling results DNV-RP-C201 - prescriptive - (plate, stiffener, girder):',
+                                                   font=self._text_size["Text 9 bold"], anchor='nw',
+                                                    fill = self._color_text)
+
+                    self._result_canvas.create_text([x + dx*0, (y+(start_y+2)*dy) * 1],
+                                               text='Overpressure plate side',font=self._text_size["Text 9"],
+                                               anchor='nw',fill=self._color_text)
+                    self._result_canvas.create_text([x + dx*0, (y+(start_y+3)*dy) * 1],
+                                               text='Overpressure stiffener side',font=self._text_size["Text 9"],
+                                               anchor='nw',fill=self._color_text)
+                    self._result_canvas.create_text([x + dx*0, (y+(start_y+4)*dy) * 1],
+                                               text='Resistance between stiffeners',font=self._text_size["Text 9"],
+                                               anchor='nw',fill=self._color_text)
+                    self._result_canvas.create_text([x + dx*0, (y+(start_y+5)*dy) * 1],
+                                               text='Shear capacity',font=self._text_size["Text 9"],
+                                               anchor='nw',fill=self._color_text)
+                    self._result_canvas.create_text([x + dx*0, (y+(start_y+6)*dy) * 1],
+                                               text='Maximum web height [mm]',
+                                                    font=self._text_size["Text 9"],
+                                               anchor='nw',fill=self._color_text)
+                    self._result_canvas.create_text([x + dx*0, (y+(start_y+7)*dy) * 1],
+                                               text='Maximum flange width [mm]',
+                                                    font=self._text_size["Text 9"],
+                                               anchor='nw',fill=self._color_text)
+
+                    #'Local buckling'
+                    x1, x2, x3 = 15,25,35
+                    self._result_canvas.create_text([x + dx*15, (y+(start_y+1)*dy) * 1],
+                                               text='Plate',font=self._text_size["Text 9 bold"],
+                                               anchor='nw',fill=self._color_text)
+                    self._result_canvas.create_text([x + dx*25, (y+(start_y+1)*dy) * 1],
+                                               text='Stiffener',font=self._text_size["Text 9 bold"],
+                                               anchor='nw',fill=self._color_text)
+                    self._result_canvas.create_text([x + dx*35, (y+(start_y+1)*dy) * 1],
+                                               text='Girder',font=self._text_size["Text 9 bold"],
+                                               anchor='nw',fill=self._color_text)
+                    x_mult = x1
+                    self._result_canvas.create_text([x + dx*x_mult , (y+(start_y+2)*dy) * 1],
+                                               text=str(round(buckling['Plate']['Plate buckling'],3)),
+                                                    font=self._text_size["Text 9 bold"],
+                                               anchor='nw',fill=color_buckling)
+                    x_mult = x2
+                    self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+2)*dy) * 1],
+                                               text=str(round(buckling['Stiffener']['Overpressure plate side'],3)),
+                                                    font=self._text_size["Text 9 bold"],
+                                               anchor='nw',fill=color_buckling)
+                    self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+3)*dy) * 1],
+                                               text=str(round(buckling['Stiffener']['Overpressure stiffener side'],3)),
+                                                    font=self._text_size["Text 9 bold"],
+                                               anchor='nw',fill=color_buckling)
+
+                    stfweb = round(buckling['Local buckling']['Stiffener'][0],3)*1000
+                    stffl = round(buckling['Local buckling']['Stiffener'][1],3)*1000
+
+                    self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+4)*dy) * 1],
+                                               text=str(round(buckling['Stiffener']['Resistance between stiffeners'],3))
+                                                    ,font=self._text_size["Text 9 bold"],
+                                               anchor='nw',
+                                                    fill= color_buckling)
+                    self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+5)*dy) * 1],
+                                               text=str(round(buckling['Stiffener']['Shear capacity'],3)),
+                                                    font=self._text_size["Text 9 bold"],
+                                               anchor='nw',
+                                                    fill=color_buckling)
+
+
+                    self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+6)*dy) * 1],
+                                               text=str(stfweb),
+                                                    font=self._text_size["Text 9"],
+                                               anchor='nw',fill=self._color_text if obj_scnt_calc_stf is None else 'red'
+                                                    if obj_scnt_calc_stf.hw > stfweb else 'green')
+                    self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+7)*dy) * 1],
+                                               text=str(stffl),
+                                                    font=self._text_size["Text 9"],
+                                               anchor='nw',fill=self._color_text if obj_scnt_calc_stf is None else 'red'
+                                                    if obj_scnt_calc_stf.b > stffl else 'green')
+                    x_mult = x3
+                    self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+2)*dy) * 1],
+                                               text=str(round(buckling['Girder']['Overpressure plate side'],3)),
+                                                    font=self._text_size["Text 9 bold"],
+                                               anchor='nw',fill=color_buckling)
+                    self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+3)*dy) * 1],
+                                               text=str(round(buckling['Girder']['Overpressure girder side'],3)),
+                                                    font=self._text_size["Text 9 bold"],
+                                               anchor='nw',fill=color_buckling)
+                    self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+4)*dy) * 1],
+                                               text=str(round(buckling['Girder']['Shear capacity'],3)),
+                                                    font=self._text_size["Text 9 bold"],
+                                               anchor='nw',fill=color_buckling)
+
+                    gweb = round(buckling['Local buckling']['Girder'][0],3)*1000
+                    gfl = round(buckling['Local buckling']['Girder'][1],3)*1000
+                    self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+6)*dy) * 1],
+                                               text=str(gweb),
+                                                    font=self._text_size["Text 9"],
+                                               anchor='nw',fill=self._color_text if obj_scnt_calc_girder is None else
+                        'red' if obj_scnt_calc_girder.hw > gweb else 'green')
+                    self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+7)*dy) * 1],
+                                               text=str(gfl),
+                                                    font=self._text_size["Text 9"],
+                                               anchor='nw',fill=self._color_text if obj_scnt_calc_girder is None else
+                        'red' if obj_scnt_calc_girder.b > gfl else 'green')
+
+                    #
+                    # self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+7)*dy) * 1],
+                    #                            text=str(round(buckling['Local buckling']['Girder'][1],3)),
+                    #                                 font=self._text_size["Text 9"],
+                    #                            anchor='nw',fill=color_buckling)
+
+
+                elif self._new_buckling_method.get() == 'ML-CL (PULS based)':
+
+                    self._result_canvas.create_text([x * 1, (y+(start_y+0)*dy) * 1],
                                                     text='Buckling results ANYstructure ML algorithm:',
-                                                    font=self._text_size["Text 9 bold"], anchor='nw')
-                    self._result_canvas.create_text([x * 1, (y + 10 * dy) * 1],
+                                                    font=self._text_size["Text 9 bold"], anchor='nw',
+                                                    fill = self._color_text)
+                    self._result_canvas.create_text([x * 1, (y+(start_y+1)*dy) * 1],
                                                     text='Buckling: ' + self._ML_classes[state['ML buckling class'][current_line]['buckling']],
                                                     font=self._text_size["Text 9 bold"],
                                                     anchor='nw', fill=state['ML buckling colors'][current_line]['buckling'])
-                    self._result_canvas.create_text([x * 1, (y + 11 * dy) * 1],
+                    self._result_canvas.create_text([x * 1, (y+(start_y+2)*dy) * 1],
                                                     text='Ultimate: ' +self._ML_classes[state['ML buckling class'][current_line]['ultimate']],
                                                     font=self._text_size["Text 9 bold"],
                                                     anchor='nw', fill=state['ML buckling colors'][current_line]['ultimate'])
-                    if obj_structure.get_puls_sp_or_up() == 'SP':
+                    if obj_scnt_calc_pl.get_puls_sp_or_up() == 'SP':
                         csr = state['ML buckling class'][current_line]['CSR']
                         csr_str = ['Ok' if csr[0] == 1 else 'Not ok', 'Ok' if csr[1] == 1 else 'Not ok',
                                    'Ok' if csr[2] == 1 else 'Not ok', 'Ok' if csr[3] == 1 else 'Not ok']
-                        self._result_canvas.create_text([x * 1, (y + 12.5 * dy) * 1],
+                        self._result_canvas.create_text([x * 1, (y+(start_y+3)*dy) * 1],
                                                         text='CSR requirements (stiffener):  plate-'+ csr_str[0]+ ' web-'+
                                                              csr_str[1] + ' web/flange ratio-'+ csr_str[2] +
                                                              ' flange-'+ csr_str[3] ,
@@ -3146,7 +4424,7 @@ class Application():
                     else:
                         csr = state['ML buckling class'][current_line]['CSR']
                         csr_str = 'Ok' if csr[0] == 1 else 'Not ok'
-                        self._result_canvas.create_text([x * 1, (y + 12.5 * dy) * 1],
+                        self._result_canvas.create_text([x * 1, (y+(start_y+3)*dy) * 1],
                                                         text='CSR requirements (stiffener):  Plate slenderness -'+
                                                              csr_str,
                                                         font=self._text_size["Text 9"],
@@ -3156,30 +4434,105 @@ class Application():
 
                 # fatigue results
 
-                self._result_canvas.create_text([x * 1, (y+14*dy) * 1],
+                self._result_canvas.create_text([x * 1, (y+(start_y+8)*dy) * 1],
                                                 text='Fatigue results (DNVGL-RP-C203): ',
-                                                font=self._text_size["Text 9 bold"], anchor='nw')
+                                                font=self._text_size["Text 9 bold"], anchor='nw', fill = self._color_text)
 
                 if self._line_to_struc[current_line][2] != None:
                     if state['fatigue'][current_line]['damage'] is not None:
                         damage = state['fatigue'][current_line]['damage']
                         dff = state['fatigue'][current_line]['dff']
-                        self._result_canvas.create_text([x * 1, (y + 15 * dy) * 1],
+                        self._result_canvas.create_text([x * 1, (y + (start_y+9) * dy) * 1],
                                                         text='Total damage (DFF not included): '+str(round(damage,3)) +
                                                              '  |  With DFF = '+str(dff)+' --> Damage: '+
                                                              str(round(damage*dff,3)),
                                                         font=self._text_size["Text 9 bold"], anchor='nw',
                                                         fill=color_fatigue)
                     else:
-                        self._result_canvas.create_text([x * 1, (y + 15 * dy) * 1],
+                        self._result_canvas.create_text([x * 1, (y + (start_y+9) * dy) * 1],
                                                         text='Total damage: NO RESULTS ',
                                                         font=self._text_size["Text 9 bold"],
-                                                        anchor='nw')
+                                                        anchor='nw', fill = self._color_text)
                 else:
-                    self._result_canvas.create_text([x * 1, (y + 15 * dy) * 1],
+                    self._result_canvas.create_text([x * 1, (y + (start_y+9) * dy) * 1],
                                                     text='Total damage: NO RESULTS ',
                                                     font=self._text_size["Text 9 bold"],
-                                                    anchor='nw')
+                                                    anchor='nw', fill = self._color_text)
+
+            elif self._active_line in self._line_to_struc and self._line_to_struc[self._active_line][5] is not None:
+
+                '''
+                Cylinder calculations
+                    'cylinder' = {'Unstiffened shell': uf_unstf_shell,
+                               'Longitudinal stiffened shell': uf_long_stf,
+                               'Ring stiffened shell': uf_ring_stf,
+                               'Heavy ring frame': uf_ring_frame,
+                               'Column stability check': column_stability,
+                               'Stiffener check': stiffener_check}
+                '''
+                cyl_obj = self._line_to_struc[self._active_line][5]
+
+                text = 'Results for cylinders and curved plates/panels:'
+                self._result_canvas.create_text([x * 1, y * 1],
+                                                text=text, font=self._text_size['Text 12 bold'], anchor='nw',
+                                                fill = self._color_text)
+                y_location = 3
+                results = cyl_obj.get_utilization_factors()
+                for key, value in results.items():
+                    if key in ['Weight', 'Need to check column buckling']:
+                        continue
+
+                    if key != 'Stiffener check':
+                        text_key = key
+                        if key == 'Column stability check':
+                            if results['Need to check column buckling'] == False:
+                                continue
+                            text_value = 'N/A' if value is None else 'OK' if value else 'Not ok'
+                        else:
+                            text_value = 'N/A' if value is None else str(round(value, 2))
+
+                        if value is None:
+                            uf_col = 'grey'
+                        else:
+                            uf_col = 'red' if any([value > 1, value == False]) else 'green'
+                        self._result_canvas.create_text([x*1, y+dy*y_location],
+                                                       text=text_key,font=self._text_size['Text 10 bold'],anchor='nw',
+                                                    fill = self._color_text)
+                        self._result_canvas.create_text([dx*20, dy*y_location],
+                                                       text=text_value,font=self._text_size['Text 10 bold'],anchor='nw',
+                                                        fill=uf_col)
+                    else:
+
+                        if value is not None:
+                            y_location +=1
+                            self._result_canvas.create_text([x, dy*y_location],
+                                                            text='Stiffener requirement checks:',
+                                                            font=self._text_size['Text 10 bold'],
+                                                            anchor='nw',
+                                                            fill = self._color_text)
+                            y_location += 1
+                            idx_y, idx_x = 0, 0
+
+                            for stf_type, chk_bool in value.items():
+                                stf_text = stf_type
+
+                                chk_text = 'OK' if chk_bool == True else 'Not OK' if chk_bool == False else 'N/A'
+
+                                self._result_canvas.create_text([10*dx*idx_x, dy*y_location],
+                                                                text=stf_text, font=self._text_size['Text 10 bold'],
+                                                                anchor='nw',
+                                                                fill=self._color_text if not value else 'green')
+
+                                self._result_canvas.create_text([10*dx*idx_x, y + (y_location+1)*dy],
+                                                                text=chk_text, font=self._text_size['Text 10 bold'],
+                                                                anchor='nw',
+                                                                fill='green' if chk_bool == True else 'red' if
+                                                                chk_bool == False else self._color_text)
+                                idx_y += 1
+                                idx_x += 1
+
+
+                    y_location += 1
 
     def report_generate(self, autosave = False):
         '''
@@ -3262,7 +4615,7 @@ class Application():
                     data.set_acceleration(self._accelerations_dict)
 
             for line, obj in self._line_to_struc.items():
-                obj[1].need_recalc = True
+                obj[0].need_recalc = True
         except TclError:
             messagebox.showinfo(title='Input error', message='Input must be a number. Dots used not comma.')
 
@@ -3309,7 +4662,7 @@ class Application():
                 self._point_dict[current_point] = [x_coord, y_coord]
                 self._active_point = current_point
                 if move:
-                    self.logger(point=current_point, move_coords=(current_coords,[x_coord, y_coord])) #TODO
+                    self.logger(point=current_point, move_coords=(current_coords,[x_coord, y_coord]))
                 else:
                     self.logger(point=current_point, move_coords=None)
 
@@ -3340,17 +4693,17 @@ class Application():
                     coord1 = self._point_dict['point'+str(data[0])]
                     coord2 = self._point_dict['point'+str(data[1])]
                     if line in self._line_to_struc.keys():
-                        self._line_to_struc[line][0].set_span(dist(coord1,coord2))
-                        self._line_to_struc[line][1].set_span(dist(coord1, coord2))
+                        self._line_to_struc[line][0].Plate.set_span(dist(coord1,coord2))
+                        self._line_to_struc[line][0].Plate.set_span(dist(coord1, coord2))
                         self._PULS_results.result_changed(line)
-                        if self._line_to_struc[line][0].get_structure_type() not in ['GENERAL_INTERNAL_NONWT',
+                        if self._line_to_struc[line][0].Plate.get_structure_type() not in ['GENERAL_INTERNAL_NONWT',
                                                                                                 'FRAME']:
                             self._tank_dict = {}
                             self._main_grid.clear()
                             self._compartments_listbox.delete(0, 'end')
 
             for line, obj in self._line_to_struc.items():
-                obj[1].need_recalc = True
+                obj[0].need_recalc = True
             self.update_frame()
         else:
             messagebox.showinfo(title='Input error', message='A point must be selected (right click).')
@@ -3403,28 +4756,29 @@ class Application():
 
                     self.add_to_combinations_dict(current_name)
             for line, obj in self._line_to_struc.items():
-                obj[1].need_recalc = True
+                obj[0].need_recalc = True
         except TclError:
             messagebox.showinfo(title='Input error', message='Input must be a line number.')
 
     def new_structure(self, event = None, pasted_structure = None, multi_return = None, toggle_multi = None,
-                      suspend_recalc = False):
+                      suspend_recalc = False, cylinder_return = None):
         '''
         This method maps the structure to the line when clicking "add structure to line" button.
         The result is put in a dictionary. Key is line name and value is the structure object.
 
         self_line_to_stuc
-            [0] Structure class
-            [1] calc scantling class instance
+            [0] AllStructure class
+            [1] None
             [2] calc fatigue class instance
             [3] load class instance
-            [4] load combinations result (currently not used)
+            [4] None
+            [5] Cylinder buckling data
         :return:
         '''
 
         if all([pasted_structure == None, multi_return == None]):
             if any([self._new_stf_spacing.get()==0, self._new_plate_thk.get()==0, self._new_stf_web_h.get()==0,
-                    self._new_sft_web_t.get()==0]):
+                    self._new_stf_web_t.get()==0]):
                 mess = tk.messagebox.showwarning('No propertied defined', 'No properties is defined for the line!\n'
                                                                           'Define spacing, web height, web thickness etc.\n'
                                                                           'Either press button with stiffener or input'
@@ -3434,25 +4788,28 @@ class Application():
         if self._line_is_active or multi_return != None:
             # structure dictionary: name of line : [ 0.Structure class, 1.calc scantling class,
             # 2.calc fatigue class, 3.load object, 4.load combinations result ]
+            CylinderObj = None
             if multi_return is not None:
-                obj_dict = multi_return[1].get_structure_prop()
+                prop_dict = multi_return[0].get_main_properties() # From optimizer.
             elif toggle_multi is not None:
-                obj_dict = toggle_multi
-            elif pasted_structure == None:
+                prop_dict = toggle_multi
+            elif pasted_structure is None:
+                calc_dom = self._new_calculation_domain.get()
                 obj_dict = {'mat_yield': [self._new_material.get()*1e6, 'Pa'],
                             'mat_factor': [self._new_material_factor.get(), ''],
-                            'span': [self._new_field_len.get(), 'm'],
+                            'span': [self._new_field_len.get()/1000, 'm'],
                             'spacing': [self._new_stf_spacing.get()/1000, 'm'],
                             'plate_thk': [self._new_plate_thk.get()/1000, 'm'],
                             'stf_web_height': [self._new_stf_web_h.get()/1000, 'm'],
-                            'stf_web_thk': [self._new_sft_web_t.get()/1000, 'm'],
+                            'stf_web_thk': [self._new_stf_web_t.get()/1000, 'm'],
                             'stf_flange_width': [self._new_stf_fl_w.get()/1000, 'm'],
                             'stf_flange_thk': [self._new_stf_fl_t.get()/1000, 'm'],
                             'structure_type': [self._new_stucture_type.get(), ''],
                             'stf_type': [self._new_stf_type.get(), ''],
                             'sigma_y1': [self._new_sigma_y1.get(), 'MPa'],
                             'sigma_y2': [self._new_sigma_y2.get(), 'MPa'],
-                            'sigma_x': [self._new_sigma_x.get(), 'MPa'],
+                            'sigma_x1': [self._new_sigma_x1.get(), 'MPa'],
+                            'sigma_x2': [self._new_sigma_x2.get(), 'MPa'],
                             'tau_xy': [self._new_tauxy.get(), 'MPa'],
                             'plate_kpp': [self._new_plate_kpp.get(), ''],
                             'stf_kps': [self._new_stf_kps.get(), ''],
@@ -3464,48 +4821,280 @@ class Application():
                             'zstar_optimization': [self._new_zstar_optimization.get(), ''],
                             'puls buckling method': [self._new_puls_method.get(), ''],
                             'puls boundary': [self._new_puls_panel_boundary.get(), ''],
-                            'puls stiffener end': [self._new_puls_stf_end_type.get(), ''],
+                            'puls stiffener end': [self._new_buckling_stf_end_support.get(), ''],
                             'puls sp or up':  [self._new_puls_sp_or_up.get(), ''],
-                            'puls up boundary': [self._new_puls_up_boundary.get(), ''],}
-            else:
-                obj_dict = pasted_structure.get_structure_prop()
+                            'puls up boundary': [self._new_puls_up_boundary.get(), ''],
+                            'panel or shell': [self._new_panel_or_shell.get(), '']}
 
-            if self._active_line not in self._line_to_struc.keys():
-                self._line_to_struc[self._active_line] = [None, None, None, [None], {}]
-                self._line_to_struc[self._active_line][0] = Structure(obj_dict)
-                self._sections = add_new_section(self._sections, struc.Section(obj_dict))
-                self._line_to_struc[self._active_line][1] = CalcScantlings(obj_dict)
-                self._line_to_struc[self._active_line][2] = None
-                if self._line_to_struc[self._active_line][0].get_structure_type() not in \
+                obj_dict_pl = copy.copy(obj_dict)
+                obj_dict_stf = copy.copy(obj_dict)
+                obj_dict_girder = copy.copy(obj_dict)
+
+                obj_dict_girder['stf_web_height'] =  [self._new_girder_web_h.get()/1000, 'm']
+                obj_dict_girder['stf_web_thk'] = [self._new_girder_web_t.get() / 1000, 'm']
+                obj_dict_girder['stf_flange_width'] = [self._new_girder_fl_w.get() / 1000, 'm']
+                obj_dict_girder['stf_flange_thk'] =  [self._new_girder_fl_t.get() / 1000, 'm']
+                obj_dict_girder['stf_type'] = [self._new_girder_type.get(), '']
+                
+                main_dict = dict()
+                main_dict['minimum pressure in adjacent spans'] = [self._new_buckling_min_press_adj_spans.get(), '']
+                main_dict['material yield'] = [self._new_material.get()*1e6, 'Pa']
+                main_dict['load factor on stresses'] = [self._new_buckling_lf_stresses.get(), '']
+                main_dict['load factor on pressure'] = [1, '']
+                main_dict['buckling method'] = [self._new_puls_method.get(), '']
+                main_dict['stiffener end support'] =[self._new_buckling_stf_end_support.get(), '']  # 'Continuous'
+                main_dict['girder end support'] = [self._new_buckling_girder_end_support.get(), '']  # 'Continuous'
+                main_dict['tension field'] = [self._new_buckling_tension_field.get(), '']  # 'not allowed'
+                main_dict['plate effective agains sigy'] = [self._new_buckling_effective_against_sigy.get(), '']  # True
+                main_dict['buckling length factor stf'] = [self._new_buckling_length_factor_stf.get(), '']
+                main_dict['buckling length factor girder'] = [self._new_buckling_length_factor_stf.get(), '']
+                main_dict['km3'] = [self._new_buckling_km3.get(), '']  # 12
+                main_dict['km2'] = [self._new_buckling_km2.get(), '']  # 24
+                main_dict['girder distance between lateral support'] = [self._new_buckling_girder_dist_bet_lat_supp.get(), '']
+                main_dict['stiffener distance between lateral support'] = [self._new_buckling_stf_dist_bet_lat_supp.get(), '']
+                main_dict['panel length, Lp'] = [self._new_panel_length_Lp.get(), '']
+                main_dict['pressure side'] = [self._new_pressure_side.get(), '']  # either 'stiffener', 'plate', 'both'
+                main_dict['fabrication method stiffener'] = [self._new_buckling_fab_method_stf.get(), '']
+                main_dict['fabrication method girder'] = [self._new_buckling_fab_method_girder.get(), '']
+                main_dict['calculation domain'] = [self._new_calculation_domain.get(), '']
+
+                prop_dict = {'main dict': main_dict,
+                             'Plate': obj_dict_pl,
+                             'Stiffener': None if calc_dom == 'Flat plate, unstiffened' else obj_dict_stf,
+                             'Girder': None if calc_dom in ['Flat plate, unstiffened', 'Flat plate, stiffened']
+                             else obj_dict_girder}
+
+                if self._new_calculation_domain.get() not in ['Flat plate, stiffened','Flat plate, unstiffened',
+                                                  'Flat plate, stiffened with girder'] and cylinder_return is None:
+                    '''
+                    Shell structure.
+                     0:'Stiffened panel, flat', 1:'Unstiffened shell (Force input)', 2:'Unstiffened panel (Stress input)',
+                     3:'Longitudinal Stiffened shell  (Force input)', 4:'Longitudinal Stiffened panel (Stress input)',
+                     5:'Ring Stiffened shell (Force input)', 6:'Ring Stiffened panel (Stress input)',
+                     7:'Orthogonally Stiffened shell (Force input)', 8:'Orthogonally Stiffened panel (Stress input)'
+                    '''
+                    domain_string = self._new_calculation_domain.get()
+                    domain_int = self._shell_geometries_map[domain_string]
+
+                    dummy_data = {'span': [self._new_field_len.get()/1000, 'm'],
+                                  'plate_thk': [self._new_plate_thk.get()/1000, 'm'],
+                                  'structure_type': [self._new_stucture_type.get(), ''],
+                                  'sigma_y1': [self._new_sigma_y1.get(), 'MPa'],
+                                  'sigma_y2': [self._new_sigma_y2.get(), 'MPa'],
+                                  'sigma_x1': [self._new_sigma_x1.get(), 'MPa'],
+                                  'sigma_x2': [self._new_sigma_x2.get(), 'MPa'],
+                                  'tau_xy': [self._new_tauxy.get(), 'MPa'],
+                                  'plate_kpp': [self._new_plate_kpp.get(), ''],
+                                  'stf_kps': [self._new_stf_kps.get(), ''],
+                                  'stf_km1': [self._new_stf_km1.get(), ''],
+                                  'stf_km2': [self._new_stf_km2.get(), ''],
+                                  'stf_km3': [self._new_stf_km3.get(), ''],
+                                  'press_side': [self._new_pressure_side.get(), ''],
+                                  'structure_types':[self._structure_types, ''],
+                                  'zstar_optimization': [self._new_zstar_optimization.get(), ''],
+                                  'puls buckling method': [self._new_puls_method.get(), ''],
+                                  'puls boundary': [self._new_puls_panel_boundary.get(), ''],
+                                  'puls stiffener end': [self._new_buckling_stf_end_support.get(), ''],
+                                  'puls sp or up':  [self._new_puls_sp_or_up.get(), ''],
+                                  'puls up boundary': [self._new_puls_up_boundary.get(), ''],
+                                  'panel or shell': [self._new_panel_or_shell.get(), ''],
+                                  'mat_factor': [self._new_material_factor.get(), '',],
+                                  'spacing': [self._new_stf_spacing.get()/1000, 'm'],}
+
+                    # Main class input
+
+                    # Shell data input
+                    shell_dict = {'plate_thk': [self._new_shell_thk.get() / 1000, 'm'],
+                                  'radius': [self._new_shell_radius.get() / 1000, 'm'],
+                                  'distance between rings, l': [self._new_shell_dist_rings.get() / 1000, 'm'],
+                                  'length of shell, L': [self._new_shell_length.get() / 1000, 'm'],
+                                  'tot cyl length, Lc': [self._new_shell_tot_length.get() / 1000, 'm'],
+                                  'eff. buckling lenght factor': [self._new_shell_k_factor.get(), ''],
+                                  'mat_yield': [self._new_shell_yield.get() * 1e6, 'Pa'],
+                                  }
+                    # Longitudinal stiffener input
+                    long_dict = {'spacing': [self._new_stf_spacing.get() / 1000, 'm'],
+                                 'stf_web_height': [self._new_stf_web_h.get() / 1000, 'm'],
+                                 'stf_web_thk': [self._new_stf_web_t.get() / 1000, 'm'],
+                                 'stf_flange_width': [self._new_stf_fl_w.get() / 1000, 'm'],
+                                 'stf_flange_thk': [self._new_stf_fl_t.get() / 1000, 'm'],
+                                 'stf_type': [self._new_stf_type.get(), ''],
+                                 'span': [self._new_field_len.get()/1000, 'm'],
+                                 'mat_yield': [self._new_shell_yield.get() * 1e6, 'Pa'],
+                                 'panel or shell': ['shell', '']}
+                    ring_stf_dict = {'stf_web_height': [self._new_shell_ring_stf_hw.get() / 1000, 'm'],
+                                     'stf_web_thk': [self._new_shell_ring_stf_tw.get() / 1000, 'm'],
+                                     'stf_flange_width': [self._new_shell_ring_stf_b.get() / 1000, 'm'],
+                                     'stf_flange_thk': [self._new_shell_ring_stf_tf.get() / 1000, 'm'],
+                                     'stf_type': [self._new_shell_ring_stf_type.get(), ''],
+                                     'mat_yield': [self._new_shell_yield.get() * 1e6, 'Pa'],
+                                     'panel or shell': ['shell', '']}
+                    ring_frame_dict = {'stf_web_height': [self._new_shell_ring_frame_hw.get() / 1000, 'm'],
+                                       'stf_web_thk': [self._new_shell_ring_frame_tw.get() / 1000, 'm'],
+                                       'stf_flange_width': [self._new_shell_ring_frame_b.get() / 1000, 'm'],
+                                       'stf_flange_thk': [self._new_shell_ring_frame_tf.get() / 1000, 'm'],
+                                       'stf_type': [self._new_shell_ring_frame_type.get(), ''],
+                                       'span': [self._new_field_len.get()/1000, 'm'],
+                                       'mat_yield': [self._new_shell_yield.get() * 1e6, 'Pa'],
+                                       'panel or shell': ['shell', '']}
+
+                    geometry = self._shell_geometries_map[self._new_calculation_domain.get()]
+
+                    if self._new_shell_stress_or_force.get() == 1:
+                        forces = [self._new_shell_Nsd.get(), self._new_shell_Msd.get(), \
+                                 self._new_shell_Tsd.get(), self._new_shell_Qsd.get()]
+                        sasd, smsd, tTsd, tQsd, shsd = hlp.helper_cylinder_stress_to_force_to_stress(
+                            stresses=None, forces=forces,  geometry=geometry, shell_t=self._new_shell_thk.get(),
+                            shell_radius=self._new_shell_radius.get(), shell_spacing=self._new_stf_spacing.get(),
+                            hw=self._new_stf_web_h.get(), tw=self._new_stf_web_t.get(), b=self._new_stf_fl_w.get(),
+                            tf=self._new_stf_fl_t.get(), CylinderAndCurvedPlate=CylinderAndCurvedPlate)
+                        self._new_shell_sasd.set(sasd)
+                        self._new_shell_smsd.set(smsd)
+                        self._new_shell_tTsd.set(tTsd)
+                        self._new_shell_tQsd.set(tQsd)
+                        #self._new_shell_shsd.set(0)
+                    else:
+                        stresses = [self._new_shell_sasd.get(), self._new_shell_smsd.get(), self._new_shell_tTsd.get(),
+                                    self._new_shell_tQsd.get(), self._new_shell_shsd.get()]
+                        sasd, smsd, tTsd, tQsd, shsd = stresses
+                        Nsd, Msd, Tsd, Qsd, shsd = hlp.helper_cylinder_stress_to_force_to_stress(
+                            stresses=stresses, geometry=geometry, shell_t=self._new_shell_thk.get(),
+                            shell_radius=self._new_shell_radius.get(), shell_spacing=self._new_stf_spacing.get(),
+                            hw=self._new_stf_web_h.get(), tw=self._new_stf_web_t.get(), b=self._new_stf_fl_w.get(),
+                            tf=self._new_stf_fl_t.get(), CylinderAndCurvedPlate=CylinderAndCurvedPlate)
+                        self._new_shell_Nsd.set(Nsd)
+                        self._new_shell_Msd.set(Msd)
+                        self._new_shell_Tsd.set(Tsd)
+                        self._new_shell_Qsd.set(Qsd)
+
+                    main_dict_cyl = {'sasd': [sasd*1e6, 'Pa'],
+                                 'smsd': [smsd*1e6, 'Pa'],
+                                 'tTsd': [tTsd*1e6, 'Pa'],
+                                 'tQsd': [tQsd*1e6, 'Pa'],
+                                 'psd': [self._new_shell_psd.get() *1e6, 'Pa'],
+                                 'shsd': [shsd *1e6, 'Pa'],
+                                 'geometry': [self._shell_geometries_map[self._new_calculation_domain.get()], ''],
+                                 'material factor':  [self._new_shell_mat_factor.get(), ''],
+                                 'delta0': [0.005, ''],
+                                 'fab method ring stf':  [self._new_shell_ring_stf_fab_method.get(), ''],
+                                 'fab method ring girder':  [self._new_shell_ring_frame_fab_method.get(), ''],
+                                 'E-module':  [self._new_shell_e_module.get(), 'Pa'],
+                                 'poisson':  [self._new_shell_poisson.get(), ''],
+                                 'mat_yield': [self._new_shell_yield.get() *1e6, 'Pa'],
+                                 'length between girders': [self._new_shell_ring_frame_length_between_girders.get()/1000, 'm'],
+                                 'panel spacing, s': [self._new_shell_panel_spacing.get()/1000, 'm'],
+                                 'ring stf excluded': [self._new_shell_exclude_ring_stf.get(), ''],
+                                 'ring frame excluded': [self._new_shell_exclude_ring_frame.get(), '',],
+                                     'ULS or ALS': [self._new_shell_uls_or_als.get(), '',],
+                                     'end cap pressure': [self._new_shell_end_cap_pressure_included.get(), '']
+                    }
+
+                    for key, value in dummy_data.items():
+                        if key not in long_dict.keys():
+                            long_dict[key] = value
+                        if key not in ring_stf_dict.keys():
+                            ring_stf_dict[key] = value
+                        if key not in ring_frame_dict.keys():
+                            ring_frame_dict[key] = value
+
+                    CylinderObj = CylinderAndCurvedPlate(main_dict_cyl, Shell(shell_dict),
+                                                         long_stf=None if geometry in [1,2,5,6]
+                                                         else Structure(long_dict),
+                                                          ring_stf=None if any([geometry in [1,2,3,4],
+                                                                                self._new_shell_exclude_ring_stf.get()])
+                                                          else Structure(ring_stf_dict),
+                                                          ring_frame=None if any([geometry in [1,2,3,4],
+                                                                                  self._new_shell_exclude_ring_frame.get()])
+                                                          else Structure(ring_frame_dict))
+                elif cylinder_return is not None:
+
+                    main_dict_cyl, shell_dict, long_dict, ring_stf_dict, ring_frame_dict = \
+                        cylinder_return.get_all_properties()
+            else:
+                prop_dict = pasted_structure.get_main_properties()
+
+
+            if self._active_line not in self._line_to_struc.keys() :
+                self._line_to_struc[self._active_line] = [None, None, None, [None], {}, None]
+                # First entry
+                # Flat plate domains: 'Flat plate, stiffened with girder', 'Flat plate, stiffened', Flat plate, unstiffened'
+                cdom = self._new_calculation_domain.get()
+                All = AllStructure(Plate=CalcScantlings(prop_dict['Plate']),
+                                   Stiffener=None if cdom == 'Flat plate, unstiffened'
+                                   else CalcScantlings(prop_dict['Stiffener']),
+                                   Girder=None if cdom in ['Flat plate, unstiffened', 'Flat plate, stiffened']
+                                   else CalcScantlings(prop_dict['Girder']),
+                                   main_dict=prop_dict['main dict'])
+
+                self._sections = add_new_section(self._sections, struc.Section(obj_dict_stf))
+                self._line_to_struc[self._active_line][0] = All
+                self._line_to_struc[self._active_line][5] = CylinderObj
+                if self._line_to_struc[self._active_line][0].Plate.get_structure_type() not in \
                         self._structure_types['non-wt']:
                     self._tank_dict = {}
                     self._main_grid.clear()
                     self._compartments_listbox.delete(0, 'end')
+                if self._new_calculation_domain.get() not in ['Flat plate, stiffened','Flat plate, unstiffened',
+                                                  'Flat plate, stiffened with girder']:
+                    CylinderObj = CylinderAndCurvedPlate(main_dict_cyl, Shell(shell_dict),
+                                                         long_stf=None if geometry in [1,2,5,6]
+                                                         else Structure(long_dict),
+                                                          ring_stf=None if any([geometry in [1,2,3,4],
+                                                                                self._new_shell_exclude_ring_stf.get()])
+                                                          else Structure(ring_stf_dict),
+                                                          ring_frame=None if any([geometry in [1,2,3,4],
+                                                                                  self._new_shell_exclude_ring_frame.get()])
+                                                          else Structure(ring_frame_dict))
+
+                    self._line_to_struc[self._active_line][5] = CylinderObj
+
             else:
-                prev_type = self._line_to_struc[self._active_line][0].get_structure_type()
-                prev_str_obj, prev_calc_obj = copy.deepcopy(self._line_to_struc[self._active_line][0]),\
-                                              copy.deepcopy(self._line_to_struc[self._active_line][1])
+                prev_type = self._line_to_struc[self._active_line][0].Plate.get_structure_type()
+                #cdom = self._line_to_struc[self._active_line][0].calculation_domain
+                #prev_calc_obj = copy.deepcopy(self._line_to_struc[self._active_line][1])
+                prev_all_obj = copy.deepcopy(self._line_to_struc[self._active_line][0])
+                self._line_to_struc[self._active_line][0].set_main_properties(prop_dict)
 
-                self._line_to_struc[self._active_line][0].set_main_properties(obj_dict)
-                self._line_to_struc[self._active_line][1].set_main_properties(obj_dict)
-
-                if self._new_scale_stresses.get() and prev_str_obj.get_tuple() != \
-                        self._line_to_struc[self._active_line][0].get_tuple():
-                    self._line_to_struc[self._active_line][0] = \
-                        op.create_new_structure_obj(prev_str_obj, self._line_to_struc[self._active_line][0].get_tuple(),
-                                                    fup=self._new_fup.get(), fdwn=self._new_fdwn.get())
-                    self._line_to_struc[self._active_line][1] = \
-                        op.create_new_calc_obj(prev_calc_obj,self._line_to_struc[self._active_line][1].get_tuple(),
+                if self._new_scale_stresses.get() and prev_all_obj.Plate.get_tuple() != \
+                        self._line_to_struc[self._active_line][0].Plate.get_tuple():
+                    self._line_to_struc[self._active_line][0].Plate = \
+                        op.create_new_calc_obj(prev_all_obj.Plate,
+                                               self._line_to_struc[self._active_line][0].Plate.get_tuple(),
                                                fup=self._new_fup.get(), fdwn=self._new_fdwn.get())[0]
-                self._line_to_struc[self._active_line][1].need_recalc = True
+
+
+                self._line_to_struc[self._active_line][0].need_recalc = True
+
                 if self._line_to_struc[self._active_line][2] is not None:
-                    self._line_to_struc[self._active_line][2].set_main_properties(obj_dict)
-                if prev_type in self._structure_types['non-wt'] and obj_dict['structure_type'][0] in \
+                    calc_dom = self._line_to_struc[self._active_line][0].calculation_domain
+                    if calc_dom == 'Flat plate, unstiffened':
+                        self._line_to_struc[self._active_line][2] = None
+                    else:
+                        self._line_to_struc[self._active_line][2].set_main_properties(prop_dict['Stiffener'])
+
+                if prev_type in self._structure_types['non-wt'] and prop_dict['Plate']['structure_type'][0] in \
                                         self._structure_types['internals'] + self._structure_types['horizontal'] + \
                                 self._structure_types['vertical']:
                     self._tank_dict = {}
                     self._main_grid.clear()
                     self._compartments_listbox.delete(0, 'end')
+
+                if  None and all([CylinderObj is None, cylinder_return is None,
+                                  self._line_to_struc[self._active_line][5] is not None]):
+                    self._line_to_struc[self._active_line][5] = None
+                elif CylinderObj is not None:
+                    if self._line_to_struc[self._active_line][5] is not None and self._new_scale_stresses.get():
+                        NewCylinderObj = op.create_new_cylinder_obj(self._line_to_struc[self._active_line][5],
+                                                                 CylinderObj.get_x_opt())
+                        NewCylinderObj.LongStfObj = None if CylinderObj.LongStfObj is None \
+                            else NewCylinderObj.LongStfObj
+                        NewCylinderObj.RingStfObj = None if CylinderObj.RingStfObj is None \
+                            else NewCylinderObj.RingStfObj
+                        NewCylinderObj.RingFrameObj = None if CylinderObj.RingFrameObj is None \
+                            else NewCylinderObj.RingFrameObj
+                    self._line_to_struc[self._active_line][5] = CylinderObj
+                elif cylinder_return is not None:
+                    self._line_to_struc[self._active_line][5] = cylinder_return
             try:
                 self.calculate_all_load_combinations_for_line_all_lines()
             except (KeyError, AttributeError):
@@ -3520,12 +5109,14 @@ class Application():
         if not suspend_recalc:
             # when changing multiple parameters, recalculations are suspended.
             for line, obj in self._line_to_struc.items():
-                obj[1].need_recalc = True
+                obj[0].need_recalc = True
             state = self.update_frame()
-            if state != None:
+            if state != None and self._line_is_active:
                 self._weight_logger['new structure']['COG'].append(self.get_color_and_calc_state()['COG'])
                 self._weight_logger['new structure']['weight'].append(self.get_color_and_calc_state()['Total weight'])
                 self._weight_logger['new structure']['time'].append(time.time())
+            self.cylinder_gui_mods()
+
         self.get_unique_plates_and_beams()
 
     def option_meny_structure_type_trace(self, event):
@@ -3533,8 +5124,9 @@ class Application():
 
         self._new_sigma_y1.set(self._default_stresses[self._new_stucture_type.get()][0])
         self._new_sigma_y2.set(self._default_stresses[self._new_stucture_type.get()][1])
-        self._new_sigma_x.set(self._default_stresses[self._new_stucture_type.get()][2])
-        self._new_tauxy.set(self._default_stresses[self._new_stucture_type.get()][3])
+        self._new_sigma_x1.set(self._default_stresses[self._new_stucture_type.get()][2])
+        self._new_sigma_x2.set(self._default_stresses[self._new_stucture_type.get()][3])
+        self._new_tauxy.set(self._default_stresses[self._new_stucture_type.get()][4])
 
         if self._new_stucture_type.get() in self._structure_types['vertical']:
             text = '(Vertical pressure calc.)'
@@ -3598,7 +5190,7 @@ class Application():
         line_results = {}
         for line, data in self._line_to_struc.items():
             line_results[line] = data[1].is_acceptable_sec_mod(
-                data[0].get_section_modulus(), self.get_highest_pressure(line)['normal'])
+                data[1].get_section_modulus(), self.get_highest_pressure(line)['normal'])
 
         return line_results
 
@@ -3646,7 +5238,7 @@ class Application():
             return load_info
         return results
 
-    def calculate_one_load_combination(self, line_name, comb_name, load_condition):
+    def calculate_one_load_combination(self, current_line, comb_name, load_condition):
         '''
         Creating load combination for ULS.
         Inserted into self._line_to_struc index = 4
@@ -3656,7 +5248,7 @@ class Application():
         '''
 
         defined_loads = []
-        for load_obj in self._line_to_struc[line_name][3]:
+        for load_obj in self._line_to_struc[current_line][3]:
             if load_obj is not None:
                 if load_obj.get_limit_state() != 'FLS':
                     defined_loads.append(load_obj)
@@ -3664,9 +5256,9 @@ class Application():
             defined_tanks =  []
         else:
             defined_tanks = [['comp'+str(int(tank_num)), self._tank_dict['comp'+str(int(tank_num))]]
-                     for tank_num in self.get_compartments_for_line_duplicates(line_name)]
+                     for tank_num in self.get_compartments_for_line_duplicates(current_line)]
 
-        coord = (self.get_line_radial_mid(line_name), self.get_line_low_elevation(line_name))
+        coord = (self.get_line_radial_mid(current_line), self.get_line_low_elevation(current_line))
 
         if load_condition not in ['tanktest','manual','slamming']:
             acc = (self._accelerations_dict['static'], self._accelerations_dict['dyn_'+str(load_condition)])
@@ -3675,12 +5267,12 @@ class Application():
 
         load_factors_all = self._new_load_comb_dict
 
-        line_name_obj = [line_name, self._line_to_struc[line_name][0]]
+        current_line_obj = [current_line, self._line_to_struc[current_line][0].Plate]
 
-        if self._line_to_struc[line_name][0].get_structure_type() in ['', 'FRAME','GENERAL_INTERNAL_NONWT']:
+        if self._line_to_struc[current_line][0].Plate.get_structure_type() in ['', 'FRAME','GENERAL_INTERNAL_NONWT']:
             return [0, '']
         else:
-            return_value = one_load_combination(line_name_obj, coord, defined_loads, load_condition,
+            return_value = one_load_combination(current_line_obj, coord, defined_loads, load_condition,
                                                 defined_tanks, comb_name, acc, load_factors_all)
 
             return return_value
@@ -3708,7 +5300,7 @@ class Application():
         current_tank.set_acceleration(self._accelerations_dict)
         current_tank.set_density(self._new_density.get())
         for line, obj in self._line_to_struc.items():
-            obj[1].need_recalc = True
+            obj[0].need_recalc = True
             if  self._compartments_listbox.get('active') in self.get_compartments_for_line(line):
                 self._PULS_results.result_changed(line)
 
@@ -3730,7 +5322,7 @@ class Application():
 
                 if line in self._line_dict.keys():
                     if line in self._line_to_struc.keys():
-                        if self._line_to_struc[line][0].get_structure_type() not in self._structure_types['non-wt']:
+                        if self._line_to_struc[line][0].Plate.get_structure_type() not in self._structure_types['non-wt']:
                             self.delete_properties_pressed()
                             self.delete_all_tanks()
                     self._line_dict.pop(line)
@@ -3809,15 +5401,19 @@ class Application():
     def paste_property(self, event = None):
         ''' Paste property to line '''
         if self._active_line not in self._line_to_struc.keys():
-            self.new_structure(pasted_structure=self._line_to_struc[self.__copied_line_prop][0])
-
-        if self._line_to_struc[self._active_line][0].get_structure_type() !=\
-                self._line_to_struc[self.__copied_line_prop][0].get_structure_type():
+            if self._line_to_struc[self.__copied_line_prop][5] is not None:
+                self.new_structure(cylinder_return=self._line_to_struc[self.__copied_line_prop][5])
+            else:
+                self.new_structure(pasted_structure=self._line_to_struc[self.__copied_line_prop][0])
+        elif self._line_to_struc[self.__copied_line_prop][5] is not None:
+            self.new_structure(cylinder_return=self._line_to_struc[self.__copied_line_prop][5])
+        elif self._line_to_struc[self._active_line][0].Plate.get_structure_type() !=\
+                self._line_to_struc[self.__copied_line_prop][0].Plate.get_structure_type():
             tk.messagebox.showerror('Paste error', 'Can only paste to same structure type. This is to avoid problems '
                                                    'with compartments not detecting changes to watertightness.')
             return
         else:
-            self.new_structure(pasted_structure= self._line_to_struc[self.__copied_line_prop][0])
+            self.new_structure(pasted_structure = self._line_to_struc[self.__copied_line_prop][0])
 
         self.update_frame()
 
@@ -3827,6 +5423,7 @@ class Application():
         if line != None:
             self._line_to_struc.pop(line)
             self._state_logger.pop(line)
+
             action_taken = True
         elif self._active_line != '' and self._active_line in self._line_to_struc.keys():
             self._line_to_struc.pop(self._active_line)
@@ -3835,7 +5432,7 @@ class Application():
 
         if action_taken:
             for line, obj in self._line_to_struc.items():
-                obj[1].need_recalc = True
+                obj[0].need_recalc = True
             self.update_frame()
 
     def delete_all_tanks(self):
@@ -3860,37 +5457,71 @@ class Application():
         Setting the properties in the entry fields to the specified values.
         '''
         if line in self._line_to_struc:
-            properties = self._line_to_struc[line][0].get_structure_prop()
-            self._new_material.set(round(properties['mat_yield'][0]/1e6,5))
-            self._new_material_factor.set(properties['mat_factor'][0])
-            self._new_field_len.set(round(properties['span'][0],5))
-            self._new_stf_spacing.set(round(properties['spacing'][0]*1000,5))
-            self._new_plate_thk.set(round(properties['plate_thk'][0]*1000,5))
-            self._new_stf_web_h.set(round(properties['stf_web_height'][0]*1000,5))
-            self._new_sft_web_t.set(round(properties['stf_web_thk'][0]*1000,5))
-            self._new_stf_fl_w.set(round(properties['stf_flange_width'][0]*1000,5))
-            self._new_stf_fl_t.set(round(properties['stf_flange_thk'][0]*1000,5))
-            self._new_plate_kpp.set(properties['plate_kpp'][0])
-            self._new_stf_kps.set(properties['stf_kps'][0])
-            self._new_sigma_y1.set(round(properties['sigma_y1'][0],1))
-            self._new_sigma_y2.set(round(properties['sigma_y2'][0],1))
-            self._new_sigma_x.set(round(properties['sigma_x'][0],1))
-            self._new_tauxy.set(round(properties['tau_xy'][0],1))
-            self._new_stucture_type.set(properties['structure_type'][0])
-            self._new_stf_type.set(properties['stf_type'][0])
-            self._new_stf_km1.set(properties['stf_km1'][0])
-            self._new_stf_km2.set(properties['stf_km2'][0])
-            self._new_stf_km3.set(properties['stf_km3'][0])
-            try:
-                self._new_pressure_side.set(properties['press_side'][0])
-            except KeyError:
-                self._new_pressure_side.set('p')
-            self._new_zstar_optimization.set(properties['zstar_optimization'][0])
-            self._new_puls_method.set(properties['puls buckling method'][0])
-            self._new_puls_panel_boundary.set(properties['puls boundary'][0])
-            self._new_puls_stf_end_type.set(properties['puls stiffener end'][0])
-            self._new_puls_sp_or_up.set(properties['puls sp or up'][0])
-            self._new_puls_up_boundary.set(properties['puls up boundary'][0])
+            all_dict = self._line_to_struc[line][0].get_main_properties()
+            main_dict = {}
+            for key, val in all_dict['main dict'].items():
+                main_dict[key] = [0, val[1]] if val[0] is None else val
+
+            self._new_buckling_min_press_adj_spans.set(main_dict['minimum pressure in adjacent spans'][0])
+            self._new_buckling_lf_stresses.set(main_dict['load factor on stresses'][0])
+            self._new_buckling_stf_end_support.set(main_dict['stiffener end support'][0])
+            self._new_buckling_girder_end_support.set(main_dict['girder end support'][0])
+            self._new_buckling_tension_field.set(main_dict['tension field'][0])
+            self._new_buckling_effective_against_sigy.set(main_dict['plate effective agains sigy'][0])
+            self._new_buckling_length_factor_stf.set(main_dict['buckling length factor stf'][0])
+            self._new_buckling_length_factor_girder.set(main_dict['buckling length factor girder'][0])
+            self._new_buckling_km3.set(main_dict['km3'][0])
+            self._new_buckling_km2.set(main_dict['km2'][0])
+            self._new_buckling_stf_dist_bet_lat_supp.set(main_dict['stiffener distance between lateral support'][0])
+            self._new_buckling_girder_dist_bet_lat_supp.set(main_dict['girder distance between lateral support'][0])
+            self._new_buckling_fab_method_stf.set(main_dict['fabrication method stiffener'][0])
+            self._new_buckling_fab_method_girder.set(main_dict['fabrication method girder'][0])
+            self._new_pressure_side.set(main_dict['pressure side'][0])
+            self._new_panel_length_Lp.set(main_dict['panel length, Lp'][0])
+            self._new_calculation_domain.set(main_dict['calculation domain'][0])
+
+            for idx, properties in enumerate([all_dict['Plate'], all_dict['Stiffener'], all_dict['Girder']]):
+                if properties is None:
+                    continue
+                if idx == 0:
+                    self._new_material.set(round(properties['mat_yield'][0]/1e6,5))
+                    self._new_material_factor.set(properties['mat_factor'][0])
+                    self._new_field_len.set(round(properties['span'][0]*1000,5))
+                    self._new_plate_thk.set(round(properties['plate_thk'][0]*1000,5))
+                    self._new_plate_kpp.set(properties['plate_kpp'][0])
+                    self._new_sigma_y1.set(round(properties['sigma_y1'][0],1))
+                    self._new_sigma_y2.set(round(properties['sigma_y2'][0],1))
+                    self._new_sigma_x1.set(round(properties['sigma_x1'][0],1))
+                    self._new_sigma_x2.set(round(properties['sigma_x2'][0], 1))
+                    self._new_tauxy.set(round(properties['tau_xy'][0],1))
+                    self._new_stucture_type.set(properties['structure_type'][0])
+                    # try:
+                    #     self._new_pressure_side.set(properties['press_side'][0])
+                    # except KeyError:
+                    #     self._new_pressure_side.set('both sides')
+                    self._new_zstar_optimization.set(properties['zstar_optimization'][0])
+                    self._new_puls_method.set(properties['puls buckling method'][0])
+                    self._new_puls_panel_boundary.set(properties['puls boundary'][0])
+                    self._new_buckling_stf_end_support.set(properties['puls stiffener end'][0])
+                    self._new_puls_sp_or_up.set(properties['puls sp or up'][0])
+                    self._new_puls_up_boundary.set(properties['puls up boundary'][0])
+                if idx == 1:
+                    self._new_stf_spacing.set(round(properties['spacing'][0] * 1000, 5))
+                    self._new_stf_kps.set(properties['stf_kps'][0])
+                    self._new_stf_km1.set(properties['stf_km1'][0])
+                    self._new_stf_km2.set(properties['stf_km2'][0])
+                    self._new_stf_km3.set(properties['stf_km3'][0])
+                    self._new_stf_web_h.set(round(properties['stf_web_height'][0]*1000,5))
+                    self._new_stf_web_t.set(round(properties['stf_web_thk'][0]*1000,5))
+                    self._new_stf_fl_w.set(round(properties['stf_flange_width'][0]*1000,5))
+                    self._new_stf_fl_t.set(round(properties['stf_flange_thk'][0]*1000,5))
+                    self._new_stf_type.set(properties['stf_type'][0])
+                if idx == 2:
+                    self._new_girder_web_h.set(round(properties['stf_web_height'][0]*1000,5))
+                    self._new_girder_web_t.set(round(properties['stf_web_thk'][0]*1000,5))
+                    self._new_girder_fl_w.set(round(properties['stf_flange_width'][0]*1000,5))
+                    self._new_girder_fl_t.set(round(properties['stf_flange_thk'][0]*1000,5))
+                    self._new_girder_type.set(properties['stf_type'][0])
 
     def get_highest_pressure(self, line, limit_state = 'ULS'):
         '''
@@ -3948,18 +5579,18 @@ class Application():
                         pressures['p_ext']['loaded'] = load.get_calculated_pressure(self.get_pressures_calc_coord(line),
                                                                                     accelerations[0],
                                                                                     self._line_to_struc[line][
-                                                                                        0].get_structure_type())
+                                                                                        0].Plate.get_structure_type())
                     if fls_exist[exist_i] and load.get_load_condition() == 'ballast':
                         pressures['p_ext']['ballast'] = load.get_calculated_pressure(self.get_pressures_calc_coord(line),
                                                                                     accelerations[1],
                                                                                     self._line_to_struc[line][
-                                                                                        0].get_structure_type())
+                                                                                        0].Plate.get_structure_type())
 
                     if fls_exist[exist_i] and load.get_load_condition() == 'part':
                         pressures['p_ext']['part'] = load.get_calculated_pressure(self.get_pressures_calc_coord(line),
                                                                                     accelerations[2],
                                                                                     self._line_to_struc[line][
-                                                                                        0].get_structure_type())
+                                                                                        0].Plate.get_structure_type())
 
         if self._tank_dict == {}:
             compartments = []
@@ -4136,12 +5767,13 @@ class Application():
         beams, plates = list(), list()
         if self._line_to_struc != {}:
             for line, data in self._line_to_struc.items():
-                this_beam = data[0].get_beam_string()
-                this_plate = data[0].get_pl_thk()*1000
-                if this_beam not in beams:
-                    beams.append(this_beam)
-                if this_plate not in plates:
-                    plates.append(this_plate)
+                if data[0].Stiffener is not None:
+                    this_beam = data[0].Stiffener.get_beam_string()
+                    this_plate = data[0].Stiffener.get_pl_thk()*1000
+                    if this_beam not in beams:
+                        beams.append(this_beam)
+                    if this_plate not in plates:
+                        plates.append(this_plate)
 
         return {'plates':plates, 'beams': beams}
 
@@ -4202,6 +5834,8 @@ class Application():
         self._main_canvas.bind('<Button-3>', self.button_3_click)
         self._main_canvas.bind("<B2-Motion>", self.button_2_click_and_drag)
         self._main_canvas.bind("<MouseWheel>", self.mouse_scroll)
+        #self._prop_canvas.bind("<MouseWheel>", self.mouse_scroll)
+
         self._parent.bind('<Control-z>', self.undo)
         #self._parent.bind('<Control-y>', self.redo)
         #self._parent.bind('<Control-p>', self.delete_point)
@@ -4281,7 +5915,7 @@ class Application():
             for line in self._line_to_struc.keys():
                 if line not in self._multiselect_lines:
                     if event.keysym == 't':
-                        if self._line_to_struc[line][1].get_structure_type() == self._new_stucture_type.get():
+                        if self._line_to_struc[line][0].Plate.get_structure_type() == self._new_stucture_type.get():
                             self._multiselect_lines.append(line)
                     else:
                         self._multiselect_lines.append(line)
@@ -4292,12 +5926,18 @@ class Application():
         self.update_frame()
 
     def mouse_scroll(self,event):
-        self._canvas_scale +=  event.delta/50
-        self._canvas_scale = 0 if self._canvas_scale < 0 else self._canvas_scale
+
+        if event.y < self._main_canvas.winfo_height():
+            self._canvas_scale +=  event.delta/50
+            self._canvas_scale = 0 if self._canvas_scale < 0 else self._canvas_scale
+        else:
+            pass
+
         try:
             state = self.get_color_and_calc_state()
         except AttributeError:
             state = None
+
         self.update_frame()
 
     def button_2_click(self, event):
@@ -4319,6 +5959,7 @@ class Application():
         When clicking the right button, this method is called.
         method is referenced in
         '''
+
         self._previous_drag_mouse = [event.x, event.y]
         click_x = self._main_canvas.winfo_pointerx() - self._main_canvas.winfo_rootx()
         click_y = self._main_canvas.winfo_pointery() - self._main_canvas.winfo_rooty()
@@ -4373,10 +6014,46 @@ class Application():
         self.update_frame()
         self._combination_slider.set(1)
         if self._line_is_active:
+            self._tabControl.select(self._tab_prop)
+
             try:
                 self.gui_load_combinations(self._combination_slider.get())
             except (KeyError, AttributeError):
                 pass
+
+        self.cylinder_gui_mods()
+
+    def cylinder_gui_mods(self):
+        if self._active_line in self._line_to_struc.keys():
+
+            if self._line_to_struc[self._active_line][5] is not None:
+                self._new_calculation_domain.set(CylinderAndCurvedPlate
+                                                 .geomeries[self._line_to_struc[self._active_line][5].geometry])
+                self._new_shell_exclude_ring_stf.set(self._line_to_struc[self._active_line][5]._ring_stiffener_excluded)
+                self._new_shell_exclude_ring_frame.set(self._line_to_struc[self._active_line][5]._ring_frame_excluded)
+                self.calculation_domain_selected()
+                # Setting the correct optmization buttons
+                #'Flat plate, unstiffened', 'Flat plate, stiffened', 'Flat plate, stiffened with girder'
+                for dom in ['Flat plate, unstiffened', 'Flat plate, stiffened', 'Flat plate, stiffened with girder']:
+                    for btn, placement in zip(self._optimization_buttons[dom],
+                                              self._optimization_buttons[dom + ' place']):
+                        btn.place_forget()
+                for btn, placement in zip(self._optimization_buttons['cylinder'],
+                                          self._optimization_buttons['cylinder place']):
+
+                    btn.place(relx = placement[0], rely= placement[1],relheight = placement[2], relwidth = placement[3])
+
+            else:
+                self._new_calculation_domain.set(self._line_to_struc[self._active_line][0].calculation_domain)
+                self.calculation_domain_selected()
+                dom = self._line_to_struc[self._active_line][0].calculation_domain
+                for btn, placement in zip(self._optimization_buttons['cylinder'],
+                                          self._optimization_buttons['cylinder place']):
+                    btn.place_forget()
+
+                for btn, placement in zip(self._optimization_buttons[dom],
+                                          self._optimization_buttons[dom + ' place']):
+                    btn.place(relx = placement[0], rely= placement[1],relheight = placement[2], relwidth = placement[3] )
 
     def button_1_click_comp_box(self,event):
         '''
@@ -4384,7 +6061,7 @@ class Application():
         :param event:
         :return:
         '''
-        self._selected_tank.config(text='',font = self._text_size['Text 12 bold'],fg='red')
+        self._selected_tank.config(text='')
         self._tank_acc_label.config(text='Accelerations [m/s^2]: ',font = self._text_size['Text 8 bold'])
 
         if len(self._tank_dict)!=0:
@@ -4444,7 +6121,7 @@ class Application():
 
     def draw_point_frame(self):
         ''' Frame to define brackets on selected point. '''
-        pt_canvas = tk.Canvas(self._pt_frame,height=100,width=100,background='gray60')
+        pt_canvas = tk.Canvas(self._pt_frame,height=100,width=100,background=self._style.lookup('TFrame', 'background'))
         pt_canvas.place(relx=0, rely=0)
         pt_canvas.create_oval(45,45,55,55,fill='red')
         new_left_br = tk.IntVar()
@@ -4452,14 +6129,14 @@ class Application():
         new_upper_br = tk.IntVar()
         new_lower_br = tk.IntVar()
         wid = 5
-        ent_left = tk.Entry(self._pt_frame,textvariable=new_left_br, width=wid, bg = self._entry_color,
-                            fg = self._entry_text_color)
-        ent_right = tk.Entry(self._pt_frame, textvariable=new_right_br, width=wid, bg = self._entry_color,
-                             fg = self._entry_text_color)
-        ent_upper = tk.Entry(self._pt_frame, textvariable=new_upper_br, width=wid, bg = self._entry_color,
-                             fg = self._entry_text_color)
-        ent_lower = tk.Entry(self._pt_frame, textvariable=new_lower_br, width=wid, bg = self._entry_color,
-                             fg = self._entry_text_color)
+        ent_left = ttk.Entry(self._pt_frame,textvariable=new_left_br, width=wid,
+                            )
+        ent_right = ttk.Entry(self._pt_frame, textvariable=new_right_br, width=wid,
+                             )
+        ent_upper = ttk.Entry(self._pt_frame, textvariable=new_upper_br, width=wid,
+                             )
+        ent_lower = ttk.Entry(self._pt_frame, textvariable=new_lower_br, width=wid,
+                             )
         ent_lower.place(relx=0.018229167, rely=0.009259259)
         ent_upper.place(relx=0.018229167, rely=0.069444444)
         ent_left.place(relx=0.002604167, rely=0.037037037)
@@ -4474,8 +6151,10 @@ class Application():
             return
 
         structure_properties = {}
+        shell_structure_properties = {}
         for key, value in self._line_to_struc.items():
-            structure_properties[key] = value[0].get_structure_prop()
+            structure_properties[key] = value[0].get_main_properties()
+            shell_structure_properties[key] = None if value[5] is None else value[5].get_all_properties()
 
         fatigue_properties = {}
         for key, value in self._line_to_struc.items():
@@ -4504,16 +6183,19 @@ class Application():
             counter+=1
 
         export_all = {}
-        export_all['project information'] = self._new_project_infomation.get()
+
+        export_all['project information'] = self._project_information.get('1.0', tk.END)
+        export_all['theme'] = self._current_theme
         export_all['point_dict'] = self._point_dict
         export_all['line_dict'] = self._line_dict
         export_all['structure_properties'] = structure_properties
+        export_all['shell structure properties'] = shell_structure_properties
         export_all['load_properties'] = load_properties
         export_all['accelerations_dict'] = self._accelerations_dict
         export_all['load_combinations'] = load_combiantions
         export_all['tank_properties'] = tank_properties
         export_all['fatigue_properties'] = fatigue_properties
-        export_all['buckling type'] = self._new_buckling_slider.get()
+        #export_all['buckling type'] = self._new_buckling_slider.get()
 
         if self._PULS_results is not None:
             export_all['PULS results'] = self._PULS_results.get_run_results()
@@ -4523,6 +6205,8 @@ class Application():
                                   'shift ver': self._new_shift_viz_coord_ver.get()}
 
         export_all['Weight and COG'] = self._weight_logger
+
+
 
         json.dump(export_all, save_file)#, sort_keys=True, indent=4)
         save_file.close()
@@ -4545,9 +6229,11 @@ class Application():
 
         self.reset()
         if 'project information' in imported.keys():
-            self._new_project_infomation.set(imported['project information'])
+            self._project_information.delete("1.0", tk.END)
+            self._project_information.insert(1.0, imported['project information'])
         else:
-            self._new_project_infomation.set('No project information provided. Input here.')
+            self._project_information.delete("1.0", tk.END)
+            self._project_information.insert(1.0, 'No information on project provided. Input here.')
 
         if 'shifting' in imported.keys():
             self._new_shifted_coords.set(imported['shifting']['shifted checked'])
@@ -4556,17 +6242,26 @@ class Application():
         else:
             pass
 
+        if 'theme' in imported.keys():
+            self.set_colors(imported['theme'])
+
         self._point_dict = imported['point_dict']
         self._line_dict = imported['line_dict']
         struc_prop = imported['structure_properties']
+        old_save_file = False
 
         for line, lines_prop in struc_prop.items():
 
-            self._line_to_struc[line] = [None, None, None, [], {}, [True, 'green']]
+            if len(lines_prop) > 10:
+                # Loading a file (pre 3.4)
+                old_save_file = True
+
+            self._line_to_struc[line] = [None, None, None, [], {}, None]
             self._line_point_to_point_string.append(
                 self.make_point_point_line_string(self._line_dict[line][0], self._line_dict[line][1])[0])
             self._line_point_to_point_string.append(
                 self.make_point_point_line_string(self._line_dict[line][0], self._line_dict[line][1])[1])
+
             if 'structure_types' not in lines_prop.keys():
                 lines_prop['structure_types'] = [self._structure_types, ' ']
             if 'zstar_optimization' not in lines_prop.keys():
@@ -4576,7 +6271,7 @@ class Application():
             if 'puls boundary' not in lines_prop.keys():
                 lines_prop['puls boundary'] = [self._new_puls_panel_boundary.get(), '']
             if 'puls stiffener end' not in lines_prop.keys():
-                lines_prop['puls stiffener end'] = [self._new_puls_stf_end_type.get(), '']
+                lines_prop['puls stiffener end'] = [self._new_buckling_stf_end_support.get(), '']
             if 'puls sp or up' not in lines_prop.keys():
                 lines_prop['puls sp or up'] = [self._new_puls_sp_or_up.get(), '']
             if 'puls up boundary' not in lines_prop.keys():
@@ -4584,15 +6279,90 @@ class Application():
             if 'mat_factor' not in lines_prop.keys():
                 lines_prop['mat_factor'] = [self._new_material_factor.get(), '']
 
-            self._line_to_struc[line][0] = Structure(lines_prop)
-            self._line_to_struc[line][1] = CalcScantlings(lines_prop)
-            if imported['fatigue_properties'][line] is not None:
-                self._line_to_struc[line][2] = CalcFatigue(lines_prop, imported['fatigue_properties'][line])
-            else:
-                self._line_to_struc[line][2] = None
+            # Sigma x1/x2 is missing before 3.4
+            if 'sigma_x' in lines_prop.keys():
+                lines_prop['sigma_x1'] = lines_prop['sigma_x']
+                lines_prop['sigma_x2'] = lines_prop['sigma_x']
+                lines_prop.pop('sigma_x')
 
-            #  Recording sections.
-            self._sections = add_new_section(self._sections, struc.Section(lines_prop))
+            if old_save_file: #need to get some basic information
+                import ANYstructure_local.example_data as ex
+                main_dict = ex.prescriptive_main_dict
+                map_end = {'C': 'Continuous', 'S': 'Sniped'}
+                lines_prop['puls stiffener end'] = [map_end[lines_prop['puls stiffener end'][0]],
+                                                    lines_prop['puls stiffener end'][1]]
+                main_dict['material yield'] = [355e6, 'Pa']
+                main_dict['load factor on stresses'] = [1, '']
+                main_dict['load factor on pressure'] = [1, '']
+                main_dict['buckling method'] = [lines_prop['puls buckling method'], '']
+                main_dict['stiffener end support'] = lines_prop['puls stiffener end']  # 'Continuous'
+                main_dict['girder end support'] = ['Continuous', '']  # 'Continuous'
+                dom = 'Flat plate, stiffened' if lines_prop['puls sp or up'][0] == 'SP' else 'Flat plate, unstiffened'
+
+                main_dict['calculation domain'] = [dom, '']
+                map_side = {'p': 'plate side', 's': 'stiffener side'}
+                if 'press_side' in lines_prop.keys():
+                    lines_prop['press_side'] = [map_side[lines_prop['press_side'][0]], '']
+                else:
+                    lines_prop['press_side'] = 'both sides'
+                lines_prop['panel or shell'] = 'panel'
+                #lines_prop['tension field'] = 'allowed'
+                self._line_to_struc[line][0] = AllStructure(Plate=CalcScantlings(lines_prop),
+                                                            Stiffener=None if dom == 'Flat plate, unstiffened'
+                                                            else CalcScantlings(lines_prop),
+                                                            Girder=None, main_dict=main_dict)
+
+                if imported['fatigue_properties'][line] is not None:
+                    self._line_to_struc[line][2] = CalcFatigue(lines_prop,
+                                                               imported['fatigue_properties'][line])
+                else:
+                    self._line_to_struc[line][2] = None
+                #  Recording sections.
+                self._sections = add_new_section(self._sections, struc.Section(lines_prop))
+
+            else:
+                self._line_to_struc[line][0] = AllStructure(Plate=None if lines_prop['Plate'] is None
+                                                            else CalcScantlings(lines_prop['Plate']),
+                                                            Stiffener=None if lines_prop['Stiffener'] is None
+                                                            else CalcScantlings(lines_prop['Stiffener']),
+                                                            Girder=None if lines_prop['Girder'] is None
+                                                            else CalcScantlings(lines_prop['Girder']),
+                                                            main_dict=lines_prop['main dict'])
+
+                if imported['fatigue_properties'][line] is not None:
+                    self._line_to_struc[line][2] = CalcFatigue(lines_prop['Stiffener'],
+                                                               imported['fatigue_properties'][line])
+                else:
+                    self._line_to_struc[line][2] = None
+                #  Recording sections.
+                if self._line_to_struc[line][0].Stiffener is not None:
+                    self._sections = add_new_section(self._sections, struc.Section(lines_prop['Stiffener']))
+
+            if 'shell structure properties' in imported.keys():
+                if imported['shell structure properties'][line] is not None:
+                    # need to correct the calcuation domain.
+                    #self._new_calculation_domain.set(imported_dict['Main class'][CylinderAndCurvedPlate.geomeries])
+                    imported_dict = imported['shell structure properties'][line]
+                    '''
+                    all_data = {'Main class': self.get_main_properties(),
+                                'Shell': self._Shell.get_main_properties(),
+                                'Long. stf.': self._LongStf.get_structure_prop(),
+                                'Ring stf.': self.RingStfObj.get_structure_prop(),
+                                'Ring frame': self._RingFrame.get_structure_prop()}
+                    '''
+                    for stuc_type in ['Long. stf.', 'Ring stf.', 'Ring frame']:
+                        if imported_dict[stuc_type] is not None:
+                            if 'sigma_x' in imported_dict[stuc_type].keys():
+                                imported_dict[stuc_type]['sigma_x1'] = imported_dict[stuc_type]['sigma_x']
+                                imported_dict[stuc_type]['sigma_x2'] = imported_dict[stuc_type]['sigma_x']
+                                imported_dict[stuc_type].pop('sigma_x')
+                    self._line_to_struc[line][5] = \
+                        CylinderAndCurvedPlate(imported_dict['Main class'], shell=None if imported_dict['Shell'] is None
+                        else Shell(imported_dict['Shell']), long_stf=None if imported_dict['Long. stf.'] is None
+                        else Structure(imported_dict['Long. stf.']), ring_stf=None if imported_dict['Ring stf.'] is None
+                        else Structure(imported_dict['Ring stf.']), ring_frame=None if imported_dict['Ring frame']
+                                                                                       is None
+                        else Structure(imported_dict['Ring frame']))
 
         # opening the loads
         variables = ['poly_third','poly_second', 'poly_first', 'poly_const', 'load_condition',
@@ -4674,7 +6444,6 @@ class Application():
                 self._PULS_results.puls_sheet_location = imported['PULS results']['sheet location']
                 imported['PULS results'].pop('sheet location')
             self._PULS_results.set_run_results(imported['PULS results'])
-            self.toggle_puls_run()
 
         # Setting the scale of the canvas
         points = self._point_dict
@@ -4682,9 +6451,9 @@ class Application():
         highest_x = max([coord[0] for coord in points.values()])
         self._canvas_scale = min(800 / highest_y, 800 / highest_x, 15)
 
-        if 'buckling type' in imported.keys():
-            self._new_buckling_slider.set(imported['buckling type'])
-            self._buckling_slider.set(imported['buckling type'])
+        # if 'buckling type' in imported.keys():
+        #     self._new_buckling_slider.set(imported['buckling type'])
+        #     self._buckling_slider.set(imported['buckling type'])
 
         if 'Weight and COG' in imported.keys():
             self._weight_logger = imported['Weight and COG']
@@ -4713,7 +6482,7 @@ class Application():
             # Create the text widget
             text_widget = tk.Text(text_m, height=60, width=80)
             # Create a scrollbar
-            scroll_bar = tk.Scrollbar(text_m)
+            scroll_bar = ttk.Scrollbar(text_m)
             # Pack the scroll bar
             # Place it to the right side, using tk.RIGHT
             scroll_bar.pack(side=tk.RIGHT)
@@ -4750,18 +6519,15 @@ class Application():
 
         hlp.plot_weights(time_stamp=time_stamp, cog=cog,structure=structure,weight=weight)
 
-    def on_open_structure_window(self):
+    def on_open_structure_window(self, clicked_button = None):
         '''
         Opens the window to create structure.
         :return:
         '''
-        if self._line_is_active:
+        self._clicked_section_create = clicked_button  # Identifying the clicked button
 
-            top_opt = tk.Toplevel(self._parent, background=self._general_color)
-            struc.CreateStructureWindow(top_opt, self)
-
-        else:
-            messagebox.showinfo(title='Select line',message='You must select a line')
+        top_opt = tk.Toplevel(self._parent, background=self._general_color)
+        struc.CreateStructureWindow(top_opt, self)
 
     def on_open_stresses_window(self):
         '''
@@ -4815,9 +6581,9 @@ class Application():
             return
         elif self._PULS_results.get_puls_line_results(self._active_line) is None:
             return
-        if self._puls_information_button.config('relief')[-1] == 'sunken':
-            self.text_widget.forget()
-            self._puls_information_button.config(relief='raised')
+        # if self._puls_information_button.config('relief')[-1] == 'sunken':
+        #     self.text_widget.forget()
+        #     self._puls_information_button.config(relief='raised')
         this_result = self._PULS_results.get_puls_line_results(self._active_line)
         this_string = ''
         for key, value in this_result.items():
@@ -4834,7 +6600,7 @@ class Application():
         # Create the text widget
         text_widget = tk.Text(text_m , height=60, width=100)
         # Create a scrollbar
-        scroll_bar = tk.Scrollbar(text_m)
+        scroll_bar = ttk.Scrollbar(text_m)
         # Pack the scroll bar
         # Place it to the right side, using tk.RIGHT
         scroll_bar.pack(side=tk.RIGHT)
@@ -4892,6 +6658,27 @@ class Application():
             else:
                 top_opt = tk.Toplevel(self._parent, background=self._general_color)
                 opw.CreateOptimizeWindow(top_opt, self)
+        else:
+            messagebox.showinfo(title='Select line',message='You must select a line')
+
+    def on_optimize_cylinder(self):
+        '''
+        User open window to optimize current structure
+        :return:
+        '''
+
+        # if [self.get_highest_pressure(line)['normal'] for line in self._line_to_struc.keys()] == []:
+        #     # messagebox.showinfo(title='Missing something', message='Missing properties/loads etc.')
+        #     # return
+
+        if self._line_is_active:
+            if self._active_line not in self._line_to_struc:
+                messagebox.showinfo(title='Missing properties', message='Specify properties for line')
+            elif self._line_to_struc[self._active_line][5] == None:
+                messagebox.showinfo(title='Missing cylinder', message='Make a shell or panel')
+            else:
+                top_opt = tk.Toplevel(self._parent, background=self._general_color)
+                opc.CreateOptimizeCylinderWindow(top_opt, self)
         else:
             messagebox.showinfo(title='Select line',message='You must select a line')
 
@@ -4983,7 +6770,7 @@ class Application():
             # adding values to the line dictionary. resetting first.
             for key, value in self._line_to_struc.items():
                 self._line_to_struc[key][3] = []
-                self._line_to_struc[key][1].need_recalc = True  # All lines need recalculations.
+                self._line_to_struc[key][0].need_recalc = True  # All lines need recalculations.
 
             for main_line in self._line_dict.keys():
                 for load_obj, load_line in self._load_dict.values():
@@ -4992,7 +6779,6 @@ class Application():
                             if load_obj.__str__() != temp_load[load_obj.get_name()][0].__str__() and main_line in \
                                     load_line+temp_load[load_obj.get_name()][1]:
                                 # The load has changed for this line.
-                                # TODO double check this.
                                 if self._PULS_results is not None:
                                     self._PULS_results.result_changed(main_line)
                     if main_line in load_line and main_line in self._line_to_struc.keys():
@@ -5013,15 +6799,26 @@ class Application():
         :return:
         '''
 
-        self.new_structure(multi_return = returned_object[0:3])
-        # self._line_to_struc[self._active_line][0]=returned_objects[0]
+        self.new_structure(multi_return = returned_object[0:2])
+        # self._line_to_struc[self._active_line][1]=returned_objects[0]
         # self._line_to_struc[self._active_line][1]=returned_objects[1]
-        # self._line_to_struc[self._active_line][1].need_recalc = True
+        # self._line_to_struc[self._active_line][0].need_recalc = True
         # self.set_selected_variables(self._active_line)
         # if returned_objects[2] is not None:
         #     self._line_to_struc[self._active_line][2] = CalcFatigue(returned_objects[0].get_structure_prop(),
         #                                                             returned_objects[2])
         # self.new_structure()
+        self.update_frame()
+
+    def on_close_opt_cyl_window(self,returned_object):
+        '''
+        Sets the returned properties.
+        :param returned_structure:
+        :return:
+        '''
+
+        self.new_structure(cylinder_return = returned_object[0])
+
         self.update_frame()
 
     def on_close_opt_multiple_window(self, returned_objects):
@@ -5033,8 +6830,8 @@ class Application():
 
         for line,all_objs in returned_objects.items():
             self._active_line = line
-            #self._line_to_struc[line][1].need_recalc = True
-            self.new_structure(multi_return= all_objs[0:3])
+            #self._line_to_struc[line][0].need_recalc = True
+            self.new_structure(multi_return= all_objs[0:2])
         self.update_frame()
 
     def on_close_structure_window(self,returned_structure):
@@ -5042,14 +6839,41 @@ class Application():
         Setting the input field to specified properties
         :param returned_structure:
         :return:
+
+
+                self._shell_ring_stf_gui_items = [self._lab_shell_ring_stiffener,self._ent_shell_ring_stf_hw,
+                                          self._ent_shell_ring_stf_tw,self._ent_shell_ring_stf_b,
+                                          self._ent_shell_ring_stf_tf, self._ent_shell_ring_stf_tripping_brackets,
+                                          self._ent_shell_ring_stf_type, self._chk_shell_ring_frame_exclude,
+                                          self._btn_shell_stf_section_ring_stf]
         '''
-        self._new_stf_spacing.set(returned_structure[0])
-        self._new_plate_thk.set(returned_structure[1])
-        self._new_stf_web_h.set(returned_structure[2])
-        self._new_sft_web_t.set(returned_structure[3])
-        self._new_stf_fl_w.set(returned_structure[4])
-        self._new_stf_fl_t.set(returned_structure[5])
-        self._new_stf_type.set(returned_structure[6])
+        clicked_button = returned_structure[7] #["long stf", "ring stf", "ring frame", "flat long stf", 'flat stf', 'flat girder']
+
+
+        if clicked_button in ["long stf", "flat long stf", 'flat stf']:
+            self._new_stf_spacing.set(returned_structure[0])
+            self._new_plate_thk.set(returned_structure[1])
+            self._new_stf_web_h.set(returned_structure[2])
+            self._new_stf_web_t.set(returned_structure[3])
+            self._new_stf_fl_w.set(returned_structure[4])
+            self._new_stf_fl_t.set(returned_structure[5])
+            self._new_stf_type.set(returned_structure[6])
+        elif clicked_button == 'flat girder':
+            self._new_girder_web_h.set(returned_structure[2])
+            self._new_girder_web_t.set(returned_structure[3])
+            self._new_girder_fl_w.set(returned_structure[4])
+            self._new_girder_fl_t.set(returned_structure[5])
+            self._new_girder_type.set(returned_structure[6])
+        elif clicked_button == "ring stf":
+            self._new_shell_ring_stf_hw.set(returned_structure[2])
+            self._new_shell_ring_stf_tw.set(returned_structure[3])
+            self._new_shell_ring_stf_b.set(returned_structure[4])
+            self._new_shell_ring_stf_tf.set(returned_structure[5])
+        elif clicked_button == "ring frame":
+            self._new_shell_ring_frame_hw.set(returned_structure[2])
+            self._new_shell_ring_frame_tw.set(returned_structure[3])
+            self._new_shell_ring_frame_b.set(returned_structure[4])
+            self._new_shell_ring_frame_tf.set(returned_structure[5])
 
         section = struc.Section({'stf_type': returned_structure[6],
                                  'stf_web_height': returned_structure[2]/1000,
@@ -5068,14 +6892,15 @@ class Application():
         '''
         self._new_sigma_y1.set(returned_stress_and_km[0])
         self._new_sigma_y2.set(returned_stress_and_km[1])
-        self._new_sigma_x.set(returned_stress_and_km[2])
-        self._new_tauxy.set(returned_stress_and_km[3])
-        self._new_stf_km1.set(returned_stress_and_km[4])
+        self._new_sigma_x1.set(returned_stress_and_km[2])
+        self._new_sigma_x2.set(returned_stress_and_km[3])
+        self._new_tauxy.set(returned_stress_and_km[4])
         self._new_stf_km1.set(returned_stress_and_km[5])
         self._new_stf_km1.set(returned_stress_and_km[6])
-        self._new_plate_kpp.set(returned_stress_and_km[7])
-        self._new_stf_kps.set(returned_stress_and_km[8])
-        self._new_stucture_type.set(returned_stress_and_km[9],)
+        self._new_stf_km1.set(returned_stress_and_km[7])
+        self._new_plate_kpp.set(returned_stress_and_km[8])
+        self._new_stf_kps.set(returned_stress_and_km[9])
+        self._new_stucture_type.set(returned_stress_and_km[10],)
 
     def on_close_fatigue_window(self,returned_fatigue_prop: dict):
         '''
@@ -5084,13 +6909,13 @@ class Application():
         :return:
         '''
         if self._line_to_struc[self._active_line][2] == None:
-            self._line_to_struc[self._active_line][2] = CalcFatigue(self._line_to_struc[self._active_line][1]
+            self._line_to_struc[self._active_line][2] = CalcFatigue(self._line_to_struc[self._active_line][0].Plate
                                                                     .get_structure_prop(),
                                                                          returned_fatigue_prop)
         else:
             self._line_to_struc[self._active_line][2].set_fatigue_properties(returned_fatigue_prop)
 
-        self._line_to_struc[self._active_line][1].need_recalc = True
+        self._line_to_struc[self._active_line][0].need_recalc = True
         if self.__returned_load_data is not None:
             map(self.on_close_load_window, self.__returned_load_data)
 
@@ -5098,7 +6923,7 @@ class Application():
         for key, value in self._line_to_struc.items():
             if self._line_to_struc[key][2] is not None:
                 self._line_to_struc[key][2].set_commmon_properties(returned_fatigue_prop)
-            self._line_to_struc[key][1].need_recalc = True  # All lines need recalculations.
+            self._line_to_struc[key][0].need_recalc = True  # All lines need recalculations.
 
         self.update_frame()
 
@@ -5218,12 +7043,22 @@ class Application():
             elif 'line' in current[0]:
                 self.new_line(redo=['point'+str(num) for num in current[1]])
 
-    def open_documentation(self):
+    def open_documentation_pdf(self):
         ''' Open the documentation pdf. '''
         if os.path.isfile('ANYstructure_documentation.pdf'):
             os.startfile('ANYstructure_documentation.pdf')
         else:
             os.startfile(self._root_dir + '/' + 'ANYstructure_documentation.pdf')
+
+    def open_documentation(self):
+        ''' Open the documentation webpage. '''
+        import webbrowser
+        webbrowser.open('https://sites.google.com/view/anystructure/start', new=0, autoraise=True)
+
+    def open_donate(self):
+        ''' Open the documentation webpage. '''
+        import webbrowser
+        webbrowser.open('https://sites.google.com/view/anystructure/donate', new=0, autoraise=True)
 
     def open_about(self):
         '''
@@ -5263,8 +7098,10 @@ if __name__ == '__main__':
     multiprocessing.freeze_support()
     errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
     root = tk.Tk()
+    # root.tk.call("source", "sun-valley.tcl")
+    # root.tk.call("set_theme", "light")
     width = int(root.winfo_screenwidth()*1)
-    height = int(root.winfo_screenheight()*1)
+    height = int(root.winfo_screenheight()*0.95)
     root.geometry(f'{width}x{height}')
     my_app = Application(root)
     root.mainloop()

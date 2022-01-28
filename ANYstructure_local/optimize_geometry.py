@@ -7,7 +7,9 @@ import numpy as np
 import time, os
 from tkinter import messagebox
 import ANYstructure_local.example_data as test
+from ANYstructure_local.calc_structure import *
 from ANYstructure_local.helper import *
+import ANYstructure_local.example_data as ex
 import copy, pickle
 import ANYstructure_local.calc_structure
 import ANYstructure_local.helper as hlp
@@ -30,7 +32,10 @@ class CreateOptGeoWindow():
             self._load_count = 0
             self._point_dict = test.get_point_dict()
             self._canvas_scale = 20
+
+
             self._line_to_struc = test.get_line_to_struc()
+
             self._opt_frames = {}
             self._active_points = ['point1','point4','point8','point5']
             self._ML_buckling = dict()  # Buckling machine learning algorithm
@@ -291,8 +296,8 @@ class CreateOptGeoWindow():
         self._ent_fl_thk_lower.place(x=start_x + dx * 7, y=start_y + 2 * dy)
 
         # setting default values
-        init_dim = float(50)  # mm
-        init_thk = float(2)  # mm
+        init_dim = float(100)  # mm
+        init_thk = float(5)  # mm
         self._new_delta_spacing.set(init_dim)
         self._new_delta_pl_thk.set(init_thk)
         self._new_delta_web_h.set(init_dim)
@@ -305,7 +310,7 @@ class CreateOptGeoWindow():
         self._new_pl_thk_lower.set(round(10, 5))
         self._new_web_h_upper.set(round(500, 5))
         self._new_web_h_lower.set(round(300, 5))
-        self._new_web_thk_upper.set(round(22, 5))
+        self._new_web_thk_upper.set(round(25, 5))
         self._new_web_thk_lower.set(round(10, 5))
         self._new_fl_w_upper.set(round(250, 5))
         self._new_fl_w_lower.set(round(50, 5))
@@ -579,7 +584,7 @@ class CreateOptGeoWindow():
         #         return
         self.draw_select_canvas(opt_results=self._geo_results)
 
-    def run_optimizaion(self, load_pre = False, save_results = True, harmonize = False):
+    def run_optimizaion(self, load_pre = False, save_results = False, harmonize = False):
         '''
         Function when pressing the optimization botton inside this window.
         :return:
@@ -609,6 +614,7 @@ class CreateOptGeoWindow():
         slamming_press = [list() for dummy in range(7)]
 
         broke = False
+        pressure_side = 'both sides'  # default value
         for line,coord in self._opt_structure.items():
             if self.opt_create_struc_obj(self._opt_structure[line]) is None:
                 broke = True
@@ -618,9 +624,10 @@ class CreateOptGeoWindow():
                 fat_obj_single = self.opt_create_struc_obj(self._opt_structure[line])[2]
                 fatigue_objects.append(fat_obj_single)
 
+
             if __name__ == '__main__':
                 import ANYstructure_local.example_data as ex
-                lateral_press.append(200)  # for testing
+                lateral_press.append(0.2)  # for testing
                 slamming_press.append(0)
                 fatigue_objects.append(ex.get_fatigue_object())
                 for pressure in ex.get_geo_opt_fat_press():
@@ -628,6 +635,7 @@ class CreateOptGeoWindow():
                                                pressure['p_ext']['part']),
                                               (pressure['p_int']['loaded'], pressure['p_int']['ballast'],
                                                pressure['p_int']['part'])))
+                pressure_side = 'both sides'
 
             else:
                 p1, p2 = self._opt_structure[line]
@@ -641,9 +649,10 @@ class CreateOptGeoWindow():
 
                 # Taking properites from the closest line.
                 closet_line = self.opt_find_closest_orig_line(to_find)
+                pressure_side = self._line_to_struc[closet_line].overpressure_side
                 #print('Closest line', closet_line, p1, p2, to_find)
                 gotten_lat_press = self.app.get_highest_pressure(closet_line)
-                lateral_press.append(gotten_lat_press['normal'] / 1000)
+                lateral_press.append(gotten_lat_press['normal'] / 1e6)
                 slamming_press.append(gotten_lat_press['slamming'])
                 if fat_obj_single is not None:
                     fat_press_single = self.app.get_fatigue_pressures(closet_line, fat_obj_single.get_accelerations())
@@ -682,7 +691,7 @@ class CreateOptGeoWindow():
 
                     geo_results = op.run_optmizataion(initial_structure_obj=init_objects,min_var=this_min_var,
                                                       max_var=this_max_var,lateral_pressure=lateral_press,
-                                                      deltas=self.get_deltas(), algorithm='anysmart',side='p',
+                                                      deltas=self.get_deltas(), algorithm='anysmart',side=pressure_side,
                                                       const_chk = contraints,pso_options = self.pso_parameters,
                                                       is_geometric=True,fatigue_obj= fatigue_objects,
                                                       fat_press_ext_int=fat_press_ext_int,
@@ -711,7 +720,7 @@ class CreateOptGeoWindow():
             else:
                 geo_results = op.run_optmizataion(initial_structure_obj=init_objects, min_var=self.get_lower_bounds(),
                                                   max_var=self.get_upper_bounds(), lateral_pressure=lateral_press,
-                                                  deltas=self.get_deltas(), algorithm='anysmart', side='p',
+                                                  deltas=self.get_deltas(), algorithm='anysmart', side=pressure_side,
                                                   const_chk=contraints, pso_options=self.pso_parameters,
                                                   is_geometric=True, fatigue_obj=fatigue_objects,
                                                   fat_press_ext_int=fat_press_ext_int,
@@ -731,10 +740,10 @@ class CreateOptGeoWindow():
                                                            command=self.get_plate_field_options)
                 self._ent_option_fractions.place(x=self._option_fractions_place[0], y=self._option_fractions_place[1])
 
-            # #SAVING RESULTS
-            # if save_results:
-            #     with open('geo_opt_2.pickle', 'wb') as file:
-            #         pickle.dump(geo_results, file)
+            #SAVING RESULTS
+            if save_results:
+                with open('geo_opt_2.pickle', 'wb') as file:
+                    pickle.dump(geo_results, file)
         else:
             with open('geo_opt_2.pickle', 'rb') as file:
                 self._geo_results = pickle.load(file)
@@ -791,8 +800,8 @@ class CreateOptGeoWindow():
             return None
         objects = [copy.deepcopy(x) if x != None else None for x in
                    self._line_to_struc[self.opt_find_closest_orig_line(point)]]
-
-        objects[0].set_span(dist(pt1,pt2))
+        objects[0].Plate.set_span(dist(pt1,pt2))
+        objects[0].Stiffener.set_span(dist(pt1, pt2))
 
         return objects
 
@@ -812,7 +821,7 @@ class CreateOptGeoWindow():
                 current[0] += (vector[0]/distance) * delta
                 current[1] += (vector[1]/distance) * delta
                 if dist(coord,current) <= 0.1:
-                    if self._line_to_struc[key][0].get_structure_type() not in ('GENERAL_INTERNAL_NONWT', 'FRAME'):
+                    if self._line_to_struc[key][0].Plate.get_structure_type() not in ('GENERAL_INTERNAL_NONWT', 'FRAME'):
                         return key
                     else:
                         return None
@@ -1113,9 +1122,9 @@ class CreateOptGeoWindow():
 
         if line != None:
             if __name__ == '__main__':
-                lateral_press = 200  # for testing
+                lateral_press = 0.2  # for testing
             else:
-                lateral_press = self.app.get_highest_pressure(line)['normal'] / 1000
+                lateral_press = self.app.get_highest_pressure(line)['normal'] /1e6
             self._canvas_opt.create_text(250, self._prop_canvas_dim[1] - 10,
                                          text='Lateral pressure: ' + str(lateral_press) + ' kPa',
                                          font='Verdana 10 bold', fill='red')
@@ -1154,7 +1163,7 @@ class CreateOptGeoWindow():
                     coord2 = self.get_point_canvas_coord('point' + str(value[1]))
                     vector = [coord2[0] - coord1[0], coord2[1] - coord1[1]]
                     # drawing a bold line if it is selected
-                    if self._line_to_struc[line][0].get_structure_type() not in ('GENERAL_INTERNAL_NONWT','FRAME'):
+                    if self._line_to_struc[line][0].Plate.get_structure_type() not in ('GENERAL_INTERNAL_NONWT','FRAME'):
 
                         if line in self._active_lines:
                             self._canvas_select.create_line(coord1, coord2, width=6, fill=color,stipple='gray50')
@@ -1243,8 +1252,7 @@ class CreateOptGeoWindow():
                 #     y_loc = 40
 
                 y_loc = y_loc + delta
-
-                check_ok = [val[3] is True for val in opt_results[key][1]]
+                check_ok = [val[2] is True for val in values[1]]
 
                 if save_file is not None:
                     save_file.write('\n')
@@ -1259,7 +1267,7 @@ class CreateOptGeoWindow():
 
                 for data_idx, data in enumerate(values[1]):
                     for idx, stuc_info in enumerate(data):
-                        if type(stuc_info) == ANYstructure_local.calc_structure.Structure:
+                        if type(stuc_info) == ANYstructure_local.calc_structure.AllStructure:
 
                             if y_loc > 700:
                                 y_loc = 120
@@ -1277,13 +1285,15 @@ class CreateOptGeoWindow():
                             elif item_count == len(values[1])-1:
                                 endstring = ' -END 2-'+' OK!\n' if values[1][data_idx][3] else ' -END 2-'+' NOT OK!\n'
                             self._canvas_select.create_text([start_x + delta, y_loc],
-                                                            text=stuc_info.get_one_line_string()+endstring,
+                                                            text=stuc_info.get_one_line_string_mixed()+endstring,
                                                             anchor='w', font=text_type)
                             y_loc += 15
 
                             if save_file is not None:
-                                save_file.write(stuc_info.get_one_line_string()+' ' + stuc_info.get_extended_string() +
-                                                ' | ' + stuc_info.get_report_stresses() + endstring)
+                                save_file.write(stuc_info.get_one_line_string_mixed()+' ' +
+                                                stuc_info.get_extended_string_mixed() +
+                                                ' | ' + stuc_info.Plate.get_report_stresses() +
+                                                endstring)
                             item_count += 1
 
                 if save_file is not None:
@@ -1340,32 +1350,34 @@ class CreateOptGeoWindow():
 
         for key, value in self._geo_results.items():
             y_loc = y_loc + delta
-            check_ok = [val[3] is True for val in self._geo_results[key][1]]
+
+            check_ok = [val[2] is True for val in value[1]]
 
             self._canvas_opt.create_text([start_x + 20, y_loc ], text=str(len(check_ok)),
                                          anchor='w', font=text_type)
 
             self._canvas_opt.create_text([start_x + 120, y_loc ], text=str('No results\n' if
                                                                            self._geo_results[key][1][0][0] is None else
-                                                                           round(self._geo_results[key][1][0][0]
-                                                                                 .get_span(),4)),
+                                                                           round(self._geo_results[key][1][0][0].
+                                                                                 Plate.get_span(),4)),
                                          anchor='w', font=text_type)
             self._canvas_opt.create_text([start_x + 220, y_loc ],
                                          text=str(round(self._geo_results[key][0] / max_weight, 3))
                                          if max_weight != 0 else '',
                                          anchor='w', font=text_type)
+
             self._canvas_opt.create_text([start_x + 330, y_loc ], text=str(all(check_ok)),
                                          anchor='w', font=text_type)
 
             if save_to_file is not None:
                 save_file.write(str(len(check_ok))+ ' ' + 'No results\n' if self._geo_results[key][1][0][0] is None
-                                                             else str(round(self._geo_results[key][1][0][0].get_span(),
+                                                             else str(round(self._geo_results[key][1][0][0].Plate.get_span(),
                                                                             4)) + ' ' +
                                                                   str(round(self._geo_results[key][0] / max_weight, 3))
                                                                   + '\n' if max_weight != 0 else
                 '' + ' ' + str(all(check_ok))+'\n')
             if self._geo_results[key][1][0][0] is not None:
-                xplot.append(round(self._geo_results[key][1][0][0].get_span(),4))
+                xplot.append(round(self._geo_results[key][1][0][0].Plate.get_span(),4))
                 yplot.append(round(self._geo_results[key][0] / max_weight, 4))
 
         if save_to_file is not None:
@@ -1656,8 +1668,7 @@ class CreateOptGeoWindow():
     def plot_results(self):
         'Plotting a selected panel'
         if self._geo_results is not None \
-                and type(self._new_option_fraction.get()) == int \
-                and type(self._new_option_panel.get()) == int:
+                and type(self._new_option_fraction.get()) == int and type(self._new_option_panel.get()) == int:
             op.plot_optimization_results(self._geo_results[int(self._new_option_fraction.get()/2)][1]
                                          [self._new_option_panel.get()])
 
