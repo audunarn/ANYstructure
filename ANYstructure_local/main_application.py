@@ -7104,14 +7104,13 @@ class Application():
         Open a about messagebox.
         :return:
         '''
-        messagebox.showinfo(title='Information', message='ANYstructure 3.x (Stable/Production)'
+        messagebox.showinfo(title='Information', message='ANYstructure 4.x (Stable/Production)'
                                                          '\n'
                                                          '\n'
                                                          'By Audun Arnesen Nyhus \n'
-                                                         '2021\n\n'
-                                                         'All technical calculation based on:'
-                                                         '- DNVGL-OS-C101'
-                                                         '- Supporting DNVGL RPs and standards')
+                                                         '2022\n\n'
+                                                         'All technical calculation based on \n'
+                                                         'DNV RPs and standards')
 
     def export_to_js(self):
         '''
