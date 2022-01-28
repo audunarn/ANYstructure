@@ -4863,7 +4863,8 @@ class Application():
                             'puls stiffener end': [self._new_buckling_stf_end_support.get(), ''],
                             'puls sp or up':  [self._new_puls_sp_or_up.get(), ''],
                             'puls up boundary': [self._new_puls_up_boundary.get(), ''],
-                            'panel or shell': [self._new_panel_or_shell.get(), '']}
+                            'panel or shell': [self._new_panel_or_shell.get(), ''],
+                            'girder_lg': [self._new_girder_length_LG.get()/1000, '']}
 
                 obj_dict_pl = copy.copy(obj_dict)
                 obj_dict_stf = copy.copy(obj_dict)
