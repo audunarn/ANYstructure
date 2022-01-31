@@ -3645,13 +3645,23 @@ class CylinderAndCurvedPlate():
 
         return provide_data
 
-
     def get_all_properties(self):
         all_data = {'Main class': self.get_main_properties(),
                     'Shell': self._Shell.get_main_properties(),
                     'Long. stf.': None if self._LongStf is None else self._LongStf.get_structure_prop(),
                     'Ring stf.': None if self._RingStf is None else self.RingStfObj.get_structure_prop(),
                     'Ring frame': None if self._RingFrame is None else self._RingFrame.get_structure_prop()}
+        return all_data
+
+    def set_all_properties(self, all_prop_dict): # TODO ensure that this is set when optimizing and saving.
+        all_data = {'Main class': self.set_main_properties(all_prop_dict['Main class']),
+                    'Shell': self._Shell.set_main_properties(all_prop_dict['Shell']),
+                    'Long. stf.': None if self._LongStf is None else
+                    self._LongStf.set_main_properties(all_prop_dict['Long. stf.']),
+                    'Ring stf.': None if self._RingStf is None else
+                    self.RingStfObj.set_main_properties(all_prop_dict['Ring stf.']),
+                    'Ring frame': None if self._RingFrame is None else
+                    self._RingFrame.set_main_properties(all_prop_dict['Ring frame'])}
         return all_data
 
     def get_main_properties(self):
@@ -3676,26 +3686,6 @@ class CylinderAndCurvedPlate():
                      'end cap pressure': [self._end_cap_pressure_included, ''],
                      'ULS or ALS':[self._uls_or_als, '']}
         return main_dict
-
-    def set_main_properties(self, main_dict):
-        self._sasd = main_dict['sasd'][0]
-        self._smsd = main_dict['smsd'][0]
-        self._tTsd = main_dict['tTsd'][0]
-        self._tQsd= main_dict['tQsd'][0]
-        self._psd = main_dict['psd'][0]
-        self._shsd = main_dict['shsd'][0]
-        self._geometry = main_dict['geometry'][0]
-        self._mat_factor = main_dict['material factor'][0]
-        self._delta0 = main_dict['delta0'][0]
-        self._fab_method_ring_stf = main_dict['fab method ring stf'][0]
-        self._fab_method_ring_girder = main_dict['fab method ring girder'][0]
-        self._E = main_dict['E-module'][0]
-        self._v = main_dict['poisson'][0]
-        self._yield = main_dict['mat_yield'][0]
-        self._length_between_girders = main_dict['length between girders'][0]
-        self._panel_spacing = main_dict['panel spacing, s'][0]
-        self.__ring_stiffener_excluded = main_dict['ring stf excluded'][0]
-        self.__ring_frame_excluded = main_dict['ring frame excluded'][0]
         
     def set_stresses_and_pressure(self, val):
         self._sasd = val['sasd']

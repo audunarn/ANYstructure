@@ -24,7 +24,6 @@ class CreateOptimizeCylinderWindow():
             import pickle
             self._initial_structure_obj = test.get_structure_calc_object(heavy=True)
             self._initial_calc_obj = test.get_structure_calc_object(heavy=True)
-            self._lateral_pressure = -0.2e6
             self._fatigue_object = test.get_fatigue_object()
             self._fatigue_pressure = test.get_fatigue_pressures()
             self._slamming_pressure = test.get_slamming_pressure()
@@ -34,7 +33,7 @@ class CreateOptimizeCylinderWindow():
 
             self._initial_cylinder_obj = calc.CylinderAndCurvedPlate(main_dict=test.shell_main_dict,
                                                                      shell=calc.Shell(test.shell_dict),
-                                            long_stf=calc.Structure(test.obj_dict_cyl_long2),
+                                            long_stf=None,#calc.Structure(test.obj_dict_cyl_long2),
                                             ring_stf=None,#calc.Structure(test.obj_dict_cyl_ring2),
                                             ring_frame=None)#calc.Structure(test.obj_dict_cyl_heavy_ring2))
 
@@ -97,7 +96,7 @@ class CreateOptimizeCylinderWindow():
             except AttributeError:
                 self._fatigue_pressure = None
             try:
-                self._lateral_pressure = self.app.get_highest_pressure(self.app._active_line)['normal'] / 1000
+                self._lateral_pressure = 0
             except KeyError:
                 self._lateral_pressure = 0
             try:
@@ -139,7 +138,7 @@ class CreateOptimizeCylinderWindow():
             ring_frame_deltas = np.array(       [None, None, 0.2, 0.01, 0.1, 0.01, None, None])
             ring_frame_lower_bounds = np.array( [None, None, 0.7,  0.02, 0.2, 0.02, None, None])
         '''
-        ent_w = 10
+        ent_w = 12
 
         default_shell_upper_bounds = np.array([0.03, 3, 5, 5, 10, None, None, None])
         default_shell_deltas = np.array([0.005, 0.5, 1, 0.1, 1, None, None, None])
@@ -271,6 +270,13 @@ class CreateOptimizeCylinderWindow():
         self._new_tQsd = tk.DoubleVar()
         self._new_design_pressure = tk.DoubleVar()
         self._new_shsd = tk.DoubleVar()
+        
+        self._new_sasd.set(self._initial_cylinder_obj.sasd)
+        self._new_smsd.set(self._initial_cylinder_obj.smsd)
+        self._new_tTsd.set(self._initial_cylinder_obj.tTsd)
+        self._new_tQsd.set(self._initial_cylinder_obj.tQsd)
+        self._new_design_pressure.set(self._initial_cylinder_obj.psd)
+        self._new_shsd.set(self._initial_cylinder_obj.shsd)
 
 
         self._ent_sasd = tk.Entry(self._frame, textvariable=self._new_sasd, width=ent_w)
@@ -350,32 +356,32 @@ class CreateOptimizeCylinderWindow():
         dys = 0.9*dy
         tk.Label(self._frame, text='Design axial stress,          sa,sd', font='Verdana 9')\
             .place(x=start_x+10*dx,y=start_y+1*dys)
-        tk.Label(self._frame, text='MPa', font='Verdana 9')\
+        tk.Label(self._frame, text='Pa', font='Verdana 9')\
             .place(x=start_x+dx*14,y=start_y+1*dys)
 
         tk.Label(self._frame, text='Design bending stress,   sm,sd', font='Verdana 9')\
             .place(x=start_x+10*dx,y=start_y+2*dys)
-        tk.Label(self._frame, text='MPa', font='Verdana 9')\
+        tk.Label(self._frame, text='Pa', font='Verdana 9')\
             .place(x=start_x+dx*14,y=start_y+2*dys)
 
         tk.Label(self._frame, text='Design torsional stress,   tT,sd', font='Verdana 9')\
             .place(x=start_x+10*dx,y=start_y+3*dys)
-        tk.Label(self._frame, text='MPa', font='Verdana 9')\
+        tk.Label(self._frame, text='Pa', font='Verdana 9')\
             .place(x=start_x+dx*14,y=start_y+3*dys)
 
         tk.Label(self._frame, text='Design shear stress,        tQ,sd', font='Verdana 9')\
             .place(x=start_x+10*dx,y=start_y+4*dys)
-        tk.Label(self._frame, text='MPa', font='Verdana 9')\
+        tk.Label(self._frame, text='Pa', font='Verdana 9')\
             .place(x=start_x+dx*14,y=start_y+4*dys)
 
         tk.Label(self._frame, text='Design lateral pressure,    psd', font='Verdana 9 bold')\
             .place(x=start_x+10*dx,y=start_y+5*dys)
-        tk.Label(self._frame, text='MPa', font='Verdana 9')\
+        tk.Label(self._frame, text='Pa', font='Verdana 9')\
             .place(x=start_x+dx*14,y=start_y+5*dys)
         
         tk.Label(self._frame, text='Additional hoop stress, sh,sd,    psd', font='Verdana 9 bold')\
             .place(x=start_x+10*dx,y=start_y+6*dys)
-        tk.Label(self._frame, text='MPa', font='Verdana 9')\
+        tk.Label(self._frame, text='Pa', font='Verdana 9')\
             .place(x=start_x+dx*14,y=start_y+6*dys)
         
         self._ent_sasd.place(x=start_x+dx*13,y=start_y+1*dys)
@@ -402,7 +408,6 @@ class CreateOptimizeCylinderWindow():
         init_dim = float(10) #mm
         init_thk = float(1) #mm
 
-        self._new_design_pressure.set(self._lateral_pressure)
         self._new_slamming_pressure.set(self._slamming_pressure)
         if self._fatigue_pressure is None:
             self._new_fatigue_ext_press.set(0), self._new_fatigue_int_press.set(0)
@@ -589,6 +594,13 @@ class CreateOptimizeCylinderWindow():
         else:
             fat_press = None
 
+        self._new_sasd.set(self._new_sasd.get())
+        self._new_smsd.set(self._new_smsd.get())
+        self._new_tTsd.set(self._new_tTsd.get())
+        self._new_tQsd.set(self._new_tQsd.get())
+        self._new_design_pressure.set(self._new_design_pressure.get())
+        self._new_shsd.set(self._new_shsd.get())
+
         self._opt_results= op.run_optmizataion(initial_structure_obj= self._initial_cylinder_obj,
                                                min_var= self.get_lower_bounds(),
                                                max_var=self.get_upper_bounds(),lateral_pressure=
@@ -616,6 +628,12 @@ class CreateOptimizeCylinderWindow():
                                                                           CylObj=self._opt_results[0],
                                                                           start_x_cyl=350, start_y_cyl=300, text_x=230,
                                                                           text_y=120)
+            self._new_sasd.set(self._opt_results[0].sasd)
+            self._new_smsd.set(self._opt_results[0].smsd)
+            self._new_tTsd.set(self._opt_results[0].tTsd)
+            self._new_tQsd.set(self._opt_results[0].tQsd)
+            self._new_design_pressure.set(self._opt_results[0].psd)
+            self._new_shsd.set(self._opt_results[0].shsd)
             #self.draw_properties()
         else:
             messagebox.showinfo(title='Nothing found', message='No better alternatives found. Modify input.\n'
@@ -821,9 +839,7 @@ class CreateOptimizeCylinderWindow():
 
             open_files = askopenfilenames(parent=self._frame, title='Choose files to open')
             predefined_stiffener_iter = hlp.helper_read_section_file(files=list(open_files),
-                                                                     obj=self._initial_structure_obj)
-
-
+                                                                     obj=self._initial_cylinder_obj)
 
         if predefined_stiffener_iter == []:
             self._toggle_btn.config(relief="raised")
