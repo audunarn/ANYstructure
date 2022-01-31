@@ -84,7 +84,7 @@ class Application():
         self._tabControl.add(self._tab_information, text='Information')
         self._tabControl.add(self._tab_help, text='Help')
 
-        self._tabControl.place(relwidth=0.2585, relheight = 0.99)
+        self._tabControl.place(relwidth=0.2585, relheight = 1)
         #self._tabControl.select(self._tab2)
 
 

@@ -54,7 +54,7 @@ class CreateStructureWindow():
                 else:
                     self._initial_structure_obj = None
 
-            except KeyError:
+            except (KeyError, AttributeError) as error:
                 self._initial_structure_obj = None
             self._section_list = [section.__str__() for section in app._sections]
             self._section_objects = app._sections

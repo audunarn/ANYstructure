@@ -392,23 +392,26 @@ class Structure():
         ht = h - tf1 / 2 - tf2 / 2
         return (Iz1 * ht) / (Iz1 + Iz2) + tf2 / 2 - ez
 
-    def get_moment_of_intertia(self, efficent_se=None, only_stf = False, tf1 = None, reduced_tw = None):
+    def get_moment_of_intertia(self, efficent_se=None, only_stf = False, tf1 = None, reduced_tw = None,
+                               plate_thk = None, plate_spacing = None):
         '''
         Returning moment of intertia.
         :return:
         '''
         if only_stf:
-            tf1 = 0
-            b1 = 0
+            tf1 = t = 0
+            b1 = s_e = 0
         else:
-            tf1 = self._plate_th if tf1 == None else tf1
-            b1 = self._spacing if efficent_se==None else efficent_se
+            tf1 = t =  self._plate_th if tf1 == None else tf1
+            b1 = s_e =self._spacing if efficent_se==None else efficent_se
+
+        e_f = 0
 
         h = self._flange_th+self._web_height+tf1
         tw = self._web_th if reduced_tw == None else reduced_tw/1000
         hw = self._web_height
-        tf2 = self._flange_th
-        b2 = self._flange_width
+        tf2 = tf = self._flange_th
+        b2 = bf = self._flange_width
 
         Ax = tf1 * b1 + tf2 * b2 + hw * tw
         Iyc = (1 / 12) * (b1 * math.pow(tf1, 3) + b2 * math.pow(tf2, 3) + tw * math.pow(hw, 3))
@@ -416,6 +419,17 @@ class Structure():
         Iy = Iyc + (tf1 * b1 * math.pow(tf2 + hw + tf1 / 2, 2) + tw * hw * math.pow(tf2 + hw / 2, 2) +
              tf2 * b2 * math.pow(tf2 / 2, 2)) - Ax * math.pow(ez, 2)
 
+        # ###
+        # z_c = bf * tf * e_f / (s_e * t + hw * tw + bf * tf)
+        # I_z = 1.0 / 12.0 * t * math.pow(s_e,3) + 1.0 / 12.0 * hw * math.pow(tw,3) + 1.0 / 12.0 * tf * math.pow(bf,3) +\
+        #       t * s_e * math.pow(z_c,2) + \
+        #       tw * hw * math.pow(z_c,2) + bf * tf * math.pow(e_f - z_c,2)
+        # ###
+        #
+        # z_c = (bf * tf * (tf / 2.0 + t / 2.0 + hw) + hw * tw * (hw / 2.0 + t / 2.0)) / (s_e * t + hw * tw + bf * tf)
+        # I_sef = 1.0 / 12.0 * tw * hw ** 3 + 1.0 / 12.0 * bf * tf ** 3 + 1.0 / 12.0 * s_e * t ** 3 + tw * hw * (
+        #             hw / 2.0 + t / 2.0 - z_c) ** 2 + tf * bf * (hw + t / 2.0 + tf / 2.0 - z_c) ** 2 + s_e * t * z_c ** 2
+        # print(I_sef, I_z, Iy)
         return Iy
 
     def get_Iz_moment_of_inertia(self, reduced_tw = None):
@@ -649,8 +663,9 @@ class Structure():
         tw = self._web_th if reduced_tw == None else reduced_tw/1000
         hw = self._web_height
         Ax = tf1 * b1 + tf2 * b2 + hw * tw
+        effana = (tf1 * b1 * tf1/2 + hw * tw * (tf1 + hw / 2) + tf2 * b2 * (tf1+hw+tf2/2)) / Ax
 
-        return (tf1 * b1 * tf1/2 + hw * tw * (tf1 + hw / 2) + tf2 * b2 * (tf1+hw+tf2/2)) / Ax
+        return effana
 
     def get_weight(self):
         '''
@@ -1901,7 +1916,7 @@ class AllStructure():
         Lg = self._Plate.get_lg()*1000
 
         Ltg = Lg if self._girder_dist_between_lateral_supp == None else self._girder_dist_between_lateral_supp
-        Lp = l if self._panel_length_Lp is None else self._panel_length_Lp
+        Lp = 0 if self._panel_length_Lp is None else self._panel_length_Lp
 
         #Pnt.8:  Buckling of Girders
         #7.8  Check for shear force
@@ -1928,10 +1943,10 @@ class AllStructure():
         Is = stf_pl_data['Is']
 
         tcel = 18*E/(t*math.pow(l,2))*math.pow(t*Is/s, 0.75)
-        tceg = tcel*math.pow(l,2)/math.pow(Lp,2) if Lp > 0 else 0
+        tceg = 0 if Lp == 0 else tcel*math.pow(l,2)/math.pow(Lp,2)
 
-        alpha_t1 = 0 if tceg > 0 else math.sqrt(0.6*fy/tceg)
-        alpha_t2 =  0 if tcel > 0 else math.sqrt(0.6*fy/tcel)
+        alpha_t1 = 0 if Lp == 0 else math.sqrt(0.6*fy/tceg)
+        alpha_t2 = math.sqrt(0.6*fy/tcel)
 
         tcrg = 0.6*fy/math.pow(alpha_t1,2) if alpha_t1 > 1 else 0.6*fy
         tcrl = 0.6*fy/math.pow(alpha_t2,2) if alpha_t2 > 1 else 0.6*fy
@@ -1971,10 +1986,11 @@ class AllStructure():
         le = eff_width_other_calc
 
         AtotG = Ag + le * t
+
         Iy = self._Girder.get_moment_of_intertia(efficent_se=le / 1000) * 1000 ** 4
         zp = self._Girder.get_cross_section_centroid_with_effective_plate(le / 1000) * 1000 - t / 2  # ch7.5.1 page 19
         zt = (t / 2 + self._Girder.hw + self._Girder.tf) - zp  # ch 7.5.1 page 19
-
+#
         def red_prop():
             twG =max(0,self._Girder.tw*(1-Vsd_div_Vrd))
 
@@ -2082,7 +2098,7 @@ class AllStructure():
         MstRd = WeG*(fy/gammaM) #eq7.70 checked ok
         MpRd = Wep*(fy/gammaM) #eq7.71 checked ok
 
-        NE = ((math.pow(math.pi,2))*E*AeG)/(math.pow(lk/ie,2))# eq7.72 , checked ok
+        NE = ((math.pow(math.pi,2))*E*AeG)/(math.pow(LGk/ie,2))# eq7.72 , checked ok
         # print(fr_dict)
         # print(fk_dict)
         # print('WeG', WeG, 'Wep', Wep)
@@ -4223,7 +4239,8 @@ if __name__ == '__main__':
     Girder = CalcScantlings(ex.obj_dict_heavy)
     PreBuc = AllStructure(Plate = Plate, Stiffener = Stiffener, Girder = Girder,
                                   main_dict=ex.prescriptive_main_dict)
-    PreBuc.lat_press = 0.398986
+    print(Girder)
+    PreBuc.lat_press = 0.412197
     #print(Plate)
     # print(Plate)
     #print(Stiffener)
