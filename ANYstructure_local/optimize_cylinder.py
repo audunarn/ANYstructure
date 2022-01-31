@@ -491,9 +491,6 @@ class CreateOptimizeCylinderWindow():
                                                                       CylObj=self._initial_cylinder_obj,
                                                                       start_x_cyl=350, start_y_cyl=300, text_x=230,
                                                                       text_y=120)
-        print(self.get_lower_bounds())
-        print(self.get_deltas())
-        print(self.get_upper_bounds())
 
     def selected_algorithm(self,event):
         '''
