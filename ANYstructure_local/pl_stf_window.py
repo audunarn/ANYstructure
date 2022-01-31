@@ -54,7 +54,7 @@ class CreateStructureWindow():
                 else:
                     self._initial_structure_obj = None
 
-            except KeyError:
+            except (KeyError, AttributeError) as error:
                 self._initial_structure_obj = None
             self._section_list = [section.__str__() for section in app._sections]
             self._section_objects = app._sections
@@ -100,6 +100,7 @@ class CreateStructureWindow():
         self._new_fl_thk = tk.DoubleVar()
         self._new_stiffener_type = tk.StringVar()
         self._new_stiffener_filter = tk.StringVar()
+        self._new_stiffener_filter.set('No filter applied')
         self._new_girder_length = tk.DoubleVar()
         self._new_section = tk.StringVar()
 

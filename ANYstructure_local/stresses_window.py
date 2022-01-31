@@ -140,17 +140,17 @@ class CreateStressesWindow():
         init_thk = 0.002
 
         if self._initial_structure_obj != None:
-            self._new_trans_stress_high.set(self._initial_structure_obj.get_sigma_y1())
-            self._new_trans_stress_low.set(self._initial_structure_obj.get_sigma_y2())
-            self._new_axial_stress_1.set(self._initial_structure_obj.get_sigma_x1())
-            self._new_axial_stress_2.set(self._initial_structure_obj.get_sigma_x2())
-            self._new_shear_stress.set(self._initial_structure_obj.get_tau_xy())
-            self._new_km1.set(self._initial_structure_obj.get_km1())
-            self._new_km2.set(self._initial_structure_obj.get_km2())
-            self._new_km3.set(self._initial_structure_obj.get_km3())
-            self._new_kpp.set(self._initial_structure_obj.get_kpp())
-            self._new_kps.set(self._initial_structure_obj.get_kps())
-            self._new_structure_type.set(self._initial_structure_obj.get_structure_type())
+            self._new_trans_stress_high.set(self.Plate._initial_structure_obj.get_sigma_y1())
+            self._new_trans_stress_low.set(self.Plate._initial_structure_obj.get_sigma_y2())
+            self._new_axial_stress_1.set(self.Plate._initial_structure_obj.get_sigma_x1())
+            self._new_axial_stress_2.set(self.Plate._initial_structure_obj.get_sigma_x2())
+            self._new_shear_stress.set(self.Plate._initial_structure_obj.get_tau_xy())
+            self._new_km1.set(self.Plate._initial_structure_obj.get_km1())
+            self._new_km2.set(self.Plate._initial_structure_obj.get_km2())
+            self._new_km3.set(self.Plate._initial_structure_obj.get_km3())
+            self._new_kpp.set(self.Plate._initial_structure_obj.get_kpp())
+            self._new_kps.set(self.Plate._initial_structure_obj.get_kps())
+            self._new_structure_type.set(self.Plate._initial_structure_obj.get_structure_type())
 
         else:
             self._new_structure_type.set('GENERAL_INTERNAL_WT')
