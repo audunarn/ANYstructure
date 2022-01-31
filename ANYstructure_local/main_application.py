@@ -890,7 +890,7 @@ class Application():
         self._lab_sig_x1 = ttk.Label(self._tab_prop, text='Transverse compress.,sig_x1')
         self._lab_sig_x2 = ttk.Label(self._tab_prop, text='Transverse compress.,sig_x2')
         self._lab_tau_y1 = ttk.Label(self._tab_prop, text='Shear Stres,tau_y1')
-        self._lab_yield = ttk.Label(self._tab_prop, text='Yield [MPa]:', font = self._text_size['Text 9'])
+        self._lab_yield = ttk.Label(self._tab_prop, text='Material yield stress [MPa]:', font = self._text_size['Text 9'])
         self._lab_mat_fac = ttk.Label(self._tab_prop, text='Mat. factor', font = self._text_size['Text 9'])
         self._lab_structure_type = ttk.Label(self._tab_prop, text='Select structure type:',
                                              font=self._text_size['Text 9'])
@@ -1340,9 +1340,9 @@ class Application():
                                                 )
         self._lab_shell_en_cap_pressure =  ttk.Label(self._tab_prop, text='End cap pressure is', font=self._text_size['Text 8'],
                                                 )
-        self._lab_shell_fab_stf =  ttk.Label(self._tab_prop, text='Fab. method ring stf.:', font=self._text_size['Text 8'],
+        self._lab_shell_fab_stf =  ttk.Label(self._tab_prop, text='Fabrictaion method ring stiffener.:', font=self._text_size['Text 8'],
                                                 )
-        self._lab_shell_fab_frame =  ttk.Label(self._tab_prop, text='Fab. method ring gird.:', font=self._text_size['Text 8'],
+        self._lab_shell_fab_frame =  ttk.Label(self._tab_prop, text='Fabrictaion method ring gird.:', font=self._text_size['Text 8'],
                                                 )
 
         self._new_shell_sasd = tk.DoubleVar()
@@ -1386,6 +1386,15 @@ class Application():
         self._new_shell_psd = self._new_shell_psd
         self._ent_shell_shsd = ttk.Entry(self._tab_prop, textvariable=self._new_shell_shsd,
                                                width=int(5 * 1), )
+
+        # Load information button
+
+        self._shell_btn_load_info =  ttk.Button(self._tab_prop, text='Load info',
+                                                command=lambda id= "shell": self.stress_information_notebooks(id),
+                                                style = "Bold.TButton")
+        self._flat_btn_load_info =  ttk.Button(self._tab_prop, text='Load info',
+                                                command=lambda id= "flat": self.stress_information_notebooks(id),
+                                                style = "Bold.TButton")
 
         self._shell_loads_other_gui_items = [self._lab_shell_loads, self._ent_shell_force_input,
                                               self._ent_shell_stress_input]
@@ -1713,6 +1722,7 @@ class Application():
         self.set_colors('default')  # Setting colors theme
         self._current_theme = 'default'
 
+
     def set_colors(self, theme):
         self._current_theme = theme
         if theme == 'light':
@@ -1839,7 +1849,8 @@ class Application():
                 prov_lab.place(relx=hor_start + 5 * delta_x, rely=vert_start + idx * delta_y)
                 prov_ent.place(relx=hor_start + 6.5 * delta_x, rely=vert_start + idx * delta_y)
                 idx += 1
-
+            self._flat_btn_load_info.place(relx=hor_start + 5 * delta_x,
+                                            rely=vert_start + (idx+1) * delta_y)
             idx = idx_now
             self._flat_gui_headlines[5].place(relx=hor_start + 0 * delta_x, rely=vert_start + idx * delta_y)
             idx += 1
@@ -1999,43 +2010,13 @@ class Application():
                 self._shell_other_gui_items = [self._ent_shell_end_cap_pressure_included, self._ent_shell_uls_or_als,
                                    self._ent_shell_fab_ring_stf, self._ent_shell_fab_ring_frame]
             '''
-            other_count = 2
-            other_dy = 1.25
-            other_x = 5.8
-            other_text_shift = 2.5
+
             self._lab_shell_limit_state.place(relx=hor_start,
                                              rely=ent_geo_y + delta_y*2.2)
             self._ent_shell_uls_or_als.place(relx=hor_start+ 1.6  * delta_x,
                                              rely=ent_geo_y + delta_y*2.2,
                                              relwidth=geo_ent_width*2)
-
-            self._lab_yield.place(relx=hor_start + 4  * delta_x,
-                                             rely=ent_geo_y + delta_y*3)
-            self._ent_shell_yield.place(relx=hor_start+ 6  * delta_x,
-                                             rely=ent_geo_y + delta_y*3, relwidth=geo_ent_width)
-            other_count+= 1
-            if ring_stf:
-                self._lab_shell_fab_stf.place(relx=hor_start + 4  * delta_x,
-                                                   rely=ent_geo_y + delta_y*4)
-                self._ent_shell_fab_ring_stf.place(relx = hor_start + 6  * delta_x,
-                                                   rely=ent_geo_y + delta_y*4, relwidth=geo_ent_width*1.9)
-                other_count += 1
-
-            if ring_frame:
-                self._lab_shell_fab_frame.place(relx=hor_start + 4  * delta_x,
-                                                   rely=ent_geo_y + delta_y*5)
-                self._ent_shell_fab_ring_frame.place(relx=hor_start + 6  * delta_x,
-                                                   rely=ent_geo_y + delta_y*5, relwidth=geo_ent_width*1.9)
-                other_count += 1
-
-            if self._shell_geometries_map[self._new_calculation_domain.get()] in [1,5]:
-                other_count += 1
-                self._lab_shell_en_cap_pressure.place(relx=hor_start+ 5.5  * delta_x- delta_x*other_text_shift,
-                                                                rely= ent_geo_y + delta_y*other_count*other_dy,
-                                                                relwidth=0.09)
-                self._ent_shell_end_cap_pressure_included.place(relx=hor_start+ other_x  * delta_x,
-                                                                rely= ent_geo_y + delta_y*other_count*other_dy,
-                                                                relwidth=0.09)
+            
 
             # Load data
             ent_geo_y += 3.3 * delta_y
@@ -2077,6 +2058,42 @@ class Application():
                           rely=ent_geo_y + (idx+1)*delta_y)
                 self._unit_informations_dimensions.append(lab)
 
+            self._shell_btn_load_info.place(relx=hor_start + 5*delta_x,
+                                            rely=ent_geo_y + 1*delta_y)
+
+            # Various
+            end_y = ent_geo_y + (idx+1)*delta_y
+            other_count = 1
+
+            self._lab_yield.place(relx=hor_start,
+                                             rely=end_y + delta_y*other_count)
+            self._ent_shell_yield.place(relx=hor_start+ 4  * delta_x,
+                                             rely=end_y + delta_y*other_count, relwidth=geo_ent_width)
+            other_count += 1
+
+            if ring_stf:
+                self._lab_shell_fab_stf.place(relx=hor_start,
+                                                   rely=end_y + delta_y*other_count)
+                self._ent_shell_fab_ring_stf.place(relx = hor_start + 4  * delta_x,
+                                                   rely=end_y + delta_y*other_count)
+                other_count += 1
+
+            if ring_frame:
+                self._lab_shell_fab_frame.place(relx=hor_start, rely=end_y + delta_y*other_count)
+                self._ent_shell_fab_ring_frame.place(relx=hor_start + 4  * delta_x,
+                                                   rely=end_y + delta_y*other_count, relwidth=geo_ent_width*1.9)
+                other_count += 1
+
+            if self._shell_geometries_map[self._new_calculation_domain.get()] in [1,5]:
+                self._lab_shell_en_cap_pressure.place(relx=hor_start,
+                                                                rely= end_y + delta_y*other_count)
+                self._ent_shell_end_cap_pressure_included.place(relx=3  * delta_x,
+                                                                rely= end_y + delta_y*other_count)
+                other_count += 1
+                
+            # Removing flat stuff
+                
+
             for dom in ['Flat plate, unstiffened', 'Flat plate, stiffened', 'Flat plate, stiffened with girder']:
                 for btn, placement in zip(self._optimization_buttons[dom],
                                           self._optimization_buttons[dom + ' place']):
@@ -2085,7 +2102,6 @@ class Application():
             for btn, placement in zip(self._optimization_buttons['cylinder'],
                                       self._optimization_buttons['cylinder' + ' place']):
                 btn.place(relx=placement[0], rely=placement[1], relheight=placement[2], relwidth=placement[3])
-
 
     def calculation_domain_selected(self, event = None):
         '''
@@ -2104,7 +2120,8 @@ class Application():
                       self._lab_puls_uf, self._lab_puls_int_gt, self._lab_puls_cont_sniped, self._lab_span, self._lab_s,
                       self._ent_puls_sp_or_up, self._ent_puls_method, self._ent_puls_uf, self._ent_puls_panel_boundary,
                       self._ent_puls_stf_end_type,
-                      self._stf_button, self._stress_button,self._fls_button]
+                      self._stf_button, self._stress_button,self._fls_button, self._shell_btn_load_info,
+                      self._flat_btn_load_info]
 
         to_process = to_process+self._shell_gui_items+self._shell_long_stf_gui_items+self._shell_ring_stf_gui_items+\
                      self._shell_ring_frame_gui_items+self._shell_loads_other_gui_items+\
@@ -2258,6 +2275,59 @@ class Application():
         progress.stop()
         progress.destroy()
         self.update_frame()
+
+    def stress_information_notebooks(self, info_type = 'shell'):
+        ''' Shows stress information '''
+        text_m = tk.Toplevel(self._parent, background=self._general_color)
+        # Create the text widget
+        text_widget = tk.Text(text_m , height=30, width=100)
+        # Create a scrollbar
+        scroll_bar = ttk.Scrollbar(text_m)
+        # Pack the scroll bar
+        # Place it to the right side, using tk.RIGHT
+        scroll_bar.pack(side=tk.RIGHT)
+        # Pack it into our tkinter application
+        # Place the text widget to the left side
+        text_widget.pack(side=tk.LEFT)
+        if info_type == 'shell':
+            long_text = 'Information on stresses:\n' \
+                        ' \n'\
+                        'Uniform stresses is assumed.\n' \
+                        'Shear stresses are set to positive.\n' \
+                        'Compression stress is taken as NEGATIVE.\n' \
+                        'Lateral pressure is taken as negative when acting toward cylinder center.\n' \
+                        'Hoop stresses are negative when applying negative overpressure.\n ' \
+                        '   \n'
+        else:
+            long_text = 'Information on stresses:\n' \
+                        ' \n' \
+                        'Uniform or linear variable stresses is assumed.\n' \
+                        'The stresses included in the check is acial memebrane stresses.\n'\
+                        'Shear stresses are set to positive.\n' \
+                        'Bending stresses are included included by lateral pressure and need not be included.\n'\
+                        'Compression stress is taken as POSITIVE.\n' \
+                        'The memebrane acial stress in transverse direction that is due to girder bending\n' \
+                        'needs to be included in the check according to method 1.\n'\
+                        'Lateral pressure outer overpressure is taken as positive.\n' \
+                        '   \n'
+        # Insert text into the text widget
+        text_widget.insert('current', long_text)
+
+        try:
+            if info_type == 'shell':
+                img_file_name = 'Cylinder-Load_distribution.png'
+            else:
+                img_file_name = 'img_axial_stresses.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
+            photo = tk.PhotoImage(file=file_path)
+            self._int_button.config(image = photo)
+            self._int_button.image = photo
+        except TclError:
+            pass
+        text_widget.image_create('current', image=photo)
 
     def trace_puls_uf(self, *args):
         if self._PULS_results is not None:
