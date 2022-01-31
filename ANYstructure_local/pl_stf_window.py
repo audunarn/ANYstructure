@@ -100,6 +100,7 @@ class CreateStructureWindow():
         self._new_fl_thk = tk.DoubleVar()
         self._new_stiffener_type = tk.StringVar()
         self._new_stiffener_filter = tk.StringVar()
+        self._new_stiffener_filter.set('No filter applied')
         self._new_girder_length = tk.DoubleVar()
         self._new_section = tk.StringVar()
 

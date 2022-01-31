@@ -2009,8 +2009,8 @@ class AllStructure():
         lk = Lg
         LGk = lk if self._buckling_length_factor_girder is None else lk*self._buckling_length_factor_girder
 
-        ie = 0 if Vsd_div_Vrd<0.5 else math.sqrt(Iy/AtotG)
-
+        #ie = 0 if Vsd_div_Vrd<0.5 else math.sqrt(Iy/AtotG)
+        ie = math.sqrt(Iy / AtotG)
         fE = 0 if LGk == 0 else math.pow(math.pi,2)*E*math.pow(ie/LGk,2)
 
         # 8.2  Girder forces, cont

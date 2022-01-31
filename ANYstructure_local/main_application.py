@@ -444,14 +444,21 @@ class Application():
         ttk.Checkbutton(self._tab_geo, variable = self._new_draw_point_name, command = self.on_color_code_check)\
             .place(relx=ent_x, rely=point_start+3*delta_y)
 
+        self._new_line_name = tk.BooleanVar()
+        self._new_line_name.set(False)
+
         line_start, line_x = point_start+0.2, 0.0055
         ttk.Label(self._tab_geo, text='Input line from "point number" to "point number"',
                  font=self._text_size['Text 9 bold'], )\
             .place(rely=line_start, relx=line_x, anchor = tk.NW)
-        ttk.Label(self._tab_geo, text='Line from point:',font="Text 9", )\
+        ttk.Label(self._tab_geo, text='Line from point number:',font="Text 9", )\
             .place(relx=line_x, rely=line_start+delta_y)
-        ttk.Label(self._tab_geo, text='Line to point:',font="Text 9", )\
+        ttk.Label(self._tab_geo, text='Line to point number:',font="Text 9", )\
             .place(relx=line_x, rely=line_start+2*delta_y)
+        ttk.Label(self._tab_geo, text='Show line names in GUI', font="Text 9").place(relx=point_x_start,
+                                                                                             rely=line_start+3*delta_y)
+        ttk.Checkbutton(self._tab_geo, variable=self._new_line_name,
+                        command=self.on_color_code_check).place(relx=ent_x, rely=line_start+3*delta_y)
 
 
         # --- line input/output ---
@@ -471,8 +478,7 @@ class Application():
         self._new_colorcode_utilization.set(False)
         self._new_label_color_coding = tk.BooleanVar()
         self._new_label_color_coding.set(False)
-        self._new_line_name = tk.BooleanVar()
-        self._new_line_name.set(False)
+
         self._new_colorcode_sigmax = tk.BooleanVar()
         self._new_colorcode_sigmax.set(False)
         self._new_colorcode_sigmay1 = tk.BooleanVar()
@@ -970,7 +976,8 @@ class Application():
         self._lab_puls_int_gt =  ttk.Label(self._tab_prop, text='PULS Int-integrated GL-free left/right GT-free top/bottom')
         self._lab_puls_cont_sniped =  ttk.Label(self._tab_prop, text='Continous or Sniped',
                                                 font = self._text_size['Text 8'])
-        self._lab_puls_up_supp =  ttk.Label(self._tab_prop, text='PULS UP support - left,right,upper,lower',
+        self._lab_puls_up_supp =  ttk.Label(self._tab_prop, text='PULS UP support - left,right,upper,lower\n'
+                                                                 'S: simply supported C: Continuous',
                                            font = self._text_size['Text 8'])
         # self._zstar_label = ttk.Label(self._tab_prop, text='z* optimization (buckling RP-C201)',
         #                               font=self._text_size['Text 8'])
@@ -1011,8 +1018,7 @@ class Application():
 
         chk_deltax = 0.1
         chk_deltay = 0.025
-        self._information_gui_chk_structure = [ttk.Checkbutton(self._tab_information, variable = self._new_line_name,
-                                                               command = self.on_color_code_check),
+        self._information_gui_chk_structure = [
                                                ttk.Checkbutton(self._tab_information,
                                                               variable = self._new_label_color_coding,
                                                               command = self.on_color_code_check),
@@ -1050,7 +1056,7 @@ class Application():
                                                self._chk_button_puls_spup,
                                                self._chk_button_puls_acceptance]
 
-        self._information_gui_lab_chk_structure = [ttk.Label(self._tab_information, text='Show line names in GUI', font="Text 9"),
+        self._information_gui_lab_chk_structure = [
                                                    ttk.Label(self._tab_information, text='Label color code', font="Text 9"),
                                                    ttk.Label(self._tab_information, text='Show COG/COB', font="Text 9"),
                                                    ttk.Label(self._tab_information, text='Check to see avaliable shortcuts', font="Text 9"),
@@ -2721,7 +2727,6 @@ class Application():
             slamming_pressure = 0
             if current_line in self._line_to_struc.keys():
                 all_obj = self._line_to_struc[current_line][0]
-
                 obj_scnt_calc_pl = all_obj.Plate #self._line_to_struc[current_line][1]
                 obj_scnt_calc_stf = all_obj.Stiffener  # self._line_to_struc[current_line][1]
                 obj_scnt_calc_girder = all_obj.Girder  # self._line_to_struc[current_line][1]
