@@ -3508,7 +3508,6 @@ class CylinderAndCurvedPlate():
 
         #   Special case:  calculation of fak for unstiffened shell:
 
-
         #   General case:
 
         use_fac = 1 if geometry < 3 else 2
@@ -3525,7 +3524,7 @@ class CylinderAndCurvedPlate():
 
         i = Itot/Atot
         fE = E*math.sqrt(math.pi*i  / (Lc * k_factor))
-        Lambda_ = math.sqrt(fak/fE)
+        Lambda_ = 0 if fE == 0 else math.sqrt(fak/fE)
 
         fkc = (1-0-28*math.pow(Lambda_,2))*fak if Lambda_ <= 1.34 else fak/math.pow(Lambda_,2)
         gammaM = data['gammaM curved panel'] #self._mat_factor  # Check
