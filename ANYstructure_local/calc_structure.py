@@ -103,7 +103,13 @@ class Structure():
         return self._panel_or_shell
     @panel_or_shell.setter  # in mm
     def panel_or_shell(self, val):
-        self._panel_or_shell = val
+        self._panel_or_shell = val   
+    @property
+    def stiffener_type(self):
+        return self._stiffener_type
+    @stiffener_type.setter
+    def stiffener_type(self, val):
+        self._stiffener_type = val
 
     def __str__(self):
         '''
@@ -2185,11 +2191,11 @@ class AllStructure():
 
         return {'Stiffener': [max_web_stf, max_flange_stf], 'Girder': [max_web_girder, max_flange_girder]}
 
-    def get_tuple(self):
-        ''' Return a tuple of the plate stiffener'''
-        return (self.Plate.get_s(), self.Plate.get_pl_thk(), self.Stiffener.get_web_thk(), self.Stiffener.get_web_thk(),
-                self.Stiffener.get_fl_w(), self.Stiffener.get_fl_thk(), self.Plate.get_span(), self.Plate.get_lg(),
-                self.Stiffener.get_stiffener_type())
+    # def get_tuple(self):
+    #     ''' Return a tuple of the plate stiffener'''
+    #     return (self.Plate.get_s(), self.Plate.get_pl_thk(), self.Stiffener.get_web_thk(), self.Stiffener.get_web_thk(),
+    #             self.Stiffener.get_fl_w(), self.Stiffener.get_fl_thk(), self.Plate.get_span(), self.Plate.get_lg(),
+    #             self.Stiffener.get_stiffener_type())
 
     def get_one_line_string_mixed(self):
         ''' Returning a one line string. '''
@@ -3502,7 +3508,6 @@ class CylinderAndCurvedPlate():
 
         #   Special case:  calculation of fak for unstiffened shell:
 
-
         #   General case:
 
         use_fac = 1 if geometry < 3 else 2
@@ -3519,7 +3524,7 @@ class CylinderAndCurvedPlate():
 
         i = Itot/Atot
         fE = E*math.sqrt(math.pi*i  / (Lc * k_factor))
-        Lambda_ = math.sqrt(fak/fE)
+        Lambda_ = 0 if fE == 0 else math.sqrt(fak/fE)
 
         fkc = (1-0-28*math.pow(Lambda_,2))*fak if Lambda_ <= 1.34 else fak/math.pow(Lambda_,2)
         gammaM = data['gammaM curved panel'] #self._mat_factor  # Check
@@ -3645,13 +3650,23 @@ class CylinderAndCurvedPlate():
 
         return provide_data
 
-
     def get_all_properties(self):
         all_data = {'Main class': self.get_main_properties(),
                     'Shell': self._Shell.get_main_properties(),
                     'Long. stf.': None if self._LongStf is None else self._LongStf.get_structure_prop(),
                     'Ring stf.': None if self._RingStf is None else self.RingStfObj.get_structure_prop(),
                     'Ring frame': None if self._RingFrame is None else self._RingFrame.get_structure_prop()}
+        return all_data
+
+    def set_all_properties(self, all_prop_dict): # TODO ensure that this is set when optimizing and saving.
+        all_data = {'Main class': self.set_main_properties(all_prop_dict['Main class']),
+                    'Shell': self._Shell.set_main_properties(all_prop_dict['Shell']),
+                    'Long. stf.': None if self._LongStf is None else
+                    self._LongStf.set_main_properties(all_prop_dict['Long. stf.']),
+                    'Ring stf.': None if self._RingStf is None else
+                    self.RingStfObj.set_main_properties(all_prop_dict['Ring stf.']),
+                    'Ring frame': None if self._RingFrame is None else
+                    self._RingFrame.set_main_properties(all_prop_dict['Ring frame'])}
         return all_data
 
     def get_main_properties(self):
@@ -3676,26 +3691,6 @@ class CylinderAndCurvedPlate():
                      'end cap pressure': [self._end_cap_pressure_included, ''],
                      'ULS or ALS':[self._uls_or_als, '']}
         return main_dict
-
-    def set_main_properties(self, main_dict):
-        self._sasd = main_dict['sasd'][0]
-        self._smsd = main_dict['smsd'][0]
-        self._tTsd = main_dict['tTsd'][0]
-        self._tQsd= main_dict['tQsd'][0]
-        self._psd = main_dict['psd'][0]
-        self._shsd = main_dict['shsd'][0]
-        self._geometry = main_dict['geometry'][0]
-        self._mat_factor = main_dict['material factor'][0]
-        self._delta0 = main_dict['delta0'][0]
-        self._fab_method_ring_stf = main_dict['fab method ring stf'][0]
-        self._fab_method_ring_girder = main_dict['fab method ring girder'][0]
-        self._E = main_dict['E-module'][0]
-        self._v = main_dict['poisson'][0]
-        self._yield = main_dict['mat_yield'][0]
-        self._length_between_girders = main_dict['length between girders'][0]
-        self._panel_spacing = main_dict['panel spacing, s'][0]
-        self.__ring_stiffener_excluded = main_dict['ring stf excluded'][0]
-        self.__ring_frame_excluded = main_dict['ring frame excluded'][0]
         
     def set_stresses_and_pressure(self, val):
         self._sasd = val['sasd']
@@ -3708,27 +3703,30 @@ class CylinderAndCurvedPlate():
     def get_x_opt(self):
         '''
         shell       (0.02, 2.5, 5, 5, 10, nan, nan, nan),
-        long        (0.875, nan, 0.3, 0.01, 0.1, 0.01, nan, nan),
-        ring        (nan, nan, 0.3, 0.01, 0.1, 0.01, nan, nan),
-        ring        (nan, nan, 0.7, 0.02, 0.2, 0.02, nan, nan)] 
+        long        (0.875, nan, 0.3, 0.01, 0.1, 0.01, nan, stiffener_type)),
+        ring        (nan, nan, 0.3, 0.01, 0.1, 0.01, nan, stiffener_type)),
+        ring        (nan, nan, 0.7, 0.02, 0.2, 0.02, nan, stiffener_type))] 
+        
+        (self._spacing, self._plate_th, self._web_height, self._web_th, self._flange_width,
+                self._flange_th, self._span, self._girder_lg, self._stiffener_type)
         '''
         shell = [self._Shell.thk, self._Shell.radius, self._Shell.dist_between_rings, self._Shell.length_of_shell, 
                  self._Shell.tot_cyl_length, np.nan, np.nan, np.nan]
         if self._LongStf is not None:
             long = [self._LongStf.s/1000, np.nan, self._LongStf.hw/1000, self._LongStf.tw/1000, self._LongStf.b/1000, 
-                    self._LongStf.tf/1000, np.nan, np.nan]
+                    self._LongStf.tf/1000, np.nan, self._LongStf.stiffener_type]
         else:
             long = [0 for dummy in range(8)]
         
         if self._RingStf is not None:
             ring_stf = [self._RingStf.s/1000, np.nan, self._RingStf.hw/1000, self._RingStf.tw/1000, self._RingStf.b/1000, 
-                    self._RingStf.tf/1000, np.nan, np.nan]
+                    self._RingStf.tf/1000, np.nan, self._RingStf.stiffener_type]
         else:
             ring_stf = [0 for dummy in range(8)]
         
         if self._RingFrame is not None:
             ring_fr = [self._RingFrame.s/1000, np.nan, self._RingFrame.hw/1000, self._RingFrame.tw/1000, self._RingFrame.b/1000, 
-                    self._RingFrame.tf/1000, np.nan, np.nan]
+                    self._RingFrame.tf/1000, np.nan, self._RingFrame.stiffener_type]
         else:
             ring_fr = [0 for dummy in range(8)]
 

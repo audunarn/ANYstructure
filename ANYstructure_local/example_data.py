@@ -39,7 +39,7 @@ obj_dict_cyl_ring = {'mat_yield': [355e6, 'Pa'], 'mat_factor': [1.15, ''],'span'
                     'stf_flange_thk': [0.024957, 'm'], 'structure_type': ['BOTTOM', ''], 'plate_kpp': [1, ''],
                     'stf_kps': [1, ''], 'stf_km1': [12, ''], 'stf_km2': [24, ''], 'stf_km3': [12, ''],
                     'sigma_y1': [80, 'MPa'], 'sigma_y2': [80, 'MPa'], 'sigma_x2': [80, 'MPa'], 'sigma_x1': [80, 'MPa'], 'tau_xy': [5, 'MPa'],
-                    'stf_type': ['HP-bulb', ''], 'structure_types': [structure_types, ''], 'zstar_optimization': [True, ''],
+                    'stf_type': ['L-bulb', ''], 'structure_types': [structure_types, ''], 'zstar_optimization': [True, ''],
                     'puls buckling method':[2,''], 'puls boundary':['Int',''], 'puls stiffener end':['C',''],
                     'puls sp or up':['SP',''], 'puls up boundary' :['SSSS',''] , 'panel or shell': ['shell', ''] }
 
@@ -59,7 +59,7 @@ obj_dict_cyl_long2 = {'mat_yield': [355e6, 'Pa'], 'mat_factor': [1.15, ''],'span
                     'stf_flange_thk': [0.0249572753957594, 'm'], 'structure_type': ['BOTTOM', ''], 'plate_kpp': [1, ''],
                     'stf_kps': [1, ''], 'stf_km1': [12, ''], 'stf_km2': [24, ''], 'stf_km3': [12, ''],
                     'sigma_y1': [80, 'MPa'], 'sigma_y2': [80, 'MPa'], 'sigma_x2': [80, 'MPa'], 'sigma_x1': [80, 'MPa'], 'tau_xy': [5, 'MPa'],
-                    'stf_type': ['HP-bulb', ''], 'structure_types': [structure_types, ''], 'zstar_optimization': [True, ''],
+                    'stf_type': ['L-bulb', ''], 'structure_types': [structure_types, ''], 'zstar_optimization': [True, ''],
                     'puls buckling method':[2,''], 'puls boundary':['Int',''], 'puls stiffener end':['C',''],
                     'puls sp or up':['SP',''], 'puls up boundary' :['SSSS',''] , 'panel or shell': ['shell', ''] }
 

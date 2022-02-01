@@ -63,7 +63,8 @@ def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lat
     if cylinder:
         to_return = any_smart_loop_cylinder(min_var=min_var, max_var=max_var, deltas=deltas,
                                             initial_structure_obj=initial_structure_obj,
-                                            use_weight_filter = use_weight_filter)
+                                            use_weight_filter = use_weight_filter,
+                                            predefiened_stiffener_iter=predefined_stiffener_iter)
         return to_return
 
     elif algorithm == 'anysmart' and not is_geometric:
@@ -227,19 +228,19 @@ def any_smart_loop_cylinder(min_var,max_var,deltas,initial_structure_obj,lateral
 
         else:
             structure_to_check = any_get_all_combs(min_var[idx], max_var[idx], deltas[idx],
-                                                   predef_stiffeners= [item.get_tuple() for item in predefiened_stiffener_iter])
+                                                   predef_stiffeners= [item.get_tuple() for item in
+                                                                       predefiened_stiffener_iter])
         combs.append(structure_to_check)
 
 
     # Combining the individual components.
-
+    # TODO the cylinder does not know the stiffener type when optimizing. FIX this.
     final_comb, iter_vals = list(), list()
     for shell in combs[0]:
         for long in combs[1]:
             for ring_stf in combs[2]:
                 for ring_frame in combs[3]:
                     final_comb.append([[shell, long, ring_stf, ring_frame], initial_structure_obj])
-
     # Weight filter
     min_weight = float('inf')
     if use_weight_filter:
@@ -746,6 +747,7 @@ def create_new_cylinder_obj(init_obj, x_new):
     ring        (nan, nan, 0.3, 0.01, 0.1, 0.01, nan, nan),
     ring        (nan, nan, 0.7, 0.02, 0.2, 0.02, nan, nan)]
     '''
+
     stress_press = [init_obj.sasd, init_obj.smsd, init_obj.tTsd, init_obj.tQsd, init_obj.shsd]
     shell_obj = init_obj.ShellObj
     long_obj = init_obj.LongStfObj
@@ -951,21 +953,26 @@ def calc_weight_cylinder(x):
     ring        (nan, nan, 0.3, 0.01, 0.1, 0.01, nan, nan),
     ring        (nan, nan, 0.7, 0.02, 0.2, 0.02, nan, nan)]
     '''
-
-    num_long_stf = 2*math.pi*x[0][1]/x[1][0]
-    long_stf_area = x[1][2]*x[1][3]+x[1][4]*x[1][5]
-    long_stf_volume = long_stf_area * x[0][4] * num_long_stf
-
-    num_ring_stf = x[0][4] / x[0][2]
-
-    ring_stf_volume = math.pi*(math.pow(x[0][1],2)-math.pow(x[0][1]-x[2][2],2))*x[2][3] + \
-                      2*math.pi*(x[0][1]-x[2][2]) * x[2][4] * x[2][5]
-    ring_stf_tot_vol = ring_stf_volume * num_ring_stf
-
-    num_ring_girder = x[0][4] / x[0][3]
-    ring_frame_volume = math.pi*(math.pow(x[0][1],2)-math.pow(x[0][1]-x[3][2],2))*x[3][3] + \
-                      2*math.pi*(x[0][1]-x[3][2])*x[3][4]*x[3][5]
-    tot_ring_frame_vol = ring_frame_volume*num_ring_girder
+    if sum(x[1]) != 0:
+        num_long_stf = 2*math.pi*x[0][1]/x[1][0]
+        long_stf_area = x[1][2]*x[1][3]+x[1][4]*x[1][5]
+        long_stf_volume = long_stf_area * x[0][4] * num_long_stf
+    else:
+        long_stf_volume = 0
+    if sum(x[2]) != 0:
+        num_ring_stf = x[0][4] / x[0][2]
+        ring_stf_volume = math.pi*(math.pow(x[0][1],2)-math.pow(x[0][1]-x[2][2],2))*x[2][3] + \
+                          2*math.pi*(x[0][1]-x[2][2]) * x[2][4] * x[2][5]
+        ring_stf_tot_vol = ring_stf_volume * num_ring_stf
+    else:
+        ring_stf_tot_vol = 0
+    if sum(x[3]) != 0:
+        num_ring_girder = x[0][4] / x[0][3]
+        ring_frame_volume = math.pi*(math.pow(x[0][1],2)-math.pow(x[0][1]-x[3][2],2))*x[3][3] + \
+                          2*math.pi*(x[0][1]-x[3][2])*x[3][4]*x[3][5]
+        tot_ring_frame_vol = ring_frame_volume*num_ring_girder
+    else:
+        tot_ring_frame_vol = 0
 
     shell_volume = 2 * math.pi * x[0][1] * x[0][0] * x[0][4]
 
