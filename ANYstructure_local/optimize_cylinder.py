@@ -1,4 +1,5 @@
 # This is where the optimization is done.
+import copy
 import tkinter as tk
 from _tkinter import TclError
 
@@ -33,8 +34,8 @@ class CreateOptimizeCylinderWindow():
 
             self._initial_cylinder_obj = calc.CylinderAndCurvedPlate(main_dict=test.shell_main_dict,
                                                                      shell=calc.Shell(test.shell_dict),
-                                            long_stf=None,#calc.Structure(test.obj_dict_cyl_long2),
-                                            ring_stf=None,#calc.Structure(test.obj_dict_cyl_ring2),
+                                            long_stf=calc.Structure(test.obj_dict_cyl_long2),
+                                            ring_stf=calc.Structure(test.obj_dict_cyl_ring2),
                                             ring_frame=None)#calc.Structure(test.obj_dict_cyl_heavy_ring2))
 
             self._ML_buckling = dict()  # Buckling machine learning algorithm
@@ -836,10 +837,11 @@ class CreateOptimizeCylinderWindow():
             self._toggle_btn.config(bg = 'salmon')
             self._toggle_btn.config(bg='lightgreen')
 
-
+            predefined_stiffener_iter = []
             open_files = askopenfilenames(parent=self._frame, title='Choose files to open')
-            predefined_stiffener_iter = hlp.helper_read_section_file(files=list(open_files),
-                                                                     obj=self._initial_cylinder_obj)
+            if self._initial_cylinder_obj.LongStfObj is not None:
+                predefined_stiffener_iter = hlp.helper_read_section_file(files=list(open_files),
+                                                                         obj=self._initial_cylinder_obj.LongStfObj)
 
         if predefined_stiffener_iter == []:
             self._toggle_btn.config(relief="raised")

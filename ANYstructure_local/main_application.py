@@ -1395,6 +1395,9 @@ class Application():
         self._flat_btn_load_info =  ttk.Button(self._tab_prop, text='Load info',
                                                 command=lambda id= "flat": self.stress_information_notebooks(id),
                                                 style = "Bold.TButton")
+        self._shell_btn_length_info =  ttk.Button(self._tab_prop, text='Length info',
+                                                command=lambda id= "length": self.stress_information_notebooks(id),
+                                                style = "Bold.TButton")
 
         self._shell_loads_other_gui_items = [self._lab_shell_loads, self._ent_shell_force_input,
                                               self._ent_shell_stress_input]
@@ -1911,23 +1914,25 @@ class Application():
                                      self._ent_shell_dist_rings,
                                      self._ent_shell_length,self._ent_shell_tot_length,self._ent_shell_k_factor]
             '''
-            ent_geo_y -= delta_y
+
             self._lab_shell.place(relx=hor_start, rely=ent_geo_y+ delta_y)
 
             tmp_unit_info = list()
-            for lab in ['Thickness, t', 'Radius, r', 'Ring dist., l', 'Shell len., L', 'Tot len., Lc', 'k-factor, k',
+            for lab in ['Shell plate thickness', 'Shell radius (middle of plate)', 'Distance between rings, l',
+                        'Length of shell, L', 'Total cylinder length, Lc', 'Effective buckling length factor, k',
                         'Material factor']:
                 tmp_unit_info.append(ttk.Label(self._tab_prop, text=lab))
 
             for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
-                lab.place(relx=hor_start + idx * delta_x,rely=ent_geo_y+ delta_y*2)
+                lab.place(relx=hor_start,rely=ent_geo_y+ delta_y*(2+idx))
                 self._unit_informations_dimensions.append(lab)
 
             for idx, entry in enumerate(self._shell_gui_items[1:]):
+                entry.place(relx=hor_start + 5*delta_x, rely=ent_geo_y + delta_y*(2+idx), relwidth=geo_ent_width)
 
-                entry.place(relx=hor_start + idx * delta_x, rely=ent_geo_y + delta_y*3, relwidth=geo_ent_width)
+            self._shell_btn_length_info.place(relx=hor_start + 6*delta_x, rely=ent_geo_y + delta_y*(idx))
 
-            ent_geo_y += delta_y*3
+            ent_geo_y += delta_y*(len(self._shell_gui_items[1:])+1)
 
         if long_stf:
 
@@ -2280,7 +2285,7 @@ class Application():
         ''' Shows stress information '''
         text_m = tk.Toplevel(self._parent, background=self._general_color)
         # Create the text widget
-        text_widget = tk.Text(text_m , height=30, width=100)
+        text_widget = tk.Text(text_m , height=35, width=100)
         # Create a scrollbar
         scroll_bar = ttk.Scrollbar(text_m)
         # Pack the scroll bar
@@ -2298,7 +2303,7 @@ class Application():
                         'Lateral pressure is taken as negative when acting toward cylinder center.\n' \
                         'Hoop stresses are negative when applying negative overpressure.\n ' \
                         '   \n'
-        else:
+        elif info_type == 'flat':
             long_text = 'Information on stresses:\n' \
                         ' \n' \
                         'Uniform or linear variable stresses is assumed.\n' \
@@ -2310,14 +2315,18 @@ class Application():
                         'needs to be included in the check according to method 1.\n'\
                         'Lateral pressure outer overpressure is taken as positive.\n' \
                         '   \n'
+        else:
+            long_text = 'Also see the "Help tab".'
         # Insert text into the text widget
         text_widget.insert('current', long_text)
 
         try:
             if info_type == 'shell':
                 img_file_name = 'Cylinder-Load_distribution.png'
-            else:
+            elif info_type == 'flat':
                 img_file_name = 'img_axial_stresses.gif'
+            else:
+                img_file_name = 'Definition_of_parameters_L_and_LH.png'
             if os.path.isfile('images/' + img_file_name):
                 file_path = 'images/' + img_file_name
             else:

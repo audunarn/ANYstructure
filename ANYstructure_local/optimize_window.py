@@ -1048,11 +1048,12 @@ class CreateOptimizeWindow():
             self._ent_delta_pl_thk.config(bg = 'lightgreen')
 
             open_files = askopenfilenames(parent=self._frame, title='Choose files to open')
+            # TODO for both stiffeners and girders
+
+            self._initial_calc_obj.Stiffener.t = self._initial_calc_obj.Plate.t
+            self._initial_calc_obj.Stiffener.s = self._initial_calc_obj.Plate.s
             predefined_stiffener_iter = hlp.helper_read_section_file(files=list(open_files),
-                                                                     obj=self._initial_calc_obj)
-
-
-
+                                                                     obj=self._initial_calc_obj.Stiffener)
         if predefined_stiffener_iter == []:
             self._toggle_btn.config(relief="raised")
             self._toggle_btn.config(bg = 'salmon')

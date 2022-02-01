@@ -63,7 +63,8 @@ def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lat
     if cylinder:
         to_return = any_smart_loop_cylinder(min_var=min_var, max_var=max_var, deltas=deltas,
                                             initial_structure_obj=initial_structure_obj,
-                                            use_weight_filter = use_weight_filter)
+                                            use_weight_filter = use_weight_filter,
+                                            predefiened_stiffener_iter=predefined_stiffener_iter)
         return to_return
 
     elif algorithm == 'anysmart' and not is_geometric:
@@ -240,7 +241,6 @@ def any_smart_loop_cylinder(min_var,max_var,deltas,initial_structure_obj,lateral
             for ring_stf in combs[2]:
                 for ring_frame in combs[3]:
                     final_comb.append([[shell, long, ring_stf, ring_frame], initial_structure_obj])
-
     # Weight filter
     min_weight = float('inf')
     if use_weight_filter:
