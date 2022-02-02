@@ -234,9 +234,7 @@ def any_smart_loop_cylinder(min_var,max_var,deltas,initial_structure_obj,lateral
                                                                            predefiened_stiffener_iter])
         combs.append(structure_to_check)
 
-
     # Combining the individual components.
-    # TODO the cylinder does not know the stiffener type when optimizing. FIX this.
     final_comb, iter_vals = list(), list()
     for shell in combs[0]:
         for long in combs[1]:
