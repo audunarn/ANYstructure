@@ -219,7 +219,7 @@ def any_smart_loop_cylinder(min_var,max_var,deltas,initial_structure_obj,lateral
                    fdwn = 1, fup = 0.5, ml_algo = None, use_weight_filter = True):
 
     combs = list()
-
+    # TODO first optmize for long then ring components. Find the overall smallest weight.
     # Creating the individual combinations for Shell, LongStf, RingStf and RingFrame
     for idx, str_type in enumerate(range(len(min_var))):
         if sum(min_var[idx]) == 0:
