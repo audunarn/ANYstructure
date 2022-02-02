@@ -35,7 +35,7 @@ class CreateOptimizeCylinderWindow():
             self._initial_cylinder_obj = calc.CylinderAndCurvedPlate(main_dict=test.shell_main_dict,
                                                                      shell=calc.Shell(test.shell_dict),
                                             long_stf=calc.Structure(test.obj_dict_cyl_long2),
-                                            ring_stf=calc.Structure(test.obj_dict_cyl_ring2),
+                                            ring_stf=None,#calc.Structure(test.obj_dict_cyl_ring2),
                                             ring_frame=None)#calc.Structure(test.obj_dict_cyl_heavy_ring2))
 
             self._ML_buckling = dict()  # Buckling machine learning algorithm
@@ -485,6 +485,7 @@ class CreateOptimizeCylinderWindow():
 
         # tk.Button(self._frame,text='Iterate predefiened stiffeners',command=self.open_multiple_files ,bg='yellow')\
         #     .place(x=start_x, y=start_y - dy * 2)
+        # command=lambda id="default": self.set_colors(id)
         self._toggle_btn = tk.Button(self._frame, text="Iterate predefiened stiffeners", relief="raised",
                                      command=self.toggle, bg = 'salmon')
         self._toggle_btn.place(x= + 3*dx, y=start_y - dy * 2)
@@ -600,6 +601,7 @@ class CreateOptimizeCylinderWindow():
         self._new_tTsd.set(self._new_tTsd.get())
         self._new_tQsd.set(self._new_tQsd.get())
         self._new_design_pressure.set(self._new_design_pressure.get())
+        self._initial_cylinder_obj.psd = self._new_design_pressure.get()
         self._new_shsd.set(self._new_shsd.get())
 
         self._opt_results= op.run_optmizataion(initial_structure_obj= self._initial_cylinder_obj,
@@ -850,6 +852,7 @@ class CreateOptimizeCylinderWindow():
             self._predefined_stiffener_iter  = None
         else:
             self._predefined_stiffener_iter = predefined_stiffener_iter
+
         self.update_running_time()
 
     def open_example_file(self):

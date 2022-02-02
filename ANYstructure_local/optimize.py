@@ -220,16 +220,18 @@ def any_smart_loop_cylinder(min_var,max_var,deltas,initial_structure_obj,lateral
     combs = list()
 
     # Creating the individual combinations for Shell, LongStf, RingStf and RingFrame
-
     for idx, str_type in enumerate(range(len(min_var))):
-
-        if predefiened_stiffener_iter is None:
-            structure_to_check = any_get_all_combs(min_var[idx], max_var[idx], deltas[idx])
-
+        if sum(min_var[idx]) == 0:
+            structure_to_check = [(0, 0, 0, 0, 0, 0, 0, 0, 0),]
         else:
-            structure_to_check = any_get_all_combs(min_var[idx], max_var[idx], deltas[idx],
-                                                   predef_stiffeners= [item.get_tuple() for item in
-                                                                       predefiened_stiffener_iter])
+            if any([predefiened_stiffener_iter is None, idx == 0]):
+                initial_structure_obj.LongStfObj.stiffener_type = 'T'
+                structure_to_check = any_get_all_combs(min_var[idx], max_var[idx], deltas[idx])
+
+            else:
+                structure_to_check = any_get_all_combs(min_var[idx], max_var[idx], deltas[idx],
+                                                       predef_stiffeners= [item.get_tuple() for item in
+                                                                           predefiened_stiffener_iter])
         combs.append(structure_to_check)
 
 
@@ -241,6 +243,8 @@ def any_smart_loop_cylinder(min_var,max_var,deltas,initial_structure_obj,lateral
             for ring_stf in combs[2]:
                 for ring_frame in combs[3]:
                     final_comb.append([[shell, long, ring_stf, ring_frame], initial_structure_obj])
+    # print('All combs', len(combs[0]),len(combs[1]),len(combs[2]),len(combs[3]),len(final_comb))
+    # quit()
     # Weight filter
     min_weight = float('inf')
     if use_weight_filter:
@@ -548,6 +552,7 @@ def any_constraints_cylinder(x,obj: calc.CylinderAndCurvedPlate,init_weight, lat
                  'Stiffener check': 4, 'UF ring stiffeners':5, 'UF ring frame': 6, 'Check OK': 7}
     calc_obj = create_new_cylinder_obj(obj, x)
 
+
     # Weigth
     if init_weight != False:
         this_weight = calc_weight_cylinder(x)
@@ -784,6 +789,7 @@ def create_new_cylinder_obj(init_obj, x_new):
         new_obj.LongStfObj.tw = x_new[1][3]*1000
         new_obj.LongStfObj.b = x_new[1][4]*1000
         new_obj.LongStfObj.tf = x_new[1][5]*1000
+        new_obj.LongStfObj.stiffener_type = x_new[1][8]
 
     return new_obj
 
@@ -953,20 +959,20 @@ def calc_weight_cylinder(x):
     ring        (nan, nan, 0.3, 0.01, 0.1, 0.01, nan, nan),
     ring        (nan, nan, 0.7, 0.02, 0.2, 0.02, nan, nan)]
     '''
-    if sum(x[1]) != 0:
+    if sum(x[1][0:8]) != 0:
         num_long_stf = 2*math.pi*x[0][1]/x[1][0]
         long_stf_area = x[1][2]*x[1][3]+x[1][4]*x[1][5]
         long_stf_volume = long_stf_area * x[0][4] * num_long_stf
     else:
         long_stf_volume = 0
-    if sum(x[2]) != 0:
+    if sum(x[2][0:8]) != 0:
         num_ring_stf = x[0][4] / x[0][2]
         ring_stf_volume = math.pi*(math.pow(x[0][1],2)-math.pow(x[0][1]-x[2][2],2))*x[2][3] + \
                           2*math.pi*(x[0][1]-x[2][2]) * x[2][4] * x[2][5]
         ring_stf_tot_vol = ring_stf_volume * num_ring_stf
     else:
         ring_stf_tot_vol = 0
-    if sum(x[3]) != 0:
+    if sum(x[3][0:8]) != 0:
         num_ring_girder = x[0][4] / x[0][3]
         ring_frame_volume = math.pi*(math.pow(x[0][1],2)-math.pow(x[0][1]-x[3][2],2))*x[3][3] + \
                           2*math.pi*(x[0][1]-x[3][2])*x[3][4]*x[3][5]
