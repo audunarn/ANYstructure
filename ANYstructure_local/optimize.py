@@ -212,7 +212,8 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
 
     return calc_object, fat_dict, True, main_fail
 
-def any_smart_loop_cylinder(min_var,max_var,deltas,initial_structure_obj,lateral_pressure = None, init_filter = float('inf'),
+def any_smart_loop_cylinder(min_var,max_var,deltas,initial_structure_obj,lateral_pressure = None,
+                            init_filter = float('inf'),
                    side='p',const_chk=(True,True,True,True,True,True,True, False, False,False), fat_dict = None,
                    fat_press = None, slamming_press = 0, predefiened_stiffener_iter = None, processes = None,
                    fdwn = 1, fup = 0.5, ml_algo = None, use_weight_filter = True):
@@ -288,6 +289,8 @@ def any_smart_loop_cylinder(min_var,max_var,deltas,initial_structure_obj,lateral
         return None, None, None, False, main_fail
 
     new_cylinder_obj = create_new_cylinder_obj(initial_structure_obj, ass_var)
+
+    # Checking ring stiffeners and frames
 
     #return new_struc_obj, new_calc_obj, fat_dict, True, main_fail
     return new_cylinder_obj, main_fail
@@ -550,18 +553,18 @@ def any_constraints_cylinder(x,obj: calc.CylinderAndCurvedPlate,init_weight, lat
                  'Stiffener check': 4, 'UF ring stiffeners':5, 'UF ring frame': 6, 'Check OK': 7}
     calc_obj = create_new_cylinder_obj(obj, x)
 
-
+    optimizing = True if any([calc_obj.RingStfObj is None, calc_obj.RingFrameObj is None]) else False
     # Weigth
     if init_weight != False:
         this_weight = calc_weight_cylinder(x)
         if this_weight > init_weight:
-            results = calc_obj.get_utilization_factors(optimizing=True, empty_result_dict = True)
+            results = calc_obj.get_utilization_factors(optimizing=optimizing, empty_result_dict = True)
             results['Weight'] = this_weight
             all_checks[0] += 1
             return False, 'Weight filter', x, all_checks, calc_obj
 
     if chk[0]:
-        results = calc_obj.get_utilization_factors(optimizing = True)
+        results = calc_obj.get_utilization_factors(optimizing = optimizing)
         if results[0]:
             all_checks[check_map[results[1]]] += 1
             return True, results[1], x, all_checks, calc_obj
