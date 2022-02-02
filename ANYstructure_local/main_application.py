@@ -1725,7 +1725,6 @@ class Application():
         self.set_colors('default')  # Setting colors theme
         self._current_theme = 'default'
 
-
     def set_colors(self, theme):
         self._current_theme = theme
         if theme == 'light':
@@ -2099,14 +2098,16 @@ class Application():
             # Removing flat stuff
                 
 
-            for dom in ['Flat plate, unstiffened', 'Flat plate, stiffened', 'Flat plate, stiffened with girder']:
+            for dom in ['Flat plate, unstiffened', 'Flat plate, stiffened', 'Flat plate, stiffened with girder',
+                        'cylinder']:
                 for btn, placement in zip(self._optimization_buttons[dom],
                                           self._optimization_buttons[dom + ' place']):
                     btn.place_forget()
 
-            for btn, placement in zip(self._optimization_buttons['cylinder'],
-                                      self._optimization_buttons['cylinder' + ' place']):
-                btn.place(relx=placement[0], rely=placement[1], relheight=placement[2], relwidth=placement[3])
+            if not any([ring_stf, ring_frame]): # TODO optmizing not implemented yet for ring stf and frame.
+                for btn, placement in zip(self._optimization_buttons['cylinder'],
+                                          self._optimization_buttons['cylinder' + ' place']):
+                    btn.place(relx=placement[0], rely=placement[1], relheight=placement[2], relwidth=placement[3])
 
     def calculation_domain_selected(self, event = None):
         '''
@@ -2126,7 +2127,7 @@ class Application():
                       self._ent_puls_sp_or_up, self._ent_puls_method, self._ent_puls_uf, self._ent_puls_panel_boundary,
                       self._ent_puls_stf_end_type,
                       self._stf_button, self._stress_button,self._fls_button, self._shell_btn_load_info,
-                      self._flat_btn_load_info]
+                      self._flat_btn_load_info, self._shell_btn_length_info]
 
         to_process = to_process+self._shell_gui_items+self._shell_long_stf_gui_items+self._shell_ring_stf_gui_items+\
                      self._shell_ring_frame_gui_items+self._shell_loads_other_gui_items+\
