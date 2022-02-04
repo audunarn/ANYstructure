@@ -498,20 +498,20 @@ class Structure():
         bf = self._flange_width*1000
         hw = self._web_height*1000
 
-        if self._stiffener_type == 'FB':
-            It = ((hw*math.pow(tw,3)/3e4) * (1-0.63*(tw/hw)) )
-        else:
-            It = ((((ef-0.5*tf)*math.pow(tw,3))/3e4) * (1-0.63*(tw/(ef-0.5*tf))) + ((bf*math.pow(tf,3))/3e4)
-                  * (1-0.63*(tf/bf)) )
+        # if self._stiffener_type == 'FB':
+        #     It = ((hw*math.pow(tw,3)/3e4) * (1-0.63*(tw/hw)) )
+        # else:
+        #     It = ((((ef-0.5*tf)*math.pow(tw,3))/3e4) * (1-0.63*(tw/(ef-0.5*tf))) + ((bf*math.pow(tf,3))/3e4)
+        #           * (1-0.63*(tf/bf)) )
         # G = 80769.2
         # It2 = (2/3) * (math.pow(tw,3)*hw + bf*math.pow(tf, 3)) *(hw+tf/2)
         # print(It, It2*G)
         # print(hw, tw, bf, tf)
-        # I_t1 = 1.0 / 3.0 * math.pow(tw , 3) * hw + 1.0 / 3.0 * math.pow(tf, 3) * bf
+        I_t1 = 1.0 / 3.0 * math.pow(tw , 3) * hw + 1.0 / 3.0 * math.pow(tf, 3) * bf
         # I_t2 = 1.0 / 3.0 * math.pow(tw , 3) * (hw + tf) + 1.0 / 3.0 * math.pow(tf, 3) * (bf - tw)
         # print('It', I_t1, I_t2, It* 1e4)
-
-        return It * 1e4
+        # TODO It seem to be different between cylinder and flat plate calcualtions
+        return I_t1#  * 1e4
 
     def get_polar_moment(self, reduced_tw  = None):
         tf = self._flange_th*1000
@@ -1357,7 +1357,8 @@ class AllStructure():
         else:
             girder_buckling_pl_side, girder_buckling_girder_side, girder_shear_capacity = 0,0,0
         
-        return {'Plate': {'Plate buckling': up_buckling}, 'Stiffener': {'Overpressure plate side': stf_buckling_pl_side,
+        return {'Plate': {'Plate buckling': up_buckling},
+                'Stiffener': {'Overpressure plate side': stf_buckling_pl_side,
                                                     'Overpressure stiffener side': stf_buckling_stf_side, 
                                                     'Resistance between stiffeners': stf_plate_resistance,
                                                     'Shear capacity': stf_shear_capacity},
@@ -2061,7 +2062,8 @@ class AllStructure():
         b = max([self._Girder.b, self._Girder.tw])
         C = 0.55 if self._Girder.get_stiffener_type() in ['T', 'FB'] else 1.1
         LGT0 = b*C*math.sqrt(E*Af/(fy*(Af+Aw/3))) #TODO can add a automatic check/message if torsional buckling shall be considered
-
+        girder_data['Torsional buckling'] = 'Torsional buckling to be considered' if Ltg >LGT0 else \
+            "Torsional buckling need not to be considered"
         def lt_params(LTG):
             fETG = math.pow(math.pi, 2)*E*Iz/((Af+Aw/3)*math.pow(LTG, 2))
             alphaTG = math.sqrt(fy/fETG)
@@ -2081,8 +2083,6 @@ class AllStructure():
                 mu = 0 if ie == 0 else (0.34 + 0.08 * zt / ie) * (alpha - 0.2)
             else:
                 fr = fy
-                if fE == 0:
-                    print('hi')
                 alpha = math.sqrt(fr / fE)
                 mu = 0 if ie == 0 else (0.34 + 0.08 * zp / ie) * (alpha - 0.2)
             fr_dict[lT] = fr
@@ -2506,14 +2506,15 @@ class CylinderAndCurvedPlate():
                    'Heavy ring frame': None,
                    'Column stability check': None,
                    'Stiffener check': None,
+                   'Stiffener check detailed': None,
                    'Weight': None}
 
         if empty_result_dict:
             return results
-
-        unstiffend_shell, column_buckling_data, data_shell_buckling = None, None, None
+        data_shell_buckling = self.shell_buckling()
+        unstiffend_shell, column_buckling_data = None, None
         # UF for unstiffened shell
-        unstiffend_shell = self.unstiffened_shell()
+        unstiffend_shell = self.unstiffened_shell(shell_data=data_shell_buckling)
 
         s = self._panel_spacing*1000 if self._LongStf is None else self._LongStf.s
 
@@ -2532,7 +2533,6 @@ class CylinderAndCurvedPlate():
 
         if self._geometry in [3,4,7,8]:
             if self._LongStf is not None:
-                data_shell_buckling = self.shell_buckling(unstiffened_cylinder=unstiffend_shell)
                 column_buckling_data= self.column_buckling(unstf_shell_data=unstiffend_shell,
                                                           shell_bukcling_data=data_shell_buckling)
                 long_stf_shell = self.longitudinally_stiffened_shell(column_buckling_data=column_buckling_data,
@@ -2541,6 +2541,7 @@ class CylinderAndCurvedPlate():
                 results['Column stability check'] = column_buckling_data['Column stability check']
                 results['Need to check column buckling'] = column_buckling_data['Need to check column buckling']
                 results['Stiffener check'] = column_buckling_data['stiffener check']
+                results['Stiffener check detailed'] = column_buckling_data['stiffener check detailed']
                 if self._geometry in [3,4,7,8] and long_stf_shell['fksd'] > 0:
                     results['Longitudinal stiffened shell'] = long_stf_shell['sjsd_used']/long_stf_shell['fksd']\
                         if self._geometry in [3,4,7,8] else 0
@@ -2557,8 +2558,6 @@ class CylinderAndCurvedPlate():
             # UF for panel ring buckling
             ring_stf_shell = None
             if self._RingStf is not None:
-                data_shell_buckling = data_shell_buckling if data_shell_buckling is not None \
-                    else self.shell_buckling(unstiffened_cylinder=unstiffend_shell)
                 column_buckling_data = column_buckling_data if column_buckling_data is not None  \
                     else self.column_buckling( unstf_shell_data=unstiffend_shell,
                                                shell_bukcling_data=data_shell_buckling)
@@ -2567,6 +2566,7 @@ class CylinderAndCurvedPlate():
                 results['Column stability check'] = column_buckling_data['Column stability check']
                 results['Need to check column buckling'] = column_buckling_data['Need to check column buckling']
                 results['Stiffener check'] = column_buckling_data['stiffener check']
+                results['Stiffener check detailed'] = column_buckling_data['stiffener check detailed']
                 results['Ring stiffened shell'] = ring_stf_shell[0]
 
                 if optimizing:
@@ -2580,8 +2580,6 @@ class CylinderAndCurvedPlate():
         # UF for ring frame
         if self._geometry in [5, 6, 7, 8]:
             if self._RingFrame is not None:
-                data_shell_buckling = data_shell_buckling if data_shell_buckling is not None \
-                    else self.shell_buckling(unstiffened_cylinder=unstiffend_shell)
                 column_buckling_data = column_buckling_data if column_buckling_data is not None  \
                     else self.column_buckling( unstf_shell_data=unstiffend_shell,
                                                shell_bukcling_data=data_shell_buckling)
@@ -2591,6 +2589,7 @@ class CylinderAndCurvedPlate():
                 results['Column stability check'] = column_buckling_data['Column stability check']
                 results['Need to check column buckling'] = column_buckling_data['Need to check column buckling']
                 results['Stiffener check'] = column_buckling_data['stiffener check']
+                results['Stiffener check detailed'] = column_buckling_data['stiffener check detailed']
                 results['Heavy ring frame'] = ring_stf_shell[1]
 
                 if optimizing:
@@ -2631,7 +2630,7 @@ class CylinderAndCurvedPlate():
         self._end_cap_pressure_included = main_dict['end cap pressure'][0]
         self._uls_or_als =  main_dict['ULS or ALS'][0]
 
-    def shell_buckling(self,unstiffened_cylinder = None):
+    def shell_buckling(self):
         '''
         Main sheet to calculate cylinder buckling.
         '''
@@ -2652,9 +2651,11 @@ class CylinderAndCurvedPlate():
             if idx != 'Unstiffened':
                 hs = obj.hw/2 if stf_type =='FB' else obj.hw + obj.tf/2
                 It = obj.get_torsional_moment_venant()
+                se = self._Shell.get_effective_width_shell_plate()
+                print(obj.get_torsional_moment_venant(efficient_flange=False))
                 Ipo = obj.get_polar_moment()
                 Iz = obj.get_Iz_moment_of_inertia()
-                se = self._Shell.get_effective_width_shell_plate()
+
                 Iy = obj.get_moment_of_intertia(efficent_se=se, tf1=self._Shell.thk)*1000**4
 
                 cross_sec_data.append([hs, It, Iz, Ipo, Iy])
@@ -2740,16 +2741,16 @@ class CylinderAndCurvedPlate():
         tsd = np.array(tsd)
         sjsd = np.sqrt(sxsd**2 - sxsd*shsd + shsd**2+3*tsd**2)
 
-        return {'sjsd': sjsd, 'parameters': parameters, 'cross section data': cross_sec_data, 'shRsd': shRsd}
+        return {'sjsd': sjsd, 'parameters': parameters, 'cross section data': cross_sec_data, 'shRsd': shRsd, 'shsd': shsd, 'sxsd': sxsd}
 
-    def unstiffened_shell(self, conical = False):
+    def unstiffened_shell(self, conical = False, shell_data = None):
 
         E = self._E/1e6
         t = self._Shell.thk*1000
 
         # get correct s
 
-        s = max([self._Shell.dist_between_rings, 2*math.pi*self._Shell.radius])*1000 if self._LongStf == None else \
+        s = min([self._Shell.dist_between_rings, 2*math.pi*self._Shell.radius])*1000 if self._LongStf == None else \
             self._LongStf.s
         v = self._v
         r = self._Shell.radius*1000
@@ -2760,8 +2761,10 @@ class CylinderAndCurvedPlate():
         smsd = self._smsd/1e6
         tsd = self._tTsd/1e6+self._tQsd/1e6
         psd = self._psd/1e6
-        shsd = psd*r/t
-
+        if self._RingStf is not None:
+            shsd = shell_data['shsd'][1]
+        else:
+            shsd = psd*r/t
 
         provide_data = dict()
 
@@ -2784,7 +2787,7 @@ class CylinderAndCurvedPlate():
         if geometry in [2,6]:
             sxsd = sasd+smsd
         else:
-            sxsd = min(sasd, sasd+smsd, smsd-smsd)
+            sxsd = min(sasd, sasd+smsd, sasd-smsd)
 
         if smsd < 0:
             smsd = -smsd
@@ -2887,15 +2890,14 @@ class CylinderAndCurvedPlate():
 
                 #print(sasd_iter, this_val)
 
-            return 0 if len(logger) == 1 else logger[-2]
-
+            return 0 if len(logger) == 1 else max([logger[-2],0])
 
         provide_data['max axial stress - 3.3 Unstifffed curved panel'] = iter_table_1()
 
 
         # Pnt. 3.4 Unstifffed circular cylinders
         Zl = (math.pow(l, 2)/(r*t)) * math.sqrt(1 - math.pow(v, 2)) #(3.4.3) (3.6.5)
-
+        provide_data['Zl'] = Zl
         def table_3_2(chk):
             psi = {'Axial stress': 1, 'Bending': 1,
                    'Torsion and shear force': 5.34,
@@ -2937,7 +2939,7 @@ class CylinderAndCurvedPlate():
         if l / r > test2:
             fEh_used = 0.25 * E * math.pow(t / r, 2)
         else:
-            fEh_used = fElat if not self._end_cap_pressure_included else fEhyd
+            fEh_used = fElat if self._end_cap_pressure_included == 'not included in axial stresses' else fEhyd
         #
         # if geometry in [2,6]:
         #     sxsd = self._sasd+smsd
@@ -3028,7 +3030,7 @@ class CylinderAndCurvedPlate():
                 else:
                     sasd_iter -= 20
 
-            return 0 if len(logger) == 1 else logger[-2]
+            return 0 if len(logger) == 1 else max(logger[-2],0)
 
         provide_data['max axial stress - 3.4.2 Shell buckling'] = iter_table_2()
         return provide_data
@@ -3037,7 +3039,7 @@ class CylinderAndCurvedPlate():
 
         E = self._E/1e6
         t = self._Shell.thk*1000
-        s = max([self._Shell.dist_between_rings, 2*math.pi*self._Shell.radius])*1000 if self._LongStf == None else \
+        s = min([self._Shell.dist_between_rings, 2*math.pi*self._Shell.radius])*1000 if self._LongStf == None else \
             self._LongStf.s
 
         r = self._Shell.radius*1000
@@ -3056,7 +3058,8 @@ class CylinderAndCurvedPlate():
         #Pnt. 3.5:  Ring stiffened shell
 
         # Pnt. 3.5.2.1   Requirement for cross-sectional area:
-        Zl = self._Shell.get_Zl()
+        #Zl = self._Shell.get_Zl()
+        Zl = math.pow(s,2)*math.sqrt(1-math.pow(self._v,2))/(r*t) if r*t>0 else 0
         Areq = np.nan if Zl == 0 else (2/math.pow(Zl,2)+0.06)*l*t
         Areq = np.array([Areq, Areq])
         Astf = np.nan if self._RingStf is None else self._RingStf.get_cross_section_area(include_plate=False)*1000**2
@@ -3176,7 +3179,7 @@ class CylinderAndCurvedPlate():
         fE = np.array([C1[idx]*math.pow(math.pi,2)*E/(12*(1-math.pow(0.3,2)))*(math.pow(t/L,2)) if L > 0
                        else 0.1 for idx in [0,1]])
 
-        fr = np.array(fT)
+        fr = np.array(fT) #TODO minor differnce
         lambda_2 = fr/fE
         lambda_ = np.sqrt(lambda_2)
 
@@ -3415,10 +3418,11 @@ class CylinderAndCurvedPlate():
         for key, obj in {'Longitudinal stiff.': self._LongStf, 'Ring Stiff.': self._RingStf,
                          'Ring Girder': self._RingFrame}.items():
             if obj is None:
+                idx += 1
                 continue
             gammaM = data['gammaM circular cylinder'] if self._geometry > 2 else \
                 data['gammaM curved panel']
-            sjsd = shell_buckling_data['sjsd'][idx]
+            sjsd = shell_buckling_data['sjsd'][idx-1]
 
             this_s = 0 if self._LongStf is None else self._LongStf.s
             if any([self._geometry in [1, 5], this_s > (self._Shell.dist_between_rings * 1000)]):
@@ -3436,7 +3440,6 @@ class CylinderAndCurvedPlate():
                 lT = l
             else:
                 s_or_leo = shell_buckling_data['parameters'][param_map[key]][2]
-
                 lT = math.pi*math.sqrt(r*hw)
 
             C = hw/s_or_leo*math.pow(t/tw,3)*math.sqrt(1-min([1,eta])) if s_or_leo*tw>0 else 0
@@ -3452,6 +3455,7 @@ class CylinderAndCurvedPlate():
                                                                                                      2) + math.pow(
                     math.pi, 2) \
                       * E * Iz / ((Aw / 3 + Af) * math.pow(lT, 2))
+                print('WHY')
             else:
                 hs, It, Iz, Ipo, Iy = shell_buckling_data['cross section data'][idx-1]
                 fEt = beta * G * It / Ipo + math.pow(math.pi, 2) * E * math.pow(hs, 2) * Iz / (Ipo * math.pow(lT, 2))
@@ -3467,9 +3471,11 @@ class CylinderAndCurvedPlate():
             if key == 'Longitudinal stiff.':
                 provide_data['lambda_T'] = lambdaT
                 provide_data['fT'] = fT
-
             fT_dict[key] = fT
             idx += 1
+            if key == 'Ring Stiff.':
+                print(hs, It, Iz, Ipo, Iy)
+                print('hello')
         provide_data['fT_dict'] = fT_dict
 
         # Moment of inertia
@@ -3516,14 +3522,15 @@ class CylinderAndCurvedPlate():
             a = 1 + math.pow(fy, 2) / math.pow(fEa, 2)
             b = ((2 * math.pow(fy, 2) / (fEa * fEh)) - 1) * shsd
             c = math.pow(shsd, 2) + math.pow(fy, 2) * math.pow(shsd, 2) / math.pow(fEh, 2) - math.pow(fy, 2)
-            fak = (b + math.sqrt(math.pow(b, 2) - 4 * a * c)) / (2 * a)
+            fak = 0 if b == 0 else (b + math.sqrt(math.pow(b, 2) - 4 * a * c)) / (2 * a)
         elif any([geometry in [1,5], s > l]):
             fak = data['max axial stress - 3.4.2 Shell buckling']
         else:
             fak = data['max axial stress - 3.3 Unstifffed curved panel']
 
         i = Itot/Atot
-        fE = E*math.sqrt(math.pi*i  / (Lc * k_factor))
+        fE = 0.0001 if Lc*k_factor == 0 else E*math.sqrt(math.pi*i  / (Lc * k_factor))
+
         Lambda_ = 0 if fE == 0 else math.sqrt(fak/fE)
 
         fkc = (1-0-28*math.pow(Lambda_,2))*fak if Lambda_ <= 1.34 else fak/math.pow(Lambda_,2)
@@ -3644,8 +3651,29 @@ class CylinderAndCurvedPlate():
         chk4 = [np.nan if np.isnan(val) else chk4[idx] for idx, val in enumerate(ef_div_tw_req)]
 
         provide_data['stiffener check'] = {'longitudinal':all([chk1[0], chk2[0]]),
-                                           'ring stiffener': None if self._RingStf is None else all([chk1[1],chk2[1],chk3[0],chk4[0]]),
-                                           'ring frame': None if self._RingStf is None else all([chk1[2],chk2[2],chk3[1],chk4[1]])}
+                                           'ring stiffener': None if self._RingStf is None else
+                                           all([chk1[1],chk2[1],chk3[0],chk4[0]]),
+                                           'ring frame': None if self._RingFrame is None else
+                                           all([chk1[2],chk2[2],chk3[1],chk4[1]])}
+        provide_data['stiffener check detailed'] = {'longitudinal':'Web height < ' + str(round(stf_req_h[0],1)) if not chk1[0]
+        else '' + ' ' + 'flange width < ' +str(round(stf_req_b[0],1)) if not chk2[0] else ' ',
+                                                   'ring stiffener': None if self._RingStf is None
+                                                   else 'Web height < ' + str(round(stf_req_h[1],1)) if not chk1[1]
+                                                   else '' + ' ' + 'flange width < ' +str(round(stf_req_b[1],1)) if not chk2[1]
+                                                   else ' '  + ' ' + 'hw/tw >= ' + str(round(req_hw_div_tw[0],1))
+                                                   if not chk3[0]
+                                                   else ''+ ' ' + 'ef/tw >= ' + str(round(ef_div_tw_req[0],1))
+                                                   if not chk4[0]
+                                                   else '',
+                                                   'ring frame': None if self._RingFrame is None
+                                                   else  'Web height < ' + str(round(stf_req_h[2],1)) if not chk1[2]
+                                                   else '' + ' ' + 'flange width < ' +str(round(stf_req_b[2],1)) if not chk2[2]
+                                                   else ' '  + ' ' + 'hw/tw >= ' + str(round(req_hw_div_tw[1],1))
+                                                   if not chk3[1]
+                                                   else ''+ ' ' + 'ef/tw >= ' + str(round(ef_div_tw_req[1],1))
+                                                   if not chk4[1]
+                                                   else ''}
+
         provide_data['Column stability check'] = stab_chk
 
         return provide_data
@@ -4223,26 +4251,26 @@ if __name__ == '__main__':
     #     #my_test.cyl_buckling_long_sft_shell()
     #
     #
-    # #Structure(ex.obj_dict_cyl_ring)
-    # #Structure(ex.obj_dict_cyl_heavy_ring)
-    # my_cyl = CylinderAndCurvedPlate(main_dict = ex.shell_main_dict2, shell= Shell(ex.shell_dict),
-    #                                 long_stf= Structure(ex.obj_dict_cyl_long2),
-    #                                 ring_stf = None,# Structure(ex.obj_dict_cyl_ring2),
-    #                                 ring_frame= Structure(ex.obj_dict_cyl_heavy_ring2))
-    # print(my_cyl.get_utilization_factors())
+    #Structure(ex.obj_dict_cyl_ring)
+    #Structure(ex.obj_dict_cyl_heavy_ring)
+    my_cyl = CylinderAndCurvedPlate(main_dict = ex.shell_main_dict2, shell= Shell(ex.shell_dict),
+                                    long_stf= None,#Structure(ex.obj_dict_cyl_long2),
+                                    ring_stf = Structure(ex.obj_dict_cyl_ring2),
+                                    ring_frame= None)#Structure(ex.obj_dict_cyl_heavy_ring2))
+    print(my_cyl.get_utilization_factors())
 
-    # Prescriptive buckling UPDATED
-    Plate = CalcScantlings(ex.obj_dict)
-    Stiffener = CalcScantlings(ex.obj_dict)
-    Girder = CalcScantlings(ex.obj_dict_heavy)
-    PreBuc = AllStructure(Plate = Plate, Stiffener = Stiffener, Girder = Girder,
-                                  main_dict=ex.prescriptive_main_dict)
-    print(Girder)
-    PreBuc.lat_press = 0.412197
-    #print(Plate)
-    # print(Plate)
-    #print(Stiffener)
+    # # Prescriptive buckling UPDATED
+    # Plate = CalcScantlings(ex.obj_dict)
+    # Stiffener = CalcScantlings(ex.obj_dict)
+    # Girder = CalcScantlings(ex.obj_dict_heavy)
+    # PreBuc = AllStructure(Plate = Plate, Stiffener = Stiffener, Girder = Girder,
+    #                               main_dict=ex.prescriptive_main_dict)
     # print(Girder)
-    #print(PreBuc.get_main_properties())
-    print(PreBuc.plate_buckling())
+    # PreBuc.lat_press = 0.412197
+    # #print(Plate)
+    # # print(Plate)
+    # #print(Stiffener)
+    # # print(Girder)
+    # #print(PreBuc.get_main_properties())
+    # print(PreBuc.plate_buckling())
 

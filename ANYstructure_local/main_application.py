@@ -4475,7 +4475,6 @@ class Application():
                                                anchor='nw',
                                                     fill=color_buckling)
 
-
                     self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+6)*dy) * 1],
                                                text=str(stfweb),
                                                     font=self._text_size["Text 9"],
@@ -4495,7 +4494,7 @@ class Application():
                                                text=str(round(buckling['Girder']['Overpressure girder side'],3)),
                                                     font=self._text_size["Text 9 bold"],
                                                anchor='nw',fill=color_buckling)
-                    self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+4)*dy) * 1],
+                    self._result_canvas.create_text([x + dx*x_mult, (y+(start_y+5)*dy) * 1],
                                                text=str(round(buckling['Girder']['Shear capacity'],3)),
                                                     font=self._text_size["Text 9 bold"],
                                                anchor='nw',fill=color_buckling)
@@ -4602,11 +4601,12 @@ class Application():
                                                 fill = self._color_text)
                 y_location = 3
                 results = cyl_obj.get_utilization_factors()
+
                 for key, value in results.items():
                     if key in ['Weight', 'Need to check column buckling']:
                         continue
 
-                    if key != 'Stiffener check':
+                    if all([key != 'Stiffener check', key != 'Stiffener check detailed']):
                         text_key = key
                         if key == 'Column stability check':
                             if results['Need to check column buckling'] == False:
@@ -4625,7 +4625,7 @@ class Application():
                         self._result_canvas.create_text([dx*20, dy*y_location],
                                                        text=text_value,font=self._text_size['Text 10 bold'],anchor='nw',
                                                         fill=uf_col)
-                    else:
+                    elif key == 'Stiffener check':
 
                         if value is not None:
                             y_location +=1
@@ -4642,13 +4642,20 @@ class Application():
 
                                 chk_text = 'OK' if chk_bool == True else 'Not OK' if chk_bool == False else 'N/A'
 
-                                self._result_canvas.create_text([10*dx*idx_x, dy*y_location],
+                                self._result_canvas.create_text([15*dx*idx_x, dy*y_location],
                                                                 text=stf_text, font=self._text_size['Text 10 bold'],
                                                                 anchor='nw',
-                                                                fill=self._color_text if not value else 'green')
+                                                                fill=self._color_text if not value else 'black')
 
-                                self._result_canvas.create_text([10*dx*idx_x, y + (y_location+1)*dy],
+                                self._result_canvas.create_text([15*dx*idx_x, y + (y_location+1)*dy],
                                                                 text=chk_text, font=self._text_size['Text 10 bold'],
+                                                                anchor='nw',
+                                                                fill='green' if chk_bool == True else 'red' if
+                                                                chk_bool == False else self._color_text)
+
+                                self._result_canvas.create_text([15*dx*idx_x, y + (y_location+2)*dy],
+                                                                text=results['Stiffener check detailed'][stf_type],
+                                                                font=self._text_size['Text 10'],
                                                                 anchor='nw',
                                                                 fill='green' if chk_bool == True else 'red' if
                                                                 chk_bool == False else self._color_text)
