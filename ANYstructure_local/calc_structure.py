@@ -3179,7 +3179,7 @@ class CylinderAndCurvedPlate():
         fE = np.array([C1[idx]*math.pow(math.pi,2)*E/(12*(1-math.pow(0.3,2)))*(math.pow(t/L,2)) if L > 0
                        else 0.1 for idx in [0,1]])
 
-        fr = np.array(fT) #TODO THIS IS NOT CORRECT for ring stiffener
+        fr = np.array(fT) #TODO minor differnce
         lambda_2 = fr/fE
         lambda_ = np.sqrt(lambda_2)
 
