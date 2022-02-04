@@ -2787,7 +2787,7 @@ class CylinderAndCurvedPlate():
         if geometry in [2,6]:
             sxsd = sasd+smsd
         else:
-            sxsd = min(sasd, sasd+smsd, smsd-smsd)
+            sxsd = min(sasd, sasd+smsd, sasd-smsd)
 
         if smsd < 0:
             smsd = -smsd
@@ -2939,7 +2939,7 @@ class CylinderAndCurvedPlate():
         if l / r > test2:
             fEh_used = 0.25 * E * math.pow(t / r, 2)
         else:
-            fEh_used = fElat if not self._end_cap_pressure_included else fEhyd
+            fEh_used = fElat if self._end_cap_pressure_included == 'not included in axial stresses' else fEhyd
         #
         # if geometry in [2,6]:
         #     sxsd = self._sasd+smsd
