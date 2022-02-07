@@ -510,7 +510,7 @@ class Structure():
         I_t1 = 1.0 / 3.0 * math.pow(tw , 3) * hw + 1.0 / 3.0 * math.pow(tf, 3) * bf
         # I_t2 = 1.0 / 3.0 * math.pow(tw , 3) * (hw + tf) + 1.0 / 3.0 * math.pow(tf, 3) * (bf - tw)
         # print('It', I_t1, I_t2, It* 1e4)
-        # TODO It seem to be different between cylinder and flat plate calcualtions
+
         return I_t1#  * 1e4
 
     def get_polar_moment(self, reduced_tw  = None):
@@ -2652,7 +2652,7 @@ class CylinderAndCurvedPlate():
                 hs = obj.hw/2 if stf_type =='FB' else obj.hw + obj.tf/2
                 It = obj.get_torsional_moment_venant()
                 se = self._Shell.get_effective_width_shell_plate()
-                print(obj.get_torsional_moment_venant(efficient_flange=False))
+
                 Ipo = obj.get_polar_moment()
                 Iz = obj.get_Iz_moment_of_inertia()
 
@@ -3179,7 +3179,7 @@ class CylinderAndCurvedPlate():
         fE = np.array([C1[idx]*math.pow(math.pi,2)*E/(12*(1-math.pow(0.3,2)))*(math.pow(t/L,2)) if L > 0
                        else 0.1 for idx in [0,1]])
 
-        fr = np.array(fT) #TODO minor differnce
+        fr = np.array(fT)
         lambda_2 = fr/fE
         lambda_ = np.sqrt(lambda_2)
 
@@ -4253,24 +4253,26 @@ if __name__ == '__main__':
     #
     #Structure(ex.obj_dict_cyl_ring)
     #Structure(ex.obj_dict_cyl_heavy_ring)
-    my_cyl = CylinderAndCurvedPlate(main_dict = ex.shell_main_dict2, shell= Shell(ex.shell_dict),
-                                    long_stf= None,#Structure(ex.obj_dict_cyl_long2),
-                                    ring_stf = Structure(ex.obj_dict_cyl_ring2),
-                                    ring_frame= None)#Structure(ex.obj_dict_cyl_heavy_ring2))
-    print(my_cyl.get_utilization_factors())
+    # my_cyl = CylinderAndCurvedPlate(main_dict = ex.shell_main_dict2, shell= Shell(ex.shell_dict),
+    #                                 long_stf= None,#Structure(ex.obj_dict_cyl_long2),
+    #                                 ring_stf = Structure(ex.obj_dict_cyl_ring2),
+    #                                 ring_frame= None)#Structure(ex.obj_dict_cyl_heavy_ring2))
+    # print(my_cyl.get_utilization_factors())
 
-    # # Prescriptive buckling UPDATED
-    # Plate = CalcScantlings(ex.obj_dict)
-    # Stiffener = CalcScantlings(ex.obj_dict)
-    # Girder = CalcScantlings(ex.obj_dict_heavy)
-    # PreBuc = AllStructure(Plate = Plate, Stiffener = Stiffener, Girder = Girder,
-    #                               main_dict=ex.prescriptive_main_dict)
+    # Prescriptive buckling UPDATED
+    Plate = CalcScantlings(ex.obj_dict)
+    Stiffener = CalcScantlings(ex.obj_dict)
+    Girder = CalcScantlings(ex.obj_dict_heavy)
+    PreBuc = AllStructure(Plate = Plate, Stiffener = Stiffener, Girder = Girder,
+                                  main_dict=ex.prescriptive_main_dict)
+    print(Plate)
+    print(Stiffener)
+    print(Girder)
+    PreBuc.lat_press = 0.412197
+    #print(Plate)
+    # print(Plate)
+    #print(Stiffener)
     # print(Girder)
-    # PreBuc.lat_press = 0.412197
-    # #print(Plate)
-    # # print(Plate)
-    # #print(Stiffener)
-    # # print(Girder)
-    # #print(PreBuc.get_main_properties())
-    # print(PreBuc.plate_buckling())
+    #print(PreBuc.get_main_properties())
+    print(PreBuc.plate_buckling())
 
