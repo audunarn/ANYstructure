@@ -510,9 +510,7 @@ class Structure():
         I_t1 = 1.0 / 3.0 * math.pow(tw , 3) * hw + 1.0 / 3.0 * math.pow(tf, 3) * bf
         # I_t2 = 1.0 / 3.0 * math.pow(tw , 3) * (hw + tf) + 1.0 / 3.0 * math.pow(tf, 3) * (bf - tw)
         # print('It', I_t1, I_t2, It* 1e4)
-        # TODO It seem to be different between cylinder and flat plate calcualtions
-        print(tf, tw, bf, hw)
-        print(I_t1)
+
         return I_t1#  * 1e4
 
     def get_polar_moment(self, reduced_tw  = None):
@@ -3181,7 +3179,7 @@ class CylinderAndCurvedPlate():
         fE = np.array([C1[idx]*math.pow(math.pi,2)*E/(12*(1-math.pow(0.3,2)))*(math.pow(t/L,2)) if L > 0
                        else 0.1 for idx in [0,1]])
 
-        fr = np.array(fT) #TODO minor differnce
+        fr = np.array(fT)
         lambda_2 = fr/fE
         lambda_ = np.sqrt(lambda_2)
 
