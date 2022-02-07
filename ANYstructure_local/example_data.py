@@ -21,7 +21,7 @@ obj_dict = {'mat_yield': [355e6, 'Pa'], 'mat_factor': [1.15, ''],'span': [3.7, '
             'stf_type': ['T', ''], 'structure_types': [structure_types, ''], 'zstar_optimization': [True, ''],
             'puls buckling method':[1,''], 'puls boundary':['Int',''], 'puls stiffener end':['C',''],
             'puls sp or up':['SP',''], 'puls up boundary' :['SSSS',''], 'panel or shell': ['panel', ''],
-            'pressure side': ['both sides', ''] }
+            'pressure side': ['both sides', ''], 'girder_lg': [5, 'm']}
 
 obj_dict_cyl_long = {'mat_yield': [355e6, 'Pa'], 'mat_factor': [1.15, ''],'span': [5, 'm'], 'spacing': [0.6, 'm'],
                     'plate_thk': [0.015, 'm'],
