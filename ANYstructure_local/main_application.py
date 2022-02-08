@@ -1722,8 +1722,8 @@ class Application():
                                                   command=self.on_plot_cog_dev,style = "Bold.TButton")
         self._weight_button.place(relx=0.9525,rely=0.7, relwidth = 0.038)
         self.gui_structural_properties()  # Initiating the flat panel structural properties
-        self.set_colors('default')  # Setting colors theme
-        self._current_theme = 'default'
+        # self.set_colors('default')  # Setting colors theme
+        # self._current_theme = 'default'
 
     def set_colors(self, theme):
         self._current_theme = theme
@@ -7230,7 +7230,59 @@ if __name__ == '__main__':
     errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
     root = tk.Tk()
     # root.tk.call("source", "sun-valley.tcl")
-    # root.tk.call("set_theme", "light")
+    # root.tk.call("set_theme", "dark")
+
+    # style = ttk.Style(root)
+    # root.tk.eval("""
+    #     set dir C:/Users/cefany/Downloads/awthemes-10.4.0
+    #
+    #     package ifneeded awthemes 10.4.0 \
+    #         [list source [file join $dir awthemes.tcl]]
+    #     package ifneeded colorutils 4.8 \
+    #         [list source [file join $dir colorutils.tcl]]
+    #     package ifneeded awarc 1.6.1 \
+    #         [list source [file join $dir awarc.tcl]]
+    #     package ifneeded ttk::theme::awarc 1.6.1 \
+    #         [list source [file join $dir awarc.tcl]]
+    #     package ifneeded awblack 7.8.1 \
+    #         [list source [file join $dir awblack.tcl]]
+    #     package ifneeded ttk::theme::awblack 7.8.1 \
+    #         [list source [file join $dir awblack.tcl]]
+    #     package ifneeded awbreeze 1.9.1 \
+    #         [list source [file join $dir awbreeze.tcl]]
+    #     package ifneeded ttk::theme::awbreeze 1.9.1 \
+    #         [list source [file join $dir awbreeze.tcl]]
+    #     package ifneeded awbreezedark 1.0.1 \
+    #         [list source [file join $dir awbreezedark.tcl]]
+    #     package ifneeded ttk::theme::awbreezedark 1.0.1 \
+    #         [list source [file join $dir awbreezedark.tcl]]
+    #     package ifneeded awclearlooks 1.3.1 \
+    #         [list source [file join $dir awclearlooks.tcl]]
+    #     package ifneeded ttk::theme::awclearlooks 1.3.1 \
+    #         [list source [file join $dir awclearlooks.tcl]]
+    #     package ifneeded awdark 7.12 \
+    #         [list source [file join $dir awdark.tcl]]
+    #     package ifneeded ttk::theme::awdark 7.12 \
+    #         [list source [file join $dir awdark.tcl]]
+    #     package ifneeded awlight 7.10 \
+    #         [list source [file join $dir awlight.tcl]]
+    #     package ifneeded ttk::theme::awlight 7.10 \
+    #         [list source [file join $dir awlight.tcl]]
+    #     package ifneeded awtemplate 1.5.1 \
+    #         [list source [file join $dir awtemplate.tcl]]
+    #     package ifneeded ttk::theme::awtemplate 1.5.1 \
+    #         [list source [file join $dir awtemplate.tcl]]
+    #     package ifneeded awwinxpblue 7.9.1 \
+    #         [list source [file join $dir awwinxpblue.tcl]]
+    #     package ifneeded ttk::theme::awwinxpblue 7.9.1 \
+    #         [list source [file join $dir awwinxpblue.tcl]]
+    #
+    #     package require tksvg
+    #
+    #     """)
+    # root.tk.call("package", "require", 'awwinxpblue')
+    # style.theme_use('awwinxpblue')
+
     width = int(root.winfo_screenwidth()*1)
     height = int(root.winfo_screenheight()*0.95)
     root.geometry(f'{width}x{height}')
