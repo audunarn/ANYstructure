@@ -4,7 +4,7 @@ Weight optimization for all structures with machine learning capabilities.
 Calculations are based on DNV standards and rules.
 
 ### What's new in 4.0 ###
-* Cylinder design and optimization
+* Cylinder design and optimization!
 * Flat plate prescriptive buckling improved. Girder calculation added.
 * Updated GUI with color themes.
 ### What's new in 3.3 ###

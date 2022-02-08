@@ -760,7 +760,7 @@ class LetterMaker(object):
         '''
 
         table_all = []
-        headers = ['Line', 'pl thk', 's', 'web h', 'web thk', 'fl. w', 'fl. thk', 'sig x', 'sig y1',
+        headers = ['Line', 'pl thk', 's', 'web h', 'web thk', 'fl. w', 'fl. thk', 'sig x1', 'sig x2', 'sig y1',
                    'sig y2', 'tau xy', 'max press.', 'sec. mod', 'min sec.', 'min plt',
                    'shr area', 'min shr A', 'fat uf', 'buc uf']
         table_all.append(headers)
@@ -769,7 +769,7 @@ class LetterMaker(object):
             pressure = round(self.data.get_highest_pressure(line)['normal'] / 1000,0)
 
             if self.data._PULS_results is not None:
-                puls_method = self.data._line_to_struc[line][0].get_puls_method()
+                puls_method = self.data._line_to_struc[line][0].Plate.get_puls_method()
                 if line in self.data._PULS_results.get_run_results().keys():
                     if puls_method == 'buckling':
                         buckling_uf = \
@@ -787,10 +787,13 @@ class LetterMaker(object):
                 fat_uf = self.data.get_color_and_calc_state()['fatigue'][line]['damage']
 
 
-            data = [line,str(struc_obj.Plate.get_pl_thk() * 1000), str(struc_obj.get_s() * 1000),
-                    str(struc_obj.Stiffener.get_web_h() * 1000), str(struc_obj.Stiffener.get_web_thk() * 1000),
-                    str(struc_obj.Stiffener.get_fl_w() * 1000), str(struc_obj.Stiffener.get_fl_thk() * 1000),
-                    str(round(struc_obj.Plate.get_sigma_x(), 0)), str(round(struc_obj.Plate.get_sigma_y1(), 0)),
+            data = [line,str(struc_obj.Plate.get_pl_thk() * 1000), str(struc_obj.Plate.get_s() * 1000),
+                    str('' if struc_obj.Stiffener is None else struc_obj.Stiffener.get_web_h() * 1000),
+                    str('' if struc_obj.Stiffener is None else struc_obj.Stiffener.get_web_thk() * 1000),
+                    str('' if struc_obj.Stiffener is None else struc_obj.Stiffener.get_fl_w() * 1000),
+                    str('' if struc_obj.Stiffener is None else struc_obj.Stiffener.get_fl_thk() * 1000),
+                    str(round(struc_obj.Plate.get_sigma_x1(), 0)), str(round(struc_obj.Plate.get_sigma_x2(), 0)),
+                    str(round(struc_obj.Plate.get_sigma_y1(), 0)),
                     str(round(struc_obj.Plate.get_sigma_y2(), 0)),
                     str(round(struc_obj.Plate.get_tau_xy(), 0)), str(round(pressure, 2) * 1000),
                     str(int(min(self.data.get_color_and_calc_state()['section_modulus'][line]['sec_mod']) * 1000 ** 3)),
@@ -802,7 +805,7 @@ class LetterMaker(object):
 
             table_all.append(data)
 
-        t = Table(table_all,colWidths=[0.57*inch])
+        t = Table(table_all,colWidths=[0.55*inch])
         t.setStyle(TableStyle([
             ('GRID', (0, 0), (-1, -1), 0.5, colors.gray),
             ('BACKGROUND', (0, 0), (-1, -1), colors.lightblue),
