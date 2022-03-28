@@ -607,7 +607,7 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
             puls_uf = PULSrun.get_puls_line_results(x_id)["Buckling strength"]["Actual usage Factor"][0]
         elif calc_object[0].Plate.get_puls_method() == 'ultimate':
             puls_uf = PULSrun.get_puls_line_results(x_id)["Ultimate capacity"]["Actual usage Factor"][0]
-        if type(puls_uf) == str:
+        if type(puls_uf) == str or puls_uf is None:
             return False, 'PULS', x, all_checks
         all_checks[8] = puls_uf/PULSrun.puls_acceptance
         if puls_uf/PULSrun.puls_acceptance >= 1:
@@ -1026,16 +1026,16 @@ def stress_scaling(sigma_old,t_old,t_new, fdwn = 1, fup = 0.5):
 
     if t_new <= t_old: #decreasing the thickness
         sigma_new = sigma_old*(t_old/(t_old-fdwn*abs((t_old-t_new))))
-        assert sigma_new >= sigma_old, 'ERROR no stress increase: \n' \
-                                      't_old '+str(t_old)+' sigma_old '+str(sigma_old)+ \
-                                      '\nt_new '+str(t_new)+' sigma_new '+str(sigma_new)
+        # assert sigma_new >= sigma_old, 'ERROR no stress increase: \n' \
+        #                               't_old '+str(t_old)+' sigma_old '+str(sigma_old)+ \
+        #                               '\nt_new '+str(t_new)+' sigma_new '+str(sigma_new)
 
     else: #increasing the thickness
 
         sigma_new = sigma_old*(t_old/(t_old+fup*abs((t_old-t_new))))
-        assert sigma_new <= sigma_old, 'ERROR no stress reduction: \n' \
-                                      't_old '+str(t_old)+' sigma_old '+str(sigma_old)+ \
-                                      '\nt_new '+str(t_new)+' sigma_new '+str(sigma_new)
+        # assert sigma_new <= sigma_old, 'ERROR no stress reduction: \n' \
+        #                               't_old '+str(t_old)+' sigma_old '+str(sigma_old)+ \
+        #                               '\nt_new '+str(t_new)+' sigma_new '+str(sigma_new)
     return sigma_new
 
 def stress_scaling_area(sigma_old,a_old,a_new, fdwn = 1, fup = 0.5):
