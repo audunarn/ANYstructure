@@ -188,7 +188,7 @@ class CreateLoadWindow():
         tk.Label(self._frame, text = 'Hydrostatic loads defined by draft.',
                  font="Verdana 8 bold")\
             .place(x = horizontal_start,y = load_vert_start-1.5*delta_y)
-        tk.Label(self._frame, text = 'Define static draft from sea:')\
+        tk.Label(self._frame, text = 'Define static draft from sea [m]:')\
             .place(x = horizontal_start,y = load_vert_start + delta_y)
         tk.Label(self._frame, text='Define name of static load:').place(x=horizontal_start,y=load_vert_start)
         tk.Label(self._frame, text='Select load condition:').place(x=horizontal_start,y=load_vert_start + delta_y*2)
