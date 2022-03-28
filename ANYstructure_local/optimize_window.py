@@ -37,6 +37,7 @@ class CreateOptimizeWindow():
             self._puls_acceptance = 0.87
             self._initial_calc_obj.lat_press = self._lateral_pressure/1000
             self._ML_buckling = dict()  # Buckling machine learning algorithm
+            self._root_dir = 'C:\\Github\\ANYstructure\\ANYstructure_local\\'
             for name, file_base in zip(['cl SP buc int predictor', 'cl SP buc int scaler',
                                         'cl SP ult int predictor', 'cl SP ult int scaler',
                                         'cl SP buc GLGT predictor', 'cl SP buc GLGT scaler',
@@ -1047,7 +1048,8 @@ class CreateOptimizeWindow():
             self._ent_pl_thk_lower.config(bg = 'lightgreen')
             self._ent_delta_pl_thk.config(bg = 'lightgreen')
 
-            open_files = askopenfilenames(parent=self._frame, title='Choose files to open')
+            open_files = askopenfilenames(parent=self._frame, title='Choose files to open',
+                                          initialdir=self._root_dir)
             # TODO for both stiffeners and girders
 
             self._initial_calc_obj.Stiffener.t = self._initial_calc_obj.Plate.t

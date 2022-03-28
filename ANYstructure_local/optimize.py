@@ -656,7 +656,9 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
         buckling_local = calc_object[0].local_buckling(optimizing=True)
         check = all([buckling_local['Stiffener'][0] < calc_object[0].Stiffener.hw,
                      buckling_local['Stiffener'][1] < calc_object[0].Stiffener.b])
-        all_checks[2] = max([calc_object[0].Stiffener.hw/buckling_local['Stiffener'][0],
+        all_checks[2] = max([0 if buckling_local['Stiffener'][0] == 0 else
+                             calc_object[0].Stiffener.hw/buckling_local['Stiffener'][0],
+                            0 if buckling_local['Stiffener'][1] == 0 else
                             calc_object[0].Stiffener.b/buckling_local['Stiffener'][1]])
         if not check:
             if print_result:
@@ -1091,8 +1093,19 @@ def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight
         dict_to_run = {}
         for x in iterable_all:
             x_id = x_to_string(x)
-            calc_object = create_new_calc_obj(init_stuc_obj, x, fat_dict, fdwn = fdwn, fup = fup)
-            dict_to_run[x_id] = calc_object[0].get_puls_input()
+            # calc_object = create_new_calc_obj(init_stuc_obj, x, fat_dict, fdwn = fdwn, fup = fup)
+
+            calc_object_stf = None if init_stuc_obj.Stiffener is None else create_new_calc_obj(init_stuc_obj.Stiffener,
+                                                                                               x, fat_dict,
+                                                                                               fdwn=fdwn, fup=fup)
+            calc_object_pl = create_new_calc_obj(init_stuc_obj.Plate, x, fat_dict, fdwn=fdwn, fup=fup)
+            calc_object = [calc.AllStructure(Plate=calc_object_pl[0],
+                                             Stiffener=None if init_stuc_obj.Stiffener is None else calc_object_stf[0],
+                                             Girder=None,
+                                             main_dict=init_stuc_obj.get_main_properties()['main dict']),
+                           calc_object_pl[1]]
+
+            dict_to_run[x_id] = calc_object[0].Plate.get_puls_input()
             dict_to_run[x_id]['Identification'] = x_id
             dict_to_run[x_id]['Pressure (fixed)'] = lat_press # PULS sheet to have pressure in MPa
 
@@ -1111,20 +1124,30 @@ def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight
         idx_count = 0
         for idx, x in enumerate(iterable_all):
             idx_count += 1
-            calc_object = create_new_calc_obj(init_stuc_obj, x, fat_dict, fdwn=fdwn, fup=fup)
-            if calc_object[0].get_puls_sp_or_up() == 'UP':
-                if calc_object[0].get_puls_boundary() == 'Int':
-                    up_int.append(calc_object[0].get_buckling_ml_input(lat_press, alone = False))
+            # calc_object = create_new_calc_obj(init_stuc_obj, x, fat_dict, fdwn=fdwn, fup=fup)
+
+            calc_object_stf = None if init_stuc_obj.Stiffener is None else create_new_calc_obj(init_stuc_obj.Stiffener,
+                                                                                               x, fat_dict,
+                                                                                               fdwn=fdwn, fup=fup)
+            calc_object_pl = create_new_calc_obj(init_stuc_obj.Plate, x, fat_dict, fdwn=fdwn, fup=fup)
+            calc_object = [calc.AllStructure(Plate=calc_object_pl[0],
+                                             Stiffener=None if init_stuc_obj.Stiffener is None else calc_object_stf[0],
+                                             Girder=None,
+                                             main_dict=init_stuc_obj.get_main_properties()['main dict']), calc_object_pl[1]]
+
+            if calc_object[0].Plate.get_puls_sp_or_up() == 'UP':
+                if calc_object[0].Plate.get_puls_boundary() == 'Int':
+                    up_int.append(calc_object[0].Plate.get_buckling_ml_input(lat_press, alone = False))
                     up_int_idx.append(idx)
                 else:
-                    up_gl_gt.append(calc_object[0].get_buckling_ml_input(lat_press, alone = False))
+                    up_gl_gt.append(calc_object[0].Plate.get_buckling_ml_input(lat_press, alone = False))
                     up_gl_gt_idx.append(idx)
             else:
-                if calc_object[0].get_puls_boundary() == 'Int':
-                    sp_int.append(calc_object[0].get_buckling_ml_input(lat_press, alone = False))
+                if calc_object[0].Plate.get_puls_boundary() == 'Int':
+                    sp_int.append(calc_object[0].Plate.get_buckling_ml_input(lat_press, alone = False))
                     sp_int_idx.append(idx)
                 else:
-                    sp_gl_gt.append(calc_object[0].get_buckling_ml_input(lat_press, alone = False))
+                    sp_gl_gt.append(calc_object[0].Plate.get_buckling_ml_input(lat_press, alone = False))
                     sp_gl_gt_idx.append(idx)
 
         # Predict

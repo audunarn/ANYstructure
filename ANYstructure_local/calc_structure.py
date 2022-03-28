@@ -975,8 +975,9 @@ class CalcScantlings(Structure):
         else:
             sigxd =max(sig_x1 , sig_x2)
 
-        sigma_jd = math.sqrt(math.pow(self._sigma_x1,2)+math.pow(sigma_y,2)-
+        sigma_jd = math.sqrt(math.pow(sigxd,2)+math.pow(sigma_y,2)-
                              sigxd*sigma_y+3*math.pow(self._tauxy,2))
+
         fy = self._mat_yield / 1000000
         fyd = fy/self._mat_factor
         sigma_pd1 = min(1.3*(fyd-sigma_jd), fyd)
@@ -1688,10 +1689,10 @@ class AllStructure():
             math.pow(max([sxsd, 0]), 2) + math.pow(max([sysd, 0]), 2) - max([sxsd, 0]) * max([sysd, 0]) +
             3 * math.pow(tsd, 2))  # eq 7.38, ok
 
-
         alphae = math.sqrt( (fy/sjSd) * math.pow(math.pow(max([sxsd, 0])/fEpx, c)+
                                                    math.pow(max([sysd, 0])/fEpy, c)+
                                                    math.pow(abs(tsd)/fEpt, c), 1/c)) # eq 7.40
+
 
 
         fep = fy / math.sqrt(1+math.pow(alphae,4)) # eq 7.39
@@ -3473,9 +3474,9 @@ class CylinderAndCurvedPlate():
                 provide_data['fT'] = fT
             fT_dict[key] = fT
             idx += 1
-            if key == 'Ring Stiff.':
-                print(hs, It, Iz, Ipo, Iy)
-                print('hello')
+            # if key == 'Ring Stiff.':
+            #     print(hs, It, Iz, Ipo, Iy)
+            #     print('hello')
         provide_data['fT_dict'] = fT_dict
 
         # Moment of inertia

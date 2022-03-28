@@ -161,6 +161,7 @@ class Application():
         sub_colors.add_command(label='Colors - Grey', command = lambda id = "grey": self.set_colors(id))
         sub_colors.add_command(label='Colors - Dark', command = lambda id = "dark": self.set_colors(id))
         sub_colors.add_command(label='Colors - Unicorn', command=lambda id="pink": self.set_colors(id))
+        sub_colors.add_command(label='Colors - Slava Ukraini', command=lambda id="SlavaUkraini": self.set_colors(id))
         sub_colors.add_command(label='Functional - All items', command=lambda id="all items": self.set_colors(id))
         sub_colors.add_command(label='Functional - Modelling', command=lambda id="modelling": self.set_colors(id))
 
@@ -1155,7 +1156,6 @@ class Application():
         self._new_shell_exclude_ring_stf = tk.BooleanVar()
         self._new_shell_exclude_ring_frame = tk.BooleanVar()
 
-
         self._new_shell_panel_spacing = tk.DoubleVar()
         self._new_shell_thk.set(20)
         self._new_shell_radius.set(5000)
@@ -1722,7 +1722,7 @@ class Application():
                                                   command=self.on_plot_cog_dev,style = "Bold.TButton")
         self._weight_button.place(relx=0.9525,rely=0.7, relwidth = 0.038)
         self.gui_structural_properties()  # Initiating the flat panel structural properties
-        # self.set_colors('default')  # Setting colors theme
+        self.set_colors('default')  # Setting colors theme
         # self._current_theme = 'default'
 
     def set_colors(self, theme):
@@ -1748,6 +1748,11 @@ class Application():
             self._color_text = 'black'
             ent_bg = 'white'
             #relx=x_canvas_place, rely=0,relwidth=0.523, relheight = 0.73
+        elif theme == 'SlavaUkraini':
+            self._general_color = '#0057b7'
+            self._color_text = 'white'
+            ent_bg = 'white'
+            cavas_bg = 	'#ffd700'
         elif theme == 'modelling':
             self._main_canvas.place_forget()
             x_canvas_place = 0.26
@@ -1770,10 +1775,14 @@ class Application():
             self._style.configure('TOptionMenu', background=ent_bg)
             self._style.configure("TMenubutton", background=ent_bg)
             self._style.configure('TRadiobutton', background=self._general_color, foreground='black')
-
-            self._prop_canvas.configure(bg = self._general_color)
-            self._main_canvas.configure(bg = self._general_color)
-            self._result_canvas.configure(bg = self._general_color)
+            if theme in ['SlavaUkraini',]:
+                self._prop_canvas.configure(bg=cavas_bg)
+                self._main_canvas.configure(bg=cavas_bg)
+                self._result_canvas.configure(bg=cavas_bg)
+            else:
+                self._prop_canvas.configure(bg = self._general_color)
+                self._main_canvas.configure(bg = self._general_color)
+                self._result_canvas.configure(bg = self._general_color)
 
         # self._frame_viz_hor.configure(bg =self._color_text)
         # self._frame_viz_ver.configure(bg=self._color_text)
@@ -4908,11 +4917,17 @@ class Application():
         '''
 
         if all([pasted_structure == None, multi_return == None]):
-            if any([self._new_stf_spacing.get()==0, self._new_plate_thk.get()==0, self._new_stf_web_h.get()==0,
-                    self._new_stf_web_t.get()==0]):
+            missing_input = False
+            if self._new_calculation_domain.get() in ['Flat plate, stiffened', 'Flat plate, unstiffened',
+                                                          'Flat plate, stiffened with girder']:
+                if any([self._new_stf_spacing.get()==0, self._new_plate_thk.get()==0, self._new_stf_web_h.get()==0,
+                        self._new_stf_web_t.get()==0]): # TODO must account for calculation domain
+                    missing_input = True
+
+            if missing_input:
                 mess = tk.messagebox.showwarning('No propertied defined', 'No properties is defined for the line!\n'
                                                                           'Define spacing, web height, web thickness etc.\n'
-                                                                          'Either press button with stiffener or input'
+                                                                          'Either press button with stiffener or input '
                                                                           'manually.', type='ok')
                 return
 
@@ -5158,7 +5173,7 @@ class Application():
                                    else CalcScantlings(prop_dict['Girder']),
                                    main_dict=prop_dict['main dict'])
 
-                self._sections = add_new_section(self._sections, struc.Section(obj_dict_stf))
+                self._sections = add_new_section(self._sections, struc.Section(obj_dict_stf)) # TODO error when pasting
                 self._line_to_struc[self._active_line][0] = All
                 self._line_to_struc[self._active_line][5] = CylinderObj
                 if self._line_to_struc[self._active_line][0].Plate.get_structure_type() not in \
@@ -6130,7 +6145,7 @@ class Application():
         if self._line_is_active and self._active_line not in self._line_to_struc.keys():
             p1 = self._point_dict['point'+str(self._line_dict[self._active_line][0])]
             p2 = self._point_dict['point'+str(self._line_dict[self._active_line][1])]
-            self._new_field_len.set(dist(p1,p2))
+            self._new_field_len.set(dist(p1,p2)*1000)
 
         if self._toggle_btn.config('relief')[-1] == 'sunken':
             if self._active_line not in self._multiselect_lines:
