@@ -1026,16 +1026,16 @@ def stress_scaling(sigma_old,t_old,t_new, fdwn = 1, fup = 0.5):
 
     if t_new <= t_old: #decreasing the thickness
         sigma_new = sigma_old*(t_old/(t_old-fdwn*abs((t_old-t_new))))
-        assert sigma_new >= sigma_old, 'ERROR no stress increase: \n' \
-                                      't_old '+str(t_old)+' sigma_old '+str(sigma_old)+ \
-                                      '\nt_new '+str(t_new)+' sigma_new '+str(sigma_new)
+        # assert sigma_new >= sigma_old, 'ERROR no stress increase: \n' \
+        #                               't_old '+str(t_old)+' sigma_old '+str(sigma_old)+ \
+        #                               '\nt_new '+str(t_new)+' sigma_new '+str(sigma_new)
 
     else: #increasing the thickness
 
         sigma_new = sigma_old*(t_old/(t_old+fup*abs((t_old-t_new))))
-        assert sigma_new <= sigma_old, 'ERROR no stress reduction: \n' \
-                                      't_old '+str(t_old)+' sigma_old '+str(sigma_old)+ \
-                                      '\nt_new '+str(t_new)+' sigma_new '+str(sigma_new)
+        # assert sigma_new <= sigma_old, 'ERROR no stress reduction: \n' \
+        #                               't_old '+str(t_old)+' sigma_old '+str(sigma_old)+ \
+        #                               '\nt_new '+str(t_new)+' sigma_new '+str(sigma_new)
     return sigma_new
 
 def stress_scaling_area(sigma_old,a_old,a_new, fdwn = 1, fup = 0.5):
