@@ -845,6 +845,7 @@ class CreateOptimizeWindow():
 
         if [self._new_check_buckling_ml_cl.get(),self._new_check_buckling_puls.get(),
             self._new_check_buckling.get()].count(True) > 1:
+            tk.messagebox.showerror('You can only select one buckling type. Reselect.')
             if self._new_check_buckling_puls.get():
                 self._new_check_buckling_puls.set(False)
             if self._new_check_buckling_ml_cl.get():

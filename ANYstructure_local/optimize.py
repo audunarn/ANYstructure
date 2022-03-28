@@ -607,7 +607,7 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
             puls_uf = PULSrun.get_puls_line_results(x_id)["Buckling strength"]["Actual usage Factor"][0]
         elif calc_object[0].Plate.get_puls_method() == 'ultimate':
             puls_uf = PULSrun.get_puls_line_results(x_id)["Ultimate capacity"]["Actual usage Factor"][0]
-        if type(puls_uf) == str:
+        if type(puls_uf) == str or puls_uf is None:
             return False, 'PULS', x, all_checks
         all_checks[8] = puls_uf/PULSrun.puls_acceptance
         if puls_uf/PULSrun.puls_acceptance >= 1:
