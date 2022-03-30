@@ -5196,18 +5196,24 @@ class Application():
 
             else:
                 prev_type = self._line_to_struc[self._active_line][0].Plate.get_structure_type()
-                #cdom = self._line_to_struc[self._active_line][0].calculation_domain
-                #prev_calc_obj = copy.deepcopy(self._line_to_struc[self._active_line][1])
                 prev_all_obj = copy.deepcopy(self._line_to_struc[self._active_line][0])
                 self._line_to_struc[self._active_line][0].set_main_properties(prop_dict)
 
-                if self._new_scale_stresses.get() and prev_all_obj.Plate.get_tuple() != \
-                        self._line_to_struc[self._active_line][0].Plate.get_tuple():
-                    self._line_to_struc[self._active_line][0].Plate = \
-                        op.create_new_calc_obj(prev_all_obj.Plate,
-                                               self._line_to_struc[self._active_line][0].Plate.get_tuple(),
-                                               fup=self._new_fup.get(), fdwn=self._new_fdwn.get())[0]
-
+                if self._new_scale_stresses.get() and prev_all_obj.get_main_properties() != \
+                        self._line_to_struc[self._active_line][0].get_main_properties():
+                    if prev_all_obj.Stiffener is not None:
+                        plate = self._line_to_struc[self._active_line][0].Plate
+                        stiffener = self._line_to_struc[self._active_line][0].Stiffener
+                        girder = self._line_to_struc[self._active_line][0].Girder
+                        calc_tup = (plate.get_s(), plate.get_pl_thk(), stiffener.get_web_h(), stiffener.get_web_thk(),
+                                    stiffener.get_fl_w(),
+                                    stiffener.get_fl_thk(), plate.get_span(), stiffener.get_lg() if girder is None else
+                                    girder.get_lg(), stiffener.stiffener_type)
+                    else:
+                        calc_tup = self._line_to_struc[self._active_line][0].Plate.get_tuple()
+                    self._line_to_struc[self._active_line][0] = op.create_new_calc_obj(prev_all_obj, calc_tup,
+                                                                                       fup=self._new_fup.get(),
+                                                                                       fdwn=self._new_fdwn.get())[0]
 
                 self._line_to_struc[self._active_line][0].need_recalc = True
 
