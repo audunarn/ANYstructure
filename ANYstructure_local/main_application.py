@@ -1863,6 +1863,8 @@ class Application():
                 idx += 1
             self._flat_btn_load_info.place(relx=hor_start + 5 * delta_x,
                                             rely=vert_start + (idx+1) * delta_y)
+            self._button_str_type.place(relx=hor_start + 5 * delta_x,
+                                            rely=vert_start + (idx+3) * delta_y)
             idx = idx_now
             self._flat_gui_headlines[5].place(relx=hor_start + 0 * delta_x, rely=vert_start + idx * delta_y)
             idx += 1
@@ -2137,7 +2139,7 @@ class Application():
                       self._ent_puls_sp_or_up, self._ent_puls_method, self._ent_puls_uf, self._ent_puls_panel_boundary,
                       self._ent_puls_stf_end_type,
                       self._stf_button, self._stress_button,self._fls_button, self._shell_btn_load_info,
-                      self._flat_btn_load_info, self._shell_btn_length_info]
+                      self._flat_btn_load_info, self._shell_btn_length_info,self._button_str_type]
 
         to_process = to_process+self._shell_gui_items+self._shell_long_stf_gui_items+self._shell_ring_stf_gui_items+\
                      self._shell_ring_frame_gui_items+self._shell_loads_other_gui_items+\
