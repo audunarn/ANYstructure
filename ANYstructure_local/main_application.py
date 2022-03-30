@@ -6997,14 +6997,18 @@ class Application():
             for main_line in self._line_dict.keys():
                 for load_obj, load_line in self._load_dict.values():
                     if main_line in self._line_to_struc.keys():
-
-                        if any([load_obj.__str__() != temp_load[load_obj.get_name()][0].__str__() and main_line in \
-                                load_line+temp_load[load_obj.get_name()][1],
-                                main_line in list(set(temp_load[load_obj.get_name()][1]).symmetric_difference(set(load_line)))]) :
-
+                        if load_obj.get_name() in temp_load.keys():
+                            if any([load_obj.__str__() != temp_load[load_obj.get_name()][0].__str__() and main_line in \
+                                    load_line+temp_load[load_obj.get_name()][1],
+                                    main_line in list(set(temp_load[load_obj.get_name()][1]).symmetric_difference(set(load_line)))]) :
+                                # The load has changed for this line.
+                                if self._PULS_results is not None:
+                                    self._PULS_results.result_changed(main_line)
+                        elif main_line in load_line:
                             # The load has changed for this line.
                             if self._PULS_results is not None:
                                 self._PULS_results.result_changed(main_line)
+
 
                     if main_line in load_line and main_line in self._line_to_struc.keys():
                         self._line_to_struc[main_line][3].append(load_obj)
