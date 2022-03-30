@@ -1990,8 +1990,10 @@ class AllStructure():
         Cxs = stf_pl_data['Cxs']
         fkx = Cxs*fy
         CxG = math.sqrt(1-math.pow(sxsd/fkx,2)) if sxsd<fkx else 0
-
-        CyG_tens = 1 if Lg > 2*l else Lg/(l*math.sqrt(4-math.pow(Lg/l,2)))
+        if 4-math.pow(Lg/l,2) != 0:
+            CyG_tens = 1 if Lg > 2*l else Lg/(l*math.sqrt(4-math.pow(Lg/l,2)))
+        else:
+            CyG_tens = 1
         CyG_comp  = 0 if l*alphap == 0 else stf_pl_data['Cys_comp']
         CyG = min([1,CyG_tens]) if sy1sd<0 else min([1, CyG_comp])
         CtG = math.sqrt(1-3*math.pow(tsd/fy,2)) if tsd<fy/math.sqrt(3) else 0

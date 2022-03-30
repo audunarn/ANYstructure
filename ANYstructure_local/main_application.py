@@ -4617,8 +4617,9 @@ class Application():
                     if all([key != 'Stiffener check', key != 'Stiffener check detailed']):
                         text_key = key
                         if key == 'Column stability check':
-                            if results['Need to check column buckling'] == False:
-                                continue
+                            if 'Need to check column buckling' in results.keys():
+                                if results['Need to check column buckling'] == False:
+                                    continue
                             text_value = 'N/A' if value is None else 'OK' if value else 'Not ok'
                         else:
                             text_value = 'N/A' if value is None else str(round(value, 2))
