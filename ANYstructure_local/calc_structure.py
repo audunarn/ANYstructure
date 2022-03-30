@@ -720,6 +720,12 @@ class Structure():
         else:
             stf_type = self._stiffener_type
         map_boundary = {'Continuous': 'C', 'Sniped': 'S'}
+        sig_x1 = self._sigma_x1
+        sig_x2 = self._sigma_x2
+        if sig_x1 * sig_x2 >= 0:
+            sigxd = sig_x1 if abs(sig_x1) > abs(sig_x2) else sig_x2
+        else:
+            sigxd = max(sig_x1, sig_x2)
         if self._puls_sp_or_up == 'SP':
             return_dict = {'Identification': None, 'Length of panel': self._span*1000, 'Stiffener spacing': self._spacing*1000,
                             'Plate thickness': self._plate_th*1000,
@@ -733,7 +739,7 @@ class Structure():
                             'Flange thick.': self._flange_th*1000, 'Tilt angle': 0,
                           'Number of sec. stiffeners': 0, 'Modulus of elasticity': 2.1e11/1e6, "Poisson's ratio": 0.3,
                           'Yield stress plate': self._mat_yield/1e6, 'Yield stress stiffener': self._mat_yield/1e6,
-                            'Axial stress': 0 if self._puls_boundary == 'GT' else self._sigma_x1,
+                            'Axial stress': 0 if self._puls_boundary == 'GT' else sigxd,
                            'Trans. stress 1': 0 if self._puls_boundary == 'GL' else self._sigma_y1,
                           'Trans. stress 2': 0 if self._puls_boundary == 'GL' else self._sigma_y2,
                            'Shear stress': self._tauxy,
@@ -757,8 +763,8 @@ class Structure():
                            'Plate thickness': self._plate_th*1000,
                          'Modulus of elasticity': 2.1e11/1e6, "Poisson's ratio": 0.3,
                           'Yield stress plate': self._mat_yield/1e6,
-                         'Axial stress 1': 0 if self._puls_boundary == 'GT' else self._sigma_x1,
-                           'Axial stress 2': 0 if self._puls_boundary == 'GT' else self._sigma_x1,
+                         'Axial stress 1': 0 if self._puls_boundary == 'GT' else sigxd,
+                           'Axial stress 2': 0 if self._puls_boundary == 'GT' else sigxd,
                            'Trans. stress 1': 0 if self._puls_boundary == 'GL' else self._sigma_y1,
                          'Trans. stress 2': 0 if self._puls_boundary == 'GL' else self._sigma_y2,
                            'Shear stress': self._tauxy, 'Pressure (fixed)': None, 'In-plane support': self._puls_boundary,
