@@ -792,7 +792,7 @@ def create_new_cylinder_obj(init_obj, x_new):
         new_obj.LongStfObj.tw = x_new[1][3]*1000
         new_obj.LongStfObj.b = x_new[1][4]*1000
         new_obj.LongStfObj.tf = x_new[1][5]*1000
-        new_obj.LongStfObj.stiffener_type = x_new[1][8]
+        new_obj.LongStfObj.stiffener_type = x_new[1][7]
 
     return new_obj
 

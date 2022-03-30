@@ -886,23 +886,24 @@ class Application():
 
 
         self._lab_press_side = ttk.Label(self._tab_prop, text='Overpressure side')
-        self._lab_sig_y1 = ttk.Label(self._tab_prop, text='Longitudinal compr. ,sig_y1')
-        self._lab_sig_y2 = ttk.Label(self._tab_prop, text='Longitudinal compr. ,sig_y2')
-        self._lab_sig_x1 = ttk.Label(self._tab_prop, text='Transverse compress.,sig_x1')
-        self._lab_sig_x2 = ttk.Label(self._tab_prop, text='Transverse compress.,sig_x2')
+        self._lab_sig_x1 = ttk.Label(self._tab_prop, text='Axial stress 1,sig_x1')
+        self._lab_sig_x2 = ttk.Label(self._tab_prop, text='Axial stress 2,sig_x2')
+        self._lab_sig_y1 = ttk.Label(self._tab_prop, text='Trans. stress 1,sig_y1')
+        self._lab_sig_y2 = ttk.Label(self._tab_prop, text='Trans. stress 2,sig_y2')
         self._lab_tau_y1 = ttk.Label(self._tab_prop, text='Shear Stres,tau_y1')
         self._lab_yield = ttk.Label(self._tab_prop, text='Material yield stress [MPa]:', font = self._text_size['Text 9'])
         self._lab_mat_fac = ttk.Label(self._tab_prop, text='Mat. factor', font = self._text_size['Text 9'])
         self._lab_structure_type = ttk.Label(self._tab_prop, text='Select structure type:',
                                              font=self._text_size['Text 9'])
 
-        self._flat_gui_lab_loads = [self._lab_press_side ,self._lab_sig_y1, self._lab_sig_y2,self._lab_sig_x1,
-                                    self._lab_sig_x2, self._lab_tau_y1, self._lab_yield, self._lab_mat_fac,
+        self._flat_gui_lab_loads = [self._lab_press_side , self._lab_sig_x1,
+                                    self._lab_sig_x2, self._lab_sig_y1, self._lab_sig_y2,
+                                    self._lab_tau_y1, self._lab_yield, self._lab_mat_fac,
                                     self._lab_structure_type]
-        self._flat_gui_loads = [self._ent_pressure_side, self._ent_sigma_y1, self._ent_sigma_y2, self._ent_sigma_x1,
-                                self._ent_sigma_x2, self._ent_tauxy, self._ent_mat, self._ent_mat_factor,
+        self._flat_gui_loads = [self._ent_pressure_side, self._ent_sigma_x1,
+                                self._ent_sigma_x2, self._ent_sigma_y1, self._ent_sigma_y2, self._ent_tauxy,
+                                self._ent_mat, self._ent_mat_factor,
                                 self._ent_structure_type]
-
 
         self._new_buckling_method = tk.StringVar()
         options = ['DNV-RP-C201 - prescriptive','DNV PULS','ML-CL (PULS based)']
@@ -2258,8 +2259,8 @@ class Application():
                 if line not in result_lines:
                     data[0].Plate.hw = data[0].Stiffener.hw
                     data[0].Plate.tw = data[0].Stiffener.tw
-                    data[0].Plate.tw = data[0].Stiffener.b
-                    data[0].Plate.tw = data[0].Stiffener.tf
+                    data[0].Plate.b = data[0].Stiffener.b
+                    data[0].Plate.tf = data[0].Stiffener.tf
                     dict_to_run[line] = data[0].Plate.get_puls_input()
                     dict_to_run[line]['Identification'] = line
                     dict_to_run[line]['Pressure (fixed)'] = self.get_highest_pressure(line)['normal']/1e6
@@ -4041,17 +4042,13 @@ class Application():
 
 
         if self._active_line in self._line_to_struc:
-
+            self.set_selected_variables(self._active_line)
             # printing the properties to the active line
             if self._line_is_active and self._line_to_struc[self._active_line][5] is None:
                 #checkered(10, self._prop_canvas)
-                self.set_selected_variables(self._active_line)
-
                 self._prop_canvas.create_text([canvas_width/2-canvas_width/20, canvas_height/20],
                                              text ='SELECTED: '+str(self._active_line),
                                              font=self._text_size["Text 10 bold"], fill='red')
-
-
                 if all([self._line_to_struc[self._active_line][0].Stiffener is None,
                         self._line_to_struc[self._active_line][0].Girder is None]):
                     structure_obj = self._line_to_struc[self._active_line][0].Plate
@@ -4078,7 +4075,8 @@ class Application():
 
                     if structure_obj is not None:
                         self._prop_canvas.create_text([startx +40, 50],
-                                                      text='Stiffener' if idx == 0 else 'Girder',
+                                                      text='Stiffener\n' +structure_obj.get_beam_string()
+                                                      if idx == 0 else 'Girder\n' + structure_obj.get_beam_string(),
                                                       font=self._text_size["Text 10 bold"], fill='Black')
                         if structure_obj is not None:
                             self._prop_canvas.create_text([100, 20],
@@ -4132,7 +4130,7 @@ class Application():
     @staticmethod
     def draw_cylinder(text_size = None, canvas = None, CylObj: CylinderAndCurvedPlate = None,
                       height = 150, radius = 150,
-                      start_x_cyl = 500,start_y_cyl = 20, acceptance_color = False, text_x = 180, text_y = 130,
+                      start_x_cyl = 500,start_y_cyl = 20, acceptance_color = False, text_x = 200, text_y = 130,
                       text_color = 'black'):
 
         canvas_width = canvas.winfo_width()
@@ -4172,7 +4170,6 @@ class Application():
                                                       coord1[0] + radius * arc_x,
                                                       coord1[1] + height + 1 * arc_y * offset_oval+offset_oval/2,
                                                       fill='blue')
-
         if CylObj.RingStfObj is not None:
             num_ring_stiff = CylObj.ShellObj.length_of_shell / \
                              CylObj.ShellObj._dist_between_rings
@@ -5669,6 +5666,74 @@ class Application():
                     self._new_girder_fl_w.set(round(properties['stf_flange_width'][0]*1000,5))
                     self._new_girder_fl_t.set(round(properties['stf_flange_thk'][0]*1000,5))
                     self._new_girder_type.set(properties['stf_type'][0])
+
+            if self._line_to_struc[self._active_line][5] is not None:
+
+                cylobj = self._line_to_struc[self._active_line][5]
+                all_dicts = cylobj.get_all_properties()
+
+                # Shell data input
+                shell_dict = all_dicts['Shell']
+                self._new_shell_thk.set(shell_dict['plate_thk'][0]*1000)
+                self._new_shell_radius.set(shell_dict['radius'][0]*1000)
+                self._new_shell_dist_rings.set(shell_dict['distance between rings, l'][0]*1000)
+                self._new_shell_length.set(shell_dict['length of shell, L'][0]*1000)
+                self._new_shell_tot_length.set(shell_dict['tot cyl length, Lc'][0]*1000)
+                self._new_shell_k_factor.set(shell_dict['eff. buckling lenght factor'][0]*1000)
+                self._new_shell_yield.set(shell_dict['mat_yield'][0]/1e6)
+
+                main_dict_cyl = all_dicts['Main class']
+
+                self._new_shell_sasd.set(main_dict_cyl['sasd'][0]/1e6)
+                self._new_shell_smsd .set(main_dict_cyl['smsd'][0]/1e6)
+                self._new_shell_tTsd.set(main_dict_cyl['tTsd'][0]/1e6)
+                self._new_shell_tQsd.set(main_dict_cyl['tQsd'][0]/1e6)
+                self._new_shell_psd.set(main_dict_cyl['psd'][0]/1e6)
+                self._new_shell_shsd.set(main_dict_cyl['shsd'][0]/1e6)
+                self._new_calculation_domain.set(main_dict_cyl['geometry'][0])
+                self._new_shell_mat_factor.set(main_dict_cyl['material factor'][0])
+                self._new_shell_ring_stf_fab_method.set(main_dict_cyl['fab method ring stf'][0])
+                self._new_shell_ring_frame_fab_method.set(main_dict_cyl['fab method ring girder'][0])
+                self._new_shell_e_module.set(main_dict_cyl['E-module'][0])
+                self._new_shell_poisson.set(main_dict_cyl['poisson'][0])
+                self._new_shell_yield.set(main_dict_cyl['mat_yield'][0]/1e6)
+                self._new_shell_ring_frame_length_between_girders.set(main_dict_cyl['length between girders'][0]*1000)
+                self._new_shell_panel_spacing.set(main_dict_cyl['panel spacing, s'][0]*1000)
+                self._new_shell_exclude_ring_stf.set(main_dict_cyl['ring stf excluded'][0])
+                self._new_shell_exclude_ring_frame.set(main_dict_cyl['ring frame excluded'][0])
+                self._new_shell_uls_or_als.set(main_dict_cyl['ULS or ALS'][0])
+                self._new_shell_end_cap_pressure_included.set(main_dict_cyl['end cap pressure'][0])
+                
+                if cylobj.LongStfObj is not None:
+                    # Longitudinal stiffener input
+                    long_dict = all_dicts['Long. stf.']
+                    self._new_stf_spacing.set(long_dict['spacing'][0]*1000)
+                    self._new_stf_web_h.set(long_dict['stf_web_height'][0]*1000)
+                    self._new_stf_web_t.set(long_dict['stf_web_thk'][0]*1000)
+                    self._new_stf_fl_w.set(long_dict['stf_flange_width'][0]*1000)
+                    self._new_stf_fl_t.set(long_dict['stf_flange_thk'][0]*1000)
+                    self._new_stf_type.set(long_dict['stf_type'][0])
+                    self._new_field_len.set(long_dict['span'][0]*1000)
+                    self._new_shell_yield.set(long_dict['mat_yield'][0]/1e6)
+                    self._new_panel_or_shell.set('shell')
+                if cylobj.RingStfObj is not None:
+                    ring_stf_dict = all_dicts['Ring stf.']
+                    self._new_shell_ring_stf_hw.set(ring_stf_dict['stf_web_height'][0]*1000)
+                    self._new_shell_ring_stf_tw.set(ring_stf_dict['stf_web_thk'][0]*1000)
+                    self._new_shell_ring_stf_b.set(ring_stf_dict['stf_flange_width'][0]*1000)
+                    self._new_shell_ring_stf_tf.set(ring_stf_dict['stf_flange_thk'][0]*1000)
+                    self._new_shell_ring_stf_type.set(ring_stf_dict['stf_type'][0])
+                    self._new_shell_yield.set(ring_stf_dict['mat_yield'][0]/1e6)
+                    self._new_panel_or_shell.set('shell')
+                if cylobj.RingFrameObj is not None:
+                    ring_frame_dict = all_dicts['Ring frame']
+                    self._new_shell_ring_frame_hw.set(ring_frame_dict ['stf_web_height'][0]*1000)
+                    self._new_shell_ring_frame_tw.set(ring_frame_dict ['stf_web_thk'][0]*1000)
+                    self._new_shell_ring_frame_b.set(ring_frame_dict ['stf_flange_width'][0]*1000)
+                    self._new_shell_ring_frame_tf.set(ring_frame_dict ['stf_flange_thk'][0]*1000)
+                    self._new_shell_ring_frame_type.set(ring_frame_dict ['stf_type'][0])
+                    self._new_shell_yield.set(ring_frame_dict ['mat_yield'][0]/1e6)
+                    self._new_panel_or_shell.set('shell')
 
     def get_highest_pressure(self, line, limit_state = 'ULS'):
         '''

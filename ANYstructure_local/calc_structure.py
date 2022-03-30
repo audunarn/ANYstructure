@@ -141,6 +141,11 @@ class Structure():
                    str(round(self._web_th*1000, 0))
         if self._stiffener_type == 'FB':
             ret_str = base_name
+        elif self._stiffener_type in ['L-bulb', 'bulb', 'hp']:
+            ret_str = 'Bulb'+str(int(self._web_height*1000 + self._flange_th*1000))+'x'+\
+                      str(round(self._web_th*1000, 0))+ '_(' +str(round(self._web_height*1000, 0)) + 'x' + \
+                   str(round(self._web_th*1000, 0))+ str(round(self._flange_width*1000, 0)) + 'x' + \
+                      str(round(self._flange_th*1000, 0))+')'
         else:
             ret_str = base_name + '__' + str(round(self._flange_width*1000, 0)) + 'x' + \
                       str(round(self._flange_th*1000, 0))
@@ -148,6 +153,17 @@ class Structure():
         ret_str = ret_str.replace('.', '_')
 
         return ret_str
+        # base_name = self._stiffener_type+ '_' + str(round(self._web_height*1000, 0)) + 'x' + \
+        #            str(round(self._web_th*1000, 0))
+        # if self._stiffener_type == 'FB':
+        #     ret_str = base_name
+        # else:
+        #     ret_str = base_name + '__' + str(round(self._flange_width*1000, 0)) + 'x' + \
+        #               str(round(self._flange_th*1000, 0))
+        #
+        # ret_str = ret_str.replace('.', '_')
+        #
+        # return ret_str
 
     def get_structure_types(self):
         return self._structure_types
@@ -3719,6 +3735,7 @@ class CylinderAndCurvedPlate():
                      'ring frame excluded': [self.__ring_frame_excluded, ''],
                      'end cap pressure': [self._end_cap_pressure_included, ''],
                      'ULS or ALS':[self._uls_or_als, '']}
+
         return main_dict
         
     def set_stresses_and_pressure(self, val):

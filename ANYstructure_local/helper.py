@@ -65,9 +65,8 @@ def helper_dnva_dnvb(line_name_obj, coord, defined_loads, load_condition,
     calc_load, load_print, prt_conditions = [], ['',], []
     line_name = line_name_obj[0]
     structure_type = line_name_obj[1].get_structure_type()
-    if print_it:
-        #load_print.append('Load calculation for '+line_name_obj[0] + ' ' + comb_name+ ' ' + load_condition)
-        pass
+    # if line_name_obj[0] == 'line12':
+    #     print('Load calculation for '+line_name_obj[0] + ' ' + comb_name+ ' ' + load_condition)
 
     # if print_line != None and line_name == print_line:
     #     print('Load calculation for '+line_name_obj[0] + ' ' + comb_name+ ' ' + load_condition)
@@ -108,7 +107,8 @@ def helper_dnva_dnvb(line_name_obj, coord, defined_loads, load_condition,
                                  str(load_factors[1].get())+'*'+\
                                  str(round(load.get_calculated_pressure(coord, acc[1],structure_type),1))+ ' = '+ \
                                  str(round(dynamic_pressure,1))+'\n')
-
+                    # if line_name_obj[0] == 'line12':
+                    #     print('Pressures',static_pressure,'+',dynamic_pressure,'=',static_pressure+dynamic_pressure)
                     calc_load.append(static_pressure+dynamic_pressure)
 
     # calculate the tank loads
@@ -174,6 +174,8 @@ def helper_dnva_dnvb(line_name_obj, coord, defined_loads, load_condition,
             pass
 
         load_print.append('------------------------------------------------------------------\n')
+    # if line_name_obj[0] == 'line12':
+    #     print('end')
     return [int(abs(sum(calc_load))), load_print]
 
 def helper_slamming(defined_loads):
