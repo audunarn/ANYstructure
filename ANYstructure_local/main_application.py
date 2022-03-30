@@ -7005,7 +7005,7 @@ class Application():
                                 if self._PULS_results is not None:
                                     self._PULS_results.result_changed(main_line)
                         elif main_line in load_line:
-                            # The load has changed for this line.
+                            # This is a new load for this line.
                             if self._PULS_results is not None:
                                 self._PULS_results.result_changed(main_line)
 
