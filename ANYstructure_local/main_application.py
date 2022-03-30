@@ -274,6 +274,7 @@ class Application():
         self._load_window_couter = 1 # this is used to create the naming of the tanks in the load window
         self._logger = {'added': list(), 'deleted': list()}  # used to log operations for geometry operations, to be used for undo/redo
         self.__returned_load_data = None # Temporary data for returned loads from the load window.
+        self.__previous_load_data = None # Used to compare loads before and after.
         self.__copied_line_prop = None  # Used to copy line properties to another.
         self._PULS_results = None # If a puls run is avaliable, it is stored here.
         self._center_of_buoyancy = dict()   # Center of buoyancy for all and for carious static drafts
@@ -6849,7 +6850,7 @@ class Application():
             self._ext_button.image = photo
         except TclError:
             pass
-
+        self.__previous_load_data = copy.deepcopy(self._load_dict)
         top = tk.Toplevel(self._parent, background=self._general_color)
         load_window.CreateLoadWindow(top, self)
 
@@ -6981,7 +6982,7 @@ class Application():
             pass
         self._load_window_couter = counter
         self._new_load_comb_dict = load_comb_dict
-        temp_load = copy.deepcopy(self._load_dict)
+        temp_load = self.__previous_load_data
         if len(returned_loads) != 0:
             need_to_recalc_puls = {}
             for load, data in returned_loads.items():
@@ -6996,14 +6997,19 @@ class Application():
             for main_line in self._line_dict.keys():
                 for load_obj, load_line in self._load_dict.values():
                     if main_line in self._line_to_struc.keys():
-                        if returned_loads:
-                            if load_obj.__str__() != temp_load[load_obj.get_name()][0].__str__() and main_line in \
-                                    load_line+temp_load[load_obj.get_name()][1]:
-                                # The load has changed for this line.
-                                if self._PULS_results is not None:
-                                    self._PULS_results.result_changed(main_line)
+
+                        if any([load_obj.__str__() != temp_load[load_obj.get_name()][0].__str__() and main_line in \
+                                load_line+temp_load[load_obj.get_name()][1],
+                                main_line in list(set(temp_load[load_obj.get_name()][1]).symmetric_difference(set(load_line)))]) :
+
+                            # The load has changed for this line.
+                            if self._PULS_results is not None:
+                                self._PULS_results.result_changed(main_line)
+
                     if main_line in load_line and main_line in self._line_to_struc.keys():
                         self._line_to_struc[main_line][3].append(load_obj)
+
+
 
         # Storing the the returned data to temporary variable.
         self.__returned_load_data = [returned_loads, counter, load_comb_dict]
@@ -7293,7 +7299,6 @@ class Application():
                                                          '2022\n\n'
                                                          'All technical calculation based on \n'
                                                          'DNV RPs and standards')
-
     def export_to_js(self):
         '''
         Printing to a js file
