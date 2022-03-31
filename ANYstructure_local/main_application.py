@@ -143,8 +143,10 @@ class Application():
         sub_report.add_command(label='Stiffened flat plate - Weight development, plates and beams', command=self.on_plot_cog_dev)
 
         sub_sesam = tk.Menu(menu)
-        menu.add_cascade(label = 'SESAM interface', menu = sub_sesam)
-        sub_sesam.add_command(label = 'Export geometry to JS', command = self.export_to_js)
+        menu.add_cascade(label = 'Interfaces', menu = sub_sesam)
+        sub_sesam.add_command(label = 'Export geometry to SESAM GeniE JS', command = self.export_to_js)
+        sub_sesam.add_command(label='Run all PULS lines', command=self.puls_run_all_lines)
+        sub_sesam.add_command(label='Delete all PULS results', command=self.puls_delete_all)
 
         sub_help = tk.Menu(menu)
         menu.add_cascade(label='Help', menu = sub_help)
@@ -2260,10 +2262,10 @@ class Application():
             current_button = self._puls_run_all
             for line, data in self._line_to_struc.items():
                 if line not in result_lines:
-                    data[0].Plate.hw = data[0].Stiffener.hw
-                    data[0].Plate.tw = data[0].Stiffener.tw
-                    data[0].Plate.b = data[0].Stiffener.b
-                    data[0].Plate.tf = data[0].Stiffener.tf
+                    data[0].Plate.hw = 0 if data[0].Stiffener is None else data[0].Stiffener.hw
+                    data[0].Plate.tw = 0 if data[0].Stiffener is None else data[0].Stiffener.tw
+                    data[0].Plate.b = 0 if data[0].Stiffener is None else data[0].Stiffener.b
+                    data[0].Plate.tf = 0 if data[0].Stiffener is None else data[0].Stiffener.tf
                     dict_to_run[line] = data[0].Plate.get_puls_input()
                     dict_to_run[line]['Identification'] = line
                     dict_to_run[line]['Pressure (fixed)'] = self.get_highest_pressure(line)['normal']/1e6
@@ -2382,6 +2384,17 @@ class Application():
 
     def puls_run_one_line(self):
         self.puls_run_all_lines(self._active_line)
+        self.update_frame()
+
+    def puls_delete_all(self):
+        '''
+        Deletes all existing PULS results
+        '''
+        if self._PULS_results is not None:
+            for key, val in self._line_to_struc.items():
+                self._PULS_results.result_changed(key)
+                val[0].need_recalc = True
+
         self.update_frame()
 
     def resize(self, event):
@@ -7008,12 +7021,8 @@ class Application():
                             # This is a new load for this line.
                             if self._PULS_results is not None:
                                 self._PULS_results.result_changed(main_line)
-
-
                     if main_line in load_line and main_line in self._line_to_struc.keys():
                         self._line_to_struc[main_line][3].append(load_obj)
-
-
 
         # Storing the the returned data to temporary variable.
         self.__returned_load_data = [returned_loads, counter, load_comb_dict]
@@ -7303,6 +7312,7 @@ class Application():
                                                          '2022\n\n'
                                                          'All technical calculation based on \n'
                                                          'DNV RPs and standards')
+
     def export_to_js(self):
         '''
         Printing to a js file
