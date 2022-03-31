@@ -4093,7 +4093,7 @@ class Application():
                         self._prop_canvas.create_text([startx +40, 50],
                                                       text='Stiffener\n' +structure_obj.get_beam_string()
                                                       if idx == 0 else 'Girder\n' + structure_obj.get_beam_string(),
-                                                      font=self._text_size["Text 10 bold"], fill='Black')
+                                                      font=self._text_size["Text 9 bold"], fill='Black')
                         if structure_obj is not None:
                             self._prop_canvas.create_text([100, 20],
                                                           text='Thickness scale x 2',
