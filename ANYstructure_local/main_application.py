@@ -95,8 +95,11 @@ class Application():
         sub_menu = tk.Menu(menu)
         menu.add_cascade(label='File', menu=sub_menu)
         sub_menu.add_command(label='New project', command=self.reset)
-        sub_menu.add_command(label='Save project', command=self.savefile)
+        sub_menu.add_command(label='Save project as...', command=self.savefile)
+        self.__last_save_file = None  # Keeping the last filename and path
+        sub_menu.add_command(label='Save project, Alt-S', command=self.save_no_dialogue)
         sub_menu.add_command(label='Open project', command=self.openfile)
+        sub_menu.add_command(label='Restore previous', command=self.restore_previous)
         self._shortcut_text = 'CTRL-Z Undo geometry action\n' \
                               'CTRL-P Copy selected point\n' \
                               'CTRL-M Move selected point)\n' \
@@ -278,6 +281,7 @@ class Application():
         self.__returned_load_data = None # Temporary data for returned loads from the load window.
         self.__previous_load_data = None # Used to compare loads before and after.
         self.__copied_line_prop = None  # Used to copy line properties to another.
+
         self._PULS_results = None # If a puls run is avaliable, it is stored here.
         self._center_of_buoyancy = dict()   # Center of buoyancy for all and for carious static drafts
                                             # Example {8: (5,20), 22: (12,20), 'all': (16,20)}
@@ -2170,6 +2174,7 @@ class Application():
                     7:'Orthogonally Stiffened shell (Force input)',
                     8:'Orthogonally Stiffened panel (Stress input)'}
         '''
+
         if self._new_calculation_domain.get() == 'Flat plate, unstiffened':
             self._new_puls_sp_or_up.set('UP')
             self.gui_structural_properties(flat_unstf = True, flat_stf = False)
@@ -4777,7 +4782,6 @@ class Application():
         '''
         Adds a point number and coordinates to the point dictionary. Type is 'p1' = [x0,y0]
         '''
-
         try:
             if copy:
                 x_coord = self._new_point_x.get()/1000 + self._point_dict[self._active_point][0]
@@ -4929,6 +4933,8 @@ class Application():
             [5] Cylinder buckling data
         :return:
         '''
+        if not multi_return:
+            self.save_no_dialogue(backup=True) #keeping a backup
 
         if all([pasted_structure == None, multi_return == None]):
             missing_input = False
@@ -4955,6 +4961,7 @@ class Application():
                 prop_dict = toggle_multi
             elif pasted_structure is None:
                 calc_dom = self._new_calculation_domain.get()
+
                 obj_dict = {'mat_yield': [self._new_material.get()*1e6, 'Pa'],
                             'mat_factor': [self._new_material_factor.get(), ''],
                             'span': [self._new_field_len.get()/1000, 'm'],
@@ -5018,6 +5025,7 @@ class Application():
                 main_dict['fabrication method stiffener'] = [self._new_buckling_fab_method_stf.get(), '']
                 main_dict['fabrication method girder'] = [self._new_buckling_fab_method_girder.get(), '']
                 main_dict['calculation domain'] = [self._new_calculation_domain.get(), '']
+
 
                 prop_dict = {'main dict': main_dict,
                              'Plate': obj_dict_pl,
@@ -5168,7 +5176,6 @@ class Application():
                                                                                   self._new_shell_exclude_ring_frame.get()])
                                                           else Structure(ring_frame_dict))
                 elif cylinder_return is not None:
-
                     main_dict_cyl, shell_dict, long_dict, ring_stf_dict, ring_frame_dict = \
                         cylinder_return.get_all_properties()
             else:
@@ -5210,6 +5217,11 @@ class Application():
                     self._line_to_struc[self._active_line][5] = CylinderObj
 
             else:
+                # if self._new_calculation_domain.get() in ['Flat plate, stiffened','Flat plate, unstiffened',
+                #                                   'Flat plate, stiffened with girder'] and \
+                #         self._line_to_struc[self._active_line][5] is not None:
+                #     self._line_to_struc[self._active_line][5] = None
+
                 prev_type = self._line_to_struc[self._active_line][0].Plate.get_structure_type()
                 prev_all_obj = copy.deepcopy(self._line_to_struc[self._active_line][0])
                 self._line_to_struc[self._active_line][0].set_main_properties(prop_dict)
@@ -5246,7 +5258,7 @@ class Application():
                     self._main_grid.clear()
                     self._compartments_listbox.delete(0, 'end')
 
-                if  None and all([CylinderObj is None, cylinder_return is None,
+                if all([CylinderObj is None, cylinder_return is None,
                                   self._line_to_struc[self._active_line][5] is not None]):
                     self._line_to_struc[self._active_line][5] = None
                 elif CylinderObj is not None:
@@ -5319,6 +5331,7 @@ class Application():
         :return:
         '''
         # points, self._point_dict, content), point
+        self.save_no_dialogue(backup=True)  # keeping a backup
 
         temp_tank_dict = {  'comp_no' : comp_no,
                             'cells' : cells,
@@ -5702,7 +5715,7 @@ class Application():
                 self._new_shell_dist_rings.set(shell_dict['distance between rings, l'][0]*1000)
                 self._new_shell_length.set(shell_dict['length of shell, L'][0]*1000)
                 self._new_shell_tot_length.set(shell_dict['tot cyl length, Lc'][0]*1000)
-                self._new_shell_k_factor.set(shell_dict['eff. buckling lenght factor'][0]*1000)
+                self._new_shell_k_factor.set(shell_dict['eff. buckling lenght factor'][0])
                 self._new_shell_yield.set(shell_dict['mat_yield'][0]/1e6)
 
                 main_dict_cyl = all_dicts['Main class']
@@ -5713,7 +5726,8 @@ class Application():
                 self._new_shell_tQsd.set(main_dict_cyl['tQsd'][0]/1e6)
                 self._new_shell_psd.set(main_dict_cyl['psd'][0]/1e6)
                 self._new_shell_shsd.set(main_dict_cyl['shsd'][0]/1e6)
-                self._new_calculation_domain.set(main_dict_cyl['geometry'][0])
+
+                self._new_calculation_domain.set(CylinderAndCurvedPlate.geomeries[main_dict_cyl['geometry'][0]])
                 self._new_shell_mat_factor.set(main_dict_cyl['material factor'][0])
                 self._new_shell_ring_stf_fab_method.set(main_dict_cyl['fab method ring stf'][0])
                 self._new_shell_ring_frame_fab_method.set(main_dict_cyl['fab method ring girder'][0])
@@ -6090,6 +6104,7 @@ class Application():
         self._parent.bind('<Right>', self.right_arrow)
         self._parent.bind('<Down>', self.up_arrow)
         self._parent.bind('<Up>', self.down_arrow)
+        self._parent.bind("<Alt-s>", self.save_no_dialogue)
         #self._parent.bind('<Enter>', self.enter_key_pressed)
 
     def left_arrow(self, event):
@@ -6377,13 +6392,29 @@ class Application():
         ent_left.place(relx=0.002604167, rely=0.037037037)
         ent_right.place(relx=0.03125, rely=0.037037037)
 
-    def savefile(self):
+    def save_no_dialogue(self, event = None, backup = False):
+        if backup:
+            self.savefile(filename=self._root_dir + '\\' + 'backup.txt',backup = backup)
+            return
+        if self.__last_save_file is not None:
+            self.savefile(filename=self.__last_save_file)
+        else:
+            tk.messagebox.showerror('Save error', 'No saves in this session yet.')
+
+    def savefile(self, filename = None, backup = False):
         '''
         Saving to a file using JSON formatting.
         '''
-        save_file = filedialog.asksaveasfile(mode="w", defaultextension=".txt")
-        if save_file is None:  # ask saveasfile return `None` if dialog closed with "cancel".
-            return
+
+        if filename is None:
+            save_file = filedialog.asksaveasfile(mode="w", defaultextension=".txt")
+            if save_file is None:  # ask saveasfile return `None` if dialog closed with "cancel".
+                return
+            if not backup:
+                self.__last_save_file = save_file.name
+        else:
+            save_file = open(filename, mode='w')
+
 
         structure_properties = {}
         shell_structure_properties = {}
@@ -6432,6 +6463,8 @@ class Application():
         export_all['fatigue_properties'] = fatigue_properties
         #export_all['buckling type'] = self._new_buckling_slider.get()
 
+        export_all['buckling method'] = self._new_buckling_method.get()
+
         if self._PULS_results is not None:
             export_all['PULS results'] = self._PULS_results.get_run_results()
             export_all['PULS results']['sheet location'] = self._PULS_results.puls_sheet_location
@@ -6441,12 +6474,11 @@ class Application():
 
         export_all['Weight and COG'] = self._weight_logger
 
-
-
         json.dump(export_all, save_file)#, sort_keys=True, indent=4)
         save_file.close()
-        self._parent.wm_title('| ANYstructure |     ' + save_file.name)
-        self.update_frame()
+        if not backup:
+            self._parent.wm_title('| ANYstructure |     ' + save_file.name)
+        #self.update_frame()
 
     def openfile(self, defined = None, alone = False):
         '''
@@ -6680,11 +6712,17 @@ class Application():
                 imported['PULS results'].pop('sheet location')
             self._PULS_results.set_run_results(imported['PULS results'])
 
-        # Setting the scale of the canvas
+        if 'buckling method' in list(imported.keys()):
+            #options = ['DNV-RP-C201 - prescriptive', 'DNV PULS', 'ML-CL (PULS based)']
+            self._new_buckling_method.set(imported['buckling method'])
+
+            # Setting the scale of the canvas
+
         points = self._point_dict
         highest_y = max([coord[1] for coord in points.values()])
         highest_x = max([coord[0] for coord in points.values()])
-        self._canvas_scale = min(800 / highest_y, 800 / highest_x, 15)
+        if not any([highest_x == 0, highest_y == 0]):
+            self._canvas_scale = min(800 / highest_y, 800 / highest_x, 15)
 
         # if 'buckling type' in imported.keys():
         #     self._new_buckling_slider.set(imported['buckling type'])
@@ -6697,6 +6735,10 @@ class Application():
         imp_file.close()
         self._parent.wm_title('| ANYstructure |     ' + imp_file.name)
         self.update_frame()
+
+    def restore_previous(self):
+        if os.path.isfile(self._root_dir + '\\backup.txt'):
+            self.openfile(defined=self._root_dir + '\\backup.txt')
 
     def open_example(self, file_name = 'ship_section_example.txt'):
         ''' Open the example file. To be used in help menu. '''
@@ -6981,6 +7023,7 @@ class Application():
         Setting properties created in load window.
         :return:
         '''
+        self.save_no_dialogue(backup=True)  # keeping a backup
 
         try:
             img_file_name = 'img_ext_pressure_button.gif'
@@ -7028,8 +7071,8 @@ class Application():
         self.__returned_load_data = [returned_loads, counter, load_comb_dict]
 
        # Calculating center of buoyancy from static cases.
-
-        self.get_cob() # Update COB
+        if self._grid_calc is not None:
+            self.get_cob() # Update COB
         self.update_frame()
 
     def on_close_opt_window(self,returned_object):
@@ -7038,6 +7081,7 @@ class Application():
         :param returned_structure:
         :return:
         '''
+        self.save_no_dialogue(backup=True)  # keeping a backup
 
         self.new_structure(multi_return = returned_object[0:2])
         # self._line_to_struc[self._active_line][1]=returned_objects[0]
@@ -7210,6 +7254,7 @@ class Application():
         '''
 
         mess = tk.messagebox.showwarning('Close main window', 'Save before closing?',type = 'yesnocancel')
+        self.save_no_dialogue(backup=True)  # keeping a backup
 
         if mess == 'yes':
             self.savefile()

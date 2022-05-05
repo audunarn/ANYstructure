@@ -144,7 +144,7 @@ class Structure():
         elif self._stiffener_type in ['L-bulb', 'bulb', 'hp']:
             ret_str = 'Bulb'+str(int(self._web_height*1000 + self._flange_th*1000))+'x'+\
                       str(round(self._web_th*1000, 0))+ '_(' +str(round(self._web_height*1000, 0)) + 'x' + \
-                   str(round(self._web_th*1000, 0))+ str(round(self._flange_width*1000, 0)) + 'x' + \
+                   str(round(self._web_th*1000, 0))+'_'+ str(round(self._flange_width*1000, 0)) + 'x' + \
                       str(round(self._flange_th*1000, 0))+')'
         else:
             ret_str = base_name + '__' + str(round(self._flange_width*1000, 0)) + 'x' + \
@@ -3480,7 +3480,7 @@ class CylinderAndCurvedPlate():
                                                                                                      2) + math.pow(
                     math.pi, 2) \
                       * E * Iz / ((Aw / 3 + Af) * math.pow(lT, 2))
-                print('WHY')
+
             else:
                 hs, It, Iz, Ipo, Iy = shell_buckling_data['cross section data'][idx-1]
                 fEt = beta * G * It / Ipo + math.pow(math.pi, 2) * E * math.pow(hs, 2) * Iz / (Ipo * math.pow(lT, 2))
