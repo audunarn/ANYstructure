@@ -4933,7 +4933,7 @@ class Application():
             [5] Cylinder buckling data
         :return:
         '''
-        if not multi_return:
+        if multi_return is None:
             self.save_no_dialogue(backup=True) #keeping a backup
 
         if all([pasted_structure == None, multi_return == None]):
@@ -7111,7 +7111,7 @@ class Application():
         :param returned_structure:
         :return:
         '''
-
+        self.save_no_dialogue(backup=True)  # keeping a backup
         for line,all_objs in returned_objects.items():
             self._active_line = line
             #self._line_to_struc[line][0].need_recalc = True

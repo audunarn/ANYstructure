@@ -840,7 +840,7 @@ class CreateOptimizeCylinderWindow():
             self._toggle_btn.config(bg='lightgreen')
 
             predefined_stiffener_iter = []
-            open_files = askopenfilenames(parent=self._frame, title='Choose files to open')
+            open_files = askopenfilenames(parent=self._frame, title='Choose files to open', initialdir=self._root_dir)
             if self._initial_cylinder_obj.LongStfObj is not None:
                 predefined_stiffener_iter = hlp.helper_read_section_file(files=list(open_files),
                                                                          obj=self._initial_cylinder_obj.LongStfObj)
