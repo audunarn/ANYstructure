@@ -2,6 +2,12 @@
 ANYstructure is the ultimate steel structure design tool for plate fields and cylinders! 
 Weight optimization for all structures with machine learning capabilities. 
 Calculations are based on DNV standards and rules.
+### What's new in 4.4 ###
+* Backup and restore feature added.
+* 
+### What's new in 4.3 ###
+* General stability.
+* User friendliness.
 ### What's new in 4.2 ###
 * Bug fixing.
 * Ukraininan theme.

@@ -1643,7 +1643,8 @@ class CreateOptGeoWindow():
             self._ent_pl_thk_lower.config(bg = 'lightgreen')
             self._ent_delta_pl_thk.config(bg = 'lightgreen')
             if given_path is None:
-                self._filez = list(askopenfilenames(parent=self._frame, title='Choose files to open'))
+                self._filez = list(askopenfilenames(parent=self._frame, title='Choose files to open',
+                                                    initialdir=self._root_dir))
             else:
                 self._filez = [given_path]
             if self._filez == []:

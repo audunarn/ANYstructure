@@ -95,8 +95,11 @@ class Application():
         sub_menu = tk.Menu(menu)
         menu.add_cascade(label='File', menu=sub_menu)
         sub_menu.add_command(label='New project', command=self.reset)
-        sub_menu.add_command(label='Save project', command=self.savefile)
+        sub_menu.add_command(label='Save project as...', command=self.savefile)
+        self.__last_save_file = None  # Keeping the last filename and path
+        sub_menu.add_command(label='Save project, Alt-S', command=self.save_no_dialogue)
         sub_menu.add_command(label='Open project', command=self.openfile)
+        sub_menu.add_command(label='Restore previous', command=self.restore_previous)
         self._shortcut_text = 'CTRL-Z Undo geometry action\n' \
                               'CTRL-P Copy selected point\n' \
                               'CTRL-M Move selected point)\n' \
@@ -138,13 +141,15 @@ class Application():
 
         sub_report = tk.Menu(menu)
         menu.add_cascade(label = 'Reporting', menu = sub_report)
-        sub_report.add_command(label = 'Stiffened flat plate - Generate PDF report', command = self.report_generate)
+        sub_report.add_command(label = 'Generate PDF report', command = self.report_generate)
         sub_report.add_command(label='Stiffened flat plate - Generate PDF result table', command=self.table_generate)
         sub_report.add_command(label='Stiffened flat plate - Weight development, plates and beams', command=self.on_plot_cog_dev)
 
         sub_sesam = tk.Menu(menu)
-        menu.add_cascade(label = 'SESAM interface', menu = sub_sesam)
-        sub_sesam.add_command(label = 'Export geometry to JS', command = self.export_to_js)
+        menu.add_cascade(label = 'Interfaces', menu = sub_sesam)
+        sub_sesam.add_command(label = 'Export geometry to SESAM GeniE JS', command = self.export_to_js)
+        sub_sesam.add_command(label='Run all PULS lines', command=self.puls_run_all_lines)
+        sub_sesam.add_command(label='Delete all PULS results', command=self.puls_delete_all)
 
         sub_help = tk.Menu(menu)
         menu.add_cascade(label='Help', menu = sub_help)
@@ -274,7 +279,9 @@ class Application():
         self._load_window_couter = 1 # this is used to create the naming of the tanks in the load window
         self._logger = {'added': list(), 'deleted': list()}  # used to log operations for geometry operations, to be used for undo/redo
         self.__returned_load_data = None # Temporary data for returned loads from the load window.
+        self.__previous_load_data = None # Used to compare loads before and after.
         self.__copied_line_prop = None  # Used to copy line properties to another.
+
         self._PULS_results = None # If a puls run is avaliable, it is stored here.
         self._center_of_buoyancy = dict()   # Center of buoyancy for all and for carious static drafts
                                             # Example {8: (5,20), 22: (12,20), 'all': (16,20)}
@@ -886,23 +893,24 @@ class Application():
 
 
         self._lab_press_side = ttk.Label(self._tab_prop, text='Overpressure side')
-        self._lab_sig_y1 = ttk.Label(self._tab_prop, text='Longitudinal compr. ,sig_y1')
-        self._lab_sig_y2 = ttk.Label(self._tab_prop, text='Longitudinal compr. ,sig_y2')
-        self._lab_sig_x1 = ttk.Label(self._tab_prop, text='Transverse compress.,sig_x1')
-        self._lab_sig_x2 = ttk.Label(self._tab_prop, text='Transverse compress.,sig_x2')
+        self._lab_sig_x1 = ttk.Label(self._tab_prop, text='Axial stress 1,sig_x1')
+        self._lab_sig_x2 = ttk.Label(self._tab_prop, text='Axial stress 2,sig_x2')
+        self._lab_sig_y1 = ttk.Label(self._tab_prop, text='Trans. stress 1,sig_y1')
+        self._lab_sig_y2 = ttk.Label(self._tab_prop, text='Trans. stress 2,sig_y2')
         self._lab_tau_y1 = ttk.Label(self._tab_prop, text='Shear Stres,tau_y1')
         self._lab_yield = ttk.Label(self._tab_prop, text='Material yield stress [MPa]:', font = self._text_size['Text 9'])
         self._lab_mat_fac = ttk.Label(self._tab_prop, text='Mat. factor', font = self._text_size['Text 9'])
         self._lab_structure_type = ttk.Label(self._tab_prop, text='Select structure type:',
                                              font=self._text_size['Text 9'])
 
-        self._flat_gui_lab_loads = [self._lab_press_side ,self._lab_sig_y1, self._lab_sig_y2,self._lab_sig_x1,
-                                    self._lab_sig_x2, self._lab_tau_y1, self._lab_yield, self._lab_mat_fac,
+        self._flat_gui_lab_loads = [self._lab_press_side , self._lab_sig_x1,
+                                    self._lab_sig_x2, self._lab_sig_y1, self._lab_sig_y2,
+                                    self._lab_tau_y1, self._lab_yield, self._lab_mat_fac,
                                     self._lab_structure_type]
-        self._flat_gui_loads = [self._ent_pressure_side, self._ent_sigma_y1, self._ent_sigma_y2, self._ent_sigma_x1,
-                                self._ent_sigma_x2, self._ent_tauxy, self._ent_mat, self._ent_mat_factor,
+        self._flat_gui_loads = [self._ent_pressure_side, self._ent_sigma_x1,
+                                self._ent_sigma_x2, self._ent_sigma_y1, self._ent_sigma_y2, self._ent_tauxy,
+                                self._ent_mat, self._ent_mat_factor,
                                 self._ent_structure_type]
-
 
         self._new_buckling_method = tk.StringVar()
         options = ['DNV-RP-C201 - prescriptive','DNV PULS','ML-CL (PULS based)']
@@ -1862,6 +1870,8 @@ class Application():
                 idx += 1
             self._flat_btn_load_info.place(relx=hor_start + 5 * delta_x,
                                             rely=vert_start + (idx+1) * delta_y)
+            self._button_str_type.place(relx=hor_start + 5 * delta_x,
+                                            rely=vert_start + (idx+3) * delta_y)
             idx = idx_now
             self._flat_gui_headlines[5].place(relx=hor_start + 0 * delta_x, rely=vert_start + idx * delta_y)
             idx += 1
@@ -2136,7 +2146,7 @@ class Application():
                       self._ent_puls_sp_or_up, self._ent_puls_method, self._ent_puls_uf, self._ent_puls_panel_boundary,
                       self._ent_puls_stf_end_type,
                       self._stf_button, self._stress_button,self._fls_button, self._shell_btn_load_info,
-                      self._flat_btn_load_info, self._shell_btn_length_info]
+                      self._flat_btn_load_info, self._shell_btn_length_info,self._button_str_type]
 
         to_process = to_process+self._shell_gui_items+self._shell_long_stf_gui_items+self._shell_ring_stf_gui_items+\
                      self._shell_ring_frame_gui_items+self._shell_loads_other_gui_items+\
@@ -2164,6 +2174,7 @@ class Application():
                     7:'Orthogonally Stiffened shell (Force input)',
                     8:'Orthogonally Stiffened panel (Stress input)'}
         '''
+
         if self._new_calculation_domain.get() == 'Flat plate, unstiffened':
             self._new_puls_sp_or_up.set('UP')
             self.gui_structural_properties(flat_unstf = True, flat_stf = False)
@@ -2256,10 +2267,10 @@ class Application():
             current_button = self._puls_run_all
             for line, data in self._line_to_struc.items():
                 if line not in result_lines:
-                    data[0].Plate.hw = data[0].Stiffener.hw
-                    data[0].Plate.tw = data[0].Stiffener.tw
-                    data[0].Plate.tw = data[0].Stiffener.b
-                    data[0].Plate.tw = data[0].Stiffener.tf
+                    data[0].Plate.hw = 0 if data[0].Stiffener is None else data[0].Stiffener.hw
+                    data[0].Plate.tw = 0 if data[0].Stiffener is None else data[0].Stiffener.tw
+                    data[0].Plate.b = 0 if data[0].Stiffener is None else data[0].Stiffener.b
+                    data[0].Plate.tf = 0 if data[0].Stiffener is None else data[0].Stiffener.tf
                     dict_to_run[line] = data[0].Plate.get_puls_input()
                     dict_to_run[line]['Identification'] = line
                     dict_to_run[line]['Pressure (fixed)'] = self.get_highest_pressure(line)['normal']/1e6
@@ -2378,6 +2389,17 @@ class Application():
 
     def puls_run_one_line(self):
         self.puls_run_all_lines(self._active_line)
+        self.update_frame()
+
+    def puls_delete_all(self):
+        '''
+        Deletes all existing PULS results
+        '''
+        if self._PULS_results is not None:
+            for key, val in self._line_to_struc.items():
+                self._PULS_results.result_changed(key)
+                val[0].need_recalc = True
+
         self.update_frame()
 
     def resize(self, event):
@@ -4024,7 +4046,6 @@ class Application():
         canvas_width = self._prop_canvas.winfo_width()
         canvas_height = self._prop_canvas.winfo_height()
 
-
         def checkered(line_distance, canvas):
             '''
             Grid lines in the properties canvas.
@@ -4038,20 +4059,14 @@ class Application():
             for y in range(line_distance, canvas_height, line_distance):
                 canvas.create_line(0, y, canvas_width, y, stipple='gray50', activestipple='gray75')
 
-
-
         if self._active_line in self._line_to_struc:
-
+            self.set_selected_variables(self._active_line)
             # printing the properties to the active line
             if self._line_is_active and self._line_to_struc[self._active_line][5] is None:
                 #checkered(10, self._prop_canvas)
-                self.set_selected_variables(self._active_line)
-
                 self._prop_canvas.create_text([canvas_width/2-canvas_width/20, canvas_height/20],
                                              text ='SELECTED: '+str(self._active_line),
                                              font=self._text_size["Text 10 bold"], fill='red')
-
-
                 if all([self._line_to_struc[self._active_line][0].Stiffener is None,
                         self._line_to_struc[self._active_line][0].Girder is None]):
                     structure_obj = self._line_to_struc[self._active_line][0].Plate
@@ -4078,8 +4093,9 @@ class Application():
 
                     if structure_obj is not None:
                         self._prop_canvas.create_text([startx +40, 50],
-                                                      text='Stiffener' if idx == 0 else 'Girder',
-                                                      font=self._text_size["Text 10 bold"], fill='Black')
+                                                      text='Stiffener\n' +structure_obj.get_beam_string()
+                                                      if idx == 0 else 'Girder\n' + structure_obj.get_beam_string(),
+                                                      font=self._text_size["Text 9 bold"], fill='Black')
                         if structure_obj is not None:
                             self._prop_canvas.create_text([100, 20],
                                                           text='Thickness scale x 2',
@@ -4132,7 +4148,7 @@ class Application():
     @staticmethod
     def draw_cylinder(text_size = None, canvas = None, CylObj: CylinderAndCurvedPlate = None,
                       height = 150, radius = 150,
-                      start_x_cyl = 500,start_y_cyl = 20, acceptance_color = False, text_x = 180, text_y = 130,
+                      start_x_cyl = 500,start_y_cyl = 20, acceptance_color = False, text_x = 200, text_y = 130,
                       text_color = 'black'):
 
         canvas_width = canvas.winfo_width()
@@ -4172,7 +4188,6 @@ class Application():
                                                       coord1[0] + radius * arc_x,
                                                       coord1[1] + height + 1 * arc_y * offset_oval+offset_oval/2,
                                                       fill='blue')
-
         if CylObj.RingStfObj is not None:
             num_ring_stiff = CylObj.ShellObj.length_of_shell / \
                              CylObj.ShellObj._dist_between_rings
@@ -4618,8 +4633,9 @@ class Application():
                     if all([key != 'Stiffener check', key != 'Stiffener check detailed']):
                         text_key = key
                         if key == 'Column stability check':
-                            if results['Need to check column buckling'] == False:
-                                continue
+                            if 'Need to check column buckling' in results.keys():
+                                if results['Need to check column buckling'] == False:
+                                    continue
                             text_value = 'N/A' if value is None else 'OK' if value else 'Not ok'
                         else:
                             text_value = 'N/A' if value is None else str(round(value, 2))
@@ -4763,7 +4779,6 @@ class Application():
         '''
         Adds a point number and coordinates to the point dictionary. Type is 'p1' = [x0,y0]
         '''
-
         try:
             if copy:
                 x_coord = self._new_point_x.get()/1000 + self._point_dict[self._active_point][0]
@@ -4915,6 +4930,8 @@ class Application():
             [5] Cylinder buckling data
         :return:
         '''
+        if multi_return is None:
+            self.save_no_dialogue(backup=True) #keeping a backup
 
         if all([pasted_structure == None, multi_return == None]):
             missing_input = False
@@ -4941,6 +4958,7 @@ class Application():
                 prop_dict = toggle_multi
             elif pasted_structure is None:
                 calc_dom = self._new_calculation_domain.get()
+
                 obj_dict = {'mat_yield': [self._new_material.get()*1e6, 'Pa'],
                             'mat_factor': [self._new_material_factor.get(), ''],
                             'span': [self._new_field_len.get()/1000, 'm'],
@@ -5004,6 +5022,7 @@ class Application():
                 main_dict['fabrication method stiffener'] = [self._new_buckling_fab_method_stf.get(), '']
                 main_dict['fabrication method girder'] = [self._new_buckling_fab_method_girder.get(), '']
                 main_dict['calculation domain'] = [self._new_calculation_domain.get(), '']
+
 
                 prop_dict = {'main dict': main_dict,
                              'Plate': obj_dict_pl,
@@ -5154,7 +5173,6 @@ class Application():
                                                                                   self._new_shell_exclude_ring_frame.get()])
                                                           else Structure(ring_frame_dict))
                 elif cylinder_return is not None:
-
                     main_dict_cyl, shell_dict, long_dict, ring_stf_dict, ring_frame_dict = \
                         cylinder_return.get_all_properties()
             else:
@@ -5196,19 +5214,30 @@ class Application():
                     self._line_to_struc[self._active_line][5] = CylinderObj
 
             else:
+                # if self._new_calculation_domain.get() in ['Flat plate, stiffened','Flat plate, unstiffened',
+                #                                   'Flat plate, stiffened with girder'] and \
+                #         self._line_to_struc[self._active_line][5] is not None:
+                #     self._line_to_struc[self._active_line][5] = None
+
                 prev_type = self._line_to_struc[self._active_line][0].Plate.get_structure_type()
-                #cdom = self._line_to_struc[self._active_line][0].calculation_domain
-                #prev_calc_obj = copy.deepcopy(self._line_to_struc[self._active_line][1])
                 prev_all_obj = copy.deepcopy(self._line_to_struc[self._active_line][0])
                 self._line_to_struc[self._active_line][0].set_main_properties(prop_dict)
 
-                if self._new_scale_stresses.get() and prev_all_obj.Plate.get_tuple() != \
-                        self._line_to_struc[self._active_line][0].Plate.get_tuple():
-                    self._line_to_struc[self._active_line][0].Plate = \
-                        op.create_new_calc_obj(prev_all_obj.Plate,
-                                               self._line_to_struc[self._active_line][0].Plate.get_tuple(),
-                                               fup=self._new_fup.get(), fdwn=self._new_fdwn.get())[0]
-
+                if self._new_scale_stresses.get() and prev_all_obj.get_main_properties() != \
+                        self._line_to_struc[self._active_line][0].get_main_properties():
+                    if prev_all_obj.Stiffener is not None:
+                        plate = self._line_to_struc[self._active_line][0].Plate
+                        stiffener = self._line_to_struc[self._active_line][0].Stiffener
+                        girder = self._line_to_struc[self._active_line][0].Girder
+                        calc_tup = (plate.get_s(), plate.get_pl_thk(), stiffener.get_web_h(), stiffener.get_web_thk(),
+                                    stiffener.get_fl_w(),
+                                    stiffener.get_fl_thk(), plate.get_span(), stiffener.get_lg() if girder is None else
+                                    girder.get_lg(), stiffener.stiffener_type)
+                    else:
+                        calc_tup = self._line_to_struc[self._active_line][0].Plate.get_tuple()
+                    self._line_to_struc[self._active_line][0] = op.create_new_calc_obj(prev_all_obj, calc_tup,
+                                                                                       fup=self._new_fup.get(),
+                                                                                       fdwn=self._new_fdwn.get())[0]
 
                 self._line_to_struc[self._active_line][0].need_recalc = True
 
@@ -5226,7 +5255,7 @@ class Application():
                     self._main_grid.clear()
                     self._compartments_listbox.delete(0, 'end')
 
-                if  None and all([CylinderObj is None, cylinder_return is None,
+                if all([CylinderObj is None, cylinder_return is None,
                                   self._line_to_struc[self._active_line][5] is not None]):
                     self._line_to_struc[self._active_line][5] = None
                 elif CylinderObj is not None:
@@ -5299,6 +5328,7 @@ class Application():
         :return:
         '''
         # points, self._point_dict, content), point
+        self.save_no_dialogue(backup=True)  # keeping a backup
 
         temp_tank_dict = {  'comp_no' : comp_no,
                             'cells' : cells,
@@ -5670,6 +5700,75 @@ class Application():
                     self._new_girder_fl_t.set(round(properties['stf_flange_thk'][0]*1000,5))
                     self._new_girder_type.set(properties['stf_type'][0])
 
+            if self._line_to_struc[self._active_line][5] is not None:
+
+                cylobj = self._line_to_struc[self._active_line][5]
+                all_dicts = cylobj.get_all_properties()
+
+                # Shell data input
+                shell_dict = all_dicts['Shell']
+                self._new_shell_thk.set(shell_dict['plate_thk'][0]*1000)
+                self._new_shell_radius.set(shell_dict['radius'][0]*1000)
+                self._new_shell_dist_rings.set(shell_dict['distance between rings, l'][0]*1000)
+                self._new_shell_length.set(shell_dict['length of shell, L'][0]*1000)
+                self._new_shell_tot_length.set(shell_dict['tot cyl length, Lc'][0]*1000)
+                self._new_shell_k_factor.set(shell_dict['eff. buckling lenght factor'][0])
+                self._new_shell_yield.set(shell_dict['mat_yield'][0]/1e6)
+
+                main_dict_cyl = all_dicts['Main class']
+
+                self._new_shell_sasd.set(main_dict_cyl['sasd'][0]/1e6)
+                self._new_shell_smsd .set(main_dict_cyl['smsd'][0]/1e6)
+                self._new_shell_tTsd.set(main_dict_cyl['tTsd'][0]/1e6)
+                self._new_shell_tQsd.set(main_dict_cyl['tQsd'][0]/1e6)
+                self._new_shell_psd.set(main_dict_cyl['psd'][0]/1e6)
+                self._new_shell_shsd.set(main_dict_cyl['shsd'][0]/1e6)
+
+                self._new_calculation_domain.set(CylinderAndCurvedPlate.geomeries[main_dict_cyl['geometry'][0]])
+                self._new_shell_mat_factor.set(main_dict_cyl['material factor'][0])
+                self._new_shell_ring_stf_fab_method.set(main_dict_cyl['fab method ring stf'][0])
+                self._new_shell_ring_frame_fab_method.set(main_dict_cyl['fab method ring girder'][0])
+                self._new_shell_e_module.set(main_dict_cyl['E-module'][0])
+                self._new_shell_poisson.set(main_dict_cyl['poisson'][0])
+                self._new_shell_yield.set(main_dict_cyl['mat_yield'][0]/1e6)
+                self._new_shell_ring_frame_length_between_girders.set(main_dict_cyl['length between girders'][0]*1000)
+                self._new_shell_panel_spacing.set(main_dict_cyl['panel spacing, s'][0]*1000)
+                self._new_shell_exclude_ring_stf.set(main_dict_cyl['ring stf excluded'][0])
+                self._new_shell_exclude_ring_frame.set(main_dict_cyl['ring frame excluded'][0])
+                self._new_shell_uls_or_als.set(main_dict_cyl['ULS or ALS'][0])
+                self._new_shell_end_cap_pressure_included.set(main_dict_cyl['end cap pressure'][0])
+                
+                if cylobj.LongStfObj is not None:
+                    # Longitudinal stiffener input
+                    long_dict = all_dicts['Long. stf.']
+                    self._new_stf_spacing.set(long_dict['spacing'][0]*1000)
+                    self._new_stf_web_h.set(long_dict['stf_web_height'][0]*1000)
+                    self._new_stf_web_t.set(long_dict['stf_web_thk'][0]*1000)
+                    self._new_stf_fl_w.set(long_dict['stf_flange_width'][0]*1000)
+                    self._new_stf_fl_t.set(long_dict['stf_flange_thk'][0]*1000)
+                    self._new_stf_type.set(long_dict['stf_type'][0])
+                    self._new_field_len.set(long_dict['span'][0]*1000)
+                    self._new_shell_yield.set(long_dict['mat_yield'][0]/1e6)
+                    self._new_panel_or_shell.set('shell')
+                if cylobj.RingStfObj is not None:
+                    ring_stf_dict = all_dicts['Ring stf.']
+                    self._new_shell_ring_stf_hw.set(ring_stf_dict['stf_web_height'][0]*1000)
+                    self._new_shell_ring_stf_tw.set(ring_stf_dict['stf_web_thk'][0]*1000)
+                    self._new_shell_ring_stf_b.set(ring_stf_dict['stf_flange_width'][0]*1000)
+                    self._new_shell_ring_stf_tf.set(ring_stf_dict['stf_flange_thk'][0]*1000)
+                    self._new_shell_ring_stf_type.set(ring_stf_dict['stf_type'][0])
+                    self._new_shell_yield.set(ring_stf_dict['mat_yield'][0]/1e6)
+                    self._new_panel_or_shell.set('shell')
+                if cylobj.RingFrameObj is not None:
+                    ring_frame_dict = all_dicts['Ring frame']
+                    self._new_shell_ring_frame_hw.set(ring_frame_dict ['stf_web_height'][0]*1000)
+                    self._new_shell_ring_frame_tw.set(ring_frame_dict ['stf_web_thk'][0]*1000)
+                    self._new_shell_ring_frame_b.set(ring_frame_dict ['stf_flange_width'][0]*1000)
+                    self._new_shell_ring_frame_tf.set(ring_frame_dict ['stf_flange_thk'][0]*1000)
+                    self._new_shell_ring_frame_type.set(ring_frame_dict ['stf_type'][0])
+                    self._new_shell_yield.set(ring_frame_dict ['mat_yield'][0]/1e6)
+                    self._new_panel_or_shell.set('shell')
+
     def get_highest_pressure(self, line, limit_state = 'ULS'):
         '''
         Returning the highest pressure of a line.
@@ -6002,6 +6101,7 @@ class Application():
         self._parent.bind('<Right>', self.right_arrow)
         self._parent.bind('<Down>', self.up_arrow)
         self._parent.bind('<Up>', self.down_arrow)
+        self._parent.bind("<Alt-s>", self.save_no_dialogue)
         #self._parent.bind('<Enter>', self.enter_key_pressed)
 
     def left_arrow(self, event):
@@ -6289,13 +6389,29 @@ class Application():
         ent_left.place(relx=0.002604167, rely=0.037037037)
         ent_right.place(relx=0.03125, rely=0.037037037)
 
-    def savefile(self):
+    def save_no_dialogue(self, event = None, backup = False):
+        if backup:
+            self.savefile(filename=self._root_dir + '\\' + 'backup.txt',backup = backup)
+            return
+        if self.__last_save_file is not None:
+            self.savefile(filename=self.__last_save_file)
+        else:
+            tk.messagebox.showerror('Save error', 'No saves in this session yet.')
+
+    def savefile(self, filename = None, backup = False):
         '''
         Saving to a file using JSON formatting.
         '''
-        save_file = filedialog.asksaveasfile(mode="w", defaultextension=".txt")
-        if save_file is None:  # ask saveasfile return `None` if dialog closed with "cancel".
-            return
+
+        if filename is None:
+            save_file = filedialog.asksaveasfile(mode="w", defaultextension=".txt")
+            if save_file is None:  # ask saveasfile return `None` if dialog closed with "cancel".
+                return
+            if not backup:
+                self.__last_save_file = save_file.name
+        else:
+            save_file = open(filename, mode='w')
+
 
         structure_properties = {}
         shell_structure_properties = {}
@@ -6344,6 +6460,8 @@ class Application():
         export_all['fatigue_properties'] = fatigue_properties
         #export_all['buckling type'] = self._new_buckling_slider.get()
 
+        export_all['buckling method'] = self._new_buckling_method.get()
+
         if self._PULS_results is not None:
             export_all['PULS results'] = self._PULS_results.get_run_results()
             export_all['PULS results']['sheet location'] = self._PULS_results.puls_sheet_location
@@ -6353,12 +6471,11 @@ class Application():
 
         export_all['Weight and COG'] = self._weight_logger
 
-
-
         json.dump(export_all, save_file)#, sort_keys=True, indent=4)
         save_file.close()
-        self._parent.wm_title('| ANYstructure |     ' + save_file.name)
-        self.update_frame()
+        if not backup:
+            self._parent.wm_title('| ANYstructure |     ' + save_file.name)
+        #self.update_frame()
 
     def openfile(self, defined = None, alone = False):
         '''
@@ -6592,11 +6709,17 @@ class Application():
                 imported['PULS results'].pop('sheet location')
             self._PULS_results.set_run_results(imported['PULS results'])
 
-        # Setting the scale of the canvas
+        if 'buckling method' in list(imported.keys()):
+            #options = ['DNV-RP-C201 - prescriptive', 'DNV PULS', 'ML-CL (PULS based)']
+            self._new_buckling_method.set(imported['buckling method'])
+
+            # Setting the scale of the canvas
+
         points = self._point_dict
         highest_y = max([coord[1] for coord in points.values()])
         highest_x = max([coord[0] for coord in points.values()])
-        self._canvas_scale = min(800 / highest_y, 800 / highest_x, 15)
+        if not any([highest_x == 0, highest_y == 0]):
+            self._canvas_scale = min(800 / highest_y, 800 / highest_x, 15)
 
         # if 'buckling type' in imported.keys():
         #     self._new_buckling_slider.set(imported['buckling type'])
@@ -6609,6 +6732,10 @@ class Application():
         imp_file.close()
         self._parent.wm_title('| ANYstructure |     ' + imp_file.name)
         self.update_frame()
+
+    def restore_previous(self):
+        if os.path.isfile(self._root_dir + '\\backup.txt'):
+            self.openfile(defined=self._root_dir + '\\backup.txt')
 
     def open_example(self, file_name = 'ship_section_example.txt'):
         ''' Open the example file. To be used in help menu. '''
@@ -6775,7 +6902,7 @@ class Application():
             self._ext_button.image = photo
         except TclError:
             pass
-
+        self.__previous_load_data = copy.deepcopy(self._load_dict)
         top = tk.Toplevel(self._parent, background=self._general_color)
         load_window.CreateLoadWindow(top, self)
 
@@ -6893,6 +7020,7 @@ class Application():
         Setting properties created in load window.
         :return:
         '''
+        self.save_no_dialogue(backup=True)  # keeping a backup
 
         try:
             img_file_name = 'img_ext_pressure_button.gif'
@@ -6907,7 +7035,7 @@ class Application():
             pass
         self._load_window_couter = counter
         self._new_load_comb_dict = load_comb_dict
-        temp_load = copy.deepcopy(self._load_dict)
+        temp_load = self.__previous_load_data
         if len(returned_loads) != 0:
             need_to_recalc_puls = {}
             for load, data in returned_loads.items():
@@ -6922,12 +7050,17 @@ class Application():
             for main_line in self._line_dict.keys():
                 for load_obj, load_line in self._load_dict.values():
                     if main_line in self._line_to_struc.keys():
-                        if returned_loads:
-                            if load_obj.__str__() != temp_load[load_obj.get_name()][0].__str__() and main_line in \
-                                    load_line+temp_load[load_obj.get_name()][1]:
+                        if load_obj.get_name() in temp_load.keys():
+                            if any([load_obj.__str__() != temp_load[load_obj.get_name()][0].__str__() and main_line in \
+                                    load_line+temp_load[load_obj.get_name()][1],
+                                    main_line in list(set(temp_load[load_obj.get_name()][1]).symmetric_difference(set(load_line)))]) :
                                 # The load has changed for this line.
                                 if self._PULS_results is not None:
                                     self._PULS_results.result_changed(main_line)
+                        elif main_line in load_line:
+                            # This is a new load for this line.
+                            if self._PULS_results is not None:
+                                self._PULS_results.result_changed(main_line)
                     if main_line in load_line and main_line in self._line_to_struc.keys():
                         self._line_to_struc[main_line][3].append(load_obj)
 
@@ -6935,8 +7068,8 @@ class Application():
         self.__returned_load_data = [returned_loads, counter, load_comb_dict]
 
        # Calculating center of buoyancy from static cases.
-
-        self.get_cob() # Update COB
+        if self._grid_calc is not None:
+            self.get_cob() # Update COB
         self.update_frame()
 
     def on_close_opt_window(self,returned_object):
@@ -6945,6 +7078,7 @@ class Application():
         :param returned_structure:
         :return:
         '''
+        self.save_no_dialogue(backup=True)  # keeping a backup
 
         self.new_structure(multi_return = returned_object[0:2])
         # self._line_to_struc[self._active_line][1]=returned_objects[0]
@@ -6974,7 +7108,7 @@ class Application():
         :param returned_structure:
         :return:
         '''
-
+        self.save_no_dialogue(backup=True)  # keeping a backup
         for line,all_objs in returned_objects.items():
             self._active_line = line
             #self._line_to_struc[line][0].need_recalc = True
@@ -7117,6 +7251,7 @@ class Application():
         '''
 
         mess = tk.messagebox.showwarning('Close main window', 'Save before closing?',type = 'yesnocancel')
+        self.save_no_dialogue(backup=True)  # keeping a backup
 
         if mess == 'yes':
             self.savefile()

@@ -137,10 +137,18 @@ class Structure():
 
     def get_beam_string(self):
         ''' Returning a string. '''
+        if type(self._stiffener_type) != str:
+            print('error')
+
         base_name = self._stiffener_type+ '_' + str(round(self._web_height*1000, 0)) + 'x' + \
                    str(round(self._web_th*1000, 0))
         if self._stiffener_type == 'FB':
             ret_str = base_name
+        elif self._stiffener_type in ['L-bulb', 'bulb', 'hp']:
+            ret_str = 'Bulb'+str(int(self._web_height*1000 + self._flange_th*1000))+'x'+\
+                      str(round(self._web_th*1000, 0))+ '_(' +str(round(self._web_height*1000, 0)) + 'x' + \
+                   str(round(self._web_th*1000, 0))+'_'+ str(round(self._flange_width*1000, 0)) + 'x' + \
+                      str(round(self._flange_th*1000, 0))+')'
         else:
             ret_str = base_name + '__' + str(round(self._flange_width*1000, 0)) + 'x' + \
                       str(round(self._flange_th*1000, 0))
@@ -148,6 +156,17 @@ class Structure():
         ret_str = ret_str.replace('.', '_')
 
         return ret_str
+        # base_name = self._stiffener_type+ '_' + str(round(self._web_height*1000, 0)) + 'x' + \
+        #            str(round(self._web_th*1000, 0))
+        # if self._stiffener_type == 'FB':
+        #     ret_str = base_name
+        # else:
+        #     ret_str = base_name + '__' + str(round(self._flange_width*1000, 0)) + 'x' + \
+        #               str(round(self._flange_th*1000, 0))
+        #
+        # ret_str = ret_str.replace('.', '_')
+        #
+        # return ret_str
 
     def get_structure_types(self):
         return self._structure_types
@@ -489,10 +508,10 @@ class Structure():
         return Iy
 
     def get_torsional_moment_venant(self, reduced_tw = None, efficient_flange = True):
-        if efficient_flange:
-            ef = self.get_ef_iacs()*1000
-        else:
-            ef = self._flange_width * 1000
+        # if efficient_flange:
+        #     ef = self.get_ef_iacs()*1000
+        # else:
+        #     ef = self._flange_width * 1000
         tf = self._flange_th*1000
         tw = self._web_th*1000 if reduced_tw is None else reduced_tw
         bf = self._flange_width*1000
@@ -704,6 +723,12 @@ class Structure():
         else:
             stf_type = self._stiffener_type
         map_boundary = {'Continuous': 'C', 'Sniped': 'S'}
+        sig_x1 = self._sigma_x1
+        sig_x2 = self._sigma_x2
+        if sig_x1 * sig_x2 >= 0:
+            sigxd = sig_x1 if abs(sig_x1) > abs(sig_x2) else sig_x2
+        else:
+            sigxd = max(sig_x1, sig_x2)
         if self._puls_sp_or_up == 'SP':
             return_dict = {'Identification': None, 'Length of panel': self._span*1000, 'Stiffener spacing': self._spacing*1000,
                             'Plate thickness': self._plate_th*1000,
@@ -717,7 +742,7 @@ class Structure():
                             'Flange thick.': self._flange_th*1000, 'Tilt angle': 0,
                           'Number of sec. stiffeners': 0, 'Modulus of elasticity': 2.1e11/1e6, "Poisson's ratio": 0.3,
                           'Yield stress plate': self._mat_yield/1e6, 'Yield stress stiffener': self._mat_yield/1e6,
-                            'Axial stress': 0 if self._puls_boundary == 'GT' else self._sigma_x1,
+                            'Axial stress': 0 if self._puls_boundary == 'GT' else sigxd,
                            'Trans. stress 1': 0 if self._puls_boundary == 'GL' else self._sigma_y1,
                           'Trans. stress 2': 0 if self._puls_boundary == 'GL' else self._sigma_y2,
                            'Shear stress': self._tauxy,
@@ -741,8 +766,8 @@ class Structure():
                            'Plate thickness': self._plate_th*1000,
                          'Modulus of elasticity': 2.1e11/1e6, "Poisson's ratio": 0.3,
                           'Yield stress plate': self._mat_yield/1e6,
-                         'Axial stress 1': 0 if self._puls_boundary == 'GT' else self._sigma_x1,
-                           'Axial stress 2': 0 if self._puls_boundary == 'GT' else self._sigma_x1,
+                         'Axial stress 1': 0 if self._puls_boundary == 'GT' else sigxd,
+                           'Axial stress 2': 0 if self._puls_boundary == 'GT' else sigxd,
                            'Trans. stress 1': 0 if self._puls_boundary == 'GL' else self._sigma_y1,
                          'Trans. stress 2': 0 if self._puls_boundary == 'GL' else self._sigma_y2,
                            'Shear stress': self._tauxy, 'Pressure (fixed)': None, 'In-plane support': self._puls_boundary,
@@ -1728,7 +1753,7 @@ class AllStructure():
         def lt_params(lT):
 
             if Ipo*lT>0:
-                fET = G*It/Ipo+math.pow(math.pi,2)*E*math.pow(hs,2)*Iz/(Ipo*math.pow(lT,2))
+                fET = beta*G*It/Ipo+math.pow(math.pi,2)*E*math.pow(hs,2)*Iz/(Ipo*math.pow(lT,2)) #NOTE, beta was missed from above, added. 23.08.2022
             else:
                 fET = 0.001
             alphaT = 0 if fET == 0 else math.sqrt(fy/fET)
@@ -1968,8 +1993,10 @@ class AllStructure():
         Cxs = stf_pl_data['Cxs']
         fkx = Cxs*fy
         CxG = math.sqrt(1-math.pow(sxsd/fkx,2)) if sxsd<fkx else 0
-
-        CyG_tens = 1 if Lg > 2*l else Lg/(l*math.sqrt(4-math.pow(Lg/l,2)))
+        if 4-math.pow(Lg/l,2) != 0:
+            CyG_tens = 1 if Lg > 2*l else Lg/(l*math.sqrt(4-math.pow(Lg/l,2)))
+        else:
+            CyG_tens = 1
         CyG_comp  = 0 if l*alphap == 0 else stf_pl_data['Cys_comp']
         CyG = min([1,CyG_tens]) if sy1sd<0 else min([1, CyG_comp])
         CtG = math.sqrt(1-3*math.pow(tsd/fy,2)) if tsd<fy/math.sqrt(3) else 0
@@ -3456,7 +3483,7 @@ class CylinderAndCurvedPlate():
                                                                                                      2) + math.pow(
                     math.pi, 2) \
                       * E * Iz / ((Aw / 3 + Af) * math.pow(lT, 2))
-                print('WHY')
+
             else:
                 hs, It, Iz, Ipo, Iy = shell_buckling_data['cross section data'][idx-1]
                 fEt = beta * G * It / Ipo + math.pow(math.pi, 2) * E * math.pow(hs, 2) * Iz / (Ipo * math.pow(lT, 2))
@@ -3719,6 +3746,7 @@ class CylinderAndCurvedPlate():
                      'ring frame excluded': [self.__ring_frame_excluded, ''],
                      'end cap pressure': [self._end_cap_pressure_included, ''],
                      'ULS or ALS':[self._uls_or_als, '']}
+
         return main_dict
         
     def set_stresses_and_pressure(self, val):

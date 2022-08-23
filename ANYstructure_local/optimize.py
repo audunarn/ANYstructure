@@ -223,7 +223,7 @@ def any_smart_loop_cylinder(min_var,max_var,deltas,initial_structure_obj,lateral
     # Creating the individual combinations for Shell, LongStf, RingStf and RingFrame
     for idx, str_type in enumerate(range(len(min_var))):
         if sum(min_var[idx]) == 0:
-            structure_to_check = [(0, 0, 0, 0, 0, 0, 0, 0, 0),]
+            structure_to_check = [(0, 0, 0, 0, 0, 0, 0, 0),]
         else:
             if any([predefiened_stiffener_iter is None, idx == 0]):
                 initial_structure_obj.LongStfObj.stiffener_type = 'T'
@@ -233,6 +233,10 @@ def any_smart_loop_cylinder(min_var,max_var,deltas,initial_structure_obj,lateral
                 structure_to_check = any_get_all_combs(min_var[idx], max_var[idx], deltas[idx],
                                                        predef_stiffeners= [item.get_tuple() for item in
                                                                            predefiened_stiffener_iter])
+            # TODO add stifffener type
+
+        # [list(item).append('T') for item in structure_to_check]
+        # [tuple(item) for item in structure_to_check]
         combs.append(structure_to_check)
 
     # Combining the individual components.
@@ -551,6 +555,7 @@ def any_constraints_cylinder(x,obj: calc.CylinderAndCurvedPlate,init_weight, lat
     all_checks = [0,0,0,0,0,0,0,0]
     check_map = {'weight': 0, 'UF unstiffened': 1, 'Column stability': 2, 'UF longitudinal stiffeners':3,
                  'Stiffener check': 4, 'UF ring stiffeners':5, 'UF ring frame': 6, 'Check OK': 7}
+
     calc_obj = create_new_cylinder_obj(obj, x)
 
     optimizing = True if any([calc_obj.RingStfObj is None, calc_obj.RingFrameObj is None]) else False
@@ -792,7 +797,8 @@ def create_new_cylinder_obj(init_obj, x_new):
         new_obj.LongStfObj.tw = x_new[1][3]*1000
         new_obj.LongStfObj.b = x_new[1][4]*1000
         new_obj.LongStfObj.tf = x_new[1][5]*1000
-        new_obj.LongStfObj.stiffener_type = x_new[1][8]
+
+        #new_obj.LongStfObj.stiffener_type = x_new[1][7] # TODO should be 8
 
     return new_obj
 
@@ -803,45 +809,113 @@ def create_new_calc_obj(init_obj,x, fat_dict=None, fdwn = 1, fup = 0.5):
     :return:
     '''
 
-    x_old = [init_obj.get_s(), init_obj.get_pl_thk(), init_obj.get_web_h() , init_obj.get_web_thk(),
-             init_obj.get_fl_w(),init_obj.get_fl_thk(), init_obj.get_span(), init_obj.get_lg()]
+    if type(init_obj) == calc.AllStructure:
 
-    sigma_y1_new = stress_scaling(init_obj.get_sigma_y1(), init_obj.get_pl_thk(), x[1], fdwn = fdwn, fup = fup)
-    sigma_y2_new = stress_scaling(init_obj.get_sigma_y2(), init_obj.get_pl_thk(), x[1], fdwn = fdwn, fup = fup)
-    tau_xy_new = stress_scaling(init_obj.get_tau_xy(), init_obj.get_pl_thk(), x[1], fdwn = fdwn, fup = fup)
-    sigma_x1_new = stress_scaling_area(init_obj.get_sigma_x1(),
-                                      sum(get_field_tot_area(x_old)),
-                                      sum(get_field_tot_area(x)), fdwn = fdwn, fup = fup)
-    sigma_x2_new = stress_scaling_area(init_obj.get_sigma_x2(),
-                                      sum(get_field_tot_area(x_old)),
-                                      sum(get_field_tot_area(x)), fdwn = fdwn, fup = fup)
-    try:
-        stf_type = x[8]
-    except IndexError:
-        stf_type = init_obj.get_stiffener_type()
+        if init_obj.Stiffener is not None:
+            plate = init_obj.Plate
+            stiffener = init_obj.Stiffener
+            girder = init_obj.Girder
+            x_old = (plate.get_s(), plate.get_pl_thk(), stiffener.get_web_h(), stiffener.get_web_thk(),
+                        stiffener.get_fl_w(),
+                        stiffener.get_fl_thk(), plate.get_span(), stiffener.get_lg() if girder is None else
+                        girder.get_lg(), stiffener.stiffener_type)
+        else:
+            x_old = init_obj.Plate.get_tuple()
+        
+        sigma_y1_new = stress_scaling(init_obj.Plate.get_sigma_y1(), init_obj.Plate.get_pl_thk(), x[1], fdwn = fdwn, fup = fup)
+        sigma_y2_new = stress_scaling(init_obj.Plate.get_sigma_y2(), init_obj.Plate.get_pl_thk(), x[1], fdwn = fdwn, fup = fup)
+        tau_xy_new = stress_scaling(init_obj.Plate.get_tau_xy(), init_obj.Plate.get_pl_thk(), x[1], fdwn = fdwn, fup = fup)
+        sigma_x1_new = stress_scaling_area(init_obj.Plate.get_sigma_x1(),
+                                          sum(get_field_tot_area(x_old)),
+                                          sum(get_field_tot_area(x)), fdwn = fdwn, fup = fup)
+        sigma_x2_new = stress_scaling_area(init_obj.Plate.get_sigma_x2(),
+                                          sum(get_field_tot_area(x_old)),
+                                          sum(get_field_tot_area(x)), fdwn = fdwn, fup = fup)
+        try:
+            stf_type = x[8]
+        except IndexError:
+            stf_type = init_obj.plate.get_stiffener_type()
+        
+        main_dict = {'mat_yield': [init_obj.Plate.get_fy(), 'Pa'],'mat_factor': [init_obj.Plate.get_mat_factor(), 'Pa'],
+                     'span': [init_obj.Plate.get_span(), 'm'],
+                     'spacing': [x[0], 'm'],'plate_thk': [x[1], 'm'],'stf_web_height':[ x[2], 'm'],
+                     'stf_web_thk': [x[3], 'm'],'stf_flange_width': [x[4], 'm'],
+                     'stf_flange_thk': [x[5], 'm'],'structure_type': [init_obj.Plate.get_structure_type(), ''],
+                     'stf_type': [stf_type, ''],'sigma_y1': [sigma_y1_new, 'MPa'],
+                     'sigma_y2': [sigma_y2_new, 'MPa'],'sigma_x1': [sigma_x1_new, 'MPa'],'sigma_x2': [sigma_x2_new, 'MPa'],
+                     'tau_xy': [tau_xy_new, 'MPa'],'plate_kpp': [init_obj.Plate.get_kpp(), ''],
+                     'stf_kps': [init_obj.Plate.get_kps(), ''],'stf_km1': [init_obj.Plate.get_km1(), ''],
+                     'stf_km2': [init_obj.Plate.get_km2(), ''],'stf_km3': [init_obj.Plate.get_km3(), ''],
+                     'structure_types':[init_obj.Plate.get_structure_types(), ''],
+                     'zstar_optimization': [init_obj.Plate.get_z_opt(), ''],
+                     'puls buckling method':[init_obj.Plate.get_puls_method(),''],
+                     'puls boundary':[init_obj.Plate.get_puls_boundary(),''],
+                     'puls stiffener end':[init_obj.Plate.get_puls_stf_end(),''],
+                     'puls sp or up':[init_obj.Plate.get_puls_sp_or_up(),''],
+                     'puls up boundary':[init_obj.Plate.get_puls_up_boundary(),''],
+                     'panel or shell': [init_obj.Plate.panel_or_shell, '']}
+        all_dict = init_obj.get_main_properties()
+        all_dict['Plate'] = main_dict
+        all_dict['Stiffener'] = None if init_obj.Stiffener is None else main_dict
+        all_dict['Girder'] = None if init_obj.Girder is None else main_dict
 
-    main_dict = {'mat_yield': [init_obj.get_fy(), 'Pa'],'mat_factor': [init_obj.get_mat_factor(), 'Pa'],
-                 'span': [init_obj.get_span(), 'm'],
-                 'spacing': [x[0], 'm'],'plate_thk': [x[1], 'm'],'stf_web_height':[ x[2], 'm'],
-                 'stf_web_thk': [x[3], 'm'],'stf_flange_width': [x[4], 'm'],
-                 'stf_flange_thk': [x[5], 'm'],'structure_type': [init_obj.get_structure_type(), ''],
-                 'stf_type': [stf_type, ''],'sigma_y1': [sigma_y1_new, 'MPa'],
-                 'sigma_y2': [sigma_y2_new, 'MPa'],'sigma_x1': [sigma_x1_new, 'MPa'],'sigma_x2': [sigma_x2_new, 'MPa'],
-                 'tau_xy': [tau_xy_new, 'MPa'],'plate_kpp': [init_obj.get_kpp(), ''],
-                 'stf_kps': [init_obj.get_kps(), ''],'stf_km1': [init_obj.get_km1(), ''],
-                 'stf_km2': [init_obj.get_km2(), ''],'stf_km3': [init_obj.get_km3(), ''],
-                 'structure_types':[init_obj.get_structure_types(), ''],
-                 'zstar_optimization': [init_obj.get_z_opt(), ''],
-                 'puls buckling method':[init_obj.get_puls_method(),''],
-                 'puls boundary':[init_obj.get_puls_boundary(),''],
-                 'puls stiffener end':[init_obj.get_puls_stf_end(),''],
-                 'puls sp or up':[init_obj.get_puls_sp_or_up(),''],
-                 'puls up boundary':[init_obj.get_puls_up_boundary(),''],
-                 'panel or shell': [init_obj.panel_or_shell, '']}
-    if fat_dict == None:
-        return calc.CalcScantlings(main_dict), None
+        if fat_dict == None:
+            return calc.AllStructure(Plate=None if all_dict['Plate'] is None
+                                                            else calc.CalcScantlings(all_dict['Plate']),
+                                                            Stiffener=None if all_dict['Stiffener'] is None
+                                                            else calc.CalcScantlings(all_dict['Stiffener']),
+                                                            Girder=None if all_dict['Girder'] is None
+                                                            else calc.CalcScantlings(all_dict['Girder']),
+                                                            main_dict=all_dict['main dict']), None
+        else:
+            return calc.AllStructure(Plate=None if all_dict['Plate'] is None
+                                                            else calc.CalcScantlings(all_dict['Plate']),
+                                                            Stiffener=None if all_dict['Stiffener'] is None
+                                                            else calc.CalcScantlings(all_dict['Stiffener']),
+                                                            Girder=None if all_dict['Girder'] is None
+                                                            else calc.CalcScantlings(all_dict['Girder']),
+                                                            main_dict=all_dict['main dict']), \
+                   calc.CalcFatigue(main_dict, fat_dict)
     else:
-        return calc.CalcScantlings(main_dict), calc.CalcFatigue(main_dict, fat_dict)
+        x_old = [init_obj.get_s(), init_obj.get_pl_thk(), init_obj.get_web_h() , init_obj.get_web_thk(),
+                 init_obj.get_fl_w(),init_obj.get_fl_thk(), init_obj.get_span(), init_obj.get_lg()]
+
+        sigma_y1_new = stress_scaling(init_obj.get_sigma_y1(), init_obj.get_pl_thk(), x[1], fdwn = fdwn, fup = fup)
+        sigma_y2_new = stress_scaling(init_obj.get_sigma_y2(), init_obj.get_pl_thk(), x[1], fdwn = fdwn, fup = fup)
+        tau_xy_new = stress_scaling(init_obj.get_tau_xy(), init_obj.get_pl_thk(), x[1], fdwn = fdwn, fup = fup)
+        sigma_x1_new = stress_scaling_area(init_obj.get_sigma_x1(),
+                                          sum(get_field_tot_area(x_old)),
+                                          sum(get_field_tot_area(x)), fdwn = fdwn, fup = fup)
+        sigma_x2_new = stress_scaling_area(init_obj.get_sigma_x2(),
+                                          sum(get_field_tot_area(x_old)),
+                                          sum(get_field_tot_area(x)), fdwn = fdwn, fup = fup)
+        try:
+            stf_type = x[8]
+        except IndexError:
+            stf_type = init_obj.get_stiffener_type()
+
+        main_dict = {'mat_yield': [init_obj.get_fy(), 'Pa'],'mat_factor': [init_obj.get_mat_factor(), 'Pa'],
+                     'span': [init_obj.get_span(), 'm'],
+                     'spacing': [x[0], 'm'],'plate_thk': [x[1], 'm'],'stf_web_height':[ x[2], 'm'],
+                     'stf_web_thk': [x[3], 'm'],'stf_flange_width': [x[4], 'm'],
+                     'stf_flange_thk': [x[5], 'm'],'structure_type': [init_obj.get_structure_type(), ''],
+                     'stf_type': [stf_type, ''],'sigma_y1': [sigma_y1_new, 'MPa'],
+                     'sigma_y2': [sigma_y2_new, 'MPa'],'sigma_x1': [sigma_x1_new, 'MPa'],'sigma_x2': [sigma_x2_new, 'MPa'],
+                     'tau_xy': [tau_xy_new, 'MPa'],'plate_kpp': [init_obj.get_kpp(), ''],
+                     'stf_kps': [init_obj.get_kps(), ''],'stf_km1': [init_obj.get_km1(), ''],
+                     'stf_km2': [init_obj.get_km2(), ''],'stf_km3': [init_obj.get_km3(), ''],
+                     'structure_types':[init_obj.get_structure_types(), ''],
+                     'zstar_optimization': [init_obj.get_z_opt(), ''],
+                     'puls buckling method':[init_obj.get_puls_method(),''],
+                     'puls boundary':[init_obj.get_puls_boundary(),''],
+                     'puls stiffener end':[init_obj.get_puls_stf_end(),''],
+                     'puls sp or up':[init_obj.get_puls_sp_or_up(),''],
+                     'puls up boundary':[init_obj.get_puls_up_boundary(),''],
+                     'panel or shell': [init_obj.panel_or_shell, '']}
+        if fat_dict == None:
+            return calc.CalcScantlings(main_dict), None
+        else:
+            return calc.CalcScantlings(main_dict), calc.CalcFatigue(main_dict, fat_dict)
 
 def create_new_structure_obj(init_obj, x, fat_dict=None, fdwn = 1, fup = 0.5):
     '''
@@ -1216,7 +1290,7 @@ def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight
 
     return check_ok, check_not_ok
 
-def any_get_all_combs(min_var, max_var,deltas, init_weight = float('inf'), predef_stiffeners = None, cylinder = False):
+def any_get_all_combs(min_var, max_var,deltas, init_weight = float('inf'), predef_stiffeners = None, stf_type = None):
     '''
     Calulating initial values.
     :param min:
@@ -1258,11 +1332,13 @@ def any_get_all_combs(min_var, max_var,deltas, init_weight = float('inf'), prede
         predef_iterable = list()
         for pre_str in predef_stiffeners:
             for spacing in spacing_array:
+
                 for pl_thk in pl_thk_array:
                     new_field = list(pre_str)
                     new_field[0] = spacing
                     new_field[1] = pl_thk
                     predef_iterable.append(tuple(new_field))
+
         return predef_iterable
 
 

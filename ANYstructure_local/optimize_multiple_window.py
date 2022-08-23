@@ -1419,7 +1419,7 @@ class CreateOptimizeMultipleWindow():
 
             self.app.on_close_opt_multiple_window(to_return)
             messagebox.showinfo(title='Return info', message='Returning: '+str(list(to_return.keys())) +
-                                                             '\nLines withot results are not returned.')
+                                                             '\nLines without results are not returned.')
 
         self._frame.destroy()
 
@@ -1447,7 +1447,8 @@ class CreateOptimizeMultipleWindow():
                 self._ent_spacing_upper.config(bg = 'lightgreen')
                 self._ent_spacing_lower.config(bg = 'lightgreen')
                 self._ent_delta_spacing.config(bg = 'lightgreen')
-                openfile = list(askopenfilenames(parent=self._frame, title='Choose files to open'))
+                openfile = list(askopenfilenames(parent=self._frame, title='Choose files to open',
+                                                 initialdir=self._root_dir))
                 if openfile == []:
                     self._toggle_btn.config(relief="raised")
                     self._toggle_btn.config(bg='salmon')

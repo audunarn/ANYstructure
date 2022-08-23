@@ -170,6 +170,7 @@ class LetterMaker(object):
 
         for line in sorted(self.data._line_dict.keys()):
             vpos -= delta
+
             if line in self.data._line_to_struc.keys():
                 if self.data._line_to_struc[line][5] is None:
                     struc_obj = self.data._line_to_struc[line][0]
@@ -271,23 +272,25 @@ class LetterMaker(object):
                                             str(round(max(buc_util),2))+' -> '+'NOT OK')
                     elif self.data._new_buckling_method.get() == 'DNV PULS':
                         if self.data._PULS_results is not None:
-                            puls_method = self.data._line_to_struc[line][0].get_puls_method()
+                            puls_method = self.data._line_to_struc[line][0].Plate.get_puls_method()
                             textobject.textLine('PULS results using '+str(puls_method) + 'utilization with acceptance '+
                                                 str(self.data._PULS_results.puls_acceptance))
                             if line in self.data._PULS_results.get_run_results().keys():
                                 puls_buckling = self.data._PULS_results.get_run_results()[line]['Buckling strength']['Actual usage Factor'][0]
                                 puls_ultimate = self.data._PULS_results.get_run_results()[line]['Ultimate capacity']['Actual usage Factor'][0]
-
-                                if puls_method == 'buckling' and puls_buckling/self.data._PULS_results.puls_acceptance > 1:
-                                    textobject.setFillColor('red')
+                                if  puls_buckling is not None:
+                                    if puls_method == 'buckling' and puls_buckling/self.data._PULS_results.puls_acceptance > 1:
+                                        textobject.setFillColor('red')
                                 textobject.textLine('PULS buckling utilization = ' + str(puls_buckling))
                                 textobject.setFillColor('black')
-                                if puls_method == 'ultimate'  and puls_ultimate/self.data._PULS_results.puls_acceptance > 1:
-                                    textobject.setFillColor('red')
+                                if puls_ultimate is not None:
+                                    if puls_method == 'ultimate'  and puls_ultimate/self.data._PULS_results.puls_acceptance > 1:
+                                        textobject.setFillColor('red')
                                 textobject.textLine('PULS ultimate utilization = ' + str(puls_ultimate))
                                 textobject.setFillColor('black')
+
                     else:
-                        puls_method = self.data._line_to_struc[line][0].get_puls_method()
+                        puls_method = self.data._line_to_struc[line][0].Plate.get_puls_method()
                         textobject.textLine('ML-CL results using '+str(puls_method) + 'utilization with acceptance 0.87')
                         if line in self.data._PULS_results.get_run_results().keys():
                             ml_buckling = self.data.get_color_and_calc_state()['ML buckling class'][line]['buckling']
@@ -327,6 +330,7 @@ class LetterMaker(object):
 
                     textobject.setFillColor('black')
                     self.c.drawText(textobject)
+                    vpos -= 10
                 else:
                     cyl_obj = self.data._line_to_struc[line][5]
                     textobject = self.c.beginText()
@@ -345,10 +349,16 @@ class LetterMaker(object):
                         +'Total cyl. lenght, Lc: ' + str(round(cyl_obj.ShellObj.tot_cyl_length, 1)))
 
                     results = cyl_obj.get_utilization_factors()
+                    textobject.textLine('Design axial stress/force:     ' + str(cyl_obj.sasd / 1e6) + ' MPa')
+                    textobject.textLine('Design bending stress/moment:  ' + str(cyl_obj.smsd / 1e6) + ' MPa')
+                    textobject.textLine('Design tosional stress/moment: ' + str(cyl_obj.tTsd / 1e6) + ' MPa')
+                    textobject.textLine('Design shear stress/force:     ' + str(cyl_obj.tQsd / 1e6) + ' MPa')
+                    textobject.textLine('Design lateral pressure        ' + str(cyl_obj.psd / 1e6) + ' MPa' )
+                    vpos -= 40
                     for key, value in results.items():
                         if key in ['Weight', 'Need to check column buckling']:
                             continue
-                        if key != 'Stiffener check':
+                        if key not in ['Stiffener check', 'Stiffener check detailed']:
                             text_key = key
                             if key == 'Column stability check':
                                 if results['Need to check column buckling'] == False:
@@ -363,18 +373,18 @@ class LetterMaker(object):
                             textobject.setFillColor(uf_col)
                             textobject.textLine(text_key + ' : UF = ' + uf_text)
                             textobject.setFillColor('black')
-                        else:
+                        elif key == 'Stiffener check':
                             if value is not None:
-
                                 textobject.textLine('Stiffener requirement checks:')
                                 stf_type_all = ''
                                 for stf_type, chk_bool in value.items():
                                     chk_text = 'OK' if chk_bool == True else 'Not OK' if chk_bool == False else 'N/A'
                                     stf_type_all += stf_type + ' : ' + chk_text + '     '
                                 textobject.textLine(stf_type_all)
-
+                        vpos -= 10
 
                     self.c.drawText(textobject)
+                    vpos += 10
             else:
                 textobject.setFont("Helvetica-Oblique", 10)
                 textobject.textLine('*********** '+line+' ***********')
@@ -455,7 +465,7 @@ class LetterMaker(object):
                         self.c.setStrokeColor('black')
                 elif self.data._new_buckling_method.get() == 'DNV PULS':
                     try:
-                        method = self.data._line_to_struc[line][0].get_puls_method()
+                        method = self.data._line_to_struc[line][0].Plate.get_puls_method()
                         if self.data._PULS_results is not None:
                             util = self.data._PULS_results.get_utilization(line, method, self.data._new_puls_uf.get())
                             if util is not None:
@@ -464,7 +474,7 @@ class LetterMaker(object):
                         self.c.setStrokeColor('black')
                 else:
 
-                    method = self.data._line_to_struc[line][0].get_puls_method()
+                    method = self.data._line_to_struc[line][0].Plate.get_puls_method()
                     self.c.setStrokeColor(colors[line][method])
 
             elif draw_type == 'section' and self.data._line_to_struc[line][0].Stiffener is not None:
@@ -491,7 +501,7 @@ class LetterMaker(object):
                 elif self.data._new_buckling_method.get() == 'DNV PULS':
                     self.c.setStrokeColor(all_line_data['color code']['lines'][line]['PULS uf color'])
                 else:
-                    puls_method = self.data._line_to_struc[line][0].get_puls_method()
+                    puls_method = self.data._line_to_struc[line][0].Plate.get_puls_method()
                     self.c.setStrokeColor(matplotlib_colors.rgb2hex(all_line_data['ML buckling colors'][line][puls_method]))
 
             elif draw_type == 'sigma x':
