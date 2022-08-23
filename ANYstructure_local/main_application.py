@@ -6410,8 +6410,10 @@ class Application():
             if not backup:
                 self.__last_save_file = save_file.name
         else:
-            save_file = open(filename, mode='w')
-
+            try:
+                save_file = open(filename, mode='w')
+            except FileNotFoundError:
+                save_file = open(filename.replace('ANYstructure_local\\',''), mode='w')
 
         structure_properties = {}
         shell_structure_properties = {}
@@ -6735,7 +6737,11 @@ class Application():
 
     def restore_previous(self):
         if os.path.isfile(self._root_dir + '\\backup.txt'):
-            self.openfile(defined=self._root_dir + '\\backup.txt')
+            try:
+                self.openfile(defined=self._root_dir + '\\backup.txt')
+            except FileNotFoundError:
+                self.openfile(defined=self._root_dir + '\\backup.txt'.replace('ANYstructure_local\\', ''))
+
 
     def open_example(self, file_name = 'ship_section_example.txt'):
         ''' Open the example file. To be used in help menu. '''
