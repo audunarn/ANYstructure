@@ -223,7 +223,7 @@ def any_smart_loop_cylinder(min_var,max_var,deltas,initial_structure_obj,lateral
     # Creating the individual combinations for Shell, LongStf, RingStf and RingFrame
     for idx, str_type in enumerate(range(len(min_var))):
         if sum(min_var[idx]) == 0:
-            structure_to_check = [(0, 0, 0, 0, 0, 0, 0, 0, 0),]
+            structure_to_check = [(0, 0, 0, 0, 0, 0, 0, 0),]
         else:
             if any([predefiened_stiffener_iter is None, idx == 0]):
                 initial_structure_obj.LongStfObj.stiffener_type = 'T'
@@ -233,6 +233,10 @@ def any_smart_loop_cylinder(min_var,max_var,deltas,initial_structure_obj,lateral
                 structure_to_check = any_get_all_combs(min_var[idx], max_var[idx], deltas[idx],
                                                        predef_stiffeners= [item.get_tuple() for item in
                                                                            predefiened_stiffener_iter])
+            # TODO add stifffener type
+
+        # [list(item).append('T') for item in structure_to_check]
+        # [tuple(item) for item in structure_to_check]
         combs.append(structure_to_check)
 
     # Combining the individual components.
@@ -551,6 +555,7 @@ def any_constraints_cylinder(x,obj: calc.CylinderAndCurvedPlate,init_weight, lat
     all_checks = [0,0,0,0,0,0,0,0]
     check_map = {'weight': 0, 'UF unstiffened': 1, 'Column stability': 2, 'UF longitudinal stiffeners':3,
                  'Stiffener check': 4, 'UF ring stiffeners':5, 'UF ring frame': 6, 'Check OK': 7}
+
     calc_obj = create_new_cylinder_obj(obj, x)
 
     optimizing = True if any([calc_obj.RingStfObj is None, calc_obj.RingFrameObj is None]) else False
@@ -792,7 +797,8 @@ def create_new_cylinder_obj(init_obj, x_new):
         new_obj.LongStfObj.tw = x_new[1][3]*1000
         new_obj.LongStfObj.b = x_new[1][4]*1000
         new_obj.LongStfObj.tf = x_new[1][5]*1000
-        new_obj.LongStfObj.stiffener_type = x_new[1][7]
+
+        #new_obj.LongStfObj.stiffener_type = x_new[1][7] # TODO should be 8
 
     return new_obj
 
@@ -1284,7 +1290,7 @@ def get_filtered_results(iterable_all,init_stuc_obj,lat_press,init_filter_weight
 
     return check_ok, check_not_ok
 
-def any_get_all_combs(min_var, max_var,deltas, init_weight = float('inf'), predef_stiffeners = None, cylinder = False):
+def any_get_all_combs(min_var, max_var,deltas, init_weight = float('inf'), predef_stiffeners = None, stf_type = None):
     '''
     Calulating initial values.
     :param min:
@@ -1326,11 +1332,13 @@ def any_get_all_combs(min_var, max_var,deltas, init_weight = float('inf'), prede
         predef_iterable = list()
         for pre_str in predef_stiffeners:
             for spacing in spacing_array:
+
                 for pl_thk in pl_thk_array:
                     new_field = list(pre_str)
                     new_field[0] = spacing
                     new_field[1] = pl_thk
                     predef_iterable.append(tuple(new_field))
+
         return predef_iterable
 
 

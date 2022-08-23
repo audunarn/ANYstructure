@@ -137,6 +137,9 @@ class Structure():
 
     def get_beam_string(self):
         ''' Returning a string. '''
+        if type(self._stiffener_type) != str:
+            print('error')
+
         base_name = self._stiffener_type+ '_' + str(round(self._web_height*1000, 0)) + 'x' + \
                    str(round(self._web_th*1000, 0))
         if self._stiffener_type == 'FB':
@@ -505,10 +508,10 @@ class Structure():
         return Iy
 
     def get_torsional_moment_venant(self, reduced_tw = None, efficient_flange = True):
-        if efficient_flange:
-            ef = self.get_ef_iacs()*1000
-        else:
-            ef = self._flange_width * 1000
+        # if efficient_flange:
+        #     ef = self.get_ef_iacs()*1000
+        # else:
+        #     ef = self._flange_width * 1000
         tf = self._flange_th*1000
         tw = self._web_th*1000 if reduced_tw is None else reduced_tw
         bf = self._flange_width*1000
@@ -1750,7 +1753,7 @@ class AllStructure():
         def lt_params(lT):
 
             if Ipo*lT>0:
-                fET = G*It/Ipo+math.pow(math.pi,2)*E*math.pow(hs,2)*Iz/(Ipo*math.pow(lT,2))
+                fET = beta*G*It/Ipo+math.pow(math.pi,2)*E*math.pow(hs,2)*Iz/(Ipo*math.pow(lT,2)) #NOTE, beta was missed from above, added.
             else:
                 fET = 0.001
             alphaT = 0 if fET == 0 else math.sqrt(fy/fET)

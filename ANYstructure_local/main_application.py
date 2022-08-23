@@ -4046,7 +4046,6 @@ class Application():
         canvas_width = self._prop_canvas.winfo_width()
         canvas_height = self._prop_canvas.winfo_height()
 
-
         def checkered(line_distance, canvas):
             '''
             Grid lines in the properties canvas.
@@ -4059,8 +4058,6 @@ class Application():
             # horizontal lines at an interval of "line_distance" pixel
             for y in range(line_distance, canvas_height, line_distance):
                 canvas.create_line(0, y, canvas_width, y, stipple='gray50', activestipple='gray75')
-
-
 
         if self._active_line in self._line_to_struc:
             self.set_selected_variables(self._active_line)

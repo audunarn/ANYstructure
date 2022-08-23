@@ -626,6 +626,7 @@ class CreateOptimizeCylinderWindow():
             self._opt_runned = True
             #self._result_label.config(text=self._opt_results[0].__str__)
             self._canvas_opt.delete('all')
+
             ANYstructure_local.main_application.Application.draw_cylinder(text_size='Verdana 8 bold',
                                                                           canvas = self._canvas_opt,
                                                                           CylObj=self._opt_results[0],
