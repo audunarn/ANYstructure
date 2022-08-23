@@ -1753,7 +1753,7 @@ class AllStructure():
         def lt_params(lT):
 
             if Ipo*lT>0:
-                fET = beta*G*It/Ipo+math.pow(math.pi,2)*E*math.pow(hs,2)*Iz/(Ipo*math.pow(lT,2)) #NOTE, beta was missed from above, added.
+                fET = beta*G*It/Ipo+math.pow(math.pi,2)*E*math.pow(hs,2)*Iz/(Ipo*math.pow(lT,2)) #NOTE, beta was missed from above, added. 23.08.2022
             else:
                 fET = 0.001
             alphaT = 0 if fET == 0 else math.sqrt(fy/fET)
