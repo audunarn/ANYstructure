@@ -1892,7 +1892,12 @@ class AllStructure():
                 #print(zstar, eq7_50, eq7_51,eq7_52,eq7_53,max([eq7_50, eq7_51,eq7_52,eq7_53]))
                 return max(eq7_50, eq7_51, eq7_52, eq7_53)
             res_iter_pl = minimize(iteration_min_uf_pl_side, 0, bounds=[[-zt+self._Stiffener.tf/2,zp]])
-            stf_pl_data['UF Plate side'] = res_iter_pl.fun[0]
+            print(res_iter_pl.fun)
+
+            if type(res_iter_pl.fun) == list:
+                stf_pl_data['UF Plate side'] = res_iter_pl.fun[0]
+            else:
+                stf_pl_data['UF Plate side'] = res_iter_pl.fun
 
             # Lateral pressure   on stiffener side:
 
@@ -1907,7 +1912,11 @@ class AllStructure():
                 return max(eq7_54, eq7_55, eq7_56, eq7_57)
 
             res_iter_stf = minimize(iteration_min_uf_stf_side, 0, bounds=[[-zt+self._Stiffener.tf/2,zp]])
-            stf_pl_data['UF Stiffener side'] = res_iter_stf.fun[0]
+
+            if type(res_iter_stf.fun) == list:
+                stf_pl_data['UF Stiffener side'] = res_iter_stf.fun[0]
+            else:
+                stf_pl_data['UF Stiffener side'] = res_iter_stf.fun
 
         return stf_pl_data
 
@@ -2184,7 +2193,10 @@ class AllStructure():
 
             res_iter_pl = minimize(iter_plate, 0, bounds=[[-zt + self._Girder.tf / 2, zp]])
 
-            girder_data['UF Cont. plate side'] = res_iter_pl.fun[0]
+            if type(res_iter_pl.fun) == list:
+                girder_data['UF Cont. plate side'] = res_iter_pl.fun[0]
+            else:
+                girder_data['UF Cont. plate side'] = res_iter_pl.fun
             #     Lateral pressure on girder side:
             def iter_girder(zstar):
                 uf_7_52 = NySd/NksRd-2*NySd/NRd +(M1Sd_stf +NySd*zstar)/(MstRd*(1-NySd/NE))+u
@@ -2194,7 +2206,11 @@ class AllStructure():
                 return max([uf_7_52, uf_7_53 ,uf_7_54 ,uf_7_55])
 
             res_iter_girder = minimize(iter_girder, 0, bounds=[[-zt + self._Girder.tf / 2, zp]])
-            girder_data['UF Cont. girder side'] = res_iter_girder.fun[0]
+
+            if type(res_iter_girder.fun) == list:
+                girder_data['UF Cont. girder side'] = res_iter_girder.fun[0]
+            else:
+                girder_data['UF Cont. girder side'] = res_iter_girder.fun
 
         return girder_data
 
