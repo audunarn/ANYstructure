@@ -8,7 +8,11 @@ def main(args=None):
         args = sys.argv[1:]
 
     multiprocessing.freeze_support()
-    errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
+    # windll errors out on linux. Since errorCode is not used, pass looks ok.
+    try:
+        errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
+    except:
+        pass
     root = tk.Tk()
     width = int(root.winfo_screenwidth()*1)
     height = int(root.winfo_screenheight()*0.95)
