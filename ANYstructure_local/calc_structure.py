@@ -1893,8 +1893,10 @@ class AllStructure():
                 return max(eq7_50, eq7_51, eq7_52, eq7_53)
             res_iter_pl = minimize(iteration_min_uf_pl_side, 0, bounds=[[-zt+self._Stiffener.tf/2,zp]])
 
-            #stf_pl_data['UF Plate side'] = res_iter_pl.fun[0]
-            stf_pl_data['UF Plate side'] = res_iter_pl.fun
+            if type(res_iter_pl.fun) == list: # Backward compability, SciPy
+                stf_pl_data['UF Plate side'] = res_iter_pl.fun[0]
+            else:
+                stf_pl_data['UF Plate side'] = res_iter_pl.fun
 
             # Lateral pressure   on stiffener side:
 
@@ -1909,8 +1911,11 @@ class AllStructure():
                 return max(eq7_54, eq7_55, eq7_56, eq7_57)
 
             res_iter_stf = minimize(iteration_min_uf_stf_side, 0, bounds=[[-zt+self._Stiffener.tf/2,zp]])
-            #stf_pl_data['UF Stiffener side'] = res_iter_stf.fun[0]
-            stf_pl_data['UF Stiffener side'] = res_iter_stf.fun
+
+            if type(res_iter_pl.fun) == list: # Backward compability, SciPy
+                stf_pl_data['UF Plate side'] = res_iter_pl.fun[0]
+            else:
+                stf_pl_data['UF Plate side'] = res_iter_pl.fun
 
         return stf_pl_data
 
