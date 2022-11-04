@@ -17,6 +17,10 @@ class CreateStructureWindow():
     '''
     This is the tkinter GUI for defining plate/stiffener properties.
     '''
+
+    module_dir = os.path.dirname(__file__)
+    image_dir = os.path.join(module_dir, 'images')
+
     def __init__(self, master, app):
         super(CreateStructureWindow, self).__init__()
         self._frame = master
@@ -29,7 +33,7 @@ class CreateStructureWindow():
 
             self._section_list = []
             self._section_objects = []
-            for section in hlp.helper_read_section_file('bulb_anglebar_tbar_flatbar.csv'):
+            for section in hlp.helper_read_section_file(os.path.join(self.module_dir,'bulb_anglebar_tbar_flatbar.csv')):
                 SecObj = Section(section)
                 self._section_list = hlp.add_new_section(self._section_list, SecObj)
                 self._section_objects.append(SecObj)
@@ -60,7 +64,6 @@ class CreateStructureWindow():
             self._section_objects = app._sections
 
 
-        image_dir = os.path.dirname(__file__) + '\\images\\'
         self._opt_runned = False
         self._opt_resutls = ()
         self._draw_scale = 0.5
@@ -198,11 +201,7 @@ class CreateStructureWindow():
         self._new_fl_w.trace('w',self.draw_trace)
         self._new_fl_thk.trace('w',self.draw_trace)
         try:
-            img_file_name = 'img_stiffened_plate_panel.gif'
-            if os.path.isfile('images/' + img_file_name):
-                file_path = 'images/' + img_file_name
-            else:
-                file_path = os.path.dirname(os.path.abspath(__file__)) + '/images/' + img_file_name
+            file_path = os.path.join(self.image_dir, 'img_stiffened_plate_panel.gif')
             photo = tk.PhotoImage(file=file_path)
             label = tk.Label(self._frame, image=photo)
             label.image = photo  # keep a reference!
@@ -210,11 +209,7 @@ class CreateStructureWindow():
         except TclError:
             pass
         try:
-            img_file_name = 'img_T_L_FB.gif'
-            if os.path.isfile('images/' + img_file_name):
-                file_path = 'images/' + img_file_name
-            else:
-                file_path = os.path.dirname(os.path.abspath(__file__)) + '/images/' + img_file_name
+            file_path = os.path.join(self.image_dir, 'img_T_L_FB.gif')
             photo_T_L_FB = tk.PhotoImage(file=file_path)
             label = tk.Label(self._frame, image=photo_T_L_FB )
             label.image = photo_T_L_FB   # keep a reference!
@@ -406,7 +401,7 @@ class CreateStructureWindow():
         '''
         import ANYstructure_local.helper as hlp
 
-        for section in hlp.helper_read_section_file('bulb_anglebar_tbar_flatbar.csv'):
+        for section in hlp.helper_read_section_file(os.path.join(self.module_dir,'bulb_anglebar_tbar_flatbar.csv')):
             SecObj = Section(section)
             self._section_list = hlp.add_new_section(self._section_list, SecObj)
             self._section_objects.append(SecObj)
