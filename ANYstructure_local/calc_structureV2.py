@@ -6,6 +6,548 @@ import os, time, datetime, json, random, math
 import ANYstructure_local.SN_curve_parameters as snc
 from scipy.optimize import minimize
 
+# user provides mm, internally m are used.
+# eccentric flanges (eg l-profiles) not supported
+
+class Plate:
+
+    def __init__(self, span: float, spacing: float, thickness = 0):
+        self._span: float = span
+        self._spacing: float = spacing
+        self._thickness: float = thickness
+
+    @property  # in mm
+    def span(self):
+        return self._span* 1000
+    @span.setter  # in mm
+    def span(self, val):
+        self._span = val / 1000
+    
+    @property  # in mm
+    def spacing(self):
+        return self._spacing* 1000
+    @spacing.setter  # in mm
+    def spacing(self, val):
+        self._spacing = val / 1000
+    
+    @property  # in mm
+    def thickness(self):
+        return self._thickness* 1000
+    @thickness.setter  # in mm
+    def thickness(self, val):
+        self._thickness = val / 1000
+
+    def __str__(self) -> str:
+        return 'Length: ' + str(self.span) + ', Width: ' + str(self.spacing) + ', Thickness: ' + str(self.thickness)
+
+
+class Material:
+
+    def __init__(self, youngs_modulus: float, poisson_ratio: float, yield_strength: float):
+        self._youngs_modulus: float = youngs_modulus
+        self._poisson_ratio: float = poisson_ratio
+        self._yield_strength: float = yield_strength
+
+    @property
+    def youngs_modulus(self):
+        return self._youngs_modulus
+    @youngs_modulus.setter
+    def youngs_modulus(self, val):
+        self._youngs_modulus = val
+    
+    @property
+    def poisson_ratio(self):
+        return self._poisson_ratio
+    @poisson_ratio.setter
+    def poisson_ratio(self, val):
+        self._poisson_ratio = val
+    
+    @property
+    def mat_yield(self):
+        return self._yield_strength
+    @mat_yield.setter
+    def mat_yield(self, val):
+        self._yield_strength = val
+
+    def __str__(self) -> str:
+        return 'Young\'s modulus: ' + str(self._youngs_modulus) + ', Poisson ratio: ' + str(self._poisson_ratio) + ', Yield strength: ' + str(self._yield_strength)
+
+
+class Stiffener:
+
+    def __init__(self, stiffener_type: str, web_height: float, web_th: float, flange_width: float, flange_th: float, zstar_optimization: bool = True, distanceSupport: float = 0, fabricationMethod: str = 'welded', flangeEccentricity: float = 0):
+        self._stiffener_type: str = stiffener_type
+        self._web_height: float = web_height
+        self._web_th: float = web_th
+        self._flange_width: float = flange_width
+        self._flange_th: float = flange_th
+        self.zstar_optimization: bool = zstar_optimization
+        self.distanceSupport: float = distanceSupport
+        self.fabricationMethod: str = fabricationMethod
+        self.flangeEccentricity: float = flangeEccentricity
+    
+    @property
+    def stiffener_type(self):
+        return self._stiffener_type
+    @stiffener_type.setter
+    def stiffener_type(self, val):
+        self._stiffener_type = val
+    
+    @property # in mm
+    def web_height(self):
+        return self._web_height * 1000
+    @web_height.setter # in mm
+    def web_height(self, val):
+        self._web_height = val / 1000
+    
+    @property # in mm
+    def web_th(self):
+        return self._web_th * 1000
+    @web_th.setter # in mm
+    def web_th(self, val):
+        self._web_th = val / 1000
+    
+    @property # in mm
+    def flange_width(self):
+        return self._flange_width * 1000
+    @flange_width.setter # in mm
+    def flange_width(self, val):
+        self._flange_width = val / 1000
+    
+    @property # in mm
+    def flange_th(self):
+        return self._flange_th * 1000
+    @flange_th.setter # in mm
+    def flange_th(self, val):
+        self._flange_th = val / 1000
+
+    def __str__(self) -> str:
+        ''' Returning a string. '''
+        base_name = self._stiffener_type+ '_' + str(round(self._web_height*1000, 0)) + 'x' + \
+                   str(round(self._web_th*1000, 0))
+        if self._stiffener_type == 'FB':
+            ret_str = base_name
+        elif self._stiffener_type in ['L-bulb', 'bulb', 'hp']:
+            ret_str = 'Bulb'+str(int(self._web_height*1000 + self._flange_th*1000)) + 'x' + \
+                      str(round(self._web_th*1000, 0))+ '_(' +str(round(self._web_height*1000, 0)) + 'x' + \
+                   str(round(self._web_th*1000, 0))+'_'+ str(round(self._flange_width*1000, 0)) + 'x' + \
+                      str(round(self._flange_th*1000, 0)) + ')'
+        else:
+            ret_str = base_name + '__' + str(round(self._flange_width*1000, 0)) + 'x' + \
+                      str(round(self._flange_th*1000, 0))
+
+        ret_str = ret_str.replace('.', '_')
+
+        return ret_str
+
+
+    def get_torsional_moment_venant(self, reduced_tw = None):
+        tf = self._flange_th*1000
+        tw = self._web_th*1000 if reduced_tw is None else reduced_tw
+        bf = self._flange_width*1000
+        hw = self._web_height*1000
+
+        I_t1 = 1.0 / 3.0 * math.pow(tw , 3) * hw + 1.0 / 3.0 * math.pow(tf, 3) * bf
+
+        return I_t1#  * 1e4
+
+
+    def get_flange_eccentricity(self):
+        ecc = 0 if self._stiffener_type in ['FB', 'T'] else self._flange_width / 2 - self._web_th / 2
+        return ecc
+
+    def get_polar_moment(self, reduced_tw  = None):
+        tf = self._flange_th*1000
+        tw = self._web_th*1000 if reduced_tw is None else reduced_tw
+        ef = self.get_flange_eccentricity()*1000
+        hw = self._web_height*1000
+        b = self._flange_width*1000
+
+        Ipo = tw/3*math.pow(hw, 3)+tf*(math.pow(hw+tf/2,2)*b)+tf/3*(math.pow(ef+b/2,3)-math.pow(ef-b/2,3)) + \
+              (b*math.pow(tf,3))/12 + (hw*math.pow(tw,3))/12
+
+        return Ipo
+
+    def get_ef_iacs(self) -> float:
+        ef: float = 0
+        if self._stiffener_type == 'FB':
+            ef = self._web_height
+        elif self._stiffener_type in ['L', 'T', 'L-bulb', 'HP-profile', 'HP', 'HP-bulb']:
+            ef = self._web_height + 0.5 * self._flange_th
+        return ef
+
+
+    def get_stf_cog_eccentricity(self):
+        e = (self._web_height * self._web_th * (self._web_height / 2) + self._flange_width * self._flange_th *
+             (self._web_height + self._web_th / 2)) / (self._web_height * self._web_th + self._flange_width * self._flange_th)
+        return e
+
+
+class Stress:
+
+    def __init__(self, sigma_x1: float, sigma_x2: float, sigma_y1: float, sigma_y2: float, tauxy: float):
+        self._sigma_x1: float = sigma_x1
+        self._sigma_x2: float = sigma_x2
+        self._sigma_y1: float = sigma_y1
+        self._sigma_y2: float = sigma_y2
+        self._tauxy: float = tauxy
+
+    @property
+    def sigma_x1(self):
+        return self._sigma_x1
+    @sigma_x1.setter
+    def sigma_x1(self, val):
+        self._sigma_x1 = val
+    
+    @property
+    def sigma_x2(self):
+        return self._sigma_x2
+    @sigma_x2.setter
+    def sigma_x2(self, val):
+        self._sigma_x2 = val
+    
+    @property
+    def sigma_y1(self):
+        return self._sigma_y1
+    @sigma_y1.setter
+    def sigma_y1(self, val):
+        self._sigma_y1 = val
+    
+    @property
+    def sigma_y2(self):
+        return self._sigma_y2
+    @sigma_y2.setter
+    def sigma_y2(self, val):
+        self._sigma_y2 = val
+    
+    @property
+    def tauxy(self):
+        return self._tauxy
+    @tauxy.setter
+    def tauxy(self, val):
+        self._tauxy = val
+
+    def __str__(self) -> str:
+        return  'Sigma x1: ' + str(self._sigma_x1) \
+            + ', Sigma x2: ' + str(self._sigma_x2) \
+            + ', Sigma y1: ' + str(self._sigma_y1) \
+            + ', Sigma y2: ' + str(self._sigma_y2) \
+            + ', Shear: ' + str(self._tauxy)
+
+    def set_stresses(self,sigy1,sigy2,sigx1,sigx2,tauxy):
+        '''
+        Setting the global stresses.
+        :param sigy1:
+        :param sigy2:
+        :param sigx:
+        :param tauxy:
+        :return:
+        '''
+        self.sigma_y1 = sigy1
+        self.sigma_y2 = sigy2
+        self.sigma_x1 = sigx1
+        self.sigma_x2 = sigx2
+        self.tauxy = tauxy
+
+    def get_report_stresses(self):
+        'Return the stresses to the report'
+        return 'sigma_y1: '+ str(round(self._sigma_y1, 1)) + ' sigma_y2: '+str(round(self._sigma_y2, 1)) + \
+               ' sigma_x1: ' + str(round(self._sigma_x1, 1)) +' sigma_x2: ' + str(round(self._sigma_x2, 1)) + \
+               ' tauxy: '+ str(round(self._tauxy, 1))
+
+class StiffenedPanel:
+
+    def __init__(self, material: Material, plate: Plate, stiffener: Stiffener, stiffenerEndSupport: str, girder: Stiffener):
+        self.material: Material = material
+        self.plate: Plate = plate
+        self.stiffener: Stiffener = stiffener
+        self.stiffenerEndSupport: str = stiffenerEndSupport
+        self.girder: Stiffener = girder
+
+    def __str__(self) -> str:
+        return 'Stiffened panel:\n' \
+                + '\nMaterial: ' + str(self.material) \
+                + '\nPlate:' + str(self.plate) \
+                + '\nStiffener:' + str(self.stiffener) \
+                + '\nSiffener end support: ' + str(self.stiffenerEndSupport \
+                + '\nGirder: ' + str(self.girder))
+
+    def get_one_line_string(self):
+        ''' Returning a one line string. '''
+        return 'pl_'+ str(round(self.plate.spacing, 1)) + 'x' + str(round(self.plate.thickness, 1)) + ' stf_' + self.stiffener.stiffener_type + \
+               str(round(self.stiffener.web_height, 1)) + 'x' + str(round(self.stiffener.web_th, 1)) + '+' \
+               +str(round(self.stiffener.flange_width, 1))+ 'x' + str(round(self.stiffener.flange_th, 1))
+
+
+    def get_section_modulus(self, efficient_se = None, dnv_table = False):
+        '''
+        Returns the section modulus.
+        :param efficient_se: 
+        :return: 
+        '''
+        #Plate. When using DNV table, default values are used for the plate
+        b1 = self.plate._spacing if efficient_se==None else efficient_se
+        tf1 = self.plate._thickness
+
+        #Stiffener
+        tf2 = self.stiffener._flange_th
+        b2 = self.stiffener._flange_width
+        h = self.stiffener._flange_th + self.stiffener._web_height + self.plate._thickness
+        tw = self.stiffener._web_th
+        hw = self.stiffener._web_height
+
+        # cross section area
+        Ax = tf1 * b1 + tf2 * b2 + hw * tw
+
+        assert Ax != 0, 'Ax cannot be 0'
+        # distance to center of gravity in z-direction
+        ez = (tf1 * b1 * tf1 / 2 + hw * tw * (tf1 + hw / 2) + tf2 * b2 * (tf1 + hw + tf2 / 2)) / Ax
+
+        #ez = (tf1 * b1 * (h - tf1 / 2) + hw * tw * (tf2 + hw / 2) + tf2 * b2 * (tf2 / 2)) / Ax
+        # moment of inertia in y-direction (c is centroid)
+
+        Iyc = (1 / 12) * (b1 * math.pow(tf1, 3) + b2 * math.pow(tf2, 3) + tw * math.pow(hw, 3))
+        Iy = Iyc + (tf1 * b1 * math.pow(tf1 / 2, 2) + tw * hw * math.pow(tf1+hw / 2, 2) +
+             tf2 * b2 * math.pow(tf1+hw+tf2 / 2, 2)) - Ax * math.pow(ez, 2)
+
+        # elastic section moduluses y-axis
+        Wey1 = Iy / (h - ez)
+        Wey2 = Iy / ez
+
+        return Wey1, Wey2
+
+
+    def get_plasic_section_modulus(self):
+        '''
+        Returns the plastic section modulus
+        :return:
+        '''
+        tf1 = self.plate._thickness
+        tf2 = self.stiffener._flange_th
+        b1 = self.plate._spacing
+        b2 = self.stiffener._flange_width
+        h = self.stiffener._flange_th + self.stiffener._web_height + self.plate._thickness
+        tw = self.stiffener._web_th
+        hw = self.stiffener._web_height
+
+        Ax = tf1 * b1 + tf2 * b2 + (h-tf1-tf2) * tw
+
+        ezpl = (Ax/2-b1*tf1)/tw+tf1
+
+        az1 = h-ezpl-tf1
+        az2 = ezpl-tf2
+
+        Wy1 = b1*tf1*(az1+tf1/2) + (tw/2)*math.pow(az1,2)
+        Wy2 = b2*tf2*(az2+tf2/2)+(tw/2)*math.pow(az2,2)
+
+        return Wy1+Wy2
+
+
+    def get_shear_area(self):
+        '''
+        Returning the shear area in [m^2]
+        :return:
+        '''
+        return ((self.stiffener._flange_th * self.stiffener._web_th) 
+              + (self.stiffener._web_th * self.plate._thickness) 
+              + (self.stiffener._web_height * self.stiffener._web_th))
+
+    def get_shear_center(self):
+        '''
+        Returning the shear center
+        :return:
+        '''
+        tf1 = self.plate._thickness
+        tf2 = self.stiffener._flange_th
+        b1 = self.plate._spacing
+        b2 = self.stiffener._flange_width
+        h = self.stiffener._flange_th + self.stiffener._web_height + self.plate._thickness
+        tw = self.stiffener._web_th
+        hw = self.stiffener._web_height
+
+        Ax = tf1 * b1 + tf2 * b2 + (h-tf1-tf2) * tw
+        
+        # distance to center of gravity in z-direction
+        ez = (b2*tf2*tf2/2 + tw*hw*(tf2+hw/2)+tf1*b1*(tf2+hw+tf1/2)) / Ax
+
+        # Shear center:
+        # moment of inertia, z-axis
+        Iz1 = tf1 * math.pow(b1, 3)
+        Iz2 = tf2 * math.pow(b2, 3)
+        ht = h - tf1 / 2 - tf2 / 2
+        return (Iz1 * ht) / (Iz1 + Iz2) + tf2 / 2 - ez
+
+
+    def get_moment_of_intertia(self, efficent_se=None, only_stf = False, tf1 = None, reduced_tw = None):
+        '''
+        Returning moment of intertia.
+        :return:
+        '''
+        if only_stf:
+            tf1 = t = 0
+            b1 = s_e = 0
+        else:
+            tf1 = t =  self.plate._thickness if tf1 == None else tf1
+            b1 = s_e =self.plate._spacing if efficent_se==None else efficent_se
+
+        e_f = 0
+
+        h = self.stiffener._flange_th + self.stiffener._web_height + tf1
+        tw = self.stiffener._web_th if reduced_tw == None else reduced_tw / 1000
+        hw = self.stiffener._web_height
+        tf2 = tf = self.stiffener._flange_th
+        b2 = bf = self.stiffener._flange_width
+
+        Ax = tf1 * b1 + tf2 * b2 + hw * tw
+        Iyc = (1 / 12) * (b1 * math.pow(tf1, 3) + b2 * math.pow(tf2, 3) + tw * math.pow(hw, 3))
+        ez = (tf1 * b1 * (h - tf1 / 2) + hw * tw * (tf2 + hw / 2) + tf2 * b2 * (tf2 / 2)) / Ax
+        Iy = Iyc + (tf1 * b1 * math.pow(tf2 + hw + tf1 / 2, 2) + tw * hw * math.pow(tf2 + hw / 2, 2) +
+             tf2 * b2 * math.pow(tf2 / 2, 2)) - Ax * math.pow(ez, 2)
+
+        return Iy
+
+
+    def get_Iz_moment_of_inertia(self, reduced_tw = None):
+        tw = self.stiffener._web_th * 1000 if reduced_tw is None else reduced_tw
+        hw = self.stiffener._web_height * 1000
+        tf2 = self.stiffener._flange_th * 1000
+        b2 = self.stiffener._flange_width * 1000
+
+        if self.stiffener._stiffener_type == 'FB':
+            Iz = math.pow(tw,3)*hw/12
+        elif self.stiffener._stiffener_type == 'T':
+            Iz = hw*math.pow(tw,3)/12 + tf2*math.pow(b2,3)/12
+        else:
+            Czver = tw/2
+            Czhor = b2/2
+            Aver = hw*tw
+            Ahor = b2*tf2
+            Atot = Aver+Ahor
+
+            Czoverall = Aver*Czver/Atot + Ahor*Czhor/Atot
+            dz = Czver - Czoverall
+
+            Iver = (1/12)*hw*math.pow(tw,3) + Aver*math.pow(dz,2)
+
+            dz = Czhor-Czoverall
+            Ihor = (1/12)*tf2*math.pow(b2,3) + Ahor*math.pow(dz,2)
+
+            Iz = Iver + Ihor
+
+        return Iz
+
+
+    def get_moment_of_interia_iacs(self, efficent_se=None, only_stf = False, tf1 = None):
+        if only_stf:
+            tf1 = 0
+            b1 = 0
+        else:
+            tf1 = self.plate._thickness if tf1 == None else tf1
+            b1 = self.plate._spacing if efficent_se == None else efficent_se
+        h = self.stiffener._flange_th + self.stiffener._web_height+tf1
+        tw = self.stiffener._web_th
+        hw = self.stiffener._web_height
+        tf2 = self.stiffener._flange_th
+        b2 = self.stiffener._flange_width
+
+        Af = b2*tf2
+        Aw = hw*tw
+
+        ef = hw + tf2/2
+
+        Iy = (Af*math.pow(ef,2)*math.pow(b2,2)/12) * ( (Af+2.6*Aw) / (Af+Aw))
+        return Iy
+
+
+class PulseSettings:
+
+    def __init__(self, puls_method: int, puls_boundary: str, puls_stf_end: str, puls_sp_or_up: str, puls_up_boundary: str):
+        self._puls_method: int = puls_method
+        self._puls_boundary: str = puls_boundary
+        self._puls_stf_end: str = puls_stf_end
+        self._puls_sp_or_up: str = puls_sp_or_up
+        self._puls_up_boundary: str = puls_up_boundary
+
+    @property
+    def method(self):
+        return self._puls_method
+    @method.setter
+    def method(self, val):
+        self._puls_method = val
+    
+    @property
+    def boundary(self):
+        return self._puls_boundary
+    @boundary.setter
+    def boundary(self, val):
+        self._puls_boundary = val
+    
+    @property
+    def stf_end(self):
+        return self._puls_stf_end
+    @stf_end.setter
+    def stf_end(self, val):
+        self._puls_stf_end = val
+    
+    @property
+    def sp_or_up(self):
+        return self._puls_sp_or_up
+    @sp_or_up.setter
+    def sp_or_up(self, val):
+        self._puls_sp_or_up = val
+    
+    @property
+    def up_boundary(self):
+        return self._puls_up_boundary
+    @up_boundary.setter
+    def up_boundary(self, val):
+        self._puls_up_boundary = val
+
+
+    def __str__(self) -> str:
+        return 'Method: ' + str(self._puls_method) \
+            + ', Boundary: ' + str(self._puls_boundary) \
+            + ', Stiffener end: ' + str(self._puls_stf_end \
+            + ', Panel integration: ' + str(self._puls_sp_or_up) \
+            + ', Integrated panel boundary: ' + str(self._puls_up_boundary))
+
+# this class should become the structure class
+class BucklingInput():
+
+    def __init__(self, panel: StiffenedPanel, mat_factor: float, pressure: float,  pressure_side: str, stress: Stress, pulse: PulseSettings):
+        self.panel: StiffenedPanel = panel
+        self._mat_factor: float = mat_factor
+        self._pressure: float = pressure
+        self._pressure_side: str = pressure_side
+        self.stress: Stress = stress
+        self.pulse: PulseSettings = pulse
+
+    @property
+    def mat_factor(self):
+        return self._mat_factor
+    @mat_factor.setter
+    def mat_factor(self, val):
+        self._mat_factor = val
+
+    @property
+    def pressure(self):
+        return self._pressure
+    @pressure.setter
+    def pressure(self, val):
+        self._pressure = val
+
+    @property
+    def pressure_side(self):
+        return self._pressure_side
+    @pressure_side.setter
+    def pressure_side(self, val):
+        self._pressure_side = val
+
+    def get_extended_string(self):
+        ''' Some more information returned. '''
+        return 'span: ' + str(round(self.panel.plate.span, 4))+' structure type: '+ self._structure_type + ' stf. type: ' + \
+               self.panel.stiffener.stiffener_type + ' pressure side: ' + self.pressure_side
+
 class Structure():
     '''
     Setting the properties for the plate and the stiffener. Takes a dictionary as argument.
