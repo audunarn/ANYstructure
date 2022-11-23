@@ -64,7 +64,15 @@ class Application():
         ''' Setting the style of ttk'''
         #
         self._style = ttk.Style(parent)
-        self._style.theme_use('vista')
+        
+        # vista theme not available in linux
+        try:
+            self._style.theme_use('vista')
+        except:
+            # available themes in linux:
+            # ('clam', 'alt', 'default', 'classic')
+            self._style.theme_use('clam')
+        
         self._style.layout("TNotebook", [])
         self._style.configure("TNotebook", tabmargins=0)
 
@@ -327,7 +335,8 @@ class Application():
                 self._ML_buckling[name] = pickle.load(file)
                 file.close()
             else:
-                file = open(self._root_dir +'\\' + file_base + '.pickle', 'rb')
+                #file = open(self._root_dir +'\\' + file_base + '.pickle', 'rb')
+                file = open(os.path.join(self._root_dir, file_base + '.pickle'), 'rb')
                 from sklearn.neural_network import MLPClassifier
                 from sklearn.preprocessing import StandardScaler
                 self._ML_buckling[name] = pickle.load(file)
@@ -6391,7 +6400,7 @@ class Application():
 
     def save_no_dialogue(self, event = None, backup = False):
         if backup:
-            self.savefile(filename=self._root_dir + '\\' + 'backup.txt',backup = backup)
+            self.savefile(filename=os.path.join(self._root_dir,'backup.txt'),backup = backup)
             return
         if self.__last_save_file is not None:
             self.savefile(filename=self.__last_save_file)
@@ -6736,11 +6745,8 @@ class Application():
         self.update_frame()
 
     def restore_previous(self):
-        if os.path.isfile(self._root_dir + '\\backup.txt'):
-            try:
-                self.openfile(defined=self._root_dir + '\\backup.txt')
-            except FileNotFoundError:
-                self.openfile(defined=self._root_dir + '\\backup.txt'.replace('ANYstructure_local\\', ''))
+        if os.path.isfile(os.path.join(self._root_dir,'backup.txt')):
+            self.openfile(defined=os.path.join(self._root_dir, 'backup.txt'))
 
 
     def open_example(self, file_name = 'ship_section_example.txt'):

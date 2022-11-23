@@ -4231,7 +4231,7 @@ class PULSpanel():
         self.run_all(store_results=True)
         print('Time to run', batch_size, 'batches:', time.time() - now)
 
-if __name__ == '__main__':
+def main():
     import ANYstructure_local.example_data as ex
     # PULS = PULSpanel(ex.run_dict, puls_sheet_location=r'C:\Github\ANYstructure\ANYstructure\PULS\PulsExcel_new - Copy (1).xlsm')
     # PULS.run_all_multi()
@@ -4321,3 +4321,5 @@ if __name__ == '__main__':
     #print(PreBuc.get_main_properties())
     print(PreBuc.plate_buckling())
 
+if __name__ == '__main__':
+    main()
