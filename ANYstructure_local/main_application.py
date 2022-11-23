@@ -48,7 +48,7 @@ class Application():
         parent.protocol("WM_DELETE_WINDOW", self.close_main_window)
         parent.bind("<Configure>", self.resize)
 
-        self._root_dir = os.path.dirname(__file__)
+        self._root_dir = os.path.dirname(os.path.abspath(__file__))
         # Main frame for the application
         self._main_fr = ttk.Frame(parent)
         self._main_fr.place(in_=parent, relwidth=1, relheight = 0.99)
@@ -328,11 +328,19 @@ class Application():
                                     "CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_SP_scaler"]):
             self._ML_buckling[name] = None
 
-            file = open(os.path.join(self._root_dir, file_base + '.pickle'), 'rb')
-            from sklearn.neural_network import MLPClassifier
-            from sklearn.preprocessing import StandardScaler
-            self._ML_buckling[name] = pickle.load(file)
-            file.close()
+            if os.path.isfile(file_base + '.pickle'):
+                file = open(file_base + '.pickle', 'rb')
+                from sklearn.neural_network import MLPClassifier
+                from sklearn.preprocessing import StandardScaler
+                self._ML_buckling[name] = pickle.load(file)
+                file.close()
+            else:
+                #file = open(self._root_dir +'\\' + file_base + '.pickle', 'rb')
+                file = open(os.path.join(self._root_dir, file_base + '.pickle'), 'rb')
+                from sklearn.neural_network import MLPClassifier
+                from sklearn.preprocessing import StandardScaler
+                self._ML_buckling[name] = pickle.load(file)
+                file.close()
 
         self._ML_classes ={0: 'N/A',
                            1: 'A negative utilisation factor is found.',
@@ -384,7 +392,11 @@ class Application():
         ttk.Label(self._tab_help, text='Buckling paramenter, flat plates', font="Text 10 bold", ) \
             .place(relx=0.01, rely=0.05, )
         try:
-            file_path = os.path.join(self._root_dir, 'images',  'Panel_geometry_definitions.png')
+            img_file_name = 'Panel_geometry_definitions.png'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = os.path.dirname(os.path.abspath(__file__)) + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
             label = tk.Label(self._tab_help, image=photo)
             label.image = photo  # keep a reference!
@@ -394,7 +406,11 @@ class Application():
         ttk.Label(self._tab_help, text='Buckling parameters, cylinders',font="Text 10 bold", )\
             .place(relx=0.01, rely=0.55)
         try:
-            file_path = os.path.join(self._root_dir, 'images',  'Buckling_Strength_of_Shells.png')
+            img_file_name = 'Buckling_Strength_of_Shells.png'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = os.path.dirname(os.path.abspath(__file__)) + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
             label = tk.Label(self._tab_help, image=photo)
             label.image = photo  # keep a reference!
@@ -1085,7 +1101,11 @@ class Application():
             idx += 1
             
         try:
-            file_path = os.path.join(self._root_dir, 'images',  'img_stf_button.gif')
+            img_file_name = 'img_stf_button.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
             self._stf_button = tk.Button(self._tab_prop, image=photo,
                                          command= self.on_open_structure_window)
@@ -1097,7 +1117,11 @@ class Application():
                                          bg=self._button_bg_color, fg=self._button_fg_color)
 
         try:
-            file_path = os.path.join(self._root_dir, 'images',  'img_stress_button.gif')
+            img_file_name = 'img_stress_button.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
             self._stress_button = tk.Button(self._tab_prop, image=photo, command=self.on_open_stresses_window,
                                             fg=self._button_fg_color, bg='white')
@@ -1108,7 +1132,11 @@ class Application():
                                       bg=self._button_bg_color, fg=self._button_fg_color)
 
         try:
-            file_path = os.path.join(self._root_dir, 'images',  'fls_button.gif')
+            img_file_name = 'fls_button.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
             self._fls_button = tk.Button(self._tab_prop, image=photo, command=self.on_open_fatigue_window,
                                          bg=self._button_bg_color)
@@ -1505,7 +1533,11 @@ class Application():
         # --- button to create compartments and define external pressures ---
 
         try:
-            file_path = os.path.join(self._root_dir, 'images',  'img_int_pressure_button.gif')
+            img_file_name = 'img_int_pressure_button.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
             self._int_button = tk.Button(self._tab_comp,image = photo,command=self.grid_find_tanks, bg = 'white')
             self._int_button.image = photo
@@ -1524,7 +1556,11 @@ class Application():
         show_compartment.place(relx=types_start + delta_x*4, rely=load_vert_start + delta_y * 14, relwidth = 0.3)
 
         try:
-            file_path = os.path.join(self._root_dir, 'images',  'img_ext_pressure_button.gif')
+            img_file_name = 'img_ext_pressure_button.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
 
             self._ext_button = tk.Button(self._tab_comp,image=photo, command = self.on_show_loads,
@@ -1619,7 +1655,11 @@ class Application():
                  font = self._text_size['Text 9 bold'], )\
             .place(relx=lc_x, rely=lc_y - 7 * lc_y_delta)
         try:
-            file_path = os.path.join(self._root_dir, 'images',  'img_optimize.gif')
+            img_file_name = 'img_optimize.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
             self._opt_button = tk.Button(self._main_fr,image=photo, command = self.on_optimize,
                                    bg = 'white', fg = self._button_fg_color)
@@ -1630,7 +1670,11 @@ class Application():
                       bg = self._button_bg_color, fg = self._button_fg_color)
             self._opt_button.place(relx=lc_x, rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.098)
         try:
-            file_path = os.path.join(self._root_dir, 'images',  'img_multi_opt.gif')
+            img_file_name = 'img_multi_opt.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
             self._opt_button_mult = tk.Button(self._main_fr,image=photo, command = self.on_optimize_multiple,
                                         bg = self._button_bg_color, fg = self._button_fg_color)
@@ -1643,7 +1687,11 @@ class Application():
 
 
         try:
-            file_path = os.path.join(self._root_dir, 'images',  'cylinder_opt.png')
+            img_file_name = 'cylinder_opt.png'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
             self._opt_cylinder = tk.Button(self._main_fr,image=photo, command = self.on_optimize_cylinder,
                                         bg = 'white', fg = 'white')
@@ -2309,7 +2357,10 @@ class Application():
                 img_file_name = 'img_axial_stresses.gif'
             else:
                 img_file_name = 'Definition_of_parameters_L_and_LH.png'
-            file_path = os.path.join(self._root_dir, 'images',  img_file_name)
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
             self._int_button.config(image = photo)
             self._int_button.image = photo
@@ -2614,7 +2665,11 @@ class Application():
             return
         #setting the button to red
         try:
-            file_path = os.path.join(self._root_dir, 'images',  'img_int_pressure_button_search.gif')
+            img_file_name = 'img_int_pressure_button_search.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
             self._int_button.config(image = photo)
             self._int_button.image = photo
@@ -2680,7 +2735,11 @@ class Application():
                         self._new_load_comb_dict[name][1].set(self._load_factors_dict[combination][2])
                         self._new_load_comb_dict[name][2].set(1)
         try:
-            file_path = os.path.join(self._root_dir, 'images',  'img_int_pressure_button.gif')
+            img_file_name = 'img_int_pressure_button.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
 
             self._int_button.config(image = photo)
@@ -4662,7 +4721,7 @@ class Application():
             os.remove('current_comps.png')
             self.grid_display_tanks(save = True)
         else:
-            self.grid_display_tanks(save = True)
+            self.grid_display_tanks(save=True)
 
         doc = LetterMaker(filename, "Section results", 10, self)
         doc.createDocument()
@@ -6341,10 +6400,10 @@ class Application():
 
     def save_no_dialogue(self, event = None, backup = False):
         if backup:
-            self.savefile(filename=os.path.join(self._root_dir, 'backup.txt'), backup = backup)
+            self.savefile(filename=os.path.join(self._root_dir,'backup.txt'),backup = backup)
             return
         if self.__last_save_file is not None:
-            self.savefile(filename = self.__last_save_file)
+            self.savefile(filename=self.__last_save_file)
         else:
             tk.messagebox.showerror('Save error', 'No saves in this session yet.')
 
@@ -6695,7 +6754,7 @@ class Application():
         if os.path.isfile(file_name) :
             self.openfile(defined = file_name)
         else:
-            self.openfile(defined = os.path.join(self._root_dir, file_name))
+            self.openfile(defined= self._root_dir + '/' + file_name)
 
     def button_load_info_click(self, event = None):
         ''' Get the load information for one line.'''
@@ -6845,7 +6904,11 @@ class Application():
         '''
 
         try:
-            file_path = os.path.join(self._root_dir, 'images', 'img_ext_pressure_button_def.gif')
+            img_file_name = 'img_ext_pressure_button_def.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
             self._ext_button.config(image = photo)
             self._ext_button.image = photo
@@ -6972,7 +7035,11 @@ class Application():
         self.save_no_dialogue(backup=True)  # keeping a backup
 
         try:
-            file_path = os.path.join(self._root_dir, 'images', 'img_ext_pressure_button.gif')
+            img_file_name = 'img_ext_pressure_button.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
             self._ext_button.config(image = photo)
             self._ext_button.image = photo
@@ -7159,7 +7226,11 @@ class Application():
         :return:
         '''
         try:
-            file_path = os.path.join(self._root_dir, 'images', 'img_ext_pressure_button.gif')
+            img_file_name = 'img_ext_pressure_button.gif'
+            if os.path.isfile('images/' + img_file_name):
+                file_path = 'images/' + img_file_name
+            else:
+                file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
             self._ext_button.config(image = photo)
             self._ext_button.image = photo
@@ -7271,7 +7342,7 @@ class Application():
         if os.path.isfile('ANYstructure_documentation.pdf'):
             os.startfile('ANYstructure_documentation.pdf')
         else:
-            os.startfile(os.path.join(self._root_dir, 'ANYstructure_documentation.pdf'))
+            os.startfile(self._root_dir + '/' + 'ANYstructure_documentation.pdf')
 
     def open_documentation(self):
         ''' Open the documentation webpage. '''
