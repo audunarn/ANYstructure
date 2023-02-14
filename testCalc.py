@@ -1,5 +1,5 @@
 import pprint
-from ANYstructure_local.calc_structure import *
+from calc_structure import *
 
 structure_types = {'vertical': ['BBS', 'SIDE_SHELL', 'SSS'],
                          'horizontal': ['BOTTOM', 'BBT', 'HOPPER', 'MD'],

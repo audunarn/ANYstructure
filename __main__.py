@@ -1,6 +1,7 @@
 import sys, multiprocessing, ctypes
 import tkinter as tk
-from ANYstructure_local.main_application import Application
+from main_application import Application
+
 
 def main(args=None):
     """The main routine."""
@@ -8,14 +9,10 @@ def main(args=None):
         args = sys.argv[1:]
 
     multiprocessing.freeze_support()
-    # windll errors out on linux. Since errorCode is not used, pass looks ok.
-    try:
-        errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
-    except:
-        pass
+    errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
     root = tk.Tk()
-    width = int(root.winfo_screenwidth()*1)
-    height = int(root.winfo_screenheight()*0.95)
+    width = root.winfo_screenwidth()
+    height = root.winfo_screenheight()
     root.geometry(f'{width}x{height}')
     my_app = Application(root)
     root.mainloop()
