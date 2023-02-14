@@ -1892,7 +1892,6 @@ class AllStructure():
                 #print(zstar, eq7_50, eq7_51,eq7_52,eq7_53,max([eq7_50, eq7_51,eq7_52,eq7_53]))
                 return max(eq7_50, eq7_51, eq7_52, eq7_53)
             res_iter_pl = minimize(iteration_min_uf_pl_side, 0, bounds=[[-zt+self._Stiffener.tf/2,zp]])
-            print(res_iter_pl.fun)
 
             if type(res_iter_pl.fun) == list:
                 stf_pl_data['UF Plate side'] = res_iter_pl.fun[0]
@@ -3103,7 +3102,8 @@ class CylinderAndCurvedPlate():
 
         # Pnt. 3.5.2.1   Requirement for cross-sectional area:
         #Zl = self._Shell.get_Zl()
-        Zl = math.pow(s,2)*math.sqrt(1-math.pow(self._v,2))/(r*t) if r*t>0 else 0
+
+        Zl = math.pow(l, 2) * math.sqrt(1 - math.pow(self._v, 2)) / (r * t) if r * t > 0 else 0
         Areq = np.nan if Zl == 0 else (2/math.pow(Zl,2)+0.06)*l*t
         Areq = np.array([Areq, Areq])
         Astf = np.nan if self._RingStf is None else self._RingStf.get_cross_section_area(include_plate=False)*1000**2
@@ -4266,12 +4266,12 @@ def main():
 
     #my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0))
 
-    # for example in [CalcScantlings(ex.obj_dict)]:#, CalcScantlings(ex.obj_dict2), CalcScantlings(ex.obj_dict_L)]:
-    #     my_test = example
-    #     #my_test = CalcScantlings(example)
-    #     #my_test = CalcFatigue(example, ex.fat_obj_dict2)
-    #     #my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0))
-    #     #print('Total damage: ', my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0)))
+    for example in [CalcScantlings(ex.obj_dict)]:#, CalcScantlings(ex.obj_dict2), CalcScantlings(ex.obj_dict_L)]:
+        my_test = example
+        my_test = CalcScantlings(example)
+        my_test = CalcFatigue(example, ex.fat_obj_dict2)
+        my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0))
+        print('Total damage: ', my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0)))
     #     #print(my_test.get_fatigue_properties())
     #     pressure = 200
     #     # print(my_test.buckling_local_stiffener())
