@@ -2877,10 +2877,16 @@ class CylinderAndCurvedPlate():
         if lambda_s < 0.5:
             gammaM = self._mat_factor
         else:
-            if lambda_s > 1:
-                gammaM = 1.45
+            if self._mat_factor == 1.1:
+                if lambda_s > 1:
+                    gammaM = 1.4
+                else:
+                    gammaM = 0.8+0.6*lambda_s
             else:
-                gammaM = 0.85+0.6*lambda_s
+                if lambda_s > 1:
+                    gammaM = 1.45
+                else:
+                    gammaM = 0.85+0.6*lambda_s
         if self._uls_or_als == 'ALS':
             gammaM = gammaM/self._mat_factor
         provide_data['gammaM Unstifffed panel'] = gammaM
@@ -3018,10 +3024,16 @@ class CylinderAndCurvedPlate():
         if lambda_s < 0.5:
             gammaM = self._mat_factor
         else:
-            if lambda_s > 1:
-                gammaM = 1.45
+            if self._mat_factor == 1.1:
+                if lambda_s > 1:
+                    gammaM = 1.4
+                else:
+                    gammaM = 0.8+0.6*lambda_s
             else:
-                gammaM = 0.85+0.6*lambda_s
+                if lambda_s > 1:
+                    gammaM = 1.45
+                else:
+                    gammaM = 0.85+0.6*lambda_s
         if self._uls_or_als == 'ALS':
             gammaM = gammaM/self._mat_factor
 
@@ -3380,10 +3392,17 @@ class CylinderAndCurvedPlate():
         if lambda_s < 0.5:
             gammaM = self._mat_factor
         else:
-            if lambda_s > 1:
-                gammaM = 1.45
+            if self._mat_factor == 1.1:
+                if lambda_s > 1:
+                    gammaM = 1.4
+                else:
+                    gammaM = 0.8+0.6*lambda_s
             else:
-                gammaM = 0.85+0.6*lambda_s
+                if lambda_s > 1:
+                    gammaM = 1.45
+                else:
+                    gammaM = 0.85+0.6*lambda_s
+
         if self._uls_or_als == 'ALS':
             gammaM = gammaM/self._mat_factor
 
