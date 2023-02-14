@@ -4101,7 +4101,7 @@ class Application():
                     starty = 225
 
                     if structure_obj is not None:
-                        self._prop_canvas.create_text([startx +40, 50],
+                        self._prop_canvas.create_text([startx +60, 50],
                                                       text='Stiffener\n' +structure_obj.get_beam_string()
                                                       if idx == 0 else 'Girder\n' + structure_obj.get_beam_string(),
                                                       font=self._text_size["Text 9 bold"], fill='Black')

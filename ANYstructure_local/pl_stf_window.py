@@ -1,4 +1,4 @@
-
+import pathlib
 import tkinter as tk
 from _tkinter import TclError
 from tkinter.ttk import Combobox
@@ -405,8 +405,11 @@ class CreateStructureWindow():
         Read a list.
         '''
         import ANYstructure_local.helper as hlp
-
-        for section in hlp.helper_read_section_file('bulb_anglebar_tbar_flatbar.csv'):
+        if pathlib.Path('ANYstructure_local\\bulb_anglebar_tbar_flatbar.csv').exists():
+            libfile = 'ANYstructure_local\\bulb_anglebar_tbar_flatbar.csv'
+        else:
+            libfile = 'bulb_anglebar_tbar_flatbar.csv'
+        for section in hlp.helper_read_section_file(libfile):
             SecObj = Section(section)
             self._section_list = hlp.add_new_section(self._section_list, SecObj)
             self._section_objects.append(SecObj)
