@@ -519,7 +519,7 @@ class Combination():
         self.tank_dict = value
 
 if __name__ == '__main__':
-    import ANYstructure_local.example_data as ex
+    import example_data as ex
 
     for load, type in zip([Loads(ex.load_bottom), Loads(ex.load_side), Loads(ex.load_static), Loads(ex.load_slamming)],
                           ['BOTTOM', 'SIDE_SHELL', '', '']):

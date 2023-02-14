@@ -2,17 +2,17 @@
 import tkinter as tk
 from _tkinter import TclError
 from tkinter.ttk import Progressbar
-import ANYstructure_local.optimize as op
+import optimize as op
 import numpy as np
 import time, os
 from tkinter import messagebox
-import ANYstructure_local.example_data as test
-from ANYstructure_local.calc_structure import *
-from ANYstructure_local.helper import *
-import ANYstructure_local.example_data as ex
+import example_data as test
+from calc_structure import *
+from helper import *
+import example_data as ex
 import copy, pickle
-import ANYstructure_local.calc_structure
-import ANYstructure_local.helper as hlp
+import calc_structure
+import helper as hlp
 from tkinter.filedialog import askopenfilenames
 from multiprocessing import cpu_count
 from tkinter import filedialog
@@ -49,22 +49,22 @@ class CreateOptGeoWindow():
                                         'cl UP ult GLGT predictor', 'cl UP ult GLGT scaler',
                                         'CSR predictor', 'CSR scaler'
                                         ],
-                                       ["CL_output_cl_buc_predictor_In-plane_support_cl_1_SP",
-                                        "CL_output_cl_buc_scaler_In-plane_support_cl_1_SP",
-                                        "CL_output_cl_ult_predictor_In-plane_support_cl_1_SP",
-                                        "CL_output_cl_ult_scaler_In-plane_support_cl_1_SP",
-                                        "CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_SP",
-                                        "CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_SP",
-                                        "CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_SP",
-                                        "CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_SP",
-                                        "CL_output_cl_buc_predictor_In-plane_support_cl_1_UP",
-                                        "CL_output_cl_buc_scaler_In-plane_support_cl_1_UP",
-                                        "CL_output_cl_ult_predictor_In-plane_support_cl_1_UP",
-                                        "CL_output_cl_ult_scaler_In-plane_support_cl_1_UP",
-                                        "CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_UP",
-                                        "CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_UP",
-                                        "CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_UP",
-                                        "CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_UP",
+                                       ["ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_1_SP",
+                                        "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_1_SP",
+                                        "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_1_SP",
+                                        "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_1_SP",
+                                        "ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_SP",
+                                        "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_SP",
+                                        "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_SP",
+                                        "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_SP",
+                                        "ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_1_UP",
+                                        "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_1_UP",
+                                        "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_1_UP",
+                                        "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_1_UP",
+                                        "ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_UP",
+                                        "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_UP",
+                                        "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_UP",
+                                        "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_UP",
                                         "CL_CSR-Tank_req_cl_predictor",
                                         "CL_CSR-Tank_req_cl_UP_scaler",
                                         "CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_predictor",
@@ -626,7 +626,7 @@ class CreateOptGeoWindow():
 
 
             if __name__ == '__main__':
-                import ANYstructure_local.example_data as ex
+                import example_data as ex
                 lateral_press.append(0.2)  # for testing
                 slamming_press.append(0)
                 fatigue_objects.append(ex.get_fatigue_object())
@@ -1267,7 +1267,7 @@ class CreateOptGeoWindow():
 
                 for data_idx, data in enumerate(values[1]):
                     for idx, stuc_info in enumerate(data):
-                        if type(stuc_info) == ANYstructure_local.calc_structure.AllStructure:
+                        if type(stuc_info) == calc_structure.AllStructure:
 
                             if y_loc > 700:
                                 y_loc = 120

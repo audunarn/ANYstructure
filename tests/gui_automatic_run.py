@@ -1,4 +1,4 @@
-from ANYstructure_local import main_application
+import main_application
 import multiprocessing, ctypes, os, pickle
 import tkinter as tk
 
@@ -47,31 +47,31 @@ for name, file_base in zip(['cl SP buc int predictor', 'cl SP buc int scaler',
                                     'CSR predictor UP', 'CSR scaler UP',
                                     'CSR predictor SP', 'CSR scaler SP'
                                     ],
-                                   ["CL_output_cl_buc_predictor_In-plane_support_cl_1_SP",
-                                    "CL_output_cl_buc_scaler_In-plane_support_cl_1_SP",
-                                    "CL_output_cl_ult_predictor_In-plane_support_cl_1_SP",
-                                    "CL_output_cl_ult_scaler_In-plane_support_cl_1_SP",
-                                    "CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_SP",
-                                    "CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_SP",
-                                    "CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_SP",
-                                    "CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_SP",
-                                    "CL_output_cl_buc_predictor_In-plane_support_cl_1_UP",
-                                    "CL_output_cl_buc_scaler_In-plane_support_cl_1_UP",
-                                    "CL_output_cl_ult_predictor_In-plane_support_cl_1_UP",
-                                    "CL_output_cl_ult_scaler_In-plane_support_cl_1_UP",
-                                    "CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_UP",
-                                    "CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_UP",
-                                    "CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_UP",
-                                    "CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_UP",
+                                   ["ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_1_SP",
+                                    "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_1_SP",
+                                    "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_1_SP",
+                                    "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_1_SP",
+                                    "ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_SP",
+                                    "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_SP",
+                                    "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_SP",
+                                    "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_SP",
+                                    "ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_1_UP",
+                                    "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_1_UP",
+                                    "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_1_UP",
+                                    "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_1_UP",
+                                    "ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_UP",
+                                    "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_UP",
+                                    "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_UP",
+                                    "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_UP",
                                     "CL_CSR-Tank_req_cl_predictor",
                                     "CL_CSR-Tank_req_cl_UP_scaler",
                                     "CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_predictor",
                                     "CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_SP_scaler"]):
     my_dict['_ML_buckling'][name] = None
 
-    if os.path.isfile('C:\\Github\\ANYstructure\\ANYstructure_local\\'+file_base + '.pickle'):
+    if os.path.isfile('C:\\Github\\ANYstructure\\'+file_base + '.pickle'):
 
-        file = open('C:\\Github\\ANYstructure\\ANYstructure_local\\'+file_base + '.pickle', 'rb')
+        file = open('C:\\Github\\ANYstructure\\'+file_base + '.pickle', 'rb')
         from sklearn.neural_network import MLPClassifier
         from sklearn.preprocessing import StandardScaler
 

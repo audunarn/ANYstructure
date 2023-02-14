@@ -1,6 +1,6 @@
-import ANYstructure_local.grid_window as grid_operations
+import grid_window as grid_operations
 import pytest
-import ANYstructure_local.make_grid_numpy as grid_np
+import make_grid_numpy as grid_np
 
 # Testing the Structure class
 

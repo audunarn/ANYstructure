@@ -1,9 +1,9 @@
 from scipy.special import gammaln
 from scipy.stats import gamma as gammadist
 import numpy as np
-import ANYstructure_local.helper as hlp
+import helper as hlp
 import os, time, datetime, json, random, math
-import ANYstructure_local.SN_curve_parameters as snc
+import SN_curve_parameters as snc
 from scipy.optimize import minimize
 
 class Structure():
@@ -4049,7 +4049,7 @@ class PULSpanel():
 
         :return:
         '''
-        import ANYstructure_local.excel_inteface as pulsxl
+        import excel_inteface as pulsxl
 
         iterator = self._all_to_run
 
@@ -4251,13 +4251,13 @@ class PULSpanel():
         print('Time to run', batch_size, 'batches:', time.time() - now)
 
 def main():
-    import ANYstructure_local.example_data as ex
+    import example_data as ex
     # PULS = PULSpanel(ex.run_dict, puls_sheet_location=r'C:\Github\ANYstructure\ANYstructure\PULS\PulsExcel_new - Copy (1).xlsm')
     # PULS.run_all_multi()
-    # PULS = PULSpanel(puls_sheet_location=r'C:\Github\ANYstructure\ANYstructure_local\PULS\PulsExcel_new - generator.xlsm')
+    # PULS = PULSpanel(puls_sheet_location=r'C:\Github\ANYstructure\PULS\PulsExcel_new - generator.xlsm')
     # for dummy in range(100):
     #     PULS.generate_random_results(batch_size=10000)
-    # import ANYstructure_local.example_data as test
+    # import example_data as test
     # from multiprocessing import Process
     #
     # queue = multiprocessing.SimpleQueue()

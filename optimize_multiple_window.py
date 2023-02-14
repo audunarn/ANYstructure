@@ -2,17 +2,17 @@
 import tkinter as tk
 from _tkinter import TclError
 from tkinter.ttk import Progressbar
-import ANYstructure_local.optimize as op
-import ANYstructure_local.calc_structure as calc
+import optimize as op
+import calc_structure as calc
 import numpy as np
 import time, os
 from tkinter import messagebox
-import ANYstructure_local.example_data as test
-from ANYstructure_local.helper import *
-import ANYstructure_local.helper as hlp
+import example_data as test
+from helper import *
+import helper as hlp
 from tkinter.filedialog import askopenfilenames
 from multiprocessing import cpu_count
-import ANYstructure_local.optimize as opt
+import optimize as opt
 from multiprocessing import Pool, cpu_count
 
 
@@ -81,22 +81,22 @@ class CreateOptimizeMultipleWindow():
                                         'cl UP buc GLGT predictor', 'cl UP buc GLGT scaler',
                                         'cl UP ult GLGT predictor', 'cl UP ult GLGT scaler'
                                         ],
-                                       ["CL_output_cl_buc_predictor_In-plane_support_cl_1_SP",
-                                        "CL_output_cl_buc_scaler_In-plane_support_cl_1_SP",
-                                        "CL_output_cl_ult_predictor_In-plane_support_cl_1_SP",
-                                        "CL_output_cl_ult_scaler_In-plane_support_cl_1_SP",
-                                        "CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_SP",
-                                        "CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_SP",
-                                        "CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_SP",
-                                        "CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_SP",
-                                        "CL_output_cl_buc_predictor_In-plane_support_cl_1_UP",
-                                        "CL_output_cl_buc_scaler_In-plane_support_cl_1_UP",
-                                        "CL_output_cl_ult_predictor_In-plane_support_cl_1_UP",
-                                        "CL_output_cl_ult_scaler_In-plane_support_cl_1_UP",
-                                        "CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_UP",
-                                        "CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_UP",
-                                        "CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_UP",
-                                        "CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_UP",
+                                       ["ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_1_SP",
+                                        "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_1_SP",
+                                        "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_1_SP",
+                                        "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_1_SP",
+                                        "ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_SP",
+                                        "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_SP",
+                                        "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_SP",
+                                        "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_SP",
+                                        "ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_1_UP",
+                                        "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_1_UP",
+                                        "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_1_UP",
+                                        "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_1_UP",
+                                        "ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_UP",
+                                        "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_UP",
+                                        "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_UP",
+                                        "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_UP",
                                         "CL_CSR-Tank_req_cl_predictor",
                                         "CL_CSR-Tank_req_cl_UP_scaler",
                                         "CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_predictor",

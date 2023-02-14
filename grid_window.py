@@ -1,6 +1,6 @@
 import math
-import ANYstructure_local.make_queue as queue
-import ANYstructure_local.make_stack as make_stack
+import make_queue as queue
+import make_stack as make_stack
 #from matplotlib.backends import backend_qt5agg
 from matplotlib.backends import backend_tkagg
 from matplotlib import pyplot as plt
@@ -8,7 +8,7 @@ import numpy as np
 from collections import deque
 import copy
 import matplotlib.animation as animation
-import ANYstructure_local.example_data as test
+import example_data as test
 
 
 def dist(p, q):

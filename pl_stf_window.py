@@ -2,10 +2,10 @@ import pathlib
 import tkinter as tk
 from _tkinter import TclError
 from tkinter.ttk import Combobox
-import ANYstructure_local.example_data as test
+import example_data as test
 import os
 import numpy as np
-import ANYstructure_local.helper as hlp
+import helper as hlp
 
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk)
@@ -387,7 +387,7 @@ class CreateStructureWindow():
         Read a list.
         '''
         from tkinter import filedialog
-        import ANYstructure_local.helper as hlp
+        import helper as hlp
         from pathlib import Path
 
         file = filedialog.askopenfile('r')
@@ -404,9 +404,9 @@ class CreateStructureWindow():
         '''
         Read a list.
         '''
-        import ANYstructure_local.helper as hlp
-        if pathlib.Path('ANYstructure_local\\bulb_anglebar_tbar_flatbar.csv').exists():
-            libfile = 'ANYstructure_local\\bulb_anglebar_tbar_flatbar.csv'
+        import helper as hlp
+        if pathlib.Path('bulb_anglebar_tbar_flatbar.csv').exists():
+            libfile = 'bulb_anglebar_tbar_flatbar.csv'
         else:
             libfile = 'bulb_anglebar_tbar_flatbar.csv'
         for section in hlp.helper_read_section_file(libfile):

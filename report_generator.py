@@ -6,7 +6,7 @@ from reportlab.platypus import Spacer
 from reportlab.lib.styles import  ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate
 from PIL import Image
-import ANYstructure_local.example_data as test
+import example_data as test
 from reportlab.lib.pagesizes import letter, A4, landscape
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import mm, inch
@@ -14,7 +14,7 @@ from reportlab.pdfgen import canvas
 from reportlab.platypus import Image, Paragraph, Table
 from time import strftime, gmtime
 import os
-import ANYstructure_local.helper as hlp
+import helper as hlp
 from matplotlib import pyplot as plt
 import matplotlib
 cmap_sections = plt.get_cmap('jet')
@@ -830,12 +830,12 @@ class LetterMaker(object):
 
 if __name__ == '__main__':
     import multiprocessing, ctypes, tkinter
-    import ANYstructure_local.main_application as app
+    import main_application as app
     multiprocessing.freeze_support()
     errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
     root = tkinter.Tk()
     my_app = app.Application(root)
-    ship_example = r'C:\Github\ANYstructure\ANYstructure_local\ship_section_example.txt'
+    ship_example = r'C:\Github\ANYstructure\ship_section_example.txt'
     my_app.openfile(ship_example)
     #my_app.table_generate()
     my_app.report_generate(autosave=True)

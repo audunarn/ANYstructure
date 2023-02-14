@@ -1,11 +1,11 @@
 #Optimize structure
 import numpy as np
-import ANYstructure_local.calc_structure as calc
+import calc_structure as calc
 import itertools as it
 import time
 import random
 import copy
-import ANYstructure_local.helper as hlp
+import helper as hlp
 from multiprocessing import Pool, cpu_count
 import math
 from math import floor
@@ -1513,7 +1513,7 @@ def plot_optimization_results(results, multiple = False):
     plt.show()
 
 if __name__ == '__main__':
-    import ANYstructure_local.example_data as ex
+    import example_data as ex
     from calc_structure import CylinderAndCurvedPlate, Structure, Shell
 
     shell_main_dict = ex.shell_main_dict

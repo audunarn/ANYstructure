@@ -3,14 +3,14 @@ import copy
 import tkinter as tk
 from _tkinter import TclError
 
-import ANYstructure_local.main_application
-import ANYstructure_local.optimize as op
+import main_application
+import optimize as op
 import numpy as np
 import time, os, datetime
 from tkinter import messagebox
-import ANYstructure_local.example_data as test
-import ANYstructure_local.helper as hlp
-import ANYstructure_local.calc_structure as calc
+import example_data as test
+import helper as hlp
+import calc_structure as calc
 from tkinter.filedialog import askopenfilenames
 from multiprocessing import cpu_count
 
@@ -48,26 +48,26 @@ class CreateOptimizeCylinderWindow():
                                         'cl UP buc GLGT predictor', 'cl UP buc GLGT scaler',
                                         'cl UP ult GLGT predictor', 'cl UP ult GLGT scaler'
                                         ],
-                                       ["CL_output_cl_buc_predictor_In-plane_support_cl_1_SP",
-                                        "CL_output_cl_buc_scaler_In-plane_support_cl_1_SP",
-                                        "CL_output_cl_ult_predictor_In-plane_support_cl_1_SP",
-                                        "CL_output_cl_ult_scaler_In-plane_support_cl_1_SP",
-                                        "CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_SP",
-                                        "CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_SP",
-                                        "CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_SP",
-                                        "CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_SP",
-                                        "CL_output_cl_buc_predictor_In-plane_support_cl_1_UP",
-                                        "CL_output_cl_buc_scaler_In-plane_support_cl_1_UP",
-                                        "CL_output_cl_ult_predictor_In-plane_support_cl_1_UP",
-                                        "CL_output_cl_ult_scaler_In-plane_support_cl_1_UP",
-                                        "CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_UP",
-                                        "CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_UP",
-                                        "CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_UP",
-                                        "CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_UP",
-                                        "CL_CSR-Tank_req_cl_predictor",
-                                        "CL_CSR-Tank_req_cl_UP_scaler",
-                                        "CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_predictor",
-                                        "CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_SP_scaler"]):
+                                       ["ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_1_SP",
+                                        "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_1_SP",
+                                        "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_1_SP",
+                                        "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_1_SP",
+                                        "ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_SP",
+                                        "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_SP",
+                                        "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_SP",
+                                        "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_SP",
+                                        "ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_1_UP",
+                                        "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_1_UP",
+                                        "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_1_UP",
+                                        "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_1_UP",
+                                        "ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_UP",
+                                        "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_UP",
+                                        "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_UP",
+                                        "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_UP",
+                                        "ml_files\\CL_CSR-Tank_req_cl_predictor",
+                                        "ml_files\\CL_CSR-Tank_req_cl_UP_scaler",
+                                        "ml_files\\CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_predictor",
+                                        "ml_files\\CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_SP_scaler"]):
                 self._ML_buckling[name] = None
                 if os.path.isfile(file_base + '.pickle'):
                     file = open(file_base + '.pickle', 'rb')
@@ -493,7 +493,7 @@ class CreateOptimizeCylinderWindow():
         self.draw_properties()
         self.update_running_time()
 
-        ANYstructure_local.main_application.Application.draw_cylinder(text_size='Verdana 8 bold',
+        main_application.Application.draw_cylinder(text_size='Verdana 8 bold',
                                                                       canvas = self._canvas_opt,
                                                                       CylObj=self._initial_cylinder_obj,
                                                                       start_x_cyl=350, start_y_cyl=300, text_x=230,
@@ -627,7 +627,7 @@ class CreateOptimizeCylinderWindow():
             #self._result_label.config(text=self._opt_results[0].__str__)
             self._canvas_opt.delete('all')
 
-            ANYstructure_local.main_application.Application.draw_cylinder(text_size='Verdana 8 bold',
+            main_application.Application.draw_cylinder(text_size='Verdana 8 bold',
                                                                           canvas = self._canvas_opt,
                                                                           CylObj=self._opt_results[0],
                                                                           start_x_cyl=350, start_y_cyl=300, text_x=230,

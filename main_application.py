@@ -5,28 +5,28 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
 from tkinter import messagebox
-from ANYstructure_local.calc_loads import *
-from ANYstructure_local.calc_structure import *
-import ANYstructure_local.load_window as load_window
-import ANYstructure_local.make_grid_numpy as grid
-import ANYstructure_local.grid_window as grid_window
-from ANYstructure_local.helper import *
+from calc_loads import *
+from calc_structure import *
+import load_window as load_window
+import make_grid_numpy as grid
+import grid_window as grid_window
+from helper import *
 import math, decimal
-import ANYstructure_local.optimize as op
-import ANYstructure_local.optimize_window as opw
-import ANYstructure_local.optimize_cylinder as opc
-import ANYstructure_local.optimize_multiple_window as opwmult
-import ANYstructure_local.optimize_geometry as optgeo
-import ANYstructure_local.pl_stf_window as struc
-import ANYstructure_local.stresses_window as stress
-import ANYstructure_local.fatigue_window as fatigue
-import ANYstructure_local.load_factor_window as load_factors
+import optimize as op
+import optimize_window as opw
+import optimize_cylinder as opc
+import optimize_multiple_window as opwmult
+import optimize_geometry as optgeo
+import pl_stf_window as struc
+import stresses_window as stress
+import fatigue_window as fatigue
+import load_factor_window as load_factors
 from _tkinter import TclError
 import multiprocessing
-from ANYstructure_local.report_generator import LetterMaker
+from report_generator import LetterMaker
 import os.path, os, pickle
 import ctypes
-import ANYstructure_local.sesam_interface as sesam
+import sesam_interface as sesam
 from matplotlib import pyplot as plt
 import matplotlib
 
@@ -306,26 +306,26 @@ class Application():
                                     'CSR predictor UP', 'CSR scaler UP',
                                     'CSR predictor SP', 'CSR scaler SP'
                                     ],
-                                   ["CL_output_cl_buc_predictor_In-plane_support_cl_1_SP",
-                                    "CL_output_cl_buc_scaler_In-plane_support_cl_1_SP",
-                                    "CL_output_cl_ult_predictor_In-plane_support_cl_1_SP",
-                                    "CL_output_cl_ult_scaler_In-plane_support_cl_1_SP",
-                                    "CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_SP",
-                                    "CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_SP",
-                                    "CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_SP",
-                                    "CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_SP",
-                                    "CL_output_cl_buc_predictor_In-plane_support_cl_1_UP",
-                                    "CL_output_cl_buc_scaler_In-plane_support_cl_1_UP",
-                                    "CL_output_cl_ult_predictor_In-plane_support_cl_1_UP",
-                                    "CL_output_cl_ult_scaler_In-plane_support_cl_1_UP",
-                                    "CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_UP",
-                                    "CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_UP",
-                                    "CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_UP",
-                                    "CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_UP",
-                                    "CL_CSR-Tank_req_cl_predictor",
-                                    "CL_CSR-Tank_req_cl_UP_scaler",
-                                    "CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_predictor",
-                                    "CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_SP_scaler"]):
+                                   ["ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_1_SP",
+                                    "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_1_SP",
+                                    "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_1_SP",
+                                    "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_1_SP",
+                                    "ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_SP",
+                                    "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_SP",
+                                    "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_SP",
+                                    "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_SP",
+                                    "ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_1_UP",
+                                    "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_1_UP",
+                                    "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_1_UP",
+                                    "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_1_UP",
+                                    "ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_UP",
+                                    "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_UP",
+                                    "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_UP",
+                                    "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_UP",
+                                    "ml_files\\CL_CSR-Tank_req_cl_predictor",
+                                    "ml_files\\CL_CSR-Tank_req_cl_UP_scaler",
+                                    "ml_files\\CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_predictor",
+                                    "ml_files\\CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_SP_scaler"]):
             self._ML_buckling[name] = None
 
             if os.path.isfile(file_base + '.pickle'):
@@ -6422,7 +6422,7 @@ class Application():
             try:
                 save_file = open(filename, mode='w')
             except FileNotFoundError:
-                save_file = open(filename.replace('ANYstructure_local\\',''), mode='w')
+                save_file = open(filename.replace('',''), mode='w')
 
         structure_properties = {}
         shell_structure_properties = {}
@@ -6561,7 +6561,7 @@ class Application():
                 lines_prop.pop('sigma_x')
 
             if old_save_file: #need to get some basic information
-                import ANYstructure_local.example_data as ex
+                import example_data as ex
                 main_dict = ex.prescriptive_main_dict
                 map_end = {'C': 'Continuous', 'S': 'Sniped'}
                 lines_prop['puls stiffener end'] = [map_end[lines_prop['puls stiffener end'][0]],

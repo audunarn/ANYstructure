@@ -488,8 +488,8 @@ class Grid:
         return center_of_mass
 
 if __name__ ==  '__main__':
-    import ANYstructure_local.example_data as ex
-    import ANYstructure_local.grid_window as grd
+    import example_data as ex
+    import grid_window as grd
     from matplotlib import pyplot as plt
     lines = ex.line_dict
     points = ex.point_dict
