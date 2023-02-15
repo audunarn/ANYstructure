@@ -1,12 +1,14 @@
 # This scripts provide dtat to be used for testing the code
 
-import make_grid_numpy as grid
+
 try:
     import calc_loads as load
     import calc_structure as calc_structure
+    import make_grid_numpy as grid
 except ModuleNotFoundError:
     import ANYstructure.calc_loads as load
     import ANYstructure.calc_structure as calc_structure
+    import ANYstructure.make_grid_numpy as grid
 
 import random
 

@@ -3,7 +3,6 @@ import tkinter as tk
 from _tkinter import TclError
 from tkinter.ttk import Progressbar
 from tkinter import messagebox
-from helper import *
 import copy, pickle
 from tkinter.filedialog import askopenfilenames
 from multiprocessing import cpu_count
@@ -16,12 +15,14 @@ try:
     import example_data as test
     from calc_structure import *
     import calc_structure
+    from helper import *
 except ModuleNotFoundError:
     import ANYstructure.main_application
     import ANYstructure.optimize as op
     import ANYstructure.example_data as test
     from ANYstructure.calc_structure import *
     import ANYstructure.calc_structure
+    from ANYstructure.helper import *
 
 
 class CreateOptGeoWindow():

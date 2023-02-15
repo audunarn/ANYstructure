@@ -1,5 +1,22 @@
  # -*- coding: utf-8 -*-
 
+from sklearn.neural_network import MLPClassifier
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics._pairwise_distances_reduction import _datasets_pair, _middle_term_computer
+
+import tkinter as tk
+from tkinter import ttk
+from tkinter import filedialog
+from tkinter import messagebox
+import math, decimal, pickle
+from _tkinter import TclError
+import multiprocessing
+import ctypes
+from matplotlib import pyplot as plt
+import matplotlib
+from reportlab.lib.pagesizes import letter, landscape
+from reportlab.platypus import SimpleDocTemplate
+
 try:
     from calc_structure import *
     from calc_loads import *
@@ -38,16 +55,7 @@ except ModuleNotFoundError:
     from ANYstructure.report_generator import LetterMaker
     import ANYstructure.sesam_interface as sesam
 
-import tkinter as tk
-from tkinter import ttk
-from tkinter import filedialog
-from tkinter import messagebox
-import math, decimal, pickle
-from _tkinter import TclError
-import multiprocessing
-import ctypes
-from matplotlib import pyplot as plt
-import matplotlib
+
 
 class Application():
     '''
@@ -349,15 +357,11 @@ class Application():
 
             if os.path.isfile(file_base + '.pickle'):
                 file = open(file_base + '.pickle', 'rb')
-                from sklearn.neural_network import MLPClassifier
-                from sklearn.preprocessing import StandardScaler
                 self._ML_buckling[name] = pickle.load(file)
                 file.close()
             else:
                 #file = open(self._root_dir +'\\' + file_base + '.pickle', 'rb')
                 file = open(os.path.join(self._root_dir, file_base + '.pickle'), 'rb')
-                from sklearn.neural_network import MLPClassifier
-                from sklearn.preprocessing import StandardScaler
                 self._ML_buckling[name] = pickle.load(file)
                 file.close()
 
@@ -4763,9 +4767,6 @@ class Application():
                 return
         else:
             filename = 'testrun.pdf'
-
-        from reportlab.lib.pagesizes import letter, landscape
-        from reportlab.platypus import SimpleDocTemplate
 
         if self._line_dict == {}:
             tk.messagebox.showerror('No lines', 'No lines defined. Cannot make report.')

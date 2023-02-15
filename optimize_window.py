@@ -7,7 +7,6 @@ from tkinter import messagebox
 from tkinter.filedialog import askopenfilenames
 from multiprocessing import cpu_count
 
-
 try:
     from calc_structure import CalcScantlings, AllStructure
     import example_data as test
@@ -15,7 +14,7 @@ try:
     import helper as hlp
     import optimize as op
 except ModuleNotFoundError:
-    import ANYstructure.ANYstructure
+    from ANYstructure.calc_structure import CalcScantlings, AllStructure
     import ANYstructure.example_data as test
     import ANYstructure.example_data as ex
     import ANYstructure.helper as hlp
