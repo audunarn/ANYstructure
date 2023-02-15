@@ -2890,11 +2890,16 @@ class CylinderAndCurvedPlate():
                     gammaM = 1.4
                 else:
                     gammaM = 0.8+0.6*lambda_s
-            else:
+            elif self._mat_factor == 1.15:
                 if lambda_s > 1:
                     gammaM = 1.45
                 else:
                     gammaM = 0.85+0.6*lambda_s
+            else:
+                if lambda_s > 1:
+                    gammaM = 1.45 * (self._mat_factor/1.15)
+                else:
+                    gammaM = 0.85+0.6*lambda_s * (self._mat_factor/1.15)
         if self._uls_or_als == 'ALS':
             gammaM = gammaM/self._mat_factor
         provide_data['gammaM Unstifffed panel'] = gammaM
@@ -3037,11 +3042,16 @@ class CylinderAndCurvedPlate():
                     gammaM = 1.4
                 else:
                     gammaM = 0.8+0.6*lambda_s
-            else:
+            elif self._mat_factor == 1.15:
                 if lambda_s > 1:
                     gammaM = 1.45
                 else:
                     gammaM = 0.85+0.6*lambda_s
+            else:
+                if lambda_s > 1:
+                    gammaM = 1.45 * (self._mat_factor/1.15)
+                else:
+                    gammaM = 0.85+0.6*lambda_s * (self._mat_factor/1.15)
         if self._uls_or_als == 'ALS':
             gammaM = gammaM/self._mat_factor
 
@@ -3405,11 +3415,16 @@ class CylinderAndCurvedPlate():
                     gammaM = 1.4
                 else:
                     gammaM = 0.8+0.6*lambda_s
-            else:
+            elif self._mat_factor == 1.15:
                 if lambda_s > 1:
                     gammaM = 1.45
                 else:
                     gammaM = 0.85+0.6*lambda_s
+            else:
+                if lambda_s > 1:
+                    gammaM = 1.45 * (self._mat_factor/1.15)
+                else:
+                    gammaM = 0.85+0.6*lambda_s * (self._mat_factor/1.15)
 
         if self._uls_or_als == 'ALS':
             gammaM = gammaM/self._mat_factor
@@ -3606,17 +3621,6 @@ class CylinderAndCurvedPlate():
 
         fkc = (1-0-28*math.pow(Lambda_,2))*fak if Lambda_ <= 1.34 else fak/math.pow(Lambda_,2)
         gammaM = data['gammaM curved panel'] #self._mat_factor  # Check
-
-        # if lambda_s < 0.5:
-        #     gammaM = self._mat_factor
-        # else:
-        #     if lambda_s > 1:
-        #         gammaM = 1.45
-        #     else:
-        #         gammaM = 0.85+0.6*lambda_s
-        # if self._uls_or_als == 'ALS':
-        #     gammaM = gammaM/self._mat_factor
-
 
         fakd = fak/gammaM
         fkcd = fkc/gammaM
