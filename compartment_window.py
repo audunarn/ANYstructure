@@ -4,10 +4,10 @@
 import tkinter as tk
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from matplotlib.figure import Figure
-import matplotlib
-from tkinter import messagebox
-import test
+try:
+    import test
+except ModuleNotFoundError:
+    import ANYstructure.test
 import numpy as np
 
 class CreateCompartmentWindow():

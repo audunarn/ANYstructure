@@ -1,5 +1,4 @@
 import numpy as np
-import pygmo as pg
 
 class MyProblem:
      def __init__(self, dim,upper_bounds,lower_bounds):

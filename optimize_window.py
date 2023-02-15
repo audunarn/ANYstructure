@@ -1,17 +1,25 @@
 # This is where the optimization is done.
 import tkinter as tk
 from _tkinter import TclError
-from calc_structure import CalcScantlings, AllStructure
-import example_data as ex
-import optimize as op
 import numpy as np
 import time, os, datetime
 from tkinter import messagebox
-import example_data as test
-import helper as hlp
 from tkinter.filedialog import askopenfilenames
 from multiprocessing import cpu_count
 
+
+try:
+    from calc_structure import CalcScantlings, AllStructure
+    import example_data as test
+    import example_data as ex
+    import helper as hlp
+    import optimize as op
+except ModuleNotFoundError:
+    import ANYstructure.ANYstructure
+    import ANYstructure.example_data as test
+    import ANYstructure.example_data as ex
+    import ANYstructure.helper as hlp
+    import ANYstructure.optimize as op
 class CreateOptimizeWindow():
     '''
     This class initiates the single optimization window.

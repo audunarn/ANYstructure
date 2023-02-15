@@ -3,7 +3,6 @@ Helper funations to be used.
 '''
 
 import math, copy, csv
-
 import numpy as np
 
 print_it = True

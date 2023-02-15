@@ -1,5 +1,9 @@
 import pprint
 from calc_structure import *
+try:
+    from calc_structure import *
+except ModuleNotFoundError:
+    from ANYstructure.calc_structure import *
 
 structure_types = {'vertical': ['BBS', 'SIDE_SHELL', 'SSS'],
                          'horizontal': ['BOTTOM', 'BBT', 'HOPPER', 'MD'],

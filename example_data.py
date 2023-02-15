@@ -1,8 +1,13 @@
 # This scripts provide dtat to be used for testing the code
 
 import make_grid_numpy as grid
-import calc_loads as load
-import calc_structure as calc_structure
+try:
+    import calc_loads as load
+    import calc_structure as calc_structure
+except ModuleNotFoundError:
+    import ANYstructure.calc_loads as load
+    import ANYstructure.calc_structure as calc_structure
+
 import random
 
 structure_types = {'vertical': ['BBS', 'SIDE_SHELL', 'SSS'],

@@ -1,8 +1,17 @@
+
+try:
+    import example_data as test
+    from calc_loads import *
+    from helper import *
+except ModuleNotFoundError:
+    import ANYstructure.example_data as test
+    from ANYstructure.calc_loads import *
+    from ANYstructure.helper import *
+
 import tkinter as tk
-from calc_loads import *
 from tkinter import messagebox
-from helper import *
-import example_data as test
+
+
 
 class CreateLoadWindow():
     '''

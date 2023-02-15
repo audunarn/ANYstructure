@@ -1,10 +1,18 @@
 from scipy.special import gammaln
 from scipy.stats import gamma as gammadist
 import numpy as np
-import helper as hlp
+
 import os, time, datetime, json, random, math
-import SN_curve_parameters as snc
+
 from scipy.optimize import minimize
+
+try:
+    import helper as hlp
+    import SN_curve_parameters as snc
+except ModuleNotFoundError:
+    import ANYstructure.helper as hlp
+    import ANYstructure.SN_curve_parameters as snc
+
 
 class Structure():
     '''

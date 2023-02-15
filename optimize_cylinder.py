@@ -1,18 +1,20 @@
 # This is where the optimization is done.
-import copy
-import tkinter as tk
-from _tkinter import TclError
 
-import main_application
-import optimize as op
+import tkinter as tk
 import numpy as np
 import time, os, datetime
 from tkinter import messagebox
-import example_data as test
-import helper as hlp
-import calc_structure as calc
 from tkinter.filedialog import askopenfilenames
 from multiprocessing import cpu_count
+
+try:
+    import main_application
+    import optimize as op
+    import example_data as test
+except ModuleNotFoundError:
+    import ANYstructure.main_application
+    import ANYstructure.optimize as op
+    import ANYstructure.example_data as test
 
 class CreateOptimizeCylinderWindow():
     '''

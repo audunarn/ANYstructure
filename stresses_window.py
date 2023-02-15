@@ -1,8 +1,12 @@
 # This is where the optimization is done.
 import tkinter as tk
-import example_data as test
+
 from _tkinter import TclError
 import os
+try:
+    import example_data as test
+except ModuleNotFoundError:
+    import ANYstructure.example_data as test
 
 
 class CreateStressesWindow():

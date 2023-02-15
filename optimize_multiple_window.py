@@ -2,18 +2,26 @@
 import tkinter as tk
 from _tkinter import TclError
 from tkinter.ttk import Progressbar
-import optimize as op
-import calc_structure as calc
-import numpy as np
-import time, os
 from tkinter import messagebox
-import example_data as test
-from helper import *
-import helper as hlp
 from tkinter.filedialog import askopenfilenames
-from multiprocessing import cpu_count
-import optimize as opt
 from multiprocessing import Pool, cpu_count
+
+try:
+    import main_application
+    import optimize as op
+    import example_data as test
+    from calc_structure import *
+    import calc_structure as calc
+    from helper import *
+    import optimize as opt
+except ModuleNotFoundError:
+    import ANYstructure.main_application
+    import ANYstructure.optimize as op
+    import ANYstructure.example_data as test
+    from ANYstructure.calc_structure import *
+    import ANYstructure.calc_structure as calc
+    from ANYstructure.helper import *
+    import ANYstructure.optimize as opt
 
 
 def helper_harmonizer_multi(iterator):

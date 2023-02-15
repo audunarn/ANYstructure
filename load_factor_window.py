@@ -1,7 +1,6 @@
 # Audun
 
 import tkinter as tk
-import example_data as test
 import os
 from _tkinter import TclError
 

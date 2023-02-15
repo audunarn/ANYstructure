@@ -1,32 +1,51 @@
  # -*- coding: utf-8 -*-
-import copy
-import time, datetime
+
+try:
+    from calc_structure import *
+    from calc_loads import *
+    import load_window as load_window
+    import make_grid_numpy as grid
+    import grid_window as grid_window
+    from helper import *
+    import optimize as op
+    import optimize_window as opw
+    import optimize_cylinder as opc
+    import optimize_multiple_window as opwmult
+    import optimize_geometry as optgeo
+    import pl_stf_window as struc
+    import stresses_window as stress
+    import fatigue_window as fatigue
+    import load_factor_window as load_factors
+    from report_generator import LetterMaker
+    import sesam_interface as sesam
+except ModuleNotFoundError:
+    # This is due to pyinstaller issues.
+    from ANYstructure.calc_structure import *
+    from ANYstructure.calc_loads import *
+    import ANYstructure.load_window as load_window
+    import ANYstructure.make_grid_numpy as grid
+    import ANYstructure.grid_window as grid_window
+    from ANYstructure.helper import *
+    import ANYstructure.optimize as op
+    import ANYstructure.optimize_window as opw
+    import ANYstructure.optimize_cylinder as opc
+    import ANYstructure.optimize_multiple_window as opwmult
+    import ANYstructure.optimize_geometry as optgeo
+    import ANYstructure.pl_stf_window as struc
+    import ANYstructure.stresses_window as stress
+    import ANYstructure.fatigue_window as fatigue
+    import ANYstructure.load_factor_window as load_factors
+    from ANYstructure.report_generator import LetterMaker
+    import ANYstructure.sesam_interface as sesam
+
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
 from tkinter import messagebox
-from calc_loads import *
-from calc_structure import *
-import load_window as load_window
-import make_grid_numpy as grid
-import grid_window as grid_window
-from helper import *
-import math, decimal
-import optimize as op
-import optimize_window as opw
-import optimize_cylinder as opc
-import optimize_multiple_window as opwmult
-import optimize_geometry as optgeo
-import pl_stf_window as struc
-import stresses_window as stress
-import fatigue_window as fatigue
-import load_factor_window as load_factors
+import math, decimal, pickle
 from _tkinter import TclError
 import multiprocessing
-from report_generator import LetterMaker
-import os.path, os, pickle
 import ctypes
-import sesam_interface as sesam
 from matplotlib import pyplot as plt
 import matplotlib
 
@@ -7388,9 +7407,9 @@ class Application():
 
 if __name__ == '__main__':
 
-    multiprocessing.freeze_support()
-    errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
-    root = tk.Tk()
+    # multiprocessing.freeze_support()
+    # errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
+    # root = tk.Tk()
     # root.tk.call("source", "sun-valley.tcl")
     # root.tk.call("set_theme", "dark")
 
@@ -7445,9 +7464,19 @@ if __name__ == '__main__':
     # root.tk.call("package", "require", 'awwinxpblue')
     # style.theme_use('awwinxpblue')
 
-    width = int(root.winfo_screenwidth()*1)
-    height = int(root.winfo_screenheight()*0.95)
+    # width = int(root.winfo_screenwidth()*1)
+    # height = int(root.winfo_screenheight()*0.95)
+    # root.geometry(f'{width}x{height}')
+    # my_app = Application(root)
+    # root.mainloop()
+
+    multiprocessing.freeze_support()
+    errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
+    root = tk.Tk()
+    width = root.winfo_screenwidth()
+    height = root.winfo_screenheight()
     root.geometry(f'{width}x{height}')
     my_app = Application(root)
     root.mainloop()
+
     #Application(None).openfile(r'C:\Github\ANYstructure\ANYstructure\ship_section_example.txt', alone=True)

@@ -1,18 +1,24 @@
 #Optimize structure
 import numpy as np
-import calc_structure as calc
+
 import itertools as it
 import time
 import random
 import copy
-import helper as hlp
 from multiprocessing import Pool, cpu_count
 import math
 from math import floor
 from matplotlib import pyplot as plt
-from mpl_toolkits.mplot3d import axes3d
 from tkinter.filedialog import asksaveasfilename
 import csv
+
+try:
+    import calc_structure as calc
+    import helper as hlp
+except ModuleNotFoundError:
+    import ANYstructure.calc_structure as calc
+    import ANYstructure.helper as hlp
+
 
 def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lateral_pressure=None,
                      deltas=None, algorithm='anysmart', trials=30000, side='p',

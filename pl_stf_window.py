@@ -2,10 +2,15 @@ import pathlib
 import tkinter as tk
 from _tkinter import TclError
 from tkinter.ttk import Combobox
-import example_data as test
 import os
-import numpy as np
-import helper as hlp
+
+try:
+    import example_data as test
+    import helper as hlp
+except ModuleNotFoundError:
+    import ANYstructure.example_data as test
+    import ANYstructure.helper as hlp
+
 
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk)

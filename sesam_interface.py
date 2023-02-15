@@ -3,9 +3,13 @@ Main file for handeling interface toward DNVGL software.
 Consist mainly of helper functions.
 '''
 
-import helper as hlp
-import pl_stf_window as plstf
 
+try:
+    import pl_stf_window as plstf
+    import helper as hlp
+except ModuleNotFoundError:
+    import ANYstructure.pl_stf_window as plstf
+    import ANYstructure.helper as hlp
 def point_to_js_command(point_coord, point_name):
     '''
     Returning a js script.

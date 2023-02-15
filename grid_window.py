@@ -1,7 +1,6 @@
 import math
 import make_queue as queue
 import make_stack as make_stack
-#from matplotlib.backends import backend_qt5agg
 from matplotlib.backends import backend_tkagg
 from matplotlib import pyplot as plt
 import numpy as np
@@ -9,6 +8,11 @@ from collections import deque
 import copy
 import matplotlib.animation as animation
 import example_data as test
+
+try:
+    import example_data as test
+except ModuleNotFoundError:
+    import ANYstructure.example_data as test
 
 
 def dist(p, q):
@@ -85,8 +89,9 @@ class CreateGridWindow():
             ax.tick_params(labelsize=8)
             fig.subplots_adjust(left=0.05, right=0.90, top=0.95, bottom=0.05)
             # get discrete colormap
-            #cmap = plt.get_cmap('Accent_r', np.int(np.max(data)) - np.int(np.min(data)) + 1)
-            cmap = plt.get_cmap('jet', np.int(np.max(data)) - np.int(np.min(data)) + 1)
+            #cmap = plt.get_cmap('Accent_r', np.int32(np.max(data)) - np.int32(np.min(data)) + 1)
+
+            cmap = plt.get_cmap('jet', np.int32(np.max(data)) - np.int32(np.min(data)) + 1)
             # set limits .5 outside true range
             cax = ax.matshow(data, cmap=cmap, vmin=np.min(data) - .5, vmax=np.max(data) + .5)
             # tell the colorbar to tick at integers
@@ -136,7 +141,7 @@ class CreateGridWindow():
         ax.tick_params(labelsize=8)
         fig.subplots_adjust(left=0.05, right=0.90, top=0.95, bottom=0.05)
         # get discrete colormap
-        cmap = plt.get_cmap('Accent_r', np.int(np.max(all_grids[-1])) - np.int(np.min(all_grids[-1])) + 1)
+        cmap = plt.get_cmap('Accent_r', np.int32(np.max(all_grids[-1])) - np.int32(np.min(all_grids[-1])) + 1)
         # set limits .5 outside true range
         cax = ax.matshow(all_grids[-1], cmap=cmap, vmin=np.min(all_grids[-1]) - .5, vmax=np.max(all_grids[-1]) + .5)
         # tell the colorbar to tick at integers

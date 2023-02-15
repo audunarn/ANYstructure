@@ -1,7 +1,12 @@
 # This is fatigue properties are defined.
 import tkinter as tk
-import example_data as test
-import SN_curve_parameters as sn
+
+try:
+    import example_data as test
+    import SN_curve_parameters as sn
+except ModuleNotFoundError:
+    import ANYstructure.example_data as test
+    import ANYstructure.SN_curve_parameters as sn
 
 
 class CreateFatigueWindow():

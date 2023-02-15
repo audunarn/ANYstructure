@@ -2,21 +2,27 @@
 import tkinter as tk
 from _tkinter import TclError
 from tkinter.ttk import Progressbar
-import optimize as op
-import numpy as np
-import time, os
 from tkinter import messagebox
-import example_data as test
-from calc_structure import *
 from helper import *
-import example_data as ex
 import copy, pickle
-import calc_structure
-import helper as hlp
 from tkinter.filedialog import askopenfilenames
 from multiprocessing import cpu_count
 from tkinter import filedialog
 from matplotlib import pyplot as plt
+
+try:
+    import main_application
+    import optimize as op
+    import example_data as test
+    from calc_structure import *
+    import calc_structure
+except ModuleNotFoundError:
+    import ANYstructure.main_application
+    import ANYstructure.optimize as op
+    import ANYstructure.example_data as test
+    from ANYstructure.calc_structure import *
+    import ANYstructure.calc_structure
+
 
 class CreateOptGeoWindow():
     '''

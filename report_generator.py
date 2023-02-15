@@ -4,9 +4,7 @@ import time
 from reportlab.lib.enums import TA_LEFT
 from reportlab.platypus import Spacer
 from reportlab.lib.styles import  ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate
 from PIL import Image
-import example_data as test
 from reportlab.lib.pagesizes import letter, A4, landscape
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import mm, inch
@@ -14,7 +12,6 @@ from reportlab.pdfgen import canvas
 from reportlab.platypus import Image, Paragraph, Table
 from time import strftime, gmtime
 import os
-import helper as hlp
 from matplotlib import pyplot as plt
 import matplotlib
 cmap_sections = plt.get_cmap('jet')
@@ -22,6 +19,14 @@ from reportlab.platypus import SimpleDocTemplate, TableStyle
 from reportlab.lib import colors
 from matplotlib import colors as matplotlib_colors
 import tkinter as tk
+
+try:
+    import example_data as test
+    import helper as hlp
+except ModuleNotFoundError:
+    import ANYstructure.example_data as test
+    import ANYstructure.helper as hlp
+
 
 
 def create_report(input_data):
