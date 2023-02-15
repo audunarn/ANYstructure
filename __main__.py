@@ -1,6 +1,9 @@
 import sys, multiprocessing, ctypes
 import tkinter as tk
-from main_application import Application
+try:
+    from main_application import Application
+except ModuleNotFoundError:
+    from ANYstructure.main_application import Application
 
 def main(args=None):
     """The main routine."""
