@@ -1,14 +1,13 @@
 # This scripts provide dtat to be used for testing the code
 
-
 try:
-    import calc_loads as load
-    import calc_structure as calc_structure
-    import make_grid_numpy as grid
+    import any_files.calc_loads as load
+    import any_files.calc_structure as calc_structure
+    import any_files.make_grid_numpy as grid
 except ModuleNotFoundError:
-    import ANYstructure.calc_loads as load
-    import ANYstructure.calc_structure as calc_structure
-    import ANYstructure.make_grid_numpy as grid
+    import ANYstructure.any_files.calc_loads as load
+    import ANYstructure.any_files.calc_structure as calc_structure
+    import ANYstructure.any_files.make_grid_numpy as grid
 
 import random
 
@@ -375,7 +374,7 @@ def get_line_to_struc(geo = False):
         Stiffener = get_structure_object(line)
         Girder = None  # CalcScantlings(ex.obj_dict_heavy)
         initial_calc_obj = calc_structure.AllStructure(Plate=Plate, Stiffener=Stiffener, Girder=Girder,
-                                              main_dict=prescriptive_main_dict)
+                                                       main_dict=prescriptive_main_dict)
         to_return[line]=[initial_calc_obj, None, None, [None], {}]
     return to_return
 

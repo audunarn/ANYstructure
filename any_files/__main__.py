@@ -1,9 +1,10 @@
-import sys, multiprocessing, ctypes
+import sys, multiprocessing, ctypes, os
 import tkinter as tk
 from any_files.main_application import Application
 
 def main(args=None):
     """The main routine."""
+
     if args is None:
         args = sys.argv[1:]
 

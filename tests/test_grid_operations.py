@@ -1,6 +1,6 @@
-import grid_window as grid_operations
 import pytest
-import make_grid_numpy as grid_np
+from any_files import make_grid_numpy as grid_np, grid_window as grid_operations
+
 
 # Testing the Structure class
 

@@ -6,10 +6,11 @@ from collections import deque
 import copy
 import matplotlib.animation as animation
 
+
 try:
-    import example_data as test
+    import any_files.example_data as test
 except ModuleNotFoundError:
-    import ANYstructure.example_data as test
+    import ANYstructure.any_files.example_data as test
 
 
 def dist(p, q):

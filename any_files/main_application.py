@@ -1,14 +1,10 @@
- # -*- coding: utf-8 -*-
-
-from sklearn.neural_network import MLPClassifier
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics._pairwise_distances_reduction import _datasets_pair, _middle_term_computer
+import os  # -*- coding: utf-8 -*-
 
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
 from tkinter import messagebox
-import math, decimal, pickle
+import decimal, pickle
 from _tkinter import TclError
 import multiprocessing
 import ctypes
@@ -16,44 +12,47 @@ from matplotlib import pyplot as plt
 import matplotlib
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.platypus import SimpleDocTemplate
+from sklearn.neural_network import MLPClassifier
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics._pairwise_distances_reduction import _datasets_pair,_middle_term_computer
 
 try:
-    from calc_structure import *
-    from calc_loads import *
-    import load_window as load_window
-    import make_grid_numpy as grid
-    import grid_window as grid_window
-    from helper import *
-    import optimize as op
-    import optimize_window as opw
-    import optimize_cylinder as opc
-    import optimize_multiple_window as opwmult
-    import optimize_geometry as optgeo
-    import pl_stf_window as struc
-    import stresses_window as stress
-    import fatigue_window as fatigue
-    import load_factor_window as load_factors
-    from report_generator import LetterMaker
-    import sesam_interface as sesam
+    from any_files.calc_structure import *
+    from any_files.calc_loads import *
+    import any_files.load_window as load_window
+    import any_files.make_grid_numpy as grid
+    import any_files.grid_window as grid_window
+    from any_files.helper import *
+    import any_files.optimize as op
+    import any_files.optimize_window as opw
+    import any_files.optimize_cylinder as opc
+    import any_files.optimize_multiple_window as opwmult
+    import any_files.optimize_geometry as optgeo
+    import any_files.pl_stf_window as struc
+    import any_files.stresses_window as stress
+    import any_files.fatigue_window as fatigue
+    import any_files.load_factor_window as load_factors
+    from any_files.report_generator import LetterMaker
+    import any_files.sesam_interface as sesam
 except ModuleNotFoundError:
     # This is due to pyinstaller issues.
-    from ANYstructure.calc_structure import *
-    from ANYstructure.calc_loads import *
-    import ANYstructure.load_window as load_window
-    import ANYstructure.make_grid_numpy as grid
-    import ANYstructure.grid_window as grid_window
-    from ANYstructure.helper import *
-    import ANYstructure.optimize as op
-    import ANYstructure.optimize_window as opw
-    import ANYstructure.optimize_cylinder as opc
-    import ANYstructure.optimize_multiple_window as opwmult
-    import ANYstructure.optimize_geometry as optgeo
-    import ANYstructure.pl_stf_window as struc
-    import ANYstructure.stresses_window as stress
-    import ANYstructure.fatigue_window as fatigue
-    import ANYstructure.load_factor_window as load_factors
-    from ANYstructure.report_generator import LetterMaker
-    import ANYstructure.sesam_interface as sesam
+    from ANYstructure.any_files.calc_structure import *
+    from ANYstructure.any_files.calc_loads import *
+    import ANYstructure.any_files.load_window as load_window
+    import ANYstructure.any_files.make_grid_numpy as grid
+    import ANYstructure.any_files.grid_window as grid_window
+    from ANYstructure.any_files.helper import *
+    import ANYstructure.any_files.optimize as op
+    import ANYstructure.any_files.optimize_window as opw
+    import ANYstructure.any_files.optimize_cylinder as opc
+    import ANYstructure.any_files.optimize_multiple_window as opwmult
+    import ANYstructure.any_files.optimize_geometry as optgeo
+    import ANYstructure.any_files.pl_stf_window as struc
+    import ANYstructure.any_files.stresses_window as stress
+    import ANYstructure.any_files.fatigue_window as fatigue
+    import ANYstructure.any_files.load_factor_window as load_factors
+    from ANYstructure.any_files.report_generator import LetterMaker
+    import ANYstructure.any_files.sesam_interface as sesam
 
 
 
@@ -76,6 +75,7 @@ class Application():
         parent.bind("<Configure>", self.resize)
 
         self._root_dir = os.path.dirname(os.path.abspath(__file__))
+        #self._root_dir = os.path.dirname(os.path.abspath(__file__)).replace('any_files','')
         # Main frame for the application
         self._main_fr = ttk.Frame(parent)
         self._main_fr.place(in_=parent, relwidth=1, relheight = 0.99)
@@ -361,7 +361,9 @@ class Application():
                 file.close()
             else:
                 #file = open(self._root_dir +'\\' + file_base + '.pickle', 'rb')
-                file = open(os.path.join(self._root_dir, file_base + '.pickle'), 'rb')
+
+                ml_file = os.path.join(self._root_dir, file_base + '.pickle')
+                file = open(ml_file, 'rb')
                 self._ML_buckling[name] = pickle.load(file)
                 file.close()
 
@@ -2726,8 +2728,8 @@ class Application():
             self.grid_operations(line, [self.get_grid_coord_from_points_coords(p1),
                                         self.get_grid_coord_from_points_coords(p2)])
 
-        self._grid_calc = grid_window.CreateGridWindow(self._main_grid,self._canvas_dim,
-                                                       self._pending_grid_draw,self._canvas_base_origo)
+        self._grid_calc = grid_window.CreateGridWindow(self._main_grid, self._canvas_dim,
+                                                       self._pending_grid_draw, self._canvas_base_origo)
 
 
         compartment_search_return = self._grid_calc.search_bfs(animate=animate)
@@ -4734,14 +4736,14 @@ class Application():
             if save_file is None:  # ask saveasfile return `None` if dialog closed with "cancel".
                 return
         else:
-            filename = 'testrun.pdf'
+            filename = '../testrun.pdf'
 
         if self._line_dict == {}:
             tk.messagebox.showerror('No lines', 'No lines defined. Cannot make report.')
             return
 
-        if os.path.isfile('current_comps.png'):
-            os.remove('current_comps.png')
+        if os.path.isfile('../current_comps.png'):
+            os.remove('../current_comps.png')
             self.grid_display_tanks(save = True)
         else:
             self.grid_display_tanks(save=True)
@@ -4766,7 +4768,7 @@ class Application():
             if save_file is None:  # ask saveasfile return `None` if dialog closed with "cancel".
                 return
         else:
-            filename = 'testrun.pdf'
+            filename = '../testrun.pdf'
 
         if self._line_dict == {}:
             tk.messagebox.showerror('No lines', 'No lines defined. Cannot make report.')
@@ -6420,7 +6422,7 @@ class Application():
 
     def save_no_dialogue(self, event = None, backup = False):
         if backup:
-            self.savefile(filename=os.path.join(self._root_dir,'backup.txt'),backup = backup)
+            self.savefile(filename=os.path.join(self._root_dir, '../backup.txt'), backup = backup)
             return
         if self.__last_save_file is not None:
             self.savefile(filename=self.__last_save_file)
@@ -6747,8 +6749,12 @@ class Application():
             # Setting the scale of the canvas
 
         points = self._point_dict
-        highest_y = max([coord[1] for coord in points.values()])
-        highest_x = max([coord[0] for coord in points.values()])
+        if len(points) != 0:
+            highest_y = max([coord[1] for coord in points.values()])
+            highest_x = max([coord[0] for coord in points.values()])
+        else:
+            highest_x = 1
+            highest_y = 1
         if not any([highest_x == 0, highest_y == 0]):
             self._canvas_scale = min(800 / highest_y, 800 / highest_x, 15)
 
@@ -6765,8 +6771,8 @@ class Application():
         self.update_frame()
 
     def restore_previous(self):
-        if os.path.isfile(os.path.join(self._root_dir,'backup.txt')):
-            self.openfile(defined=os.path.join(self._root_dir, 'backup.txt'))
+        if os.path.isfile(os.path.join(self._root_dir, '../backup.txt')):
+            self.openfile(defined=os.path.join(self._root_dir, '../backup.txt'))
 
 
     def open_example(self, file_name = 'ship_section_example.txt'):

@@ -8,17 +8,17 @@ from tkinter.filedialog import askopenfilenames
 from multiprocessing import cpu_count
 
 try:
-    from calc_structure import CalcScantlings, AllStructure
-    import example_data as test
-    import example_data as ex
-    import helper as hlp
-    import optimize as op
+    from any_files.calc_structure import CalcScantlings, AllStructure
+    import any_files.example_data as test
+    import any_files.example_data as ex
+    import any_files.helper as hlp
+    import any_files.optimize as op
 except ModuleNotFoundError:
-    from ANYstructure.calc_structure import CalcScantlings, AllStructure
-    import ANYstructure.example_data as test
-    import ANYstructure.example_data as ex
-    import ANYstructure.helper as hlp
-    import ANYstructure.optimize as op
+    from ANYstructure.any_files.calc_structure import CalcScantlings, AllStructure
+    import ANYstructure.any_files.example_data as test
+    import ANYstructure.any_files.example_data as ex
+    import ANYstructure.any_files.helper as hlp
+    import ANYstructure.any_files.optimize as op
 class CreateOptimizeWindow():
     '''
     This class initiates the single optimization window.
@@ -44,7 +44,7 @@ class CreateOptimizeWindow():
             self._puls_acceptance = 0.87
             self._initial_calc_obj.lat_press = self._lateral_pressure/1000
             self._ML_buckling = dict()  # Buckling machine learning algorithm
-            self._root_dir = 'C:\\Github\\ANYstructure\\'
+            self._root_dir = '/\\'
             for name, file_base in zip(['cl SP buc int predictor', 'cl SP buc int scaler',
                                         'cl SP ult int predictor', 'cl SP ult int scaler',
                                         'cl SP buc GLGT predictor', 'cl SP buc GLGT scaler',

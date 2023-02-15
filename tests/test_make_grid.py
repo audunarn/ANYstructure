@@ -1,4 +1,4 @@
-import make_grid_numpy as grid
+from any_files import make_grid_numpy as grid
 import pytest
 import numpy as np
 

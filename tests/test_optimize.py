@@ -1,6 +1,4 @@
-import optimize as opt
-import example_data as ex
-import calc_structure as calc
+from any_files import optimize as opt, example_data as ex, calc_structure as calc
 import numpy as np
 import pytest
 

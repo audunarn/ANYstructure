@@ -8,13 +8,13 @@ from tkinter.filedialog import askopenfilenames
 from multiprocessing import cpu_count
 
 try:
-    import main_application
-    import optimize as op
-    import example_data as test
+    import any_files.main_application
+    import any_files.optimize as op
+    import any_files.example_data as test
 except ModuleNotFoundError:
-    import ANYstructure.main_application
-    import ANYstructure.optimize as op
-    import ANYstructure.example_data as test
+    import ANYstructure.any_files.main_application
+    import ANYstructure.any_files.optimize as op
+    import ANYstructure.any_files.example_data as test
 
 class CreateOptimizeCylinderWindow():
     '''
@@ -73,8 +73,6 @@ class CreateOptimizeCylinderWindow():
                 self._ML_buckling[name] = None
                 if os.path.isfile(file_base + '.pickle'):
                     file = open(file_base + '.pickle', 'rb')
-                    from sklearn.neural_network import MLPClassifier
-                    from sklearn.preprocessing import StandardScaler
                     self._ML_buckling[name] = pickle.load(file)
                     file.close()
 
@@ -496,10 +494,10 @@ class CreateOptimizeCylinderWindow():
         self.update_running_time()
 
         main_application.Application.draw_cylinder(text_size='Verdana 8 bold',
-                                                                      canvas = self._canvas_opt,
-                                                                      CylObj=self._initial_cylinder_obj,
-                                                                      start_x_cyl=350, start_y_cyl=300, text_x=230,
-                                                                      text_y=120)
+                                                   canvas = self._canvas_opt,
+                                                   CylObj=self._initial_cylinder_obj,
+                                                   start_x_cyl=350, start_y_cyl=300, text_x=230,
+                                                   text_y=120)
 
     def selected_algorithm(self,event):
         '''
@@ -630,10 +628,10 @@ class CreateOptimizeCylinderWindow():
             self._canvas_opt.delete('all')
 
             main_application.Application.draw_cylinder(text_size='Verdana 8 bold',
-                                                                          canvas = self._canvas_opt,
-                                                                          CylObj=self._opt_results[0],
-                                                                          start_x_cyl=350, start_y_cyl=300, text_x=230,
-                                                                          text_y=120)
+                                                       canvas = self._canvas_opt,
+                                                       CylObj=self._opt_results[0],
+                                                       start_x_cyl=350, start_y_cyl=300, text_x=230,
+                                                       text_y=120)
             self._new_sasd.set(self._opt_results[0].sasd)
             self._new_smsd.set(self._opt_results[0].smsd)
             self._new_tTsd.set(self._opt_results[0].tTsd)
