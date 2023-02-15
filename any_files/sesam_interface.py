@@ -5,11 +5,11 @@ Consist mainly of helper functions.
 
 
 try:
-    import pl_stf_window as plstf
-    import helper as hlp
+    import any_files.pl_stf_window as plstf
+    import any_files.helper as hlp
 except ModuleNotFoundError:
-    import ANYstructure.pl_stf_window as plstf
-    import ANYstructure.helper as hlp
+    import ANYstructure.any_files.pl_stf_window as plstf
+    import ANYstructure.any_files.helper as hlp
 def point_to_js_command(point_coord, point_name):
     '''
     Returning a js script.

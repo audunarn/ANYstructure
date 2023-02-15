@@ -1,4 +1,4 @@
-import main_application
+from any_files import main_application
 import multiprocessing, ctypes, os, pickle
 import tkinter as tk
 
@@ -72,8 +72,6 @@ for name, file_base in zip(['cl SP buc int predictor', 'cl SP buc int scaler',
     if os.path.isfile('C:\\Github\\ANYstructure\\'+file_base + '.pickle'):
 
         file = open('C:\\Github\\ANYstructure\\'+file_base + '.pickle', 'rb')
-        from sklearn.neural_network import MLPClassifier
-        from sklearn.preprocessing import StandardScaler
 
         my_dict['_ML_buckling'] [name] = pickle.load(file)
         file.close()

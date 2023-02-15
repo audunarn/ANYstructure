@@ -3,26 +3,26 @@ import tkinter as tk
 from _tkinter import TclError
 from tkinter.ttk import Progressbar
 from tkinter import messagebox
-import copy, pickle
+import pickle
 from tkinter.filedialog import askopenfilenames
 from multiprocessing import cpu_count
 from tkinter import filedialog
 from matplotlib import pyplot as plt
 
 try:
-    import main_application
-    import optimize as op
-    import example_data as test
-    from calc_structure import *
-    import calc_structure
-    from helper import *
+    import any_files.main_application
+    import any_files.optimize as op
+    import any_files.example_data as test
+    from any_files.calc_structure import *
+    import any_files.calc_structure
+    from any_files.helper import *
 except ModuleNotFoundError:
-    import ANYstructure.main_application
-    import ANYstructure.optimize as op
-    import ANYstructure.example_data as test
-    from ANYstructure.calc_structure import *
-    import ANYstructure.calc_structure
-    from ANYstructure.helper import *
+    import ANYstructure.any_files.main_application
+    import ANYstructure.any_files.optimize as op
+    import ANYstructure.any_files.example_data as test
+    from ANYstructure.any_files.calc_structure import *
+    import ANYstructure.any_files.calc_structure
+    from ANYstructure.any_files.helper import *
 
 
 class CreateOptGeoWindow():
@@ -79,8 +79,6 @@ class CreateOptGeoWindow():
                     self._ML_buckling[name] = None
                     if os.path.isfile(file_base + '.pickle'):
                         file = open(file_base + '.pickle', 'rb')
-                        from sklearn.neural_network import MLPClassifier
-                        from sklearn.preprocessing import StandardScaler
                         self._ML_buckling[name] = pickle.load(file)
                         file.close()
         else:

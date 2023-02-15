@@ -7,11 +7,11 @@ import os, time, datetime, json, random, math
 from scipy.optimize import minimize
 
 try:
-    import helper as hlp
-    import SN_curve_parameters as snc
+    import any_files.helper as hlp
+    import any_files.SN_curve_parameters as snc
 except ModuleNotFoundError:
-    import ANYstructure.helper as hlp
-    import ANYstructure.SN_curve_parameters as snc
+    import ANYstructure.any_files.helper as hlp
+    import ANYstructure.any_files.SN_curve_parameters as snc
 
 
 class Structure():

@@ -1,6 +1,6 @@
-import calc_loads as calcl
+from any_files import calc_loads as calcl, example_data as ex
 import pytest
-import example_data as ex
+
 
 # Testing the Structure class
 

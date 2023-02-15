@@ -13,11 +13,11 @@ from tkinter.filedialog import asksaveasfilename
 import csv
 
 try:
-    import calc_structure as calc
-    import helper as hlp
+    import any_files.calc_structure as calc
+    import any_files.helper as hlp
 except ModuleNotFoundError:
-    import ANYstructure.calc_structure as calc
-    import ANYstructure.helper as hlp
+    import ANYstructure.any_files.calc_structure as calc
+    import ANYstructure.any_files.helper as hlp
 
 
 def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lateral_pressure=None,

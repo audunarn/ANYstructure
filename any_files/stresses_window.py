@@ -4,9 +4,9 @@ import tkinter as tk
 from _tkinter import TclError
 import os
 try:
-    import example_data as test
+    import any_files.example_data as test
 except ModuleNotFoundError:
-    import ANYstructure.example_data as test
+    import ANYstructure.any_files.example_data as test
 
 
 class CreateStressesWindow():

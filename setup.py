@@ -26,10 +26,10 @@ def readme():
 setup(
     name='ANYstructure',  # Required
     url = 'https://github.com/audunarn/ANYstructure',
-    entry_points={"console_scripts": ['ANYstructure = __main__:main']},
-    version=4.6,  # Required
+    entry_points={"console_scripts": ['ANYstructure = any_files.__main__:main']},
+    version='4.7',  # Required
     license='MIT',
-    description='A plate field optimization tool for offshore structures calculated according to DNVGL standards',
+    description='A plate field optimization tool for offshore structures calculated according to DNV standards',
     long_description = readme(),
     author='Audun Arnesen Nyhus',  # Optional
     author_email='audunarn@gmail.com',  # Optional
@@ -41,6 +41,7 @@ setup(
         'Topic :: Scientific/Engineering'],
     keywords='dnvgl-gl-os-c101 naval_architecture structural_engineering steel buckling fatigue local_scantlings optimization weight',
     include_package_data=True,
-
-    install_requires=['scipy', 'numpy', 'matplotlib', 'reportlab', 'xlwings', 'sklearn', 'scikit-learn']
+    install_requires=['scipy', 'numpy', 'matplotlib', 'reportlab', 'xlwings', 'sklearn', 'scikit-learn'],
+    packages=['any_files'],
+    py_modules = [],
 )

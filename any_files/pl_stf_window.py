@@ -5,11 +5,11 @@ from tkinter.ttk import Combobox
 import os
 
 try:
-    import example_data as test
-    import helper as hlp
+    import any_files.example_data as test
+    import any_files.helper as hlp
 except ModuleNotFoundError:
-    import ANYstructure.example_data as test
-    import ANYstructure.helper as hlp
+    import ANYstructure.any_files.example_data as test
+    import ANYstructure.any_files.helper as hlp
 
 
 from matplotlib.backends.backend_tkagg import (
