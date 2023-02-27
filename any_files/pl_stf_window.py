@@ -22,6 +22,10 @@ class CreateStructureWindow():
     '''
     This is the tkinter GUI for defining plate/stiffener properties.
     '''
+
+    _root_dir = os.path.dirname(__file__)
+    _image_dir = os.path.join(_root_dir, 'images')
+
     def __init__(self, master, app):
         super(CreateStructureWindow, self).__init__()
         self._frame = master
@@ -203,11 +207,7 @@ class CreateStructureWindow():
         self._new_fl_w.trace('w',self.draw_trace)
         self._new_fl_thk.trace('w',self.draw_trace)
         try:
-            img_file_name = 'img_stiffened_plate_panel.gif'
-            if os.path.isfile('images/' + img_file_name):
-                file_path = 'images/' + img_file_name
-            else:
-                file_path = os.path.dirname(os.path.abspath(__file__)) + '/images/' + img_file_name
+            file_path = os.path.join(self._image_dir,'img_stiffened_plate_panel.gif')
             photo = tk.PhotoImage(file=file_path)
             label = tk.Label(self._frame, image=photo)
             label.image = photo  # keep a reference!
@@ -215,11 +215,7 @@ class CreateStructureWindow():
         except TclError:
             pass
         try:
-            img_file_name = 'img_T_L_FB.gif'
-            if os.path.isfile('images/' + img_file_name):
-                file_path = 'images/' + img_file_name
-            else:
-                file_path = os.path.dirname(os.path.abspath(__file__)) + '/images/' + img_file_name
+            file_path = os.path.join(self._image_dir,'img_T_L_FB.gif')
             photo_T_L_FB = tk.PhotoImage(file=file_path)
             label = tk.Label(self._frame, image=photo_T_L_FB )
             label.image = photo_T_L_FB   # keep a reference!
@@ -392,7 +388,8 @@ class CreateStructureWindow():
         Read a list.
         '''
         from tkinter import filedialog
-        import helper as hlp
+        # import helper as hlp
+        from . import helper as hlp
         from pathlib import Path
 
         file = filedialog.askopenfile('r')
@@ -409,11 +406,13 @@ class CreateStructureWindow():
         '''
         Read a list.
         '''
-        import helper as hlp
-        if pathlib.Path('bulb_anglebar_tbar_flatbar.csv').exists():
-            libfile = 'bulb_anglebar_tbar_flatbar.csv'
-        else:
-            libfile = 'bulb_anglebar_tbar_flatbar.csv'
+        # import helper as hlp
+        from . import helper as hlp
+
+        libfile = os.path.join(self._root_dir,'bulb_anglebar_tbar_flatbar.csv')
+        if not pathlib.Path(libfile).exists():
+            raise NameError("File \"" + libfile + "\" not found.")
+
         for section in hlp.helper_read_section_file(libfile):
             SecObj = Section(section)
             self._section_list = hlp.add_new_section(self._section_list, SecObj)

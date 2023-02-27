@@ -12,9 +12,9 @@ from matplotlib import pyplot as plt
 import matplotlib
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.platypus import SimpleDocTemplate
-from sklearn.neural_network import MLPClassifier
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics._pairwise_distances_reduction import _datasets_pair,_middle_term_computer
+# from sklearn.neural_network import MLPClassifier
+# from sklearn.preprocessing import StandardScaler
+# from sklearn.metrics._pairwise_distances_reduction import _datasets_pair,_middle_term_computer
 
 try:
     from any_files.calc_structure import *
@@ -61,6 +61,10 @@ class Application():
     The Application class sets up the GUI using Tkinter.
     It is the main part of the code and calls up all other classes etc.
     '''
+
+    _root_dir = os.path.dirname(__file__)
+    _image_dir = os.path.join(_root_dir, 'images')
+
     def __init__(self, parent):
         '''
         Initaiting the tkinter frame.
@@ -74,8 +78,6 @@ class Application():
         parent.protocol("WM_DELETE_WINDOW", self.close_main_window)
         parent.bind("<Configure>", self.resize)
 
-        self._root_dir = os.path.dirname(os.path.abspath(__file__))
-        #self._root_dir = os.path.dirname(os.path.abspath(__file__)).replace('any_files','')
         # Main frame for the application
         self._main_fr = ttk.Frame(parent)
         self._main_fr.place(in_=parent, relwidth=1, relheight = 0.99)
@@ -333,26 +335,26 @@ class Application():
                                     'CSR predictor UP', 'CSR scaler UP',
                                     'CSR predictor SP', 'CSR scaler SP'
                                     ],
-                                   ["ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_1_SP",
-                                    "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_1_SP",
-                                    "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_1_SP",
-                                    "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_1_SP",
-                                    "ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_SP",
-                                    "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_SP",
-                                    "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_SP",
-                                    "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_SP",
-                                    "ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_1_UP",
-                                    "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_1_UP",
-                                    "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_1_UP",
-                                    "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_1_UP",
-                                    "ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_UP",
-                                    "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_UP",
-                                    "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_UP",
-                                    "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_UP",
-                                    "ml_files\\CL_CSR-Tank_req_cl_predictor",
-                                    "ml_files\\CL_CSR-Tank_req_cl_UP_scaler",
-                                    "ml_files\\CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_predictor",
-                                    "ml_files\\CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_SP_scaler"]):
+                                   [os.path.join("ml_files","CL_output_cl_buc_predictor_In-plane_support_cl_1_SP"),
+                                    os.path.join("ml_files","CL_output_cl_buc_scaler_In-plane_support_cl_1_SP"),
+                                    os.path.join("ml_files","CL_output_cl_ult_predictor_In-plane_support_cl_1_SP"),
+                                    os.path.join("ml_files","CL_output_cl_ult_scaler_In-plane_support_cl_1_SP"),
+                                    os.path.join("ml_files","CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_SP"),
+                                    os.path.join("ml_files","CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_SP"),
+                                    os.path.join("ml_files","CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_SP"),
+                                    os.path.join("ml_files","CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_SP"),
+                                    os.path.join("ml_files","CL_output_cl_buc_predictor_In-plane_support_cl_1_UP"),
+                                    os.path.join("ml_files","CL_output_cl_buc_scaler_In-plane_support_cl_1_UP"),
+                                    os.path.join("ml_files","CL_output_cl_ult_predictor_In-plane_support_cl_1_UP"),
+                                    os.path.join("ml_files","CL_output_cl_ult_scaler_In-plane_support_cl_1_UP"),
+                                    os.path.join("ml_files","CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_UP"),
+                                    os.path.join("ml_files","CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_UP"),
+                                    os.path.join("ml_files","CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_UP"),
+                                    os.path.join("ml_files","CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_UP"),
+                                    os.path.join("ml_files","CL_CSR-Tank_req_cl_predictor"),
+                                    os.path.join("ml_files","CL_CSR-Tank_req_cl_UP_scaler"),
+                                    os.path.join("ml_files","CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_predictor"),
+                                    os.path.join("ml_files","CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_SP_scaler")]):
             self._ML_buckling[name] = None
 
             if os.path.isfile(file_base + '.pickle'):
@@ -1126,11 +1128,7 @@ class Application():
             idx += 1
             
         try:
-            img_file_name = 'img_stf_button.gif'
-            if os.path.isfile('images/' + img_file_name):
-                file_path = 'images/' + img_file_name
-            else:
-                file_path = self._root_dir + '/images/' + img_file_name
+            file_path = os.path.join(self._root_dir, 'images','img_stf_button.gif')
             photo = tk.PhotoImage(file=file_path)
             self._stf_button = tk.Button(self._tab_prop, image=photo,
                                          command= self.on_open_structure_window)
@@ -1142,11 +1140,7 @@ class Application():
                                          bg=self._button_bg_color, fg=self._button_fg_color)
 
         try:
-            img_file_name = 'img_stress_button.gif'
-            if os.path.isfile('images/' + img_file_name):
-                file_path = 'images/' + img_file_name
-            else:
-                file_path = self._root_dir + '/images/' + img_file_name
+            file_path = os.path.join(self._root_dir, 'images','img_stress_button.gif')
             photo = tk.PhotoImage(file=file_path)
             self._stress_button = tk.Button(self._tab_prop, image=photo, command=self.on_open_stresses_window,
                                             fg=self._button_fg_color, bg='white')
@@ -1157,11 +1151,7 @@ class Application():
                                       bg=self._button_bg_color, fg=self._button_fg_color)
 
         try:
-            img_file_name = 'fls_button.gif'
-            if os.path.isfile('images/' + img_file_name):
-                file_path = 'images/' + img_file_name
-            else:
-                file_path = self._root_dir + '/images/' + img_file_name
+            file_path = os.path.join(self._root_dir, 'images','fls_button.gif')
             photo = tk.PhotoImage(file=file_path)
             self._fls_button = tk.Button(self._tab_prop, image=photo, command=self.on_open_fatigue_window,
                                          bg=self._button_bg_color)
@@ -1558,11 +1548,7 @@ class Application():
         # --- button to create compartments and define external pressures ---
 
         try:
-            img_file_name = 'img_int_pressure_button.gif'
-            if os.path.isfile('images/' + img_file_name):
-                file_path = 'images/' + img_file_name
-            else:
-                file_path = self._root_dir + '/images/' + img_file_name
+            file_path = os.path.join(self._root_dir, 'images','img_int_pressure_button.gif')
             photo = tk.PhotoImage(file=file_path)
             self._int_button = tk.Button(self._tab_comp,image = photo,command=self.grid_find_tanks, bg = 'white')
             self._int_button.image = photo
@@ -1581,11 +1567,7 @@ class Application():
         show_compartment.place(relx=types_start + delta_x*4, rely=load_vert_start + delta_y * 14, relwidth = 0.3)
 
         try:
-            img_file_name = 'img_ext_pressure_button.gif'
-            if os.path.isfile('images/' + img_file_name):
-                file_path = 'images/' + img_file_name
-            else:
-                file_path = self._root_dir + '/images/' + img_file_name
+            file_path = os.path.join(self._root_dir, 'images','img_ext_pressure_button.gif')
             photo = tk.PhotoImage(file=file_path)
 
             self._ext_button = tk.Button(self._tab_comp,image=photo, command = self.on_show_loads,
@@ -1680,11 +1662,7 @@ class Application():
                  font = self._text_size['Text 9 bold'], )\
             .place(relx=lc_x, rely=lc_y - 7 * lc_y_delta)
         try:
-            img_file_name = 'img_optimize.gif'
-            if os.path.isfile('images/' + img_file_name):
-                file_path = 'images/' + img_file_name
-            else:
-                file_path = self._root_dir + '/images/' + img_file_name
+            file_path = os.path.join(self._root_dir, 'images','img_optimize.gif')
             photo = tk.PhotoImage(file=file_path)
             self._opt_button = tk.Button(self._main_fr,image=photo, command = self.on_optimize,
                                    bg = 'white', fg = self._button_fg_color)
@@ -1695,11 +1673,7 @@ class Application():
                       bg = self._button_bg_color, fg = self._button_fg_color)
             self._opt_button.place(relx=lc_x, rely=lc_y - 6 * lc_y_delta, relheight = 0.04, relwidth = 0.098)
         try:
-            img_file_name = 'img_multi_opt.gif'
-            if os.path.isfile('images/' + img_file_name):
-                file_path = 'images/' + img_file_name
-            else:
-                file_path = self._root_dir + '/images/' + img_file_name
+            file_path = os.path.join(self._root_dir, 'images', 'img_multi_opt.gif')
             photo = tk.PhotoImage(file=file_path)
             self._opt_button_mult = tk.Button(self._main_fr,image=photo, command = self.on_optimize_multiple,
                                         bg = self._button_bg_color, fg = self._button_fg_color)
@@ -2382,10 +2356,8 @@ class Application():
                 img_file_name = 'img_axial_stresses.gif'
             else:
                 img_file_name = 'Definition_of_parameters_L_and_LH.png'
-            if os.path.isfile('images/' + img_file_name):
-                file_path = 'images/' + img_file_name
-            else:
-                file_path = self._root_dir + '/images/' + img_file_name
+            file_path = file_path = os.path.join(self._root_dir, 'images', img_file_name),
+
             photo = tk.PhotoImage(file=file_path)
             self._int_button.config(image = photo)
             self._int_button.image = photo
@@ -2690,11 +2662,7 @@ class Application():
             return
         #setting the button to red
         try:
-            img_file_name = 'img_int_pressure_button_search.gif'
-            if os.path.isfile('images/' + img_file_name):
-                file_path = 'images/' + img_file_name
-            else:
-                file_path = self._root_dir + '/images/' + img_file_name
+            file_path = os.path.join(self._root_dir, 'images' ,'img_int_pressure_button_search.gif')
             photo = tk.PhotoImage(file=file_path)
             self._int_button.config(image = photo)
             self._int_button.image = photo
@@ -2760,11 +2728,7 @@ class Application():
                         self._new_load_comb_dict[name][1].set(self._load_factors_dict[combination][2])
                         self._new_load_comb_dict[name][2].set(1)
         try:
-            img_file_name = 'img_int_pressure_button.gif'
-            if os.path.isfile('images/' + img_file_name):
-                file_path = 'images/' + img_file_name
-            else:
-                file_path = self._root_dir + '/images/' + img_file_name
+            file_path = os.path.join(self._root_dir, 'images', 'img_int_pressure_button.gif')
             photo = tk.PhotoImage(file=file_path)
 
             self._int_button.config(image = photo)
@@ -6930,11 +6894,7 @@ class Application():
         '''
 
         try:
-            img_file_name = 'img_ext_pressure_button_def.gif'
-            if os.path.isfile('images/' + img_file_name):
-                file_path = 'images/' + img_file_name
-            else:
-                file_path = self._root_dir + '/images/' + img_file_name
+            file_path = os.path.join(self._root_dir, 'images','img_ext_pressure_button_def.gif')
             photo = tk.PhotoImage(file=file_path)
             self._ext_button.config(image = photo)
             self._ext_button.image = photo
@@ -7061,11 +7021,7 @@ class Application():
         self.save_no_dialogue(backup=True)  # keeping a backup
 
         try:
-            img_file_name = 'img_ext_pressure_button.gif'
-            if os.path.isfile('images/' + img_file_name):
-                file_path = 'images/' + img_file_name
-            else:
-                file_path = self._root_dir + '/images/' + img_file_name
+            file_path = os.path.join(self._root_dir, 'images','img_ext_pressure_button.gif')
             photo = tk.PhotoImage(file=file_path)
             self._ext_button.config(image = photo)
             self._ext_button.image = photo
@@ -7252,11 +7208,7 @@ class Application():
         :return:
         '''
         try:
-            img_file_name = 'img_ext_pressure_button.gif'
-            if os.path.isfile('images/' + img_file_name):
-                file_path = 'images/' + img_file_name
-            else:
-                file_path = self._root_dir + '/images/' + img_file_name
+            file_path = os.path.join(self._root_dir, 'images','img_ext_pressure_button.gif')
             photo = tk.PhotoImage(file=file_path)
             self._ext_button.config(image = photo)
             self._ext_button.image = photo
