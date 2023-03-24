@@ -28,6 +28,7 @@ class CreateStructureWindow():
         self._frame.wm_title("Define structure properties")
         self._frame.geometry('1800x900')
         self._frame.grab_set()
+        self._root_dir = os.path.dirname(os.path.abspath(__file__))
         if __name__ == '__main__':
             self._initial_structure_obj = test.get_structure_calc_object()
             self._initial_calc_obj = test.get_structure_calc_object()
@@ -392,7 +393,7 @@ class CreateStructureWindow():
         Read a list.
         '''
         from tkinter import filedialog
-        import helper as hlp
+        import any_files.helper as hlp
         from pathlib import Path
 
         file = filedialog.askopenfile('r')
@@ -409,11 +410,12 @@ class CreateStructureWindow():
         '''
         Read a list.
         '''
-        import helper as hlp
+        import any_files.helper as hlp
         if pathlib.Path('bulb_anglebar_tbar_flatbar.csv').exists():
             libfile = 'bulb_anglebar_tbar_flatbar.csv'
         else:
             libfile = 'bulb_anglebar_tbar_flatbar.csv'
+            libfile = self._root_dir + '/' + libfile
         for section in hlp.helper_read_section_file(libfile):
             SecObj = Section(section)
             self._section_list = hlp.add_new_section(self._section_list, SecObj)

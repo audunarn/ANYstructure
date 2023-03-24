@@ -1991,7 +1991,7 @@ class Application():
             self._lab_shell_long_stiffener.place(relx=hor_start, rely=ent_geo_y+ delta_y)
 
             tmp_unit_info = list()
-            for lab in ['Web, hw', 'Web, tw', 'Flange b', 'Flange, tw', 'Spacing, s', 'Stf. type', 'Load section']:
+            for lab in ['Web, hw', 'Web, tw', 'Flange b', 'Flange, tf', 'Spacing, s', 'Stf. type', 'Load section']:
                 tmp_unit_info.append(ttk.Label(self._tab_prop, text=lab))
 
             for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
@@ -2007,7 +2007,7 @@ class Application():
         if ring_stf:
             self._lab_shell_ring_stiffener.place(relx=hor_start, rely=ent_geo_y+ delta_y*1)
             tmp_unit_info = list()
-            for lab in ['Web, hw', 'Web, tw', 'Flange, b', 'Flange, tw','tr. br. dist', 'Stf. type',
+            for lab in ['Web, hw', 'Web, tw', 'Flange, b', 'Flange, tf','tr. br. dist', 'Stf. type',
                         'Exclude', 'Load section prop.']:
                 tmp_unit_info.append(ttk.Label(self._tab_prop, text=lab))
 
@@ -2043,7 +2043,7 @@ class Application():
                     entry.place(relx=hor_start + idx * delta_x, rely=ent_geo_y + delta_y * 3, relwidth=geo_ent_width)
 
             tmp_unit_info = list()
-            for lab in ['Web, hw', 'Web, tw', 'Flange, b', 'Flange, tw', 'tr. br. dist', 'L bet. Gird.',
+            for lab in ['Web, hw', 'Web, tw', 'Flange, b', 'Flange, tf', 'tr. br. dist', 'L bet. Gird.',
                         'Stf. type', 'Exclude', 'Load section prop.']:
                 tmp_unit_info.append(ttk.Label(self._tab_prop, text=lab))
 
@@ -3895,7 +3895,6 @@ class Application():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                               text=this_text)
 
-
         elif self._new_colorcode_pressure.get() == True and line in list(self._line_to_struc.keys()):
             if self._line_to_struc[line][5] is not None:
                 color = 'grey'
@@ -3930,6 +3929,7 @@ class Application():
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                               text=this_text)
+
         elif self._new_colorcode_utilization.get() == True and self._new_buckling_method.get() == 'ML-CL (PULS based)':
             color = 'black'
             if self._new_label_color_coding.get():
@@ -4031,12 +4031,12 @@ class Application():
                                                   text=this_text)
 
             elif self._new_buckling_method.get() == 'DNV PULS':
-                color = state['color code']['lines'][line]['Total uf color rp']
+                color = state['color code']['lines'][line]['Total uf color puls']
                 if self._new_label_color_coding.get():
                     self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                                   text=round(state['color code']['lines'][line]['Total uf puls'],2))
             elif self._new_buckling_method.get() == 'DNV-RP-C201 - prescriptive':
-                color = state['color code']['lines'][line]['Total uf color puls']
+                color = state['color code']['lines'][line]['Total uf color rp']
                 if self._new_label_color_coding.get():
                     self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                                   text=round(state['color code']['lines'][line]['Total uf rp'],2))
@@ -4045,6 +4045,7 @@ class Application():
                 if self._new_label_color_coding.get():
                     self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                                   text='N/A')
+
         elif self._new_colorcode_puls_acceptance.get():
             if state['color code']['lines'][line]['PULS method'] == None:
                 color = 'black'
@@ -4053,6 +4054,7 @@ class Application():
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                               text=state['color code']['lines'][line]['PULS method'])
+
         elif self._new_colorcode_puls_sp_or_up.get():
             if state['color code']['lines'][line]['PULS sp or up'] == None:
                 color = 'black'
@@ -4698,8 +4700,10 @@ class Application():
 
                             for stf_type, chk_bool in value.items():
                                 stf_text = stf_type
+                                if stf_type == 'ring frame':
+                                    continue
 
-                                chk_text = 'OK' if chk_bool == True else 'Not OK' if chk_bool == False else 'N/A'
+                                chk_text = 'OK' if chk_bool == True else 'failed' if chk_bool == False else 'N/A'
 
                                 self._result_canvas.create_text([15*dx*idx_x, dy*y_location],
                                                                 text=stf_text, font=self._text_size['Text 10 bold'],

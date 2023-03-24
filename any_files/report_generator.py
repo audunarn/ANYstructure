@@ -462,6 +462,8 @@ class LetterMaker(object):
         idx, drawed_data = 0, list()
         all_line_data = self.data.get_color_and_calc_state()
         for line, pt in lines.items():
+            if line not in list(self.data._line_to_struc.keys()):
+                continue
             if draw_type == 'UF':
                 if self.data._new_buckling_method.get() == 'DNV-RP-C201 - prescriptive':
                     try:
@@ -780,6 +782,8 @@ class LetterMaker(object):
                    'shr area', 'min shr A', 'fat uf', 'buc uf']
         table_all.append(headers)
         for line in sorted(self.data._line_dict.keys()):
+            if line not in list(self.data._line_to_struc.keys()):
+                continue
             struc_obj = self.data._line_to_struc[line][0]
             pressure = round(self.data.get_highest_pressure(line)['normal'] / 1000,0)
 
@@ -793,7 +797,10 @@ class LetterMaker(object):
                         buckling_uf = \
                         self.data._PULS_results.get_run_results()[line]['Ultimate capacity']['Actual usage Factor'][0]
             else:
-                buckling_uf = str(round(max(self.data.get_color_and_calc_state()['buckling'][line]), 2))
+                try:
+                    buckling_uf = str(round(max(self.data.get_color_and_calc_state()['buckling'][line]), 2))
+                except TypeError:
+                    buckling_uf = None
 
             if self.data.get_color_and_calc_state()['fatigue'][line]['damage'] is not None:
                 fat_uf = self.data.get_color_and_calc_state()['fatigue'][line]['damage']

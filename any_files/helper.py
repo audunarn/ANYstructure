@@ -2,11 +2,11 @@
 Helper funations to be used.
 '''
 
-import math, copy, csv
+import math, copy, csv, os
 import numpy as np
 
 print_it = True
-
+root_dir = os.path.dirname(os.path.abspath(__file__))
 def print_helper(properties, prop_text, units):
     '''
     Used to print out the properties

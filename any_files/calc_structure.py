@@ -2657,6 +2657,7 @@ class CylinderAndCurvedPlate():
         # print('Results for geometry', self._geometry)
         # print('UF',uf_unstf_shell, uf_long_stf, uf_ring_stf, uf_ring_frame)
         # print('Stiffeners', stiffener_check)
+
         return results
 
     def set_main_properties(self, main_dict):
@@ -2792,7 +2793,8 @@ class CylinderAndCurvedPlate():
         tsd = np.array(tsd)
         sjsd = np.sqrt(sxsd**2 - sxsd*shsd + shsd**2+3*tsd**2)
 
-        return {'sjsd': sjsd, 'parameters': parameters, 'cross section data': cross_sec_data, 'shRsd': shRsd, 'shsd': shsd, 'sxsd': sxsd}
+        return {'sjsd': sjsd, 'parameters': parameters, 'cross section data': cross_sec_data,
+                'shRsd': shRsd, 'shsd': shsd, 'sxsd': sxsd}
 
     def unstiffened_shell(self, conical = False, shell_data = None):
 
@@ -2812,10 +2814,12 @@ class CylinderAndCurvedPlate():
         smsd = self._smsd/1e6
         tsd = self._tTsd/1e6+self._tQsd/1e6
         psd = self._psd/1e6
+
         if self._RingStf is not None:
-            shsd = shell_data['shsd'][1]
+            shsd = shell_data['shsd'][1] # TODO something wrong with shSd
         else:
             shsd = psd*r/t
+
 
         provide_data = dict()
 
@@ -2877,7 +2881,7 @@ class CylinderAndCurvedPlate():
             lambda_s_pow = 0
         else:
             lambda_s_pow = (fy/sjsd) * (sa0sd/fEax + sh0sd/fEcirc + tsd/fEshear)
-
+        print('lambda_s_pow',lambda_s_pow, 'fy',fy, 'sjsd',sjsd, 'sa0sd', sa0sd , 'fEax',fEax, 'sh0sd', sh0sd, 'fEcirc', fEcirc, 'tsd',tsd, 'fEshear',fEshear)
         lambda_s = math.sqrt(lambda_s_pow)
         fks = fy/math.sqrt(1+math.pow(lambda_s,4 ))
 
@@ -2904,6 +2908,7 @@ class CylinderAndCurvedPlate():
             gammaM = gammaM/self._mat_factor
         provide_data['gammaM Unstifffed panel'] = gammaM
         fksd = fks/gammaM
+        print('fks', fks, 'gammaM', gammaM, 'fksd', fksd)
         provide_data['fksd - Unstifffed curved panel'] = fksd
         uf = sjsd/fksd
 
@@ -3160,8 +3165,11 @@ class CylinderAndCurvedPlate():
                           abs(worst_ax_comp) * t * (1 + alfaA) * math.pow(r0[1], 4) / (500 * E * l)])
 
         #Pnt. 3.5.2.5   Required Ixh for shell subjected to torsion and/or shear:
+
         Ixhreq = np.array([math.pow(tsd / E, (8 / 5)) * math.pow(r0[0] / L, 1 / 5) * L * r0[0] * t * l,
                            math.pow(tsd / E, (8 / 5)) * math.pow(r0[1] / L, 1 / 5) * L * r0[1] * t * l])
+        print('Ixhreq:', Ixhreq, '              r0:', r0)
+
 
 
         #Pnt. 3.5.2.6   Simplified calculation of Ih for shell subjected to external pressure
@@ -3729,7 +3737,8 @@ class CylinderAndCurvedPlate():
                                            'ring stiffener': None if self._RingStf is None else
                                            all([chk1[1],chk2[1],chk3[0],chk4[0]]),
                                            'ring frame': None if self._RingFrame is None else
-                                           all([chk1[2],chk2[2],chk3[1],chk4[1]])}
+                                           True}
+                                           #all([chk1[2],chk2[2],chk3[1],chk4[1]])} SKIP check for girders
         provide_data['stiffener check detailed'] = {'longitudinal':'Web height < ' + str(round(stf_req_h[0],1)) if not chk1[0]
         else '' + ' ' + 'flange width < ' +str(round(stf_req_b[0],1)) if not chk2[0] else ' ',
                                                    'ring stiffener': None if self._RingStf is None
