@@ -2253,11 +2253,11 @@ class Application():
                         tf=self._new_stf_fl_t.get(), CylinderAndCurvedPlate=CylinderAndCurvedPlate)
                     self._new_shell_sasd.set(sasd)
                     self._new_shell_smsd.set(smsd)
-                    self._new_shell_tTsd.set(tTsd)
+                    self._new_shell_tTsd.set(abs(tTsd))
                     self._new_shell_tQsd.set(tQsd)
                     # self._new_shell_shsd.set(0)
                 else:
-                    stresses = [self._new_shell_sasd.get(), self._new_shell_smsd.get(), self._new_shell_tTsd.get(),
+                    stresses = [self._new_shell_sasd.get(), self._new_shell_smsd.get(), abs(self._new_shell_tTsd.get()),
                                 self._new_shell_tQsd.get(), self._new_shell_shsd.get()]
                     sasd, smsd, tTsd, tQsd, shsd = stresses
                     Nsd, Msd, Tsd, Qsd, shsd = hlp.helper_cylinder_stress_to_force_to_stress(
@@ -5155,7 +5155,8 @@ class Application():
                         self._new_shell_tQsd.set(tQsd)
                         #self._new_shell_shsd.set(0)
                     else:
-                        stresses = [self._new_shell_sasd.get(), self._new_shell_smsd.get(), self._new_shell_tTsd.get(),
+                        stresses = [self._new_shell_sasd.get(), self._new_shell_smsd.get(),
+                                    abs(self._new_shell_tTsd.get()),
                                     self._new_shell_tQsd.get(), self._new_shell_shsd.get()]
                         sasd, smsd, tTsd, tQsd, shsd = stresses
                         Nsd, Msd, Tsd, Qsd, shsd = hlp.helper_cylinder_stress_to_force_to_stress(

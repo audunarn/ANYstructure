@@ -13,7 +13,6 @@ except ModuleNotFoundError:
     import ANYstructure.any_files.helper as hlp
     import ANYstructure.any_files.SN_curve_parameters as snc
 
-
 class Structure():
     '''
     Setting the properties for the plate and the stiffener. Takes a dictionary as argument.
@@ -2466,7 +2465,7 @@ class CylinderAndCurvedPlate():
         self._smsd = val
     @property
     def tTsd(self):
-        return self._tTsd
+        return abs(self._tTsd)
     @tTsd.setter
     def tTsd(self, val):
         self._tTsd = abs(val)
@@ -2790,7 +2789,7 @@ class CylinderAndCurvedPlate():
 
         sxsd = np.array(sxsd)
         shsd = np.array(shsd)
-        tsd = np.array(tsd)
+        tsd = np.array(np.abs(tsd))
         sjsd = np.sqrt(sxsd**2 - sxsd*shsd + shsd**2+3*tsd**2)
 
         return {'sjsd': sjsd, 'parameters': parameters, 'cross section data': cross_sec_data,
@@ -2812,7 +2811,7 @@ class CylinderAndCurvedPlate():
 
         sasd = self._sasd/1e6
         smsd = self._smsd/1e6
-        tsd = self._tTsd/1e6+self._tQsd/1e6
+        tsd = abs(self._tTsd/1e6+self._tQsd/1e6)
         psd = self._psd/1e6
 
         if self._RingStf is None:
@@ -3292,7 +3291,7 @@ class CylinderAndCurvedPlate():
         LH = L
         sasd = self._sasd/1e6
         smsd = self._smsd/1e6
-        tsd = self._tTsd/1e6 + self._tQsd/1e6
+        tsd = abs(self._tTsd/1e6 + self._tQsd/1e6)
         psd = self._psd/1e6
         shsd = psd * r / t
 
@@ -3492,7 +3491,7 @@ class CylinderAndCurvedPlate():
 
         sasd = self._sasd/1e6
         smsd = self._smsd/1e6
-        tsd = self._tTsd/1e6 + self._tQsd/1e6
+        tsd = abs(self._tTsd/1e6 + self._tQsd/1e6)
         psd = self._psd/1e6
         shsd = psd * r / t
 
@@ -3778,7 +3777,7 @@ class CylinderAndCurvedPlate():
     def get_main_properties(self):
         main_dict = {'sasd': [self._sasd, 'Pa'],
                      'smsd': [self._smsd, 'Pa'],
-                     'tTsd': [self._tTsd, 'Pa'],
+                     'tTsd': [abs(self._tTsd), 'Pa'],
                      'tQsd': [self._tQsd, 'Pa'],
                      'psd': [self._psd, 'Pa'],
                      'shsd': [self._shsd, 'Pa'],
