@@ -2395,7 +2395,7 @@ class CylinderAndCurvedPlate():
         #if main_dict['geometry'][0] in [1,3,5,7]: # Need to convert from forces to stresses.
         self._sasd = main_dict['sasd'][0]
         self._smsd = main_dict['smsd'][0]
-        self._tTsd = main_dict['tTsd'][0]
+        self._tTsd = abs(main_dict['tTsd'][0])
         self._tQsd= main_dict['tQsd'][0]
         self._psd = main_dict['psd'][0]
         self._shsd = main_dict['shsd'][0]
@@ -2469,7 +2469,7 @@ class CylinderAndCurvedPlate():
         return self._tTsd
     @tTsd.setter
     def tTsd(self, val):
-        self._tTsd = val
+        self._tTsd = abs(val)
     @property
     def tQsd(self):
         return self._tQsd
@@ -2663,7 +2663,7 @@ class CylinderAndCurvedPlate():
     def set_main_properties(self, main_dict):
         self._sasd = main_dict['sasd'][0]
         self._smsd = main_dict['smsd'][0]
-        self._tTsd = main_dict['tTsd'][0]
+        self._tTsd = abs(main_dict['tTsd'][0])
         self._tQsd= main_dict['tQsd'][0]
         self._psd = main_dict['psd'][0]
         self._shsd = main_dict['shsd'][0]
@@ -2745,7 +2745,7 @@ class CylinderAndCurvedPlate():
                 shRsd.append(np.nan)
                 continue
             if idx == 'Unstiffened':
-                shsd.append((self._psd/1e6)*r/t+self._shsd/1e6)
+                shsd.append((self._psd/1e6)*r/t + self._shsd/1e6)
                 sxsd.append(self._sasd/1e6+self._smsd/1e6 if self._geometry in [2,6] else
                             min([self._sasd/1e6, self._sasd/1e6-self._smsd/1e6, self._sasd/1e6+self._smsd/1e6]))
                 tsd.append(self._tTsd/1e6 + self._tQsd/1e6)
@@ -2815,11 +2815,10 @@ class CylinderAndCurvedPlate():
         tsd = self._tTsd/1e6+self._tQsd/1e6
         psd = self._psd/1e6
 
-        if self._RingStf is not None:
-            shsd = shell_data['shsd'][1] # TODO something wrong with shSd
+        if self._RingStf is None:
+            shsd = shell_data['shsd'][0]
         else:
-            shsd = psd*r/t
-
+            shsd = shell_data['shsd'][1]
 
         provide_data = dict()
 
@@ -2881,7 +2880,7 @@ class CylinderAndCurvedPlate():
             lambda_s_pow = 0
         else:
             lambda_s_pow = (fy/sjsd) * (sa0sd/fEax + sh0sd/fEcirc + tsd/fEshear)
-        print('lambda_s_pow',lambda_s_pow, 'fy',fy, 'sjsd',sjsd, 'sa0sd', sa0sd , 'fEax',fEax, 'sh0sd', sh0sd, 'fEcirc', fEcirc, 'tsd',tsd, 'fEshear',fEshear)
+
         lambda_s = math.sqrt(lambda_s_pow)
         fks = fy/math.sqrt(1+math.pow(lambda_s,4 ))
 
@@ -2908,7 +2907,6 @@ class CylinderAndCurvedPlate():
             gammaM = gammaM/self._mat_factor
         provide_data['gammaM Unstifffed panel'] = gammaM
         fksd = fks/gammaM
-        print('fks', fks, 'gammaM', gammaM, 'fksd', fksd)
         provide_data['fksd - Unstifffed curved panel'] = fksd
         uf = sjsd/fksd
 
@@ -3128,7 +3126,7 @@ class CylinderAndCurvedPlate():
         LH = L
         sasd = self._sasd/1e6
         smsd = self._smsd/1e6
-        tsd = self._tTsd/1e6 + self._tQsd/1e6
+        tsd = abs(self._tTsd/1e6 + self._tQsd/1e6) # MAYBE MAYBE NOT.
         psd = self._psd/1e6
 
         data_shell_buckling = self.shell_buckling() if data_shell_buckling == None else data_shell_buckling
@@ -3165,12 +3163,8 @@ class CylinderAndCurvedPlate():
                           abs(worst_ax_comp) * t * (1 + alfaA) * math.pow(r0[1], 4) / (500 * E * l)])
 
         #Pnt. 3.5.2.5   Required Ixh for shell subjected to torsion and/or shear:
-
         Ixhreq = np.array([math.pow(tsd / E, (8 / 5)) * math.pow(r0[0] / L, 1 / 5) * L * r0[0] * t * l,
                            math.pow(tsd / E, (8 / 5)) * math.pow(r0[1] / L, 1 / 5) * L * r0[1] * t * l])
-        print('Ixhreq:', Ixhreq, '              r0:', r0)
-
-
 
         #Pnt. 3.5.2.6   Simplified calculation of Ih for shell subjected to external pressure
         zt = np.array([data_shell_buckling['parameters'][0][6],data_shell_buckling['parameters'][1][6]])
@@ -3808,7 +3802,7 @@ class CylinderAndCurvedPlate():
     def set_stresses_and_pressure(self, val):
         self._sasd = val['sasd']
         self._smsd = val['smsd']
-        self._tTsd = val['tTsd']
+        self._tTsd = abs(val['tTsd'])
         self._tQsd= val['tQsd']
         self._psd = val['psd']
         self._shsd = val['shsd']
