@@ -3313,6 +3313,34 @@ class Application():
                     puls_color = matplotlib.colors.rgb2hex(cmap_sections(puls_uf))
                     puls_sp_or_up = self._line_to_struc[line][0].Plate.get_puls_sp_or_up()
 
+                # Cylinders
+                if self._line_to_struc[line][5] is not None:
+                    cyl_obj = self._line_to_struc[line][5]
+                    radius = round(cyl_obj.ShellObj.radius * 1000, 2)
+                    thickness = round(cyl_obj.ShellObj.thk * 1000, 2)
+                    long_str = cyl_obj.LongStfObj.get_beam_string()
+                    ring_stf = cyl_obj.LongStfObj.get_beam_string()
+                    heavy_ring = cyl_obj.LongStfObj.get_beam_string()
+                    span = round(cyl_obj.ShellObj.dist_between_rings, 1)
+                    tot_length = round(cyl_obj.ShellObj.length_of_shell, 1)
+                    tot_cyl = round(cyl_obj.ShellObj.tot_cyl_length, 1)
+                    sigma_axial = cyl_obj.sasd / 1e6
+                    sigma_bend = cyl_obj.smsd / 1e6
+                    sigma_tors = cyl_obj.tTsd / 1e6
+                    tau_xy = cyl_obj.tQsd / 1e6
+                    lat_press = cyl_obj.psd / 1e6
+                    sigma_hoop = cyl_obj.shsd / 1e6
+                    results = cyl_obj.get_utilization_factors()
+
+                    cyl_uf =  max([round(0 if results['Unstiffened shell'] is None else results['Unstiffened shell'],2),
+                                   round(0 if results['Longitudinal stiffened shell'] is None else results['Longitudinal stiffened shell'],2),
+                                   round(0 if results['Ring stiffened shell'] is None else results['Ring stiffened shell'],2),
+                                   round(0 if results['Heavy ring frame'] is None else results['Heavy ring frame'],2)])
+                else:
+                    cyl_uf = 0
+
+
+
                 rp_uf = rec_for_color[line]['rp buckling']
 
                 tot_uf_rp = max([rec_for_color[line]['fatigue'], rp_uf,
@@ -3331,7 +3359,9 @@ class Application():
                 for stress_list, this_stress in zip([sig_x, sig_y1, sig_y2, tau_xy],
                                                      [line_data[0].Plate.get_sigma_x1(), line_data[0].Plate.get_sigma_y1(),
                                                       line_data[0].Plate.get_sigma_y2(), line_data[0].Plate.get_tau_xy()]):
-                    if len(stress_list) == 1:
+                    if type(stress_list)==float:
+                        res.append(1)
+                    elif len(stress_list) == 1:
                         res.append(1)
                     elif max(stress_list) == 0 and min(stress_list) == 0:
                         res.append(0)
@@ -3381,6 +3411,8 @@ class Application():
                                            'sigma y1': matplotlib.colors.rgb2hex(cmap_sections(sig_y1_uf)),
                                            'sigma y2': matplotlib.colors.rgb2hex(cmap_sections(sig_y2_uf)),
                                            'tau xy':matplotlib.colors.rgb2hex(cmap_sections(tau_xy_uf)),
+                    'cylinder uf': matplotlib.colors.rgb2hex(cmap_sections(cyl_uf))
+
                                            }
                 return_dict['color code']['lines'] = line_color_coding
 
@@ -3911,13 +3943,23 @@ class Application():
 
         elif self._new_colorcode_utilization.get() == True and self._new_buckling_method.get() == 'DNV-RP-C201 - prescriptive':
             if self._line_to_struc[line][5] is not None:
-                color = 'grey'
-                this_text = 'N/A'
+                cyl_obj = self._line_to_struc[line][5]
+                results = cyl_obj.get_utilization_factors()
+                ufs = [round(0 if results['Unstiffened shell'] is None else results['Unstiffened shell'], 2),
+                       round(0 if results['Longitudinal stiffened shell'] is None else results['Longitudinal stiffened shell'],2),
+                       round(0 if results['Ring stiffened shell'] is None else results['Ring stiffened shell'], 2),
+                       round(0 if results['Heavy ring frame'] is None else results['Heavy ring frame'], 2)]
+
+                color = state['color code']['lines'][line]['cylinder uf']
+                this_text = str(max(ufs))
+                if self._new_label_color_coding.get():
+                    self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                                  text=this_text)
             else:
                 color = state['color code']['lines'][line]['rp uf color']
-            if self._new_label_color_coding.get():
-                self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
-                                              text=round(state['color code']['lines'][line]['rp uf'],2))
+                if self._new_label_color_coding.get():
+                    self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
+                                                  text=round(state['color code']['lines'][line]['rp uf'],2))
 
         elif self._new_colorcode_utilization.get() == True and self._new_buckling_method.get() == 'DNV PULS':
             if self._line_to_struc[line][5] is not None:
@@ -4024,8 +4066,15 @@ class Application():
 
         elif self._new_colorcode_total.get() == True:
             if self._line_to_struc[line][5] is not None:
-                color = 'grey'
-                this_text = 'N/A'
+                cyl_obj = self._line_to_struc[line][5]
+                results = cyl_obj.get_utilization_factors()
+                ufs = [round(0 if results['Unstiffened shell'] is None else results['Unstiffened shell'], 2),
+                       round(0 if results['Longitudinal stiffened shell'] is None else results['Longitudinal stiffened shell'],2),
+                       round(0 if results['Ring stiffened shell'] is None else results['Ring stiffened shell'], 2),
+                       round(0 if results['Heavy ring frame'] is None else results['Heavy ring frame'], 2)]
+
+                color = state['color code']['lines'][line]['cylinder uf']
+                this_text = str(max(ufs))
                 if self._new_label_color_coding.get():
                     self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
                                                   text=this_text)
