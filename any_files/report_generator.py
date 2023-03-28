@@ -359,6 +359,7 @@ class LetterMaker(object):
                     textobject.textLine('Design tosional stress/moment: ' + str(cyl_obj.tTsd / 1e6) + ' MPa')
                     textobject.textLine('Design shear stress/force:     ' + str(cyl_obj.tQsd / 1e6) + ' MPa')
                     textobject.textLine('Design lateral pressure        ' + str(cyl_obj.psd / 1e6) + ' MPa' )
+                    textobject.textLine('Additional hoop stress         ' + str(cyl_obj.shsd / 1e6) + ' MPa')
                     vpos -= 40
                     for key, value in results.items():
                         if key in ['Weight', 'Need to check column buckling']:
@@ -777,65 +778,118 @@ class LetterMaker(object):
         '''
 
         table_all = []
-        headers = ['Line', 'pl thk', 's', 'web h', 'web thk', 'fl. w', 'fl. thk', 'sig x1', 'sig x2', 'sig y1',
-                   'sig y2', 'tau xy', 'max press.', 'sec. mod', 'min sec.', 'min plt',
-                   'shr area', 'min shr A', 'fat uf', 'buc uf']
-        table_all.append(headers)
+        cylindersy, flat_plates, idx = False, False,-1
         for line in sorted(self.data._line_dict.keys()):
-            if line not in list(self.data._line_to_struc.keys()):
-                continue
-            struc_obj = self.data._line_to_struc[line][0]
-            pressure = round(self.data.get_highest_pressure(line)['normal'] / 1000,0)
+            idx += 1
+            if self.data._line_to_struc[line][5] is None and cylinders is False:
+                flat_plates = True
+                if idx == 0:
+                    headers = ['Line', 'pl thk', 's', 'web h', 'web thk', 'fl. w', 'fl. thk', 'sig x1', 'sig x2', 'sig y1',
+                               'sig y2', 'tau xy', 'max press.', 'sec. mod', 'min sec.', 'min plt',
+                               'shr area', 'min shr A', 'fat uf', 'buc uf']
+                    table_all.append(headers)
+                if line not in list(self.data._line_to_struc.keys()):
+                    continue
+                struc_obj = self.data._line_to_struc[line][0]
+                pressure = round(self.data.get_highest_pressure(line)['normal'] / 1000,0)
 
-            if self.data._PULS_results is not None:
-                puls_method = self.data._line_to_struc[line][0].Plate.get_puls_method()
-                if line in self.data._PULS_results.get_run_results().keys():
-                    if puls_method == 'buckling':
-                        buckling_uf = \
-                        self.data._PULS_results.get_run_results()[line]['Buckling strength']['Actual usage Factor'][0]
-                    else:
-                        buckling_uf = \
-                        self.data._PULS_results.get_run_results()[line]['Ultimate capacity']['Actual usage Factor'][0]
-            else:
-                try:
-                    buckling_uf = str(round(max(self.data.get_color_and_calc_state()['buckling'][line]), 2))
-                except TypeError:
-                    buckling_uf = None
+                if self.data._PULS_results is not None:
+                    puls_method = self.data._line_to_struc[line][0].Plate.get_puls_method()
+                    if line in self.data._PULS_results.get_run_results().keys():
+                        if puls_method == 'buckling':
+                            buckling_uf = \
+                            self.data._PULS_results.get_run_results()[line]['Buckling strength']['Actual usage Factor'][0]
+                        else:
+                            buckling_uf = \
+                            self.data._PULS_results.get_run_results()[line]['Ultimate capacity']['Actual usage Factor'][0]
+                else:
+                    try:
+                        buckling_uf = str(round(max(self.data.get_color_and_calc_state()['buckling'][line]), 2))
+                    except TypeError:
+                        buckling_uf = None
 
-            if self.data.get_color_and_calc_state()['fatigue'][line]['damage'] is not None:
-                fat_uf = self.data.get_color_and_calc_state()['fatigue'][line]['damage']
-                fat_uf = round(fat_uf, 3)
-            else:
-                fat_uf = self.data.get_color_and_calc_state()['fatigue'][line]['damage']
+                if self.data.get_color_and_calc_state()['fatigue'][line]['damage'] is not None:
+                    fat_uf = self.data.get_color_and_calc_state()['fatigue'][line]['damage']
+                    fat_uf = round(fat_uf, 3)
+                else:
+                    fat_uf = self.data.get_color_and_calc_state()['fatigue'][line]['damage']
 
 
-            data = [line,str(struc_obj.Plate.get_pl_thk() * 1000), str(struc_obj.Plate.get_s() * 1000),
-                    str('' if struc_obj.Stiffener is None else struc_obj.Stiffener.get_web_h() * 1000),
-                    str('' if struc_obj.Stiffener is None else struc_obj.Stiffener.get_web_thk() * 1000),
-                    str('' if struc_obj.Stiffener is None else struc_obj.Stiffener.get_fl_w() * 1000),
-                    str('' if struc_obj.Stiffener is None else struc_obj.Stiffener.get_fl_thk() * 1000),
-                    str(round(struc_obj.Plate.get_sigma_x1(), 0)), str(round(struc_obj.Plate.get_sigma_x2(), 0)),
-                    str(round(struc_obj.Plate.get_sigma_y1(), 0)),
-                    str(round(struc_obj.Plate.get_sigma_y2(), 0)),
-                    str(round(struc_obj.Plate.get_tau_xy(), 0)), str(round(pressure, 2) * 1000),
-                    str(int(min(self.data.get_color_and_calc_state()['section_modulus'][line]['sec_mod']) * 1000 ** 3)),
-                    str(int(self.data.get_color_and_calc_state()['section_modulus'][line]['min_sec_mod'] * 1000 ** 3)),
-                    str(round(self.data.get_color_and_calc_state()['thickness'][line]['min_thk'], 2)),
-                    str(int(self.data.get_color_and_calc_state()['shear_area'][line]['shear_area'] * 1000 ** 2)),
-                    str(int(self.data.get_color_and_calc_state()['shear_area'][line]['min_shear_area'] * 1000 ** 2)),
-                    fat_uf, buckling_uf]
+                data = [line,str(struc_obj.Plate.get_pl_thk() * 1000), str(struc_obj.Plate.get_s() * 1000),
+                        str('' if struc_obj.Stiffener is None else struc_obj.Stiffener.get_web_h() * 1000),
+                        str('' if struc_obj.Stiffener is None else struc_obj.Stiffener.get_web_thk() * 1000),
+                        str('' if struc_obj.Stiffener is None else struc_obj.Stiffener.get_fl_w() * 1000),
+                        str('' if struc_obj.Stiffener is None else struc_obj.Stiffener.get_fl_thk() * 1000),
+                        str(round(struc_obj.Plate.get_sigma_x1(), 0)), str(round(struc_obj.Plate.get_sigma_x2(), 0)),
+                        str(round(struc_obj.Plate.get_sigma_y1(), 0)),
+                        str(round(struc_obj.Plate.get_sigma_y2(), 0)),
+                        str(round(struc_obj.Plate.get_tau_xy(), 0)), str(round(pressure, 2) * 1000),
+                        str(int(min(self.data.get_color_and_calc_state()['section_modulus'][line]['sec_mod']) * 1000 ** 3)),
+                        str(int(self.data.get_color_and_calc_state()['section_modulus'][line]['min_sec_mod'] * 1000 ** 3)),
+                        str(round(self.data.get_color_and_calc_state()['thickness'][line]['min_thk'], 2)),
+                        str(int(self.data.get_color_and_calc_state()['shear_area'][line]['shear_area'] * 1000 ** 2)),
+                        str(int(self.data.get_color_and_calc_state()['shear_area'][line]['min_shear_area'] * 1000 ** 2)),
+                        fat_uf, buckling_uf]
 
-            table_all.append(data)
+                table_all.append(data)
 
-        t = Table(table_all,colWidths=[0.55*inch])
-        t.setStyle(TableStyle([
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.gray),
-            ('BACKGROUND', (0, 0), (-1, -1), colors.lightblue),
-            ('FONTSIZE', (0, 0), (-1, -1), 8),
-            ('FONTSIZE', (0, 4), (-1, 4), 8),
-            ('TEXTFONT', (0, 1), (-1, 1), 'Times-Bold'),
-            ('TEXTFONT', (0, 4), (-1, 4), 'Times-Bold'),
-        ]))
+            elif not flat_plates:
+                cylinders = True
+                if idx == 0:
+                    headers = ['Line', 'Radius', 'Thickness', 'Span', 'Tot. length',
+                               'Axial stress', 'Bend stress', 'Tors. stress', 'Shear stress', 'Lat. press.',
+                               'Hoop stress',
+                               'UF shell', 'UF long. stf.', 'UF ring. stf.', 'UF girder']
+                    table_all.append(headers)
+                cyl_obj = self.data._line_to_struc[line][5]
+                radius = round(cyl_obj.ShellObj.radius * 1000, 2)
+                thickness = round(cyl_obj.ShellObj.thk * 1000, 2)
+                long_str = cyl_obj.LongStfObj.get_beam_string()
+                ring_stf = cyl_obj.LongStfObj.get_beam_string()
+                heavy_ring = cyl_obj.LongStfObj.get_beam_string()
+                span = round(cyl_obj.ShellObj.dist_between_rings, 1)
+                tot_length = round(cyl_obj.ShellObj.length_of_shell, 1)
+                tot_cyl = round(cyl_obj.ShellObj.tot_cyl_length, 1)
+                sigma_axial = cyl_obj.sasd / 1e6
+                sigma_bend = cyl_obj.smsd / 1e6
+                sigma_tors = cyl_obj.tTsd / 1e6
+                tau_xy = cyl_obj.tQsd / 1e6
+                lat_press = cyl_obj.psd / 1e6
+                sigma_hoop = cyl_obj.shsd / 1e6
+                results = cyl_obj.get_utilization_factors()
+                data = [line, radius, thickness, span, tot_length,
+                        sigma_axial,
+                        sigma_bend,
+                        sigma_tors,
+                        tau_xy,
+                        lat_press,
+                        sigma_hoop,
+                        round(0 if results['Unstiffened shell'] is None else results['Unstiffened shell'],2),
+                        round(0 if results['Longitudinal stiffened shell'] is None else results['Longitudinal stiffened shell'],2),
+                        round(0 if results['Ring stiffened shell'] is None else results['Ring stiffened shell'],2),
+                        round(0 if results['Heavy ring frame'] is None else results['Heavy ring frame'],2)
+                        ]
+                table_all.append([str(data_item) for data_item in data])
+        if cylinders:
+            t = Table(table_all,colWidths=[0.7*inch])
+            t.setStyle(TableStyle([
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.gray),
+                ('BACKGROUND', (0, 0), (-1, -1), colors.lightblue),
+                ('FONTSIZE', (0, 0), (-1, -1), 8),
+                ('FONTSIZE', (0, 4), (-1, 4), 8),
+                ('TEXTFONT', (0, 1), (-1, 1), 'Times-Bold'),
+                ('TEXTFONT', (0, 4), (-1, 4), 'Times-Bold'),
+            ]))
+        else:
+            t = Table(table_all,colWidths=[0.55*inch])
+            t.setStyle(TableStyle([
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.gray),
+                ('BACKGROUND', (0, 0), (-1, -1), colors.lightblue),
+                ('FONTSIZE', (0, 0), (-1, -1), 8),
+                ('FONTSIZE', (0, 4), (-1, 4), 8),
+                ('TEXTFONT', (0, 1), (-1, 1), 'Times-Bold'),
+                ('TEXTFONT', (0, 4), (-1, 4), 'Times-Bold'),
+            ]))
 
         return [t,]
 
@@ -849,8 +903,9 @@ if __name__ == '__main__':
     my_app = app.Application(root)
     ship_example = r'C:\Github\ANYstructure\ship_section_example.txt'
     my_app.openfile(ship_example)
-    #my_app.table_generate()
-    my_app.report_generate(autosave=True)
+    #
+    my_app.table_generate()
+    #my_app.report_generate(autosave=True)
     # doc = LetterMaker("example.pdf", "The MVP", 10, to_report_gen)
     # doc.createDocument()
     # doc.savePDF()

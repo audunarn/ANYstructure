@@ -2619,6 +2619,8 @@ class CylinderAndCurvedPlate():
                 results['Stiffener check detailed'] = column_buckling_data['stiffener check detailed']
                 results['Ring stiffened shell'] = ring_stf_shell[0]
 
+
+
                 if optimizing:
                     if not results['Column stability check']:
                         return False, 'Column stability', results
@@ -3108,6 +3110,7 @@ class CylinderAndCurvedPlate():
             return 0 if len(logger) == 1 else max(logger[-2],0)
 
         provide_data['max axial stress - 3.4.2 Shell buckling'] = iter_table_2()
+        provide_data['shsd'] = shsd
         return provide_data
 
     def ring_stiffened_shell(self, data_shell_buckling = None, column_buckling_data = None):
@@ -3293,7 +3296,8 @@ class CylinderAndCurvedPlate():
         smsd = self._smsd/1e6
         tsd = abs(self._tTsd/1e6 + self._tQsd/1e6)
         psd = self._psd/1e6
-        shsd = psd * r / t
+        shsd = unstiffened_shell['shsd']
+
 
         lightly_stf = s/t > math.sqrt(r/t)
         provide_data = dict()
@@ -3349,8 +3353,9 @@ class CylinderAndCurvedPlate():
         alpha = 12*(1-math.pow(v,2))*Iy/(s*math.pow(t,3))
         Zl = (math.pow(l, 2)/(r*t)) * math.sqrt(1-math.pow(v,2))
 
-        #print('Zl', Zl, 'alpha', alpha, 'Isef', Iy, 'Se', Se, 'sjsd', sjsd, 'sxsd', sxSd, 'fks', fks, 'As', As)
+        print('Zl', Zl, 'alpha', alpha, 'Isef', Iy, 'Se', Se, 'sjsd', sjsd, 'sxsd', sxSd, 'fks', fks, 'As', As)
         # Table 3-3
+
 
         def table_3_3(chk):
             psi = {'Axial stress': 0 if Se == 0 else (1+alpha) / (1+A/(Se*t)),
@@ -3371,7 +3376,7 @@ class CylinderAndCurvedPlate():
             C = 0 if psi == 0 else psi * math.sqrt(1 + math.pow(rho * epsilon / psi, 2))  # (3.4.2) (3.6.4)
             fE = C * ((math.pow(math.pi, 2) * E) / (12 * (1 - math.pow(v, 2)))) * math.pow(t / l,2)
             vals.append(fE)
-            #print(chk, 'C', C, 'psi', psi,'epsilon', epsilon,'rho' ,rho, 'fE', fE)
+            print(chk, 'C', C, 'psi', psi,'epsilon', epsilon,'rho' ,rho, 'fE', fE)
         fEax, fEtors, fElat = vals
 
         #Torsional Buckling can be excluded as possible failure if:
@@ -3388,7 +3393,7 @@ class CylinderAndCurvedPlate():
         sa0sd = -sasd if sasd < 0 else 0
         sm0sd = -smsd if smsd < 0 else 0
         sh0sd = -shsd if shsd < 0 else 0
-
+        print('fy_used', fy_used,'sasd', sasd,'shsd', shsd, 'tsd', tsd)
         sjsd_panels = math.sqrt(math.pow(sasd+smsd,2)-(sasd+smsd)*shsd + math.pow(shsd,2)+  3*math.pow(tsd,2))
 
         worst_axial_comb = min(sasd-smsd,sasd+smsd)
@@ -3407,7 +3412,7 @@ class CylinderAndCurvedPlate():
         lambda_s = math.sqrt(lambda_s2_panel) if shell_type == 1 else math.sqrt(lambda_s2_shell)
 
         fks = fy_used/math.sqrt(1+math.pow(lambda_s,4))
-
+        print('tsd',tsd, 'sasd', sasd, 'sjsd panels', sjsd_panels, 'fy_used', fy_used, 'lambda_T',data_col_buc['lambda_T'] )
         if lambda_s < 0.5:
             gammaM = self._mat_factor
         else:
@@ -3433,8 +3438,9 @@ class CylinderAndCurvedPlate():
         # Design buckling strength:
         fksd = fks/gammaM
         provide_data['fksd'] = fksd
-        #print('fksd', fksd, 'fks', fks, 'gammaM', gammaM, 'lambda_s', lambda_s, 'lambda_s^2 panel', lambda_s2_panel, 'sjsd', sjsd_used, 'worst_axial_comb',worst_axial_comb, 'sm0sd',sm0sd)
-
+        print('fksd', fksd, 'fks', fks, 'gammaM', gammaM, 'lambda_s', lambda_s, 'lambda_s^2 panel',
+              lambda_s2_panel, 'sjsd', sjsd_used, 'worst_axial_comb',worst_axial_comb, 'sm0sd',sm0sd)
+        print('  ')
         return provide_data
 
     @staticmethod
@@ -3556,6 +3562,7 @@ class CylinderAndCurvedPlate():
             # General
 
             if key == 'Longitudinal stiff.':
+                print('Column buckling', 'fET', fEt, 'mu', mu, 'lambdaT', lambdaT, 'hs', hs, 'It', It, 'Iz', Iz ,'Ipo', Ipo)
                 provide_data['lambda_T'] = lambdaT
                 provide_data['fT'] = fT
             fT_dict[key] = fT
