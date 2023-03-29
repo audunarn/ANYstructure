@@ -3206,14 +3206,23 @@ class Application():
             else:
                 pass
 
-        sec_in_model, idx, recorded_sections = dict(), 0, list()
+        sec_in_model,  idx, recorded_sections = dict(), 0, list()
+        cyl_sec_in_model, idx_cyl, recorded_cyl_sections = dict(),  0, list()
+
         for data in self._line_to_struc.values():
             if data[0].Stiffener is not None:
                 if data[0].Stiffener.get_beam_string() not in recorded_sections:
                     sec_in_model[data[0].Stiffener.get_beam_string()] = idx
                     recorded_sections.append(data[0].Stiffener.get_beam_string())
                     idx += 1
+            if data[5] is not None:
+                if data[5].LongStfObj.get_beam_string() not in recorded_cyl_sections:
+                    cyl_sec_in_model[ data[5].LongStfObj.get_beam_string()] = idx_cyl
+                    recorded_cyl_sections.append(data[5].LongStfObj.get_beam_string())
+                    idx_cyl += 1
+
         sec_in_model['length'] = len(recorded_sections)
+        cyl_sec_in_model['length'] = len(recorded_cyl_sections)
 
         if self._line_to_struc != {}:
             sec_mod_map = np.arange(0,1.1,0.1)
@@ -3332,8 +3341,9 @@ class Application():
                                          'max tau xy': max(tau_xy), 'min tau xy': min(tau_xy), 'tau xy map': tau_xy_map,
                                          'structure types map': np.unique(structure_type).tolist(),
                                          'sections in model': sec_in_model,
+                                         'cyl sections in model': cyl_sec_in_model,
                                          'recorded sections': recorded_sections,
-                                         'recorded cylinder long sections' : recorded_cyl_long_stf,
+                                         'recorded cylinder long sections' : recorded_cyl_sections,
                                          'spacings': spacing, 'max spacing': max(spacing), 'min spacing': min(spacing)}
             line_color_coding, puls_method_map, puls_sp_or_up_map = \
                 {}, {None: 0, 'buckling': 0.5, 'ultimate': 1}, {None:0, 'SP': 0.5, 'UP': 1}
@@ -3386,6 +3396,7 @@ class Application():
                 else:
                     cyl_uf = 0
                     cyl_long_str = ' '
+                    cyl_long_str = None
 
                 rp_uf = rec_for_color[line]['rp buckling']
 
@@ -3428,7 +3439,9 @@ class Application():
                                            matplotlib.colors.rgb2hex(cmap_sections(sec_in_model[line_data[0]
                                                                                    .Stiffener.get_beam_string()]/
                                                                                    len(list(recorded_sections)))),
-                                            'section cyl': 'blue',
+                                            'section cyl': 'black' if cyl_long_str is None else
+                                            matplotlib.colors.rgb2hex(cmap_sections(cyl_sec_in_model[cyl_long_str] /
+                                                                                    len(list(recorded_cyl_sections)))),
                                            'structure type': matplotlib.colors.rgb2hex(
                                                cmap_sections(structure_type_unique.index(line_data[0].Plate.get_structure_type())
                                                              /len(structure_type_unique))),
@@ -3957,7 +3970,7 @@ class Application():
                         color = state['color code']['lines'][line]['section cyl']
                     else:
                         this_text = 'N/A'
-                    color = 'grey'
+                        color = 'grey'
                 else:
                     color = 'grey'
                     this_text = 'N/A'
