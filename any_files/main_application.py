@@ -54,8 +54,6 @@ except ModuleNotFoundError:
     from ANYstructure.any_files.report_generator import LetterMaker
     import ANYstructure.any_files.sesam_interface as sesam
 
-
-
 class Application():
     '''
     The Application class sets up the GUI using Tkinter.
@@ -2871,6 +2869,37 @@ class Application():
             rec_for_color[current_line]  = {}
             slamming_pressure = 0
             if current_line in self._line_to_struc.keys():
+                if self._line_to_struc[current_line][5] is not None:
+                    cyl_obj = self._line_to_struc[current_line][5]
+                    cyl_radius = round(cyl_obj.ShellObj.radius * 1000, 2)
+                    cyl_thickness = round(cyl_obj.ShellObj.thk * 1000, 2)
+                    cyl_long_str = cyl_obj.LongStfObj.get_beam_string()
+                    cyl_ring_stf = cyl_obj.LongStfObj.get_beam_string()
+                    cyl_heavy_ring = cyl_obj.LongStfObj.get_beam_string()
+                    cyl_span = round(cyl_obj.ShellObj.dist_between_rings, 1)
+                    cyl_tot_length = round(cyl_obj.ShellObj.length_of_shell, 1)
+                    cyl_tot_cyl = round(cyl_obj.ShellObj.tot_cyl_length, 1)
+                    cyl_sigma_axial = cyl_obj.sasd / 1e6
+                    cyl_sigma_bend = cyl_obj.smsd / 1e6
+                    cyl_sigma_tors = cyl_obj.tTsd / 1e6
+                    cyl_tau_xy = cyl_obj.tQsd / 1e6
+                    cyl_lat_press = cyl_obj.psd / 1e6
+                    cyl_sigma_hoop = cyl_obj.shsd / 1e6
+                    cyl_results = cyl_obj.get_utilization_factors()
+                    all_cyl_thk, recorded_cyl_long_stf = list(), list()
+                    for obj_list in self._line_to_struc.values():
+                        if obj_list[5] is not None:
+                            all_cyl_thk.append(round(obj_list[5].ShellObj.thk* 1000, 2))
+                            recorded_cyl_long_stf.append(cyl_obj.LongStfObj.get_beam_string())
+
+                    all_cyl_thk = np.unique(all_cyl_thk)
+                    all_cyl_thk = np.sort(all_cyl_thk)
+
+                else:
+                    cyl_thickness = 0
+                    all_cyl_thk = [1,]
+                    recorded_cyl_long_stf = [' ',]
+
                 all_obj = self._line_to_struc[current_line][0]
                 obj_scnt_calc_pl = all_obj.Plate #self._line_to_struc[current_line][1]
                 obj_scnt_calc_stf = all_obj.Stiffener  # self._line_to_struc[current_line][1]
@@ -2982,8 +3011,7 @@ class Application():
                 Cylinder calculations
                 '''
                 if self._line_to_struc[current_line][5] is not None:
-                    cylinder_results = self._line_to_struc[current_line][5].get_utilization_factors()
-                    return_dict['cylinder'][current_line] = cylinder_results
+                    return_dict['cylinder'][current_line] = cyl_results
 
 
                 '''
@@ -3192,6 +3220,8 @@ class Application():
             fat_map = np.arange(0,1.1,0.1)
             all_thicknesses = [round(objs[0].Plate.get_pl_thk(), 5) for objs in self._line_to_struc.values()]
             all_thicknesses = np.unique(all_thicknesses).tolist()
+            
+            
             thickest_plate = max(all_thicknesses)
             if len(all_thicknesses) > 1:
                 thk_map = np.arange(min(all_thicknesses), max(all_thicknesses) + (max(all_thicknesses) -
@@ -3199,6 +3229,18 @@ class Application():
                                      (max(all_thicknesses) - min(all_thicknesses)) / 10)
             else:
                 thk_map = all_thicknesses
+
+            if self._line_to_struc[current_line][5] is not None:
+                all_cyl_thk = all_cyl_thk.tolist()
+                if len(all_cyl_thk) > 1:
+                    thk_map_cyl = np.arange(min(all_cyl_thk), max(all_cyl_thk) + (max(all_cyl_thk) -
+                                                                                      min(all_cyl_thk)) / 10,
+                                        (max(all_cyl_thk) - min(all_cyl_thk)) / 10)
+                else:
+                    thk_map_cyl = all_cyl_thk
+            else:
+                thk_map_cyl = [1,]
+                all_cyl_thk = [1,]
 
             try:
                 all_pressures = sorted([self.get_highest_pressure(line)['normal']
@@ -3275,7 +3317,7 @@ class Application():
                               self._line_to_struc.keys()]
 
             return_dict['color code'] = {'thickest plate': thickest_plate, 'thickness map': thk_map,
-                                         'all thicknesses': all_thicknesses,
+                                         'all thicknesses': all_thicknesses, 'all cyl thicknesses': all_cyl_thk,
                                          'section modulus map': sec_mod_map,
                                          'fatigue map': fat_map,
                                          'highest pressure': highest_pressure, 'lowest pressure': lowest_pressure,
@@ -3291,6 +3333,7 @@ class Application():
                                          'structure types map': np.unique(structure_type).tolist(),
                                          'sections in model': sec_in_model,
                                          'recorded sections': recorded_sections,
+                                         'recorded cylinder long sections' : recorded_cyl_long_stf,
                                          'spacings': spacing, 'max spacing': max(spacing), 'min spacing': min(spacing)}
             line_color_coding, puls_method_map, puls_sp_or_up_map = \
                 {}, {None: 0, 'buckling': 0.5, 'ultimate': 1}, {None:0, 'SP': 0.5, 'UP': 1}
@@ -3316,30 +3359,33 @@ class Application():
                 # Cylinders
                 if self._line_to_struc[line][5] is not None:
                     cyl_obj = self._line_to_struc[line][5]
-                    radius = round(cyl_obj.ShellObj.radius * 1000, 2)
-                    thickness = round(cyl_obj.ShellObj.thk * 1000, 2)
-                    long_str = cyl_obj.LongStfObj.get_beam_string()
-                    ring_stf = cyl_obj.LongStfObj.get_beam_string()
-                    heavy_ring = cyl_obj.LongStfObj.get_beam_string()
-                    span = round(cyl_obj.ShellObj.dist_between_rings, 1)
-                    tot_length = round(cyl_obj.ShellObj.length_of_shell, 1)
-                    tot_cyl = round(cyl_obj.ShellObj.tot_cyl_length, 1)
-                    sigma_axial = cyl_obj.sasd / 1e6
-                    sigma_bend = cyl_obj.smsd / 1e6
-                    sigma_tors = cyl_obj.tTsd / 1e6
+                    cyl_radius = round(cyl_obj.ShellObj.radius * 1000, 2)
+                    cyl_thickness = round(cyl_obj.ShellObj.thk * 1000, 2)
+                    cyl_long_str = cyl_obj.LongStfObj.get_beam_string()
+                    cyl_ring_stf = cyl_obj.LongStfObj.get_beam_string()
+                    cyl_heavy_ring = cyl_obj.LongStfObj.get_beam_string()
+                    cyl_span = round(cyl_obj.ShellObj.dist_between_rings, 1)
+                    cyl_tot_length = round(cyl_obj.ShellObj.length_of_shell, 1)
+                    cyl_tot_cyl = round(cyl_obj.ShellObj.tot_cyl_length, 1)
+                    cyl_sigma_axial = cyl_obj.sasd / 1e6
+                    cyl_sigma_bend = cyl_obj.smsd / 1e6
+                    cyl_sigma_tors = cyl_obj.tTsd / 1e6
                     tau_xy = cyl_obj.tQsd / 1e6
-                    lat_press = cyl_obj.psd / 1e6
-                    sigma_hoop = cyl_obj.shsd / 1e6
-                    results = cyl_obj.get_utilization_factors()
+                    cyl_lat_press = cyl_obj.psd / 1e6
+                    cyl_sigma_hoop = cyl_obj.shsd / 1e6
+                    cyl_results = cyl_obj.get_utilization_factors()
 
-                    cyl_uf =  max([round(0 if results['Unstiffened shell'] is None else results['Unstiffened shell'],2),
-                                   round(0 if results['Longitudinal stiffened shell'] is None else results['Longitudinal stiffened shell'],2),
-                                   round(0 if results['Ring stiffened shell'] is None else results['Ring stiffened shell'],2),
-                                   round(0 if results['Heavy ring frame'] is None else results['Heavy ring frame'],2)])
+                    cyl_uf =  max([round(0 if cyl_results['Unstiffened shell'] is None else
+                                         cyl_results['Unstiffened shell'],2),
+                                   round(0 if cyl_results['Longitudinal stiffened shell'] is None else
+                                         cyl_results['Longitudinal stiffened shell'],2),
+                                   round(0 if cyl_results['Ring stiffened shell'] is None else
+                                         cyl_results['Ring stiffened shell'],2),
+                                   round(0 if cyl_results['Heavy ring frame'] is None else
+                                         cyl_results['Heavy ring frame'],2)])
                 else:
                     cyl_uf = 0
-
-
+                    cyl_long_str = ' '
 
                 rp_uf = rec_for_color[line]['rp buckling']
 
@@ -3372,7 +3418,6 @@ class Application():
 
                 sig_x_uf, sig_y1_uf, sig_y2_uf , tau_xy_uf = res
 
-
                 line_color_coding[line] = {'plate': matplotlib.colors.rgb2hex(cmap_sections(
                     thk_sort_unique.index(round(line_data[0].Plate.get_pl_thk(),10))/len(thk_sort_unique))),
                                            'spacing': 'black' if line_data[0].Stiffener is None else matplotlib.colors.rgb2hex(
@@ -3383,6 +3428,7 @@ class Application():
                                            matplotlib.colors.rgb2hex(cmap_sections(sec_in_model[line_data[0]
                                                                                    .Stiffener.get_beam_string()]/
                                                                                    len(list(recorded_sections)))),
+                                            'section cyl': 'blue',
                                            'structure type': matplotlib.colors.rgb2hex(
                                                cmap_sections(structure_type_unique.index(line_data[0].Plate.get_structure_type())
                                                              /len(structure_type_unique))),
@@ -3411,7 +3457,9 @@ class Application():
                                            'sigma y1': matplotlib.colors.rgb2hex(cmap_sections(sig_y1_uf)),
                                            'sigma y2': matplotlib.colors.rgb2hex(cmap_sections(sig_y2_uf)),
                                            'tau xy':matplotlib.colors.rgb2hex(cmap_sections(tau_xy_uf)),
-                    'cylinder uf': matplotlib.colors.rgb2hex(cmap_sections(cyl_uf))
+                    'cylinder uf': matplotlib.colors.rgb2hex(cmap_sections(cyl_uf)),
+                    'cylinder plate' :  matplotlib.colors.rgb2hex(cmap_sections(
+                    all_cyl_thk.index(cyl_thickness)/len(all_cyl_thk)))
 
                                            }
                 return_dict['color code']['lines'] = line_color_coding
@@ -3719,15 +3767,22 @@ class Application():
                                               fill=matplotlib.colors.rgb2hex(cmap_sections(idx/sec_in_model['length'])),
                                               anchor="nw")
         elif self._new_colorcode_plates.get() == True and self._line_to_struc != {}:
-
-            all_thicknesses = np.unique(cc_state['all thicknesses']).tolist()
+            cylinder = False
+            for obj_list in self._line_to_struc.values():
+                if obj_list[5] is not None:
+                    cylinder = True
+            if cylinder:
+                all_thicknesses = np.unique(cc_state['all cyl thicknesses']).tolist()
+            else:
+                all_thicknesses = np.unique(cc_state['all thicknesses']).tolist()
 
             for idx, thk in enumerate(np.unique(all_thicknesses).tolist()):
-                self._main_canvas.create_text(11, start_text_shift+20*idx, text=str('Plate '+ str(thk*1000) + ' mm'),
+                self._main_canvas.create_text(11, start_text_shift+20*idx, text=str('Plate '+
+                                                                                    str(thk if cylinder else thk*1000) + ' mm'),
                                               font=self._text_size["Text 10 bold"],
                                               fill='black',
                                               anchor="nw")
-                self._main_canvas.create_text(10, start_text+20*idx, text=str('Plate '+ str(thk*1000) + ' mm'),
+                self._main_canvas.create_text(10, start_text+20*idx, text=str('Plate '+ str(thk if cylinder else thk*1000) + ' mm'),
                                               font=self._text_size["Text 10 bold"],
                                               fill=matplotlib.colors.rgb2hex(cmap_sections(all_thicknesses.index(thk)
                                                                                            /len(all_thicknesses))),
@@ -3895,8 +3950,17 @@ class Application():
             return 'black'
         if self._new_colorcode_beams.get() == True and line in list(self._line_to_struc.keys()):
             if self._line_to_struc[line][5] is not None or self._line_to_struc[line][0].Stiffener is None:
-                color = 'grey'
-                this_text = 'N/A'
+                if self._line_to_struc[line][5] is not None:
+                    cyl_obj = self._line_to_struc[line][5]
+                    if cyl_obj.LongStfObj is not None:
+                        this_text = cyl_obj.LongStfObj.get_beam_string(short = True)
+                        color = state['color code']['lines'][line]['section cyl']
+                    else:
+                        this_text = 'N/A'
+                    color = 'grey'
+                else:
+                    color = 'grey'
+                    this_text = 'N/A'
             elif self._line_to_struc[line][0].Plate is not None:
                 color = state['color code']['lines'][line]['section']
                 this_text = self._line_to_struc[line][0].Plate.get_beam_string()
@@ -3907,8 +3971,9 @@ class Application():
 
         elif self._new_colorcode_plates.get() == True and line in list(self._line_to_struc.keys()):
             if self._line_to_struc[line][5] is not None:
-                color = 'grey'
-                this_text = 'N/A'
+                cyl_obj = self._line_to_struc[line][5]
+                color = state['color code']['lines'][line]['cylinder plate']
+                this_text = str(round(cyl_obj.ShellObj.thk * 1000, 2))
             else:
                 color = state['color code']['lines'][line]['plate']
                 this_text = str(self._line_to_struc[line][0].Plate.get_pl_thk()*1000)
