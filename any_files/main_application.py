@@ -2865,10 +2865,22 @@ class Application():
         else:
             return return_dict
         rec_for_color = {}
+
+        # Cylinder general
+        all_cyl_thk, recorded_cyl_long_stf = list(), list()
+        for obj_list in self._line_to_struc.values():
+            if obj_list[5] is not None:
+                all_cyl_thk.append(round(obj_list[5].ShellObj.thk * 1000, 2))
+                recorded_cyl_long_stf.append(obj_list[5].LongStfObj.get_beam_string())
+        all_cyl_thk = np.unique(all_cyl_thk)
+        all_cyl_thk = np.sort(all_cyl_thk)
+
         for current_line in line_iterator:
             rec_for_color[current_line]  = {}
             slamming_pressure = 0
             if current_line in self._line_to_struc.keys():
+
+
                 if self._line_to_struc[current_line][5] is not None:
                     cyl_obj = self._line_to_struc[current_line][5]
                     cyl_radius = round(cyl_obj.ShellObj.radius * 1000, 2)
@@ -2886,19 +2898,8 @@ class Application():
                     cyl_lat_press = cyl_obj.psd / 1e6
                     cyl_sigma_hoop = cyl_obj.shsd / 1e6
                     cyl_results = cyl_obj.get_utilization_factors()
-                    all_cyl_thk, recorded_cyl_long_stf = list(), list()
-                    for obj_list in self._line_to_struc.values():
-                        if obj_list[5] is not None:
-                            all_cyl_thk.append(round(obj_list[5].ShellObj.thk* 1000, 2))
-                            recorded_cyl_long_stf.append(cyl_obj.LongStfObj.get_beam_string())
-
-                    all_cyl_thk = np.unique(all_cyl_thk)
-                    all_cyl_thk = np.sort(all_cyl_thk)
-
                 else:
                     cyl_thickness = 0
-                    all_cyl_thk = [1,]
-                    recorded_cyl_long_stf = [' ',]
 
                 all_obj = self._line_to_struc[current_line][0]
                 obj_scnt_calc_pl = all_obj.Plate #self._line_to_struc[current_line][1]
@@ -3239,17 +3240,17 @@ class Application():
             else:
                 thk_map = all_thicknesses
 
-            if self._line_to_struc[current_line][5] is not None:
-                all_cyl_thk = all_cyl_thk.tolist()
-                if len(all_cyl_thk) > 1:
-                    thk_map_cyl = np.arange(min(all_cyl_thk), max(all_cyl_thk) + (max(all_cyl_thk) -
-                                                                                      min(all_cyl_thk)) / 10,
-                                        (max(all_cyl_thk) - min(all_cyl_thk)) / 10)
-                else:
-                    thk_map_cyl = all_cyl_thk
-            else:
-                thk_map_cyl = [1,]
-                all_cyl_thk = [1,]
+            # if self._line_to_struc[current_line][5] is not None:
+            #     all_cyl_thk = all_cyl_thk.tolist()
+            #     if len(all_cyl_thk) > 1:
+            #         thk_map_cyl = np.arange(min(all_cyl_thk), max(all_cyl_thk) + (max(all_cyl_thk) -
+            #                                                                           min(all_cyl_thk)) / 10,
+            #                             (max(all_cyl_thk) - min(all_cyl_thk)) / 10)
+            #     else:
+            #         thk_map_cyl = all_cyl_thk
+            # else:
+            #     thk_map_cyl = [1,]
+
 
             try:
                 all_pressures = sorted([self.get_highest_pressure(line)['normal']
@@ -3397,6 +3398,7 @@ class Application():
                     cyl_uf = 0
                     cyl_long_str = ' '
                     cyl_long_str = None
+                    cyl_thickness = None
 
                 rp_uf = rec_for_color[line]['rp buckling']
 
@@ -3413,6 +3415,7 @@ class Application():
                 rp_util = max(list(return_dict['utilization'][line].values()))
 
                 res = list()
+
                 for stress_list, this_stress in zip([sig_x, sig_y1, sig_y2, tau_xy],
                                                      [line_data[0].Plate.get_sigma_x1(), line_data[0].Plate.get_sigma_y1(),
                                                       line_data[0].Plate.get_sigma_y2(), line_data[0].Plate.get_tau_xy()]):
@@ -3428,6 +3431,8 @@ class Application():
                         res.append(this_stress/ max(stress_list))
 
                 sig_x_uf, sig_y1_uf, sig_y2_uf , tau_xy_uf = res
+                if type(all_cyl_thk) is not list:
+                    all_cyl_thk = all_cyl_thk.tolist()
 
                 line_color_coding[line] = {'plate': matplotlib.colors.rgb2hex(cmap_sections(
                     thk_sort_unique.index(round(line_data[0].Plate.get_pl_thk(),10))/len(thk_sort_unique))),
@@ -3471,8 +3476,8 @@ class Application():
                                            'sigma y2': matplotlib.colors.rgb2hex(cmap_sections(sig_y2_uf)),
                                            'tau xy':matplotlib.colors.rgb2hex(cmap_sections(tau_xy_uf)),
                     'cylinder uf': matplotlib.colors.rgb2hex(cmap_sections(cyl_uf)),
-                    'cylinder plate' :  matplotlib.colors.rgb2hex(cmap_sections(
-                    all_cyl_thk.index(cyl_thickness)/len(all_cyl_thk)))
+                    'cylinder plate' :  matplotlib.colors.rgb2hex
+                    (cmap_sections(0 if cyl_thickness is None else all_cyl_thk.index(cyl_thickness)/len(all_cyl_thk)))
 
                                            }
                 return_dict['color code']['lines'] = line_color_coding
@@ -3959,8 +3964,11 @@ class Application():
     def color_code_line(self, state, line, coord1, vector):
 
         cc_state = state['color code']
+
         if line not in state['color code']['lines'].keys():
             return 'black'
+
+
         if self._new_colorcode_beams.get() == True and line in list(self._line_to_struc.keys()):
             if self._line_to_struc[line][5] is not None or self._line_to_struc[line][0].Stiffener is None:
                 if self._line_to_struc[line][5] is not None:
@@ -4020,7 +4028,10 @@ class Application():
                                               text=this_text)
 
         elif self._new_colorcode_utilization.get() == True and self._new_buckling_method.get() == 'DNV-RP-C201 - prescriptive':
-            if self._line_to_struc[line][5] is not None:
+            if line not in list(self._line_to_struc.keys()):
+                color = 'black'
+                this_text = 'N/A'
+            elif self._line_to_struc[line][5] is not None:
                 cyl_obj = self._line_to_struc[line][5]
                 results = cyl_obj.get_utilization_factors()
                 ufs = [round(0 if results['Unstiffened shell'] is None else results['Unstiffened shell'], 2),
