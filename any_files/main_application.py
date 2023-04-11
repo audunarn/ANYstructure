@@ -202,6 +202,7 @@ class Application():
         sub_colors.add_command(label='Colors - Slava Ukraini', command=lambda id="SlavaUkraini": self.set_colors(id))
         sub_colors.add_command(label='Functional - All items', command=lambda id="all items": self.set_colors(id))
         sub_colors.add_command(label='Functional - Modelling', command=lambda id="modelling": self.set_colors(id))
+        sub_colors.add_command(label='Functional - Cylinder', command=lambda id="cylinder": self.set_colors(id))
 
         #base_mult = 1.2
         #base_canvas_dim = [int(1000 * base_mult),int(720*base_mult)]  #do not modify this, sets the "orignal" canvas dimensions.
@@ -264,7 +265,8 @@ class Application():
 
         # Point frame
         self._pt_frame = tk.Frame(self._main_canvas, width=100, height=100, bg="black", relief='raised')
-
+        # Cylinder gui look placement of optmization button
+        self._gui_functional_look_cylinder_opt = [0.82, 0.008, 0.04, 0.175]
         #
         # -------------------------------------------------------------------------------------------------------------
         #
@@ -1740,9 +1742,8 @@ class Application():
                                       'Flat plate, unstiffened place': [],
                                       'Flat plate, stiffened with girder': [],
                                       'Flat plate, stiffened with girder place': [],
-
-                                   'cylinder': [self._opt_cylinder],
-                                   'cylinder place' : [[lc_x, lc_y - 6 * lc_y_delta, 0.04, 0.175]]}
+                                       'cylinder': [self._opt_cylinder],
+                                       'cylinder place' : [[lc_x, lc_y - 6 * lc_y_delta, 0.04, 0.175]]}
 
         # Load information button
         ttk.Button(self._main_fr, text='Load info', command=self.button_load_info_click,style = "Bold.TButton")\
@@ -1804,8 +1805,17 @@ class Application():
             self._main_canvas.place_forget()
             x_canvas_place = 0.26
             self._main_canvas.place(relx=x_canvas_place, rely=0, relwidth=0.523, relheight=0.73)
+        elif theme == 'cylinder':
+            self._main_canvas.place_forget()
+            x_canvas_place = 0.26
+            self._main_canvas.place(relx=x_canvas_place, rely=0,relwidth=0.74, relheight = 0.73)
+            tk.Misc.lift(self._main_canvas)
+            self._gui_functional_look = 'cylinder'
+            placement = self._gui_functional_look_cylinder_opt # [0.786458333, 0.12962963000000005, 0.04, 0.175]
+            self._opt_cylinder.place(relx=placement[0], rely=placement[1], relheight=placement[2], relwidth=placement[3])
+            tk.Misc.lift(self._opt_cylinder)
 
-        if theme not in ['modelling', 'all items']:
+        if theme not in ['modelling', 'all items','cylinder']:
             self._style.configure("Bold.TButton", font=('Sans', '10', 'bold'))
             self._style.configure('TCheckbutton', background=self._general_color)
             self._style.configure('TFrame', background=self._general_color)
@@ -5023,7 +5033,8 @@ class Application():
                     if line in self._line_to_struc.keys():
                         self._line_to_struc[line][0].Plate.set_span(dist(coord1,coord2))
                         self._line_to_struc[line][0].Plate.set_span(dist(coord1, coord2))
-                        self._PULS_results.result_changed(line)
+                        if self._PULS_results is not None:
+                            self._PULS_results.result_changed(line)
                         if self._line_to_struc[line][0].Plate.get_structure_type() not in ['GENERAL_INTERNAL_NONWT',
                                                                                                 'FRAME']:
                             self._tank_dict = {}
@@ -6461,7 +6472,8 @@ class Application():
                         btn.place_forget()
                 for btn, placement in zip(self._optimization_buttons['cylinder'],
                                           self._optimization_buttons['cylinder place']):
-
+                    if self._gui_functional_look == 'cylinder':
+                        placement = self._gui_functional_look_cylinder_opt
                     btn.place(relx = placement[0], rely= placement[1],relheight = placement[2], relwidth = placement[3])
 
             else:
