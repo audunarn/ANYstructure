@@ -2,6 +2,10 @@
 ANYstructure is the ultimate steel structure design tool for plate fields and cylinders! 
 Weight optimization for all structures with machine learning capabilities. 
 Calculations are based on DNV standards and rules
+### What's new in 4.8 ###
+* Reporting table on cylinders.
+* Color coding on come cylinder properties.
+* Corrected error on additional hoop stress input for cylinders.
 ### What's new in 4.7 ###
 * Corrected error on girder caluculation for cylinder buckling.
 * Added 1.10 load factor option for cylinder buckling.
