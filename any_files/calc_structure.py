@@ -1468,12 +1468,15 @@ class AllStructure():
         uf_sjsd = sjsd/fy*gammaM
         unstf_pl_data['UF sjsd'] = uf_sjsd
 
-        psi_x =max([0,(1-math.pow(sjsd/fy,2))/math.sqrt(1-3/4*math.pow(sysd/fy,2)-3*math.pow(tsd/fy,2))])
-
+        #psi_x =max([0,(1-math.pow(sjsd/fy,2))/math.sqrt(1-3/4*math.pow(sysd/fy,2)-3*math.pow(tsd/fy,2))])
+        psi_x =max([0,(1-math.pow(sjsd/fy,2))/math.sqrt(1-3/4*math.pow(sysd/fy,2)-3*math.pow(tsd/fy,2))]) \
+            if 1-3/4*math.pow(sysd/fy,2)-3*math.pow(tsd/fy,2) > 0 else 0
         psi_x_chk = (1-3/4*math.pow(sy1sd/fy,2)-3*math.pow(tsd/fy,2))>0
+
         psi_y = max([0,(1-math.pow(sjsd/fy,2))/math.sqrt(1-3/4*math.pow(sxsd/fy,2)-3*math.pow(tsd/fy,2))]) \
             if 1-3/4*math.pow(sxsd/fy,2)-3*math.pow(tsd/fy,2) > 0 else 0
         psi_y_chk = (1 - 3 / 4 * math.pow(sxsd / fy, 2) - 3 * math.pow(tsd / fy, 2)) > 0
+
         if gammaM * s * l == 0:
             Psd_max_press = 0
         else:
