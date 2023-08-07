@@ -1512,7 +1512,8 @@ class AllStructure():
 
         Cx =(alpha_p-0.055*(3+max([-2,shear_ratio_long])))/math.pow(alpha_p, 2)
 
-        sxRd = Cx*fy/gammaM if not all([sig_x1<0, sig_x2<0]) else 1
+        sxRd = Cx*fy/gammaM if not all([sig_x1<0, sig_x2<0]) else 1*fy/gammaM # Corrected 07.08.2023, issue 126
+
         uf_unstf_pl_long_stress = 0 if sxRd == 0 else abs(sxsd/sxRd)
         unstf_pl_data['UF Longitudinal stress'] = uf_unstf_pl_long_stress
         #print(uf_unstf_pl_long_stress)
