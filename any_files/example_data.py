@@ -19,7 +19,7 @@ structure_types = {'vertical': ['BBS', 'SIDE_SHELL', 'SSS'],
 
 obj_dict = {'mat_yield': [355e6, 'Pa'], 'mat_factor': [1.10, ''],'span': [3.3, 'm'], 'spacing': [0.68, 'm'],
             'plate_thk': [0.025, 'm'],
-            'stf_web_height': [0.250297358, 'm'], 'stf_web_thk': [0.012, 'm'], 'stf_flange_width': [0.52, 'm'],
+            'stf_web_height': [0.250297358, 'm'], 'stf_web_thk': [0.012, 'm'], 'stf_flange_width': [0.052, 'm'],
             'stf_flange_thk': [0.029702642, 'm'], 'structure_type': ['BOTTOM', ''], 'plate_kpp': [1, ''],
             'stf_kps': [1, ''], 'stf_km1': [12, ''], 'stf_km2': [24, ''], 'stf_km3': [12, ''],
             'sigma_y1': [100, 'MPa'], 'sigma_y2': [100, 'MPa'], 'sigma_x2': [102.7, 'MPa'], 'sigma_x1': [102.7, 'MPa'],

@@ -428,6 +428,120 @@ class Structure():
         ht = h - tf1 / 2 - tf2 / 2
         return (Iz1 * ht) / (Iz1 + Iz2) + tf2 / 2 - ez
 
+    def get_moment_of_intertia_hp(self):
+        import math
+        import numpy as np
+        from scipy.integrate import simps
+
+        # class Stiffener:
+        #     def __init__(self, h, tw, plate_width, plate_thickness):
+        #         self.h = h
+        #         self.tw = tw
+        #         self.bf = 2.5 * self.tw
+        #         self.tf = 2.5 * self.tw
+        #         self.r = self.tw
+        #         self.plate_width = plate_width
+        #         self.plate_thickness = plate_thickness
+        #
+        #     @classmethod
+        #     def from_hp(cls, h, tw, plate_width, plate_thickness):
+        #         return cls(h, tw, plate_width, plate_thickness)
+        #
+        #     def _distance(self, x, c, r):
+        #         y1 = (self.h - self.tf) / 2
+        #         y2 = self.tf / 2
+        #         if (x <= -c).any() or (x >= c).any():
+        #             return np.abs(x) - c + r
+        #         else:
+        #             theta = np.arcsin((y1 - y2) / r)
+        #             A1 = theta * r ** 2 / 2
+        #             A2 = (y1 - r) * (x + c - r)
+        #             A3 = (y2 - r) * (c - r) + r ** 2 * theta
+        #             if x <= 0:
+        #                 return A1 - A2
+        #             else:
+        #                 return A1 - A3 - (x - c - r) * y1
+        #
+        #     def _integrand(self, x, c, r):
+        #         y = self._distance(x, c, r)
+        #         return y ** 2
+        #
+        #     def get_moment_of_inertia_hp(self):
+        #         # Create points for integration
+        #         c = (self.h - 2 * self.tw) / 2
+        #         r = self.tw
+        #         x = np.linspace(-c, c, num=1000)
+        #
+        #         # Integrate to find moment of inertia
+        #         integrand = lambda x: self._integrand(x, c, r)
+        #         y = self._distance(x, c, r)
+        #         I = simps(y * integrand(x), x)
+        #
+        #         return I
+        #
+        #     def get_moment_of_inertia_plate(self):
+        #         I_plate = (self.plate_width * self.plate_thickness ** 3) / 12
+        #         return I_plate
+        #
+        #     def get_moment_of_inertia_combined(self):
+        #         I_stiffener = self.get_moment_of_inertia_hp()
+        #         I_plate = self.get_moment_of_inertia_plate()
+        #         I_combined = I_stiffener + I_plate
+        #         return I_stiffener, I_plate, I_combined
+
+        import numpy as np
+        from scipy.integrate import simps
+
+        import numpy as np
+        from scipy.integrate import simps
+
+        class Stiffener:
+            def __init__(self, hp_height, hp_thickness, plate_width, plate_thickness):
+                self.hp_height = hp_height
+                self.hp_thickness = hp_thickness
+                self.plate_width = plate_width
+                self.plate_thickness = plate_thickness
+
+            def _integrand(self, x, c, r):
+                if (x <= -c).any() or (x >= c).any():
+                    return (x ** 2 + r ** 2) ** 0.5
+                else:
+                    return r
+
+            def _distance(self, x, c, r):
+                if (x <= -c).any() or (x >= c).any():
+                    return self.hp_height / 2 - self.hp_thickness - r
+                elif x >= c:
+                    return self.hp_height / 2 - self.hp_thickness - r
+                else:
+                    return self.hp_height / 2 - self.hp_thickness - (x ** 2 - c ** 2) ** 0.5
+
+            def get_moment_of_inertia_hp(self):
+                # Create points for integration
+                c = (self.hp_height - 2 * self.hp_thickness) / 2
+                r = self.hp_thickness
+                x = np.linspace(-c, c, num=1000)
+
+                # Integrate to find moment of inertia
+                integrand = lambda x: self._integrand(x, c, r)
+                y = self._distance(x, c, r)
+                I = simps(y * integrand(x), x)
+
+                return I
+
+            def get_moment_of_inertia(self):
+                I_stiffener = self.get_moment_of_inertia_hp()
+                I_plate = self.plate_thickness * (self.plate_width ** 3 / 12)
+                I_total = I_stiffener + I_plate
+
+                return I_stiffener, I_plate, I_total
+
+        stiffener = Stiffener(hp_height=300, hp_thickness=12, plate_width=680, plate_thickness=25)
+        I_stiffener, I_plate, I_total = stiffener.get_moment_of_inertia()
+        print(f"Moment of inertia of stiffener: {I_stiffener:.3e} mm^4")
+        print(f"Moment of inertia of plate: {I_plate:.3e} mm^4")
+        print(f"Moment of inertia of combined: {I_total:.3e} mm^4")
+
     def get_moment_of_intertia(self, efficent_se=None, only_stf = False, tf1 = None, reduced_tw = None,
                                plate_thk = None, plate_spacing = None):
         '''
@@ -466,6 +580,7 @@ class Structure():
         # I_sef = 1.0 / 12.0 * tw * hw ** 3 + 1.0 / 12.0 * bf * tf ** 3 + 1.0 / 12.0 * s_e * t ** 3 + tw * hw * (
         #             hw / 2.0 + t / 2.0 - z_c) ** 2 + tf * bf * (hw + t / 2.0 + tf / 2.0 - z_c) ** 2 + s_e * t * z_c ** 2
         # print(I_sef, I_z, Iy)
+        #print(2*(bf*(h/2)**3/12 + tf*(h-tf)**3/12) + tw*h**3/12, Iy)
         return Iy
 
     def get_Iz_moment_of_inertia(self, reduced_tw = None):
@@ -3075,23 +3190,18 @@ class CylinderAndCurvedPlate():
         provide_data['gammaM circular cylinder'] = gammaM
         #print('UF', uf, 'Unstifffed circular cylinders')
         def iter_table_2():
-
             found, sasd_iter, count, this_val, logger  = False, 0 if uf > 1 else sasd, 0, 0, list()
-
             while not found:
                 # Iteration
                 sigmsd_iter = smsd if geometry in [2, 6] else min([-smsd, smsd])
                 siga0sd_iter = 0 if sasd_iter >= 0 else -sasd_iter  # (3.2.4)
                 sigm0sd_iter = 0 if sigmsd_iter >= 0 else -sigmsd_iter  # (3.2.5)
                 sigh0sd_iter = 0 if shsd >= 0 else -shsd  # (3.2.6)
-
                 sjsd_iter = math.sqrt(
                     math.pow(sasd_iter + sigmsd_iter, 2) - (sasd_iter + sigmsd_iter) * shsd + math.pow(shsd, 2) +
                     3 * math.pow(tsd, 2))  # (3.2.3)
-
                 lambdas_iter = math.sqrt((fy/sjsd_iter) * (siga0sd_iter/fEax + sigm0sd_iter/fEbend +
                                                            sigh0sd_iter/fElat + tsd/fEtors))
-
                 gammaM_iter = 1  # As taken in the DNVGL sheets
                 fks_iter = fy / math.sqrt(1 + math.pow(lambdas_iter, 4))
                 fksd_iter = fks_iter / gammaM_iter
@@ -4315,11 +4425,11 @@ def main():
     #my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0))
 
     for example in [CalcScantlings(ex.obj_dict)]:#, CalcScantlings(ex.obj_dict2), CalcScantlings(ex.obj_dict_L)]:
+
         my_test = example
-        my_test = CalcScantlings(example)
-        my_test = CalcFatigue(example, ex.fat_obj_dict2)
-        my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0))
-        print('Total damage: ', my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0)))
+        # my_test = CalcFatigue(example, ex.fat_obj_dict2)
+        # my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0))
+        # print('Total damage: ', my_test.get_total_damage(int_press=(0, 0, 0), ext_press=(0, 40000, 0)))
     #     #print(my_test.get_fatigue_properties())
     #     pressure = 200
     #     # print(my_test.buckling_local_stiffener())
@@ -4358,16 +4468,17 @@ def main():
     Girder = CalcScantlings(ex.obj_dict_heavy)
     PreBuc = AllStructure(Plate = Plate, Stiffener = Stiffener, Girder = Girder,
                                   main_dict=ex.prescriptive_main_dict)
-    print(Plate)
+    #print(Plate)
     print(Stiffener)
-    print(Girder)
-    PreBuc.lat_press = 0.412197
+    print(Stiffener.get_moment_of_intertia_hp())
+    #print(Girder)
+    #PreBuc.lat_press = 0.412197
     #print(Plate)
     # print(Plate)
     #print(Stiffener)
     # print(Girder)
     #print(PreBuc.get_main_properties())
-    print(PreBuc.plate_buckling())
+    #print(PreBuc.plate_buckling())
 
 if __name__ == '__main__':
     main()

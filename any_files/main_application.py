@@ -92,7 +92,8 @@ class Application():
         
         # vista theme not available in linux
         try:
-            self._style.theme_use('vista')
+            self._style.theme_use('ITFT1')
+            #self._style.theme_use('vista')
         except:
             # available themes in linux:
             # ('clam', 'alt', 'default', 'classic')
