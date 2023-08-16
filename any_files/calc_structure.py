@@ -1,9 +1,8 @@
 from scipy.special import gammaln
 from scipy.stats import gamma as gammadist
 import numpy as np
-
+from scipy.integrate import simps
 import os, time, datetime, json, random, math
-
 from scipy.optimize import minimize
 
 try:
@@ -429,9 +428,6 @@ class Structure():
         return (Iz1 * ht) / (Iz1 + Iz2) + tf2 / 2 - ez
 
     def get_moment_of_intertia_hp(self):
-        import math
-        import numpy as np
-        from scipy.integrate import simps
 
         # class Stiffener:
         #     def __init__(self, h, tw, plate_width, plate_thickness):
@@ -489,11 +485,6 @@ class Structure():
         #         I_combined = I_stiffener + I_plate
         #         return I_stiffener, I_plate, I_combined
 
-        import numpy as np
-        from scipy.integrate import simps
-
-        import numpy as np
-        from scipy.integrate import simps
 
         class Stiffener:
             def __init__(self, hp_height, hp_thickness, plate_width, plate_thickness):
