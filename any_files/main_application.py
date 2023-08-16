@@ -6739,7 +6739,13 @@ class Application():
                 lines_prop.pop('sigma_x')
 
             if old_save_file: #need to get some basic information
-                import example_data as ex
+                # Import issues
+                try:
+                    import example_data as ex
+                except ModuleNotFoundError:
+                    # This is due to pyinstaller issues.
+                    import ANYstructure.any_files.example_data as ex
+
                 main_dict = ex.prescriptive_main_dict
                 map_end = {'C': 'Continuous', 'S': 'Sniped'}
                 lines_prop['puls stiffener end'] = [map_end[lines_prop['puls stiffener end'][0]],
