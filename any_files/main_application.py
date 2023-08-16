@@ -6744,7 +6744,8 @@ class Application():
                     import example_data as ex
                 except ModuleNotFoundError:
                     # This is due to pyinstaller issues.
-                    import ANYstructure.any_files.example_data as ex
+                    import any_files.example_data as ex
+                    #import ANYstructure.any_files.example_data as ex
 
                 main_dict = ex.prescriptive_main_dict
                 map_end = {'C': 'Continuous', 'S': 'Sniped'}
