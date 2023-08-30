@@ -2960,11 +2960,14 @@ class CylinderAndCurvedPlate():
 
         if smsd < 0:
             smsd = -smsd
+            sm0sd = -smsd
         else:
             if geometry in [2, 6]:
                 smsd = 0
+                sm0sd = 0
             else:
                 smsd = smsd
+                sm0sd = smsd
 
         sjsd = math.sqrt(math.pow(sxsd,2) - sxsd*shsd + math.pow(shsd,2) + 3 * math.pow(tsd, 2))  # (3.2.3)
 
@@ -3120,26 +3123,12 @@ class CylinderAndCurvedPlate():
             fEh_used = 0.25 * E * math.pow(t / r, 2)
         else:
             fEh_used = fElat if self._end_cap_pressure_included == 'not included in axial stresses' else fEhyd
-        #
-        # if geometry in [2,6]:
-        #     sxsd = self._sasd+smsd
-        # else:
-        #     sxsd = min(self._sasd, self._sasd+smsd, smsd-smsd)
-
 
         sjsd = math.sqrt(math.pow(sxsd,2) - sxsd*shsd + math.pow(shsd,2) + 3 * math.pow(tsd, 2))  # (3.2.3)
 
         sa0sd = -sasd if sasd < 0 else 0
         sh0sd = -shsd if shsd < 0 else 0
 
-        if smsd < 0:
-            sm0sd = -smsd
-        else:
-
-            if geometry in [2,6]:
-                sm0sd = 0
-            else:
-                sm0sd = smsd
 
         if any([fEax == 0, fEbend == 0, fEt_used == 0, fEh_used == 0, sjsd == 0]):
             lambda_s_pow = 0

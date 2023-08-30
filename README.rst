@@ -46,3 +46,9 @@ Documentation
 -------------
 
 Documentation is cointained in the tool. Help -> Open documentation.
+
+Website
+-------------
+
+https://sites.google.com/view/anystructure/start
+
