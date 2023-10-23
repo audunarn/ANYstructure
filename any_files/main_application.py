@@ -2052,7 +2052,7 @@ class Application():
                     entry.place(relx=hor_start + idx * delta_x, rely=ent_geo_y + delta_y * 3, relwidth=geo_ent_width)
 
             tmp_unit_info = list()
-            for lab in ['Web, hw', 'Web, tw', 'Flange, b', 'Flange, tf', 'tr. br. dist', 'L bet. Gird.',
+            for lab in ['Web, hw', 'Web, tw', 'Flange, b', 'Flange, tf', 'tr. br. dist', 'Lh bet. Gird.',
                         'Stf. type', 'Exclude', 'Load section prop.']:
                 tmp_unit_info.append(ttk.Label(self._tab_prop, text=lab))
 
@@ -2882,7 +2882,8 @@ class Application():
         for obj_list in self._line_to_struc.values():
             if obj_list[5] is not None:
                 all_cyl_thk.append(round(obj_list[5].ShellObj.thk * 1000, 2))
-                recorded_cyl_long_stf.append(obj_list[5].LongStfObj.get_beam_string())
+                if obj_list[5].LongStfObj is not None:
+                    recorded_cyl_long_stf.append(obj_list[5].LongStfObj.get_beam_string())
         all_cyl_thk = np.unique(all_cyl_thk)
         all_cyl_thk = np.sort(all_cyl_thk)
 
@@ -2894,20 +2895,20 @@ class Application():
 
                 if self._line_to_struc[current_line][5] is not None:
                     cyl_obj = self._line_to_struc[current_line][5]
-                    cyl_radius = round(cyl_obj.ShellObj.radius * 1000, 2)
-                    cyl_thickness = round(cyl_obj.ShellObj.thk * 1000, 2)
-                    cyl_long_str = cyl_obj.LongStfObj.get_beam_string()
-                    cyl_ring_stf = cyl_obj.LongStfObj.get_beam_string()
-                    cyl_heavy_ring = cyl_obj.LongStfObj.get_beam_string()
-                    cyl_span = round(cyl_obj.ShellObj.dist_between_rings, 1)
-                    cyl_tot_length = round(cyl_obj.ShellObj.length_of_shell, 1)
-                    cyl_tot_cyl = round(cyl_obj.ShellObj.tot_cyl_length, 1)
-                    cyl_sigma_axial = cyl_obj.sasd / 1e6
-                    cyl_sigma_bend = cyl_obj.smsd / 1e6
-                    cyl_sigma_tors = cyl_obj.tTsd / 1e6
-                    cyl_tau_xy = cyl_obj.tQsd / 1e6
-                    cyl_lat_press = cyl_obj.psd / 1e6
-                    cyl_sigma_hoop = cyl_obj.shsd / 1e6
+                    # cyl_radius = round(cyl_obj.ShellObj.radius * 1000, 2)
+                    # cyl_thickness = round(cyl_obj.ShellObj.thk * 1000, 2)
+                    # cyl_long_str = cyl_obj.LongStfObj.get_beam_string()
+                    # cyl_ring_stf = cyl_obj.LongStfObj.get_beam_string()
+                    # cyl_heavy_ring = cyl_obj.LongStfObj.get_beam_string()
+                    # cyl_span = round(cyl_obj.ShellObj.dist_between_rings, 1)
+                    # cyl_tot_length = round(cyl_obj.ShellObj.length_of_shell, 1)
+                    # cyl_tot_cyl = round(cyl_obj.ShellObj.tot_cyl_length, 1)
+                    # cyl_sigma_axial = cyl_obj.sasd / 1e6
+                    # cyl_sigma_bend = cyl_obj.smsd / 1e6
+                    # cyl_sigma_tors = cyl_obj.tTsd / 1e6
+                    # cyl_tau_xy = cyl_obj.tQsd / 1e6
+                    # cyl_lat_press = cyl_obj.psd / 1e6
+                    # cyl_sigma_hoop = cyl_obj.shsd / 1e6
                     cyl_results = cyl_obj.get_utilization_factors()
                 else:
                     cyl_thickness = 0
@@ -3228,10 +3229,11 @@ class Application():
                     recorded_sections.append(data[0].Stiffener.get_beam_string())
                     idx += 1
             if data[5] is not None:
-                if data[5].LongStfObj.get_beam_string() not in recorded_cyl_sections:
-                    cyl_sec_in_model[ data[5].LongStfObj.get_beam_string()] = idx_cyl
-                    recorded_cyl_sections.append(data[5].LongStfObj.get_beam_string())
-                    idx_cyl += 1
+                if data[5].LongStfObj is not None:
+                    if data[5].LongStfObj.get_beam_string() not in recorded_cyl_sections:
+                        cyl_sec_in_model[ data[5].LongStfObj.get_beam_string()] = idx_cyl
+                        recorded_cyl_sections.append(data[5].LongStfObj.get_beam_string())
+                        idx_cyl += 1
 
         sec_in_model['length'] = len(recorded_sections)
         cyl_sec_in_model['length'] = len(recorded_cyl_sections)
@@ -3381,20 +3383,21 @@ class Application():
                 # Cylinders
                 if self._line_to_struc[line][5] is not None:
                     cyl_obj = self._line_to_struc[line][5]
-                    cyl_radius = round(cyl_obj.ShellObj.radius * 1000, 2)
+                    # cyl_radius = round(cyl_obj.ShellObj.radius * 1000, 2)
                     cyl_thickness = round(cyl_obj.ShellObj.thk * 1000, 2)
-                    cyl_long_str = cyl_obj.LongStfObj.get_beam_string()
-                    cyl_ring_stf = cyl_obj.LongStfObj.get_beam_string()
-                    cyl_heavy_ring = cyl_obj.LongStfObj.get_beam_string()
-                    cyl_span = round(cyl_obj.ShellObj.dist_between_rings, 1)
-                    cyl_tot_length = round(cyl_obj.ShellObj.length_of_shell, 1)
-                    cyl_tot_cyl = round(cyl_obj.ShellObj.tot_cyl_length, 1)
-                    cyl_sigma_axial = cyl_obj.sasd / 1e6
-                    cyl_sigma_bend = cyl_obj.smsd / 1e6
-                    cyl_sigma_tors = cyl_obj.tTsd / 1e6
+                    if cyl_obj.LongStfObj is not None:
+                        cyl_long_str = cyl_obj.LongStfObj.get_beam_string()
+                    # cyl_ring_stf = cyl_obj.LongStfObj.get_beam_string()
+                    # cyl_heavy_ring = cyl_obj.LongStfObj.get_beam_string()
+                    # cyl_span = round(cyl_obj.ShellObj.dist_between_rings, 1)
+                    # cyl_tot_length = round(cyl_obj.ShellObj.length_of_shell, 1)
+                    # cyl_tot_cyl = round(cyl_obj.ShellObj.tot_cyl_length, 1)
+                    # cyl_sigma_axial = cyl_obj.sasd / 1e6
+                    # cyl_sigma_bend = cyl_obj.smsd / 1e6
+                    # cyl_sigma_tors = cyl_obj.tTsd / 1e6
                     tau_xy = cyl_obj.tQsd / 1e6
-                    cyl_lat_press = cyl_obj.psd / 1e6
-                    cyl_sigma_hoop = cyl_obj.shsd / 1e6
+                    # cyl_lat_press = cyl_obj.psd / 1e6
+                    # cyl_sigma_hoop = cyl_obj.shsd / 1e6
                     cyl_results = cyl_obj.get_utilization_factors()
 
                     cyl_uf =  max([round(0 if cyl_results['Unstiffened shell'] is None else
