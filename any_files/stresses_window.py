@@ -144,11 +144,11 @@ class CreateStressesWindow():
         init_thk = 0.002
 
         if self._initial_structure_obj != None:
-            self._new_trans_stress_high.set(self._initial_structure_obj.Plate.get_sigma_y1())
-            self._new_trans_stress_low.set(self._initial_structure_obj.Plate.get_sigma_y2())
-            self._new_axial_stress_1.set(self._initial_structure_obj.Plate.get_sigma_x1())
-            self._new_axial_stress_2.set(self._initial_structure_obj.Plate.get_sigma_x2())
-            self._new_shear_stress.set(self._initial_structure_obj.Plate.get_tau_xy())
+            self._new_trans_stress_high.set(self._initial_structure_obj.Plate.sigma_y1)
+            self._new_trans_stress_low.set(self._initial_structure_obj.Plate.sigma_y2)
+            self._new_axial_stress_1.set(self._initial_structure_obj.Plate.sigma_x1)
+            self._new_axial_stress_2.set(self._initial_structure_obj.Plate.sigma_x2)
+            self._new_shear_stress.set(self._initial_structure_obj.Plate.tau_xy)
             self._new_km1.set(self._initial_structure_obj.Plate.get_km1())
             self._new_km2.set(self._initial_structure_obj.Plate.get_km2())
             self._new_km3.set(self._initial_structure_obj.Plate.get_km3())
