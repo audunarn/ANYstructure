@@ -46,15 +46,21 @@ class FlatStru():
     '''
     def __init__(self, calculation_domain: str = None):
         super().__init__()
-        assert calculation_domain is not None, ('Calculation domain missing.\n '
-                                                'Alternatives:\n    "Flat plate, unstiffened"\n    "Flat plate, stiffened"')
+        assert calculation_domain in ["Flat plate, unstiffened", "Flat plate, stiffened",
+                                      "Flat plate, stiffened with girder"], ('Calculation domain missing!\n '
+                                                'Alternatives:'
+                                                '\n    "Flat plate, unstiffened"'
+                                                '\n    "Flat plate, stiffened"'
+                                                '\n    "Flat plate, stiffened with girder"')
+
         self._Plate = Structure()
         self._Stiffeners = Structure()
         self._Girder = Structure()
         self._calculation_domain = calculation_domain
         self._FlatStructure = AllStructure(Plate=self._Plate,
                            Stiffener=None if calculation_domain == 'Flat plate, unstiffened' else self._Stiffeners,
-                           Girder=None if calculation_domain in ['Flat plate, unstiffened', 'Flat plate, stiffened'] else self._Girder)
+                           Girder=None if calculation_domain in ['Flat plate, unstiffened', 'Flat plate, stiffened']
+                           else self._Girder, calculation_domain=calculation_domain)
     
     @property
     def calculation_domain(self):
@@ -87,6 +93,11 @@ class FlatStru():
         self._FlatStructure.Plate.sigma_x2 = sigma_x2
         self._FlatStructure.Plate.sigma_y1 = sigma_y1
         self._FlatStructure.Plate.sigma_y2 = sigma_y2
+        self._FlatStructure.Stiffener.tau_xy = tau_xy
+        self._FlatStructure.Stiffener.sigma_x1 = sigma_x1
+        self._FlatStructure.Stiffener.sigma_x2 = sigma_x2
+        self._FlatStructure.Stiffener.sigma_y1 = sigma_y1
+        self._FlatStructure.Stiffener.sigma_y2 = sigma_y2
         self._FlatStructure.lat_press = pressure
         
     def set_stiffener(self, hw: float = 0.26*1000, tw: float = 0.012*1000, bf: float = 0.049*1000,
@@ -97,8 +108,10 @@ class FlatStru():
         self._FlatStructure.Stiffener.b = bf
         self._FlatStructure.Stiffener.tf = tf
         self._FlatStructure.Stiffenerstiffener_type = 'L-bulb' if stf_type in ['hp HP HP-bulb bulb'] else stf_type
-        self._FlatStructure.Stiffeners = spacing
+        self._FlatStructure.Stiffener.s = spacing
         self._FlatStructure.Stiffener.girder_lg = 10
+        self._FlatStructure.Stiffener.t = self._FlatStructure.Plate.t
+
 
     def set_girder(self, hw: float = 500, tw: float = 15, bf: float = 200,
                                    tf: float = 25, stf_type: str = 'T', spacing:float = 700):
@@ -107,6 +120,34 @@ class FlatStru():
         self._FlatStructure.Girder.tw = tw
         self._FlatStructure.Girder.b = bf
         self._FlatStructure.Girder.tf = tf
+        self._FlatStructure.Girder.girder_lg = 10
+        self._FlatStructure.Girder.t = self._FlatStructure.Plate.t
+
+    def set_buckling_parameters(self, calculation_method: str= None, buckling_acceptance: str = None,
+                                stiffened_plate_effective_aginst_sigy = True,
+                                min_lat_press_adj_span: float = None, buckling_length_factor_stf: float = None,
+                                buckling_length_factor_girder: float = None,
+                                stf_dist_between_lateral_supp: float = None,
+                                girder_dist_between_lateral_supp: float = None,
+                                panel_length_Lp: float = None, stiffener_support: str = 'Continuous',
+                                girder_support: str = 'Continuous'):
+
+        assert calculation_method in ['DNV-RP-C201 - prescriptive', 'ML-CL (PULS based)']
+        assert buckling_acceptance in ['buckling', 'ultimate']
+        assert stiffener_support in ['Continuous', 'Sniped']
+        assert girder_support in ['Continuous', 'Sniped']
+
+        self._FlatStructure._stiffened_plate_effective_aginst_sigy = stiffened_plate_effective_aginst_sigy
+        self._FlatStructure.method = buckling_acceptance
+        self._FlatStructure._min_lat_press_adj_span = min_lat_press_adj_span
+        self._FlatStructure._buckling_length_factor_stf = buckling_length_factor_stf
+        self._FlatStructure._buckling_length_factor_girder = buckling_length_factor_girder
+        self._FlatStructure._girder_dist_between_lateral_supp = girder_dist_between_lateral_supp
+        self._FlatStructure._stf_dist_between_lateral_supp= stf_dist_between_lateral_supp
+        self._FlatStructure._panel_length_Lp = panel_length_Lp
+        self._FlatStructure._stf_end_support = stiffener_support
+        self._FlatStructure._girder_end_support = girder_support
+
 
 
 
@@ -286,12 +327,16 @@ if __name__ == '__main__':
     # my_cyl.set_ring_girder()
     # my_cyl.set_shell_buckling_parmeters()
     # my_cyl.get_buckling_results()
-    my_flat = FlatStru("Flat plate, stiffened")
-    my_flat.set_material()
-    my_flat.set_plate_geometry()
-    my_flat.set_loads(sigma_x1=50, sigma_x2=50, sigma_y1=50, sigma_y2=50, pressure=0.01)
-    my_flat.set_stiffener()
-    my_flat.get_buckling_results()
+    for var in [True, False]:
+        my_flat = FlatStru("Flat plate, stiffened with girder")
+        my_flat.set_material()
+        my_flat.set_plate_geometry()
+        my_flat.set_loads(sigma_x1=50, sigma_x2=50, sigma_y1=50, sigma_y2=50, pressure=0.01)
+        my_flat.set_stiffener()
+        my_flat.set_girder()
+        my_flat.set_buckling_parameters(calculation_method='DNV-RP-C201 - prescriptive', buckling_acceptance='buckling',
+                                        stiffened_plate_effective_aginst_sigy=var)
+        my_flat.get_buckling_results()
 
 
 

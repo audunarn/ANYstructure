@@ -645,10 +645,13 @@ class Structure():
         Returning moment of intertia.
         :return:
         '''
+
         if only_stf:
             tf1 = t = 0
             b1 = s_e = 0
         else:
+            # if tf1 == None:
+            #     tf1 = self._plate_th
             tf1 = t =  self._plate_th if tf1 == None else tf1
             b1 = s_e =self._spacing if efficent_se==None else efficent_se
 
@@ -1390,7 +1393,7 @@ class AllStructure():
     Calculation of structure
     '''
     def __init__(self, Plate: CalcScantlings = None, Stiffener: CalcScantlings = None, Girder: CalcScantlings = None,
-                 main_dict = None):
+                 main_dict = None, calculation_domain: str = None):
         super(AllStructure, self).__init__()
         self._Plate = Plate  # This contain the stresses
         self._Stiffener = Stiffener
@@ -1409,7 +1412,7 @@ class AllStructure():
             self._stf_end_support = main_dict['stiffener end support'][0]#'Continuous'
             self._girder_end_support = main_dict['girder end support'][0]#'Continuous'
             self._tension_field_action = main_dict['tension field'][0]# 'not allowed'
-            self._stiffed_plate_effective_aginst_sigy = main_dict['plate effective agains sigy'][0] #True
+            self._stiffened_plate_effective_aginst_sigy = main_dict['plate effective agains sigy'][0] #True
             self._buckling_length_factor_stf = None if main_dict['buckling length factor stf'][0] == 0 else \
                 main_dict['buckling length factor stf'][0]
             self._buckling_length_factor_girder = None if main_dict['buckling length factor girder'][0] == 0 else \
@@ -1429,8 +1432,8 @@ class AllStructure():
         else: # setting default values
             self._stf_end_support = 'Continuous'
             self._girder_end_support = 'Continuous'
-            self._tension_field_action ='not allowed'
-            self._stiffed_plate_effective_aginst_sigy = True
+            self._tension_field_action = 'not allowed'
+            self._stiffened_plate_effective_aginst_sigy = True
             self._km3 = 12
             self._km2 = 24
             self._overpressure_side = 'both sides'
@@ -1441,8 +1444,20 @@ class AllStructure():
             self._lat_load_factor = 1
             self._stress_load_factor = 1
             self._lat_press = 0
+            self._buckling_length_factor_stf = None
+            self._buckling_length_factor_girder = None
+            self._stf_dist_between_lateral_supp = None
+            self._girder_dist_between_lateral_supp = None
+            self._panel_length_Lp = None
+            self._calculation_domain = calculation_domain
+            
     
-    
+    @property
+    def method(self):
+        return self._method
+    @method.setter
+    def method(self, val):
+        self._method = val
     @property
     def tension_field_action(self):
         return self._tension_field_action
@@ -1450,11 +1465,11 @@ class AllStructure():
     def tension_field_action(self, val):
         self._tension_field_action = val
     @property
-    def stiffed_plate_effective_aginst_sigy(self):
-        return self._stiffed_plate_effective_aginst_sigy
-    @stiffed_plate_effective_aginst_sigy.setter
-    def stiffed_plate_effective_aginst_sigy(self, val):
-        self._stiffed_plate_effective_aginst_sigy = val
+    def stiffened_plate_effective_aginst_sigy(self):
+        return self._stiffened_plate_effective_aginst_sigy
+    @stiffened_plate_effective_aginst_sigy.setter
+    def stiffened_plate_effective_aginst_sigy(self, val):
+        self._stiffened_plate_effective_aginst_sigy = val
     @property
     def km3(self):
         return self._km3
@@ -1579,6 +1594,19 @@ class AllStructure():
     def mat_yield(self, val):
         self._mat_yield = val
 
+    def get_method(self):
+
+        if self.calculation_domain == "Flat plate, stiffened with girder":
+            if self._stiffened_plate_effective_aginst_sigy:
+                return 1
+            else:
+                return 2
+        else:
+            if 'not' in self._tension_field_action:
+                return 1
+            else:
+                return 2
+
     def get_main_properties(self):
         main_dict = dict()
         main_dict['minimum pressure in adjacent spans'] = [self._min_lat_press_adj_span,  '']
@@ -1589,7 +1617,7 @@ class AllStructure():
         main_dict['stiffener end support'] = [self._stf_end_support, '']  # 'Continuous'
         main_dict['girder end support'] = [self._girder_end_support, '']  # 'Continuous'
         main_dict['tension field'] = [self._tension_field_action, '']  # 'not allowed'
-        main_dict['plate effective agains sigy'] = [self._stiffed_plate_effective_aginst_sigy, '']  # True
+        main_dict['plate effective agains sigy'] = [self._stiffened_plate_effective_aginst_sigy, '']  # True
         main_dict['buckling length factor stf'] = [self._buckling_length_factor_stf, '']
         main_dict['buckling length factor girder'] = [self._buckling_length_factor_girder, '']
         main_dict['km3'] = [self._km3, '']  # 12
@@ -1617,7 +1645,7 @@ class AllStructure():
         self._stf_end_support = main_dict['stiffener end support'][0]#'Continuous'
         self._girder_end_support = main_dict['girder end support'][0]#'Continuous'
         self._tension_field_action = main_dict['tension field'][0]# 'not allowed'
-        self._stiffed_plate_effective_aginst_sigy = main_dict['plate effective agains sigy'][0] #True
+        self._stiffened_plate_effective_aginst_sigy = main_dict['plate effective agains sigy'][0] #True
         self._buckling_length_factor_stf = None if main_dict['buckling length factor stf'][0] == 0 else \
             main_dict['buckling length factor stf'][0]
         self._buckling_length_factor_girder = None if main_dict['buckling length factor girder'][0] == 0 else \
@@ -1927,9 +1955,11 @@ class AllStructure():
 
         stf_pl_data = dict()
 
-        sxsd = 0 if self._method == 2 else unstf_pl_data['sxsd']
-        sy1sd = unstf_pl_data['sy1sd']
-        sysd = 0 if self._method == 2 else unstf_pl_data['sysd']
+        sxsd = unstf_pl_data['sxsd']
+        #sxsd = 0 if self._method == 2 else unstf_pl_data['sxsd']
+        sy1sd = 0 if self.get_method() == 2 else unstf_pl_data['sy1sd']
+
+        sysd = 0 if self.get_method() == 2 else unstf_pl_data['sysd']
         tsd = self._Plate.tau_xy * self._stress_load_factor
         psd = self._lat_press * self._lat_load_factor
         psd_min_adj = psd if self._min_lat_press_adj_span is None else\
@@ -2272,9 +2302,13 @@ class AllStructure():
         sig_y1 = self._Plate.sigma_y1 * self._stress_load_factor
         sig_y2 = self._Plate.sigma_y2 * self._stress_load_factor
 
-        sxsd = 0 if self._method == 2 else unstf_pl_data['sxsd']
+        sxsd = unstf_pl_data['sxsd']
+        #sxsd = 0 if self._method == 2 else unstf_pl_data['sxsd']
+
         sy1sd = unstf_pl_data['sy1sd']
-        sysd = 0 if self._method == 2 else unstf_pl_data['sysd']
+
+        #sysd = 0 if self.get_method() == 2 else unstf_pl_data['sysd']
+        sysd = unstf_pl_data['sysd']
         tsd = self._Plate.tau_xy * self._stress_load_factor
         psd = self._lat_press * self._lat_load_factor
         psd_min_adj = psd if self._min_lat_press_adj_span is None else\
@@ -2304,7 +2338,8 @@ class AllStructure():
         As = self._Stiffener.tw*self._Stiffener.hw + self._Stiffener.b*self._Stiffener.tf
         Ag = self._Girder.tw*self._Girder.hw + self._Girder.b*self._Girder.tf
 
-        sysd = 0 if self._method == 2 else unstf_pl_data['sysd']
+
+        #sysd = 0 if self.get_method() == 2 else unstf_pl_data['sysd']
         NySd = sysd*(Ag+l*t)
 
         Is = stf_pl_data['Is']
@@ -2349,8 +2384,8 @@ class AllStructure():
         le_div_l_method2  = CxG*CyG*CtG
         le_method2 = le_div_l_method2*l
 
-        eff_width_sec_mod = tot_min_lim if self._stiffed_plate_effective_aginst_sigy else le_method2
-        eff_width_other_calc = le_method1 if self._stiffed_plate_effective_aginst_sigy else le_method2
+        eff_width_sec_mod = tot_min_lim if self.get_method() == 1 else le_method2
+        eff_width_other_calc = le_method1 if self.get_method() == 1 else le_method2
 
         le = eff_width_other_calc
 
