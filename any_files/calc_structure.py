@@ -1433,7 +1433,8 @@ class AllStructure():
             self._stf_end_support = 'Continuous'
             self._girder_end_support = 'Continuous'
             self._tension_field_action = 'not allowed'
-            self._stiffened_plate_effective_aginst_sigy = True
+            self._stiffened_plate_effective_aginst_sigy = ['Stf. pl. effective against sigma y',
+                                                          'All sigma y to girder'][0]
             self._km3 = 12
             self._km2 = 24
             self._overpressure_side = 'both sides'
@@ -1595,17 +1596,18 @@ class AllStructure():
         self._mat_yield = val
 
     def get_method(self):
-
-        if self.calculation_domain == "Flat plate, stiffened with girder":
-            if self._stiffened_plate_effective_aginst_sigy:
-                return 1
-            else:
-                return 2
+        gird_opt = ['Stf. pl. effective against sigma y', 'All sigma y to girder']
+        #stf_opt = ['allowed', 'not allowed']
+        #if self.calculation_domain == "Flat plate, stiffened with girder":
+        if self._stiffened_plate_effective_aginst_sigy == gird_opt[0]:
+            return 1
         else:
-            if 'not' in self._tension_field_action:
-                return 1
-            else:
-                return 2
+            return 2
+        # else:
+        #     if self._tension_field_action == stf_opt[0]:
+        #         return 1
+        #     else:
+        #         return 2
 
     def get_main_properties(self):
         main_dict = dict()

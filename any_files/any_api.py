@@ -137,7 +137,8 @@ class FlatStru():
         assert stiffener_support in ['Continuous', 'Sniped']
         assert girder_support in ['Continuous', 'Sniped']
 
-        self._FlatStructure._stiffened_plate_effective_aginst_sigy = stiffened_plate_effective_aginst_sigy
+        sigy_mapper = {True: 'Stf. pl. effective against sigma y', False:'All sigma y to girder'}
+        self._FlatStructure._stiffened_plate_effective_aginst_sigy = sigy_mapper[stiffened_plate_effective_aginst_sigy]
         self._FlatStructure.method = buckling_acceptance
         self._FlatStructure._min_lat_press_adj_span = min_lat_press_adj_span
         self._FlatStructure._buckling_length_factor_stf = buckling_length_factor_stf
@@ -334,9 +335,11 @@ if __name__ == '__main__':
         my_flat.set_loads(sigma_x1=50, sigma_x2=50, sigma_y1=50, sigma_y2=50, pressure=0.01)
         my_flat.set_stiffener()
         my_flat.set_girder()
+        print('stiffened_plate_effective_aginst_sigy', var)
         my_flat.set_buckling_parameters(calculation_method='DNV-RP-C201 - prescriptive', buckling_acceptance='buckling',
                                         stiffened_plate_effective_aginst_sigy=var)
         my_flat.get_buckling_results()
+        print(' ')
 
 
 
