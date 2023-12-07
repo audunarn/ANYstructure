@@ -40,10 +40,75 @@ except ModuleNotFoundError:
 class FlatStru():
     '''
     API class for all flat plates.
+    Domains:
+    1. 'Flat plate, unstiffened'
+    2. 'Flat plate, stiffened'
     '''
-    def __init__(self):
+    def __init__(self, calculation_domain: str = None):
         super().__init__()
-        pass
+        assert calculation_domain is not None, ('Calculation domain missing.\n '
+                                                'Alternatives:\n    "Flat plate, unstiffened"\n    "Flat plate, stiffened"')
+        self._Plate = Structure()
+        self._Stiffeners = Structure()
+        self._Girder = Structure()
+        self._calculation_domain = calculation_domain
+        self._FlatStructure = AllStructure(Plate=self._Plate,
+                           Stiffener=None if calculation_domain == 'Flat plate, unstiffened' else self._Stiffeners,
+                           Girder=None if calculation_domain in ['Flat plate, unstiffened', 'Flat plate, stiffened'] else self._Girder)
+    
+    @property
+    def calculation_domain(self):
+        return self._calculation_domain
+    @calculation_domain.setter
+    def calculation_domain(self, val):
+        self._calculation_domain = val
+
+    def set_material(self, mat_yield = 355e6, emodule = 2.1e11, material_factor = 1.15, poisson = 0.3):
+        self._FlatStructure.mat_yield = mat_yield
+        self._FlatStructure.E = emodule
+        self._FlatStructure.v = poisson
+        self._FlatStructure.mat_factor = material_factor
+        self._Plate.mat_factor = material_factor
+
+    def get_buckling_results(self):
+        print(self._FlatStructure.plate_buckling())
+
+    def set_plate_geometry(self, spacing: float = 0.7, thickness: float = 0.02, span: float = 4.0):
+        self._FlatStructure.Plate.t = thickness
+        self._FlatStructure.Plate.s = spacing
+        self._FlatStructure.Plate.span = span
+        self._FlatStructure.Plate.girder_lg = 10
+    
+    def set_loads(self, pressure: float = 0, sigma_x1: float = 0,sigma_x2: float = 0, sigma_y1: float = 0,
+                  sigma_y2: float = 0, tau_xy: float = 0):
+        
+        self._FlatStructure.Plate.tau_xy = tau_xy
+        self._FlatStructure.Plate.sigma_x1 = sigma_x1
+        self._FlatStructure.Plate.sigma_x2 = sigma_x2
+        self._FlatStructure.Plate.sigma_y1 = sigma_y1
+        self._FlatStructure.Plate.sigma_y2 = sigma_y2
+        self._FlatStructure.lat_press = pressure
+        
+    def set_stiffener(self, hw: float = 0.26*1000, tw: float = 0.012*1000, bf: float = 0.049*1000,
+                                   tf: float = 0.027330027*1000, stf_type: str = 'bulb', spacing:float = 0.608*1000):
+
+        self._FlatStructure.Stiffener.hw = hw
+        self._FlatStructure.Stiffener.tw = tw
+        self._FlatStructure.Stiffener.b = bf
+        self._FlatStructure.Stiffener.tf = tf
+        self._FlatStructure.Stiffenerstiffener_type = 'L-bulb' if stf_type in ['hp HP HP-bulb bulb'] else stf_type
+        self._FlatStructure.Stiffeners = spacing
+        self._FlatStructure.Stiffener.girder_lg = 10
+
+    def set_girder(self, hw: float = 500, tw: float = 15, bf: float = 200,
+                                   tf: float = 25, stf_type: str = 'T', spacing:float = 700):
+
+        self._FlatStructure.Girder.hw = hw
+        self._FlatStructure.Girder.tw = tw
+        self._FlatStructure.Girder.b = bf
+        self._FlatStructure.Girder.tf = tf
+
+
 
 class CylStru():
     ''' API class for all cylinder options.
@@ -179,6 +244,17 @@ class CylStru():
         self._CylinderMain.LongStfObj.s = spacing
         self._CylinderMain.LongStfObj.t = self._CylinderMain.ShellObj.thk
 
+    def set_ring_stiffener(self, hw: float = 0.26*1000, tw: float = 0.012*1000, bf: float = 0.049*1000,
+                                   tf: float = 0.027330027*1000, stf_type: str = 'bulb', spacing:float = 0.608*1000):
+
+        self._CylinderMain.RingStfObj.hw = hw
+        self._CylinderMain.RingStfObj.tw = tw
+        self._CylinderMain.RingStfObj.b = bf
+        self._CylinderMain.RingStfObj.tf = tf
+        self._CylinderMain.RingStfObj.stiffener_type = 'L-bulb' if stf_type in ['hp HP HP-bulb bulb'] else stf_type
+        self._CylinderMain.RingStfObj.s = spacing
+        self._CylinderMain.RingStfObj.t = self._CylinderMain.ShellObj.thk
+
     def set_ring_girder(self, hw: float = 500, tw: float = 15, bf: float = 200,
                                    tf: float = 25, stf_type: str = 'T', spacing:float = 700):
 
@@ -193,26 +269,31 @@ class CylStru():
     def get_buckling_results(self):
         return self._CylinderMain.get_utilization_factors()
 
-
-
-
 if __name__ == '__main__':
-    my_cyl = CylStru(geometry_type='Orthogonally Stiffened shell')
-    my_cyl.set_stresses(sasd=-200e6)
-    my_cyl.set_material()
-    my_cyl.set_imperfection()
-    my_cyl.set_fabrication_method()
-    my_cyl.set_end_cap_pressure_included_in_stress()
-    my_cyl.set_uls_or_als()
-    my_cyl.set_exclude_ring_stiffener()
-    my_cyl.set_length_between_girder(val=3300)
-    my_cyl.set_panel_spacing(val=608)
-    my_cyl.set_shell_geometry(radius=6500,thickness=20, tot_length_of_shell=20000, distance_between_rings=3300)
-    my_cyl.set_longitudinal_stiffener()
-    my_cyl.set_ring_girder()
-    my_cyl.set_shell_buckling_parmeters()
+    # my_cyl = CylStru(geometry_type='Orthogonally Stiffened shell')
+    # my_cyl.set_stresses(sasd=-271354000, tQsd=4788630, shsd=-11228200)
+    # my_cyl.set_material()
+    # my_cyl.set_imperfection()
+    # my_cyl.set_fabrication_method()
+    # my_cyl.set_end_cap_pressure_included_in_stress()
+    # my_cyl.set_uls_or_als()
+    # my_cyl.set_exclude_ring_stiffener()
+    # my_cyl.set_length_between_girder(val=3.300)
+    # my_cyl.set_panel_spacing(val=0.680)
+    # my_cyl.set_shell_geometry(radius=6.500,thickness=0.024, tot_length_of_shell=20.000, distance_between_rings=3.300)
+    # my_cyl.get_buckling_results()
+    # my_cyl.set_longitudinal_stiffener()
+    # my_cyl.set_ring_girder()
+    # my_cyl.set_shell_buckling_parmeters()
+    # my_cyl.get_buckling_results()
+    my_flat = FlatStru("Flat plate, stiffened")
+    my_flat.set_material()
+    my_flat.set_plate_geometry()
+    my_flat.set_loads(sigma_x1=50, sigma_x2=50, sigma_y1=50, sigma_y2=50, pressure=0.01)
+    my_flat.set_stiffener()
+    my_flat.get_buckling_results()
 
-    print(my_cyl.get_buckling_results())
+
 
 
 

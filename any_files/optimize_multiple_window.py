@@ -42,9 +42,9 @@ def helper_harmonizer_multi(iterator):
         fup = iterator['info'][slave_line]['fup']
         fdwn = iterator['info'][slave_line]['fdwn']
         if iterator['info']['keep spacing']:
-            x = [chk_calc_obj.get_s()] + master_x[1:] + [chk_calc_obj.get_span(), chk_calc_obj.get_lg()]
+            x = [chk_calc_obj.get_s()] + master_x[1:] + [chk_calc_obj.span, chk_calc_obj.girder_lg]
         else:
-            x = master_x + [chk_calc_obj.get_span(), chk_calc_obj.get_lg()]
+            x = master_x + [chk_calc_obj.span, chk_calc_obj.girder_lg]
 
         chk_any = op.any_constraints_all(x=x, obj=chk_calc_obj, lat_press=lateral_press,
                                          init_weight=float('inf'), side='p', chk=iterator['info']['checks'],
@@ -721,9 +721,9 @@ class CreateOptimizeMultipleWindow():
                     chk_calc_obj = iter_run_info[slave_line]['chk_calc_obj']
                     master_x = list(x_and_info['x'])
                     if iter_run_info['keep spacing']:
-                        x = [chk_calc_obj.Plate.get_s()] + master_x[1:] + [chk_calc_obj.Plate.get_span(), chk_calc_obj.Plate.get_lg()]
+                        x = [chk_calc_obj.Plate.get_s()] + master_x[1:] + [chk_calc_obj.Plate.span, chk_calc_obj.Plate.girder_lg]
                     else:
-                        x = master_x + [chk_calc_obj.Plate.get_span(), chk_calc_obj.Plate.get_lg()]
+                        x = master_x + [chk_calc_obj.Plate.span, chk_calc_obj.Plate.girder_lg]
                     fdwn = self._new_fdwn.get()
                     fup = self._new_fdwn.get()
                     calc_object = op.create_new_calc_obj(chk_calc_obj, x, fat_obj.get_fatigue_properties(), fdwn=fdwn,
@@ -822,10 +822,10 @@ class CreateOptimizeMultipleWindow():
             for line in self._opt_results.keys():
                 if self._keep_spacing:
                     this_x = [self._line_to_struc[line][0].Plate.get_s()] + list(lowest_x)[1:] + \
-                             [self._line_to_struc[line][0].Plate.get_span(), self._line_to_struc[line][0].Plate.get_lg()]
+                             [self._line_to_struc[line][0].Plate.span, self._line_to_struc[line][0].Plate.girder_lg]
                 else:
-                    this_x = list(lowest_x) + [self._line_to_struc[line][0].Plate.get_span(),
-                                               self._line_to_struc[line][0].Plate.get_lg()]
+                    this_x = list(lowest_x) + [self._line_to_struc[line][0].Plate.span,
+                                               self._line_to_struc[line][0].Plate.girder_lg]
 
                 calc_object_stf = op.create_new_calc_obj(self._line_to_struc[line][0].Plate, this_x,
                                                          fat_obj.get_fatigue_properties(), fdwn=fdwn, fup=fup)
@@ -866,7 +866,7 @@ class CreateOptimizeMultipleWindow():
             master_x = [master_obj.Plate.get_s(), master_obj.Plate.get_pl_thk(), master_obj.Stiffener.get_web_h(),
                         master_obj.Stiffener.get_web_thk(), master_obj.Stiffener.get_fl_w(),
                         master_obj.Stiffener.get_fl_thk(),
-                        master_obj.Plate.get_span(),master_obj.Plate.get_lg()]
+                        master_obj.Plate.span,master_obj.Plate.girder_lg]
             harm_res[master_line] = []
             for slave_line in self._opt_results.keys():
                 input_pressures = self.get_pressure_input(slave_line)
@@ -877,10 +877,10 @@ class CreateOptimizeMultipleWindow():
                 chk_calc_obj = self._opt_results[slave_line][1]
 
                 chk_result = list(op.run_optmizataion(chk_calc_obj,
-                                                      master_x[0:6]+[chk_calc_obj.Plate.get_span(),
-                                                                     chk_calc_obj.Plate.get_lg()],
-                                                      master_x[0:6]+[chk_calc_obj.Plate.get_span(),
-                                                                     chk_calc_obj.Plate.get_lg()],
+                                                      master_x[0:6]+[chk_calc_obj.Plate.span,
+                                                                     chk_calc_obj.Plate.girder_lg],
+                                                      master_x[0:6]+[chk_calc_obj.Plate.span,
+                                                                     chk_calc_obj.Plate.girder_lg],
                                                       lateral_press,self.get_deltas(),
                                                       algorithm=self._new_algorithm.get(),
                                                       trials=self._new_algorithm_random_trials.get(),
@@ -901,7 +901,7 @@ class CreateOptimizeMultipleWindow():
                 master_area = sum(op.get_field_tot_area([master_obj.Plate.get_s(), master_obj.Plate.get_pl_thk(),
                                                          master_obj.Stiffener.get_web_h(), master_obj.Stiffener.get_web_thk(),
                                                          master_obj.Stiffener.get_fl_w(), master_obj.Stiffener.get_fl_thk(),
-                                                         master_obj.Plate.get_span(),master_obj.Plate.get_lg()]))
+                                                         master_obj.Plate.span,master_obj.Plate.girder_lg]))
                 if master_area < harmonized_area:
                     harmonized_area = master_area
                     harmonized_line = master_line
@@ -995,7 +995,7 @@ class CreateOptimizeMultipleWindow():
         return np.array([spacing, self._new_pl_thk_upper.get() / 1000,
                          self._new_web_h_upper.get() / 1000, self._new_web_thk_upper.get() / 1000,
                          self._new_fl_w_upper.get() / 1000, self._new_fl_thk_upper.get() / 1000,
-                         obj.Plate.get_span(), obj.Plate.get_lg()])
+                         obj.Plate.span, obj.Plate.girder_lg])
 
     def get_lower_bounds(self,obj):
         '''
@@ -1009,7 +1009,7 @@ class CreateOptimizeMultipleWindow():
         return np.array([spacing, self._new_pl_thk_lower.get() / 1000,
                          self._new_web_h_lower.get() / 1000, self._new_web_thk_lower.get() / 1000,
                          self._new_fl_w_lower.get() / 1000, self._new_fl_thk_lower.get() / 1000,
-                         obj.Plate.get_span(), obj.Plate.get_lg()])
+                         obj.Plate.span, obj.Plate.girder_lg])
 
     def checkered(self, line_distance):
         '''
@@ -1056,8 +1056,8 @@ class CreateOptimizeMultipleWindow():
                                                                               init_obj.Stiffener.get_web_thk(),
                                                                               init_obj.Stiffener.get_fl_w(),
                                                                               init_obj.Stiffener.get_fl_thk(),
-                                                                              init_obj.Stiffener.get_span(),
-                                                                              init_obj.Stiffener.get_lg()]))),
+                                                                              init_obj.Stiffener.span,
+                                                                              init_obj.Stiffener.girder_lg]))),
                                         font='Verdana 8', fill=init_color)
     
             self._canvas_opt.create_rectangle(ctr_x - m * init_obj.Plate.get_s() / 2, ctr_y, ctr_x + m * init_obj.Plate.get_s() / 2,
@@ -1126,8 +1126,8 @@ class CreateOptimizeMultipleWindow():
                                                                                 opt_obj.Stiffener.get_web_thk(),
                                                                                 opt_obj.Stiffener.get_fl_w(),
                                                                                 opt_obj.Stiffener.get_fl_thk(),
-                                                                                opt_obj.Plate.get_span(),
-                                                                                opt_obj.Plate.get_lg()]))),
+                                                                                opt_obj.Plate.span,
+                                                                                opt_obj.Plate.girder_lg]))),
                                         font='Verdana 8', fill=opt_color)
 
         elif self._opt_results != {}:

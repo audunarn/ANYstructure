@@ -3166,7 +3166,7 @@ class Application():
                     line_weight = op.calc_weight([obj_scnt_calc_stf.get_s(), obj_scnt_calc_stf.get_pl_thk(),
                                                   obj_scnt_calc_stf.get_web_h(), obj_scnt_calc_stf.get_web_thk(),
                                                   obj_scnt_calc_stf.get_fl_w(), obj_scnt_calc_stf.get_fl_thk(),
-                                                  obj_scnt_calc_stf.get_span(), obj_scnt_calc_stf.get_lg()])
+                                                  obj_scnt_calc_stf.span, obj_scnt_calc_stf.girder_lg])
                 else:
                     line_weight = 0
                 points = self._line_dict[current_line]
@@ -3300,14 +3300,14 @@ class Application():
             else:
                 puls_util_map = None
 
-            sig_x = np.unique([self._line_to_struc[line][0].Plate.get_sigma_x1() for line in
+            sig_x = np.unique([self._line_to_struc[line][0].Plate.sigma_x1 for line in
                                self._line_to_struc.keys()]).tolist()
             if len(sig_x) > 1: # TODO color coding when using sig_x1 and sig_x2 (23.12.2021)
                 sig_x_map = np.arange(min(sig_x), max(sig_x) + (max(sig_x) - min(sig_x)) / 10,
                                       (max(sig_x) - min(sig_x)) / 10)
             else:
                 sig_x_map = sig_x
-            sig_y1 = np.unique([self._line_to_struc[line][0].Plate.get_sigma_y1() for line in
+            sig_y1 = np.unique([self._line_to_struc[line][0].Plate.sigma_y1 for line in
                                 self._line_to_struc.keys()]).tolist()
             if len(sig_y1) > 1:
                 sig_y1_map = np.arange(min(sig_y1), max(sig_y1) + (max(sig_y1) - min(sig_y1)) / 10,
@@ -3315,7 +3315,7 @@ class Application():
             else:
                 sig_y1_map = sig_y1
 
-            sig_y2 = np.unique([self._line_to_struc[line][0].Plate.get_sigma_y2() for line in
+            sig_y2 = np.unique([self._line_to_struc[line][0].Plate.sigma_y2 for line in
                                 self._line_to_struc.keys()]).tolist()
             if len(sig_y2) > 1:
 
@@ -3323,7 +3323,7 @@ class Application():
                                        (max(sig_y2) - min(sig_y2)) / 10)
             else:
                 sig_y2_map = sig_y2
-            tau_xy = np.unique([self._line_to_struc[line][0].Plate.get_tau_xy() for line in
+            tau_xy = np.unique([self._line_to_struc[line][0].Plate.tau_xy for line in
                                 self._line_to_struc.keys()]).tolist()
             if len(tau_xy) > 1:
                 tau_xy_map = np.arange(min(tau_xy), max(tau_xy) + (max(tau_xy) - min(tau_xy)) / 10,
@@ -3431,8 +3431,8 @@ class Application():
                 res = list()
 
                 for stress_list, this_stress in zip([sig_x, sig_y1, sig_y2, tau_xy],
-                                                     [line_data[0].Plate.get_sigma_x1(), line_data[0].Plate.get_sigma_y1(),
-                                                      line_data[0].Plate.get_sigma_y2(), line_data[0].Plate.get_tau_xy()]):
+                                                     [line_data[0].Plate.sigma_x1, line_data[0].Plate.sigma_y1,
+                                                      line_data[0].Plate.sigma_y2, line_data[0].Plate.tau_xy]):
                     if type(stress_list)==float:
                         res.append(1)
                     elif len(stress_list) == 1:
@@ -4087,7 +4087,7 @@ class Application():
                 this_text = 'N/A'
             else:
                 color = state['color code']['lines'][line]['sigma x']
-                this_text = str(self._line_to_struc[line][0].Plate.get_sigma_x1())
+                this_text = str(self._line_to_struc[line][0].Plate.sigma_x1)
 
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
@@ -4099,7 +4099,7 @@ class Application():
                 this_text = 'N/A'
             else:
                 color = state['color code']['lines'][line]['sigma y1']
-                this_text = str(self._line_to_struc[line][0].Plate.get_sigma_y2())
+                this_text = str(self._line_to_struc[line][0].Plate.sigma_y2)
 
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
@@ -4111,7 +4111,7 @@ class Application():
                 this_text = 'N/A'
             else:
                 color = state['color code']['lines'][line]['sigma y2']
-                this_text = str(self._line_to_struc[line][0].Plate.get_sigma_y2())
+                this_text = str(self._line_to_struc[line][0].Plate.sigma_y2)
 
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
@@ -4123,7 +4123,7 @@ class Application():
                 this_text = 'N/A'
             else:
                 color = state['color code']['lines'][line]['tau xy']
-                this_text =round(self._line_to_struc[line][0].Plate.get_tau_xy(),2)
+                this_text =round(self._line_to_struc[line][0].Plate.tau_xy,2)
 
             if self._new_label_color_coding.get():
                 self._main_canvas.create_text(coord1[0] + vector[0] / 2 + 5, coord1[1] + vector[1] / 2 - 10,
@@ -5420,8 +5420,8 @@ class Application():
                         girder = self._line_to_struc[self._active_line][0].Girder
                         calc_tup = (plate.get_s(), plate.get_pl_thk(), stiffener.get_web_h(), stiffener.get_web_thk(),
                                     stiffener.get_fl_w(),
-                                    stiffener.get_fl_thk(), plate.get_span(), stiffener.get_lg() if girder is None else
-                                    girder.get_lg(), stiffener.stiffener_type)
+                                    stiffener.get_fl_thk(), plate.span, stiffener.girder_lg if girder is None else
+                                    girder.girder_lg, stiffener.stiffener_type)
                     else:
                         calc_tup = self._line_to_struc[self._active_line][0].Plate.get_tuple()
                     self._line_to_struc[self._active_line][0] = op.create_new_calc_obj(prev_all_obj, calc_tup,
