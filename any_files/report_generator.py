@@ -188,7 +188,7 @@ class LetterMaker(object):
                     textobject.textLine('Plate thickness: '+ str(struc_obj.Plate.get_pl_thk()*1000)+ ' [mm]          '
                                                                                                'Stiffener spacing: '+
                                         str(struc_obj.Plate.get_s()*1000)+' [mm]'+ '          Span: '+
-                                        str(round(struc_obj.Plate.get_span(),4))
+                                        str(round(struc_obj.Plate.span,4))
                                         + ' [m]')
                     if struc_obj.Stiffener is not None:
                         textobject.textLine('Stiffener: '+ str(struc_obj.Stiffener.get_web_h()*1000)+ 'x' +
@@ -202,11 +202,11 @@ class LetterMaker(object):
                                             str(int(struc_obj.Plate.get_km1()))+'/'+
                                             str(int(struc_obj.Plate.get_km2()))+'/'+
                                             str(int(struc_obj.Plate.get_km3())))
-                    textobject.textLine('Defined stresses [MPa]:  sigma_x1 = '+str(struc_obj.Plate.get_sigma_x1())+
-                                        '  sigma_x2 = ' + str(struc_obj.Plate.get_sigma_x2()) +
-                                        '  sigma_y1 = '+ str(struc_obj.Plate.get_sigma_y1()) +
-                                        '  sigma_y2 = '+ str(struc_obj.Plate.get_sigma_y2()) +
-                                        '  tau_xy = ' + str(struc_obj.Plate.get_tau_xy()))
+                    textobject.textLine('Defined stresses [MPa]:  sigma_x1 = '+str(struc_obj.Plate.sigma_x1)+
+                                        '  sigma_x2 = ' + str(struc_obj.Plate.sigma_x2) +
+                                        '  sigma_y1 = '+ str(struc_obj.Plate.sigma_y1) +
+                                        '  sigma_y2 = '+ str(struc_obj.Plate.sigma_y2) +
+                                        '  tau_xy = ' + str(struc_obj.Plate.tau_xy))
                     textobject.textLine('ULS max pressure for line: '+ str(round(pressure,2)*1000)
                                         + ' [kPa]'+'      Pressure applied at: '+struc_obj.overpressure_side)
 
@@ -820,10 +820,10 @@ class LetterMaker(object):
                         str('' if struc_obj.Stiffener is None else struc_obj.Stiffener.get_web_thk() * 1000),
                         str('' if struc_obj.Stiffener is None else struc_obj.Stiffener.get_fl_w() * 1000),
                         str('' if struc_obj.Stiffener is None else struc_obj.Stiffener.get_fl_thk() * 1000),
-                        str(round(struc_obj.Plate.get_sigma_x1(), 0)), str(round(struc_obj.Plate.get_sigma_x2(), 0)),
-                        str(round(struc_obj.Plate.get_sigma_y1(), 0)),
-                        str(round(struc_obj.Plate.get_sigma_y2(), 0)),
-                        str(round(struc_obj.Plate.get_tau_xy(), 0)), str(round(pressure, 2) * 1000),
+                        str(round(struc_obj.Plate.sigma_x1, 0)), str(round(struc_obj.Plate.sigma_x2, 0)),
+                        str(round(struc_obj.Plate.sigma_y1, 0)),
+                        str(round(struc_obj.Plate.sigma_y2, 0)),
+                        str(round(struc_obj.Plate.tau_xy, 0)), str(round(pressure, 2) * 1000),
                         str(int(min(self.data.get_color_and_calc_state()['section_modulus'][line]['sec_mod']) * 1000 ** 3)),
                         str(int(self.data.get_color_and_calc_state()['section_modulus'][line]['min_sec_mod'] * 1000 ** 3)),
                         str(round(self.data.get_color_and_calc_state()['thickness'][line]['min_thk'], 2)),
