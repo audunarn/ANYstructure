@@ -435,11 +435,11 @@ class CreateOptimizeWindow():
         self._new_delta_web_thk.set(init_thk)
         self._new_delta_fl_w.set(init_dim)
         self._new_delta_fl_thk.set(init_thk)
-        self._new_trans_stress_high.set(self._initial_calc_obj.Plate.sigma_y1)
-        self._new_trans_stress_low.set(self._initial_calc_obj.Plate.sigma_y2)
-        self._new_axial_stress.set(self._initial_calc_obj.Plate.sigma_x1)
+        self._new_trans_stress_high.set(self._initial_calc_obj.Plate.get_sigma_y1())
+        self._new_trans_stress_low.set(self._initial_calc_obj.Plate.get_sigma_y2())
+        self._new_axial_stress.set(self._initial_calc_obj.Plate.get_sigma_x1())
 
-        self._new_shear_stress.set(self._initial_calc_obj.Plate.tau_xy)
+        self._new_shear_stress.set(self._initial_calc_obj.Plate.get_tau_xy())
 
         self._new_design_pressure.set(self._lateral_pressure)
         self._new_slamming_pressure.set(self._slamming_pressure)
@@ -472,7 +472,7 @@ class CreateOptimizeWindow():
 
         self._new_pressure_side.set('p')
         self._new_width_lg.set(10)
-        self._new_span.set(round(self._initial_calc_obj.Plate.span,5))
+        self._new_span.set(round(self._initial_calc_obj.Plate.get_span(),5))
         self._new_algorithm.set('anysmart')
         self._new_algorithm_random_trials.set(100000)
         self._new_swarm_size.set(100)

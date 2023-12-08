@@ -16,146 +16,96 @@ class Structure():
     '''
     Setting the properties for the plate and the stiffener. Takes a dictionary as argument.
     '''
-    def __init__(self, main_dict: dict = None, *args, **kwargs):
+    def __init__(self, main_dict, *args, **kwargs):
         super(Structure,self).__init__()
-        if main_dict is None:
-            self._panel_or_shell = None
-            self._plate_th = None
-            self._web_height = None
-            self._web_th = None
-            self._flange_width = None
-            self._flange_th = None
-            self._mat_yield = None
-            self._mat_factor = None
-            self._span = None
-            self._spacing = None
-            self._structure_type = None
-            self._sigma_y1 = None
-            self._sigma_y2 = None
-            self._sigma_x1 = None
-            self._sigma_x2 = None
-            self._tauxy = None
-            self._plate_kpp = None
-            self._stf_kps = None
-            self._km1 = None
-            self._km2 = None
-            self._km3 = None
-            self._stiffener_type = None
-            self._structure_types = None
-            self._dynamic_variable_orientation = None
-            if self._structure_type is None:
-                self._dynamic_variable_orientation = None
-            self._puls_method = None
-            self._puls_boundary = None
-            self._puls_stf_end = None
-            self._puls_sp_or_up = None
-            self._puls_up_boundary = None
-            self._zstar_optimization = None
-            try:
-                self._girder_lg = None
-            except KeyError:
-                self._girder_lg = None
-            try:
-                self._pressure_side = None
-            except KeyError:
-                self._pressure_side = None
-            self._panel_or_shell = None
+        self._main_dict = main_dict
+        if 'panel or shell' not in main_dict.keys():
+            self._panel_or_shell = 'panel'
         else:
-            self._main_dict = main_dict
-            if 'panel or shell' not in main_dict.keys():
-                self._panel_or_shell = 'panel'
-            else:
-                self._panel_or_shell = main_dict['panel or shell'][0]
-            self._plate_th = main_dict['plate_thk'][0]
-            self._web_height = main_dict['stf_web_height'][0]
-            self._web_th = main_dict['stf_web_thk'][0]
-            self._flange_width = main_dict['stf_flange_width'][0]
-            self._flange_th = main_dict['stf_flange_thk'][0]
-            self._mat_yield = main_dict['mat_yield'][0]
-            self._mat_factor = main_dict['mat_factor'][0]
-            self._span = main_dict['span'][0]
-            self._spacing = main_dict['spacing'][0]
-            self._structure_type = main_dict['structure_type'][0]
-            self._sigma_y1=main_dict['sigma_y1'][0]
-            self._sigma_y2=main_dict['sigma_y2'][0]
-            self._sigma_x1 = main_dict['sigma_x1'][0]
-            self._sigma_x2 = main_dict['sigma_x2'][0]
-            self._tauxy=main_dict['tau_xy'][0]
-            self._plate_kpp = main_dict['plate_kpp'][0]
-            self._stf_kps = main_dict['stf_kps'][0]
-            self._km1 = main_dict['stf_km1'][0]
-            self._km2 = main_dict['stf_km2'][0]
-            self._km3 = main_dict['stf_km3'][0]
-            self._stiffener_type=main_dict['stf_type'][0]
-            self._structure_types = main_dict['structure_types'][0]
-            self._dynamic_variable_orientation = None
-            if self._structure_type in self._structure_types['vertical']:
-                self._dynamic_variable_orientation = 'z - vertical'
-            elif self._structure_type in self._structure_types['horizontal']:
-                self._dynamic_variable_orientation = 'x - horizontal'
-            self._puls_method = main_dict['puls buckling method'][0]
-            self._puls_boundary = main_dict['puls boundary'][0]
-            self._puls_stf_end = main_dict['puls stiffener end'][0]
-            self._puls_sp_or_up = main_dict['puls sp or up'][0]
-            self._puls_up_boundary = main_dict['puls up boundary'][0]
-
-            self._zstar_optimization = main_dict['zstar_optimization'][0]
-            try:
-                self._girder_lg=main_dict['girder_lg'][0]
-            except KeyError:
-                self._girder_lg = 10
-            try:
-                self._pressure_side = main_dict['press_side'][0]
-            except KeyError:
-                self._pressure_side = 'both sides'
             self._panel_or_shell = main_dict['panel or shell'][0]
+        self._plate_th = main_dict['plate_thk'][0]
+        self._web_height = main_dict['stf_web_height'][0]
+        self._web_th = main_dict['stf_web_thk'][0]
+        self._flange_width = main_dict['stf_flange_width'][0]
+        self._flange_th = main_dict['stf_flange_thk'][0]
+        self._mat_yield = main_dict['mat_yield'][0]
+        self._mat_factor = main_dict['mat_factor'][0]
+        self._span = main_dict['span'][0]
+        self._spacing = main_dict['spacing'][0]
+        self._structure_type = main_dict['structure_type'][0]
+        self._sigma_y1=main_dict['sigma_y1'][0]
+        self._sigma_y2=main_dict['sigma_y2'][0]
+        self._sigma_x1 = main_dict['sigma_x1'][0]
+        self._sigma_x2 = main_dict['sigma_x2'][0]
+        self._tauxy=main_dict['tau_xy'][0]
+        self._plate_kpp = main_dict['plate_kpp'][0]
+        self._stf_kps = main_dict['stf_kps'][0]
+        self._km1 = main_dict['stf_km1'][0]
+        self._km2 = main_dict['stf_km2'][0]
+        self._km3 = main_dict['stf_km3'][0]
+        self._stiffener_type=main_dict['stf_type'][0]
+        self._structure_types = main_dict['structure_types'][0]
+        self._dynamic_variable_orientation = None
+        if self._structure_type in self._structure_types['vertical']:
+            self._dynamic_variable_orientation = 'z - vertical'
+        elif self._structure_type in self._structure_types['horizontal']:
+            self._dynamic_variable_orientation = 'x - horizontal'
+        self._puls_method = main_dict['puls buckling method'][0]
+        self._puls_boundary = main_dict['puls boundary'][0]
+        self._puls_stf_end = main_dict['puls stiffener end'][0]
+        self._puls_sp_or_up = main_dict['puls sp or up'][0]
+        self._puls_up_boundary = main_dict['puls up boundary'][0]
+
+        self._zstar_optimization = main_dict['zstar_optimization'][0]
+        try:
+            self._girder_lg=main_dict['girder_lg'][0]
+        except KeyError:
+            self._girder_lg = 10
+        try:
+            self._pressure_side = main_dict['press_side'][0]
+        except KeyError:
+            self._pressure_side = 'both sides'
+        self._panel_or_shell = main_dict['panel or shell'][0]
 
     # Property decorators are used in buckling of shells. IN mm!
     @property # in mm
     def hw(self):
-        assert self._web_height is not None, 'Variable missing: self._web_height'
         return self._web_height * 1000
     @hw.setter # in mm
     def hw(self, val):
         self._web_height = val / 1000
     @property # in mm
     def tw(self):
-        assert self._web_th is not None, 'Variable missing: self._web_th - web thickness'
         return self._web_th * 1000
     @tw.setter # in mm
     def tw(self, val):
         self._web_th = val / 1000
     @property # in mm
     def b(self):
-        assert self._flange_width is not None, 'Variable missing: self._flange_width'
         return self._flange_width * 1000
     @b.setter # in mm
     def b(self, val):
         self._flange_width = val / 1000
     @property # in mm
     def tf(self):
-        assert self._flange_th is not None, 'Variable missing: self._flange_th'
         return self._flange_th * 1000
     @tf.setter # in mm
     def tf(self, val):
         self._flange_th = val / 1000
     @property  # in mm
     def s(self):
-        assert self._spacing is not None, 'Variable missing: self._spacing'
         return self._spacing* 1000
     @s.setter  # in mm
     def s(self, val):
         self._spacing = val / 1000
     @property  # in mm
     def t(self):
-        assert self._plate_th is not None, 'Variable missing: self._plate_th'
         return self._plate_th* 1000
     @t.setter  # in mm
     def t(self, val):
         self._plate_th = val / 1000
     @property  # in mm
     def panel_or_shell(self):
-
         return self._panel_or_shell
     @panel_or_shell.setter  # in mm
     def panel_or_shell(self, val):
@@ -167,122 +117,29 @@ class Structure():
     def stiffener_type(self, val):
         self._stiffener_type = val
 
-    @property
-    def E(self):
-        return self._E
-    @E.setter
-    def E(self, val):
-        self._E = val
-    @property
-    def v(self):
-        return self._v
-    @v.setter
-    def v(self, val):
-        self._v = val
-    @property
-    def mat_yield(self):
-        return self._mat_yield
-    @mat_yield.setter
-    def mat_yield(self, val):
-        self._mat_yield = val
-
-    @property
-    def mat_factor(self):
-        assert self._mat_factor is not None, 'Missing variable: self._mat_factor'
-        return self._mat_factor
-    @mat_factor.setter
-    def mat_factor(self, val):
-        self._mat_factor = val
-
-    @property
-    def span(self):
-        assert self._span is not None, 'Missing variable: self._span'
-        return self._span
-    @span.setter
-    def span(self, val):
-        self._span = val
-        
-    @property
-    def sigma_x1(self):
-        assert self._sigma_x1 is not None, 'Missing variable: self._sigma_x1'
-        return self._sigma_x1
-    @sigma_x1.setter
-    def sigma_x1(self, val):
-        self._sigma_x1 = val
-    @property
-    def sigma_x2(self):
-        assert self._sigma_x2 is not None, 'Missing variable: self._sigma_x2'
-        return self._sigma_x2
-    @sigma_x2.setter
-    def sigma_x2(self, val):
-        self._sigma_x2 = val
-        
-    @property
-    def sigma_y1(self):
-        assert self._sigma_y1 is not None, 'Missing variable: self._sigma_y1'
-        return self._sigma_y1
-    @sigma_y1.setter
-    def sigma_y1(self, val):
-        self._sigma_y1 = val
-    
-    @property
-    def sigma_y2(self):
-        assert self._sigma_y2 is not None, 'Missing variable: self._sigma_y2'
-        return self._sigma_y2
-    @sigma_y2.setter
-    def sigma_y2(self, val):
-        self._sigma_y2 = val
-        
-    @property
-    def tau_xy(self):
-        assert self._tauxy is not None, 'Missing variable: self._tauxy'
-        return self._tauxy
-    @tau_xy.setter
-    def tau_xy(self, val):
-        self._tauxy = val
-        
-    @property
-    def girder_lg(self):
-        assert self._girder_lg is not None, 'Missing variable: self._girder_lg'
-        return self._girder_lg
-    @girder_lg.setter
-    def girder_lg(self, val):
-        self._girder_lg = val
-
-
     def __str__(self):
         '''
         Returning all properties.
         '''
-        try:
-            return \
-                str(
-                '\n Plate field span:              ' + str(round(self._span*1000)) + ' mm' +
-                '\n Stiffener spacing:             ' + str(self._spacing*1000)+' mm'+
-                '\n Plate thickness:               ' + str(self._plate_th*1000)+' mm'+
-                '\n Stiffener web height:          ' + str(self._web_height*1000)+' mm'+
-                '\n Stiffener web thickness:       ' + str(self._web_th*1000)+' mm'+
-                '\n Stiffener flange width:        ' + str(self._flange_width*1000)+' mm'+
-                '\n Stiffener flange thickness:    ' + str(self._flange_th*1000)+' mm'+
-                '\n Material yield:                ' + str(self._mat_yield/1e6)+' MPa'+
-                '\n Structure/stiffener type:      ' + str(self._structure_type)+'/'+(self._stiffener_type)+
-                '\n Dynamic load varible_          ' + str(self._dynamic_variable_orientation)+
-                '\n Plate fixation paramter,kpp:   ' + str(self._plate_kpp) + ' ' +
-                '\n Stf. fixation paramter,kps:    ' + str(self._stf_kps) + ' ' +
-                '\n Global stress, sig_y1/sig_y2:  ' + str(round(self._sigma_y1,3))+'/'+str(round(self._sigma_y2,3))+ ' MPa' +
-                '\n Global stress, sig_x1/sig_x2:   ' + str(round(self._sigma_x1,3))+'/'+str(round(self._sigma_x2,3))+ ' MPa' +
-                '\n Global shear, tau_xy:          ' + str(round(self._tauxy,3)) + ' MPa' +
-                '\n km1,km2,km3:                   ' + str(self._km1)+'/'+str(self._km2)+'/'+str(self._km3)+
-                '\n Pressure side (p-plate/s-stf): ' + str(self._pressure_side) + ' ')
-        except TypeError:
-            return \
-                str(
-                    '\n Stiffener spacing:             ' + str(self._spacing * 1000) + ' mm' +
-                    '\n Plate thickness:               ' + str(self._plate_th * 1000) + ' mm' +
-                    '\n Stiffener web height:          ' + str(self._web_height * 1000) + ' mm' +
-                    '\n Stiffener web thickness:       ' + str(self._web_th * 1000) + ' mm' +
-                    '\n Stiffener flange width:        ' + str(self._flange_width * 1000) + ' mm' +
-                    '\n Stiffener flange thickness:    ' + str(self._flange_th * 1000) + ' mm' )
+        return \
+            str(
+            '\n Plate field span:              ' + str(round(self._span*1000)) + ' mm' +
+            '\n Stiffener spacing:             ' + str(self._spacing*1000)+' mm'+
+            '\n Plate thickness:               ' + str(self._plate_th*1000)+' mm'+
+            '\n Stiffener web height:          ' + str(self._web_height*1000)+' mm'+
+            '\n Stiffener web thickness:       ' + str(self._web_th*1000)+' mm'+
+            '\n Stiffener flange width:        ' + str(self._flange_width*1000)+' mm'+
+            '\n Stiffener flange thickness:    ' + str(self._flange_th*1000)+' mm'+
+            '\n Material yield:                ' + str(self._mat_yield/1e6)+' MPa'+
+            '\n Structure/stiffener type:      ' + str(self._structure_type)+'/'+(self._stiffener_type)+
+            '\n Dynamic load varible_          ' + str(self._dynamic_variable_orientation)+
+            '\n Plate fixation paramter,kpp:   ' + str(self._plate_kpp) + ' ' +
+            '\n Stf. fixation paramter,kps:    ' + str(self._stf_kps) + ' ' +
+            '\n Global stress, sig_y1/sig_y2:  ' + str(round(self._sigma_y1,3))+'/'+str(round(self._sigma_y2,3))+ ' MPa' +
+            '\n Global stress, sig_x1/sig_x2:   ' + str(round(self._sigma_x1,3))+'/'+str(round(self._sigma_x2,3))+ ' MPa' +
+            '\n Global shear, tau_xy:          ' + str(round(self._tauxy,3)) + ' MPa' +
+            '\n km1,km2,km3:                   ' + str(self._km1)+'/'+str(self._km2)+'/'+str(self._km3)+
+            '\n Pressure side (p-plate/s-stf): ' + str(self._pressure_side) + ' ')
 
     def get_beam_string(self, short = False):
         ''' Returning a string. '''
@@ -359,7 +216,37 @@ class Structure():
         ''' Some more information returned. '''
         return 'span: '+str(round(self._span,4))+' structure type: '+ self._structure_type + ' stf. type: ' + \
                self._stiffener_type + ' pressure side: ' + self._pressure_side
-
+    
+    def get_sigma_y1(self):
+        '''
+        Return sigma_y1
+        :return:
+        '''
+        return self._sigma_y1
+    def get_sigma_y2(self):
+        '''
+        Return sigma_y2
+        :return:
+        '''
+        return self._sigma_y2
+    def get_sigma_x1(self):
+        '''
+        Return sigma_x
+        :return:
+        '''
+        return self._sigma_x1
+    def get_sigma_x2(self):
+        '''
+        Return sigma_x
+        :return:
+        '''
+        return self._sigma_x2
+    def get_tau_xy(self):
+        '''
+        Return tau_xy
+        :return:
+        '''
+        return self._tauxy
     def get_s(self):
         '''
         Return the spacing
@@ -402,13 +289,20 @@ class Structure():
         :return:
         '''
         return self._mat_yield
-
+    def get_mat_factor(self):
+        return self._mat_factor
     def get_span(self):
         '''
         Return the span
         :return:
         '''
         return self._span
+    def get_lg(self):
+        '''
+        Return the girder length
+        :return:
+        '''
+        return self._girder_lg
     def get_kpp(self):
         '''
         Return var
@@ -645,13 +539,10 @@ class Structure():
         Returning moment of intertia.
         :return:
         '''
-
         if only_stf:
             tf1 = t = 0
             b1 = s_e = 0
         else:
-            # if tf1 == None:
-            #     tf1 = self._plate_th
             tf1 = t =  self._plate_th if tf1 == None else tf1
             b1 = s_e =self._spacing if efficent_se==None else efficent_se
 
@@ -1393,7 +1284,7 @@ class AllStructure():
     Calculation of structure
     '''
     def __init__(self, Plate: CalcScantlings = None, Stiffener: CalcScantlings = None, Girder: CalcScantlings = None,
-                 main_dict = None, calculation_domain: str = None):
+                 main_dict = None):
         super(AllStructure, self).__init__()
         self._Plate = Plate  # This contain the stresses
         self._Stiffener = Stiffener
@@ -1402,129 +1293,40 @@ class AllStructure():
 
         self._v = 0.3
         self._E = 2.1e11
-        if main_dict is not None:
-            self._min_lat_press_adj_span = None if main_dict['minimum pressure in adjacent spans'][0] == 0 else \
-                main_dict['minimum pressure in adjacent spans'][0]
-            self._mat_yield =  main_dict['material yield'][0]
-            self._stress_load_factor = main_dict['load factor on stresses'][0]
-            self._lat_load_factor = main_dict['load factor on pressure'][0]
-            self._method = main_dict['buckling method'][0]
-            self._stf_end_support = main_dict['stiffener end support'][0]#'Continuous'
-            self._girder_end_support = main_dict['girder end support'][0]#'Continuous'
-            self._tension_field_action = main_dict['tension field'][0]# 'not allowed'
-            self._stiffened_plate_effective_aginst_sigy = main_dict['plate effective agains sigy'][0] #True
-            self._buckling_length_factor_stf = None if main_dict['buckling length factor stf'][0] == 0 else \
-                main_dict['buckling length factor stf'][0]
-            self._buckling_length_factor_girder = None if main_dict['buckling length factor girder'][0] == 0 else \
-                main_dict['buckling length factor girder'][0]
-            self._km3 = main_dict['km3'][0]#12
-            self._km2 = main_dict['km2'][0]#24
-            self._stf_dist_between_lateral_supp = None if main_dict['stiffener distance between lateral support'][0] == 0 \
-                else main_dict['stiffener distance between lateral support'][0]
-            self._girder_dist_between_lateral_supp = None if main_dict['girder distance between lateral support'][0] == 0 \
-                else main_dict['girder distance between lateral support'][0]
-            self._panel_length_Lp = None if main_dict['panel length, Lp'][0] == 0 else main_dict['panel length, Lp'][0]
-            self._overpressure_side = main_dict['pressure side'][0] # either 'stiffener side', 'plate side', 'both sides'
-            self._fab_method_stiffener = main_dict['fabrication method stiffener'][0]#'welded'
-            self._fab_method_girder = main_dict['fabrication method girder'][0]#'welded'
-            self._calculation_domain = main_dict['calculation domain'][0]
-            self._need_recalc = True
-        else: # setting default values
-            self._stf_end_support = 'Continuous'
-            self._girder_end_support = 'Continuous'
-            self._tension_field_action = 'not allowed'
-            self._stiffened_plate_effective_aginst_sigy = ['Stf. pl. effective against sigma y',
-                                                          'All sigma y to girder'][0]
-            self._km3 = 12
-            self._km2 = 24
-            self._overpressure_side = 'both sides'
-            self._fab_method_stiffener = 'welded'
-            self._fab_method_girder = 'welded'
-            self._need_recalc = True
-            self._mat_yield = None
-            self._lat_load_factor = 1
-            self._stress_load_factor = 1
-            self._lat_press = 0
-            self._buckling_length_factor_stf = None
-            self._buckling_length_factor_girder = None
-            self._stf_dist_between_lateral_supp = None
-            self._girder_dist_between_lateral_supp = None
-            self._panel_length_Lp = None
-            self._calculation_domain = calculation_domain
-            
-    
-    @property
-    def method(self):
-        return self._method
-    @method.setter
-    def method(self, val):
-        self._method = val
-    @property
-    def tension_field_action(self):
-        return self._tension_field_action
-    @tension_field_action.setter
-    def tension_field_action(self, val):
-        self._tension_field_action = val
-    @property
-    def stiffened_plate_effective_aginst_sigy(self):
-        return self._stiffened_plate_effective_aginst_sigy
-    @stiffened_plate_effective_aginst_sigy.setter
-    def stiffened_plate_effective_aginst_sigy(self, val):
-        self._stiffened_plate_effective_aginst_sigy = val
-    @property
-    def km3(self):
-        return self._km3
-    @km3.setter
-    def km3(self, val):
-        self._km3 = val
-    @property
-    def km2(self):
-        return self._km2
-    @km2.setter
-    def km2(self, val):
-        self._km2 = val
-    
+
+        self._min_lat_press_adj_span = None if main_dict['minimum pressure in adjacent spans'][0] == 0 else \
+            main_dict['minimum pressure in adjacent spans'][0]
+        self._yield =  main_dict['material yield'][0]
+        self._stress_load_factor = main_dict['load factor on stresses'][0]
+        self._lat_load_factor = main_dict['load factor on pressure'][0]
+        self._method = main_dict['buckling method'][0]
+        self._stf_end_support = main_dict['stiffener end support'][0]#'Continuous'
+        self._girder_end_support = main_dict['girder end support'][0]#'Continuous'
+        self._tension_field_action = main_dict['tension field'][0]# 'not allowed'
+        self._stiffed_plate_effective_aginst_sigy = main_dict['plate effective agains sigy'][0] #True
+        self._buckling_length_factor_stf = None if main_dict['buckling length factor stf'][0] == 0 else \
+            main_dict['buckling length factor stf'][0]
+        self._buckling_length_factor_girder = None if main_dict['buckling length factor girder'][0] == 0 else \
+            main_dict['buckling length factor girder'][0]
+        self._km3 = main_dict['km3'][0]#12
+        self._km2 = main_dict['km2'][0]#24
+        self._stf_dist_between_lateral_supp = None if main_dict['stiffener distance between lateral support'][0] == 0 \
+            else main_dict['stiffener distance between lateral support'][0]
+        self._girder_dist_between_lateral_supp = None if main_dict['girder distance between lateral support'][0] == 0 \
+            else main_dict['girder distance between lateral support'][0]
+
+        self._panel_length_Lp = None if main_dict['panel length, Lp'][0] == 0 else main_dict['panel length, Lp'][0]
+        self._overpressure_side = main_dict['pressure side'][0] # either 'stiffener side', 'plate side', 'both sides'
+        self._fab_method_stiffener = main_dict['fabrication method stiffener'][0]#'welded'
+        self._fab_method_girder = main_dict['fabrication method girder'][0]#'welded'
+        self._calculation_domain = main_dict['calculation domain'][0]
+        self._need_recalc = True
+
+
     @property
     def need_recalc(self):
         return self._need_recalc
-    @need_recalc.setter
-    def need_recalc(self, val):
-        self._need_recalc = val
-    
-    @property
-    def overpressure_side(self):
-        return self._overpressure_side
-    @overpressure_side.setter
-    def overpressure_side(self, val):
-        self._overpressure_side = val
-    @property
-    def fab_method_stiffener(self):
-        return self._fab_method_stiffener
-    @fab_method_stiffener.setter
-    def fab_method_stiffener(self, val):
-        self._fab_method_stiffener = val
-    
-    @property
-    def fab_method_girder(self):
-        return self._fab_method_girder
-    @fab_method_girder.setter
-    def fab_method_girder(self, val):
-        self._fab_method_girder = val
-    @property
-    def stf_end_support(self):
-        return self._stf_end_support
-    @stf_end_support.setter
-    def stf_end_support(self, val):
-        self._stf_end_support = val
-    @property
-    def girder_end_support(self):
-        return self._girder_end_support
-    @girder_end_support.setter
-    def girder_end_support(self, val):
-        self._girder_end_support = val
-    @property
-    def need_recalc(self):
-        return self._need_recalc
+
     @need_recalc.setter
     def need_recalc(self, val):
         self._need_recalc = val
@@ -1573,53 +1375,17 @@ class AllStructure():
     def calculation_domain(self, val):
         self._calculation_domain = val
 
-    @property
-    def E(self):
-        assert self._E is not None, 'Missing variable: self._E'
-        return self._E
-    @E.setter
-    def E(self, val):
-        self._E = val
-    @property
-    def v(self):
-        assert self._v is not None, 'Missing variable: self._v'
-        return self._v
-    @v.setter
-    def v(self, val):
-        self._v = val
-    @property
-    def mat_yield(self):
-        assert self._mat_yield is not None, 'Missing variable: self._mat_yield'
-        return self._mat_yield
-    @mat_yield.setter
-    def mat_yield(self, val):
-        self._mat_yield = val
-
-    def get_method(self):
-        gird_opt = ['Stf. pl. effective against sigma y', 'All sigma y to girder']
-        #stf_opt = ['allowed', 'not allowed']
-        #if self.calculation_domain == "Flat plate, stiffened with girder":
-        if self._stiffened_plate_effective_aginst_sigy == gird_opt[0]:
-            return 1
-        else:
-            return 2
-        # else:
-        #     if self._tension_field_action == stf_opt[0]:
-        #         return 1
-        #     else:
-        #         return 2
-
     def get_main_properties(self):
         main_dict = dict()
         main_dict['minimum pressure in adjacent spans'] = [self._min_lat_press_adj_span,  '']
-        main_dict['material yield'] = [self._mat_yield, 'Pa']
+        main_dict['material yield'] = [self._yield, 'Pa']
         main_dict['load factor on stresses'] = [self._stress_load_factor, '']
         main_dict['load factor on pressure'] = [self._lat_load_factor, '']
         main_dict['buckling method'] = [self._method, '']
         main_dict['stiffener end support'] = [self._stf_end_support, '']  # 'Continuous'
         main_dict['girder end support'] = [self._girder_end_support, '']  # 'Continuous'
         main_dict['tension field'] = [self._tension_field_action, '']  # 'not allowed'
-        main_dict['plate effective agains sigy'] = [self._stiffened_plate_effective_aginst_sigy, '']  # True
+        main_dict['plate effective agains sigy'] = [self._stiffed_plate_effective_aginst_sigy, '']  # True
         main_dict['buckling length factor stf'] = [self._buckling_length_factor_stf, '']
         main_dict['buckling length factor girder'] = [self._buckling_length_factor_girder, '']
         main_dict['km3'] = [self._km3, '']  # 12
@@ -1640,14 +1406,14 @@ class AllStructure():
         main_dict = prop_dict['main dict']
         self._min_lat_press_adj_span = None if main_dict['minimum pressure in adjacent spans'][0] == 0 else \
             main_dict['minimum pressure in adjacent spans'][0]
-        self._mat_yield =  main_dict['material yield'][0]
+        self._yield =  main_dict['material yield'][0]
         self._stress_load_factor = main_dict['load factor on stresses'][0]
         self._lat_load_factor = main_dict['load factor on pressure'][0]
         self._method = main_dict['buckling method'][0]
         self._stf_end_support = main_dict['stiffener end support'][0]#'Continuous'
         self._girder_end_support = main_dict['girder end support'][0]#'Continuous'
         self._tension_field_action = main_dict['tension field'][0]# 'not allowed'
-        self._stiffened_plate_effective_aginst_sigy = main_dict['plate effective agains sigy'][0] #True
+        self._stiffed_plate_effective_aginst_sigy = main_dict['plate effective agains sigy'][0] #True
         self._buckling_length_factor_stf = None if main_dict['buckling length factor stf'][0] == 0 else \
             main_dict['buckling length factor stf'][0]
         self._buckling_length_factor_girder = None if main_dict['buckling length factor girder'][0] == 0 else \
@@ -1750,21 +1516,20 @@ class AllStructure():
 
         E = self._E/1e6
         v = self._v
-        fy = self._mat_yield/1e6
-        gammaM = self._Plate.mat_factor
+        fy = self._yield/1e6
+        gammaM = self._Plate.get_mat_factor()
         t = self._Plate.t
         s = self._Plate.s
-        l = self._Plate.span*1000
+        l = self._Plate.get_span()*1000
 
-        tsd = self._Plate.tau_xy
+        tsd = self._Plate.get_tau_xy()
         psd = self._lat_press*self._lat_load_factor
 
-        sig_x1 = self._Plate.sigma_x1*self._stress_load_factor
-        sig_x2 = self._Plate.sigma_x2*self._stress_load_factor
+        sig_x1 = self._Plate.get_sigma_x1()*self._stress_load_factor
+        sig_x2 = self._Plate.get_sigma_x2()*self._stress_load_factor
 
-        sig_y1 = self._Plate.sigma_y1 * self._stress_load_factor
-        sig_y2 = self._Plate.sigma_y2 * self._stress_load_factor
-
+        sig_y1 = self._Plate.get_sigma_y1() * self._stress_load_factor
+        sig_y2 = self._Plate.get_sigma_y2() * self._stress_load_factor
 
         if sig_x1 * sig_x2 >= 0:
             Use_Smax_x = sxsd = sig_x1 if abs(sig_x1) > abs(sig_x2) else sig_x2
@@ -1941,28 +1706,26 @@ class AllStructure():
         E = self._E / 1e6
         v = self._v
         G = E/(2*(1+v))
-        fy = self._mat_yield/1e6
-        gammaM = self._Plate.mat_factor
+        fy = self._yield/1e6
+        gammaM = self._Plate.get_mat_factor()
         t = self._Plate.t
         s = self._Plate.s
-        l = self._Plate.span * 1000
+        l = self._Plate.get_span() * 1000
 
-        sig_x1 = self._Plate.sigma_x1 * self._stress_load_factor
-        sig_x2 = self._Plate.sigma_x2 * self._stress_load_factor
+        sig_x1 = self._Plate.get_sigma_x1() * self._stress_load_factor
+        sig_x2 = self._Plate.get_sigma_x2() * self._stress_load_factor
 
-        sig_y1 = self._Plate.sigma_y1 * self._stress_load_factor
-        sig_y2 = self._Plate.sigma_y2 * self._stress_load_factor
+        sig_y1 = self._Plate.get_sigma_y1() * self._stress_load_factor
+        sig_y2 = self._Plate.get_sigma_y2() * self._stress_load_factor
 
-        Lg = self._Plate.girder_lg*1000
+        Lg = self._Plate.get_lg()*1000
 
         stf_pl_data = dict()
 
-        sxsd = unstf_pl_data['sxsd']
-        #sxsd = 0 if self._method == 2 else unstf_pl_data['sxsd']
-        sy1sd = 0 if self.get_method() == 2 else unstf_pl_data['sy1sd']
-
-        sysd = 0 if self.get_method() == 2 else unstf_pl_data['sysd']
-        tsd = self._Plate.tau_xy * self._stress_load_factor
+        sxsd = 0 if self._method == 2 else unstf_pl_data['sxsd']
+        sy1sd = unstf_pl_data['sy1sd']
+        sysd = 0 if self._method == 2 else unstf_pl_data['sysd']
+        tsd = self._Plate.get_tau_xy() * self._stress_load_factor
         psd = self._lat_press * self._lat_load_factor
         psd_min_adj = psd if self._min_lat_press_adj_span is None else\
             self._min_lat_press_adj_span*self._lat_load_factor
@@ -2287,36 +2050,32 @@ class AllStructure():
         E = self._E / 1e6
         v = self._v
         G = E/(2*(1+v))
-        fy = self._mat_yield/1e6
-        gammaM = self._Plate.mat_factor
+        fy = self._yield/1e6
+        gammaM = self._Plate.get_mat_factor()
         t = self._Plate.t
         s = self._Plate.s
-        l = self._Plate.span * 1000
+        l = self._Plate.get_span() * 1000
         hw = self._Girder.hw
 
-        tsd = self._Plate.tau_xy * self._stress_load_factor
+        tsd = self._Plate.get_tau_xy() * self._stress_load_factor
         psd = self._lat_press
 
 
-        sig_x1 = self._Plate.sigma_x1 * self._stress_load_factor
-        sig_x2 = self._Plate.sigma_x2 * self._stress_load_factor
+        sig_x1 = self._Plate.get_sigma_x1() * self._stress_load_factor
+        sig_x2 = self._Plate.get_sigma_x2() * self._stress_load_factor
 
-        sig_y1 = self._Plate.sigma_y1 * self._stress_load_factor
-        sig_y2 = self._Plate.sigma_y2 * self._stress_load_factor
+        sig_y1 = self._Plate.get_sigma_y1() * self._stress_load_factor
+        sig_y2 = self._Plate.get_sigma_y2() * self._stress_load_factor
 
-        sxsd = unstf_pl_data['sxsd']
-        #sxsd = 0 if self._method == 2 else unstf_pl_data['sxsd']
-
+        sxsd = 0 if self._method == 2 else unstf_pl_data['sxsd']
         sy1sd = unstf_pl_data['sy1sd']
-
-        #sysd = 0 if self.get_method() == 2 else unstf_pl_data['sysd']
-        sysd = unstf_pl_data['sysd']
-        tsd = self._Plate.tau_xy * self._stress_load_factor
+        sysd = 0 if self._method == 2 else unstf_pl_data['sysd']
+        tsd = self._Plate.get_tau_xy() * self._stress_load_factor
         psd = self._lat_press * self._lat_load_factor
         psd_min_adj = psd if self._min_lat_press_adj_span is None else\
             self._min_lat_press_adj_span*self._lat_load_factor
 
-        Lg = self._Plate.girder_lg*1000
+        Lg = self._Plate.get_lg()*1000
 
         Ltg = Lg if self._girder_dist_between_lateral_supp == None else self._girder_dist_between_lateral_supp
         Lp = 0 if self._panel_length_Lp is None else self._panel_length_Lp
@@ -2340,8 +2099,7 @@ class AllStructure():
         As = self._Stiffener.tw*self._Stiffener.hw + self._Stiffener.b*self._Stiffener.tf
         Ag = self._Girder.tw*self._Girder.hw + self._Girder.b*self._Girder.tf
 
-
-        #sysd = 0 if self.get_method() == 2 else unstf_pl_data['sysd']
+        sysd = 0 if self._method == 2 else unstf_pl_data['sysd']
         NySd = sysd*(Ag+l*t)
 
         Is = stf_pl_data['Is']
@@ -2386,8 +2144,8 @@ class AllStructure():
         le_div_l_method2  = CxG*CyG*CtG
         le_method2 = le_div_l_method2*l
 
-        eff_width_sec_mod = tot_min_lim if self.get_method() == 1 else le_method2
-        eff_width_other_calc = le_method1 if self.get_method() == 1 else le_method2
+        eff_width_sec_mod = tot_min_lim if self._stiffed_plate_effective_aginst_sigy else le_method2
+        eff_width_other_calc = le_method1 if self._stiffed_plate_effective_aginst_sigy else le_method2
 
         le = eff_width_other_calc
 
@@ -2580,7 +2338,7 @@ class AllStructure():
         '''
         Checks for girders and stiffeners
         '''
-        fy = self._mat_yield
+        fy = self._yield
         if self._Stiffener is not None:
             max_web_stf = 42*self._Stiffener.tw*math.sqrt(235/fy) if self._Stiffener.get_stiffener_type() != 'FB' else 0
             max_flange_stf = (14 if self._fab_method_stiffener == 'welded' else 15) *  self._Stiffener.tf *math.sqrt(235/fy)
@@ -2600,7 +2358,7 @@ class AllStructure():
     # def get_tuple(self):
     #     ''' Return a tuple of the plate stiffener'''
     #     return (self.Plate.get_s(), self.Plate.get_pl_thk(), self.Stiffener.get_web_thk(), self.Stiffener.get_web_thk(),
-    #             self.Stiffener.get_fl_w(), self.Stiffener.get_fl_thk(), self.Plate.span, self.Plate.girder_lg,
+    #             self.Stiffener.get_fl_w(), self.Stiffener.get_fl_thk(), self.Plate.get_span(), self.Plate.get_lg(),
     #             self.Stiffener.get_stiffener_type())
 
     def get_one_line_string_mixed(self):
@@ -2613,14 +2371,14 @@ class AllStructure():
 
     def get_extended_string_mixed(self):
         ''' Some more information returned. '''
-        return 'span: '+str(round(self.Plate.span,4))+' structure type: '+ self.Stiffener.get_structure_type() + ' stf. type: ' + \
+        return 'span: '+str(round(self.Plate.get_span(),4))+' structure type: '+ self.Stiffener.get_structure_type() + ' stf. type: ' + \
                self.Stiffener.get_stiffener_type() + ' pressure side: ' + self.Plate.overpressure_side
 
 class Shell():
     '''
     Small class to contain shell properties.
     '''
-    def __init__(self, main_dict: dict = None):
+    def __init__(self, main_dict):
         super(Shell, self).__init__()
         '''
                             shell_dict = {'plate_thk': [self._new_shell_thk.get() / 1000, 'm'],
@@ -2631,27 +2389,20 @@ class Shell():
                                   'eff. buckling lenght factor': [self._new_shell_k_factor.get() / 1000, 'm'],
                                   'mat_yield': [self._new_shell_yield.get() *1e6, 'Pa']}
         '''
-        if main_dict is None:
-            self._thk = None
-            self._mat_yield = None
-            self._radius = None
-            self._dist_between_rings = None
-            self._length_of_shell = None
-            self._tot_cyl_length = None
-            self._k_factor = None
-        else:
-            self._thk = main_dict['plate_thk'][0]
-            self._mat_yield = main_dict['mat_yield'][0]
-            self._radius = main_dict['radius'][0]
-            self._dist_between_rings = main_dict['distance between rings, l'][0]
-            self._length_of_shell = main_dict['length of shell, L'][0]
-            self._tot_cyl_length = main_dict['tot cyl length, Lc'][0]
-            self._k_factor = main_dict['eff. buckling lenght factor'][0]
+        self._thk = main_dict['plate_thk'][0]
+        self._yield = main_dict['mat_yield'][0]
+        self._radius = main_dict['radius'][0]
+        self._dist_between_rings = main_dict['distance between rings, l'][0]
+        self._length_of_shell = main_dict['length of shell, L'][0]
+        self._tot_cyl_length = main_dict['tot cyl length, Lc'][0]
+        self._k_factor = main_dict['eff. buckling lenght factor'][0]
 
         # For conical
         self._cone_r1 = None
         self._cone_r2 = None
         self._cone_alpha = None
+
+
     @property
     def Lc(self):
         return self._tot_cyl_length
@@ -2709,13 +2460,13 @@ class Shell():
                                   'length of shell, L': [self._length_of_shell, 'm'],
                                   'tot cyl length, Lc': [self._tot_cyl_length, 'm'],
                                   'eff. buckling lenght factor': [self._k_factor, 'm'],
-                                  'mat_yield': [self._mat_yield, 'Pa']}
+                                  'mat_yield': [self._yield, 'Pa']}
         return main_data
 
     def set_main_properties(self, main_dict):
 
         self._thk = main_dict['plate_thk'][0]
-        self._mat_yield = main_dict['mat_yield'][0]
+        self._yield = main_dict['mat_yield'][0]
         self._radius = main_dict['radius'][0]
         self._dist_between_rings = main_dict['distance between rings, l'][0]
         self._length_of_shell = main_dict['length of shell, L'][0]
@@ -2746,66 +2497,42 @@ class CylinderAndCurvedPlate():
     for key, value in geomeries.items():
         geomeries_map[value] = key
 
-    geomeries_map_no_input_spec = dict()
-    for key, value in geomeries.items():
-        this_str = value.replace(' (Stress input)', '')
-        this_str = this_str.replace(' (Force input)', '')
-        geomeries_map_no_input_spec[this_str] = key
-
     def __init__(self, main_dict = None, shell: Shell = None, long_stf: Structure = None, ring_stf: Structure = None,
                  ring_frame: Structure = None):
         super(CylinderAndCurvedPlate, self).__init__()
 
-        if all([main_dict is None, shell is None, long_stf is None, ring_stf is None]):
-                self._sasd= None
-                self._smsd= None
-                self._tTsd= None
-                self._tQsd= None
-                self._psd = None
-                self._shsd= None
-                self._geometry= None
-                self._mat_factor= None
-                self._delta0 = None
-                self._fab_method_ring_stf= None
-                self._fab_method_ring_girder= None
-                self._E = None
-                self._v = None
-                self._mat_yield= None
-                self._length_between_girders= None
-                self._panel_spacing= None
-                self.__ring_stiffener_excluded= None
-                self.__ring_frame_excluded= None
-                self._end_cap_pressure_included= None
-                self._uls_or_als= None
+        # main_dict = {'sasd': 100, 'smsd': 100, 'tTsd': 50, 'tQsd':10, 'psd': -0.3, 'shsd': 0, 'geometry': 7,
+        #              'material factor': self._mat_factor, 'lT': 0, 'delta0': 0.005, 'fab method ring stf': 1,
+        #              'fab method ring girder': 2, 'E-module':2.1e11, 'poisson': 0.3, 'yield': 355e6}
 
-        else:
-            self._sasd = main_dict['sasd'][0]
-            self._smsd = main_dict['smsd'][0]
-            self._tTsd = abs(main_dict['tTsd'][0])
-            self._tQsd= main_dict['tQsd'][0]
-            self._psd = main_dict['psd'][0]
-            self._shsd = main_dict['shsd'][0]
-            self._geometry = main_dict['geometry'][0]
-            self._mat_factor = main_dict['material factor'][0]
-            self._delta0 = main_dict['delta0'][0]
-            self._fab_method_ring_stf = main_dict['fab method ring stf'][0]
-            self._fab_method_ring_girder = main_dict['fab method ring girder'][0]
-            self._E = main_dict['E-module'][0]
-            self._v = main_dict['poisson'][0]
-            self._mat_yield = main_dict['mat_yield'][0]
-            self._length_between_girders = main_dict['length between girders'][0]
-            self._panel_spacing = main_dict['panel spacing, s'][0]
-            self.__ring_stiffener_excluded = main_dict['ring stf excluded'][0]
-            self.__ring_frame_excluded = main_dict['ring frame excluded'][0]
-            self._end_cap_pressure_included = main_dict['end cap pressure'][0]
-            self._uls_or_als =  main_dict['ULS or ALS'][0]
+        #if main_dict['geometry'][0] in [1,3,5,7]: # Need to convert from forces to stresses.
+        self._sasd = main_dict['sasd'][0]
+        self._smsd = main_dict['smsd'][0]
+        self._tTsd = abs(main_dict['tTsd'][0])
+        self._tQsd= main_dict['tQsd'][0]
+        self._psd = main_dict['psd'][0]
+        self._shsd = main_dict['shsd'][0]
+        self._geometry = main_dict['geometry'][0]
+        self._mat_factor = main_dict['material factor'][0]
+        self._delta0 = main_dict['delta0'][0]
+        self._fab_method_ring_stf = main_dict['fab method ring stf'][0]
+        self._fab_method_ring_girder = main_dict['fab method ring girder'][0]
+        self._E = main_dict['E-module'][0]
+        self._v = main_dict['poisson'][0]
+        self._yield = main_dict['mat_yield'][0]
 
         self._Shell = shell
         self._LongStf = long_stf
         self._RingStf = ring_stf
         self._RingFrame = ring_frame
 
+        self._length_between_girders = main_dict['length between girders'][0]
+        self._panel_spacing = main_dict['panel spacing, s'][0]
+        self.__ring_stiffener_excluded = main_dict['ring stf excluded'][0]
+        self.__ring_frame_excluded = main_dict['ring frame excluded'][0]
 
+        self._end_cap_pressure_included = main_dict['end cap pressure'][0]
+        self._uls_or_als =  main_dict['ULS or ALS'][0]
 
     def __str__(self):
         '''
@@ -2826,7 +2553,7 @@ class CylinderAndCurvedPlate():
             '\n Length of shell, L:            ' + str(self._Shell.length_of_shell*1000)+' mm'+
             '\n Total cylinder lenght:         ' + str(self._Shell.tot_cyl_length*1000)+' mm'+
             '\n Eff. Buckling length factor:   ' + str(self._Shell.k_factor)+
-            '\n Material yield:                ' + str(self._mat_yield/1e6)+' MPa'+
+            '\n Material yield:                ' + str(self._yield/1e6)+' MPa'+
             '\n Spacing/panel circ., s:        ' + str(s) + ' mm' +
             '\n Longitudinal stiffeners:       ' + long_string+
             '\n Ring stiffeners                ' + ring_string+
@@ -2838,61 +2565,6 @@ class CylinderAndCurvedPlate():
             '\n Design lateral pressure        ' + str(self._psd/1e6)+' MPa'+
             '\n Additional hoop stress         ' + str(self._shsd/1e6)+' MPa')
     
-    @property
-    def uls_or_als(self):
-        return self._uls_or_als
-    @uls_or_als.setter
-    def uls_or_als(self, val):
-        self._uls_or_als = val
-    @property
-    def fab_method_ring_girder(self):
-        return self._fab_method_ring_girder
-    @fab_method_ring_girder.setter
-    def fab_method_ring_girder(self, val):
-        self._fab_method_ring_girder = val
-
-    @property
-    def fab_method_ring_stf(self):
-        return self._fab_method_ring_stf
-    @fab_method_ring_stf.setter
-    def fab_method_ring_stf(self, val):
-        self._fab_method_ring_stf = val
-    @property
-    def end_cap_pressure_included(self):
-        return self._end_cap_pressure_included
-    @end_cap_pressure_included.setter
-    def end_cap_pressure_included(self, val):
-        self._end_cap_pressure_included = val
-    @property
-    def delta0(self):
-        return self._delta0
-    @delta0.setter
-    def delta0(self, val):
-        self._delta0 = val
-    @property
-    def mat_factor(self):
-        return self._mat_factor
-    @mat_factor.setter
-    def mat_factor(self, val):
-        self._mat_factor = val
-    @property
-    def E(self):
-        return self._E
-    @E.setter
-    def E(self, val):
-        self._E = val
-    @property
-    def v(self):
-        return self._v
-    @v.setter
-    def v(self, val):
-        self._v = val
-    @property
-    def mat_yield(self):
-        return self._mat_yield
-    @mat_yield.setter
-    def mat_yield(self, val):
-        self._mat_yield = val
     @property
     def sasd(self):
         return self._sasd
@@ -3117,7 +2789,7 @@ class CylinderAndCurvedPlate():
         self._fab_method_ring_girder = main_dict['fab method ring girder'][0]
         self._E = main_dict['E-module'][0]
         self._v = main_dict['poisson'][0]
-        self._mat_yield = main_dict['mat_yield'][0]
+        self._yield = main_dict['mat_yield'][0]
         self._length_between_girders = main_dict['length between girders'][0]
         self._panel_spacing = main_dict['panel spacing, s'][0]
         self.__ring_stiffener_excluded = main_dict['ring stf excluded'][0]
@@ -3132,10 +2804,6 @@ class CylinderAndCurvedPlate():
         stucture_objects = {'Unstiffened':self._Shell, 'Long Stiff.': self._LongStf, 'Ring Stiffeners': self._RingStf,
                             'Heavy ring Frame': self._RingFrame}
         stf_type = ['T', 'FB', 'T']
-        assert self._Shell.dist_between_rings is not None, 'Input missing: self._Shell.dist_between_rings'
-        assert self._Shell.radius is not None, 'Input missing: self._Shell.radius'
-        assert self._Shell.thk is not None, 'Input missing: self._Shell.thk'
-
         l = self._Shell.dist_between_rings*1000
         r = self._Shell.radius*1000
         t = self._Shell.thk*1000
@@ -3162,10 +2830,6 @@ class CylinderAndCurvedPlate():
                 A = obj.get_cross_section_area(include_plate=False)*math.pow(1000,2)
                 beta = l/(1.56*math.sqrt(r*t))
                 leo = (l/beta) *  ((math.cosh(2*beta)-math.cos(2*beta))/(math.sinh(2*beta)+math.sin(2*beta)))
-
-                assert self._sasd is not None, 'Input missing: self._sasd'
-                assert self._smsd is not None, 'Input missing: self._smsd'
-
 
                 worst_axial_comb = min(self._sasd/1e6 - self._smsd/1e6, self._sasd/1e6 + self._smsd/1e6)
                 sxsd_used = worst_axial_comb
@@ -3195,25 +2859,18 @@ class CylinderAndCurvedPlate():
             if obj is None:
                 shRsd.append(np.nan)
                 continue
-            assert self._psd is not None, 'Input missing: self._psd'
-
             if idx == 'Unstiffened':
                 shsd.append((self._psd/1e6)*r/t + self._shsd/1e6)
                 sxsd.append(self._sasd/1e6+self._smsd/1e6 if self._geometry in [2,6] else
                             min([self._sasd/1e6, self._sasd/1e6-self._smsd/1e6, self._sasd/1e6+self._smsd/1e6]))
                 tsd.append(self._tTsd/1e6 + self._tQsd/1e6)
             elif idx == 'Long Stiff.':
-                assert +self._shsd is not None, 'Input missing: self._shsd'
-                assert +self._tTsd is not None, 'Input missing: self._tTsd'
-                assert +self._tQsd is not None, 'Input missing: self._tQsd'
-
                 if stucture_objects['Ring Stiffeners'] == None:
                     shsd.append(shsd[0]+self._shsd/1e6)
                 else:
                     shsd_ring = ((self._psd/1e6)*r/t)-parameters[0][0]*parameters[0][3]/(parameters[0][0]+1)*\
                                 ((self._psd/1e6)*r/t-0.3*sxsd[0])
                     shsd.append(shsd_ring + self._shsd/1e6)
-
                 if self._geometry in [3,4,7,8]:
                     sxsd.append(sxsd_used)
                 else:
@@ -3266,7 +2923,8 @@ class CylinderAndCurvedPlate():
         v = self._v
         r = self._Shell.radius*1000
         l = self._Shell.dist_between_rings * 1000
-        fy = self._mat_yield/1e6
+        fy = self._yield/1e6
+
         sasd = self._sasd/1e6
         smsd = self._smsd/1e6
         tsd = abs(self._tTsd/1e6+self._tQsd/1e6)
@@ -3375,10 +3033,11 @@ class CylinderAndCurvedPlate():
         sjsd_max = math.sqrt(math.pow(sasd+smsd,2)-(sasd+smsd)*shsd+math.pow(shsd,2)+3*math.pow(tsd,2))
 
         uf_max =  self._mat_factor* sjsd_max/fy
-
+        # print('Unstifffed curved panel', 'UF', uf, 'UFmax', uf_max, 'sigjsd', sjsd, 'Zs', Zs, 'lambda_s', lambda_s,
+        #       'fks', fks, 'gammaM', gammaM, 'sjsd_max', sjsd_max)
 
         def iter_table_1():
-            found, sasd_iter, count, this_val, logger  = False, 0.001 if uf > 1 else sasd, 0, 0, list()
+            found, sasd_iter, count, this_val, logger  = False, 0 if uf > 1 else sasd, 0, 0, list()
 
             while not found:
                 # Iteration
@@ -3389,6 +3048,7 @@ class CylinderAndCurvedPlate():
 
                 sjsd_iter = math.sqrt(math.pow(sasd_iter+sigmsd_iter, 2) - (sasd_iter+sigmsd_iter)*shsd + math.pow(shsd, 2)+
                                       3*math.pow(tsd, 2)) #(3.2.3)
+
                 lambdas_iter = math.sqrt((fy / sjsd_iter) * ((siga0sd_iter+sigm0sd_iter)/fEax+ sigh0sd_iter/fEcirc+tsd/fEshear)) # (3.2.2)
 
                 gammaM_iter = 1  # As taken in the DNVGL sheets
@@ -3514,14 +3174,12 @@ class CylinderAndCurvedPlate():
             while not found:
                 # Iteration
                 sigmsd_iter = smsd if geometry in [2, 6] else min([-smsd, smsd])
-                siga0sd_iter = 0.00001 if sasd_iter >= 0 else -sasd_iter  # (3.2.4)
-                sigm0sd_iter = 0.00001 if sigmsd_iter >= 0 else -sigmsd_iter  # (3.2.5)
-                sigh0sd_iter = 0.00001 if shsd >= 0 else -shsd  # (3.2.6)
+                siga0sd_iter = 0 if sasd_iter >= 0 else -sasd_iter  # (3.2.4)
+                sigm0sd_iter = 0 if sigmsd_iter >= 0 else -sigmsd_iter  # (3.2.5)
+                sigh0sd_iter = 0 if shsd >= 0 else -shsd  # (3.2.6)
                 sjsd_iter = math.sqrt(
                     math.pow(sasd_iter + sigmsd_iter, 2) - (sasd_iter + sigmsd_iter) * shsd + math.pow(shsd, 2) +
                     3 * math.pow(tsd, 2))  # (3.2.3)
-                if sjsd_iter == 0:
-                    sjsd_iter = 0.00001
                 lambdas_iter = math.sqrt((fy/sjsd_iter) * (siga0sd_iter/fEax + sigm0sd_iter/fEbend +
                                                            sigh0sd_iter/fElat + tsd/fEtors))
                 gammaM_iter = 1  # As taken in the DNVGL sheets
@@ -3562,7 +3220,7 @@ class CylinderAndCurvedPlate():
 
         r = self._Shell.radius*1000
         l = self._Shell.dist_between_rings * 1000
-        fy = self._mat_yield/1e6
+        fy = self._yield/1e6
 
         L = self._Shell.tot_cyl_length*1000
         LH = L
@@ -3728,7 +3386,7 @@ class CylinderAndCurvedPlate():
         v = self._v
         r = self._Shell.radius*1000
         l = self._Shell.dist_between_rings * 1000
-        fy = self._mat_yield/1e6
+        fy = self._yield/1e6
 
         L = self._Shell.tot_cyl_length*1000
         LH = L
@@ -3929,7 +3587,7 @@ class CylinderAndCurvedPlate():
         v = self._v
         r = self._Shell.radius*1000
         l = self._Shell.dist_between_rings * 1000
-        fy = self._mat_yield/1e6
+        fy = self._yield/1e6
 
         L = self._Shell.tot_cyl_length*1000
         LH = L
@@ -4235,7 +3893,7 @@ class CylinderAndCurvedPlate():
                      'fab method ring girder': [self._fab_method_ring_girder, '-'],
                      'E-module': [self._E, 'Pa'],
                      'poisson': [self._v, '-'],
-                     'mat_yield': [self._mat_yield, 'Pa'],
+                     'mat_yield': [self._yield, 'Pa'],
                      'length between girders': [self._length_between_girders, 'm'],
                      'panel spacing, s':  [self._panel_spacing, 'm'],
                      'ring stf excluded': [self.__ring_stiffener_excluded, ''],
@@ -4790,11 +4448,9 @@ def main():
     Girder = CalcScantlings(ex.obj_dict_heavy)
     PreBuc = AllStructure(Plate = Plate, Stiffener = Stiffener, Girder = Girder,
                                   main_dict=ex.prescriptive_main_dict)
-
-
-    print(PreBuc)
-
-    cylinder = CylinderAndCurvedPlate()
+    #print(Plate)
+    print(Stiffener)
+    print(Stiffener.get_moment_of_intertia_hp())
     #print(Girder)
     #PreBuc.lat_press = 0.412197
     #print(Plate)

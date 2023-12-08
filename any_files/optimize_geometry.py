@@ -1047,8 +1047,8 @@ class CreateOptGeoWindow():
                                                                                init_obj.get_web_thk(),
                                                                                init_obj.get_fl_w(),
                                                                                init_obj.get_fl_thk(),
-                                                                               init_obj.span,
-                                                                               init_obj.girder_lg]))),
+                                                                               init_obj.get_span(),
+                                                                               init_obj.get_lg()]))),
                                          font='Verdana 8', fill=init_color)
 
             self._canvas_opt.create_rectangle(ctr_x - m * init_obj.get_s() / 2, ctr_y, ctr_x + m * init_obj.get_s() / 2,
@@ -1119,8 +1119,8 @@ class CreateOptGeoWindow():
                                                                                  opt_obj.get_web_thk(),
                                                                                  opt_obj.get_fl_w(),
                                                                                  opt_obj.get_fl_thk(),
-                                                                                 opt_obj.span,
-                                                                                 opt_obj.girder_lg]))),
+                                                                                 opt_obj.get_span(),
+                                                                                 opt_obj.get_lg()]))),
                                          font='Verdana 8', fill=opt_color)
         else:
             self._canvas_opt.create_text(150, 60, text='No optimized solution found.')
@@ -1364,7 +1364,7 @@ class CreateOptGeoWindow():
             self._canvas_opt.create_text([start_x + 120, y_loc ], text=str('No results\n' if
                                                                            self._geo_results[key][1][0][0] is None else
                                                                            round(self._geo_results[key][1][0][0].
-                                                                                 Plate.span,4)),
+                                                                                 Plate.get_span(),4)),
                                          anchor='w', font=text_type)
             self._canvas_opt.create_text([start_x + 220, y_loc ],
                                          text=str(round(self._geo_results[key][0] / max_weight, 3))
@@ -1376,13 +1376,13 @@ class CreateOptGeoWindow():
 
             if save_to_file is not None:
                 save_file.write(str(len(check_ok))+ ' ' + 'No results\n' if self._geo_results[key][1][0][0] is None
-                                                             else str(round(self._geo_results[key][1][0][0].Plate.span,
+                                                             else str(round(self._geo_results[key][1][0][0].Plate.get_span(),
                                                                             4)) + ' ' +
                                                                   str(round(self._geo_results[key][0] / max_weight, 3))
                                                                   + '\n' if max_weight != 0 else
                 '' + ' ' + str(all(check_ok))+'\n')
             if self._geo_results[key][1][0][0] is not None:
-                xplot.append(round(self._geo_results[key][1][0][0].Plate.span,4))
+                xplot.append(round(self._geo_results[key][1][0][0].Plate.get_span(),4))
                 yplot.append(round(self._geo_results[key][0] / max_weight, 4))
 
         if save_to_file is not None:

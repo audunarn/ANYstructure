@@ -490,7 +490,7 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
                     weigth_to_add = calc_weight((obj.Plate.get_s(),obj.Plate.get_pl_thk(),obj.Stiffener.get_web_h(),
                                                  obj.Stiffener.get_web_thk(),
                                                obj.Stiffener.get_fl_w(),obj.Stiffener.get_fl_thk(),
-                                                 obj.Plate.span,width), prt=False)
+                                                 obj.Plate.get_span(),width), prt=False)
                     tot_weight += weigth_to_add
                     weight_details['objects'].append(weigth_to_add)
                     if frame_spacings[count // 2] is None:
@@ -823,18 +823,18 @@ def create_new_calc_obj(init_obj,x, fat_dict=None, fdwn = 1, fup = 0.5):
             girder = init_obj.Girder
             x_old = (plate.get_s(), plate.get_pl_thk(), stiffener.get_web_h(), stiffener.get_web_thk(),
                         stiffener.get_fl_w(),
-                        stiffener.get_fl_thk(), plate.span, stiffener.girder_lg if girder is None else
-                        girder.girder_lg, stiffener.stiffener_type)
+                        stiffener.get_fl_thk(), plate.get_span(), stiffener.get_lg() if girder is None else
+                        girder.get_lg(), stiffener.stiffener_type)
         else:
             x_old = init_obj.Plate.get_tuple()
         
-        sigma_y1_new = stress_scaling(init_obj.Plate.sigma_y1, init_obj.Plate.get_pl_thk(), x[1], fdwn = fdwn, fup = fup)
-        sigma_y2_new = stress_scaling(init_obj.Plate.sigma_y2, init_obj.Plate.get_pl_thk(), x[1], fdwn = fdwn, fup = fup)
-        tau_xy_new = stress_scaling(init_obj.Plate.tau_xy, init_obj.Plate.get_pl_thk(), x[1], fdwn = fdwn, fup = fup)
-        sigma_x1_new = stress_scaling_area(init_obj.Plate.sigma_x1,
+        sigma_y1_new = stress_scaling(init_obj.Plate.get_sigma_y1(), init_obj.Plate.get_pl_thk(), x[1], fdwn = fdwn, fup = fup)
+        sigma_y2_new = stress_scaling(init_obj.Plate.get_sigma_y2(), init_obj.Plate.get_pl_thk(), x[1], fdwn = fdwn, fup = fup)
+        tau_xy_new = stress_scaling(init_obj.Plate.get_tau_xy(), init_obj.Plate.get_pl_thk(), x[1], fdwn = fdwn, fup = fup)
+        sigma_x1_new = stress_scaling_area(init_obj.Plate.get_sigma_x1(),
                                           sum(get_field_tot_area(x_old)),
                                           sum(get_field_tot_area(x)), fdwn = fdwn, fup = fup)
-        sigma_x2_new = stress_scaling_area(init_obj.Plate.sigma_x2,
+        sigma_x2_new = stress_scaling_area(init_obj.Plate.get_sigma_x2(),
                                           sum(get_field_tot_area(x_old)),
                                           sum(get_field_tot_area(x)), fdwn = fdwn, fup = fup)
         try:
@@ -842,8 +842,8 @@ def create_new_calc_obj(init_obj,x, fat_dict=None, fdwn = 1, fup = 0.5):
         except IndexError:
             stf_type = init_obj.plate.get_stiffener_type()
         
-        main_dict = {'mat_yield': [init_obj.Plate.get_fy(), 'Pa'],'mat_factor': [init_obj.Plate.mat_factor, ''],
-                     'span': [init_obj.Plate.span, 'm'],
+        main_dict = {'mat_yield': [init_obj.Plate.get_fy(), 'Pa'],'mat_factor': [init_obj.Plate.get_mat_factor(), 'Pa'],
+                     'span': [init_obj.Plate.get_span(), 'm'],
                      'spacing': [x[0], 'm'],'plate_thk': [x[1], 'm'],'stf_web_height':[ x[2], 'm'],
                      'stf_web_thk': [x[3], 'm'],'stf_flange_width': [x[4], 'm'],
                      'stf_flange_thk': [x[5], 'm'],'structure_type': [init_obj.Plate.get_structure_type(), ''],
@@ -884,15 +884,15 @@ def create_new_calc_obj(init_obj,x, fat_dict=None, fdwn = 1, fup = 0.5):
                    calc.CalcFatigue(main_dict, fat_dict)
     else:
         x_old = [init_obj.get_s(), init_obj.get_pl_thk(), init_obj.get_web_h() , init_obj.get_web_thk(),
-                 init_obj.get_fl_w(),init_obj.get_fl_thk(), init_obj.span, init_obj.girder_lg]
+                 init_obj.get_fl_w(),init_obj.get_fl_thk(), init_obj.get_span(), init_obj.get_lg()]
 
-        sigma_y1_new = stress_scaling(init_obj.sigma_y1, init_obj.get_pl_thk(), x[1], fdwn = fdwn, fup = fup)
-        sigma_y2_new = stress_scaling(init_obj.sigma_y2, init_obj.get_pl_thk(), x[1], fdwn = fdwn, fup = fup)
-        tau_xy_new = stress_scaling(init_obj.tau_xy, init_obj.get_pl_thk(), x[1], fdwn = fdwn, fup = fup)
-        sigma_x1_new = stress_scaling_area(init_obj.sigma_x1,
+        sigma_y1_new = stress_scaling(init_obj.get_sigma_y1(), init_obj.get_pl_thk(), x[1], fdwn = fdwn, fup = fup)
+        sigma_y2_new = stress_scaling(init_obj.get_sigma_y2(), init_obj.get_pl_thk(), x[1], fdwn = fdwn, fup = fup)
+        tau_xy_new = stress_scaling(init_obj.get_tau_xy(), init_obj.get_pl_thk(), x[1], fdwn = fdwn, fup = fup)
+        sigma_x1_new = stress_scaling_area(init_obj.get_sigma_x1(),
                                           sum(get_field_tot_area(x_old)),
                                           sum(get_field_tot_area(x)), fdwn = fdwn, fup = fup)
-        sigma_x2_new = stress_scaling_area(init_obj.sigma_x2,
+        sigma_x2_new = stress_scaling_area(init_obj.get_sigma_x2(),
                                           sum(get_field_tot_area(x_old)),
                                           sum(get_field_tot_area(x)), fdwn = fdwn, fup = fup)
         try:
@@ -900,8 +900,8 @@ def create_new_calc_obj(init_obj,x, fat_dict=None, fdwn = 1, fup = 0.5):
         except IndexError:
             stf_type = init_obj.get_stiffener_type()
 
-        main_dict = {'mat_yield': [init_obj.get_fy(), 'Pa'],'mat_factor': [init_obj.Plate.mat_factor, ''],
-                     'span': [init_obj.span, 'm'],
+        main_dict = {'mat_yield': [init_obj.get_fy(), 'Pa'],'mat_factor': [init_obj.get_mat_factor(), 'Pa'],
+                     'span': [init_obj.get_span(), 'm'],
                      'spacing': [x[0], 'm'],'plate_thk': [x[1], 'm'],'stf_web_height':[ x[2], 'm'],
                      'stf_web_thk': [x[3], 'm'],'stf_flange_width': [x[4], 'm'],
                      'stf_flange_thk': [x[5], 'm'],'structure_type': [init_obj.get_structure_type(), ''],
@@ -930,14 +930,14 @@ def create_new_structure_obj(init_obj, x, fat_dict=None, fdwn = 1, fup = 0.5):
     :return:
     '''
     x_old = [init_obj.get_s(), init_obj.get_pl_thk(), init_obj.get_web_h() , init_obj.get_web_thk(),
-             init_obj.get_fl_w() ,init_obj.get_fl_thk(), init_obj.span, init_obj.girder_lg]
+             init_obj.get_fl_w() ,init_obj.get_fl_thk(), init_obj.get_span(), init_obj.get_lg()]
 
-    sigma_y1_new = stress_scaling(init_obj.sigma_y1, init_obj.get_pl_thk(), x[1], fdwn = fdwn, fup = fup)
-    sigma_y2_new = stress_scaling(init_obj.sigma_y2, init_obj.get_pl_thk(), x[1], fdwn = fdwn, fup = fup)
-    tau_xy_new = stress_scaling(init_obj.tau_xy, init_obj.get_pl_thk(), x[1],fdwn = fdwn, fup = fup)
-    sigma_x1_new = stress_scaling_area(init_obj.sigma_x1,sum(get_field_tot_area(x_old)),sum(get_field_tot_area(x)),
+    sigma_y1_new = stress_scaling(init_obj.get_sigma_y1(), init_obj.get_pl_thk(), x[1], fdwn = fdwn, fup = fup)
+    sigma_y2_new = stress_scaling(init_obj.get_sigma_y2(), init_obj.get_pl_thk(), x[1], fdwn = fdwn, fup = fup)
+    tau_xy_new = stress_scaling(init_obj.get_tau_xy(), init_obj.get_pl_thk(), x[1],fdwn = fdwn, fup = fup)
+    sigma_x1_new = stress_scaling_area(init_obj.get_sigma_x1(),sum(get_field_tot_area(x_old)),sum(get_field_tot_area(x)),
                                       fdwn = fdwn, fup = fup)
-    sigma_x2_new = stress_scaling_area(init_obj.sigma_x2,sum(get_field_tot_area(x_old)),sum(get_field_tot_area(x)),
+    sigma_x2_new = stress_scaling_area(init_obj.get_sigma_x2(),sum(get_field_tot_area(x_old)),sum(get_field_tot_area(x)),
                                       fdwn = fdwn, fup = fup)
 
     try:
@@ -945,8 +945,8 @@ def create_new_structure_obj(init_obj, x, fat_dict=None, fdwn = 1, fup = 0.5):
     except IndexError:
         stf_type = init_obj.get_stiffener_type()
 
-    main_dict = {'mat_yield': [init_obj.get_fy(), 'Pa'], 'span': [init_obj.span, 'm'],
-                 'mat_factor': [init_obj.Plate.mat_factor, ''],
+    main_dict = {'mat_yield': [init_obj.get_fy(), 'Pa'], 'span': [init_obj.get_span(), 'm'],
+                 'mat_factor': [init_obj.get_mat_factor(), 'Pa'],
                    'spacing': [x[0], 'm'], 'plate_thk': [x[1], 'm'], 'stf_web_height': [x[2], 'm'],
                    'stf_web_thk': [x[3], 'm'], 'stf_flange_width': [x[4], 'm'],
                    'stf_flange_thk': [x[5], 'm'], 'structure_type': [init_obj.get_structure_type(), ''],

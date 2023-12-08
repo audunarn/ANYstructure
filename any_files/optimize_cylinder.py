@@ -11,12 +11,10 @@ try:
     import any_files.main_application as main_application
     import any_files.optimize as op
     import any_files.example_data as test
-    import any_files.helper as hlp
 except ModuleNotFoundError:
     import ANYstructure.any_files.main_application as main_application
     import ANYstructure.any_files.optimize as op
     import ANYstructure.any_files.example_data as test
-    import ANYstructure.any_files.helper as hlp
 
 class CreateOptimizeCylinderWindow():
     '''
