@@ -1598,11 +1598,20 @@ class AllStructure():
     def get_method(self):
         gird_opt = ['Stf. pl. effective against sigma y', 'All sigma y to girder']
         #stf_opt = ['allowed', 'not allowed']
-        #if self.calculation_domain == "Flat plate, stiffened with girder":
-        if self._stiffened_plate_effective_aginst_sigy == gird_opt[0]:
-            return 1
+        # if self.calculation_domain == "Flat plate, stiffened with girder":
+        print(self._stiffened_plate_effective_aginst_sigy, gird_opt[0])
+        if self._stiffened_plate_effective_aginst_sigy == True:
+            self._stiffened_plate_effective_aginst_sigy = gird_opt[0]
+        elif self._stiffened_plate_effective_aginst_sigy == False:
+            self._stiffened_plate_effective_aginst_sigy = gird_opt[1]
+
+        if self.calculation_domain == "Flat plate, stiffened with girder":
+            if self._stiffened_plate_effective_aginst_sigy == gird_opt[0]:
+                return 1
+            else:
+                return 2
         else:
-            return 2
+            return 1
         # else:
         #     if self._tension_field_action == stf_opt[0]:
         #         return 1

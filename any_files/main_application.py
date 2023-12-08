@@ -6940,7 +6940,6 @@ class Application():
         if os.path.isfile(os.path.join(self._root_dir, '../backup.txt')):
             self.openfile(defined=os.path.join(self._root_dir, '../backup.txt'))
 
-
     def open_example(self, file_name = 'ship_section_example.txt'):
         ''' Open the example file. To be used in help menu. '''
         if os.path.isfile(file_name) :
