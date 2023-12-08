@@ -148,12 +148,6 @@ class FlatStru():
         self._FlatStructure._panel_length_Lp = panel_length_Lp
         self._FlatStructure._stf_end_support = stiffener_support
         self._FlatStructure._girder_end_support = girder_support
-    def get_ml_buckling(self, lateral_pressure,):
-        sp_or_up = 'UP' if self._calculation_domain == "Flat plate, unstiffened" else 'SP'
-        print(sp_or_up )
-        ml_input = self._FlatStructure.Stiffener.get_buckling_ml_input(design_lat_press=lateral_pressure,
-                                                                       sp_or_up=sp_or_up, alone=True, csr=True)
-        print(ml_input)
 
 
 
@@ -317,7 +311,6 @@ class CylStru():
     def get_buckling_results(self):
         return self._CylinderMain.get_utilization_factors()
 
-
 if __name__ == '__main__':
     # my_cyl = CylStru(geometry_type='Orthogonally Stiffened shell')
     # my_cyl.set_stresses(sasd=-271354000, tQsd=4788630, shsd=-11228200)
@@ -336,17 +329,16 @@ if __name__ == '__main__':
     # my_cyl.set_shell_buckling_parmeters()
     # my_cyl.get_buckling_results()
     for var in [True, False]:
-        my_flat = FlatStru("Flat plate, stiffened")
+        my_flat = FlatStru("Flat plate, stiffened with girder")
         my_flat.set_material()
         my_flat.set_plate_geometry()
         my_flat.set_loads(sigma_x1=50, sigma_x2=50, sigma_y1=50, sigma_y2=50, pressure=0.01)
         my_flat.set_stiffener()
-        #my_flat.set_girder()
+        my_flat.set_girder()
         print('stiffened_plate_effective_aginst_sigy', var)
         my_flat.set_buckling_parameters(calculation_method='DNV-RP-C201 - prescriptive', buckling_acceptance='buckling',
                                         stiffened_plate_effective_aginst_sigy=var)
-        #my_flat.get_buckling_results()
-        my_flat.get_ml_buckling(lateral_pressure=0.01)
+        my_flat.get_buckling_results()
         print(' ')
 
 
