@@ -120,7 +120,7 @@ class Structure():
         self._web_height = val / 1000
     @property # in mm
     def tw(self):
-        assert self._web_th is not None, 'Variable missing: self._web_th'
+        assert self._web_th is not None, 'Variable missing: self._web_th - web thickness'
         return self._web_th * 1000
     @tw.setter # in mm
     def tw(self, val):
