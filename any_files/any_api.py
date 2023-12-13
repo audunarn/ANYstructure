@@ -82,9 +82,9 @@ class FlatStru():
         :param emodule: elastic module, E
         :type emodule: float
         :param material_factor: material factor, typically 1.15 or 1.1
-        :type material_factor:float
+        :type material_factor: float
         :param poisson: poisson number of matieral
-        :type poisson:float
+        :type poisson: float
         :return:
         :rtype:
         '''
@@ -101,11 +101,11 @@ class FlatStru():
         '''
 
         :param spacing: stiffener spacing
-        :type spacing:float
+        :type spacing: float
         :param thickness: plate thickness
-        :type thickness:float
+        :type thickness: float
         :param span: span of plate field
-        :type span:float
+        :type span: float
         :return:
         :rtype:
         '''
@@ -119,17 +119,17 @@ class FlatStru():
         '''
 
         :param pressure: Lateral load / pressure: Psd
-        :type pressure:float
+        :type pressure: float
         :param sigma_x1: Longitudinal compr.: sx,sd
-        :type sigma_x1:float
+        :type sigma_x1: float
         :param sigma_x2: Longitudinal compr.: sx2,sd
-        :type sigma_x2:float
+        :type sigma_x2: float
         :param sigma_y1: Transverse compress.: sy,sd
-        :type sigma_y1:float
+        :type sigma_y1: float
         :param sigma_y2: Transverse compress.: sy2,sd
-        :type sigma_y2:float
+        :type sigma_y2: float
         :param tau_xy: Shear Stress: txy
-        :type tau_xy:float
+        :type tau_xy: float
         :return:
         :rtype:
         '''
@@ -146,7 +146,7 @@ class FlatStru():
         self._FlatStructure.lat_press = pressure
         
     def set_stiffener(self, hw: float = 0.26*1000, tw: float = 0.012*1000, bf: float = 0.049*1000,
-                                   tf: float = 0.027330027*1000, stf_type: str = 'bulb', spacing:float = 0.608*1000):
+                                   tf: float = 0.027330027*1000, stf_type: str = 'bulb', spacing: float = 0.608*1000):
         '''
         
         :param hw: stiffer web height, mm
@@ -175,7 +175,7 @@ class FlatStru():
 
 
     def set_girder(self, hw: float = 500, tw: float = 15, bf: float = 200,
-                                   tf: float = 25, stf_type: str = 'T', spacing:float = 700):
+                                   tf: float = 25, stf_type: str = 'T', spacing: float = 700):
         '''
         
         :param hw: stiffer web height, mm
@@ -211,25 +211,25 @@ class FlatStru():
         '''
 
         :param calculation_method: 'DNV-RP-C201 - prescriptive', 'ML-CL (PULS based)'
-        :type calculation_method:str
+        :type calculation_method: str
         :param buckling_acceptance: for ML-CL calculations, either 'buckling' or 'ultimate'
-        :type buckling_acceptance:
+        :type buckling_acceptance: str
         :param stiffened_plate_effective_aginst_sigy:
         :type stiffened_plate_effective_aginst_sigy:
         :param min_lat_press_adj_span: relative pressure applied on adjacent spans
-        :type min_lat_press_adj_span:float
+        :type min_lat_press_adj_span: float
         :param buckling_length_factor_stf:  Buckling length factor: , kstiff
-        :type buckling_length_factor_stf:float
+        :type buckling_length_factor_stf: float
         :param buckling_length_factor_girder: Buckling length factor:  kstiff
-        :type buckling_length_factor_girder:float
+        :type buckling_length_factor_girder: float
         :param stf_dist_between_lateral_supp:  Distance between tripping brackets: lT
         :type stf_dist_between_lateral_supp: float
         :param girder_dist_between_lateral_supp: Dist.betw.lateral supp.: Ltg
-        :type girder_dist_between_lateral_supp:float
+        :type girder_dist_between_lateral_supp: float
         :param panel_length_Lp: Panel length (max.no stiff spans*l): Lp
-        :type panel_length_Lp:float
+        :type panel_length_Lp: float
         :param stiffener_support: continuous or sniped at ends
-        :type stiffener_support:str
+        :type stiffener_support: str
         :param girder_support: continuous or sniped at ends
         :type girder_support: str
         :return:
@@ -259,7 +259,6 @@ class FlatStru():
 class CylStru():
     ''' API class for all cylinder options.
      Geometries are:
-
     'Unstiffened shell'
     'Unstiffened panel'
     'Longitudinal Stiffened shell'
@@ -268,28 +267,6 @@ class CylStru():
     'Ring Stiffened panel'
     'Orthogonally Stiffened shell'
     'Orthogonally Stiffened panel'
-
-    shell_main_dict = {'sasd': [-10e6, 'Pa'],
-                     'smsd': [-10e6, 'Pa'],
-                     'tTsd': [40* 1e6, 'Pa'],
-                     'tQsd': [40* 1e6, 'Pa'],
-                     'psd': [-0.1e6, 'Pa'],
-                     'shsd': [0, 'Pa'],
-                     'geometry': [3, '-'],
-                     'material factor': [1.15, ''],
-                     'delta0': [0.005, ''],
-                     'fab method ring stf': [1, ''],
-                     'fab method ring girder': [1, ''],
-                     'E-module': [2.1e11, 'Pa'],
-                     'poisson': [0.3, '-'],
-                     'mat_yield': [355 * 1e6, 'Pa'],
-                   'length between girders' : [None, 'm'],
-                   'panel spacing, s' : [2, 'm'],
-                   'ring stf excluded' : [False, ''],
-                   'ring frame excluded' : [True, ''],
-                   'end cap pressure': ['not included in axial stresses', ''],
-                   'ULS or ALS': ['ULS', '']}
-
      '''
 
     geotypes = ['Unstiffened shell', 'Unstiffened panel',
@@ -331,17 +308,17 @@ class CylStru():
         '''
 
         :param sasd: Design axial stress, sa,sd
-        :type sasd:float
+        :type sasd: float
         :param smsd: Design bending stress, sm,sd
-        :type smsd:float
+        :type smsd: float
         :param tTsd: Design torsional stress, tT,sd
-        :type tTsd:float
+        :type tTsd: float
         :param tQsd: Design shear stress, tQ,sd
-        :type tQsd:float
+        :type tQsd: float
         :param psd: Design lateral pressure, psd
-        :type psd:float
+        :type psd: float
         :param shsd: Additional hoop stress, sh,sd
-        :type shsd:float
+        :type shsd: float
         :return:
         :rtype:
         '''
@@ -361,9 +338,9 @@ class CylStru():
         :param emodule: elastic module, E
         :type emodule: float
         :param material_factor: material factor, typically 1.15 or 1.1
-        :type material_factor:float
+        :type material_factor: float
         :param poisson: poisson number of matieral
-        :type poisson:float
+        :type poisson: float
         :return:
         :rtype:
         '''
@@ -479,7 +456,6 @@ class CylStru():
 
     def set_shell_buckling_parmeters(self, eff_buckling_length_factor: float = 1.0):
         '''
-
         :param eff_buckling_length_factor: effective length factor, column buckling
         :type eff_buckling_length_factor: float
         :return:
@@ -488,7 +464,7 @@ class CylStru():
         self._CylinderMain.ShellObj.k_factor = eff_buckling_length_factor
 
     def set_longitudinal_stiffener(self, hw: float = 0.26*1000, tw: float = 0.012*1000, bf: float = 0.049*1000,
-                                   tf: float = 0.027330027*1000, stf_type: str = 'bulb', spacing:float = 0.608*1000):
+                                   tf: float = 0.027330027*1000, stf_type: str = 'bulb', spacing: float = 0.608*1000):
         '''
         :param hw: web height
         :type hw: float
@@ -501,7 +477,7 @@ class CylStru():
         :param stf_type: stiffener type, either T, FB, L or L-bulb
         :type stf_type: string
         :param spacing: distance between stiffeners
-        :type spacing:float
+        :type spacing: float
 
         '''
         self._CylinderMain.LongStfObj.hw = hw
@@ -513,7 +489,7 @@ class CylStru():
         self._CylinderMain.LongStfObj.t = self._CylinderMain.ShellObj.thk
 
     def set_ring_stiffener(self, hw: float = 0.26*1000, tw: float = 0.012*1000, bf: float = 0.049*1000,
-                                   tf: float = 0.027330027*1000, stf_type: str = 'bulb', spacing:float = 0.608*1000):
+                                   tf: float = 0.027330027*1000, stf_type: str = 'bulb', spacing: float = 0.608*1000):
         '''
 
         :param hw: web height
@@ -527,7 +503,7 @@ class CylStru():
         :param stf_type: stiffener type, either T, FB, L or L-bulb
         :type stf_type: string
         :param spacing: distance between stiffeners
-        :type spacing:float
+        :type spacing: float
         :return:
         :rtype:
         '''
@@ -540,7 +516,7 @@ class CylStru():
         self._CylinderMain.RingStfObj.t = self._CylinderMain.ShellObj.thk
 
     def set_ring_girder(self, hw: float = 500, tw: float = 15, bf: float = 200,
-                                   tf: float = 25, stf_type: str = 'T', spacing:float = 700):
+                                   tf: float = 25, stf_type: str = 'T', spacing: float = 700):
         '''
 
         :param hw: web height
@@ -554,7 +530,7 @@ class CylStru():
         :param stf_type: stiffener type, either T, FB, L or L-bulb
         :type stf_type: string
         :param spacing: distance between stiffeners
-        :type spacing:float
+        :type spacing: float
         :return:
         :rtype:
         '''
@@ -573,34 +549,34 @@ class CylStru():
         return self._CylinderMain.get_utilization_factors()
 
 if __name__ == '__main__':
-    my_cyl = CylStru(geometry_type='Orthogonally Stiffened shell')
-    my_cyl.set_stresses(sasd=-271354000, tQsd=4788630, shsd=-11228200)
-    my_cyl.set_material()
-    my_cyl.set_imperfection()
-    my_cyl.set_fabrication_method()
-    my_cyl.set_end_cap_pressure_included_in_stress()
-    my_cyl.set_uls_or_als()
-    my_cyl.set_exclude_ring_stiffener()
-    my_cyl.set_length_between_girder(val=3.300)
-    my_cyl.set_panel_spacing(val=0.680)
-    my_cyl.set_shell_geometry(radius=6.500,thickness=0.024, tot_length_of_shell=20.000, distance_between_rings=3.300)
-    my_cyl.get_buckling_results()
-    my_cyl.set_longitudinal_stiffener()
-    my_cyl.set_ring_girder()
-    my_cyl.set_shell_buckling_parmeters()
-    my_cyl.get_buckling_results()
-    for var in [True, False]:
-        my_flat = FlatStru("Flat plate, stiffened with girder")
-        my_flat.set_material()
-        my_flat.set_plate_geometry()
-        my_flat.set_loads(sigma_x1=50, sigma_x2=50, sigma_y1=50, sigma_y2=50, pressure=0.01)
-        my_flat.set_stiffener()
-        my_flat.set_girder()
-        print('stiffened_plate_effective_aginst_sigy', var)
-        my_flat.set_buckling_parameters(calculation_method='DNV-RP-C201 - prescriptive', buckling_acceptance='buckling',
-                                        stiffened_plate_effective_aginst_sigy=var)
-        my_flat.get_buckling_results()
-        print(' ')
+    pass
+    # my_cyl = CylStru(geometry_type='Orthogonally Stiffened shell')
+    # my_cyl.set_stresses(sasd=-271354000, tQsd=4788630, shsd=-11228200)
+    # my_cyl.set_material()
+    # my_cyl.set_imperfection()
+    # my_cyl.set_fabrication_method()
+    # my_cyl.set_end_cap_pressure_included_in_stress()
+    # my_cyl.set_uls_or_als()
+    # my_cyl.set_exclude_ring_stiffener()
+    # my_cyl.set_length_between_girder(val=3.300)
+    # my_cyl.set_panel_spacing(val=0.680)
+    # my_cyl.set_shell_geometry(radius=6.500,thickness=0.024, tot_length_of_shell=20.000, distance_between_rings=3.300)
+    # my_cyl.get_buckling_results()
+    # my_cyl.set_longitudinal_stiffener()
+    # my_cyl.set_ring_girder()
+    # my_cyl.set_shell_buckling_parmeters()
+    # my_cyl.get_buckling_results()
+    #
+    # my_flat = FlatStru("Flat plate, stiffened with girder")
+    # my_flat.set_material()
+    # my_flat.set_plate_geometry()
+    # my_flat.set_loads(sigma_x1=50, sigma_x2=50, sigma_y1=50, sigma_y2=50, pressure=0.01)
+    # my_flat.set_stiffener()
+    # my_flat.set_girder()
+    # my_flat.set_buckling_parameters(calculation_method='DNV-RP-C201 - prescriptive', buckling_acceptance='buckling',
+    #                                 stiffened_plate_effective_aginst_sigy=True)
+    # my_flat.get_buckling_results()
+
 
 
 
