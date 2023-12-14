@@ -13,7 +13,7 @@
 import os
 import sys
 
-
+sys.path.insert(0, "..")
 
 # -- Project information -----------------------------------------------------
 
@@ -27,13 +27,34 @@ author = 'Audun Arnesen Nyhus'
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc']
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.mathjax",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.viewcode",
+    "matplotlib.sphinxext.plot_directive",
+]
+autoapi_template_dir = "_templates/autoapi"
+# autodoc config
+autodoc_member_order = "bysource"
+autodoc_typehints = "both"
+autodoc_typehints_description_target = "documented_params"
+
+# napoleon config
+napoleon_numpy_docstring = False
+napoleon_include_init_with_doc = True
+napoleon_use_admonition_for_examples = True
+napoleon_use_ivar = True
+
+#extensions = ['sphinx.ext.autodoc']
 extensions.append('autoapi.extension')
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 autoapi_file_patterns = ['*api*.py',]
-autoapi_dirs = ['C:\\Github\\ANYstructure\\any_files\\', ]
+autoapi_dirs = ['../any_files', ]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
