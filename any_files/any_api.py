@@ -77,6 +77,8 @@ class FlatStru():
 
     def set_material(self, mat_yield = 355e6, emodule = 2.1e11, material_factor = 1.15, poisson = 0.3):
         '''
+        Set the material properties for all structure.
+
         :param mat_yield: material yield, given in Pa
         :type mat_yield: float
         :param emodule: elastic module, E
@@ -99,6 +101,8 @@ class FlatStru():
 
     def set_plate_geometry(self, spacing: float = 0.7, thickness: float = 0.02, span: float = 4.0):
         '''
+        Set the properties of plate. If the plate is stiffened, spacing is between the stiffeners. If the plate
+        is not unstiffened, the spacing is the width of the considered plate.
 
         :param spacing: stiffener spacing
         :type spacing: float
@@ -475,7 +479,7 @@ class CylStru():
         :param tf: flange thickness
         :type tf: float
         :param stf_type: stiffener type, either T, FB, L or L-bulb
-        :type stf_type: string
+        :type stf_type: str
         :param spacing: distance between stiffeners
         :type spacing: float
 
@@ -501,7 +505,7 @@ class CylStru():
         :param tf: flange thickness
         :type tf: float
         :param stf_type: stiffener type, either T, FB, L or L-bulb
-        :type stf_type: string
+        :type stf_type: str
         :param spacing: distance between stiffeners
         :type spacing: float
         :return:
@@ -528,7 +532,7 @@ class CylStru():
         :param tf: flange thickness
         :type tf: float
         :param stf_type: stiffener type, either T, FB, L or L-bulb
-        :type stf_type: string
+        :type stf_type: str
         :param spacing: distance between stiffeners
         :type spacing: float
         :return:
