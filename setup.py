@@ -41,7 +41,7 @@ setup(
         'Topic :: Scientific/Engineering'],
     keywords='dnvgl-gl-os-c101 naval_architecture structural_engineering steel buckling fatigue local_scantlings optimization weight',
     include_package_data=True,
-    install_requires=['scipy', 'numpy', 'matplotlib', 'reportlab', 'xlwings', 'scikit-learn'],
+    install_requires=['scipy', 'numpy', 'matplotlib', 'reportlab', 'xlwings', 'scikit-learn', 'sphinx-autoapi'],
     packages=['any_files'],
     py_modules = [],
 )
