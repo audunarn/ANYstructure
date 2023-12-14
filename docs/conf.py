@@ -52,7 +52,7 @@ napoleon_use_ivar = True
 extensions.append('autoapi.extension')
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+
 autoapi_file_patterns = ['*api*.py',]
 autoapi_dirs = ['../any_files', ]
 
