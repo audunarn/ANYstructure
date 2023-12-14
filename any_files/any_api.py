@@ -39,10 +39,10 @@ except ModuleNotFoundError:
 
 class FlatStru():
     '''
-    API class for all flat plates.
-    Domains:
-    1. 'Flat plate, unstiffened'
-    2. 'Flat plate, stiffened'
+    API class for all flat plates.\n
+    Domains:\n
+    1. 'Flat plate, unstiffened'\n
+    2. 'Flat plate, stiffened'\n
     '''
     def __init__(self, calculation_domain: str = None):
         '''
@@ -654,22 +654,22 @@ class CylStru():
 
 if __name__ == '__main__':
     pass
-    my_cyl = CylStru(geometry_type='Orthogonally Stiffened shell')
-    my_cyl.set_stresses(sasd=-200, tQsd=5, shsd=-60)
-    my_cyl.set_material(mat_yield=355, emodule=210000, material_factor=1.15, poisson=0.3)
-    my_cyl.set_imperfection()
-    my_cyl.set_fabrication_method()
-    my_cyl.set_end_cap_pressure_included_in_stress()
-    my_cyl.set_uls_or_als()
-    my_cyl.set_exclude_ring_stiffener()
-    my_cyl.set_length_between_girder(val=3300)
-    my_cyl.set_panel_spacing(val=680)
-    my_cyl.set_shell_geometry(radius=6500,thickness=24, tot_length_of_shell=20000, distance_between_rings=3300)
-    my_cyl.set_longitudinal_stiffener(hw=260, tw=23, bf=49, tf=28, spacing=680)
-    my_cyl.set_ring_girder(hw=500, tw=15, bf=200, tf=25, stf_type='T', spacing=700)
-    my_cyl.set_shell_buckling_parmeters()
-    my_cyl.get_buckling_results()
-    #
+    # my_cyl = CylStru(geometry_type='Orthogonally Stiffened shell')
+    # my_cyl.set_stresses(sasd=-200, tQsd=5, shsd=-60)
+    # my_cyl.set_material(mat_yield=355, emodule=210000, material_factor=1.15, poisson=0.3)
+    # my_cyl.set_imperfection()
+    # my_cyl.set_fabrication_method()
+    # my_cyl.set_end_cap_pressure_included_in_stress()
+    # my_cyl.set_uls_or_als()
+    # my_cyl.set_exclude_ring_stiffener()
+    # my_cyl.set_length_between_girder(val=3300)
+    # my_cyl.set_panel_spacing(val=680)
+    # my_cyl.set_shell_geometry(radius=6500,thickness=24, tot_length_of_shell=20000, distance_between_rings=3300)
+    # my_cyl.set_longitudinal_stiffener(hw=260, tw=23, bf=49, tf=28, spacing=680)
+    # my_cyl.set_ring_girder(hw=500, tw=15, bf=200, tf=25, stf_type='T', spacing=700)
+    # my_cyl.set_shell_buckling_parmeters()
+    # my_cyl.get_buckling_results()
+    # #
     # my_flat = FlatStru("Flat plate, stiffened with girder")
     # my_flat.set_material(mat_yield=355, emodule=210000, material_factor=1.15, poisson=0.3)
     # my_flat.set_plate_geometry()
