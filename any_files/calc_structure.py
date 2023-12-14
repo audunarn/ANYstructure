@@ -1599,7 +1599,7 @@ class AllStructure():
         gird_opt = ['Stf. pl. effective against sigma y', 'All sigma y to girder']
         #stf_opt = ['allowed', 'not allowed']
         # if self.calculation_domain == "Flat plate, stiffened with girder":
-        print(self._stiffened_plate_effective_aginst_sigy, gird_opt[0])
+
         if self._stiffened_plate_effective_aginst_sigy == True:
             self._stiffened_plate_effective_aginst_sigy = gird_opt[0]
         elif self._stiffened_plate_effective_aginst_sigy == False:
@@ -3747,7 +3747,7 @@ class CylinderAndCurvedPlate():
         psd = self._psd/1e6
         shsd = unstiffened_shell['shsd']
 
-
+        #print(h, hw, tw, b, tf, s, r, l, L, sasd, smsd, shsd)
         lightly_stf = s/t > math.sqrt(r/t)
         provide_data = dict()
 
@@ -3949,7 +3949,7 @@ class CylinderAndCurvedPlate():
         tsd = abs(self._tTsd/1e6 + self._tQsd/1e6)
         psd = self._psd/1e6
         shsd = psd * r / t
-
+        #print(t,h, hw, tw, b, tf, s, r, l, L, sasd, smsd, tsd, shsd)
         shell_buckling_data = self.shell_buckling(unstiffened_cylinder=unstf_shell_data) if\
             shell_bukcling_data is None else shell_bukcling_data
         data = self.unstiffened_shell() if unstf_shell_data is None else unstf_shell_data
@@ -4132,11 +4132,13 @@ class CylinderAndCurvedPlate():
         hw_div_tw = np.array(hw_div_tw)
 
         #parameters - [alpha, beta, leo, zeta, rf, r0, zt]
+
         req_hw_div_tw = list()
         for idx, obj in enumerate([self._RingStf, self._RingFrame]):
             if obj is None:
                 req_hw_div_tw.append(np.nan)
             else:
+                #print(shell_buckling_data['parameters'][idx][4],obj.tw, obj.hw, E, obj.hw, obj.b, obj.tf, fy)
                 to_append = np.nan if obj.b*obj.tf == 0 else 2/3*math.sqrt(shell_buckling_data['parameters'][idx][4]
                                                                                *(obj.tw*obj.hw)*E/
                                                                                (obj.hw*obj.b*obj.tf*fy))

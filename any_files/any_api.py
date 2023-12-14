@@ -74,14 +74,32 @@ class FlatStru():
     @calculation_domain.setter
     def calculation_domain(self, val):
         self._calculation_domain = val
+    @property
+    def Plate(self):
+        return self._Plate
+    @Plate.setter
+    def Plate(self, val):
+        self._Plate = val
+    @property
+    def Stiffeners(self):
+        return self._Stiffeners
+    @Stiffeners.setter
+    def Stiffeners(self, val):
+        self._Stiffeners = val
+    @property
+    def Girder(self):
+        return self._Girder
+    @Girder.setter
+    def Girder(self, val):
+        self._Girder = val
 
-    def set_material(self, mat_yield = 355e6, emodule = 2.1e11, material_factor = 1.15, poisson = 0.3):
+    def set_material(self, mat_yield = 355, emodule = 210000, material_factor = 1.15, poisson = 0.3):
         '''
         Set the material properties for all structure.
 
-        :param mat_yield: material yield, given in Pa
+        :param mat_yield: material yield, fy,  given in MPa
         :type mat_yield: float
-        :param emodule: elastic module, E
+        :param emodule: elastic module, E, given in MPa
         :type emodule: float
         :param material_factor: material factor, typically 1.15 or 1.1
         :type material_factor: float
@@ -90,8 +108,8 @@ class FlatStru():
         :return:
         :rtype:
         '''
-        self._FlatStructure.mat_yield = mat_yield
-        self._FlatStructure.E = emodule
+        self._FlatStructure.mat_yield = mat_yield*1e6
+        self._FlatStructure.E = emodule*1e6
         self._FlatStructure.v = poisson
         self._FlatStructure.mat_factor = material_factor
         self._Plate.mat_factor = material_factor
@@ -99,7 +117,8 @@ class FlatStru():
     def get_buckling_results(self):
         print(self._FlatStructure.plate_buckling())
 
-    def set_plate_geometry(self, spacing: float = 0.7, thickness: float = 0.02, span: float = 4.0):
+    def set_plate_geometry(self, spacing: float = 700, thickness: float = 20, span: float = 4000):
+
         '''
         Set the properties of plate. If the plate is stiffened, spacing is between the stiffeners. If the plate
         is not unstiffened, the spacing is the width of the considered plate.
@@ -110,29 +129,37 @@ class FlatStru():
         :type thickness: float
         :param span: span of plate field
         :type span: float
+
         :return:
         :rtype:
         '''
+
         self._FlatStructure.Plate.t = thickness
         self._FlatStructure.Plate.s = spacing
-        self._FlatStructure.Plate.span = span
-        self._FlatStructure.Plate.girder_lg = 10
+        self._FlatStructure.Plate.span = span/1000
+        self._FlatStructure.Plate.girder_lg = 10 # placeholder value
     
-    def set_loads(self, pressure: float = 0, sigma_x1: float = 0,sigma_x2: float = 0, sigma_y1: float = 0,
+    def set_stresses(self, pressure: float = 0, sigma_x1: float = 0,sigma_x2: float = 0, sigma_y1: float = 0,
                   sigma_y2: float = 0, tau_xy: float = 0):
         '''
+        Set loads applied on the plate sides.
+        x1 and y1 is on one side of the plate
+        x2 and y2 is the other side
+        tau_xy act uniformly on the plate field
+        Stresses are in MPA.
+        Use POSITIVE numbers for compression pressure, stresses and forces
 
-        :param pressure: Lateral load / pressure: Psd
+        :param pressure: Lateral load / pressure: Psd [MPa]
         :type pressure: float
-        :param sigma_x1: Longitudinal compr.: sx,sd
+        :param sigma_x1: Longitudinal compr.: sx,sd [MPa]
         :type sigma_x1: float
-        :param sigma_x2: Longitudinal compr.: sx2,sd
+        :param sigma_x2: Longitudinal compr.: sx2,sd [MPa]
         :type sigma_x2: float
-        :param sigma_y1: Transverse compress.: sy,sd
+        :param sigma_y1: Transverse compress.: sy,sd [MPa]
         :type sigma_y1: float
-        :param sigma_y2: Transverse compress.: sy2,sd
+        :param sigma_y2: Transverse compress.: sy2,sd [MPa]
         :type sigma_y2: float
-        :param tau_xy: Shear Stress: txy
+        :param tau_xy: Shear Stress: txy [MPa]
         :type tau_xy: float
         :return:
         :rtype:
@@ -148,11 +175,12 @@ class FlatStru():
         self._FlatStructure.Stiffener.sigma_y1 = sigma_y1
         self._FlatStructure.Stiffener.sigma_y2 = sigma_y2
         self._FlatStructure.lat_press = pressure
-        
-    def set_stiffener(self, hw: float = 0.26*1000, tw: float = 0.012*1000, bf: float = 0.049*1000,
-                                   tf: float = 0.027330027*1000, stf_type: str = 'bulb', spacing: float = 0.608*1000):
+
+    def set_stiffener(self, hw: float = 260, tw: float = 12, bf: float = 49,
+                                   tf: float = 27.3, stf_type: str = 'bulb', spacing: float = 608):
         '''
-        
+        Sets the stiffener properties.
+
         :param hw: stiffer web height, mm
         :type hw: float
         :param tw: stiffener web thickness, mm
@@ -181,7 +209,8 @@ class FlatStru():
     def set_girder(self, hw: float = 500, tw: float = 15, bf: float = 200,
                                    tf: float = 25, stf_type: str = 'T', spacing: float = 700):
         '''
-        
+        Sets the girder properties.
+
         :param hw: stiffer web height, mm
         :type hw: float
         :param tw: girder web thickness, mm
@@ -213,6 +242,8 @@ class FlatStru():
                                 panel_length_Lp: float = None, stiffener_support: str = 'Continuous',
                                 girder_support: str = 'Continuous'):
         '''
+        Various buckling realted parameters are set here. For details, see
+        DNV-RP-C201 Buckling strength of plated structures.
 
         :param calculation_method: 'DNV-RP-C201 - prescriptive', 'ML-CL (PULS based)'
         :type calculation_method: str
@@ -310,22 +341,65 @@ class CylStru():
 
     def set_stresses(self, sasd = 0, smsd = 0, tTsd = 0, tQsd = 0, psd = 0, shsd = 0):
         '''
+        Cylinder stresses.
+        Use negative numbers for compression pressure, stresses and forces.
 
-        :param sasd: Design axial stress, sa,sd
+        :param sasd: Design axial stress, sa,sd [MPa]
         :type sasd: float
-        :param smsd: Design bending stress, sm,sd
+        :param smsd: Design bending stress, sm,sd [MPa]
         :type smsd: float
-        :param tTsd: Design torsional stress, tT,sd
+        :param tTsd: Design torsional stress, tT,sd [MPa]
         :type tTsd: float
-        :param tQsd: Design shear stress, tQ,sd
+        :param tQsd: Design shear stress, tQ,sd [MPa]
         :type tQsd: float
-        :param psd: Design lateral pressure, psd
+        :param psd: Design lateral pressure, psd [MPa]
         :type psd: float
-        :param shsd: Additional hoop stress, sh,sd
+        :param shsd: Additional hoop stress, sh,sd [MPa]
         :type shsd: float
         :return:
         :rtype:
         '''
+
+        self._CylinderMain.sasd = sasd*1e6
+        self._CylinderMain.smsd = smsd*1e6
+        self._CylinderMain.tTsd = abs(tTsd*1e6)
+        self._CylinderMain.tQsd = abs(tQsd*1e6)
+        self._CylinderMain.psd = psd*1e6
+        self._CylinderMain.shsd = shsd*1e6
+
+    def set_forces(self, Nsd: float = 0, Msd: float = 0, Tsd: float = 0, Qsd: float = 0, psd: float = 0):
+        '''
+        Forces applied to cylinder.
+        Use negative numbers for compression pressure, stresses and forces.
+
+        :param Nsd: Design Axial force, Nsd [kN]
+        :param Msd: Design bending mom., Msd [kNm]
+        :param Tsd: Design torsional mom., Tsd [kNm]
+        :param Qsd: Design shear force, Qsd [kN]
+        :param psd: Design lateral pressure, psd [N/mm2]
+
+        :return:
+        '''
+        geomeries = {11: 'Flat plate, stiffened', 10: 'Flat plate, unstiffened',
+                     12: 'Flat plate, stiffened with girder',
+                     1: 'Unstiffened shell (Force input)', 2: 'Unstiffened panel (Stress input)',
+                     3: 'Longitudinal Stiffened shell  (Force input)', 4: 'Longitudinal Stiffened panel (Stress input)',
+                     5: 'Ring Stiffened shell (Force input)', 6: 'Ring Stiffened panel (Stress input)',
+                     7: 'Orthogonally Stiffened shell (Force input)', 8: 'Orthogonally Stiffened panel (Stress input)'}
+        geomeries_map = dict()
+        for key, value in geomeries.items():
+            geomeries_map[value] = key
+        geometry = geomeries_map[self._geometry_type]
+        forces = [Nsd, Msd, Tsd, Qsd]
+        sasd, smsd, tTsd, tQsd, shsd = hlp.helper_cylinder_stress_to_force_to_stress(
+            stresses=None, forces=forces, geometry=geometry, shell_t=self._CylinderMain.ShellObj.thk,
+            shell_radius=self._CylinderMain.ShellObj.radius,
+            shell_spacing= None if self._CylinderMain.LongStfObj is None else self._CylinderMain.LongStfObj.s,
+            hw=None if self._CylinderMain.LongStfObj is None else self._CylinderMain.LongStfObj.hw,
+            tw=None if self._CylinderMain.LongStfObj is None else self._CylinderMain.LongStfObj.tw,
+            b=None if self._CylinderMain.LongStfObj is None else self._CylinderMain.LongStfObj.b,
+            tf=None if self._CylinderMain.LongStfObj is None else self._CylinderMain.LongStfObj.tf,
+            CylinderAndCurvedPlate=CylinderAndCurvedPlate)
 
         self._CylinderMain.sasd = sasd
         self._CylinderMain.smsd = smsd
@@ -334,12 +408,14 @@ class CylStru():
         self._CylinderMain.psd = psd
         self._CylinderMain.shsd = shsd
 
-    def set_material(self, mat_yield = 355e6, emodule = 2.1e11, material_factor = 1.15, poisson = 0.3):
-        '''
 
-        :param mat_yield: material yield, given in Pa
+    def set_material(self, mat_yield = 355, emodule = 210000, material_factor = 1.15, poisson = 0.3):
+        '''
+        Set the material properties for all structure.
+
+        :param mat_yield: material yield, fy,  given in MPa
         :type mat_yield: float
-        :param emodule: elastic module, E
+        :param emodule: elastic module, E, given in MPa
         :type emodule: float
         :param material_factor: material factor, typically 1.15 or 1.1
         :type material_factor: float
@@ -348,12 +424,14 @@ class CylStru():
         :return:
         :rtype:
         '''
-        self._CylinderMain.mat_yield = mat_yield
-        self._CylinderMain.E = emodule
+        self._CylinderMain.mat_yield = mat_yield*1e6
+        self._CylinderMain.E = emodule*1e6
         self._CylinderMain.v = poisson
         self._CylinderMain.mat_factor = material_factor
     def set_imperfection(self, delta_0 = 0.005):
         '''
+        Initial out of roundness of stiffener: delta_0 * r
+        Typical value is set as default.
 
         :param delta_0: Initial out of roundness of stiffener
         :type delta_0: float
@@ -364,6 +442,7 @@ class CylStru():
 
     def set_fabrication_method(self, stiffener: str =  'Fabricated', girder: str = 'Fabricated'):
         '''
+        Fabrication method for stiffener and girder. Either 'Fabricated' or 'Cold formed'
 
         :param stiffener: set fabrication method of stiffeners, either 'Fabricated' or 'Cold formed'
         :type stiffener: str
@@ -378,6 +457,8 @@ class CylStru():
         self._CylinderMain.fab_method_ring_girder = girder
     def set_end_cap_pressure_included_in_stress(self, is_included: bool = True):
         '''
+        Cylinder may or may not have and end cap. If there is an end cap, and the stresses from pressure on this
+        is not included, ste this values to True.
 
         :param is_included: if this is not set, stresses due to end cap pressure for clyinder is set
         :type is_included: bool
@@ -387,6 +468,9 @@ class CylStru():
         self._CylinderMain.end_cap_pressure_included = is_included
     def set_uls_or_als(self, kind = 'ULS'):
         '''
+        This is used to calculate th resulting material factor.
+        ALS is Accidental Limit State
+        ULS is Ultimate Limit State
 
         :param kind: set load condition, either 'ULS' or 'ALS'
         :type kind: str
@@ -397,6 +481,8 @@ class CylStru():
         self._CylinderMain.uls_or_als = kind
     def set_exclude_ring_stiffener(self, is_excluded: bool = True):
         '''
+        If for example orthogonally stiffened cylinder is selected and there are no ring stiffeners, set this to True.
+        In this case only ring girders are included.
 
         :param is_excluded: set no ring stiffeners
         :type is_excluded: bool
@@ -406,6 +492,8 @@ class CylStru():
         self._CylinderMain._ring_stiffener_excluded = is_excluded
     def set_exclude_ring_frame(self, is_excluded: bool = True):
         '''
+        If for example orthogonally stiffened cylinder is selected and there are no ring girder, set this to True.
+        The resulting structure will then be only longitudinal and ring stiffeners.
 
         :param is_excluded: set no ring girders
         :type is_excluded: bool
@@ -416,6 +504,7 @@ class CylStru():
 
     def set_length_between_girder(self, val: float = 0):
         '''
+        Distance between the girders along the cylinder.
 
         :param val: length/span between girders
         :type val: float
@@ -425,16 +514,19 @@ class CylStru():
         self._CylinderMain.length_between_girders = val
     def set_panel_spacing(self, val: float = 0):
         '''
+        In case a curved panel is selected, not a complete cylinder, this value sets the width of the panel.
+
         :param val: spacing between stiffeners
         :type val: float
         :return:
         :rtype:
         '''
-        self._CylinderMain.panel_spacing = val
+        self._CylinderMain.panel_spacing = val/1000
 
     def set_shell_geometry(self, radius: float = 0, thickness: float = 0,distance_between_rings: float = 0,
                            tot_length_of_shell: float = 0):
         '''
+        Sets the baic parameters for the cylinder.
 
         :param radius: radius of cylinder
         :type radius: float
@@ -448,18 +540,20 @@ class CylStru():
         :rtype:
         '''
 
-        self._CylinderMain.ShellObj.radius = radius
-        self._CylinderMain.ShellObj.thk = thickness
-        self._CylinderMain.ShellObj.dist_between_rings = distance_between_rings
+        self._CylinderMain.ShellObj.radius = radius/1000
+        self._CylinderMain.ShellObj.thk = thickness/1000
+        self._CylinderMain.ShellObj.dist_between_rings = distance_between_rings/1000
         if tot_length_of_shell == 0:
             # Setting a default.
-            self._CylinderMain.ShellObj.length_of_shell = distance_between_rings * 10
-            self._CylinderMain.ShellObj.tot_cyl_length = distance_between_rings * 10
+            self._CylinderMain.ShellObj.length_of_shell = distance_between_rings * 10/1000
+            self._CylinderMain.ShellObj.tot_cyl_length = distance_between_rings * 10/1000
         else:
-            self._CylinderMain.ShellObj.tot_cyl_length = tot_length_of_shell
+            self._CylinderMain.ShellObj.tot_cyl_length = tot_length_of_shell/1000
 
     def set_shell_buckling_parmeters(self, eff_buckling_length_factor: float = 1.0):
         '''
+        Sets the buckling length paramenter of the cylinder. Used for global column buckling calculations.
+
         :param eff_buckling_length_factor: effective length factor, column buckling
         :type eff_buckling_length_factor: float
         :return:
@@ -467,9 +561,11 @@ class CylStru():
         '''
         self._CylinderMain.ShellObj.k_factor = eff_buckling_length_factor
 
-    def set_longitudinal_stiffener(self, hw: float = 0.26*1000, tw: float = 0.012*1000, bf: float = 0.049*1000,
-                                   tf: float = 0.027330027*1000, stf_type: str = 'bulb', spacing: float = 0.608*1000):
+    def set_longitudinal_stiffener(self, hw: float = 260, tw: float = 12, bf: float = 49,
+                                   tf: float = 28, stf_type: str = 'bulb', spacing: float = 680):
         '''
+        Sets the longitudinal stiffener dimensions. May be excluded.
+
         :param hw: web height
         :type hw: float
         :param tw: web thickness
@@ -492,9 +588,10 @@ class CylStru():
         self._CylinderMain.LongStfObj.s = spacing
         self._CylinderMain.LongStfObj.t = self._CylinderMain.ShellObj.thk
 
-    def set_ring_stiffener(self, hw: float = 0.26*1000, tw: float = 0.012*1000, bf: float = 0.049*1000,
-                                   tf: float = 0.027330027*1000, stf_type: str = 'bulb', spacing: float = 0.608*1000):
+    def set_ring_stiffener(self, hw: float = 260, tw: float = 12, bf: float = 49,
+                                   tf: float = 28, stf_type: str = 'bulb', spacing: float = 680):
         '''
+        Sets the ring stiffener dimensions. May be excluded.
 
         :param hw: web height
         :type hw: float
@@ -511,6 +608,8 @@ class CylStru():
         :return:
         :rtype:
         '''
+
+
         self._CylinderMain.RingStfObj.hw = hw
         self._CylinderMain.RingStfObj.tw = tw
         self._CylinderMain.RingStfObj.b = bf
@@ -522,6 +621,7 @@ class CylStru():
     def set_ring_girder(self, hw: float = 500, tw: float = 15, bf: float = 200,
                                    tf: float = 25, stf_type: str = 'T', spacing: float = 700):
         '''
+        Sets the ring girder dimensions. May be excluded.
 
         :param hw: web height
         :type hw: float
@@ -550,31 +650,30 @@ class CylStru():
 
     def get_buckling_results(self):
         ''''''
-        return self._CylinderMain.get_utilization_factors()
+        return print(self._CylinderMain.get_utilization_factors())
 
 if __name__ == '__main__':
     pass
-    # my_cyl = CylStru(geometry_type='Orthogonally Stiffened shell')
-    # my_cyl.set_stresses(sasd=-271354000, tQsd=4788630, shsd=-11228200)
-    # my_cyl.set_material()
-    # my_cyl.set_imperfection()
-    # my_cyl.set_fabrication_method()
-    # my_cyl.set_end_cap_pressure_included_in_stress()
-    # my_cyl.set_uls_or_als()
-    # my_cyl.set_exclude_ring_stiffener()
-    # my_cyl.set_length_between_girder(val=3.300)
-    # my_cyl.set_panel_spacing(val=0.680)
-    # my_cyl.set_shell_geometry(radius=6.500,thickness=0.024, tot_length_of_shell=20.000, distance_between_rings=3.300)
-    # my_cyl.get_buckling_results()
-    # my_cyl.set_longitudinal_stiffener()
-    # my_cyl.set_ring_girder()
-    # my_cyl.set_shell_buckling_parmeters()
-    # my_cyl.get_buckling_results()
+    my_cyl = CylStru(geometry_type='Orthogonally Stiffened shell')
+    my_cyl.set_stresses(sasd=-200, tQsd=5, shsd=-60)
+    my_cyl.set_material(mat_yield=355, emodule=210000, material_factor=1.15, poisson=0.3)
+    my_cyl.set_imperfection()
+    my_cyl.set_fabrication_method()
+    my_cyl.set_end_cap_pressure_included_in_stress()
+    my_cyl.set_uls_or_als()
+    my_cyl.set_exclude_ring_stiffener()
+    my_cyl.set_length_between_girder(val=3300)
+    my_cyl.set_panel_spacing(val=680)
+    my_cyl.set_shell_geometry(radius=6500,thickness=24, tot_length_of_shell=20000, distance_between_rings=3300)
+    my_cyl.set_longitudinal_stiffener(hw=260, tw=23, bf=49, tf=28, spacing=680)
+    my_cyl.set_ring_girder(hw=500, tw=15, bf=200, tf=25, stf_type='T', spacing=700)
+    my_cyl.set_shell_buckling_parmeters()
+    my_cyl.get_buckling_results()
     #
     # my_flat = FlatStru("Flat plate, stiffened with girder")
-    # my_flat.set_material()
+    # my_flat.set_material(mat_yield=355, emodule=210000, material_factor=1.15, poisson=0.3)
     # my_flat.set_plate_geometry()
-    # my_flat.set_loads(sigma_x1=50, sigma_x2=50, sigma_y1=50, sigma_y2=50, pressure=0.01)
+    # my_flat.set_stresses(sigma_x1=50, sigma_x2=50, sigma_y1=50, sigma_y2=50, pressure=0.01)
     # my_flat.set_stiffener()
     # my_flat.set_girder()
     # my_flat.set_buckling_parameters(calculation_method='DNV-RP-C201 - prescriptive', buckling_acceptance='buckling',
