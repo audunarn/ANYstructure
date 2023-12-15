@@ -4,4 +4,4 @@ anystructure
 .. toctree::
    :maxdepth: 4
 
-   anystructure
+   any_files.any_api

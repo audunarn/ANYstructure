@@ -115,7 +115,12 @@ class FlatStru():
         self._Plate.mat_factor = material_factor
 
     def get_buckling_results(self):
-        print(self._FlatStructure.plate_buckling())
+        '''
+        Return a dictionary of all buckling results.
+        :return:
+        :rtype:
+        '''
+        return  self._FlatStructure.plate_buckling()
 
     def set_plate_geometry(self, spacing: float = 700, thickness: float = 20, span: float = 4000):
 
@@ -292,49 +297,49 @@ class FlatStru():
 
 
 class CylStru():
-    ''' API class for all cylinder options.
-     Geometries are:
-    'Unstiffened shell'
-    'Unstiffened panel'
-    'Longitudinal Stiffened shell'
-    'Longitudinal Stiffened panel'
-    'Ring Stiffened shell'
-    'Ring Stiffened panel'
-    'Orthogonally Stiffened shell'
-    'Orthogonally Stiffened panel'
+    ''' API class for all cylinder options.\n
+     Calculation domains are:\n
+    1.  'Unstiffened shell'\n
+    2.  'Unstiffened panel'\n
+    3.  'Longitudinal Stiffened shell'\n
+    4.  'Longitudinal Stiffened panel'\n
+    5.  'Ring Stiffened shell'\n
+    6.  'Ring Stiffened panel'\n
+    7.  'Orthogonally Stiffened shell'\n
+    8.  'Orthogonally Stiffened panel'\n
      '''
 
     geotypes = ['Unstiffened shell', 'Unstiffened panel',
                 'Longitudinal Stiffened shell', 'Longitudinal Stiffened panel',
                 'Ring Stiffened shell', 'Ring Stiffened panel',
                 'Orthogonally Stiffened shell', 'Orthogonally Stiffened panel']
-    def __init__(self, geometry_type: str = 'Unstiffened shell'):
+    def __init__(self, calculation_domain: str = 'Unstiffened shell'):
         '''
-        :param geometry_type:   calculation domain, 'Unstiffened shell', 'Unstiffened panel',
+        :param calculation_domain:   calculation domain, 'Unstiffened shell', 'Unstiffened panel',
                                 'Longitudinal Stiffened shell', 'Longitudinal Stiffened panel', 'Ring Stiffened shell',
                                 'Ring Stiffened panel', 'Orthogonally Stiffened shell', 'Orthogonally Stiffened panel'
-        :type geometry_type: str
+        :type calculation_domain: str
         '''
         super().__init__()
-        assert geometry_type in self.geotypes, 'Geometry type must be either of: '+ str(self.geotypes)
-        self._load_type = 'Stress' if 'panel' in geometry_type else 'Force'
-        self._geometry_type = geometry_type + ' (' + self._load_type + ' input)'
+        assert calculation_domain in self.geotypes, 'Geometry type must be either of: '+ str(self.geotypes)
+        self._load_type = 'Stress' if 'panel' in calculation_domain else 'Force'
+        self._calculation_domain = calculation_domain + ' (' + self._load_type + ' input)'
         self._CylinderMain = CylinderAndCurvedPlate()
-        self._CylinderMain.geometry = CylinderAndCurvedPlate.geomeries_map_no_input_spec[geometry_type]
+        self._CylinderMain.geometry = CylinderAndCurvedPlate.geomeries_map_no_input_spec[calculation_domain]
         self._CylinderMain.ShellObj = Shell()
-        if  geometry_type in ['Unstiffened shell', 'Unstiffened panel']:
+        if  calculation_domain in ['Unstiffened shell', 'Unstiffened panel']:
             self._CylinderMain.LongStfObj = None
             self._CylinderMain.RingStfObj = None
             self._CylinderMain.RingFrameObj = None
-        elif geometry_type in ['Longitudinal Stiffened shell', 'Longitudinal Stiffened panel']:
+        elif calculation_domain in ['Longitudinal Stiffened shell', 'Longitudinal Stiffened panel']:
             self._CylinderMain.LongStfObj = Structure()
             self._CylinderMain.RingStfObj = None
             self._CylinderMain.RingFrameObj = None
-        elif geometry_type in ['Ring Stiffened shell', 'Ring Stiffened panel']:
+        elif calculation_domain in ['Ring Stiffened shell', 'Ring Stiffened panel']:
             self._CylinderMain.LongStfObj = None
             self._CylinderMain.RingStfObj = Structure()
             self._CylinderMain.RingFrameObj = None
-        elif geometry_type in ['Orthogonally Stiffened shell', 'Orthogonally Stiffened panel']:
+        elif calculation_domain in ['Orthogonally Stiffened shell', 'Orthogonally Stiffened panel']:
             self._CylinderMain.LongStfObj = Structure()
             self._CylinderMain.RingStfObj = None
             self._CylinderMain.RingFrameObj = Structure()
@@ -389,7 +394,7 @@ class CylStru():
         geomeries_map = dict()
         for key, value in geomeries.items():
             geomeries_map[value] = key
-        geometry = geomeries_map[self._geometry_type]
+        geometry = geomeries_map[self._calculation_domain]
         forces = [Nsd, Msd, Tsd, Qsd]
         sasd, smsd, tTsd, tQsd, shsd = hlp.helper_cylinder_stress_to_force_to_stress(
             stresses=None, forces=forces, geometry=geometry, shell_t=self._CylinderMain.ShellObj.thk,
@@ -649,12 +654,16 @@ class CylStru():
 
 
     def get_buckling_results(self):
-        ''''''
+        '''
+        Return a dict including all buckling results
+        :return:
+        :rtype:
+        '''
         return print(self._CylinderMain.get_utilization_factors())
 
 if __name__ == '__main__':
     pass
-    # my_cyl = CylStru(geometry_type='Orthogonally Stiffened shell')
+    # my_cyl = CylStru(calculation_domain='Orthogonally Stiffened shell')
     # my_cyl.set_stresses(sasd=-200, tQsd=5, shsd=-60)
     # my_cyl.set_material(mat_yield=355, emodule=210000, material_factor=1.15, poisson=0.3)
     # my_cyl.set_imperfection()
