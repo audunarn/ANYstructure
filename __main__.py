@@ -1,6 +1,6 @@
 import sys, multiprocessing, ctypes
 import tkinter as tk
-from any_files.main_application import Application
+from anystruct.main_application import Application
 
 def main(args=None):
     """The main routine."""

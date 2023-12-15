@@ -1,15 +1,15 @@
-import any_files.example_data as test
-from any_files.calc_loads import *
-from any_files.helper import *
+import anystruct.example_data as test
+from anystruct.calc_loads import *
+from anystruct.helper import *
 
 # try:
-#     import any_files.example_data as test
-#     from any_files.calc_loads import *
-#     from any_files.helper import *
+#     import anystruct.example_data as test
+#     from anystruct.calc_loads import *
+#     from anystruct.helper import *
 # except ModuleNotFoundError:
-#     import ANYstructure.any_files.example_data as test
-#     from ANYstructure.any_files.calc_loads import *
-#     from ANYstructure.any_files.helper import *
+#     import ANYstructure.anystruct.example_data as test
+#     from ANYstructure.anystruct.calc_loads import *
+#     from ANYstructure.anystruct.helper import *
 
 import tkinter as tk
 from tkinter import messagebox

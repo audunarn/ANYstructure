@@ -8,7 +8,7 @@ Subpackages
    :maxdepth: 4
 
    anystructure.PULS
-   anystructure.any_files
+   anystructure.anystruct
    anystructure.tests
 
 Submodules

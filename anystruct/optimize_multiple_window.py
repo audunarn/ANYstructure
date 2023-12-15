@@ -7,21 +7,21 @@ from tkinter.filedialog import askopenfilenames
 from multiprocessing import Pool, cpu_count
 
 try:
-    import any_files.main_application
-    import any_files.optimize as op
-    import any_files.example_data as test
-    from any_files.calc_structure import *
-    import any_files.calc_structure as calc
-    from any_files.helper import *
-    import any_files.optimize as opt
+    import anystruct.main_application
+    import anystruct.optimize as op
+    import anystruct.example_data as test
+    from anystruct.calc_structure import *
+    import anystruct.calc_structure as calc
+    from anystruct.helper import *
+    import anystruct.optimize as opt
 except ModuleNotFoundError:
-    import ANYstructure.any_files.main_application
-    import ANYstructure.any_files.optimize as op
-    import ANYstructure.any_files.example_data as test
-    from ANYstructure.any_files.calc_structure import *
-    import ANYstructure.any_files.calc_structure as calc
-    from ANYstructure.any_files.helper import *
-    import ANYstructure.any_files.optimize as opt
+    import ANYstructure.anystruct.main_application
+    import ANYstructure.anystruct.optimize as op
+    import ANYstructure.anystruct.example_data as test
+    from ANYstructure.anystruct.calc_structure import *
+    import ANYstructure.anystruct.calc_structure as calc
+    from ANYstructure.anystruct.helper import *
+    import ANYstructure.anystruct.optimize as opt
 
 
 def helper_harmonizer_multi(iterator):

@@ -7,7 +7,7 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   anystructure.any_files.images
+   anystructure.anystruct.images
 
 Submodules
 ----------
@@ -15,7 +15,7 @@ Submodules
 anystructure.any\_files.SN\_curve\_parameters module
 ----------------------------------------------------
 
-.. automodule:: anystructure.any_files.SN_curve_parameters
+.. automodule:: anystructure.anystruct.SN_curve_parameters
    :members:
    :undoc-members:
    :show-inheritance:
@@ -23,7 +23,7 @@ anystructure.any\_files.SN\_curve\_parameters module
 anystructure.any\_files.any\_api module
 ---------------------------------------
 
-.. automodule:: anystructure.any_files.any_api
+.. automodule:: anystructure.anystruct.any_api
    :members:
    :undoc-members:
    :show-inheritance:
@@ -31,7 +31,7 @@ anystructure.any\_files.any\_api module
 anystructure.any\_files.calc\_loads module
 ------------------------------------------
 
-.. automodule:: anystructure.any_files.calc_loads
+.. automodule:: anystructure.anystruct.calc_loads
    :members:
    :undoc-members:
    :show-inheritance:
@@ -39,7 +39,7 @@ anystructure.any\_files.calc\_loads module
 anystructure.any\_files.calc\_structure module
 ----------------------------------------------
 
-.. automodule:: anystructure.any_files.calc_structure
+.. automodule:: anystructure.anystruct.calc_structure
    :members:
    :undoc-members:
    :show-inheritance:
@@ -47,7 +47,7 @@ anystructure.any\_files.calc\_structure module
 anystructure.any\_files.compartment\_window module
 --------------------------------------------------
 
-.. automodule:: anystructure.any_files.compartment_window
+.. automodule:: anystructure.anystruct.compartment_window
    :members:
    :undoc-members:
    :show-inheritance:
@@ -55,7 +55,7 @@ anystructure.any\_files.compartment\_window module
 anystructure.any\_files.example\_data module
 --------------------------------------------
 
-.. automodule:: anystructure.any_files.example_data
+.. automodule:: anystructure.anystruct.example_data
    :members:
    :undoc-members:
    :show-inheritance:
@@ -63,7 +63,7 @@ anystructure.any\_files.example\_data module
 anystructure.any\_files.example\_data\_puls module
 --------------------------------------------------
 
-.. automodule:: anystructure.any_files.example_data_puls
+.. automodule:: anystructure.anystruct.example_data_puls
    :members:
    :undoc-members:
    :show-inheritance:
@@ -71,7 +71,7 @@ anystructure.any\_files.example\_data\_puls module
 anystructure.any\_files.excel\_inteface module
 ----------------------------------------------
 
-.. automodule:: anystructure.any_files.excel_inteface
+.. automodule:: anystructure.anystruct.excel_inteface
    :members:
    :undoc-members:
    :show-inheritance:
@@ -79,7 +79,7 @@ anystructure.any\_files.excel\_inteface module
 anystructure.any\_files.fatigue\_window module
 ----------------------------------------------
 
-.. automodule:: anystructure.any_files.fatigue_window
+.. automodule:: anystructure.anystruct.fatigue_window
    :members:
    :undoc-members:
    :show-inheritance:
@@ -87,7 +87,7 @@ anystructure.any\_files.fatigue\_window module
 anystructure.any\_files.grid\_window module
 -------------------------------------------
 
-.. automodule:: anystructure.any_files.grid_window
+.. automodule:: anystructure.anystruct.grid_window
    :members:
    :undoc-members:
    :show-inheritance:
@@ -95,7 +95,7 @@ anystructure.any\_files.grid\_window module
 anystructure.any\_files.helper module
 -------------------------------------
 
-.. automodule:: anystructure.any_files.helper
+.. automodule:: anystructure.anystruct.helper
    :members:
    :undoc-members:
    :show-inheritance:
@@ -103,7 +103,7 @@ anystructure.any\_files.helper module
 anystructure.any\_files.load\_factor\_window module
 ---------------------------------------------------
 
-.. automodule:: anystructure.any_files.load_factor_window
+.. automodule:: anystructure.anystruct.load_factor_window
    :members:
    :undoc-members:
    :show-inheritance:
@@ -111,7 +111,7 @@ anystructure.any\_files.load\_factor\_window module
 anystructure.any\_files.load\_window module
 -------------------------------------------
 
-.. automodule:: anystructure.any_files.load_window
+.. automodule:: anystructure.anystruct.load_window
    :members:
    :undoc-members:
    :show-inheritance:
@@ -119,7 +119,7 @@ anystructure.any\_files.load\_window module
 anystructure.any\_files.main\_application module
 ------------------------------------------------
 
-.. automodule:: anystructure.any_files.main_application
+.. automodule:: anystructure.anystruct.main_application
    :members:
    :undoc-members:
    :show-inheritance:
@@ -127,7 +127,7 @@ anystructure.any\_files.main\_application module
 anystructure.any\_files.make\_grid\_numpy module
 ------------------------------------------------
 
-.. automodule:: anystructure.any_files.make_grid_numpy
+.. automodule:: anystructure.anystruct.make_grid_numpy
    :members:
    :undoc-members:
    :show-inheritance:
@@ -135,7 +135,7 @@ anystructure.any\_files.make\_grid\_numpy module
 anystructure.any\_files.make\_queue module
 ------------------------------------------
 
-.. automodule:: anystructure.any_files.make_queue
+.. automodule:: anystructure.anystruct.make_queue
    :members:
    :undoc-members:
    :show-inheritance:
@@ -143,7 +143,7 @@ anystructure.any\_files.make\_queue module
 anystructure.any\_files.make\_stack module
 ------------------------------------------
 
-.. automodule:: anystructure.any_files.make_stack
+.. automodule:: anystructure.anystruct.make_stack
    :members:
    :undoc-members:
    :show-inheritance:
@@ -151,7 +151,7 @@ anystructure.any\_files.make\_stack module
 anystructure.any\_files.opt\_problem module
 -------------------------------------------
 
-.. automodule:: anystructure.any_files.opt_problem
+.. automodule:: anystructure.anystruct.opt_problem
    :members:
    :undoc-members:
    :show-inheritance:
@@ -159,7 +159,7 @@ anystructure.any\_files.opt\_problem module
 anystructure.any\_files.optimize module
 ---------------------------------------
 
-.. automodule:: anystructure.any_files.optimize
+.. automodule:: anystructure.anystruct.optimize
    :members:
    :undoc-members:
    :show-inheritance:
@@ -167,7 +167,7 @@ anystructure.any\_files.optimize module
 anystructure.any\_files.optimize\_cylinder module
 -------------------------------------------------
 
-.. automodule:: anystructure.any_files.optimize_cylinder
+.. automodule:: anystructure.anystruct.optimize_cylinder
    :members:
    :undoc-members:
    :show-inheritance:
@@ -175,7 +175,7 @@ anystructure.any\_files.optimize\_cylinder module
 anystructure.any\_files.optimize\_geometry module
 -------------------------------------------------
 
-.. automodule:: anystructure.any_files.optimize_geometry
+.. automodule:: anystructure.anystruct.optimize_geometry
    :members:
    :undoc-members:
    :show-inheritance:
@@ -183,7 +183,7 @@ anystructure.any\_files.optimize\_geometry module
 anystructure.any\_files.optimize\_multiple\_window module
 ---------------------------------------------------------
 
-.. automodule:: anystructure.any_files.optimize_multiple_window
+.. automodule:: anystructure.anystruct.optimize_multiple_window
    :members:
    :undoc-members:
    :show-inheritance:
@@ -191,7 +191,7 @@ anystructure.any\_files.optimize\_multiple\_window module
 anystructure.any\_files.optimize\_window module
 -----------------------------------------------
 
-.. automodule:: anystructure.any_files.optimize_window
+.. automodule:: anystructure.anystruct.optimize_window
    :members:
    :undoc-members:
    :show-inheritance:
@@ -199,7 +199,7 @@ anystructure.any\_files.optimize\_window module
 anystructure.any\_files.pl\_stf\_window module
 ----------------------------------------------
 
-.. automodule:: anystructure.any_files.pl_stf_window
+.. automodule:: anystructure.anystruct.pl_stf_window
    :members:
    :undoc-members:
    :show-inheritance:
@@ -207,7 +207,7 @@ anystructure.any\_files.pl\_stf\_window module
 anystructure.any\_files.report\_generator module
 ------------------------------------------------
 
-.. automodule:: anystructure.any_files.report_generator
+.. automodule:: anystructure.anystruct.report_generator
    :members:
    :undoc-members:
    :show-inheritance:
@@ -215,7 +215,7 @@ anystructure.any\_files.report\_generator module
 anystructure.any\_files.sesam\_interface module
 -----------------------------------------------
 
-.. automodule:: anystructure.any_files.sesam_interface
+.. automodule:: anystructure.anystruct.sesam_interface
    :members:
    :undoc-members:
    :show-inheritance:
@@ -223,7 +223,7 @@ anystructure.any\_files.sesam\_interface module
 anystructure.any\_files.stresses\_window module
 -----------------------------------------------
 
-.. automodule:: anystructure.any_files.stresses_window
+.. automodule:: anystructure.anystruct.stresses_window
    :members:
    :undoc-members:
    :show-inheritance:
@@ -231,7 +231,7 @@ anystructure.any\_files.stresses\_window module
 anystructure.any\_files.testCalc module
 ---------------------------------------
 
-.. automodule:: anystructure.any_files.testCalc
+.. automodule:: anystructure.anystruct.testCalc
    :members:
    :undoc-members:
    :show-inheritance:
@@ -239,7 +239,7 @@ anystructure.any\_files.testCalc module
 Module contents
 ---------------
 
-.. automodule:: anystructure.any_files
+.. automodule:: anystructure.anystruct
    :members:
    :undoc-members:
    :show-inheritance:

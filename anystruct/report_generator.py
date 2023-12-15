@@ -21,11 +21,11 @@ from matplotlib import colors as matplotlib_colors
 import tkinter as tk
 
 try:
-    import any_files.example_data as test
-    import any_files.helper as hlp
+    import anystruct.example_data as test
+    import anystruct.helper as hlp
 except ModuleNotFoundError:
-    import ANYstructure.any_files.example_data as test
-    import ANYstructure.any_files.helper as hlp
+    import ANYstructure.anystruct.example_data as test
+    import ANYstructure.anystruct.helper as hlp
 
 
 

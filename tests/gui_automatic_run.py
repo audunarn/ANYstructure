@@ -1,4 +1,4 @@
-from any_files import main_application
+from anystruct import main_application
 import multiprocessing, ctypes, os, pickle
 import tkinter as tk
 
@@ -47,26 +47,26 @@ for name, file_base in zip(['cl SP buc int predictor', 'cl SP buc int scaler',
                                     'CSR predictor UP', 'CSR scaler UP',
                                     'CSR predictor SP', 'CSR scaler SP'
                                     ],
-                                   ["any_files\\ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_1_SP",
-                                    "any_files\\ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_1_SP",
-                                    "any_files\\ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_1_SP",
-                                    "any_files\\ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_1_SP",
-                                    "any_files\\ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_SP",
-                                    "any_files\\ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_SP",
-                                    "any_files\\ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_SP",
-                                    "any_files\\ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_SP",
-                                    "any_files\\ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_1_UP",
-                                    "any_files\\ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_1_UP",
-                                    "any_files\\ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_1_UP",
-                                    "any_files\\ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_1_UP",
-                                    "any_files\\ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_UP",
-                                    "any_files\\ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_UP",
-                                    "any_files\\ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_UP",
-                                    "any_files\\ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_UP",
-                                    "any_files\\ml_files\\CL_CSR-Tank_req_cl_predictor",
-                                    "any_files\\ml_files\\CL_CSR-Tank_req_cl_UP_scaler",
-                                    "any_files\\ml_files\\CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_predictor",
-                                    "any_files\\ml_files\\CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_SP_scaler"]):
+                                   ["anystruct\\ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_1_SP",
+                                    "anystruct\\ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_1_SP",
+                                    "anystruct\\ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_1_SP",
+                                    "anystruct\\ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_1_SP",
+                                    "anystruct\\ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_SP",
+                                    "anystruct\\ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_SP",
+                                    "anystruct\\ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_SP",
+                                    "anystruct\\ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_SP",
+                                    "anystruct\\ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_1_UP",
+                                    "anystruct\\ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_1_UP",
+                                    "anystruct\\ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_1_UP",
+                                    "anystruct\\ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_1_UP",
+                                    "anystruct\\ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_UP",
+                                    "anystruct\\ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_UP",
+                                    "anystruct\\ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_UP",
+                                    "anystruct\\ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_UP",
+                                    "anystruct\\ml_files\\CL_CSR-Tank_req_cl_predictor",
+                                    "anystruct\\ml_files\\CL_CSR-Tank_req_cl_UP_scaler",
+                                    "anystruct\\ml_files\\CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_predictor",
+                                    "anystruct\\ml_files\\CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_SP_scaler"]):
     my_dict['_ML_buckling'][name] = None
 
     if os.path.isfile('C:\\Github\\ANYstructure\\'+file_base + '.pickle'):

@@ -1,5 +1,5 @@
 import pytest
-from any_files import example_data as ex, calc_structure as calc
+from anystruct import example_data as ex, calc_structure as calc
 
 
 # Testing the Structure class

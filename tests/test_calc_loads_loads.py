@@ -1,4 +1,4 @@
-from any_files import calc_loads as calcl, example_data as ex
+from anystruct import calc_loads as calcl, example_data as ex
 import pytest
 
 
