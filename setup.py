@@ -39,7 +39,7 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3.11',
         'Topic :: Scientific/Engineering'],
-    keywords='dnvgl-gl-os-c101 naval_architecture structural_engineering steel buckling fatigue local_scantlings optimization weight',
+    keywords='dnv-gl-os-c101 dnv-rp-c202 dnv-rp-c201 naval_architecture structural_engineering steel buckling fatigue local_scantlings optimization weight',
     include_package_data=True,
     install_requires=['scipy', 'numpy', 'matplotlib', 'reportlab', 'xlwings', 'scikit-learn'],
     packages=['anystruct'],
