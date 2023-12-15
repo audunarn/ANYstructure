@@ -27,7 +27,7 @@ setup(
     name='ANYstructure',  # Required
     url = 'https://github.com/audunarn/ANYstructure',
     entry_points={"console_scripts": ['ANYstructure = anystruct.__main__:main']},
-    version='4.10',  # Required
+    version='5.0.0',  # Required
     license='MIT',
     description='A plate field optimization tool for offshore structures calculated according to DNV standards',
     long_description = readme(),
@@ -41,7 +41,7 @@ setup(
         'Topic :: Scientific/Engineering'],
     keywords='dnvgl-gl-os-c101 naval_architecture structural_engineering steel buckling fatigue local_scantlings optimization weight',
     include_package_data=True,
-    install_requires=['scipy', 'numpy', 'matplotlib', 'reportlab', 'xlwings', 'scikit-learn', 'sphinx-autoapi'],
+    install_requires=['scipy', 'numpy', 'matplotlib', 'reportlab', 'xlwings', 'scikit-learn'],
     packages=['anystruct'],
     py_modules = [],
 )
