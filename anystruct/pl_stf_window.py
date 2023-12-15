@@ -5,11 +5,11 @@ from tkinter.ttk import Combobox
 import os
 
 try:
-    import any_files.example_data as test
-    import any_files.helper as hlp
+    import anystruct.example_data as test
+    import anystruct.helper as hlp
 except ModuleNotFoundError:
-    import ANYstructure.any_files.example_data as test
-    import ANYstructure.any_files.helper as hlp
+    import ANYstructure.anystruct.example_data as test
+    import ANYstructure.anystruct.helper as hlp
 
 
 from matplotlib.backends.backend_tkagg import (
@@ -393,7 +393,7 @@ class CreateStructureWindow():
         Read a list.
         '''
         from tkinter import filedialog
-        import any_files.helper as hlp
+        import anystruct.helper as hlp
         from pathlib import Path
 
         file = filedialog.askopenfile('r')
@@ -410,7 +410,7 @@ class CreateStructureWindow():
         '''
         Read a list.
         '''
-        import any_files.helper as hlp
+        import anystruct.helper as hlp
         if pathlib.Path('bulb_anglebar_tbar_flatbar.csv').exists():
             libfile = 'bulb_anglebar_tbar_flatbar.csv'
         else:

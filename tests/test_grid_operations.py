@@ -1,5 +1,5 @@
 import pytest
-from any_files import make_grid_numpy as grid_np, grid_window as grid_operations
+from anystruct import make_grid_numpy as grid_np, grid_window as grid_operations
 
 
 # Testing the Structure class

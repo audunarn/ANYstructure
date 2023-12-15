@@ -5,9 +5,9 @@ import tkinter as tk
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 try:
-    import any_files.test
+    import anystruct.test
 except ModuleNotFoundError:
-    import ANYstructure.any_files.test
+    import ANYstructure.anystruct.test
 import numpy as np
 
 class CreateCompartmentWindow():

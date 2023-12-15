@@ -8,9 +8,9 @@ import matplotlib.animation as animation
 
 
 try:
-    import any_files.example_data as test
+    import anystruct.example_data as test
 except ModuleNotFoundError:
-    import ANYstructure.any_files.example_data as test
+    import ANYstructure.anystruct.example_data as test
 
 
 def dist(p, q):

@@ -10,19 +10,19 @@ from tkinter import filedialog
 from matplotlib import pyplot as plt
 
 try:
-    import any_files.main_application
-    import any_files.optimize as op
-    import any_files.example_data as test
-    from any_files.calc_structure import *
-    import any_files.calc_structure
-    from any_files.helper import *
+    import anystruct.main_application
+    import anystruct.optimize as op
+    import anystruct.example_data as test
+    from anystruct.calc_structure import *
+    import anystruct.calc_structure
+    from anystruct.helper import *
 except ModuleNotFoundError:
-    import ANYstructure.any_files.main_application
-    import ANYstructure.any_files.optimize as op
-    import ANYstructure.any_files.example_data as test
-    from ANYstructure.any_files.calc_structure import *
-    import ANYstructure.any_files.calc_structure
-    from ANYstructure.any_files.helper import *
+    import ANYstructure.anystruct.main_application
+    import ANYstructure.anystruct.optimize as op
+    import ANYstructure.anystruct.example_data as test
+    from ANYstructure.anystruct.calc_structure import *
+    import ANYstructure.anystruct.calc_structure
+    from ANYstructure.anystruct.helper import *
 
 
 class CreateOptGeoWindow():

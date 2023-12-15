@@ -1,40 +1,40 @@
 try:
-    from any_files.calc_structure import *
-    from any_files.calc_loads import *
-    import any_files.load_window as load_window
-    import any_files.make_grid_numpy as grid
-    import any_files.grid_window as grid_window
-    from any_files.helper import *
-    import any_files.optimize as op
-    import any_files.optimize_window as opw
-    import any_files.optimize_cylinder as opc
-    import any_files.optimize_multiple_window as opwmult
-    import any_files.optimize_geometry as optgeo
-    import any_files.pl_stf_window as struc
-    import any_files.stresses_window as stress
-    import any_files.fatigue_window as fatigue
-    import any_files.load_factor_window as load_factors
-    from any_files.report_generator import LetterMaker
-    import any_files.sesam_interface as sesam
+    from anystruct.calc_structure import *
+    from anystruct.calc_loads import *
+    import anystruct.load_window as load_window
+    import anystruct.make_grid_numpy as grid
+    import anystruct.grid_window as grid_window
+    from anystruct.helper import *
+    import anystruct.optimize as op
+    import anystruct.optimize_window as opw
+    import anystruct.optimize_cylinder as opc
+    import anystruct.optimize_multiple_window as opwmult
+    import anystruct.optimize_geometry as optgeo
+    import anystruct.pl_stf_window as struc
+    import anystruct.stresses_window as stress
+    import anystruct.fatigue_window as fatigue
+    import anystruct.load_factor_window as load_factors
+    from anystruct.report_generator import LetterMaker
+    import anystruct.sesam_interface as sesam
 except ModuleNotFoundError:
     # This is due to pyinstaller issues.
-    from ANYstructure.any_files.calc_structure import *
-    from ANYstructure.any_files.calc_loads import *
-    import ANYstructure.any_files.load_window as load_window
-    import ANYstructure.any_files.make_grid_numpy as grid
-    import ANYstructure.any_files.grid_window as grid_window
-    from ANYstructure.any_files.helper import *
-    import ANYstructure.any_files.optimize as op
-    import ANYstructure.any_files.optimize_window as opw
-    import ANYstructure.any_files.optimize_cylinder as opc
-    import ANYstructure.any_files.optimize_multiple_window as opwmult
-    import ANYstructure.any_files.optimize_geometry as optgeo
-    import ANYstructure.any_files.pl_stf_window as struc
-    import ANYstructure.any_files.stresses_window as stress
-    import ANYstructure.any_files.fatigue_window as fatigue
-    import ANYstructure.any_files.load_factor_window as load_factors
-    from ANYstructure.any_files.report_generator import LetterMaker
-    import ANYstructure.any_files.sesam_interface as sesam
+    from ANYstructure.anystruct.calc_structure import *
+    from ANYstructure.anystruct.calc_loads import *
+    import ANYstructure.anystruct.load_window as load_window
+    import ANYstructure.anystruct.make_grid_numpy as grid
+    import ANYstructure.anystruct.grid_window as grid_window
+    from ANYstructure.anystruct.helper import *
+    import ANYstructure.anystruct.optimize as op
+    import ANYstructure.anystruct.optimize_window as opw
+    import ANYstructure.anystruct.optimize_cylinder as opc
+    import ANYstructure.anystruct.optimize_multiple_window as opwmult
+    import ANYstructure.anystruct.optimize_geometry as optgeo
+    import ANYstructure.anystruct.pl_stf_window as struc
+    import ANYstructure.anystruct.stresses_window as stress
+    import ANYstructure.anystruct.fatigue_window as fatigue
+    import ANYstructure.anystruct.load_factor_window as load_factors
+    from ANYstructure.anystruct.report_generator import LetterMaker
+    import ANYstructure.anystruct.sesam_interface as sesam
 
 
 class FlatStru():

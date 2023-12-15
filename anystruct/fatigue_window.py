@@ -2,11 +2,11 @@
 import tkinter as tk
 
 try:
-    import any_files.example_data as test
-    import any_files.SN_curve_parameters as sn
+    import anystruct.example_data as test
+    import anystruct.SN_curve_parameters as sn
 except ModuleNotFoundError:
-    import ANYstructure.any_files.example_data as test
-    import ANYstructure.any_files.SN_curve_parameters as sn
+    import ANYstructure.anystruct.example_data as test
+    import ANYstructure.anystruct.SN_curve_parameters as sn
 
 
 class CreateFatigueWindow():

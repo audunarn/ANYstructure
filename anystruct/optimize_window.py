@@ -8,17 +8,17 @@ from tkinter.filedialog import askopenfilenames
 from multiprocessing import cpu_count
 
 try:
-    from any_files.calc_structure import CalcScantlings, AllStructure
-    import any_files.example_data as test
-    import any_files.example_data as ex
-    import any_files.helper as hlp
-    import any_files.optimize as op
+    from anystruct.calc_structure import CalcScantlings, AllStructure
+    import anystruct.example_data as test
+    import anystruct.example_data as ex
+    import anystruct.helper as hlp
+    import anystruct.optimize as op
 except ModuleNotFoundError:
-    from ANYstructure.any_files.calc_structure import CalcScantlings, AllStructure
-    import ANYstructure.any_files.example_data as test
-    import ANYstructure.any_files.example_data as ex
-    import ANYstructure.any_files.helper as hlp
-    import ANYstructure.any_files.optimize as op
+    from ANYstructure.anystruct.calc_structure import CalcScantlings, AllStructure
+    import ANYstructure.anystruct.example_data as test
+    import ANYstructure.anystruct.example_data as ex
+    import ANYstructure.anystruct.helper as hlp
+    import ANYstructure.anystruct.optimize as op
 class CreateOptimizeWindow():
     '''
     This class initiates the single optimization window.

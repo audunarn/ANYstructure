@@ -33,7 +33,7 @@ extensions = ['sphinx.ext.autodoc', 'autodocsumm', 'sphinx.ext.autosectionlabel'
 # Add any paths that contain templates here, relative to this directory.
 
 autoapi_file_patterns = ['*api*.py',]
-autoapi_dirs = ['../any_files', ]
+autoapi_dirs = ['../anystruct', ]
 
 autoapi_template_dir = '_templates'
 # List of patterns, relative to source directory, that match files and

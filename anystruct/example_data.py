@@ -1,13 +1,13 @@
 # This scripts provide dtat to be used for testing the code
 
 try:
-    import any_files.calc_loads as load
-    import any_files.calc_structure as calc_structure
-    import any_files.make_grid_numpy as grid
+    import anystruct.calc_loads as load
+    import anystruct.calc_structure as calc_structure
+    import anystruct.make_grid_numpy as grid
 except ModuleNotFoundError:
-    import ANYstructure.any_files.calc_loads as load
-    import ANYstructure.any_files.calc_structure as calc_structure
-    import ANYstructure.any_files.make_grid_numpy as grid
+    import ANYstructure.anystruct.calc_loads as load
+    import ANYstructure.anystruct.calc_structure as calc_structure
+    import ANYstructure.anystruct.make_grid_numpy as grid
 
 import random
 

@@ -8,15 +8,15 @@ from tkinter.filedialog import askopenfilenames
 from multiprocessing import cpu_count
 
 try:
-    import any_files.main_application as main_application
-    import any_files.optimize as op
-    import any_files.example_data as test
-    import any_files.helper as hlp
+    import anystruct.main_application as main_application
+    import anystruct.optimize as op
+    import anystruct.example_data as test
+    import anystruct.helper as hlp
 except ModuleNotFoundError:
-    import ANYstructure.any_files.main_application as main_application
-    import ANYstructure.any_files.optimize as op
-    import ANYstructure.any_files.example_data as test
-    import ANYstructure.any_files.helper as hlp
+    import ANYstructure.anystruct.main_application as main_application
+    import ANYstructure.anystruct.optimize as op
+    import ANYstructure.anystruct.example_data as test
+    import ANYstructure.anystruct.helper as hlp
 
 class CreateOptimizeCylinderWindow():
     '''
@@ -27,7 +27,7 @@ class CreateOptimizeCylinderWindow():
         super(CreateOptimizeCylinderWindow,self).__init__()
         if __name__ == '__main__':
             import pickle
-            import any_files.calc_structure as calc
+            import anystruct.calc_structure as calc
             self._initial_structure_obj = test.get_structure_calc_object(heavy=True)
             self._initial_calc_obj = test.get_structure_calc_object(heavy=True)
             self._fatigue_object = test.get_fatigue_object()
