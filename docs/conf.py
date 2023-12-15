@@ -28,15 +28,13 @@ author = 'Audun Arnesen Nyhus'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 
-extensions = ['sphinx.ext.autodoc', 'autodocsumm', 'sphinx.ext.autosectionlabel']
-extensions.append('autoapi.extension')
-autodoc_default_options = {'autosummary': True}
+extensions = ['sphinx.ext.autodoc', 'autodocsumm', 'sphinx.ext.autosectionlabel', 'sphinx.ext.intersphinx']
 
 # Add any paths that contain templates here, relative to this directory.
 
 autoapi_file_patterns = ['*api*.py',]
 autoapi_dirs = ['../any_files', ]
-autoapi_generate_api_docs = True
+
 autoapi_template_dir = '_templates'
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
