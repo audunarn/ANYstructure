@@ -4,7 +4,6 @@ ANYstructure API
 ``ANYstructure`` API Classes
 -----------------------------
 
-
 .. autoclass:: any_files.any_api.FlatStru
     :members:
     :autosummary:
