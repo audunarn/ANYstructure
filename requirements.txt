@@ -4,5 +4,3 @@ reportlab
 scipy
 xlwings
 sklearn
-sphinx-autoapi
-autodocsumm
