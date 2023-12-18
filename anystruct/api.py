@@ -338,13 +338,13 @@ class FlatStru():
 
     def get_special_provisions_results(self):
         '''
-        Special provisions for plating and stiffeners in steel structures.
-        Return a dictionary:
-
-        'Plate thickness' : The thickness of plates shall not be less than this check.
-        'Stiffener section modulus' : The section modulus for longitudinals, beams, frames and other stiffeners
-                                      subjected to lateral pressure shall not be less than this check.
-        'Stiffener shear area' : The shear area of the plate/stiffener shall not be less than this ckeck.
+        Special provisions for plating and stiffeners in steel structures.\n
+        Return a dictionary:\n
+        \n
+        'Plate thickness' : The thickness of plates shall not be less than this check.\n
+        'Stiffener section modulus' : The section modulus for longitudinals, beams, frames and other stiffeners\n
+                                      subjected to lateral pressure shall not be less than this check.\n
+        'Stiffener shear area' : The shear area of the plate/stiffener shall not be less than this ckeck.\n
         :return: minium dimensions and actual dimensions for the current structure in mm/mm^2/mm^3
         :rtype: dict
         '''
