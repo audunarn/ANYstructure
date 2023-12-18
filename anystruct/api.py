@@ -659,10 +659,10 @@ class CylStru():
         :return:
         :rtype:
         '''
-        return print(self._CylinderMain.get_utilization_factors())
+        return self._CylinderMain.get_utilization_factors()
 
 if __name__ == '__main__':
-    pass
+
     # my_cyl = CylStru(calculation_domain='Orthogonally Stiffened shell')
     # my_cyl.set_stresses(sasd=-200, tQsd=5, shsd=-60)
     # my_cyl.set_material(mat_yield=355, emodule=210000, material_factor=1.15, poisson=0.3)
@@ -677,17 +677,21 @@ if __name__ == '__main__':
     # my_cyl.set_longitudinal_stiffener(hw=260, tw=23, bf=49, tf=28, spacing=680)
     # my_cyl.set_ring_girder(hw=500, tw=15, bf=200, tf=25, stf_type='T', spacing=700)
     # my_cyl.set_shell_buckling_parmeters()
-    # my_cyl.get_buckling_results()
+    # for key, val in my_cyl.get_buckling_results().items():
+    #     print(key, val)
+    #print(my_cyl.get_buckling_results())
     # #
-    # my_flat = FlatStru("Flat plate, stiffened with girder")
-    # my_flat.set_material(mat_yield=355, emodule=210000, material_factor=1.15, poisson=0.3)
-    # my_flat.set_plate_geometry()
-    # my_flat.set_stresses(sigma_x1=50, sigma_x2=50, sigma_y1=50, sigma_y2=50, pressure=0.01)
-    # my_flat.set_stiffener()
-    # my_flat.set_girder()
-    # my_flat.set_buckling_parameters(calculation_method='DNV-RP-C201 - prescriptive', buckling_acceptance='buckling',
-    #                                 stiffened_plate_effective_aginst_sigy=True)
-    # my_flat.get_buckling_results()
+    my_flat = FlatStru("Flat plate, stiffened with girder")
+    my_flat.set_material(mat_yield=355, emodule=210000, material_factor=1.15, poisson=0.3)
+    my_flat.set_plate_geometry()
+    my_flat.set_stresses(sigma_x1=50, sigma_x2=50, sigma_y1=50, sigma_y2=50, pressure=0.01)
+    my_flat.set_stiffener()
+    my_flat.set_girder()
+    my_flat.set_buckling_parameters(calculation_method='DNV-RP-C201 - prescriptive', buckling_acceptance='buckling',
+                                    stiffened_plate_effective_aginst_sigy=True)
+    for key, val in my_flat.get_buckling_results().items():
+        print(key, val)
+    #my_flat.get_buckling_results()
 
 
 

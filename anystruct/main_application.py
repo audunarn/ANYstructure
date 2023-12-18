@@ -4815,28 +4815,44 @@ class Application():
                 results = cyl_obj.get_utilization_factors()
 
                 for key, value in results.items():
-                    if key in ['Weight', 'Need to check column buckling']:
+                    if key in ['Weight', 'Need to check column buckling', 'Column stability UF']:
                         continue
 
                     if all([key != 'Stiffener check', key != 'Stiffener check detailed']):
                         text_key = key
                         if key == 'Column stability check':
                             if 'Need to check column buckling' in results.keys():
+                                txt_type = 'Text 10'
                                 if results['Need to check column buckling'] == False:
-                                    continue
-                            text_value = 'N/A' if value is None else 'OK' if value else 'Not ok'
+                                    if results['Column stability UF'] is None:
+                                        text_value = 'N/A'
+                                    else:
+                                        text_value = ('Column buckling does not need to be checked, but UF = ' +
+                                                      str(round(results['Column stability UF'],2)))
+                                    uf_col = 'green'
+                                else:
+                                    if results['Column stability UF'] is None:
+                                        text_value = 'N/A'
+                                    else:
+                                        text_value = 'Column buckling need to be checked, UF = ' + str(
+                                            round(results['Column stability UF'], 2))
+                                    uf_col = 'red'
                         else:
                             text_value = 'N/A' if value is None else str(round(value, 2))
 
-                        if value is None:
-                            uf_col = 'grey'
-                        else:
-                            uf_col = 'red' if any([value > 1, value == False]) else 'green'
+                        if key != 'Column stability check':
+                            txt_type = 'Text 10 bold'
+                            if value is None:
+                                uf_col = 'grey'
+                            else:
+                                uf_col = 'red' if any([value > 1, value == False]) else 'green'
+
+
                         self._result_canvas.create_text([x*1, y+dy*y_location],
-                                                       text=text_key,font=self._text_size['Text 10 bold'],anchor='nw',
+                                                       text=text_key,font=self._text_size[txt_type],anchor='nw',
                                                     fill = self._color_text)
                         self._result_canvas.create_text([dx*20, dy*y_location],
-                                                       text=text_value,font=self._text_size['Text 10 bold'],anchor='nw',
+                                                       text=text_value,font=self._text_size[txt_type],anchor='nw',
                                                         fill=uf_col)
                     elif key == 'Stiffener check':
 

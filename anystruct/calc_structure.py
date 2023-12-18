@@ -3006,6 +3006,7 @@ class CylinderAndCurvedPlate():
                    'Ring stiffened shell': None,
                    'Heavy ring frame': None,
                    'Column stability check': None,
+                   'Column stability UF': None,
                    'Stiffener check': None,
                    'Stiffener check detailed': None,
                    'Weight': None}
@@ -3040,6 +3041,7 @@ class CylinderAndCurvedPlate():
                                                                      unstiffened_shell=unstiffend_shell)
 
                 results['Column stability check'] = column_buckling_data['Column stability check']
+                results['Column stability UF']  = column_buckling_data['Column stability UF']
                 results['Need to check column buckling'] = column_buckling_data['Need to check column buckling']
                 results['Stiffener check'] = column_buckling_data['stiffener check']
                 results['Stiffener check detailed'] = column_buckling_data['stiffener check detailed']
@@ -3065,6 +3067,7 @@ class CylinderAndCurvedPlate():
                 ring_stf_shell = self.ring_stiffened_shell(data_shell_buckling=data_shell_buckling,
                                                            column_buckling_data=column_buckling_data)
                 results['Column stability check'] = column_buckling_data['Column stability check']
+                results['Column stability UF'] = column_buckling_data['Column stability UF']
                 results['Need to check column buckling'] = column_buckling_data['Need to check column buckling']
                 results['Stiffener check'] = column_buckling_data['stiffener check']
                 results['Stiffener check detailed'] = column_buckling_data['stiffener check detailed']
@@ -3090,6 +3093,7 @@ class CylinderAndCurvedPlate():
                     self.ring_stiffened_shell(data_shell_buckling=data_shell_buckling,
                                               column_buckling_data=column_buckling_data)
                 results['Column stability check'] = column_buckling_data['Column stability check']
+                results['Column stability UF'] = column_buckling_data['Column stability UF']
                 results['Need to check column buckling'] = column_buckling_data['Need to check column buckling']
                 results['Stiffener check'] = column_buckling_data['stiffener check']
                 results['Stiffener check detailed'] = column_buckling_data['stiffener check detailed']
@@ -4085,8 +4089,10 @@ class CylinderAndCurvedPlate():
         sa0sd = -sasd if sasd<0 else 0
 
         if fakd*fkcd > 0:
-            stab_chk = sa0sd/fkcd + (abs(smsd) / (1-sa0sd/fE))/fakd <= 1
+            stab_uf = sa0sd/fkcd + (abs(smsd) / (1-sa0sd/fE))/fakd
+            stab_chk = stab_uf <= 1
         else:
+            stab_uf = 10
             stab_chk = True
 
         #print("Stability requirement satisfied") if stab_chk else print("Not acceptable")
@@ -4210,6 +4216,7 @@ class CylinderAndCurvedPlate():
                                                    else ''}
 
         provide_data['Column stability check'] = stab_chk
+        provide_data['Column stability UF'] = stab_uf
 
         return provide_data
 
