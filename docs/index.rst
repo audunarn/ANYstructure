@@ -8,6 +8,10 @@ Welcome to ANYstructure's documentation!
 
 This page mainly document the API.
 
+The API is accessed by importing the API module:
+
+import anystruct.api as anyapi
+
 For GUI documentation, see the following link:
 
 `ANYstructure GUI documentation <https://sites.google.com/view/anystructure/documentation>`_

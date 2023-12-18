@@ -4375,7 +4375,7 @@ class Application():
         if CylObj.LongStfObj is not None:
             long_obj = CylObj.LongStfObj
 
-            num_stf = int(1000 * 2*math.pi*CylObj.ShellObj.radius / long_obj.s / 2)
+            num_stf = int(1000 * 2*math.pi*CylObj.ShellObj.radius / long_obj.spacing / 2)
             for line_num in range(1, num_stf, 1):
                 angle = 180 - 180 / (num_stf) * line_num
                 arc_x, arc_y = 1 * math.cos(math.radians(angle)), 0.5 * math.sin(math.radians(angle))
@@ -7576,11 +7576,11 @@ class Application():
         Open a about messagebox.
         :return:
         '''
-        messagebox.showinfo(title='Information', message='ANYstructure 4.x (Stable/Production)'
+        messagebox.showinfo(title='Information', message='ANYstructure 5.x.x (Stable/Production)'
                                                          '\n'
                                                          '\n'
                                                          'By Audun Arnesen Nyhus \n'
-                                                         '2022\n\n'
+                                                         '2023/2024\n\n'
                                                          'All technical calculation based on \n'
                                                          'DNV RPs and standards')
 

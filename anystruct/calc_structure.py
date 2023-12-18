@@ -2830,7 +2830,7 @@ class CylinderAndCurvedPlate():
         ring_string = 'N/A' if self._RingStf is None else self._RingStf.get_beam_string()
         frame_string = 'N/A' if self._RingFrame is None else self._RingFrame.get_beam_string()
         s = max([self._Shell.dist_between_rings, 2*math.pi*self._Shell.radius])*1000 if self._LongStf == None else \
-            self._LongStf.s
+            self._LongStf.spacing
 
         return \
             str(
@@ -3023,7 +3023,7 @@ class CylinderAndCurvedPlate():
         # UF for unstiffened shell
         unstiffend_shell = self.unstiffened_shell(shell_data=data_shell_buckling)
 
-        s = self._panel_spacing*1000 if self._LongStf is None else self._LongStf.s
+        s = self._panel_spacing*1000 if self._LongStf is None else self._LongStf.spacing
 
         if any([self._geometry in [1, 5], s > self._Shell.dist_between_rings*1000]):
             uf_unstf_shell = unstiffend_shell['UF unstiffened circular cylinder']
@@ -3280,7 +3280,7 @@ class CylinderAndCurvedPlate():
         # get correct s
 
         s = min([self._Shell.dist_between_rings, 2*math.pi*self._Shell.radius])*1000 if self._LongStf == None else \
-            self._LongStf.s
+            self._LongStf.spacing
         v = self._v
         r = self._Shell.radius*1000
         l = self._Shell.dist_between_rings * 1000
@@ -3576,7 +3576,7 @@ class CylinderAndCurvedPlate():
         E = self._E/1e6
         t = self._Shell.thk*1000
         s = min([self._Shell.dist_between_rings, 2*math.pi*self._Shell.radius])*1000 if self._LongStf == None else \
-            self._LongStf.s
+            self._LongStf.spacing
 
         r = self._Shell.radius*1000
         l = self._Shell.dist_between_rings * 1000
@@ -3742,7 +3742,7 @@ class CylinderAndCurvedPlate():
         E = self._E/1e6
         t = self._Shell.thk*1000
         s = max([self._Shell.dist_between_rings, 2*math.pi*self._Shell.radius])*1000 if self._LongStf == None else \
-            self._LongStf.s
+            self._LongStf.spacing
         v = self._v
         r = self._Shell.radius*1000
         l = self._Shell.dist_between_rings * 1000
@@ -3943,7 +3943,7 @@ class CylinderAndCurvedPlate():
         E = self._E/1e6
         t = self._Shell.thk*1000
         s = max([self._Shell.dist_between_rings, 2*math.pi*self._Shell.radius])*1000 if self._LongStf == None else \
-            self._LongStf.s
+            self._LongStf.spacing
         v = self._v
         r = self._Shell.radius*1000
         l = self._Shell.dist_between_rings * 1000
@@ -3975,7 +3975,7 @@ class CylinderAndCurvedPlate():
                 data['gammaM curved panel']
             sjsd = shell_buckling_data['sjsd'][idx-1]
 
-            this_s = 0 if self._LongStf is None else self._LongStf.s
+            this_s = 0 if self._LongStf is None else self._LongStf.spacing
             if any([self._geometry in [1, 5], this_s > (self._Shell.dist_between_rings * 1000)]):
                 fksd = data['fksd - Unstifffed circular cylinders']
             else:
@@ -3987,7 +3987,7 @@ class CylinderAndCurvedPlate():
             tw = obj.tw
 
             if key == 'Longitudinal stiff.':
-                s_or_leo = obj.s
+                s_or_leo = obj.spacing
                 lT = l
             else:
                 s_or_leo = shell_buckling_data['parameters'][param_map[key]][2]
@@ -4289,7 +4289,7 @@ class CylinderAndCurvedPlate():
         shell = [self._Shell.thk, self._Shell.radius, self._Shell.dist_between_rings, self._Shell.length_of_shell, 
                  self._Shell.tot_cyl_length, np.nan, np.nan, np.nan]
         if self._LongStf is not None:
-            long = [self._LongStf.s/1000, np.nan, self._LongStf.hw/1000, self._LongStf.tw/1000, self._LongStf.b/1000, 
+            long = [self._LongStf.spacing/1000, np.nan, self._LongStf.hw/1000, self._LongStf.tw/1000, self._LongStf.b/1000, 
                     self._LongStf.tf/1000, np.nan, self._LongStf.stiffener_type]
         else:
             long = [0 for dummy in range(8)]
