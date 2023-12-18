@@ -140,11 +140,11 @@ class Structure():
     def tf(self, val):
         self._flange_th = val / 1000
     @property  # in mm
-    def s(self):
+    def spacing(self):
         assert self._spacing is not None, 'Variable missing: self._spacing'
         return self._spacing* 1000
-    @s.setter  # in mm
-    def s(self, val):
+    @spacing.setter  # in mm
+    def spacing(self, val):
         self._spacing = val / 1000
     @property  # in mm
     def t(self):
@@ -196,7 +196,7 @@ class Structure():
 
     @property
     def span(self):
-        assert self._span is not None, 'Missing variable: self._span'
+        assert self._span is not None, 'Missing variable: self._span: span of stiffener'
         return self._span
     @span.setter
     def span(self, val):
@@ -1064,8 +1064,9 @@ class CalcScantlings(Structure):
     The class inherits from Structure class.
     '''
 
-    def __init__(self, main_dict, lat_press = True, category = 'secondary'):
+    def __init__(self, main_dict: dict = None, lat_press = True, category = 'secondary'):
         super(CalcScantlings,self).__init__(main_dict=main_dict)
+
         self.lat_press = lat_press
         self.category = category
         self._need_recalc = True
@@ -1204,7 +1205,9 @@ class CalcScantlings(Structure):
         Zs = ((math.pow(self._span, 2) * self._spacing * design_pressure) /
               (min(km_middle, km_sides) * (sigma_pd2) * kps)) * math.pow(10, 6)
         if printit:
-            print('Sigma y1', self._sigma_y1, 'Sigma y2', self._sigma_y2, 'Sigma x', self._sigma_x1, 'Pressure', design_pressure)
+            print('Sigma y1', self._sigma_y1, 'Sigma y2', self._sigma_y2, 'Sigma x', self._sigma_x1,
+                  'Pressure', design_pressure, 'fy', fy,
+                  'Section mod', max(math.pow(15, 3) / math.pow(1000, 3), Zs / math.pow(1000, 3)))
         return max(math.pow(15, 3) / math.pow(1000, 3), Zs / math.pow(1000, 3))
 
     def get_dnv_min_thickness(self, design_pressure_kpa):
@@ -1216,8 +1219,9 @@ class CalcScantlings(Structure):
 
         design_pressure = design_pressure_kpa
         #print(self._sigma_x1)
+        self.span
         sigma_y = self._sigma_y2 + (self._sigma_y1-self._sigma_y2)\
-                                       *(min(0.25*self._span,0.5*self._spacing)/self._span)
+                                       *(min(0.25*self.span,0.5*self._spacing)/self._span)
 
         sig_x1 = self._sigma_x1
         sig_x2 = self._sigma_x2
@@ -1249,6 +1253,7 @@ class CalcScantlings(Structure):
             ka = 0.72
 
         assert sigma_pd1 > 0, 'sigma_pd1 must be negative | current value is: ' + str(sigma_pd1)
+        assert self._plate_kpp is not None, 'Fixation parameters must be set.'
         t_min_bend = (15.8 * ka * self._spacing * math.sqrt(design_pressure)) / \
                      math.sqrt(sigma_pd1 *self._plate_kpp)
 
@@ -1762,7 +1767,7 @@ class AllStructure():
         fy = self._mat_yield/1e6
         gammaM = self._Plate.mat_factor
         t = self._Plate.t
-        s = self._Plate.s
+        s = self._Plate.spacing
         l = self._Plate.span*1000
 
         tsd = self._Plate.tau_xy
@@ -1953,7 +1958,7 @@ class AllStructure():
         fy = self._mat_yield/1e6
         gammaM = self._Plate.mat_factor
         t = self._Plate.t
-        s = self._Plate.s
+        s = self._Plate.spacing
         l = self._Plate.span * 1000
 
         sig_x1 = self._Plate.sigma_x1 * self._stress_load_factor
@@ -2299,7 +2304,7 @@ class AllStructure():
         fy = self._mat_yield/1e6
         gammaM = self._Plate.mat_factor
         t = self._Plate.t
-        s = self._Plate.s
+        s = self._Plate.spacing
         l = self._Plate.span * 1000
         hw = self._Girder.hw
 

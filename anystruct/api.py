@@ -59,9 +59,9 @@ class FlatStru():
                                                 '\n    "Flat plate, stiffened"'
                                                 '\n    "Flat plate, stiffened with girder"')
 
-        self._Plate = Structure()
-        self._Stiffeners = Structure()
-        self._Girder = Structure()
+        self._Plate = CalcScantlings()
+        self._Stiffeners = CalcScantlings()
+        self._Girder = CalcScantlings()
         self._calculation_domain = calculation_domain
         self._FlatStructure = AllStructure(Plate=self._Plate,
                            Stiffener=None if calculation_domain == 'Flat plate, unstiffened' else self._Stiffeners,
@@ -112,13 +112,52 @@ class FlatStru():
         self._FlatStructure.E = emodule*1e6
         self._FlatStructure.v = poisson
         self._FlatStructure.mat_factor = material_factor
-        self._Plate.mat_factor = material_factor
+
+        for sub_cls in [self.Plate, self.Stiffeners, self.Girder]:
+            if sub_cls is not None:
+                sub_cls.mat_yield = mat_yield * 1e6
+                sub_cls.E = emodule * 1e6
+                sub_cls.v = poisson
+                sub_cls.mat_factor = material_factor
+
+    def set_fixation_parameters(self, kpp: float = 1, kps: float = 1,
+                                km1: float = 12, km2: float = 24, km3: float = 12):
+        '''
+
+        :param kpp: fixation parameter for plate, 1.0 for clamped edges, 0.5 for simply supported edges
+        :type kpp: float
+        :param kps: fixation parameter for stiffeners, 1.0 if at least one end is clamped, 0.9 if both ends are simply supported
+        :type kps:
+        :param km1: Bending moment and shear force factors, see DNV standards or ANYstructure GUI
+        :type km1: float
+        :param km2: Bending moment and shear force factors, see DNV standards or ANYstructure GUI
+        :type km2: float
+        :param km3: Bending moment and shear force factors, see DNV standards or ANYstructure GUI
+        :type km3: float
+        :return:
+        :rtype:
+        '''
+        for sub_cls in [self.Plate, self.Stiffeners, self.Girder]:
+            if sub_cls is not None:
+                sub_cls._plate_kpp = kpp
+                sub_cls._stf_kps = kps
+                sub_cls._km1 = km1
+                sub_cls._km2 = km2
+                sub_cls._km3 = km3
+
+
+
 
     def get_buckling_results(self):
         '''
-        Return a dictionary of all buckling results.
-        :return:
-        :rtype:
+        Return a dictionary of all buckling results. UF - Utilization Factor.\n
+        Plate : {'Plate buckling': UF}\n
+        Stiffener: {'Overpressure plate side': UF, 'Overpressure stiffener side': UF,\n
+                    'Resistance between stiffeners': UF, 'Shear capacity': UF}\n
+        Girder: {'Overpressure plate side': UF, 'Overpressure girder side': UF, 'Shear capacity': UF}\n
+        Local buckling {'Stiffener': [UF web, UF flange], 'Girder': [UF web, UF flange]}\n
+        :return: Results for plate, stiffener, girder and a separate local check for stiffeners/girders\n
+        :rtype: dict
         '''
         return  self._FlatStructure.plate_buckling()
 
@@ -140,19 +179,20 @@ class FlatStru():
         '''
 
         self._FlatStructure.Plate.t = thickness
-        self._FlatStructure.Plate.s = spacing
+        self._FlatStructure.Plate.spacing = spacing
         self._FlatStructure.Plate.span = span/1000
         self._FlatStructure.Plate.girder_lg = 10 # placeholder value
+
     
     def set_stresses(self, pressure: float = 0, sigma_x1: float = 0,sigma_x2: float = 0, sigma_y1: float = 0,
-                  sigma_y2: float = 0, tau_xy: float = 0):
+                     sigma_y2: float = 0, tau_xy: float = 0):
         '''
-        Set loads applied on the plate sides.
-        x1 and y1 is on one side of the plate
-        x2 and y2 is the other side
-        tau_xy act uniformly on the plate field
-        Stresses are in MPA.
-        Use POSITIVE numbers for compression pressure, stresses and forces
+        Set loads applied on the plate sides.\n
+        x1 and y1 is on one side of the plate\n
+        x2 and y2 is the other side\n
+        tau_xy act uniformly on the plate field\n
+        Stresses are in MPA.\n
+        Use POSITIVE numbers for compression pressure, stresses and forces\n
 
         :param pressure: Lateral load / pressure: Psd [MPa]
         :type pressure: float
@@ -182,7 +222,7 @@ class FlatStru():
         self._FlatStructure.lat_press = pressure
 
     def set_stiffener(self, hw: float = 260, tw: float = 12, bf: float = 49,
-                                   tf: float = 27.3, stf_type: str = 'bulb', spacing: float = 608):
+                      tf: float = 27.3, stf_type: str = 'bulb', spacing: float = 608):
         '''
         Sets the stiffener properties.
 
@@ -205,10 +245,12 @@ class FlatStru():
         self._FlatStructure.Stiffener.tw = tw
         self._FlatStructure.Stiffener.b = bf
         self._FlatStructure.Stiffener.tf = tf
-        self._FlatStructure.Stiffenerstiffener_type = 'L-bulb' if stf_type in ['hp HP HP-bulb bulb'] else stf_type
-        self._FlatStructure.Stiffener.s = spacing
+        self._FlatStructure.Stiffener.stiffener_type = 'L-bulb' if stf_type in ['hp HP HP-bulb bulb'] else stf_type
+        self._FlatStructure.Stiffener.spacing = spacing
         self._FlatStructure.Stiffener.girder_lg = 10
         self._FlatStructure.Stiffener.t = self._FlatStructure.Plate.t
+        self._FlatStructure.Stiffener.span = self._FlatStructure.Plate.span
+        self._FlatStructure.Stiffener.mat_yield = self._FlatStructure.Plate.mat_yield
 
 
     def set_girder(self, hw: float = 500, tw: float = 15, bf: float = 200,
@@ -247,8 +289,8 @@ class FlatStru():
                                 panel_length_Lp: float = None, stiffener_support: str = 'Continuous',
                                 girder_support: str = 'Continuous'):
         '''
-        Various buckling realted parameters are set here. For details, see
-        DNV-RP-C201 Buckling strength of plated structures.
+        Various buckling realted parameters are set here. For details, see\n
+        DNV-RP-C201 Buckling strength of plated structures.\n
 
         :param calculation_method: 'DNV-RP-C201 - prescriptive', 'ML-CL (PULS based)'
         :type calculation_method: str
@@ -293,6 +335,29 @@ class FlatStru():
         self._FlatStructure._stf_end_support = stiffener_support
         self._FlatStructure._girder_end_support = girder_support
 
+    def get_special_provisions_results(self):
+        '''
+        Special provisions for plating and stiffeners in steel structures.\n
+        Return a dictionary:\n
+
+        'Plate thickness' : The thickness of plates shall not be less than this check.\n
+        'Stiffener section modulus' : The section modulus for longitudinals, beams, frames and other stiffeners\n
+                                      subjected to lateral pressure shall not be less than this check.\n
+        'Stiffener shear area' : The shear area of the plate/stiffener shall not be less than this ckeck.\n
+        :return: minium dimensions and acutal dimensions for the current structure in mm/mm^2/mm^3
+        :rtype: dict
+        '''
+        min_pl_thk = self.Plate.get_dnv_min_thickness(design_pressure_kpa=self._FlatStructure.lat_press * 1000)
+        min_sec_mod = self.Stiffeners.get_dnv_min_section_modulus(
+            design_pressure_kpa=self._FlatStructure.lat_press * 1000) * 1000**3
+        min_area = self.Stiffeners.get_minimum_shear_area(pressure=self._FlatStructure.lat_press * 1000) * 1000**2
+
+        this_pl_thk = self.Plate.t
+        this_secmod = self.Stiffeners.get_section_modulus()
+        this_area = self.Stiffeners.get_shear_area()* 1000**2
+        return {'Plate thickness':{'minimum': min_pl_thk, 'actual': this_pl_thk},
+                'Stiffener section modulus': {'minimum': min_sec_mod, 'actual': min(this_secmod)* 1000**3},
+                'Stiffener shear area': {'minimum': min_area, 'actual': this_area}}
 
 
 
@@ -684,14 +749,16 @@ if __name__ == '__main__':
     my_flat = FlatStru("Flat plate, stiffened with girder")
     my_flat.set_material(mat_yield=355, emodule=210000, material_factor=1.15, poisson=0.3)
     my_flat.set_plate_geometry()
-    my_flat.set_stresses(sigma_x1=50, sigma_x2=50, sigma_y1=50, sigma_y2=50, pressure=0.01)
+    my_flat.set_stresses(sigma_x1=50, sigma_x2=50, sigma_y1=150, sigma_y2=150, pressure=0.3)
     my_flat.set_stiffener()
     my_flat.set_girder()
+    my_flat.set_fixation_parameters()
     my_flat.set_buckling_parameters(calculation_method='DNV-RP-C201 - prescriptive', buckling_acceptance='buckling',
                                     stiffened_plate_effective_aginst_sigy=True)
     for key, val in my_flat.get_buckling_results().items():
         print(key, val)
-    #my_flat.get_buckling_results()
+
+    print(my_flat.get_special_provisions_results())
 
 
 

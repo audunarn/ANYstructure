@@ -1438,6 +1438,9 @@ class Application():
         self._flat_btn_load_info =  ttk.Button(self._tab_prop, text='Load info',
                                                 command=lambda id= "flat": self.stress_information_notebooks(id),
                                                 style = "Bold.TButton")
+        self._flat_btn_fixation_info =  ttk.Button(self._tab_prop, text='Parameter info',
+                                                command=lambda id= "fixation": self.stress_information_notebooks(id),
+                                                style = "Bold.TButton")
         self._shell_btn_length_info =  ttk.Button(self._tab_prop, text='Length info',
                                                 command=lambda id= "length": self.stress_information_notebooks(id),
                                                 style = "Bold.TButton")
@@ -1750,6 +1753,8 @@ class Application():
         ttk.Button(self._main_fr, text='Load info', command=self.button_load_info_click,style = "Bold.TButton")\
            .place(relx=0.78,rely=0.7, relwidth = 0.04)
 
+        # ttk.Button(self._main_fr, text='Load info', command=self.button_load_info_click,style = "Bold.TButton")\
+        #    .place(relx=0.78,rely=0.7, relwidth = 0.04)
         # Load information button
         ttk.Button(self._main_fr, text='Load factors', command=self.on_open_load_factor_window,style = "Bold.TButton")\
            .place(relx=0.8225,rely=0.7, relwidth = 0.05)
@@ -1913,6 +1918,8 @@ class Application():
                 idx += 1
             self._flat_btn_load_info.place(relx=hor_start + 5 * delta_x,
                                             rely=vert_start + (idx+1) * delta_y)
+            self._flat_btn_fixation_info.place(relx=hor_start + 5 * delta_x,
+                                            rely=vert_start+ (idx-7) * delta_y)
             self._button_str_type.place(relx=hor_start + 5 * delta_x,
                                             rely=vert_start + (idx+3) * delta_y)
             idx = idx_now
@@ -2189,7 +2196,8 @@ class Application():
                       self._ent_puls_sp_or_up, self._ent_puls_method, self._ent_puls_uf, self._ent_puls_panel_boundary,
                       self._ent_puls_stf_end_type,
                       self._stf_button, self._stress_button,self._fls_button, self._shell_btn_load_info,
-                      self._flat_btn_load_info, self._shell_btn_length_info,self._button_str_type]
+                      self._flat_btn_load_info, self._shell_btn_length_info,self._button_str_type,
+                      self._flat_btn_fixation_info]
 
         to_process = to_process+self._shell_gui_items+self._shell_long_stf_gui_items+self._shell_ring_stf_gui_items+\
                      self._shell_ring_frame_gui_items+self._shell_loads_other_gui_items+\
@@ -2389,6 +2397,8 @@ class Application():
                 img_file_name = 'Cylinder-Load_distribution.png'
             elif info_type == 'flat':
                 img_file_name = 'img_axial_stresses.gif'
+            elif info_type == 'fixation':
+                img_file_name = 'img_fixation_parameters.gif'
             else:
                 img_file_name = 'Definition_of_parameters_L_and_LH.png'
             if os.path.isfile('images/' + img_file_name):
@@ -2951,7 +2961,7 @@ class Application():
                 rec_for_color[current_line]['rp buckling'] = max(all_buckling_uf_list)
                 if obj_scnt_calc_stf is not None:
                     sec_mod = [obj_scnt_calc_stf.get_section_modulus()[0],
-                               obj_scnt_calc_stf.get_section_modulus ()[1]]
+                               obj_scnt_calc_stf.get_section_modulus()[1]]
 
                     shear_area = obj_scnt_calc_stf.get_shear_area()
                     min_shear = obj_scnt_calc_stf.get_minimum_shear_area(design_pressure)
