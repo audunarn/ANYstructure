@@ -1,20 +1,6 @@
-.. ANYstructure documentation master file, created by
-   sphinx-quickstart on Wed Dec 13 14:40:57 2023.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-Welcome to ANYstructure's documentation!
-========================================
-
-This page mainly document the API.
-
-The API is accessed by importing the API module:
-
-import anystruct.api as anyapi
-
-For GUI documentation, see the following link:
-
-`ANYstructure GUI documentation <https://sites.google.com/view/anystructure/documentation>`_
+.. image:: _static/Panel_geometry_definitions.png
+  :width: 400
+  :alt: ANYstructure logo
 
 .. toctree::
    :maxdepth: 4
@@ -22,4 +8,37 @@ For GUI documentation, see the following link:
    install
    support
    api
+
+Welcome to ANYstructure's documentation!
+========================================
+
+This page mainly document the API.
+
+
+To install ANYstructure use PIP:
+
+.. code:: shell
+
+   pip install anystructure
+
+The API is accessed by importing the API module:
+
+.. code:: shell
+
+   from anystruct import api
+   FlatStruct = api.Flatstru(*INPUT CALCULATION DOMAIN*)
+   CylStru = api.CylStru(*INPUT CALCULATION DOMAIN*)
+
+For GUI documentation, see the following link:
+
+`ANYstructure GUI documentation <https://sites.google.com/view/anystructure/documentation>`_
+
+The GUI can be started by:
+
+.. code:: shell
+
+   from anystruct import gui
+   gui.main()
+
+
 
