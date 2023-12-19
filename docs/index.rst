@@ -1,19 +1,10 @@
-.. image:: _static/Panel_geometry_definitions.png
+.. image:: _static/ANYstructure_logo.jpg
   :width: 400
   :alt: ANYstructure logo
 
-.. toctree::
-   :maxdepth: 4
-
-   install
-   support
-   api
-
 Welcome to ANYstructure's documentation!
 ========================================
-
 This page mainly document the API.
-
 
 To install ANYstructure use PIP:
 
@@ -39,6 +30,13 @@ The GUI can be started by:
 
    from anystruct import gui
    gui.main()
+
+.. toctree::
+    :hidden:
+
+   install
+   support
+   api
 
 
 
