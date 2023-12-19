@@ -33,6 +33,12 @@ The GUI can be started by:
    from anystruct import gui
    gui.main()
 
+An entry point to the GUI is also installed with PIP:
+
+ANYstructure.exe in your python installation (Scripts).
+
+
+
 Windows executable
 ------------------
 The latets release of ANYstructure can be downloaded here:
