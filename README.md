@@ -2,6 +2,11 @@
 ANYstructure is the ultimate steel structure design tool for plate fields and cylinders! 
 Weight optimization for all structures with machine learning capabilities. 
 Calculations are based on DNV standards and rules
+### What's new in 5.0.2 ###
+* API introduced
+* API documenatation at readthedocs (anystructure.readthedocs.io)
+* GUI modifications
+* Import of python package set to "anystruct"
 ### What's new in 4.10 ###
 * Corrected minor bug on membrane stresses for unstiffened cylinder.
 ### What's new in 4.9.1 ###
@@ -35,6 +40,10 @@ Calculations are based on DNV standards and rules
 * Lots of bug fixes.
 
 ------------------------------------------------------------------------
+
+For documnetation:
+
+https://anystructure.readthedocs.io/en/latest/
 
 ## The following is calculated: ##
 * Minimum plate thickness (DNV-OS-C101)

@@ -6,23 +6,25 @@ Welcome to ANYstructure's documentation!
 ========================================
 This page mainly document the API.
 
+For GUI documentation, see the following link:
+
+`ANYstructure GUI documentation <https://sites.google.com/view/anystructure/documentation>`_
+
+Python
+------
 To install ANYstructure use PIP:
 
 .. code:: shell
 
    pip install anystructure
 
-The API is accessed by importing the API module:
+API basic usage:
 
 .. code:: shell
 
    from anystruct import api
    FlatStruct = api.Flatstru(*INPUT CALCULATION DOMAIN*)
    CylStru = api.CylStru(*INPUT CALCULATION DOMAIN*)
-
-For GUI documentation, see the following link:
-
-`ANYstructure GUI documentation <https://sites.google.com/view/anystructure/documentation>`_
 
 The GUI can be started by:
 
@@ -31,12 +33,17 @@ The GUI can be started by:
    from anystruct import gui
    gui.main()
 
+Windows executable
+------------------
+The latets release of ANYstructure can be downloaded here:
+
+`Github releases <https://github.com/audunarn/ANYstructure/releases>`_
+
+Install and launch the app.
+
 .. toctree::
     :hidden:
 
    install
    support
    api
-
-
-
