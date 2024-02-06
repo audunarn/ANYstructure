@@ -4539,7 +4539,7 @@ class PULSpanel():
 
         newfile = self._puls_sheet_location
 
-        my_puls = pulsxl.PulsExcel(newfile, visible=False)
+        my_puls = pulsxl.ExcelInterface(newfile, visible=False)
         #my_puls.set_multiple_rows(20, iterator)
         run_sp, run_up = my_puls.set_multiple_rows_batch(iterator)
         my_puls.calculate_panels(sp=run_sp, up=run_up)

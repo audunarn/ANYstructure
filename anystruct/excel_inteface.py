@@ -8,8 +8,8 @@ This file open up excel PULS file
 import numpy as np
 from xlwings import App, Book
 
-class PulsExcel():
-    ''' This class open a PulsExcel work.
+class ExcelInterface():
+    ''' This class open a ExcelInterface work.
         Input and output structure data and results.
         Running macros.
     '''
@@ -18,7 +18,7 @@ class PulsExcel():
         :param path_and_file_to_book:  Path and file name or just filename in base directory.
         :param visible: If excel shall open in windows or run in the background.
         '''
-        super(PulsExcel, self).__init__()
+        super(ExcelInterface, self).__init__()
         self.app = App(visible=visible)
         self.book = Book(path_and_file_to_book)
 
@@ -211,19 +211,30 @@ class PulsExcel():
 
         return return_dict
 
+    def get_sheet_data(self, sheet = 'excel_input'):
+        this_sheet = self.book.sheets[sheet]
+        return this_sheet.used_range.value
+
 if __name__ == '__main__':
-    ex1 = {'line25': {'Identification': 'line25', 'Length of plate': 3, 'Width of c': 800.0, 'Plate thickness': 20.0,
-                      'Modulus of elasticity': 210000.0, "Poisson's ratio": 0.3, 'Yield stress plate': 355.0,
-                      'Axial stress 1': 60.0, 'Axial stress 2': 60.0, 'Trans. stress 1': 0, 'Trans. stress 2': 0,
-                      'Shear stress': 10.0, 'Pressure (fixed)': 0.0, 'In-plane support': 'GL', 'Rot left': 'SS',
-                      'Rot right': 'SS', 'Rot upper': 'SS', 'Rot lower': 'SS', 'sp or up': 'UP'}}
-    my_puls = PulsExcel(r'C:\Github\ANYstructure\ANYstructure\PULS\PulsExcel_new - Copy.xlsm',
-                        visible=True)
-    my_puls.set_multiple_rows_batch(ex1)
+    # ex1 = {'line25': {'Identification': 'line25', 'Length of plate': 3, 'Width of c': 800.0, 'Plate thickness': 20.0,
+    #                   'Modulus of elasticity': 210000.0, "Poisson's ratio": 0.3, 'Yield stress plate': 355.0,
+    #                   'Axial stress 1': 60.0, 'Axial stress 2': 60.0, 'Trans. stress 1': 0, 'Trans. stress 2': 0,
+    #                   'Shear stress': 10.0, 'Pressure (fixed)': 0.0, 'In-plane support': 'GL', 'Rot left': 'SS',
+    #                   'Rot right': 'SS', 'Rot upper': 'SS', 'Rot lower': 'SS', 'sp or up': 'UP'}}
+    # my_puls = ExcelInterface(r'C:\Github\ANYstructure\ANYstructure\PULS\PulsExcel_new - Copy.xlsm',
+    #                     visible=True)
+    # my_puls.set_multiple_rows_batch(ex1)
     # my_puls.set_multiple_rows(20, [ex.ex1, ex.ex2, ex.ex3, ex.ex4, ex.ex5, ex.ex6])
     # my_puls.calculate_panels()
     #my_puls.set_one_row(data_dict=ex.ex1['line1'])
     # [print(key, value) for key, value in my_puls.get_all_results().items()]
     # my_puls.close_book()
+    my_input = ExcelInterface(r'C:\Github\ANYstructure\anystruct\excel_input_example.xlsx',
+                              visible=False)
+    data = my_input.get_sheet_data()
+
+    for dom, l1x, l1y, l2x, l2y, pl_t, pl_s, web_h, web_th, fl_b, fl_th, sig_x1, sig_x2, sig_y1, sig_y2, tau_xy in data[1:]:
+        print(dom, l1x, l1y, l2x, l2y, pl_t, pl_s, web_h, web_th, fl_b, fl_th, sig_x1, sig_x2, sig_y1, sig_y2, tau_xy)
+
 
 

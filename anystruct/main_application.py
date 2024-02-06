@@ -1,3 +1,4 @@
+import math
 import os  # -*- coding: utf-8 -*-
 
 import tkinter as tk
@@ -34,6 +35,7 @@ try:
     import anystruct.load_factor_window as load_factors
     from anystruct.report_generator import LetterMaker
     import anystruct.sesam_interface as sesam
+    import anystruct.excel_inteface as excel_interface
 except ModuleNotFoundError:
     # This is due to pyinstaller issues.
     from ANYstructure.anystruct.calc_structure import *
@@ -53,6 +55,7 @@ except ModuleNotFoundError:
     import ANYstructure.anystruct.load_factor_window as load_factors
     from ANYstructure.anystruct.report_generator import LetterMaker
     import ANYstructure.anystruct.sesam_interface as sesam
+    import ANYstructure.anystruct.excel_inteface as excel_interface
 
 class Application():
     '''
@@ -184,6 +187,7 @@ class Application():
         sub_sesam.add_command(label = 'Export geometry to SESAM GeniE JS', command = self.export_to_js)
         sub_sesam.add_command(label='Run all PULS lines', command=self.puls_run_all_lines)
         sub_sesam.add_command(label='Delete all PULS results', command=self.puls_delete_all)
+        sub_sesam.add_command(label='Import excel file', command=self.open_exel_file)
 
         sub_help = tk.Menu(menu)
         menu.add_cascade(label='Help', menu = sub_help)
@@ -2640,7 +2644,6 @@ class Application():
                 name = ('manual', self._active_line, 'manual')  # tuple to identify combinations on line
                 if name in self._new_load_comb_dict.keys():
                     self._manual_created.append(ttk.Label(self._main_fr, text='Manual (pressure/LF)',
-
                                                          ))
                     self._manual_created.append(
                         ttk.Entry(self._main_fr, textvariable=self._new_load_comb_dict[name][0], width=15,
@@ -5033,10 +5036,12 @@ class Application():
                     self.logger(point=current_point, move_coords=(current_coords,[x_coord, y_coord]))
                 else:
                     self.logger(point=current_point, move_coords=None)
-
             self.update_frame()
+
         except TclError:
             messagebox.showinfo(title='Input error', message='Input must be a number. Dots used not comma.')
+
+
 
     def move_line(self,event = None):
         if self._line_is_active:
@@ -5122,12 +5127,12 @@ class Application():
                     # making stings from two points difining the lines, e.g. for line 1 string could be 'p1p2' and 'p2p1'
                     self._line_point_to_point_string.append(line_str)
                     self._line_point_to_point_string.append(line_str_rev)
-
                     self.add_to_combinations_dict(current_name)
             for line, obj in self._line_to_struc.items():
                 obj[0].need_recalc = True
         except TclError:
             messagebox.showinfo(title='Input error', message='Input must be a line number.')
+        return current_name
 
     def new_structure(self, event = None, pasted_structure = None, multi_return = None, toggle_multi = None,
                       suspend_recalc = False, cylinder_return = None):
@@ -6973,6 +6978,62 @@ class Application():
         else:
             self.openfile(defined= self._root_dir + '/' + file_name)
 
+    def open_exel_file(self, file_name = 'excel_input_example.xlsx'):
+        ''' Open an excel file with data to read into ANYstructure '''
+        if os.path.isfile(file_name) : #kj
+            data_wb = excel_interface.ExcelInterface(file_name, visible=False)
+        else:
+            data_wb = excel_interface.ExcelInterface(self._root_dir + '/' + file_name)
+        data = data_wb.get_sheet_data()
+        data_wb.close_book()
+        # Creating points
+        for row_data in data[1:]:
+            l1x, l1y, l2x, l2y = row_data[1:5]
+            self._new_point_x.set(l1x)
+            self._new_point_y.set(l1y)
+            self.new_point()
+            self._new_point_x.set(l2x)
+            self._new_point_y.set(l2y)
+            self.new_point()
+        # Creating lines
+        all_points = self.get_points()
+        for row_data in data[1:]:
+            l1x, l1y, l2x, l2y = row_data[1:5]
+            p1_found = False
+            p2_found = False
+
+            for key, value in all_points.items():
+                if l1x/1000 == value[0] and l1y/1000 == value[1]:
+                    p1 = get_num(key)
+                    p1_found = True
+                if l2x/1000 == value[0] and l2y/1000 == value[1]:
+                    p2 = get_num(key)
+                    p2_found = True
+            if p1_found and p2_found:
+                self._new_line_p1.set(p1)
+                self._new_line_p2.set(p2)
+                this_line = self.new_line()
+                self._active_line = this_line
+                self._line_is_active = True
+                self._new_calculation_domain.set(row_data[0])
+                self._new_field_len.set(hlp.dist((l1x, l1y), (l2x, l2y)))
+                self._new_plate_thk.set(row_data[5])
+                self._new_stf_spacing.set(row_data[6])
+                self._new_stf_web_h.set(row_data[7])
+                self._new_stf_web_t.set(row_data[8])
+                self._new_stf_fl_w.set(row_data[9])
+                self._new_stf_fl_t.set(row_data[10])
+                self._new_sigma_x1.set(row_data[11])
+                self._new_sigma_x2.set(row_data[12])
+                self._new_sigma_y1.set(row_data[13])
+                self._new_sigma_y2.set(row_data[14])
+                self._new_tauxy.set(row_data[15])
+                self.new_structure()
+                self._new_load_comb_dict[('manual', this_line, 'manual')][0].set(row_data[16])
+                self._new_load_comb_dict[('manual', this_line, 'manual')][1].set(1)
+                self._new_load_comb_dict[('manual', this_line, 'manual')][2].set(1)
+                self._line_to_struc[this_line][0].need_recalc = True
+
     def button_load_info_click(self, event = None):
         ''' Get the load information for one line.'''
         if self._active_line != '' and self._active_line in self._line_to_struc.keys():
@@ -7677,4 +7738,4 @@ if __name__ == '__main__':
     my_app = Application(root)
     root.mainloop()
 
-    #Application(None).openfile(r'C:\Github\ANYstructure\ANYstructure\ship_section_example.txt', alone=True)
+    #Application.openfile(r'C:\Github\ANYstructure\ANYstructure\ship_section_example.txt', alone=True)
