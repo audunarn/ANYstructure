@@ -7023,16 +7023,28 @@ class Application():
                 self._new_stf_web_t.set(row_data[8])
                 self._new_stf_fl_w.set(row_data[9])
                 self._new_stf_fl_t.set(row_data[10])
-                self._new_sigma_x1.set(row_data[11])
-                self._new_sigma_x2.set(row_data[12])
-                self._new_sigma_y1.set(row_data[13])
-                self._new_sigma_y2.set(row_data[14])
-                self._new_tauxy.set(row_data[15])
+                sig_start = 12
+                self._new_sigma_x1.set(row_data[sig_start])
+                self._new_sigma_x2.set(row_data[sig_start+1])
+                self._new_sigma_y1.set(row_data[sig_start+2])
+                self._new_sigma_y2.set(row_data[sig_start+3])
+                self._new_tauxy.set(row_data[sig_start+4])
+                gird_start = 18
+                if row_data[0] == 'Flat plate, stiffened with girder':
+                    self._new_girder_length_LG.set(row_data[gird_start+0])
+                    self._new_girder_web_h.set(row_data[gird_start+1])
+                    self._new_girder_web_t.set(row_data[gird_start + 2])
+                    self._new_girder_fl_w.set(row_data[gird_start + 3])
+                    self._new_girder_fl_t.set(row_data[gird_start + 4])
+                    self._new_girder_type.set(row_data[gird_start + 5])
                 self.new_structure()
                 self._new_load_comb_dict[('manual', this_line, 'manual')][0].set(row_data[16])
                 self._new_load_comb_dict[('manual', this_line, 'manual')][1].set(1)
                 self._new_load_comb_dict[('manual', this_line, 'manual')][2].set(1)
                 self._line_to_struc[this_line][0].need_recalc = True
+
+
+
 
     def button_load_info_click(self, event = None):
         ''' Get the load information for one line.'''
