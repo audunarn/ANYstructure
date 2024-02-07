@@ -137,6 +137,7 @@ class Application():
         sub_menu.add_command(label='Save project, Alt-S', command=self.save_no_dialogue)
         sub_menu.add_command(label='Open project', command=self.openfile)
         sub_menu.add_command(label='Restore previous', command=self.restore_previous)
+        sub_menu.add_command(label='Open excel input', command=self.open_excel_file)
         self._shortcut_text = 'CTRL-Z Undo geometry action\n' \
                               'CTRL-P Copy selected point\n' \
                               'CTRL-M Move selected point)\n' \
@@ -187,7 +188,7 @@ class Application():
         sub_sesam.add_command(label = 'Export geometry to SESAM GeniE JS', command = self.export_to_js)
         sub_sesam.add_command(label='Run all PULS lines', command=self.puls_run_all_lines)
         sub_sesam.add_command(label='Delete all PULS results', command=self.puls_delete_all)
-        sub_sesam.add_command(label='Import excel file', command=self.open_exel_file)
+        sub_sesam.add_command(label='Import excel file', command=self.open_excel_file)
 
         sub_help = tk.Menu(menu)
         menu.add_cascade(label='Help', menu = sub_help)
@@ -195,6 +196,7 @@ class Application():
         sub_help.add_command(label='Open documentation pdf', command=self.open_documentation_pdf)
         sub_help.add_command(label='Donate!', command=self.open_donate)
         sub_help.add_command(label = 'Open example file', command = self.open_example)
+        sub_help.add_command(label='Open example excel input file', command=self.open_example_excel_file)
         sub_help.add_command(label='About ANYstructure', command=self.open_about)
 
         sub_colors = tk.Menu(menu)
@@ -2836,12 +2838,19 @@ class Application():
                     self._new_load_comb_dict[name][2].set(1)
         else:
             pass
-
         name = ('manual', line, 'manual')
         self._new_load_comb_dict[name] = [tk.DoubleVar(), tk.DoubleVar(), tk.IntVar()]
         self._new_load_comb_dict[name][0].set(0)
         self._new_load_comb_dict[name][1].set(0)
         self._new_load_comb_dict[name][2].set(0)
+        self._new_load_comb_dict[name][0].trace('w', self.trace_acceptance_change)
+        self._new_load_comb_dict[name][1].trace('w', self.trace_acceptance_change)
+
+    def trace_update_load(self, *args):
+        try:
+            self._line_to_struc[self._active_line][0].need_recalc = True
+        except BaseException as error:
+            pass
 
     def trace_shift_change(self, *args):
         try:
@@ -6978,21 +6987,41 @@ class Application():
         else:
             self.openfile(defined= self._root_dir + '/' + file_name)
 
-    def open_exel_file(self, file_name = 'excel_input_example.xlsx'):
-        ''' Open an excel file with data to read into ANYstructure '''
-        if os.path.isfile(file_name) : #kj
-            data_wb = excel_interface.ExcelInterface(file_name, visible=False, read_only=True)
+    def open_example_excel_file(self):
+        file_name = 'excel_input_example.xlsx'
+
+        if os.path.isfile(file_name) :
+            XLB = excel_interface.ExcelInterface(file_name, visible=True, read_only=True)
         else:
-            data_wb = excel_interface.ExcelInterface(self._root_dir + '/' + file_name, visible=False, read_only=True)
+            XLB = excel_interface.ExcelInterface(self._root_dir + '/' + file_name, visible=True, read_only=True)
+
+    def open_excel_file(self):
+        ''' Open an excel file with data to read into ANYstructure '''
+
+        imp_file = filedialog.askopenfile(mode='r', defaultextension=".xlsx")
+        if imp_file is None:  # asksaveasfile return `None` if dialog closed with "cancel".
+            return
+
+        data_wb = excel_interface.ExcelInterface(imp_file.name, visible=False, read_only=True)
+        # if os.path.isfile(imp_file) : #kj
+        #     data_wb = excel_interface.ExcelInterface(imp_file, visible=False, read_only=True)
+        # else:
+        #     return
         data_flat = data_wb.get_sheet_data('flat_plate')
         data_cyl = data_wb.get_sheet_data('cylinder')
         data_wb.close_book()
-        # Creating points
-        print(data_flat, data_cyl)
 
         # Flat
         #--------------------------------------------------------------------------------------------------------------
         for row_data in data_flat[1:]:
+            l1x, l1y, l2x, l2y = row_data[1:5]
+            self._new_point_x.set(l1x)
+            self._new_point_y.set(l1y)
+            self.new_point()
+            self._new_point_x.set(l2x)
+            self._new_point_y.set(l2y)
+            self.new_point()
+        for row_data in data_cyl[1:]:
             l1x, l1y, l2x, l2y = row_data[1:5]
             self._new_point_x.set(l1x)
             self._new_point_y.set(l1y)
@@ -7006,7 +7035,6 @@ class Application():
             l1x, l1y, l2x, l2y = row_data[1:5]
             p1_found = False
             p2_found = False
-
             for key, value in all_points.items():
                 if l1x/1000 == value[0] and l1y/1000 == value[1]:
                     p1 = get_num(key)
@@ -7050,8 +7078,90 @@ class Application():
 
         # Cylinders
         # ------------------------------------------------------------------------------------------------------------
+        for row_data in data_cyl[1:]:
 
+            l1x, l1y, l2x, l2y = row_data[1:5]
+            p1_found = False
+            p2_found = False
+            for key, value in all_points.items():
+                if l1x/1000 == value[0] and l1y/1000 == value[1]:
+                    p1 = get_num(key)
+                    p1_found = True
+                if l2x/1000 == value[0] and l2y/1000 == value[1]:
+                    p2 = get_num(key)
+                    p2_found = True
 
+            if p1_found and p2_found:
+                self._new_line_p1.set(p1)
+                self._new_line_p2.set(p2)
+                this_line = self.new_line()
+                self._active_line = this_line
+                self._line_is_active = True
+                self._new_calculation_domain.set(row_data[0])
+                main_start = 5
+                self._new_shell_thk.set(row_data[main_start + 0])
+                self._new_shell_radius.set(row_data[main_start + 1])
+                self._new_shell_dist_rings.set(row_data[main_start + 2])
+                self._new_shell_length.set(row_data[main_start + 3])
+                self._new_shell_tot_length.set(row_data[main_start + 4])
+                self._new_shell_k_factor.set(row_data[main_start + 5])
+                #self._new_shell_mat_factor.set(row_data[main_start + 7])
+
+                long_start = 12
+                self._new_stf_web_h.set(row_data[long_start + 0])
+                self._new_stf_web_t.set(row_data[long_start + 1])
+                self._new_stf_fl_w.set(row_data[long_start + 2])
+                self._new_stf_fl_t.set(row_data[long_start + 3])
+                self._new_shell_panel_spacing.set(row_data[long_start + 4])
+                self._new_stf_type.set(row_data[long_start + 5])
+
+                ring_stf_start = 18
+                if row_data[ring_stf_start] is None:
+                    self._new_shell_exclude_ring_stf.set(True)
+                else:
+                    self._new_shell_ring_stf_hw.set(row_data[ring_stf_start + 0])
+                    self._new_shell_ring_stf_tw.set(row_data[ring_stf_start + 1])
+                    self._new_shell_ring_stf_b.set(row_data[ring_stf_start + 2])
+                    self._new_shell_ring_stf_tf.set(row_data[ring_stf_start + 3])
+                    self._new_shell_ring_stf_type.set(row_data[ring_stf_start + 4])
+
+                ring_frame = 23
+                if row_data[ring_frame] is None:
+                    self._new_shell_exclude_ring_frame.set(True)
+                else:
+                    self._new_shell_ring_frame_hw.set(row_data[ring_frame + 0])
+                    self._new_shell_ring_frame_tw.set(row_data[ring_frame + 1])
+                    self._new_shell_ring_frame_b.set(row_data[ring_frame + 2])
+                    self._new_shell_ring_frame_tf.set(row_data[ring_frame + 3])
+                    self._new_shell_ring_frame_length_between_girders.set(row_data[ring_frame + 4])
+                    self._new_shell_ring_frame_type.set(row_data[ring_frame + 5])
+
+                stress_start = 29
+                if row_data[stress_start] is None:
+                    pass
+                else:
+                    self._new_shell_sasd.set(row_data[stress_start + 0])
+                    self._new_shell_smsd.set(row_data[stress_start + 1])
+                    self._new_shell_tTsd.set(row_data[stress_start + 2])
+                    self._new_shell_tQsd.set(row_data[stress_start + 3])
+                    self._new_shell_psd.set(row_data[stress_start + 4])
+                    self._new_shell_shsd.set(row_data[stress_start + 5])
+
+                force_start = 35
+                if row_data[force_start] is None:
+                    pass
+                else:
+                    self._new_shell_Nsd.set(row_data[force_start + 0])
+                    self._new_shell_Msd.set(row_data[force_start + 1])
+                    self._new_shell_Tsd.set(row_data[force_start + 2])
+                    self._new_shell_Qsd.set(row_data[force_start + 3])
+                    self._new_shell_psd.set(row_data[stress_start + 4])
+
+                self._new_shell_uls_or_als.set(row_data[force_start + 5])
+                #self._new_shell_end_cap_pressure_included = tk.StringVar() TODO when should it be included?
+                # self._new_shell_fab_ring_stf = tk.StringVar()
+                # self._new_shell_fab_ring_frame = tk.StringVar()
+                self.new_structure()
 
     def button_load_info_click(self, event = None):
         ''' Get the load information for one line.'''
