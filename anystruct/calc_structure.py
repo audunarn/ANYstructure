@@ -2068,15 +2068,15 @@ class AllStructure():
         NSd = sxsd*(As+s*t)+ttf*s*t
 
         #7.4  Resistance of plate between stiffeners
-        ksp = math.sqrt(1-3*math.pow(tsd/fy,2)) if tsd < (fy/math.sqrt(3)) else 0
+        ksp = math.sqrt(1-3*math.pow(tsd/fy,2)) if abs(tsd) < (fy/math.sqrt(3)) else 0
         syrd_unstf = unstf_pl_data['syRd'] * ksp
         tsd_7_4 = fy/(math.sqrt(3)*gammaM)
-        uf_stf_panel_res_bet_plate = max([sysd/syrd_unstf if all([syrd_unstf >0, sysd > 0]) else 0, tsd/tsd_7_4])
+        uf_stf_panel_res_bet_plate = max([sysd/syrd_unstf if all([syrd_unstf >0, sysd > 0]) else 0, abs(tsd)/tsd_7_4])
         stf_pl_data['UF Plate resistance'] = uf_stf_panel_res_bet_plate
         if optimizing and uf_stf_panel_res_bet_plate > 1:
             return ['UF Plate resistance', uf_stf_panel_res_bet_plate]
-        #7.5  Characteristic buckling strength of stiffeners
 
+        #7.5  Characteristic buckling strength of stiffeners
         fEpx = 0 if s == 0 else 3.62*E*math.pow(t/s,2) # eq 7.42, checked, ok
         fEpy = 0 if s == 0 else 0.9*E*math.pow(t/s,2) # eq 7.43, checked, ok
         fEpt = 0 if s == 0 else 5.0*E*math.pow(t/s,2) # eq 7.44, checked, ok
@@ -2168,6 +2168,7 @@ class AllStructure():
 
         fk_dict = dict()
         fr_dict = dict()
+
         #Plate side
         zp = zp
         fr = fy
@@ -2177,12 +2178,15 @@ class AllStructure():
         fk_div_fr = (1+mu+math.pow(alpha,2)-math.sqrt(math.pow(1+mu+math.pow(alpha,2),2)-4*math.pow(alpha,2)))/(2*math.pow(alpha,2))
         fk = fk_div_fr*fr if alpha > 0.2 else fr
         fk_dict['plate'] = fk
-        #Stiffener side
 
-        for lT in [int(l if self._stf_dist_between_lateral_supp is None else self._stf_dist_between_lateral_supp),
-                   int(0.4*l if self._stf_dist_between_lateral_supp is None else self._stf_dist_between_lateral_supp),
-                   int(0.8*l if self._stf_dist_between_lateral_supp is None else self._stf_dist_between_lateral_supp)]:
-            params = lt_params(lT)
+        #Stiffener side
+        lengths = [l, 0.4 * l, 0.8 * l]
+        # _stf_dist_between_lateral_supp to be provided in mm in the input!!
+        if self._stf_dist_between_lateral_supp != None:
+            lengths = [self._stf_dist_between_lateral_supp, self._stf_dist_between_lateral_supp, self._stf_dist_between_lateral_supp]
+
+        for lT in lengths:
+            params = lt_params(float(lT))
             fr = params['fT'] if params['alphaT']>0.6 else fy
             fr_dict[lT] = fr
             alpha = math.sqrt(fr / fE)
@@ -2195,13 +2199,13 @@ class AllStructure():
         #7.7.3  Resistance parameters for stiffeners
 
         NRd = 0.0001 if gammaM == 0 else Ae * (fy / gammaM)  # eq7.65, checked ok
-        NksRd = Ae * (fk_dict[int(l if self._stf_dist_between_lateral_supp is None else self._stf_dist_between_lateral_supp)] / gammaM) #eq7.66
+        NksRd = Ae * (fk_dict[l if self._stf_dist_between_lateral_supp is None else self._stf_dist_between_lateral_supp] / gammaM) #eq7.66
         NkpRd = Ae * (fk_dict['plate'] / gammaM)  # checked ok
 
-        Ms1Rd = Wes * (fr_dict[int(0.4*l if self._stf_dist_between_lateral_supp is None else
-                                   self._stf_dist_between_lateral_supp)] / gammaM)  # ok
-        Ms2Rd = Wes * (fr_dict[int(0.8*l if self._stf_dist_between_lateral_supp is None else
-                                   self._stf_dist_between_lateral_supp)] / gammaM)  # eq7.69 checked ok
+        Ms1Rd = Wes * (fr_dict[0.4*l if self._stf_dist_between_lateral_supp is None else
+                                   self._stf_dist_between_lateral_supp] / gammaM)  # ok
+        Ms2Rd = Wes * (fr_dict[0.8*l if self._stf_dist_between_lateral_supp is None else
+                                   self._stf_dist_between_lateral_supp] / gammaM)  # eq7.69 checked ok
 
         MstRd = Wes*(fy/gammaM) #eq7.70 checked ok
         MpRd = Wep*(fy/gammaM) #eq7.71 checked ok
@@ -2255,7 +2259,9 @@ class AllStructure():
             M2Sd_max = max([M2Sd_pl, M2Sd_stf])
             # Lateral pressure on plate side:
             #print(M1Sd_pl, M2Sd_pl, M1Sd_stf,M2Sd_stf, qsd_stf_side, qsd_plate_side)
-            from scipy.optimize import minimize
+            from scipy.optimize import minimize_scalar
+            # tolerance and using minimize_scalar makes the calculation significantly faster!
+            tolerance: float = (zp + zt) / 1000
             def iteration_min_uf_pl_side(x):
                 eq7_50 = NSd/NksRd+(M1Sd_pl-NSd*x)/(Ms1Rd*(1-NSd/Ne))+u
                 eq7_51 = NSd/NkpRd-2*NSd/NRd +(M1Sd_pl-NSd*x)/(MpRd*(1-NSd/Ne))+u
@@ -2263,7 +2269,7 @@ class AllStructure():
                 eq7_53 = NSd/NkpRd+(M2Sd_pl+NSd*x)/(MpRd*(1-NSd/Ne))+u
                 #print(zstar, eq7_50, eq7_51,eq7_52,eq7_53,max([eq7_50, eq7_51,eq7_52,eq7_53]))
                 return max(eq7_50, eq7_51, eq7_52, eq7_53)
-            res_iter_pl = minimize(iteration_min_uf_pl_side, 0, bounds=[[-zt+self._Stiffener.tf/2,zp]])
+            res_iter_pl = minimize_scalar(iteration_min_uf_pl_side, method="Bounded", bounds=(-zt+self._Stiffener.tf/2,zp), options={'xatol': tolerance})
 
             if type(res_iter_pl.fun) == list:
                 stf_pl_data['UF Plate side'] = res_iter_pl.fun[0]
@@ -2282,7 +2288,7 @@ class AllStructure():
                 eq7_57 = NSd/NkpRd-2*NSd/NRd+(M2Sd_stf-NSd*x)/(MpRd*(1-NSd/Ne))+u
                 return max(eq7_54, eq7_55, eq7_56, eq7_57)
 
-            res_iter_stf = minimize(iteration_min_uf_stf_side, 0, bounds=[[-zt+self._Stiffener.tf/2,zp]])
+            res_iter_stf = minimize_scalar(iteration_min_uf_stf_side, method="Bounded", bounds=(-zt+self._Stiffener.tf/2,zp), options={'xatol': tolerance})
 
             if type(res_iter_stf.fun) == list:
                 stf_pl_data['UF Stiffener side'] = res_iter_stf.fun[0]
