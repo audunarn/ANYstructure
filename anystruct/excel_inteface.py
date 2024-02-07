@@ -13,14 +13,14 @@ class ExcelInterface():
         Input and output structure data and results.
         Running macros.
     '''
-    def __init__(self, path_and_file_to_book: str = None, visible = True):
+    def __init__(self, path_and_file_to_book: str = None, visible = True, read_only = False):
         '''
         :param path_and_file_to_book:  Path and file name or just filename in base directory.
         :param visible: If excel shall open in windows or run in the background.
         '''
         super(ExcelInterface, self).__init__()
         self.app = App(visible=visible)
-        self.book = Book(path_and_file_to_book)
+        self.book = Book(path_and_file_to_book, read_only=read_only)
 
         self.names_sp = {'Identification': 1, 'Length of panel': 3, 'Stiffener spacing': 4, 'Plate thickness': 5,
                       'Number of primary stiffeners': 6, 'Stiffener type (L,T,F)': 7, 'Stiffener boundary': 8,
@@ -211,8 +211,12 @@ class ExcelInterface():
 
         return return_dict
 
-    def get_sheet_data(self, sheet = 'excel_input'):
-        this_sheet = self.book.sheets[sheet]
+    def get_sheet_data(self, sheet = 'flat_plate'):
+        map = {'flat_plate': 0, 'cylinder': 1}
+        if sheet not in list(map.keys()):
+            return None
+
+        this_sheet = self.book.sheets[map[sheet]]
         return this_sheet.used_range.value
 
 if __name__ == '__main__':

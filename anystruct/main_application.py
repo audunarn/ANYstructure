@@ -6981,13 +6981,18 @@ class Application():
     def open_exel_file(self, file_name = 'excel_input_example.xlsx'):
         ''' Open an excel file with data to read into ANYstructure '''
         if os.path.isfile(file_name) : #kj
-            data_wb = excel_interface.ExcelInterface(file_name, visible=False)
+            data_wb = excel_interface.ExcelInterface(file_name, visible=False, read_only=True)
         else:
-            data_wb = excel_interface.ExcelInterface(self._root_dir + '/' + file_name)
-        data = data_wb.get_sheet_data()
+            data_wb = excel_interface.ExcelInterface(self._root_dir + '/' + file_name, visible=False, read_only=True)
+        data_flat = data_wb.get_sheet_data('flat_plate')
+        data_cyl = data_wb.get_sheet_data('cylinder')
         data_wb.close_book()
         # Creating points
-        for row_data in data[1:]:
+        print(data_flat, data_cyl)
+
+        # Flat
+        #--------------------------------------------------------------------------------------------------------------
+        for row_data in data_flat[1:]:
             l1x, l1y, l2x, l2y = row_data[1:5]
             self._new_point_x.set(l1x)
             self._new_point_y.set(l1y)
@@ -6997,7 +7002,7 @@ class Application():
             self.new_point()
         # Creating lines
         all_points = self.get_points()
-        for row_data in data[1:]:
+        for row_data in data_flat[1:]:
             l1x, l1y, l2x, l2y = row_data[1:5]
             p1_found = False
             p2_found = False
@@ -7043,6 +7048,8 @@ class Application():
                 self._new_load_comb_dict[('manual', this_line, 'manual')][2].set(1)
                 self._line_to_struc[this_line][0].need_recalc = True
 
+        # Cylinders
+        # ------------------------------------------------------------------------------------------------------------
 
 
 
