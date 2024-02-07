@@ -846,7 +846,7 @@ class Application():
                                               font = self._text_size['Text 8 bold']),
                                     ttk.Label(self._tab_prop, text='Load/stresses input',
                                               font = self._text_size['Text 8 bold']),
-                                    ttk.Label(self._tab_prop, text='Special provitions input',
+                                    ttk.Label(self._tab_prop, text='Special provisions input',
                                               font = self._text_size['Text 8 bold']),
                                     ttk.Label(self._tab_prop, text='Buckling input',
                                               font = self._text_size['Text 8 bold']),
@@ -1444,7 +1444,7 @@ class Application():
         self._flat_btn_load_info =  ttk.Button(self._tab_prop, text='Load info',
                                                 command=lambda id= "flat": self.stress_information_notebooks(id),
                                                 style = "Bold.TButton")
-        self._flat_btn_fixation_info =  ttk.Button(self._tab_prop, text='Parameter info',
+        self._flat_btn_fixation_info =  ttk.Button(self._tab_prop, text='Param. info',
                                                 command=lambda id= "fixation": self.stress_information_notebooks(id),
                                                 style = "Bold.TButton")
         self._shell_btn_length_info =  ttk.Button(self._tab_prop, text='Length info',
@@ -1925,14 +1925,14 @@ class Application():
             self._flat_btn_load_info.place(relx=hor_start + 5 * delta_x,
                                             rely=vert_start + (idx+1) * delta_y)
             self._flat_btn_fixation_info.place(relx=hor_start + 5 * delta_x,
-                                            rely=vert_start+ (idx-7) * delta_y)
+                                            rely=vert_start+ (idx-7.5) * delta_y)
             self._button_str_type.place(relx=hor_start + 5 * delta_x,
                                             rely=vert_start + (idx+3) * delta_y)
             idx = idx_now
             self._flat_gui_headlines[5].place(relx=hor_start + 0 * delta_x, rely=vert_start + idx * delta_y)
             idx += 1
             self._lab_buckling_method.place(relx=hor_start + 0 * delta_x, rely=vert_start + idx * delta_y)
-            self._buckling_method.place(relx=hor_start + 4 * delta_x, rely=vert_start + idx * delta_y)
+            self._buckling_method.place(relx=hor_start + 4 * delta_x, rely=vert_start + idx * delta_y*0.99)
             idx += 1
             if flat_panel_stf_girder:
                 self._flat_gui_headlines[7].place(relx=hor_start + 6 * delta_x, rely=vert_start + idx * delta_y)
@@ -4849,7 +4849,7 @@ class Application():
                                     if results['Column stability UF'] is None:
                                         text_value = 'N/A'
                                     else:
-                                        text_value = ('Column buckling does not need to be checked, but UF = ' +
+                                        text_value = ('Column buckling does not need to be checked\n- but UF = ' +
                                                       str(round(results['Column stability UF'],2)))
                                     uf_col = 'green'
                                 else:
@@ -7070,6 +7070,32 @@ class Application():
                     self._new_girder_fl_w.set(row_data[gird_start + 3])
                     self._new_girder_fl_t.set(row_data[gird_start + 4])
                     self._new_girder_type.set(row_data[gird_start + 5])
+
+                end_data_start = 24
+                for idx, var in enumerate([self._new_overpresure,self._new_stucture_type, self._new_buckling_stf_end_support,
+                            self._new_buckling_girder_end_support, self._new_buckling_fab_method_stf,
+                            self._new_buckling_fab_method_girder, self._new_buckling_length_factor_stf,
+                            self._new_buckling_length_factor_girder, self._new_buckling_stf_dist_bet_lat_supp,
+                            self._new_buckling_girder_dist_bet_lat_supp, self._new_buckling_tension_field,
+                            self._new_buckling_effective_against_sigy]):
+                    if row_data[end_data_start + idx] is not None:
+                        var.set(row_data[end_data_start + idx])
+
+
+
+                # self._new_overpresure.set(row_data[end_data_start + 0])
+                # self._new_stucture_type.set(row_data[end_data_start + 1])
+                # self._new_buckling_stf_end_support.set(row_data[end_data_start + 2])
+                # self._new_buckling_girder_end_support.set(row_data[end_data_start + 3])
+                # self._new_buckling_fab_method_stf.set(row_data[end_data_start + 4])
+                # self._new_buckling_fab_method_girder.set(row_data[end_data_start + 5])
+                # self._new_buckling_length_factor_stf.set(row_data[end_data_start + 6])
+                # self._new_buckling_length_factor_girder.set(row_data[end_data_start + 7])
+                # self._new_buckling_stf_dist_bet_lat_supp.set(row_data[end_data_start + 8])
+                # self._new_buckling_girder_dist_bet_lat_supp.set(row_data[end_data_start + 9])
+                # self._new_buckling_tension_field.set(row_data[end_data_start + 10])
+                # self._new_buckling_effective_against_sigy.set(row_data[end_data_start + 11])
+
                 self.new_structure()
                 self._new_load_comb_dict[('manual', this_line, 'manual')][0].set(row_data[16])
                 self._new_load_comb_dict[('manual', this_line, 'manual')][1].set(1)
@@ -7105,7 +7131,7 @@ class Application():
                 self._new_shell_length.set(row_data[main_start + 3])
                 self._new_shell_tot_length.set(row_data[main_start + 4])
                 self._new_shell_k_factor.set(row_data[main_start + 5])
-                #self._new_shell_mat_factor.set(row_data[main_start + 7])
+                self._new_shell_mat_factor.set(row_data[main_start + 6])
 
                 long_start = 12
                 self._new_stf_web_h.set(row_data[long_start + 0])
@@ -7119,6 +7145,7 @@ class Application():
                 if row_data[ring_stf_start] is None:
                     self._new_shell_exclude_ring_stf.set(True)
                 else:
+                    self._new_shell_exclude_ring_stf.set(False)
                     self._new_shell_ring_stf_hw.set(row_data[ring_stf_start + 0])
                     self._new_shell_ring_stf_tw.set(row_data[ring_stf_start + 1])
                     self._new_shell_ring_stf_b.set(row_data[ring_stf_start + 2])
@@ -7129,6 +7156,7 @@ class Application():
                 if row_data[ring_frame] is None:
                     self._new_shell_exclude_ring_frame.set(True)
                 else:
+                    self._new_shell_exclude_ring_frame.set(False)
                     self._new_shell_ring_frame_hw.set(row_data[ring_frame + 0])
                     self._new_shell_ring_frame_tw.set(row_data[ring_frame + 1])
                     self._new_shell_ring_frame_b.set(row_data[ring_frame + 2])
@@ -7140,6 +7168,8 @@ class Application():
                 if row_data[stress_start] is None:
                     pass
                 else:
+                    #mapper ={1: 'Force', 2: 'Stress'}
+                    self._new_shell_stress_or_force.set(2)
                     self._new_shell_sasd.set(row_data[stress_start + 0])
                     self._new_shell_smsd.set(row_data[stress_start + 1])
                     self._new_shell_tTsd.set(row_data[stress_start + 2])
@@ -7151,16 +7181,18 @@ class Application():
                 if row_data[force_start] is None:
                     pass
                 else:
+                    self._new_shell_stress_or_force.set(1)
                     self._new_shell_Nsd.set(row_data[force_start + 0])
                     self._new_shell_Msd.set(row_data[force_start + 1])
                     self._new_shell_Tsd.set(row_data[force_start + 2])
                     self._new_shell_Qsd.set(row_data[force_start + 3])
                     self._new_shell_psd.set(row_data[stress_start + 4])
-
-                self._new_shell_uls_or_als.set(row_data[force_start + 5])
-                #self._new_shell_end_cap_pressure_included = tk.StringVar() TODO when should it be included?
-                # self._new_shell_fab_ring_stf = tk.StringVar()
-                # self._new_shell_fab_ring_frame = tk.StringVar()
+                end_data_start = 39
+                self._new_shell_uls_or_als.set(row_data[end_data_start + 0])
+                self._new_shell_yield.set(row_data[end_data_start + 1])
+                self._new_shell_end_cap_pressure_included.set(row_data[end_data_start + 1])
+                self._new_shell_fab_ring_stf.set(row_data[end_data_start + 2])
+                self._new_shell_fab_ring_frame.set(row_data[end_data_start + 3])
                 self.new_structure()
 
     def button_load_info_click(self, event = None):
