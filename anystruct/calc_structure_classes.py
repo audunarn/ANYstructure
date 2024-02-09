@@ -1,13 +1,13 @@
 # units are SI units, unless noted otherwise in local funcions
-# still to find a better way to calculate section 7.5 on a stiffener object, so it works on both stiffener and girder
 import logging
 import math
-from typing import Union, Dict, Any
+from typing import Union, Dict, Any, Optional
 from enum import Enum
+from pydantic import BaseModel, validator
 
 
 # Create a custom logger
-logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
@@ -19,22 +19,26 @@ if not logger.hasHandlers():
     logger.addHandler(ch)
 
 
-class Material:
-
-    def __init__(self, young: float, poisson: float, strength: float, mat_factor: float=1.15, density: float=7850):
-        self._young: float = young
-        self._poisson: float = poisson
-        self._strength: float = strength
-        self._mat_factor: float = mat_factor
-        self._density: float = density
+class Material(BaseModel):
+    young: float
+    poisson: float
+    strength: float
+    mat_factor: float = 1.15
+    density: float = 78550
+    # def __init__(self, young: float, poisson: float, strength: float, mat_factor: float=1.15, density: float=7850):
+    #     self._young: float = young
+    #     self._poisson: float = poisson
+    #     self._strength: float = strength
+    #     self._mat_factor: float = mat_factor
+    #     self._density: float = density
 
 
     def __str__(self) -> str:
-        return 'Young\'s modulus: ' + str(self._young) + ' Poisson ratio: ' + str(self._poisson) + ' Yield strength: ' + str(self._strength)
+        return 'Young\'s modulus: ' + str(self.young) + ' Poisson ratio: ' + str(self.poisson) + ' Yield strength: ' + str(self.strength)
 
 
     def ToShortString(self) -> str:
-        return 'Y' + str(self._strength)
+        return 'Y' + str(self.strength)
 
 
     def get_fy(self) -> float:
@@ -42,121 +46,103 @@ class Material:
         Return material yield
         :return:
         '''
-        return self._strength
+        return self.strength
 
 
-class Plate:
-
-    def __init__(self, spacing: float, span: float, thickness:float=0, material: Material=Material(206e9, 0.3, 235e6, 7850)):
-        self._spacing: float = spacing
-        self._span: float = span
-        self._thickness: float = thickness
-        self._material: Material = material
+class Plate(BaseModel):
+    spacing: float
+    span: float
+    thickness: float
+    material: Material
+    # def __init__(self, spacing: float, span: float, thickness:float=0, material: Material=Material(206e9, 0.3, 235e6)):
+    #     self._spacing: float = spacing
+    #     self._span: float = span
+    #     self._thickness: float = thickness
+    #     self._material: Material = material
 
 
     def ToShortString(self) -> str:
-        return 'lxb' + str(self._span) + 'x' + str(self._spacing)
+        return 'lxb' + str(self.span) + 'x' + str(self.spacing)
 
 
     # Property decorators are used in buckling. IN mm!    
     @property # in mm
     def s(self):
-        return self._spacing * 1000
+        return self.spacing * 1000
     @s.setter # in mm
     def s(self, val):
-        self._spacing = val / 1000
+        self.spacing = val / 1000
 
     @property # in mm
     def l(self):
-        return self._span * 1000
+        return self.span * 1000
     @l.setter # in mm
     def l(self, val):
-        self._span = val / 1000
+        self.span = val / 1000
 
     @property # in mm
     def th(self):
-        return self._thickness * 1000
+        return self.thickness * 1000
     @th.setter # in mm
     def th(self, val):
-        self._thickness = val / 1000
+        self.thickness = val / 1000
 
 
-class Stiffener:
+class Stiffener(BaseModel):
+    type: str
+    web_height: float
+    web_th: float
+    flange_width: float
+    flange_th: float
+    dist_between_lateral_supp: Optional[float]
+    fabrication_method: str = 'welded'
+    # flange_eccentricity: float = 0
+    material: Material
 
-    def __init__(self, type: str, web_height: float, web_thickness: float, flange_width: float, flange_thickness: float, dist_between_lateral_supp: float=None, fabrication_method: str = 'welded', flange_eccentricity: float = 0, material: Material = Material(206e9, 0.3, 235e6, 7850)): # type: ignore
-        self._stiffener_type: str = type
-        self._web_height: float = web_height
-        self._web_th: float = web_thickness
-        self._flange_width: float = flange_width
-        self._flange_th: float = flange_thickness
-        self._dist_between_lateral_supp: float = dist_between_lateral_supp
-        self._fabrication_method: str = fabrication_method
-        self._flange_eccentricity: float = flange_eccentricity
-        self._material: Material = material
 
     def ToShortString(self) -> str:
-        return 'wHxwTxfWxfT' + str(round(self._web_height, 3)) + 'x' + str(round(self._web_th, 3)) + 'x' + str(round(self._flange_width, 3)) + 'x' + str(round(self._flange_th, 3))
+        return 'wHxwTxfWxfT' + str(round(self.web_height, 3)) + 'x' + str(round(self.web_th, 3)) + 'x' + str(round(self.flange_width, 3)) + 'x' + str(round(self.flange_th, 3))
 
     # Property decorators are used in buckling. IN mm!    
     @property # in mm
     def hw(self):
-        return self._web_height * 1000
+        return self.web_height * 1000
     @hw.setter # in mm
     def hw(self, val):
-        self._web_height = val / 1000
+        self.web_height = val / 1000
 
     @property # in mm
     def tw(self):
-        return self._web_th * 1000
+        return self.web_th * 1000
     @tw.setter # in mm
     def tw(self, val):
-        self._web_th = val / 1000
+        self.web_th = val / 1000
 
     @property # in mm
     def b(self):
-        return self._flange_width * 1000
+        return self.flange_width * 1000
     @b.setter # in mm
     def b(self, val):
-        self._flange_width = val / 1000
+        self.flange_width = val / 1000
 
     @property # in mm
     def tf(self):
-        return self._flange_th * 1000
+        return self.flange_th * 1000
     @tf.setter # in mm
     def tf(self, val):
-        self._flange_th = val / 1000
+        self.flange_th = val / 1000
+
 
     @property  # in mm
-    def s(self):
-        return self._spacing * 1000
-    @s.setter  # in mm
-    def s(self, val):
-        self._spacing = val / 1000
-
-    @property  # in mm
-    def t(self):
-        return self._plate_th* 1000
-    @t.setter  # in mm
-    def t(self, val):
-        self._plate_th = val / 1000 
-
-    @property  # in mm
-    def dist_between_lateral_supp(self):
-        if self._dist_between_lateral_supp == None:
+    def dist_between_lateral_supp_mm(self):
+        if self.dist_between_lateral_supp == None:
             return None
-        return self._dist_between_lateral_supp* 1000
-    @dist_between_lateral_supp.setter  # in mm
-    def dist_between_lateral_supp(self, val):
-        if self._dist_between_lateral_supp == None:
+        return self.dist_between_lateral_supp* 1000
+    @dist_between_lateral_supp_mm.setter  # in mm
+    def dist_between_lateral_supp_mm(self, val):
+        if self.dist_between_lateral_supp == None:
             return None
-        self._dist_between_lateral_supp = val / 1000 
-
-    @property
-    def stiffener_type(self):
-        return self._stiffener_type
-    @stiffener_type.setter
-    def stiffener_type(self, val):
-        self._stiffener_type = val
+        self.dist_between_lateral_supp = val / 1000 
 
     @property  # in mm
     def As(self):
@@ -165,21 +151,21 @@ class Stiffener:
 
     def get_beam_string(self) -> str:
         ''' Returning a string. '''
-        if type(self._stiffener_type) != str:
+        if type(self.type) != str:
             print('error')
 
-        base_name = self._stiffener_type+ '_' + str(round(self._web_height*1000, 0)) + 'x' + \
-                   str(round(self._web_th*1000, 0))
-        if self._stiffener_type == 'FB':
+        base_name = self.type+ '_' + str(round(self.web_height*1000, 0)) + 'x' + \
+                   str(round(self.web_th*1000, 0))
+        if self.type == 'FB':
             ret_str = base_name
-        elif self._stiffener_type in ['L-bulb', 'bulb', 'hp']:
-            ret_str = 'Bulb'+str(int(self._web_height*1000 + self._flange_th*1000))+'x'+\
-                      str(round(self._web_th*1000, 0))+ '_(' +str(round(self._web_height*1000, 0)) + 'x' + \
-                   str(round(self._web_th*1000, 0))+'_'+ str(round(self._flange_width*1000, 0)) + 'x' + \
-                      str(round(self._flange_th*1000, 0))+')'
+        elif self.type in ['L-bulb', 'bulb', 'hp']:
+            ret_str = 'Bulb'+str(int(self.web_height*1000 + self.flange_th*1000))+'x'+\
+                      str(round(self.web_th*1000, 0))+ '_(' +str(round(self.web_height*1000, 0)) + 'x' + \
+                   str(round(self.web_th*1000, 0))+'_'+ str(round(self.flange_width*1000, 0)) + 'x' + \
+                      str(round(self.flange_th*1000, 0))+')'
         else:
-            ret_str = base_name + '__' + str(round(self._flange_width*1000, 0)) + 'x' + \
-                      str(round(self._flange_th*1000, 0))
+            ret_str = base_name + '__' + str(round(self.flange_width*1000, 0)) + 'x' + \
+                      str(round(self.flange_th*1000, 0))
 
         ret_str = ret_str.replace('.', '_')
 
@@ -205,10 +191,10 @@ class Stiffener:
         The torsional moment of inertia is computed based on the dimensions and properties of the structure,
         using Venant's theorem for thin-walled open sections.
         """
-        tf = self._flange_th * 1000
-        tw = self._web_th * 1000 if reduced_tw is None else reduced_tw
-        bf = self._flange_width * 1000
-        hw = self._web_height * 1000
+        tf = self.flange_th * 1000
+        tw = self.web_th * 1000 if reduced_tw is None else reduced_tw
+        bf = self.flange_width * 1000
+        hw = self.web_height * 1000
 
         I_t1 = 1.0 / 3.0 * math.pow(tw , 3) * hw + 1.0 / 3.0 * math.pow(tf, 3) * bf
 
@@ -230,7 +216,7 @@ class Stiffener:
         For 'FB' or 'T' type stiffeners, the eccentricity is set to 0. For other types, it is calculated as the distance
         between the center of the flange width and the center of the web thickness.
         """
-        ecc = 0 if self._stiffener_type in ['FB', 'T'] else self._flange_width / 2 - self._web_th / 2
+        ecc = 0 if self.type in ['FB', 'T'] else self.flange_width / 2 - self.web_th / 2
         return ecc
 
 
@@ -253,11 +239,11 @@ class Stiffener:
         The polar moment of inertia is computed based on the dimensions and properties of the structure.
         If reduced_tw is provided, it is used as the reduced web thickness; otherwise, the original web thickness is used.
         """
-        tf = self._flange_th * 1000
-        tw = self._web_th * 1000 if reduced_tw is None else reduced_tw
+        tf = self.flange_th * 1000
+        tw = self.web_th * 1000 if reduced_tw is None else reduced_tw
         ef = self.get_flange_eccentricity() * 1000
-        hw = self._web_height * 1000
-        b = self._flange_width * 1000
+        hw = self.web_height * 1000
+        b = self.flange_width * 1000
 
         Ipo = tw / 3 * math.pow(hw, 3) + tf * (math.pow(hw + tf /2, 2) * b) + tf / 3 * (math.pow(ef + b / 2, 3) - math.pow(ef - b / 2, 3)) + \
               (b * math.pow(tf, 3)) / 12 + (hw * math.pow(tw, 3)) / 12
@@ -280,12 +266,12 @@ class Stiffener:
         For 'FB' type stiffeners, ef is equal to the web height. For other types ('L', 'T', 'L-bulb', 'HP-profile', 'HP', 'HP-bulb'),
         ef is calculated as the sum of the web height and half of the flange thickness.
         """
-        if self._stiffener_type == 'FB':
-            ef = self._web_height
-        elif self._stiffener_type in ['L', 'T', 'L-bulb', 'HP-profile', 'HP', 'HP-bulb']:
-            ef = self._web_height + 0.5 * self._flange_th
+        if self.type == 'FB':
+            ef = self.web_height
+        elif self.type in ['L', 'T', 'L-bulb', 'HP-profile', 'HP', 'HP-bulb']:
+            ef = self.web_height + 0.5 * self.flange_th
         else:
-            raise TypeError("Stiffener of type " + self._stiffener_type + " not implemented in get_ef_iacs")
+            raise TypeError("Stiffener of type " + self.type + " not implemented in get_ef_iacs")
         return ef
 
 
@@ -303,8 +289,8 @@ class Stiffener:
         The centroidal axis eccentricity is computed based on the dimensions and properties of the stiffener,
         taking into account the web height, web thickness, flange width, and flange thickness.
         """
-        e = (self._web_height * self._web_th * (self._web_height / 2) + self._flange_width * self._flange_th *
-             (self._web_height + self._web_th / 2)) / (self._web_height * self._web_th + self._flange_width * self._flange_th)
+        e = (self.web_height * self.web_th * (self.web_height / 2) + self.flange_width * self.flange_th *
+             (self.web_height + self.web_th / 2)) / (self.web_height * self.web_th + self.flange_width * self.flange_th)
         return e
 
 
@@ -339,11 +325,11 @@ class Stiffener:
         tf1 = plate_thickness
         b1 = plate_width
 
-        h = self._flange_th + self._web_height + tf1
-        tw = self._web_th if reduced_tw == None else reduced_tw / 1000
-        hw = self._web_height
-        tf2 = self._flange_th
-        b2 = self._flange_width
+        h = self.flange_th + self.web_height + tf1
+        tw = self.web_th if reduced_tw == None else reduced_tw / 1000
+        hw = self.web_height
+        tf2 = self.flange_th
+        b2 = self.flange_width
 
         Ax = tf1 * b1 + tf2 * b2 + hw * tw
         Iyc = (1 / 12) * (b1 * math.pow(tf1, 3) + b2 * math.pow(tf2, 3) + tw * math.pow(hw, 3))
@@ -376,14 +362,14 @@ class Stiffener:
         - For other types, a more complex calculation involving centroid and individual moments of inertia is performed.
 
         """
-        tw = self._web_th * 1000 if reduced_tw is None else reduced_tw
-        hw = self._web_height * 1000
-        tf2 = self._flange_th * 1000
-        b2 = self._flange_width * 1000
+        tw = self.web_th * 1000 if reduced_tw is None else reduced_tw
+        hw = self.web_height * 1000
+        tf2 = self.flange_th * 1000
+        b2 = self.flange_width * 1000
 
-        if self._stiffener_type == 'FB':
+        if self.type == 'FB':
             Iz = math.pow(tw, 3) * hw / 12
-        elif self._stiffener_type == 'T':
+        elif self.type == 'T':
             Iz = hw * math.pow(tw, 3) / 12 + tf2 * math.pow(b2, 3) / 12
         else:
             Czver = tw / 2
@@ -426,10 +412,10 @@ class Stiffener:
         The moment of inertia is computed based on the dimensions and properties of the plate and stiffener elements in the structure,
         following the International Association of Classification Societies (IACS) rules.
         """
-        tw = self._web_th
-        hw = self._web_height
-        tf2 = self._flange_th
-        b2 = self._flange_width
+        tw = self.web_th
+        hw = self.web_height
+        tf2 = self.flange_th
+        b2 = self.flange_width
 
         Af = b2 * tf2
         Aw = hw * tw
@@ -467,11 +453,11 @@ class Stiffener:
         tf1 = plate_thickness
 
         #Stiffener
-        tf2 = self._flange_th
-        b2 = self._flange_width
-        h = self._flange_th + self._web_height + tf1
-        tw = self._web_th
-        hw = self._web_height
+        tf2 = self.flange_th
+        b2 = self.flange_width
+        h = self.flange_th + self.web_height + tf1
+        tw = self.web_th
+        hw = self.web_height
 
         # cross section area
         Ax = tf1 * b1 + tf2 * b2 + hw * tw
@@ -494,7 +480,7 @@ class Stiffener:
         return Wey1, Wey2
 
 
-    def get_cross_section_centroid_with_effective_plate(self, plate_thickness: float, plate_width: float, reduced_tw=None) -> float:
+    def get_cross_section_centroid_with_effectiveplate(self, plate_thickness: float, plate_width: float, reduced_tw=None) -> float:
         """
         Calculate and return the cross-sectional centroid with effective plate.
 
@@ -522,24 +508,28 @@ class Stiffener:
         tf1 = plate_thickness
         b1 = plate_width
 
-        tf2 = self._flange_th
-        b2 = self._flange_width
-        tw = self._web_th if reduced_tw == None else reduced_tw / 1000
-        hw = self._web_height
+        tf2 = self.flange_th
+        b2 = self.flange_width
+        tw = self.web_th if reduced_tw == None else reduced_tw / 1000
+        hw = self.web_height
         Ax = tf1 * b1 + tf2 * b2 + hw * tw
         effana = (tf1 * b1 * tf1 / 2 + hw * tw * (tf1 + hw / 2) + tf2 * b2 * (tf1 + hw + tf2 / 2)) / Ax
 
         return effana
 
 
-class Stress:
-
-    def __init__(self, sigma_x1: float, sigma_x2: float, sigma_y1: float, sigma_y2: float, tauxy: float):
-        self._sigma_x1: float = sigma_x1
-        self._sigma_x2: float = sigma_x2
-        self._sigma_y1: float = sigma_y1
-        self._sigma_y2: float = sigma_y2
-        self._tauxy: float = tauxy
+class Stress(BaseModel):
+    sigma_x1: float
+    sigma_x2: float
+    sigma_y1: float
+    sigma_y2: float
+    tauxy: float
+    # def __init__(self, sigma_x1: float, sigma_x2: float, sigma_y1: float, sigma_y2: float, tauxy: float):
+    #     self._sigma_x1: float = sigma_x1
+    #     self._sigma_x2: float = sigma_x2
+    #     self._sigma_y1: float = sigma_y1
+    #     self._sigma_y2: float = sigma_y2
+    #     self._tauxy: float = tauxy
 
 
     def get_sigma_y1(self) -> float:
@@ -547,7 +537,7 @@ class Stress:
         Return sigma_y1
         :return:
         '''
-        return self._sigma_y1
+        return self.sigma_y1
     
     
     def get_sigma_y2(self) -> float:
@@ -555,7 +545,7 @@ class Stress:
         Return sigma_y2
         :return:
         '''
-        return self._sigma_y2
+        return self.sigma_y2
     
     
     def get_sigma_x1(self) -> float:
@@ -563,7 +553,7 @@ class Stress:
         Return sigma_x
         :return:
         '''
-        return self._sigma_x1
+        return self.sigma_x1
     
     
     def get_sigma_x2(self) -> float:
@@ -571,7 +561,7 @@ class Stress:
         Return sigma_x
         :return:
         '''
-        return self._sigma_x2
+        return self.sigma_x2
     
 
     def get_tau_xy(self) -> float:
@@ -579,14 +569,14 @@ class Stress:
         Return tau_xy
         :return:
         '''
-        return self._tauxy
+        return self.tauxy
 
 
     def get_report_stresses(self) -> str:
         'Return the stresses to the report'
-        return 'sigma_y1: ' + str(round(self._sigma_y1, 1)) + ' sigma_y2: ' + str(round(self._sigma_y2, 1)) + \
-               ' sigma_x1: ' + str(round(self._sigma_x1, 1)) +' sigma_x2: ' + str(round(self._sigma_x2, 1)) + \
-               ' tauxy: ' + str(round(self._tauxy, 1))
+        return 'sigma_y1: ' + str(round(self.sigma_y1, 1)) + ' sigma_y2: ' + str(round(self.sigma_y2, 1)) + \
+               ' sigma_x1: ' + str(round(self.sigma_x1, 1)) +' sigma_x2: ' + str(round(self.sigma_x2, 1)) + \
+               ' tauxy: ' + str(round(self.tauxy, 1))
 
 
     def set_stresses(self, sigy1: float, sigy2: float, sigx1: float, sigx2: float, tauxy: float) -> None:
@@ -598,98 +588,58 @@ class Stress:
         :param tauxy:
         :return:
         '''
-        self._sigma_y1 = sigy1
-        self._sigma_y2  = sigy2
-        self._sigma_x1 = sigx1
-        self._sigma_x2 = sigx2
-        self._tauxy  = tauxy
+        self.sigma_y1 = sigy1
+        self.sigma_y2  = sigy2
+        self.sigma_x1 = sigx1
+        self.sigma_x2 = sigx2
+        self.tauxy  = tauxy
 
 
-class StiffenedPanel:
-    # internally stiffener/girder end support is an enum. Makes life easier.
-    # the user provides "continuous" or "sniped", which gets translated internally.
-    def __init__(self, 
-                 plate: Plate, 
-                 stiffener: Stiffener=None, # type: ignore
-                 stiffener_end_support: str=None, # type: ignore
-                 girder: Stiffener=None, # type: ignore
-                 girder_end_support: str=None, # type: ignore
-                 girder_length: float=None, # type: ignore
-                 girder_panel_length: float=None): # type: ignore
-        
-        self._plate: Plate = plate
-        self._stiffener: Stiffener = stiffener
-        if self._stiffener is not None:
-            assert stiffener_end_support is not None, "When a stiffener is defined, also the end support needs to be defined as 'continuous' or 'sniped'"
-            
-            if stiffener_end_support.strip().lower() == "continuous":
-                self._stiffener_end_support: Enum = EndSupport.CONTINUOUS
-            elif stiffener_end_support.strip().lower() == "sniped":
-                self._stiffener_end_support: Enum = EndSupport.SNIPED
-            else:
-                raise ValueError(f"Type {stiffener_end_support} is not a valid input. only 'continuous' or 'sniped'.")
-            assert girder_length is not None, "When a stiffener is defined, also the girder length needs to be defined"
-            self._girder_lg = girder_length
+class StiffenedPanel(BaseModel):
+    plate: Plate
+    stiffener: Optional[Stiffener] = None
+    stiffener_end_support: Optional[str] = None
+    girder: Optional[Stiffener] = None
+    girder_end_support: Optional[str] = None
+    girder_length: Optional[float] = None
+    girder_panel_length: Optional[float] = None
+    # def __init__(self, **kwargs):
+    #     super().__init__(**kwargs)
+    #     if self.stiffener is not None: # type: ignore -> somehow pydantic makes this a tuple...
+    #         assert self.stiffener_end_support is not None, "When a stiffener is defined, also the end support needs to be defined as 'continuous' or 'sniped'"
+    #         if not self.stiffener_end_support.strip().lower() in ["continuous", "sniped"]: raise ValueError(f"Type {self.stiffener_end_support} is not a valid input. only 'continuous' or 'sniped'.")
+    #         assert self.girder_length is not None, "When a stiffener is defined, also the girder length needs to be defined"
 
-        self._girder: Union[Stiffener, None] = girder
-        if self._girder is not None:
-            assert self._stiffener is not None, "When a girder is defined, also the stiffener needs to be defined"
-            assert girder_end_support is not None, "When a girder is defined, also the end support needs to be defined as 'continuous' or 'sniped'"
-            if girder_end_support.strip().lower() == "continuous":
-                self._girder_end_support: Enum = EndSupport.CONTINUOUS
-            elif girder_end_support.strip().lower() == "sniped":
-                self._girder_end_support: Enum = EndSupport.SNIPED
-            else:
-                raise ValueError(f"Type {girder_end_support} is not a valid input. only 'continuous' or 'sniped'.")
-            
-            assert girder_length is not None, "When a girder is defined, also the girder length needs to be defined"
-            self._girder_lg: float = girder_length
-            assert girder_panel_length is not None, "When a girder is defined, also the panel length needs to be defined"
-            self._girder_Lp: float = girder_panel_length
-
-
-    @property
-    def stiffener_end_support(self):
-        if self._stiffener_end_support == EndSupport.CONTINUOUS:
-            return "continuous"
-        elif self._stiffener_end_support == EndSupport.SNIPED:
-            return "sniped"
-    @stiffener_end_support.setter
-    def stiffener_end_support(self, val: str):
-        if val.strip().lower() == "continuous":
-            self._stiffener_end_support: Enum = EndSupport.CONTINUOUS
-        elif val.strip().lower() == "sniped":
-            self._stiffener_end_support: Enum = EndSupport.SNIPED
-        else:
-            raise ValueError(f"Type {val} is not a valid input. only 'continuous' or 'sniped'.")
-
-    @property
-    def girder_end_support(self):
-        if self._girder_end_support == EndSupport.CONTINUOUS:
-            return "continuous"
-        elif self._girder_end_support == EndSupport.SNIPED:
-            return "sniped"
-    @girder_end_support.setter
-    def girder_end_support(self, val: str):
-        if val.strip().lower() == "continuous":
-            self._girder_end_support: Enum = EndSupport.CONTINUOUS
-        elif val.strip().lower() == "sniped":
-            self._girder_end_support: Enum = EndSupport.SNIPED
-        else:
-            raise ValueError(f"Type {val} is not a valid input. only 'continuous' or 'sniped'.")
+    #     if self.girder is not None: # type: ignore -> somehow pydantic makes this a tuple...
+    #         assert self.stiffener is not None, "When a girder is defined, also the stiffener needs to be defined"
+    #         assert self.girder_end_support is not None, "When a girder is defined, also the end support needs to be defined as 'continuous' or 'sniped'"
+    #         if not self.girder_end_support.strip().lower() in ["continuous", "sniped"]: raise ValueError(f"Type {self.girder_end_support} is not a valid input. only 'continuous' or 'sniped'.")            
+    #         assert self.girder_length is not None, "When a girder is defined, also the girder length needs to be defined"
+    #         assert self.girder_panel_length is not None, "When a girder is defined, also the panel length needs to be defined"
+    
+    @validator('stiffener_end_support')
+    def prevent_stf_end_supp(cls, v):
+        assert v is not None, 'stiffener_end_support should be either "continuous" or "sniped"'
+        return v
+    @validator('girder_end_support')
+    def prevent_grd_end_supp(cls, v):
+        assert v is not None, 'girder_end_support should be either "continuous" or "sniped"'
+        return v
 
 
     def ToShortString(self) -> str:
+        assert self.stiffener is not None
         end_supp: str = self.stiffener_end_support[0:4] if self.stiffener_end_support != None else "None"
-        return self._plate._material.ToShortString() + self._plate.ToShortString() + self._stiffener._material.ToShortString() + self._stiffener.ToShortString() + end_supp
+        return self.plate.material.ToShortString() + self.plate.ToShortString() + self.stiffener.material.ToShortString() + self.stiffener.ToShortString() + end_supp
 
 
     def get_one_line_string(self) -> str:
         ''' Returning a one line string. '''
-        return 'pl_' + str(round(self._plate._spacing * 1000, 1)) + 'x' + str(round(self._plate._thickness * 1000, 1)) + \
-               ' stf_' + self._stiffener.stiffener_type + \
-               str(round(self._stiffener._web_height * 1000, 1)) + 'x' + str(round(self._stiffener._web_th * 1000, 1)) + '+' + \
-               str(round(self._stiffener._flange_width * 1000, 1)) + 'x' + str(round(self._stiffener._flange_th * 1000, 1))
+        assert self.stiffener is not None
+        return 'pl_' + str(round(self.plate.spacing * 1000, 1)) + 'x' + str(round(self.plate.thickness * 1000, 1)) + \
+               ' stf_' + self.stiffener.type + \
+               str(round(self.stiffener.web_height * 1000, 1)) + 'x' + str(round(self.stiffener.web_th * 1000, 1)) + '+' + \
+               str(round(self.stiffener.flange_width * 1000, 1)) + 'x' + str(round(self.stiffener.flange_th * 1000, 1))
 
 
     def get_lg(self) -> float:
@@ -697,7 +647,7 @@ class StiffenedPanel:
         Return the girder length
         :return:
         '''
-        return self._girder_lg
+        return self.girder_length # type: ignore
 
 
     def get_plasic_section_modulus(self) -> float:
@@ -713,12 +663,13 @@ class StiffenedPanel:
         ------
         The plastic section modulus is computed based on the dimensions and properties of the plate and stiffener elements in the structure.
         """
-        tf1 = self._plate._thickness
-        tf2 = self._stiffener._flange_th
-        b1 = self._stiffener._spacing
-        b2 = self._stiffener._flange_width
-        h = self._stiffener._flange_th + self._stiffener._web_height + self._plate._thickness
-        tw = self._stiffener._web_th
+        assert self.stiffener is not None
+        tf1 = self.plate.thickness
+        tf2 = self.stiffener.flange_th
+        b1 = self.plate.spacing
+        b2 = self.stiffener.flange_width
+        h = self.stiffener.flange_th + self.stiffener.web_height + self.plate.thickness
+        tw = self.stiffener.web_th
 
         Ax = tf1 * b1 + tf2 * b2 + (h - tf1 - tf2) * tw
 
@@ -746,13 +697,14 @@ class StiffenedPanel:
         ------
         The shear center is determined based on the dimensions and properties of the plate and stiffener elements in the structure.
         """
-        tf1 = self._plate._thickness
-        tf2 = self._stiffener._flange_th
-        b1 = self._stiffener._spacing
-        b2 = self._stiffener._flange_width
-        h = self._stiffener._flange_th + self._stiffener._web_height + self._plate._thickness
-        tw = self._stiffener._web_th
-        hw = self._stiffener._web_height
+        assert self.stiffener is not None
+        tf1 = self.plate.thickness
+        tf2 = self.stiffener.flange_th
+        b1 = self.plate.spacing
+        b2 = self.stiffener.flange_width
+        h = self.stiffener.flange_th + self.stiffener.web_height + self.plate.thickness
+        tw = self.stiffener.web_th
+        hw = self.stiffener.web_height
         Ax = tf1 * b1 + tf2 * b2 + (h - tf1 - tf2) * tw
         # distance to center of gravity in z-direction
         ez = (b2 * tf2 * tf2 / 2 + tw * hw * (tf2 + hw / 2) + tf1 * b1 * (tf2 + hw + tf1 / 2)) / Ax
@@ -778,12 +730,13 @@ class StiffenedPanel:
         ------
         The shear area is computed based on the dimensions and properties of the plate and stiffener elements in the structure.
         """
-        return ((self._stiffener._flange_th * self._stiffener._web_th) + \
-                (self._stiffener._web_th * self._plate._thickness) + \
-                (self._stiffener._web_height * self._stiffener._web_th))
+        assert self.stiffener is not None
+        return ((self.stiffener.flange_th * self.stiffener.web_th) + \
+                (self.stiffener.web_th * self.plate.thickness) + \
+                (self.stiffener.web_height * self.stiffener.web_th))
 
 
-    def get_cross_section_area(self, efficient_se=None, include_plate=True) -> float:
+    def get_cross_section_area(self, efficient_se=None, includeplate=True) -> float:
         """
         Calculate and return the cross-sectional area.
 
@@ -791,7 +744,7 @@ class StiffenedPanel:
         -----------
         efficient_se : float, optional
             Efficient spacing for the plate. If not provided, plate spacing is used
-        include_plate : bool, optional
+        includeplate : bool, optional
             If True, includes the plate contribution in the cross-sectional area. Default is True.
 
         Returns:
@@ -803,16 +756,17 @@ class StiffenedPanel:
         ------
         The cross-sectional area is computed based on the dimensions and properties of the plate and stiffener elements in the structure.
         """
-        tf1 = self._plate._thickness if include_plate else 0
-        tf2 = self._stiffener._flange_th
-        if include_plate:
-            b1 = self._plate._spacing if efficient_se == None else efficient_se
+        assert self.stiffener is not None
+        tf1 = self.plate.thickness if includeplate else 0
+        tf2 = self.stiffener.flange_th
+        if includeplate:
+            b1 = self.plate.spacing if efficient_se == None else efficient_se
         else:
             b1 = 0
         
-        b2 = self._stiffener._flange_width
-        h = self._stiffener._web_height
-        tw = self._stiffener._web_th
+        b2 = self.stiffener.flange_width
+        h = self.stiffener.web_height
+        tw = self.stiffener.web_th
         #print('Plate: thk', tf1, 's', b1, 'Flange: thk', tf2, 'width', b2, 'Web: thk', tw, 'h', h)
         return tf1 * b1 + tf2 * b2 + h * tw
 
@@ -837,51 +791,69 @@ class StiffenedPanel:
         ------
         If no density is provided, and also no desity has been provided in the definition of plate/stiffener/girder, then 7850kg/m3 for steel is assumed.
         """
-        plate_density: float = density if density is not None else self._plate._material._density
-        stiffener_density: float = density if density is not None else self._plate._material._density
-        girder_density: float = density if density is not None else self._plate._material._density
+        plate_density: float = density if density is not None else self.plate.material.density
+        
+        
 
-        if self._girder is None:
-            assert panel_width >= 2 * self._plate._spacing
-            number_of_stiffeners: float = panel_width / self._plate._spacing
-            return plate_density * self._plate._span  * self._plate._thickness * panel_width + \
-                    number_of_stiffeners * stiffener_density * (self._stiffener._web_height * self._stiffener._web_th + self._stiffener._flange_width * self._stiffener._flange_th)
+        if self.stiffener is None and self.girder is None:
+            return plate_density * self.plate.span  * self.plate.thickness * panel_width
+        elif self.girder is None and self.stiffener is not None:
+            stiffener_density: float = density if density is not None else self.stiffener.material.density
+            assert panel_width >= 2 * self.plate.spacing
+            number_ofstiffeners: float = panel_width / self.plate.spacing
+            return plate_density * self.plate.span  * self.plate.thickness * panel_width + \
+                    number_ofstiffeners * stiffener_density * (self.stiffener.web_height * self.stiffener.web_th + self.stiffener.flange_width * self.stiffener.flange_th)
         else:
-            number_of_stiffeners: float = self._girder_lg / self._plate._spacing
-            number_of_girders: float = self._girder_Lp / self._plate._span
-            return plate_density * self._plate._thickness * self._girder_lg * self._girder_Lp + \
-                    number_of_stiffeners * stiffener_density * self._girder_Lp * (self._stiffener._web_height * self._stiffener._web_th + self._stiffener._flange_width * self._stiffener._flange_th) + \
-                    number_of_girders * girder_density * self._girder_Lp * (self._girder._web_height * self._girder._web_th + self._girder._flange_width * self._girder._flange_th)
+            assert self.girder is not None and self.stiffener is not None and self.girder_length is not None and self.girder_length is not None and self.girder_panel_length is not None
+            stiffener_density: float = density if density is not None else self.stiffener.material.density
+            girder_density: float = density if density is not None else self.girder.material.density
+            number_ofstiffeners: float = self.girder_length / self.plate.spacing
+            number_ofgirders: float = self.girder_length / self.plate.span
+            return plate_density * self.plate.thickness * self.girder_length * self.girder_panel_length + \
+                    number_ofstiffeners * stiffener_density * self.girder_panel_length * (self.stiffener.web_height * self.stiffener.web_th + self.stiffener.flange_width * self.stiffener.flange_th) + \
+                    number_ofgirders * girder_density * self.girder_panel_length * (self.girder.web_height * self.girder.web_th + self.girder.flange_width * self.girder.flange_th)
 
 
-class Stiffened_panel_calc_props:
+class Stiffened_panel_calc_props(BaseModel):
     # looks like these are parameters for both scantlings and buckling.
     # Maybe can split up in props for scantling calculations and props for buckling calculations
-    def __init__(self, zstar_optimization: bool = True, 
-                        plate_kpp: float = 1,
-                        stf_kps: float =1 ,
-                        km1: float = 12,
-                        km2: float = 24,
-                        km3: float = 12,
-                        structure_type: str = 'BOTTOM',
-                        structure_types: str = 'structure_types',
-                        lat_load_factor: float=1,
-                        stress_load_factor: float=1,
-                        buckling_length_factor_stf: Union[float, None]=None,
-                        buckling_length_factor_girder: Union[float, None]=None) -> None:
+    zstar_optimization: bool = True
+    plate_kpp: float = 1
+    stf_kps: float = 1
+    km1: float = 12
+    km2: float = 24
+    km3: float = 12
+    structure_type: str = 'BOTTOM'
+    structure_types: str = 'structure_types'
+    lat_load_factor: float = 1
+    stress_load_factor: float = 1
+    buckling_length_factor_stf: float = 1
+    buckling_length_factorgirder: float = 1
+    # def __init__(self, zstar_optimization: bool = True, 
+    #                     plate_kpp: float = 1,
+    #                     stf_kps: float =1 ,
+    #                     km1: float = 12,
+    #                     km2: float = 24,
+    #                     km3: float = 12,
+    #                     structure_type: str = 'BOTTOM',
+    #                     structure_types: str = 'structure_types',
+    #                     lat_load_factor: float=1,
+    #                     stress_load_factor: float=1,
+    #                     buckling_length_factor_stf: Union[float, None]=None,
+    #                     buckling_length_factorgirder: Union[float, None]=None) -> None:
         
-        self._zstar_optimization: bool = zstar_optimization
-        self._plate_kpp: float = plate_kpp
-        self._stf_kps: float = stf_kps
-        self._km1: float = km1
-        self._km2: float = km2
-        self._km3: float = km3
-        self._structure_type: str = structure_type
-        self._structure_types: str = structure_types
-        self._lat_load_factor: float = lat_load_factor
-        self._stress_load_factor: float = stress_load_factor
-        self._buckling_length_factor_stf: Union[float, None] = buckling_length_factor_stf
-        self._buckling_length_factor_girder: Union[float, None] = buckling_length_factor_girder
+        # self._zstar_optimization: bool = zstar_optimization
+        # self.plate_kpp: float = plate_kpp
+        # self._stf_kps: float = stf_kps
+        # self._km1: float = km1
+        # self._km2: float = km2
+        # self._km3: float = km3
+        # self._structure_type: str = structure_type
+        # self._structure_types: str = structure_types
+        # self._lat_load_factor: float = lat_load_factor
+        # self._stress_load_factor: float = stress_load_factor
+        # self._buckling_length_factor_stf: Union[float, None] = buckling_length_factor_stf
+        # self._buckling_length_factorgirder: Union[float, None] = buckling_length_factorgirder
         # self._dynamic_variable_orientation: float
         # if self.structure_type in self.structure_types['vertical']:
         #     self._dynamic_variable_orientation = 'z - vertical'
@@ -890,15 +862,15 @@ class Stiffened_panel_calc_props:
 
 
     def get_structure_types(self):
-        return self._structure_types
+        return self.structure_types
 
 
     def get_structure_type(self):
-        return self._structure_type
+        return self.structure_type
 
 
     def get_z_opt(self):
-        return self._zstar_optimization
+        return self.zstar_optimization
 
 
     def get_kpp(self):
@@ -906,7 +878,7 @@ class Stiffened_panel_calc_props:
         Return var
         :return:
         '''
-        return self._plate_kpp
+        return self.plate_kpp
     
     
     def get_kps(self):
@@ -914,7 +886,7 @@ class Stiffened_panel_calc_props:
         Return var
         :return:
         '''
-        return self._stf_kps
+        return self.stf_kps
     
     
     def get_km1(self):
@@ -922,7 +894,7 @@ class Stiffened_panel_calc_props:
         Return var
         :return:
         '''
-        return self._km1
+        return self.km1
     
     
     def get_km2(self):
@@ -930,7 +902,7 @@ class Stiffened_panel_calc_props:
         Return var
         :return:
         '''
-        return self._km2
+        return self.km2
     
     
     def get_km3(self):
@@ -938,42 +910,47 @@ class Stiffened_panel_calc_props:
         Return var
         :return:
         '''
-        return self._km3
+        return self.km3
 
 
-class Puls:
+class Puls(BaseModel):
+    puls_method: int = 1
+    puls_boundary: str = 'Int'
+    puls_stf_end: str = 'C'
+    puls_sp_or_up: str = 'SP'
+    puls_up_boundary: str = 'SSSS'
 
-    def __init__(self, puls_method: int=1, 
-                       puls_boundary: str='Int',
-                       puls_stf_end: str='C',
-                       puls_sp_or_up: str='SP',
-                       puls_up_boundary: str='SSSS') -> None:
+    # def __init__(self, puls_method: int=1, 
+    #                    puls_boundary: str='Int',
+    #                    puls_stf_end: str='C',
+    #                    puls_sp_or_up: str='SP',
+    #                    puls_up_boundary: str='SSSS') -> None:
         
-        self._puls_method: int = puls_method
-        self._puls_boundary: str = puls_boundary
-        self._puls_stf_end: str = puls_stf_end
-        self._puls_sp_or_up: str = puls_sp_or_up
-        self._puls_up_boundary: str = puls_up_boundary
+    #     self._puls_method: int = puls_method
+    #     self._puls_boundary: str = puls_boundary
+    #     self._puls_stf_end: str = puls_stf_end
+    #     self._puls_sp_or_up: str = puls_sp_or_up
+    #     self._puls_up_boundary: str = puls_up_boundary
 
 
     def get_puls_method(self):
-        return self._puls_method
+        return self.puls_method
 
 
     def get_puls_boundary(self):
-        return self._puls_boundary
+        return self.puls_boundary
 
 
     def get_puls_stf_end(self):
-        return self._puls_stf_end
+        return self.puls_stf_end
 
 
     def get_puls_sp_or_up(self):
-        return self._puls_sp_or_up
+        return self.puls_sp_or_up
 
 
     def get_puls_up_boundary(self):
-        return self._puls_up_boundary
+        return self.puls_up_boundary
 
 
 class DerivedStressValues():
@@ -989,94 +966,88 @@ class DerivedStressValues():
         self._stress_ratio_trans: float = 0
 
 
-class BucklingInput():
+class BucklingInput(BaseModel):
     # The material factor is part of the material definition. But could also be part of the calculation_properties or even here
-    def __init__(self, 
-                 panel: StiffenedPanel, 
-                 pressure: float, 
-                 pressure_side: str='both sides', 
-                 stress: Stress=Stress(0, 0, 0, 0, 0), 
-                 tension_field_action: str="not allowed", 
-                 stiffened_plate_effective_aginst_sigy: bool=True,
-                 min_lat_press_adj_span: float=None, # type: ignore
-                 calc_props: Stiffened_panel_calc_props=Stiffened_panel_calc_props(), 
-                 puls_input: Puls=Puls()):
+    panel: StiffenedPanel
+    pressure: float
+    pressure_side: str='both sides'
+    stress: Stress=Stress(sigma_x1=0, sigma_x2=0, sigma_y1=0, sigma_y2=0, tauxy=0)
+    tension_field_action: str = "not allowed"
+    stifplate_effective_aginst_sigy: bool = True
+    min_lat_press_adj_span: Optional[float] = None
+    calc_props: Stiffened_panel_calc_props = Stiffened_panel_calc_props()
+    puls_input: Puls = Puls()
+    # def __init__(self, 
+    #              panel: StiffenedPanel, 
+    #              pressure: float, 
+    #              pressure_side: str='both sides', 
+    #              stress: Stress=Stress(0, 0, 0, 0, 0), 
+    #              tension_field_action: str="not allowed", 
+    #              stiffenedplate_effective_aginst_sigy: bool=True,
+    #              min_lat_press_adj_span: float=None, # type: ignore
+    #              calc_props: Stiffened_panel_calc_props=Stiffened_panel_calc_props(), 
+    #              puls_input: Puls=Puls()):
 
-        self._panel: StiffenedPanel = panel
-        self._pressure: float = pressure
-        self._pressure_side: str = pressure_side
-        self._stress: Stress = stress
-        self._tension_field_action: str = tension_field_action # default "not allowed"
-        if stiffened_plate_effective_aginst_sigy == True:
-            self._stiffened_plate_effective_aginst_sigy: GirderOpt = GirderOpt.STF_PL_EFFECTIVE_AGAINST_SIGMA_Y
-        elif stiffened_plate_effective_aginst_sigy == False:
-            self._stiffened_plate_effective_aginst_sigy: GirderOpt = GirderOpt.ALL_SIMGA_Y_TO_GIRDER
-        else:
-            raise ValueError(f"{stiffened_plate_effective_aginst_sigy} is not a valid input for stiffened_plate_effective_aginst_sigy. Only 'True' or 'False'.")
-
-        self._min_lat_press_adj_span: float = min_lat_press_adj_span # type: ignore
-        self._stiffened_panel_calc_props: Stiffened_panel_calc_props = calc_props
-        self._puls: Puls = puls_input
-        
-    @property
-    def stiffened_plate_effective_aginst_sigy(self) -> bool:
-        if self._stiffened_plate_effective_aginst_sigy == GirderOpt.STF_PL_EFFECTIVE_AGAINST_SIGMA_Y:
-            return True
-        else:
-            return False
-    @stiffened_plate_effective_aginst_sigy.setter
-    def stiffened_plate_effective_aginst_sigy(self, val: bool):
-        if val == True:
-            self._stiffened_plate_effective_aginst_sigy = GirderOpt.STF_PL_EFFECTIVE_AGAINST_SIGMA_Y
-        elif val == False:
-            self._stiffened_plate_effective_aginst_sigy = GirderOpt.ALL_SIMGA_Y_TO_GIRDER
-        else:
-            raise ValueError(f"Type {val} is not a valid input. only 'continuous' or 'sniped'.")
+    # @property # in mm
+    # def stiffenedplate_effective_aginst_sigy_enum(self) -> GirderOpt:
+    #     if self.stifplate_effective_aginst_sigy == True:
+    #         return GirderOpt.STF_PL_EFFECTIVE_AGAINST_SIGMA_Y
+    #     else:
+    #         return GirderOpt.ALL_SIMGA_Y_TOgirder
+    # @stiffenedplate_effective_aginst_sigy_enum.setter # in mm
+    # def stiffenedplate_effective_aginst_sigy_enum(self, val: GirderOpt):
+    #     if val == GirderOpt.STF_PL_EFFECTIVE_AGAINST_SIGMA_Y:
+    #         self.stifplate_effective_aginst_sigy = True
+    #     else:
+    #         self.stifplate_effective_aginst_sigy = False
 
 
     def __str__(self):
+        assert self.panel.stiffener is not None
         '''
         Returning all properties.
         '''
         return \
             str(
-            '\n Plate field span:              ' + str(round(self._panel._plate._span * 1000)) + ' mm' +
-            '\n Stiffener spacing:             ' + str(self._panel._plate._spacing * 1000)+' mm'+
-            '\n Plate thickness:               ' + str(self._panel._plate._thickness * 1000)+' mm'+
-            '\n Stiffener web height:          ' + str(self._panel._stiffener._web_height * 1000)+' mm'+
-            '\n Stiffener web thickness:       ' + str(self._panel._stiffener._web_th * 1000)+' mm'+
-            '\n Stiffener flange width:        ' + str(self._panel._stiffener._flange_width * 1000)+' mm'+
-            '\n Stiffener flange thickness:    ' + str(self._panel._stiffener._flange_th * 1000)+' mm'+
-            '\n Plate material yield:          ' + str(self._panel._plate._material._strength / 1e6)+' MPa'+
-            '\n Stiffener material yield:       ' + str(self._panel._stiffener._material._strength / 1e6)+' MPa'+
-            '\n Structure/stiffener type:      ' + str(self._stiffened_panel_calc_props._structure_type)+'/'+(self._panel._stiffener.stiffener_type)+
+            '\n Plate field span:              ' + str(round(self.panel.plate.span * 1000)) + ' mm' +
+            '\n Stiffener spacing:             ' + str(self.panel.plate.spacing * 1000)+' mm'+
+            '\n Plate thickness:               ' + str(self.panel.plate.thickness * 1000)+' mm'+
+            '\n Stiffener web height:          ' + str(self.panel.stiffener.web_height * 1000)+' mm'+
+            '\n Stiffener web thickness:       ' + str(self.panel.stiffener.web_th * 1000)+' mm'+
+            '\n Stiffener flange width:        ' + str(self.panel.stiffener.flange_width * 1000)+' mm'+
+            '\n Stiffener flange thickness:    ' + str(self.panel.stiffener.flange_th * 1000)+' mm'+
+            '\n Plate material yield:          ' + str(self.panel.plate.material.strength / 1e6)+' MPa'+
+            '\n Stiffener material yield:       ' + str(self.panel.stiffener.material.strength / 1e6)+' MPa'+
+            '\n Structure/stiffener type:      ' + str(self.calc_props.structure_type)+'/'+(self.panel.stiffener.type)+
             # '\n Dynamic load varible_          ' + str(self._dynamic_variable_orientation)+
-            '\n Plate fixation paramter,kpp:   ' + str(self._stiffened_panel_calc_props._plate_kpp) + ' ' +
-            '\n Stf. fixation paramter,kps:    ' + str(self._stiffened_panel_calc_props._stf_kps) + ' ' +
-            '\n Global stress, sig_y1/sig_y2:  ' + str(round(self._stress._sigma_y1,3))+'/'+str(round(self._stress._sigma_y2,3))+ ' MPa' +
-            '\n Global stress, sig_x1/sig_x2:   ' + str(round(self._stress._sigma_x1,3))+'/'+str(round(self._stress._sigma_x2,3))+ ' MPa' +
-            '\n Global shear, tau_xy:          ' + str(round(self._stress._tauxy,3)) + ' MPa' +
-            '\n km1,km2,km3:                   ' + str(self._stiffened_panel_calc_props._km1)+'/'+str(self._stiffened_panel_calc_props._km2)+'/'+str(self._stiffened_panel_calc_props._km3)+
-            '\n Pressure side (p-plate/s-stf): ' + str(self._pressure_side) + ' ')
+            '\n Plate fixation paramter,kpp:   ' + str(self.calc_props.plate_kpp) + ' ' +
+            '\n Stf. fixation paramter,kps:    ' + str(self.calc_props.stf_kps) + ' ' +
+            '\n Global stress, sig_y1/sig_y2:  ' + str(round(self.stress.sigma_y1,3))+'/'+str(round(self.stress.sigma_y2,3))+ ' MPa' +
+            '\n Global stress, sig_x1/sig_x2:   ' + str(round(self.stress.sigma_x1,3))+'/'+str(round(self.stress.sigma_x2,3))+ ' MPa' +
+            '\n Global shear, tau_xy:          ' + str(round(self.stress.tauxy,3)) + ' MPa' +
+            '\n km1,km2,km3:                   ' + str(self.calc_props.km1)+'/'+str(self.calc_props.km2)+'/'+str(self.calc_props.km3)+
+            '\n Pressure side (p-plate/s-stf): ' + str(self.pressure_side) + ' ')
 
 
     def get_extended_string(self):
         ''' Some more information returned. '''
-        return 'span: ' + str(round(self._panel._plate._span, 4)) + ' structure type: ' + self._stiffened_panel_calc_props._structure_type + ' stf. type: ' + \
-               self._panel._stiffener.stiffener_type + ' pressure side: ' + self._pressure_side
+        assert self.panel.stiffener is not None
+        return 'span: ' + str(round(self.panel.plate.span, 4)) + ' structure type: ' + self.calc_props.structure_type + ' stf. type: ' + \
+               self.panel.stiffener.type + ' pressure side: ' + self.pressure_side
 
 
-    def get_plate_mat_factor(self):
-        return self._panel._plate._material._mat_factor
+    def getplate_mat_factor(self):
+        return self.panel.plate.material.mat_factor
 
 
-    def get_stiffener_mat_factor(self):
-        return self._panel._stiffener._material._mat_factor
+    def getstiffener_mat_factor(self):
+        assert self.panel.stiffener is not None
+        return self.panel.stiffener.material.mat_factor
 
 
-    def get_girder_mat_factor(self):
-        if self._panel._girder is not None:
-            return self._panel._girder._material._mat_factor
+    def getgirder_mat_factor(self):
+        if self.panel.girder is not None:
+            return self.panel.girder.material.mat_factor
         else:
             raise ValueError("The girder is not defined.")
 
@@ -1086,51 +1057,52 @@ class BucklingInput():
         Return the checked pressure side.
         :return: 
         '''
-        return self._pressure_side
+        return self.pressure_side
 
 
     def get_puls_input(self, run_type: str='SP'):
         """
         Modulus of elasticity and poison are the minimum of plat or stiffener
         """
-        if self._panel._stiffener._stiffener_type == 'FB':
+        assert self.panel.stiffener is not None
+        if self.panel.stiffener.type == 'FB':
             stf_type = 'F'
         else:
-            stf_type = self._panel._stiffener._stiffener_type
+            stf_type = self.panel.stiffener.type
         map_boundary = {'Continuous': 'C', 'Sniped': 'S'}
-        sig_x1 = self._stress._sigma_x1
-        sig_x2 = self._stress._sigma_x2
+        sig_x1 = self.stress.sigma_x1
+        sig_x2 = self.stress.sigma_x2
         if sig_x1 * sig_x2 >= 0:
             sigxd = sig_x1 if abs(sig_x1) > abs(sig_x2) else sig_x2
         else:
             sigxd = max(sig_x1, sig_x2)
         
-        elasticity: float = min(self._panel._plate._material._young, self._panel._stiffener._material._young) / 1e6
-        poison: float = min(self._panel._plate._material._poisson, self._panel._stiffener._material._poisson)
+        elasticity: float = min(self.panel.plate.material.young, self.panel.stiffener.material.young) / 1e6
+        poison: float = min(self.panel.plate.material.poisson, self.panel.stiffener.material.poisson)
         
-        if self._puls._puls_sp_or_up == 'SP':
-            return_dict = {'Identification': None, 'Length of panel': self._panel._plate._span * 1000, 'Stiffener spacing': self._panel._plate._spacing * 1000,
-                            'Plate thickness': self._panel._plate._thickness * 1000,
+        if self.puls_input.puls_sp_or_up == 'SP':
+            return_dict = {'Identification': None, 'Length of panel': self.panel.plate.span * 1000, 'Stiffener spacing': self.panel.plate.spacing * 1000,
+                            'Plate thickness': self.panel.plate.thickness * 1000,
                           'Number of primary stiffeners': 10,
                            'Stiffener type (L,T,F)': stf_type,
-                            'Stiffener boundary': map_boundary[self._puls._puls_stf_end]
-                            if map_boundary[self._puls._puls_stf_end] in ['C', 'S']
-                            else 'C' if self._puls._puls_stf_end == 'Continuous' else 'S',
-                          'Stiff. Height': self._panel._stiffener._web_height * 1000, 'Web thick.': self._panel._stiffener._web_th*1000,
-                           'Flange width': self._panel._stiffener._flange_width * 1000,
-                            'Flange thick.': self._panel._stiffener._flange_th * 1000, 'Tilt angle': 0,
+                            'Stiffener boundary': map_boundary[self.puls_input.puls_stf_end]
+                            if map_boundary[self.puls_input.puls_stf_end] in ['C', 'S']
+                            else 'C' if self.puls_input.puls_stf_end == 'Continuous' else 'S',
+                          'Stiff. Height': self.panel.stiffener.web_height * 1000, 'Web thick.': self.panel.stiffener.web_th*1000,
+                           'Flange width': self.panel.stiffener.flange_width * 1000,
+                            'Flange thick.': self.panel.stiffener.flange_th * 1000, 'Tilt angle': 0,
                           'Number of sec. stiffeners': 0, 
                          'Modulus of elasticity': elasticity, 
                          "Poisson's ratio": poison,
-                          'Yield stress plate': self._panel._plate._material._strength / 1e6, 'Yield stress stiffener': self._panel._stiffener._material._strength / 1e6,
-                            'Axial stress': 0 if self._puls._puls_boundary == 'GT' else sigxd,
-                           'Trans. stress 1': 0 if self._puls._puls_boundary == 'GL' else self._stress._sigma_y1,
-                          'Trans. stress 2': 0 if self._puls._puls_boundary == 'GL' else self._stress._sigma_y2,
-                           'Shear stress': self._stress._tauxy,
-                            'Pressure (fixed)': None, 'In-plane support': self._puls._puls_boundary,
-                           'sp or up': self._puls._puls_sp_or_up}
+                          'Yield stress plate': self.panel.plate.material.strength / 1e6, 'Yield stress stiffener': self.panel.stiffener.material.strength / 1e6,
+                            'Axial stress': 0 if self.puls_input.puls_boundary == 'GT' else sigxd,
+                           'Trans. stress 1': 0 if self.puls_input.puls_boundary == 'GL' else self.stress.sigma_y1,
+                          'Trans. stress 2': 0 if self.puls_input.puls_boundary == 'GL' else self.stress.sigma_y2,
+                           'Shear stress': self.stress.tauxy,
+                            'Pressure (fixed)': None, 'In-plane support': self.puls_input.puls_boundary,
+                           'sp or up': self.puls_input.puls_sp_or_up}
         else:
-            boundary = self._puls._puls_up_boundary
+            boundary = self.puls_input.puls_up_boundary
             blist = list()
             if len(boundary) != 4:
                 blist = ['SS', 'SS', 'SS', 'SS']
@@ -1143,22 +1115,23 @@ class BucklingInput():
                     else:
                         blist.append('SS')
 
-            return_dict = {'Identification': None, 'Length of plate': self._panel._plate._span * 1000, 'Width of c': self._panel._plate._spacing * 1000,
-                           'Plate thickness': self._panel._plate._thickness * 1000,
+            return_dict = {'Identification': None, 'Length of plate': self.panel.plate.span * 1000, 'Width of c': self.panel.plate.spacing * 1000,
+                           'Plate thickness': self.panel.plate.thickness * 1000,
                          'Modulus of elasticity': elasticity, 
                          "Poisson's ratio": poison,
-                          'Yield stress plate': self._panel._plate._material._strength / 1e6,
-                         'Axial stress 1': 0 if self._puls._puls_boundary == 'GT' else sigxd,
-                           'Axial stress 2': 0 if self._puls._puls_boundary == 'GT' else sigxd,
-                           'Trans. stress 1': 0 if self._puls._puls_boundary == 'GL' else self._stress._sigma_y1,
-                         'Trans. stress 2': 0 if self._puls._puls_boundary == 'GL' else self._stress._sigma_y2,
-                           'Shear stress': self._stress._tauxy, 'Pressure (fixed)': None, 'In-plane support': self._puls._puls_boundary,
+                          'Yield stress plate': self.panel.plate.material.strength / 1e6,
+                         'Axial stress 1': 0 if self.puls_input.puls_boundary == 'GT' else sigxd,
+                           'Axial stress 2': 0 if self.puls_input.puls_boundary == 'GT' else sigxd,
+                           'Trans. stress 1': 0 if self.puls_input.puls_boundary == 'GL' else self.stress.sigma_y1,
+                         'Trans. stress 2': 0 if self.puls_input.puls_boundary == 'GL' else self.stress.sigma_y2,
+                           'Shear stress': self.stress.tauxy, 'Pressure (fixed)': None, 'In-plane support': self.puls_input.puls_boundary,
                          'Rot left': blist[0], 'Rot right': blist[1], 'Rot upper': blist[2], 'Rot lower': blist[3],
-                           'sp or up': self._puls._puls_sp_or_up}
+                           'sp or up': self.puls_input.puls_sp_or_up}
         return return_dict
 
 
     def get_buckling_ml_input(self, design_lat_press: float=0, sp_or_up: str='SP', alone=True, csr=False):
+        assert self.panel.stiffener is not None
         '''
         Classes in data from ML
 
@@ -1171,47 +1144,47 @@ class BucklingInput():
         field_type = {'Integrated': 1,'Int': 1, 'Girder - long': 2,'GL': 2, 'Girder - trans': 3,  'GT': 3}
         up_boundary = {'SS': 1, 'CL': 2}
         map_boundary = {'Continuous': 'C', 'Sniped': 'S'}
-        sig_x1 = self._stress._sigma_x1
-        sig_x2 = self._stress._sigma_x2
+        sig_x1 = self.stress.sigma_x1
+        sig_x2 = self.stress.sigma_x2
         if sig_x1 * sig_x2 >= 0:
             sigxd = sig_x1 if abs(sig_x1) > abs(sig_x2) else sig_x2
         else:
             sigxd = max(sig_x1, sig_x2)
         
-        strength: float = min(self._panel._plate._material._strength, self._panel._stiffener._material._strength) / 1e6
+        strength: float = min(self.panel.plate.material.strength, self.panel.stiffener.material.strength) / 1e6
         
-        if self._puls._puls_sp_or_up == 'SP':
+        if self.puls_input.puls_sp_or_up == 'SP':
 
             if csr == False:
 
-                this_field =  [self._panel._plate._span * 1000, self._panel._plate._spacing * 1000, self._panel._plate._thickness * 1000, self._panel._stiffener._web_height * 1000,
-                               self._panel._stiffener._web_th * 1000, self._panel._stiffener._flange_width * 1000, self._panel._stiffener._flange_th * 1000, strength,
-                               strength, sigxd, self._stress._sigma_y1, self._stress._sigma_y2, self._stress._tauxy,
-                               design_lat_press/1000, stf_type[self._panel._stiffener._stiffener_type],
-                               stf_end[map_boundary[self._puls._puls_stf_end]]]
+                this_field =  [self.panel.plate.span * 1000, self.panel.plate.spacing * 1000, self.panel.plate.thickness * 1000, self.panel.stiffener.web_height * 1000,
+                               self.panel.stiffener.web_th * 1000, self.panel.stiffener.flange_width * 1000, self.panel.stiffener.flange_th * 1000, strength,
+                               strength, sigxd, self.stress.sigma_y1, self.stress.sigma_y2, self.stress.tauxy,
+                               design_lat_press/1000, stf_type[self.panel.stiffener.type],
+                               stf_end[map_boundary[self.puls_input.puls_stf_end]]]
             else:
-                this_field =  [self._panel._plate._span * 1000, self._panel._plate._spacing * 1000, self._panel._plate._thickness * 1000, self._panel._stiffener._web_height * 1000,
-                               self._panel._stiffener._web_th * 1000, self._panel._stiffener._flange_width * 1000, self._panel._stiffener._flange_th * 1000, strength,
-                               strength,  sigxd, self._stress._sigma_y1, self._stress._sigma_y2, self._stress._tauxy,
-                               design_lat_press/1000, stf_type[self._panel._stiffener._stiffener_type],
-                               stf_end[map_boundary[self._puls._puls_stf_end]],
-                               field_type[self._puls._puls_boundary]]
+                this_field =  [self.panel.plate.span * 1000, self.panel.plate.spacing * 1000, self.panel.plate.thickness * 1000, self.panel.stiffener.web_height * 1000,
+                               self.panel.stiffener.web_th * 1000, self.panel.stiffener.flange_width * 1000, self.panel.stiffener.flange_th * 1000, strength,
+                               strength,  sigxd, self.stress.sigma_y1, self.stress.sigma_y2, self.stress.tauxy,
+                               design_lat_press/1000, stf_type[self.panel.stiffener.type],
+                               stf_end[map_boundary[self.puls_input.puls_stf_end]],
+                               field_type[self.puls_input.puls_boundary]]
         else:
             ss_cl_list = list()
-            for letter_i in self._puls._puls_up_boundary:
+            for letter_i in self.puls_input.puls_up_boundary:
                 if letter_i == 'S':
                     ss_cl_list.append(up_boundary['SS'])
                 else:
                     ss_cl_list.append(up_boundary['CL'])
             b1, b2, b3, b4 = ss_cl_list
             if csr == False:
-                this_field =  [self._panel._plate._span * 1000, self._panel._plate._spacing * 1000, self._panel._plate._thickness * 1000, strength,
-                               sigxd, self._stress._sigma_y1, self._stress._sigma_y2, self._stress._tauxy, design_lat_press/1000,
+                this_field =  [self.panel.plate.span * 1000, self.panel.plate.spacing * 1000, self.panel.plate.thickness * 1000, strength,
+                               sigxd, self.stress.sigma_y1, self.stress.sigma_y2, self.stress.tauxy, design_lat_press/1000,
                                b1, b2, b3, b4]
             else:
-                this_field =  [self._panel._plate._span * 1000, self._panel._plate._spacing * 1000, self._panel._plate._thickness * 1000, strength,
-                               sigxd, self._stress._sigma_y1, self._stress._sigma_y2, self._stress._tauxy, design_lat_press/1000,
-                               field_type[self._puls._puls_boundary], b1, b2, b3, b4]
+                this_field =  [self.panel.plate.span * 1000, self.panel.plate.spacing * 1000, self.panel.plate.thickness * 1000, strength,
+                               sigxd, self.stress.sigma_y1, self.stress.sigma_y2, self.stress.tauxy, design_lat_press/1000,
+                               field_type[self.puls_input.puls_boundary], b1, b2, b3, b4]
         if alone:
             return [this_field,]
         else:
@@ -1222,21 +1195,21 @@ class BucklingInput():
         # calculated values in MPa
         derived_stress_values: DerivedStressValues = DerivedStressValues()
 
-        E = self._panel._plate._material._young / 1e6
-        fy = self._panel._plate._material._strength / 1e6
-        # gammaM = self._panel._plate._material._mat_factor
-        thickness = self._panel._plate.th # mm
-        spacing = self._panel._plate.s # mm
-        length = self._panel._plate.l # mm
+        E = self.panel.plate.material.young / 1e6
+        fy = self.panel.plate.material.strength / 1e6
+        # gammaM = self.panel.plate._material._mat_factor
+        thickness = self.panel.plate.th # mm
+        spacing = self.panel.plate.s # mm
+        length = self.panel.plate.l # mm
 
-        tsd = self._stress._tauxy * self._stiffened_panel_calc_props._stress_load_factor / 1e6
-        psd = self._pressure * self._stiffened_panel_calc_props._lat_load_factor
+        tsd = self.stress.tauxy * self.calc_props.stress_load_factor / 1e6
+        psd = self.pressure * self.calc_props.lat_load_factor
 
-        sig_x1 = self._stress._sigma_x1 * self._stiffened_panel_calc_props._stress_load_factor / 1e6
-        sig_x2 = self._stress._sigma_x2 * self._stiffened_panel_calc_props._stress_load_factor / 1e6
+        sig_x1 = self.stress.sigma_x1 * self.calc_props.stress_load_factor / 1e6
+        sig_x2 = self.stress.sigma_x2 * self.calc_props.stress_load_factor / 1e6
 
-        sig_y1 = self._stress._sigma_y1 * self._stiffened_panel_calc_props._stress_load_factor / 1e6
-        sig_y2 = self._stress._sigma_y2 * self._stiffened_panel_calc_props._stress_load_factor / 1e6
+        sig_y1 = self.stress.sigma_y1 * self.calc_props.stress_load_factor / 1e6
+        sig_y2 = self.stress.sigma_y2 * self.calc_props.stress_load_factor / 1e6
 
         if sig_x1 * sig_x2 >= 0:
             Use_Smax_x = sxsd = sig_x1 if abs(sig_x1) > abs(sig_x2) else sig_x2
@@ -1320,11 +1293,11 @@ class BucklingInput():
         return derived_stress_values
 
 
-    def effective_plate_width(self) -> float:
-        E = self._panel._plate._material._young / 1e6
-        fy = self._panel._plate._material._strength / 1e6
-        thickness = self._panel._plate.th # mm
-        spacing = self._panel._plate.s # mm
+    def effectiveplate_width(self) -> float:
+        E = self.panel.plate.material.young / 1e6
+        fy = self.panel.plate.material.strength / 1e6
+        thickness = self.panel.plate.th # mm
+        spacing = self.panel.plate.s # mm
         
         derived_stress_values: DerivedStressValues = self.calculate_derived_stress_values()
         
@@ -1358,20 +1331,22 @@ class BucklingInput():
 
     def red_prop(self, stiffener_or_girder: str) -> dict:
         if stiffener_or_girder.strip().lower() == "stiffener":
-            member: Stiffener = self._panel._stiffener
+            assert self.panel.stiffener is not None
+            member: Stiffener = self.panel.stiffener
         elif stiffener_or_girder.strip().lower() == "girder":
-            member: Stiffener = self._panel._girder # type: ignore
+            assert self.panel.girder is not None
+            member: Stiffener = self.panel.girder
         else:
             raise ValueError(f"stiffener_or_girder is {stiffener_or_girder} but should be either 'stiffener' or 'girder'")
 
         # TODO: update dict to object
-        fy = member._material._strength / 1e6
-        gammaM = member._material._mat_factor
-        thickness = self._panel._plate.th # mm
-        spacing = self._panel._plate.s # mm
-        length = self._panel._plate.l # mm
+        fy = member.material.strength / 1e6
+        gammaM = member.material.mat_factor
+        thickness = self.panel.plate.th # mm
+        spacing = self.panel.plate.s # mm
+        length = self.panel.plate.l # mm
 
-        psd = self._pressure * self._stiffened_panel_calc_props._lat_load_factor
+        psd = self.pressure * self.calc_props.lat_load_factor
 
         #Pnt.7:  Buckling of stiffened plates
         Vsd = psd * spacing * length / 2
@@ -1380,17 +1355,17 @@ class BucklingInput():
         Vsd_div_Vrd = Vsd / Vrd
 
         As = member.tw * member.hw + member.b * member.tf
-        se = self.effective_plate_width()
+        se = self.effectiveplate_width()
         
         tw_red =max(0, member.tw * (1 - Vsd_div_Vrd))
         
         Atot_red  = As + se * thickness - member.hw * (member.tw - tw_red )
-        gammaM = self._panel._plate._material._mat_factor
+        gammaM = self.panel.plate.material.mat_factor
         It_red  = member.get_torsional_moment_venant(reduced_tw=tw_red)
         Ipo_red  = member.get_polar_moment(reduced_tw=tw_red )
 
         Iy_red = member.get_moment_of_intertia(plate_thickness=thickness/1000, plate_width=se/1000, reduced_tw=tw_red) * 1000**4
-        zp_red  = member.get_cross_section_centroid_with_effective_plate(plate_thickness=thickness/1000, plate_width=se/1000, reduced_tw=tw_red ) \
+        zp_red  = member.get_cross_section_centroid_with_effectiveplate(plate_thickness=thickness/1000, plate_width=se/1000, reduced_tw=tw_red ) \
                     * 1000 - thickness / 2  # ch7.5.1 page 19
         zt_red  = (member.hw + member.tf) - zp_red + thickness / 2  # ch 7.5.1 page 19
         Wes_red  = 0.0001 if zt_red == 0 else Iy_red / zt_red
@@ -1401,22 +1376,24 @@ class BucklingInput():
 
     def fET(self, lT, stiffener_or_girder: str) -> float:
         if stiffener_or_girder.strip().lower() == "stiffener":
-            member: Stiffener = self._panel._stiffener
+            assert self.panel.stiffener is not None
+            member: Stiffener = self.panel.stiffener
         elif stiffener_or_girder.strip().lower() == "girder":
-            member: Stiffener = self._panel._girder # type: ignore
+            assert self.panel.girder is not None
+            member: Stiffener = self.panel.girder
         else:
             raise ValueError(f"stiffener_or_girder is {stiffener_or_girder} but should be either 'stiffener' or 'girder'")
 
         #7.5.2 Lateral torsional buckling
-        E = member._material._young / 1e6
-        v = member._material._poisson
+        E = member.material.young / 1e6
+        v = member.material.poisson
         G = E / (2 * (1 + v))
-        fy = member._material._strength / 1e6
-        thickness = self._panel._plate.th # mm
-        spacing = self._panel._plate.s # mm
-        length = self._panel._plate.l # mm
+        fy = member.material.strength / 1e6
+        thickness = self.panel.plate.th # mm
+        spacing = self.panel.plate.s # mm
+        length = self.panel.plate.l # mm
 
-        taud_Sd = self._stress._tauxy * self._stiffened_panel_calc_props._stress_load_factor / 1e6
+        taud_Sd = self.stress.tauxy * self.calc_props.stress_load_factor / 1e6
 
         #7.5  Characteristic buckling strength of stiffeners
         fEpx = 0 if spacing == 0 else 3.62 * E * math.pow(thickness / spacing, 2) # eq 7.42, checked, ok
@@ -1448,7 +1425,7 @@ class BucklingInput():
         Ipo = member.get_polar_moment()
         Iz = member.get_Iz_moment_of_inertia()
 
-        hs = member.hw / 2 if member.stiffener_type == 'FB' else \
+        hs = member.hw / 2 if member.type == 'FB' else \
             member.hw + member.tf / 2
 
         if Ipo * lT > 0:
@@ -1464,13 +1441,15 @@ class BucklingInput():
 
     def fT(self, lT, stiffener_or_girder: str) -> float:
         if stiffener_or_girder.strip().lower() == "stiffener":
-            member: Stiffener = self._panel._stiffener
+            assert self.panel.stiffener is not None
+            member: Stiffener = self.panel.stiffener
         elif stiffener_or_girder.strip().lower() == "girder":
-            member: Stiffener = self._panel._girder # type: ignore
+            assert self.panel.girder is not None
+            member: Stiffener = self.panel.girder
         else:
             raise ValueError(f"stiffener_or_girder is {stiffener_or_girder} but should be either 'stiffener' or 'girder'")
 
-        fy = member._material._strength / 1e6
+        fy = member.material.strength / 1e6
         fET: float = self.fET(lT, stiffener_or_girder)
         lambda_T = 0 if fET == 0 else math.sqrt(fy / fET)
         mu = 0.35 * (lambda_T - 0.6)
@@ -1479,17 +1458,17 @@ class BucklingInput():
                         (2 * math.pow(lambda_T, 2))
         fT = fy * fT_div_fy if lambda_T > 0.6 else fy
 
-        # logger.debug("fT: %s", fT)
+        logger.debug("lambda_T: %s mu: %s fT: %s", lambda_T, mu, fT)
         return fT
 
 
     def fr(self, lT, side: str, stiffener_or_girder: str=None) -> float: # type: ignore
-        fy = self._panel._plate._material._strength / 1e6
+        fy = self.panel.plate.material.strength / 1e6
 
         if side.strip().lower() == "plate":
             return fy
         if side.strip().lower() == "stiffener":
-            assert stiffener_or_girder is not None, "stiffener_or_girder needs to be provided for a 'stiffener side' check"
+            assert stiffener_or_girder is not None, "stiffener_orgirder needs to be provided for a 'stiffener side' check"
             fET: float = self.fET(lT, stiffener_or_girder)
             lambda_T = math.sqrt(fy / fET)
             fT: float = self.fT(lT, stiffener_or_girder)
@@ -1501,16 +1480,18 @@ class BucklingInput():
         
     def VRd(self, stiffener_or_girder: str) -> float:
         if stiffener_or_girder.strip().lower() == "stiffener":
-            member: Stiffener = self._panel._stiffener
+            assert self.panel.stiffener is not None
+            member: Stiffener = self.panel.stiffener
         elif stiffener_or_girder.strip().lower() == "girder":
-            member: Stiffener = self._panel._girder # type: ignore
+            assert self.panel.girder is not None
+            member: Stiffener = self.panel.girder
         else:
             raise ValueError(f"stiffener_or_girder is {stiffener_or_girder} but should be either 'stiffener' or 'girder'")
 
-        fy = self._panel._plate._material._strength / 1e6
-        gammaM = self._panel._plate._material._mat_factor
+        fy = self.panel.plate.material.strength / 1e6
+        gammaM = self.panel.plate.material.mat_factor
         # should the following not be either 1. only the web area, or 2.n the full stiffener area?
-        Anet = (member.hw + member.tf) * member.tw# + self._Stiffener.b*self._Stiffener.tf
+        Anet = (member.hw + member.tf) * member.tw# + self.stiffener.b*self.stiffener.tf
         VRd = Anet * fy / (gammaM * math.sqrt(3))
         
         return VRd
@@ -1518,25 +1499,27 @@ class BucklingInput():
 
     def lk(self, VSd: float, stiffener_or_girder: str) -> float:
         if stiffener_or_girder.strip().lower() == "stiffener":
-            member: Stiffener = self._panel._stiffener
+            assert self.panel.stiffener is not None
+            member: Stiffener = self.panel.stiffener
         elif stiffener_or_girder.strip().lower() == "girder":
-            member: Stiffener = self._panel._girder # type: ignore
+            assert self.panel.girder is not None
+            member: Stiffener = self.panel.girder
         else:
             raise ValueError(f"stiffener_or_girder is {stiffener_or_girder} but should be either 'stiffener' or 'girder'")
 
-        fy = self._panel._plate._material._strength / 1e6
-        gammaM = self._panel._plate._material._mat_factor
-        thickness = self._panel._plate.th # mm
-        spacing = self._panel._plate.s # mm
-        length = self._panel._plate.l # mm
+        fy = self.panel.plate.material.strength / 1e6
+        gammaM = self.panel.plate.material.mat_factor
+        thickness = self.panel.plate.th # mm
+        spacing = self.panel.plate.s # mm
+        length = self.panel.plate.l # mm
 
-        psd = self._pressure * self._stiffened_panel_calc_props._lat_load_factor
-        psd_min_adj = psd if self._min_lat_press_adj_span is None else\
-            self._min_lat_press_adj_span*self._stiffened_panel_calc_props._lat_load_factor
+        psd = self.pressure * self.calc_props.lat_load_factor
+        psd_min_adj = psd if self.min_lat_press_adj_span is None else\
+            self.min_lat_press_adj_span*self.calc_props.lat_load_factor
 
         As = member.As
-        se = self.effective_plate_width()
-        zp = member.get_cross_section_centroid_with_effective_plate(plate_thickness=thickness/1000, plate_width=se/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
+        se = self.effectiveplate_width()
+        zp = member.get_cross_section_centroid_with_effectiveplate(plate_thickness=thickness/1000, plate_width=se/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
         zt = (member.hw + member.tf) - zp + thickness / 2
         Iy = member.get_moment_of_intertia(plate_thickness=thickness/1000, plate_width=se/1000) * 1000**4
         
@@ -1551,36 +1534,38 @@ class BucklingInput():
         Wmin = min([Wes, Wep])
         pf = 0.0001 if length * spacing * gammaM == 0 else 12 * Wmin * fy / (math.pow(length, 2) * spacing * gammaM)
 
-        if self._stiffened_panel_calc_props._buckling_length_factor_stf is None:
+        if self.calc_props.buckling_length_factor_stf is None:
             if stiffener_or_girder.strip().lower() == "stiffener":
-                member_end_support = self._panel._stiffener_end_support
+                member_end_support = self.panel.stiffener_end_support
             else:
-                member_end_support = self._panel._girder_end_support
-            if member_end_support == EndSupport.CONTINUOUS:
+                member_end_support = self.panel.girder_end_support
+            if member_end_support == "continuous":
                 lk = length * (1 - 0.5 * abs(psd_min_adj / pf))
 
             else:
                 lk = length
         else:
-            lk = self._stiffened_panel_calc_props._buckling_length_factor_stf * length
+            lk = self.calc_props.buckling_length_factor_stf * length
         
         # logger.debug("lk: %s", lk)
         return lk
 
 
-    def fk_stiffener_side(self, lT, VSd: float, stiffener_or_girder: str) -> float:
+    def fkstiffener_side(self, lT, VSd: float, stiffener_or_girder: str) -> float:
         if stiffener_or_girder.strip().lower() == "stiffener":
-            member: Stiffener = self._panel._stiffener
+            assert self.panel.stiffener is not None
+            member: Stiffener = self.panel.stiffener
         elif stiffener_or_girder.strip().lower() == "girder":
-            member: Stiffener = self._panel._girder # type: ignore
+            assert self.panel.girder is not None
+            member: Stiffener = self.panel.girder
         else:
             raise ValueError(f"stiffener_or_girder is {stiffener_or_girder} but should be either 'stiffener' or 'girder'")
         
-        E = member._material._young / 1e6
-        thickness = self._panel._plate.th # mm
+        E = member.material.young / 1e6
+        thickness = self.panel.plate.th # mm
         As = member.As
-        se = self.effective_plate_width()
-        zp = member.get_cross_section_centroid_with_effective_plate(plate_thickness=thickness/1000, plate_width=se/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
+        se = self.effectiveplate_width()
+        zp = member.get_cross_section_centroid_with_effectiveplate(plate_thickness=thickness/1000, plate_width=se/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
         zt  = (member.hw + member.tf) - zp + thickness / 2  # ch 7.5.1 page 19
         Iy = member.get_moment_of_intertia(plate_thickness=thickness/1000, plate_width=se/1000) * 1000**4
         ie = 0.0001 if As + se * thickness == 0 else math.sqrt(Iy / (As + se * thickness))
@@ -1599,20 +1584,22 @@ class BucklingInput():
         return fk
 
 
-    def fk_plate(self, stiffener_or_girder: str) -> float:
+    def fkplate(self, stiffener_or_girder: str) -> float:
         if stiffener_or_girder.strip().lower() == "stiffener":
-            member: Stiffener = self._panel._stiffener
+            assert self.panel.stiffener is not None
+            member: Stiffener = self.panel.stiffener
         elif stiffener_or_girder.strip().lower() == "girder":
-            member: Stiffener = self._panel._girder # type: ignore
+            assert self.panel.girder is not None
+            member: Stiffener = self.panel.girder
         else:
             raise ValueError(f"stiffener_or_girder is {stiffener_or_girder} but should be either 'stiffener' or 'girder'")
 
-        E = member._material._young / 1e6
-        thickness = self._panel._plate.th # mm
-        length = self._panel._plate.l # mm
+        E = member.material.young / 1e6
+        thickness = self.panel.plate.th # mm
+        length = self.panel.plate.l # mm
         As = member.As
-        se = self.effective_plate_width()
-        zp = member.get_cross_section_centroid_with_effective_plate(plate_thickness=thickness/1000, plate_width=se/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
+        se = self.effectiveplate_width()
+        zp = member.get_cross_section_centroid_with_effectiveplate(plate_thickness=thickness/1000, plate_width=se/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
         Iy = member.get_moment_of_intertia(plate_thickness=thickness/1000, plate_width=se/1000) * 1000**4
         ie = 0.0001 if As + se * thickness == 0 else math.sqrt(Iy / (As + se * thickness))
         lk = length
@@ -1630,36 +1617,32 @@ class BucklingInput():
         return fk
 
 
-class CalcScantlings(BucklingInput):
+class CalcScantlings(BaseModel):
+
     '''
     This Class does the calculations for the plate fields. 
     Input is a BucklingInput object, same as for the structure class.
     The class inherits from BucklingInput class.
     '''
-    def __init__(self, buckling_input: BucklingInput, lat_press: bool=True, category: str='secondary'):
-        super(CalcScantlings, self).__init__(buckling_input._panel, 
-                                             buckling_input._pressure, 
-                                             buckling_input._pressure_side, 
-                                             buckling_input._stress, 
-                                             buckling_input._tension_field_action,
-                                             buckling_input.stiffened_plate_effective_aginst_sigy,
-                                             buckling_input._min_lat_press_adj_span,
-                                             buckling_input._stiffened_panel_calc_props, 
-                                             buckling_input._puls)
-        # pressure is defined as a property, but doesn't seem to be using in the functions, where a parameter is passed.
-        self.lat_press: bool = lat_press
-        self.category: str = category
-        self._need_recalc: bool = True
+    buckling_input: BucklingInput
+    lat_press: bool
+    category: str
+    need_recalc: bool
+    # def __init__(self, buckling_input: BucklingInput, lat_press: bool=True, category: str='secondary'):
+    #     super(CalcScantlings, self).__init__(buckling_input.panel, 
+    #                                          buckling_input.pressure, 
+    #                                          buckling_input.pressure_side, 
+    #                                          buckling_input.stress, 
+    #                                          buckling_input.tension_field_action,
+    #                                          buckling_input.stiffenedplate_effective_aginst_sigy,
+    #                                          buckling_input.min_lat_press_adj_span,
+    #                                          buckling_input.stiffened_panel_calc_props, 
+    #                                          buckling_input.puls)
+    #     # pressure is defined as a property, but doesn't seem to be using in the functions, where a parameter is passed.
+    #     self.lat_press: bool = lat_press
+    #     self.category: str = category
+    #     self._need_recalc: bool = True
 
-
-    @property
-    def need_recalc(self):
-        return self._need_recalc
-
-
-    @need_recalc.setter
-    def need_recalc(self, val):
-        self._need_recalc = val
 
 
     def get_results_for_report(self, lat_press: float=0) -> str:
@@ -1675,16 +1658,7 @@ class CalcScantlings(BucklingInput):
         String
             Returns a string for the report.
         """
-        buckling_input: BucklingInput = BucklingInput(self._panel, 
-                                                        self._pressure, 
-                                                        self._pressure_side, 
-                                                        self._stress, 
-                                                        self._tension_field_action, 
-                                                        self.stiffened_plate_effective_aginst_sigy, # note wihout the underscore
-                                                        self._min_lat_press_adj_span,
-                                                        self._stiffened_panel_calc_props, 
-                                                        self._puls)
-        dnv_buckling: DNVBuckling = DNVBuckling(buckling_input)
+        dnv_buckling: DNVBuckling = DNVBuckling(buckling_input=self.buckling_input, calculation_domain=None)
         buc = [round(res, 1) for res in dnv_buckling.stiffened_panel().values()]
 
         return 'Minimum section modulus:'\
@@ -1695,7 +1669,7 @@ class CalcScantlings(BucklingInput):
                +str(buc[2]) + ' eq7_52: ' + str(buc[3]) + ' eq7_53: ' + str(buc[4])
 
 
-    def calculate_slamming_plate(self, slamming_pressure: float, red_fac: float=1) -> float:
+    def calculate_slammingplate(self, slamming_pressure: float, red_fac: float=1) -> float:
         """
         Plate slamming according DNV
         Parameters:
@@ -1711,18 +1685,18 @@ class CalcScantlings(BucklingInput):
             Result of the calculation according ???
         """
         ka1 = 1.1
-        ka2 = min(max(0.4, self._panel._plate._spacing / self._panel._plate._span), 1)
+        ka2 = min(max(0.4, self.buckling_input.panel.plate.spacing / self.buckling_input.panel.plate.span), 1)
 
         ka = math.pow(ka1 - 0.25 * ka2, 2)
-        sigmaf = self._panel._plate._material._strength / 1e6  # MPa
+        sigmaf = self.buckling_input.panel.plate.material.strength / 1e6  # MPa
 
         psl = red_fac * slamming_pressure / 1000  # kPa
         Cd = 1.5
 
-        return 0.0158 * ka * self._panel._plate._spacing * 1000 * math.sqrt(psl / (Cd * sigmaf))
+        return 0.0158 * ka * self.buckling_input.panel.plate.spacing * 1000 * math.sqrt(psl / (Cd * sigmaf))
 
 
-    def calculate_slamming_stiffener(self, slamming_pressure: float, angle: float=90, red_fac: float=1) -> dict[str, Union[float, None]]:
+    def calculate_slammingstiffener(self, slamming_pressure: float, angle: float=90, red_fac: float=1) -> dict[str, Union[float, None]]:
         """
         Stiffener slamming according DNV
         Parameters:
@@ -1742,23 +1716,23 @@ class CalcScantlings(BucklingInput):
         """
 
         # should replace with either object or tuple
-
+        assert self.buckling_input.panel.stiffener is not None
         tk = 0
         psl = slamming_pressure / 1000  # kPa
         Pst = psl * red_fac  # Currently DNV does not use psl/2 for slamming.
-        sigmaf = self._panel._stiffener._material._strength / 1e6  # MPa
-        hw, twa, tp, tf, bf, s = [(val - tk) * 1000 for val in [self._panel._stiffener._web_height, self._panel._stiffener._web_th, self._panel._plate._thickness,
-                                                                self._panel._stiffener._flange_th, self._panel._stiffener._flange_width, self._panel._plate._spacing]]
+        sigmaf = self.buckling_input.panel.stiffener.material.strength / 1e6  # MPa
+        hw, twa, tp, tf, bf, s = [(val - tk) * 1000 for val in [self.buckling_input.panel.stiffener.web_height, self.buckling_input.panel.stiffener.web_th, self.buckling_input.panel.plate.thickness,
+                                                                self.buckling_input.panel.stiffener.flange_th, self.buckling_input.panel.stiffener.flange_width, self.buckling_input.panel.plate.spacing]]
         ns = 2
         tau_eH = sigmaf / math.sqrt(3)
-        h_stf = (self._panel._stiffener._web_height+self._panel._stiffener._flange_th) * 1000
+        h_stf = (self.buckling_input.panel.stiffener.web_height+self.buckling_input.panel.stiffener.flange_th) * 1000
         f_shr = 0.7
-        lbdg = self._panel._plate._span
-        lshr = self._panel._plate._span - self._panel._plate._spacing / 4000
+        lbdg = self.buckling_input.panel.plate.span
+        lshr = self.buckling_input.panel.plate.span - self.buckling_input.panel.plate.spacing / 4000
         dshr = h_stf + tp if 75 <= angle <= 90 else (h_stf + tp) * math.sin(math.radians(angle))
         tw = (f_shr * Pst * s * lshr) / (dshr * tau_eH)
 
-        if self._panel._stiffener._web_th * 1000 < tw:
+        if self.buckling_input.panel.stiffener.web_th * 1000 < tw:
             return {'tw_req': tw, 'Zp_req': None}
         fpl = 8* (1 + (ns / 2))
         Zp_req = (1.2 * Pst * s * math.pow(lbdg, 2) / (fpl * sigmaf)) + \
@@ -1787,15 +1761,16 @@ class CalcScantlings(BucklingInput):
             The bool is false if check is not ok
             The float is the check value if the check is not ok, None otherwise.
         """
-        pl_chk = self.calculate_slamming_plate(slamming_pressure, red_fac=pl_red_fact)
-        if self._panel._plate._thickness * 1000 < pl_chk:
-            chk1 = pl_chk / self._panel._plate._thickness * 1000
+        assert self.buckling_input.panel.stiffener is not None
+        pl_chk = self.calculate_slammingplate(slamming_pressure, red_fac=pl_red_fact)
+        if self.buckling_input.panel.plate.thickness * 1000 < pl_chk:
+            chk1 = pl_chk / self.buckling_input.panel.plate.thickness * 1000
             return False, chk1
 
-        stf_res = self.calculate_slamming_stiffener(slamming_pressure, angle=angle, red_fac=stf_red_fact)
+        stf_res = self.calculate_slammingstiffener(slamming_pressure, angle=angle, red_fac=stf_red_fact)
         if stf_res['tw_req'] is not None: # this is always the case though
-            if self._panel._stiffener._web_th * 1000 < stf_res['tw_req']:
-                chk2 = stf_res['tw_req'] / self._panel._stiffener._web_th * 1000
+            if self.buckling_input.panel.stiffener.web_th * 1000 < stf_res['tw_req']:
+                chk2 = stf_res['tw_req'] / self.buckling_input.panel.stiffener.web_th * 1000
                 return False, chk2
 
         if stf_res['Zp_req'] is not None:
@@ -1821,19 +1796,20 @@ class CalcScantlings(BucklingInput):
         Float
             The net effective plastic section modulus
         """
+        assert self.buckling_input.panel.stiffener is not None
         tk = 0
         angle_rad = math.radians(angle)
-        hw, tw, tp, tf, bf = [(val - tk) * 1000 for val in [self._panel._stiffener._web_height, self._panel._stiffener._web_th, self._panel._plate._thickness, self._panel._stiffener._flange_th,
-                                                            self._panel._stiffener._flange_width]]
-        h_stf = (self._panel._stiffener._web_height+self._panel._stiffener._flange_th)*1000
+        hw, tw, tp, tf, bf = [(val - tk) * 1000 for val in [self.buckling_input.panel.stiffener.web_height, self.buckling_input.panel.stiffener.web_th, self.buckling_input.panel.plate.thickness, self.buckling_input.panel.stiffener.flange_th,
+                                                            self.buckling_input.panel.stiffener.flange_width]]
+        h_stf = (self.buckling_input.panel.stiffener.web_height+self.buckling_input.panel.stiffener.flange_th)*1000
         de_gr = 0
-        tw_gr = self._panel._stiffener._web_th * 1000
-        hf_ctr = h_stf-0.5*tf if self._panel._stiffener.stiffener_type not in ['L','L-bulb'] else h_stf - de_gr - 0.5 * tf
-        bf_ctr = 0 if self._panel._stiffener.stiffener_type == 'T' else 0.5 * (tf - tw_gr)
+        tw_gr = self.buckling_input.panel.stiffener.web_th * 1000
+        hf_ctr = h_stf-0.5*tf if self.buckling_input.panel.stiffener.type not in ['L','L-bulb'] else h_stf - de_gr - 0.5 * tf
+        bf_ctr = 0 if self.buckling_input.panel.stiffener.type == 'T' else 0.5 * (tf - tw_gr)
         beta = 0.5
         gamma = (1 + math.sqrt(3 + 12 * beta)) / 4
 
-        Af = 0 if self._panel._stiffener.stiffener_type == 'FB' else bf * tf
+        Af = 0 if self.buckling_input.panel.stiffener.type == 'FB' else bf * tf
 
         if 75 <= angle <= 90:
             zpl = (hw * tw * (hw + tp) / 2000) + ((2 * gamma - 1) * Af * ((hf_ctr + tp / 2)) / 1000)
@@ -1862,32 +1838,32 @@ class CalcScantlings(BucklingInput):
             The minimum required section modulus
         """
         design_pressure = design_pressure_kpa
-        fy = self._panel._plate._material._strength / 1e6
-        fyd = fy / self._panel._plate._material._mat_factor
+        fy = self.buckling_input.panel.plate.material.strength / 1e6
+        fyd = fy / self.buckling_input.panel.plate.material.mat_factor
 
-        sigma_y = self._stress._sigma_y2 + (self._stress._sigma_y1 - self._stress._sigma_y2)\
-                                       *(min(0.25 * self._panel._plate._span, 0.5 * self._panel._plate._spacing) / self._panel._plate._span)
-        sig_x1 = self._stress._sigma_x1
-        sig_x2 = self._stress._sigma_x2
+        sigma_y = self.buckling_input.stress.sigma_y2 + (self.buckling_input.stress.sigma_y1 - self.buckling_input.stress.sigma_y2)\
+                                       *(min(0.25 * self.buckling_input.panel.plate.span, 0.5 * self.buckling_input.panel.plate.spacing) / self.buckling_input.panel.plate.span)
+        sig_x1 = self.buckling_input.stress.sigma_x1
+        sig_x2 = self.buckling_input.stress.sigma_x2
         if sig_x1 * sig_x2 >= 0:
             sigxd = sig_x1 if abs(sig_x1) > abs(sig_x2) else sig_x2
         else:
             sigxd =max(sig_x1 , sig_x2)
 
         sigma_jd = math.sqrt(math.pow(sigxd, 2) + math.pow(sigma_y, 2) -
-                             sigxd * sigma_y + 3 * math.pow(self._stress._tauxy, 2))
+                             sigxd * sigma_y + 3 * math.pow(self.buckling_input.stress.tauxy, 2))
 
         sigma_pd2 = fyd - sigma_jd  # design_bending_stress_mpa
 
-        kps = self._stiffened_panel_calc_props._stf_kps  # 1 is clamped, 0.9 is simply supported.
-        km_sides = min(self._stiffened_panel_calc_props._km1, self._stiffened_panel_calc_props._km3)  # see table 3 in DNVGL-OS-C101 (page 62)
-        km_middle = self._stiffened_panel_calc_props._km2  # see table 3 in DNVGL-OS-C101 (page 62)
+        kps = self.buckling_input.calc_props.stf_kps  # 1 is clamped, 0.9 is simply supported.
+        km_sides = min(self.buckling_input.calc_props.km1, self.buckling_input.calc_props.km3)  # see table 3 in DNVGL-OS-C101 (page 62)
+        km_middle = self.buckling_input.calc_props.km2  # see table 3 in DNVGL-OS-C101 (page 62)
 
-        Zs = ((math.pow(self._panel._plate._span, 2) * self._panel._plate._spacing * design_pressure) /
+        Zs = ((math.pow(self.buckling_input.panel.plate.span, 2) * self.buckling_input.panel.plate.spacing * design_pressure) /
               (min(km_middle, km_sides) * (sigma_pd2) * kps)) * math.pow(10, 6)
         
         if printit:
-            print('Sigma y1', self._stress._sigma_y1, 'Sigma y2', self._stress._sigma_y2, 'Sigma x', self._stress._sigma_x1,
+            print('Sigma y1', self.buckling_input.stress.sigma_y1, 'Sigma y2', self.buckling_input.stress.sigma_y2, 'Sigma x', self.buckling_input.stress.sigma_x1,
                   'Pressure', design_pressure, 'fy', fy,
                   'Section mod', max(math.pow(15, 3) / math.pow(1000, 3), Zs / math.pow(1000, 3)))
         
@@ -1908,22 +1884,22 @@ class CalcScantlings(BucklingInput):
             The minimum required thickness in mm
         """
         design_pressure = design_pressure_kpa
-        self._panel._plate._span
-        sigma_y = self._stress._sigma_y2 + (self._stress._sigma_y1 - self._stress._sigma_y2) \
-                                       *(min(0.25*self._panel._plate._span, 0.5 * self._panel._plate._spacing) / self._panel._plate._span)
+        self.buckling_input.panel.plate.span
+        sigma_y = self.buckling_input.stress.sigma_y2 + (self.buckling_input.stress.sigma_y1 - self.buckling_input.stress.sigma_y2) \
+                                       *(min(0.25*self.buckling_input.panel.plate.span, 0.5 * self.buckling_input.panel.plate.spacing) / self.buckling_input.panel.plate.span)
 
-        sig_x1 = self._stress._sigma_x1
-        sig_x2 = self._stress._sigma_x2
+        sig_x1 = self.buckling_input.stress.sigma_x1
+        sig_x2 = self.buckling_input.stress.sigma_x2
         if sig_x1 * sig_x2 >= 0:
             sigxd = sig_x1 if abs(sig_x1) > abs(sig_x2) else sig_x2
         else:
             sigxd =max(sig_x1 , sig_x2)
 
         sigma_jd = math.sqrt(math.pow(sigxd, 2) + math.pow(sigma_y, 2) -
-                             sigxd * sigma_y + 3 * math.pow(self._stress._tauxy, 2))
+                             sigxd * sigma_y + 3 * math.pow(self.buckling_input.stress.tauxy, 2))
 
-        fy = self._panel._plate._material._strength / 1e6
-        fyd = fy / self._panel._plate._material._mat_factor
+        fy = self.buckling_input.panel.plate.material.strength / 1e6
+        fyd = fy / self.buckling_input.panel.plate.material.mat_factor
         sigma_pd1 = min(1.3 * (fyd - sigma_jd), fyd)
         sigma_pd1 = abs(sigma_pd1)
 
@@ -1934,7 +1910,7 @@ class CalcScantlings(BucklingInput):
 
         t_min = (14.3 * t0) / math.sqrt(fyd)
 
-        ka = math.pow(1.1 - 0.25  * self._panel._plate._spacing / self._panel._plate._span, 2)
+        ka = math.pow(1.1 - 0.25  * self.buckling_input.panel.plate.spacing / self.buckling_input.panel.plate.span, 2)
 
         if ka > 1:
             ka = 1
@@ -1942,9 +1918,9 @@ class CalcScantlings(BucklingInput):
             ka = 0.72
 
         assert sigma_pd1 > 0, 'sigma_pd1 must be negative | current value is: ' + str(sigma_pd1)
-        assert self._stiffened_panel_calc_props._plate_kpp is not None, 'Fixation parameters must be set.'
-        t_min_bend = (15.8 * ka * self._panel._plate._spacing * math.sqrt(design_pressure)) / \
-                     math.sqrt(sigma_pd1 *self._stiffened_panel_calc_props._plate_kpp)
+        assert self.buckling_input.calc_props.plate_kpp is not None, 'Fixation parameters must be set.'
+        t_min_bend = (15.8 * ka * self.buckling_input.panel.plate.spacing * math.sqrt(design_pressure)) / \
+                     math.sqrt(sigma_pd1 *self.buckling_input.calc_props.plate_kpp)
 
         if self.lat_press:
             return max(t_min, t_min_bend)
@@ -1966,13 +1942,13 @@ class CalcScantlings(BucklingInput):
             The minimum required shear area in m^2
         """
         #print('SIGMA_X ', self._sigma_x1)
-        l = self._panel._plate._span
-        s = self._panel._plate._spacing
-        fy = self._panel._plate._material._strength
+        l = self.buckling_input.panel.plate.span
+        s = self.buckling_input.panel.plate.spacing
+        fy = self.buckling_input.panel.plate.material.strength
 
-        fyd = (fy / self._panel._plate._material._mat_factor) / 1e6 # yield strength
-        sig_x1 = self._stress._sigma_x1
-        sig_x2 = self._stress._sigma_x2
+        fyd = (fy / self.buckling_input.panel.plate.material.mat_factor) / 1e6 # yield strength
+        sig_x1 = self.buckling_input.stress.sigma_x1
+        sig_x2 = self.buckling_input.stress.sigma_x2
         if sig_x1 * sig_x2 >= 0:
             sigxd = sig_x1 if abs(sig_x1) > abs(sig_x2) else sig_x2
         else:
@@ -2038,10 +2014,10 @@ class CalcScantlings(BucklingInput):
             True if the plate thickness satisfies the DNV requirements.
         """
 
-        return self.get_dnv_min_thickness(design_pressure) <= self._panel._plate._thickness * 1000
+        return self.get_dnv_min_thickness(design_pressure) <= self.buckling_input.panel.plate.thickness * 1000
 
 
-    def get_plate_efficent_b(self,design_lat_press=0,axial_stress=50,
+    def getplate_efficent_b(self,design_lat_press=0,axial_stress=50,
                                  trans_stress_small=100,trans_stress_large=100):
         '''
         Simple buckling calculations according to DNV-RP-C201
@@ -2050,7 +2026,7 @@ class CalcScantlings(BucklingInput):
         raise NotImplementedError("Not implemented for scantling. Use the buckling functionality instead")
 
 
-    def buckling_local_stiffener(self):
+    def buckling_localstiffener(self):
         '''
         Local requirements for stiffeners. Chapter 9.11.
         :return:
@@ -2058,41 +2034,28 @@ class CalcScantlings(BucklingInput):
         raise NotImplementedError("Not implemented for scantling. Use the buckling functionality instead")
 
 
-class GirderOpt(Enum):
-    STF_PL_EFFECTIVE_AGAINST_SIGMA_Y = 1
-    ALL_SIMGA_Y_TO_GIRDER = 2
+class DNVBuckling(BaseModel):
+    buckling_input: BucklingInput
+    calculation_domain: Optional[str]
 
 
-class EndSupport(Enum):
-    CONTINUOUS = 1
-    SNIPED = 2
+    def get_method(self):
+        gird_opt = ['Stf. pl. effective against sigma y', 'All sigma y to girder']
+        #stf_opt = ['allowed', 'not allowed']
+        # if self.calculation_domain == "Flat plate, stiffened with girder":
 
+        if self.buckling_input.stifplate_effective_aginst_sigy == True:
+            self.buckling_input.stifplate_effective_aginst_sigy = gird_opt[0]
+        elif self.buckling_input.stifplate_effective_aginst_sigy == False:
+            self.buckling_input.stifplate_effective_aginst_sigy = gird_opt[1]
 
-class DNVBuckling(BucklingInput): 
-    def __init__(self, buckling_input: BucklingInput, calculation_domain: Union[str, None]=None):
-        super(DNVBuckling, self).__init__(buckling_input._panel, 
-                                          buckling_input._pressure,
-                                          buckling_input._pressure_side, 
-                                          buckling_input._stress, 
-                                          calc_props=buckling_input._stiffened_panel_calc_props, 
-                                          puls_input=buckling_input._puls)
-        
-        self._calculation_domain:  Union[str, None] = calculation_domain
-
-
-    def get_method(self) -> Enum:
-        if self.stiffened_plate_effective_aginst_sigy == True:
-            self._stiffened_plate_effective_aginst_sigy = GirderOpt.STF_PL_EFFECTIVE_AGAINST_SIGMA_Y
-        elif self.stiffened_plate_effective_aginst_sigy == False:
-            self._stiffened_plate_effective_aginst_sigy = GirderOpt.ALL_SIMGA_Y_TO_GIRDER
-
-        if self._calculation_domain == "Flat plate, stiffened with girder":
-            if self._stiffened_plate_effective_aginst_sigy == GirderOpt.STF_PL_EFFECTIVE_AGAINST_SIGMA_Y:
-                return GirderOpt.STF_PL_EFFECTIVE_AGAINST_SIGMA_Y
+        if self.calculation_domain == "Flat plate, stiffened with girder":
+            if self.buckling_input.stifplate_effective_aginst_sigy == gird_opt[0]:
+                return 1
             else:
-                return GirderOpt.ALL_SIMGA_Y_TO_GIRDER
+                return 2
         else:
-            return GirderOpt.STF_PL_EFFECTIVE_AGAINST_SIGMA_Y
+            return 1
 
 
     def plated_structures_buckling(self, optimizing: bool=False) -> dict:
@@ -2105,11 +2068,11 @@ class DNVBuckling(BucklingInput):
                         'Girder': {'Overpressure plate side': 0, 'Overpressure girder side': 0, 'Shear capacity': 0},
                         'Local buckling': 0}
 
-        unstf_pl = self.unstiffened_plate_buckling(optimizing = optimizing)
+        unstf_pl = self.unstiffenedplate_buckling(optimizing = optimizing)
         up_buckling = max([unstf_pl['UF Pnt. 5  Lateral loaded plates'], unstf_pl['UF sjsd'],
                            max([unstf_pl['UF Longitudinal stress'],  unstf_pl['UF transverse stresses'],
                                 unstf_pl['UF Shear stresses'], unstf_pl['UF Combined stresses']])
-                           if all([self._panel._girder is None, self._panel._stiffener is None]) else 0])
+                           if all([self.buckling_input.panel.girder is None, self.buckling_input.panel.stiffener is None]) else 0])
         if optimizing and up_buckling > 1:
             return_dummy['Plate']['Plate buckling'] = up_buckling
             return return_dummy
@@ -2117,70 +2080,70 @@ class DNVBuckling(BucklingInput):
         local_buckling = self.local_buckling(optimizing=optimizing)
 
         stf_pla: dict = {}
-        if self._panel._stiffener is not None:
+        if self.buckling_input.panel.stiffener is not None:
             stf_pla = self.stiffened_panel(optimizing=optimizing)
             if all([optimizing, type(stf_pla) == list]):
                 return_dummy['Stiffener'][stf_pla[0]] = stf_pla[1]
                 return return_dummy
 
-            stf_buckling_pl_side = stf_pla['UF Plate side'] if self._panel._stiffener_end_support == EndSupport.CONTINUOUS else \
+            stf_buckling_pl_side = stf_pla['UF Plate side'] if self.buckling_input.panel.stiffener_end_support == "continuous" else \
                 stf_pla['UF simply supported plate side']
-            stf_buckling_stf_side = stf_pla['UF Stiffener side'] if self._panel._stiffener_end_support == EndSupport.CONTINUOUS else \
+            stf_buckling_stf_side = stf_pla['UF Stiffener side'] if self.buckling_input.panel.stiffener_end_support == "continuous" else \
                 stf_pla['UF simply supported stf side']
-            stf_plate_resistance = stf_pla['UF Plate resistance']
+            stfplate_resistance = stf_pla['UF Plate resistance']
             stf_shear_capacity = stf_pla['UF Shear force']
         else:
-            stf_buckling_pl_side, stf_buckling_pl_side, stf_buckling_stf_side, stf_plate_resistance, \
+            stf_buckling_pl_side, stf_buckling_pl_side, stf_buckling_stf_side, stfplate_resistance, \
             stf_shear_capacity = 0, 0, 0, 0, 0
 
         # no girder if stiffener not present
-        if self._panel._girder is not None and self._panel._stiffener is not None:
+        if self.buckling_input.panel.girder is not None and self.buckling_input.panel.stiffener is not None:
             girder = self.girder_buckling(optmizing=optimizing)
             if all([optimizing, type(girder) == list]):
                 return_dummy['Girder'][stf_pla[0]] = stf_pla[1]
                 return return_dummy
 
-            girder_buckling_pl_side = girder['UF Cont. plate side'] if self._panel._girder_end_support == EndSupport.CONTINUOUS else \
+            girder_buckling_pl_side = girder['UF Cont. plate side'] if self.buckling_input.panel.girder_end_support == "continuous" else \
                 stf_pla['UF Simplified plate side']
-            girder_buckling_girder_side = girder['UF Cont. girder side'] if self._panel._girder_end_support == EndSupport.CONTINUOUS \
+            girder_bucklinggirder_side = girder['UF Cont. girder side'] if self.buckling_input.panel.girder_end_support == "continuous" \
                 else \
                 stf_pla['UF Simplified girder side']
             girder_shear_capacity = girder['UF shear force']
         else:
-            girder_buckling_pl_side, girder_buckling_girder_side, girder_shear_capacity = 0, 0, 0
+            girder_buckling_pl_side, girder_bucklinggirder_side, girder_shear_capacity = 0, 0, 0
         
         return {'Plate': {'Plate buckling': up_buckling},
                 'Stiffener': {'Overpressure plate side': stf_buckling_pl_side,
                                                     'Overpressure stiffener side': stf_buckling_stf_side, 
-                                                    'Resistance between stiffeners': stf_plate_resistance,
+                                                    'Resistance between stiffeners': stfplate_resistance,
                                                     'Shear capacity': stf_shear_capacity},
                 'Girder': {'Overpressure plate side': girder_buckling_pl_side,
-                           'Overpressure girder side': girder_buckling_girder_side,
+                           'Overpressure girder side': girder_bucklinggirder_side,
                            'Shear capacity': girder_shear_capacity},
                 'Local buckling': 0 if optimizing else local_buckling}
 
 
-    def unstiffened_plate_buckling(self, optimizing: bool=False) -> dict:
+    def unstiffenedplate_buckling(self, optimizing: bool=False) -> dict:
         # internal calculations are in mm (millimeter) and MPa (mega pascal)
         unstf_pl_data = dict()
 
-        E = self._panel._plate._material._young / 1e6
-        fy = self._panel._plate._material._strength / 1e6
-        gammaM = self._panel._plate._material._mat_factor
-        thickness = self._panel._plate.th # mm
-        spacing = self._panel._plate.s # mm
-        length = self._panel._plate.l # mm
+        E = self.buckling_input.panel.plate.material.young / 1e6
+        fy = self.buckling_input.panel.plate.material.strength / 1e6
+        gammaM = self.buckling_input.panel.plate.material.mat_factor
+        thickness = self.buckling_input.panel.plate.th # mm
+        spacing = self.buckling_input.panel.plate.s # mm
+        length = self.buckling_input.panel.plate.l # mm
 
-        tsd = self._stress._tauxy * self._stiffened_panel_calc_props._stress_load_factor / 1e6
-        psd = self._pressure * self._stiffened_panel_calc_props._lat_load_factor
+        tsd = self.buckling_input.stress.tauxy * self.buckling_input.calc_props.stress_load_factor / 1e6
+        psd = self.buckling_input.pressure * self.buckling_input.calc_props.lat_load_factor
 
-        sig_x1 = self._stress._sigma_x1 * self._stiffened_panel_calc_props._stress_load_factor / 1e6
-        sig_x2 = self._stress._sigma_x2 * self._stiffened_panel_calc_props._stress_load_factor / 1e6
+        sig_x1 = self.buckling_input.stress.sigma_x1 * self.buckling_input.calc_props.stress_load_factor / 1e6
+        sig_x2 = self.buckling_input.stress.sigma_x2 * self.buckling_input.calc_props.stress_load_factor / 1e6
 
-        sig_y1 = self._stress._sigma_y1 * self._stiffened_panel_calc_props._stress_load_factor / 1e6
-        sig_y2 = self._stress._sigma_y2 * self._stiffened_panel_calc_props._stress_load_factor / 1e6
+        sig_y1 = self.buckling_input.stress.sigma_y1 * self.buckling_input.calc_props.stress_load_factor / 1e6
+        sig_y2 = self.buckling_input.stress.sigma_y2 * self.buckling_input.calc_props.stress_load_factor / 1e6
 
-        derived_stress_values: DerivedStressValues = self.calculate_derived_stress_values()
+        derived_stress_values: DerivedStressValues = self.buckling_input.calculate_derived_stress_values()
         sxsd: float = derived_stress_values._sxsd
         sysd: float = derived_stress_values._sysd
         sy1sd: float = derived_stress_values._sy1sd
@@ -2338,33 +2301,33 @@ class DNVBuckling(BucklingInput):
 
 
     def stiffened_panel(self, optimizing: bool=False) -> Dict[str, Any]:
+        assert self.buckling_input.panel.stiffener is not None and self.buckling_input.panel.girder_length is not None
         # What to do with possible difference in material between plate/stiffener/girder
         # now the plate is taken
         logger.debug("---------------------------------------------------------")
         logger.debug("stiffened panel check")
         logger.debug("---------------------------------------------------------")
-        E = self._panel._plate._material._young / 1e6
-        v = self._panel._plate._material._poisson
-        fy = self._panel._plate._material._strength / 1e6
-        gammaM = self._panel._plate._material._mat_factor
-        thickness = self._panel._plate.th # mm
-        spacing = self._panel._plate.s # mm
-        length = self._panel._plate.l # mm
+        E = self.buckling_input.panel.plate.material.young / 1e6
+        fy = self.buckling_input.panel.plate.material.strength / 1e6
+        gammaM = self.buckling_input.panel.plate.material.mat_factor
+        thickness = self.buckling_input.panel.plate.th # mm
+        spacing = self.buckling_input.panel.plate.s # mm
+        length = self.buckling_input.panel.plate.l # mm
 
-        tsd = self._stress._tauxy * self._stiffened_panel_calc_props._stress_load_factor / 1e6
-        psd = self._pressure * self._stiffened_panel_calc_props._lat_load_factor
-        # sig_x1 = self._stress._sigma_x1 * self._stiffened_panel_calc_props._stress_load_factor
-        # sig_x2 = self._stress._sigma_x2 * self._stiffened_panel_calc_props._stress_load_factor
-        sig_y1 = self._stress._sigma_y1 * self._stiffened_panel_calc_props._stress_load_factor / 1e6
-        sig_y2 = self._stress._sigma_y2 * self._stiffened_panel_calc_props._stress_load_factor / 1e6
+        tsd = self.buckling_input.stress.tauxy * self.buckling_input.calc_props.stress_load_factor / 1e6
+        psd = self.buckling_input.pressure * self.buckling_input.calc_props.lat_load_factor
+        # sig_x1 = self.buckling_input.stress._sigma_x1 * self.calc_props._stress_load_factor
+        # sig_x2 = self.buckling_input.stress._sigma_x2 * self.calc_props._stress_load_factor
+        sig_y1 = self.buckling_input.stress.sigma_y1 * self.buckling_input.calc_props.stress_load_factor / 1e6
+        sig_y2 = self.buckling_input.stress.sigma_y2 * self.buckling_input.calc_props.stress_load_factor / 1e6
 
-        derived_stress_values: DerivedStressValues = self.calculate_derived_stress_values()
+        derived_stress_values: DerivedStressValues = self.buckling_input.calculate_derived_stress_values()
         sxsd: float = derived_stress_values._sxsd
         sysd: float = derived_stress_values._sysd
         sy1sd: float = derived_stress_values._sy1sd
         stress_ratio_trans = derived_stress_values._stress_ratio_trans
 
-        Lg = self._panel._girder_lg * 1000
+        Lg = self.buckling_input.panel.girder_length * 1000
 
         stf_pnl_data = dict()
 
@@ -2372,19 +2335,19 @@ class DNVBuckling(BucklingInput):
         sysd = 0 if self.get_method() == 2 else sysd
 
         # psd_min_adj = psd if self._min_lat_press_adj_span is None else\
-        #     self._min_lat_press_adj_span * self._stiffened_panel_calc_props._lat_load_factor
+        #     self._min_lat_press_adj_span * self.calc_props._lat_load_factor
         
 
         #Pnt.7:  Buckling of stiffened plates
         # 7.2  Forces in idealised stiffened plate
-        se = self.effective_plate_width()
-        Iy = Is = self._panel._stiffener.get_moment_of_intertia(plate_thickness=thickness/1000, plate_width=se/1000) * 1000**4
+        se = self.buckling_input.effectiveplate_width()
+        Iy = Is = self.buckling_input.panel.stiffener.get_moment_of_intertia(plate_thickness=thickness/1000, plate_width=se/1000) * 1000**4
 
         kc = 0 if thickness * spacing == 0 else 2 * (1 + math.sqrt(1 + 10.9 * Is / (math.pow(thickness, 3) * spacing)))
-        mc = 13.3 if self._panel._stiffener_end_support == EndSupport.CONTINUOUS else 8.9
+        mc = 13.3 if self.buckling_input.panel.stiffener_end_support == "continuous" else 8.9
 
-        zp = self._panel._stiffener.get_cross_section_centroid_with_effective_plate(plate_thickness=thickness/1000, plate_width=se/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
-        zt = (self._panel._stiffener.hw + self._panel._stiffener.tf) - zp + thickness / 2
+        zp = self.buckling_input.panel.stiffener.get_cross_section_centroid_with_effectiveplate(plate_thickness=thickness/1000, plate_width=se/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
+        zt = (self.buckling_input.panel.stiffener.hw + self.buckling_input.panel.stiffener.tf) - zp + thickness / 2
 
         Weff = 0.0001 if zt == 0 else Iy / zt
         Co = 0 if kc * E * thickness * spacing == 0 else Weff * fy * mc / (kc * E * math.pow(thickness, 2) * spacing)
@@ -2400,8 +2363,8 @@ class DNVBuckling(BucklingInput):
         3	Overpr. may occur on both sides
         '''
 
-        qsd_plate_side = qsd_opposite if self._pressure_side == 'stiffener side' else qsd_press
-        qsd_stf_side = qsd_opposite if self._pressure_side == 'plate side' else qsd_press
+        qsdplate_side = qsd_opposite if self.buckling_input.pressure_side == 'stiffener side' else qsd_press
+        qsd_stf_side = qsd_opposite if self.buckling_input.pressure_side == 'plate side' else qsd_press
         
         # calculation of kl accoring section 7.2
         if length >= spacing:
@@ -2418,12 +2381,12 @@ class DNVBuckling(BucklingInput):
 
         tau_crg = 0 if length == 0 else kg * 0.904 * E * math.pow(thickness / length, 2) # (7.4)
 
-        if self._tension_field_action == 'allowed' and tsd > (tau_crl / gammaM):
+        if self.buckling_input.tension_field_action == 'allowed' and tsd > (tau_crl / gammaM):
             ttf = tsd - tau_crg
         else:
             ttf = 0
 
-        As = self._panel._stiffener.tw*self._panel._stiffener.hw + self._panel._stiffener.b * self._panel._stiffener.tf
+        As = self.buckling_input.panel.stiffener.tw*self.buckling_input.panel.stiffener.hw + self.buckling_input.panel.stiffener.b * self.buckling_input.panel.stiffener.tf
         NSd = sxsd * (As + spacing * thickness) + ttf * spacing * thickness
 
         #7.4  Resistance of plate between stiffeners
@@ -2431,15 +2394,15 @@ class DNVBuckling(BucklingInput):
         syRd = derived_stress_values._syR if not all([sig_y1 < 0, sig_y2 < 0]) else fy
         syrd_unstf = syRd / gammaM * ksp
         tau_sd_7_4 = fy / (math.sqrt(3) * gammaM)
-        uf_stf_panel_res_bet_plate = max([sysd / syrd_unstf if all([syrd_unstf > 0, sysd > 0]) else 0, tsd / tau_sd_7_4])
-        stf_pnl_data['UF Plate resistance'] = uf_stf_panel_res_bet_plate
-        if optimizing and uf_stf_panel_res_bet_plate > 1:
-            # return ['UF Plate resistance', uf_stf_panel_res_bet_plate]
+        uf_stf_panel_res_betplate = max([sysd / syrd_unstf if all([syrd_unstf > 0, sysd > 0]) else 0, tsd / tau_sd_7_4])
+        stf_pnl_data['UF Plate resistance'] = uf_stf_panel_res_betplate
+        if optimizing and uf_stf_panel_res_betplate > 1:
+            # return ['UF Plate resistance', uf_stf_panel_res_betplate]
             return stf_pnl_data
 
         # 7.8 Check for shear force 
         Vsd = psd * spacing * length / 2
-        Vsd_div_Vrd = Vsd / self.VRd("stiffener")
+        Vsd_div_Vrd = Vsd / self.buckling_input.VRd("stiffener")
 
         stf_pnl_data['UF Shear force'] = Vsd_div_Vrd
         if optimizing and Vsd_div_Vrd > 1:
@@ -2447,7 +2410,7 @@ class DNVBuckling(BucklingInput):
             return stf_pnl_data
 
         #7.5  Characteristic buckling strength of stiffeners
-        # Is in the functions fk_stiffener(), fk_plate(), lk()
+        # Is in the functions fkstiffener(), fkplate(), lk()
 
         #7.7.3  Resistance parameters for stiffeners
         # properties depend on check for shear force, section 7.8
@@ -2457,26 +2420,26 @@ class DNVBuckling(BucklingInput):
             Wep = 0.0001 if zp == 0 else Iy / zp
             Ae = As + se * thickness
         else:
-            red_param = self.red_prop("stiffener")
+            red_param = self.buckling_input.red_prop("stiffener")
             Wes = red_param['Wes']
             Wep = red_param['Wep']
             Ae = red_param['Atot']
             reduced_properties_used = True
 
         NRd = 0.0001 if gammaM == 0 else Ae * (fy / gammaM)  # 7.65
-        NksRd = Ae * (self.fk_stiffener_side(length if self._panel._stiffener.dist_between_lateral_supp is None else self._panel._stiffener.dist_between_lateral_supp * 1000, Vsd, "stiffener") / gammaM) #eq7.66
-        NkpRd = Ae * (self.fk_plate("stiffener") / gammaM)
+        NksRd = Ae * (self.buckling_input.fkstiffener_side(length if self.buckling_input.panel.stiffener.dist_between_lateral_supp_mm is None else self.buckling_input.panel.stiffener.dist_between_lateral_supp_mm, Vsd, "stiffener") / gammaM) #eq7.66
+        NkpRd = Ae * (self.buckling_input.fkplate("stiffener") / gammaM)
 
-        logger.debug("self._panel._stiffener.dist_between_lateral_supp: %s", self._panel._stiffener.dist_between_lateral_supp)
-        Ms1Rd = Wes * (self.fr(0.4 * length if self._panel._stiffener.dist_between_lateral_supp is None else
-                                   self._panel._stiffener.dist_between_lateral_supp * 1000, "stiffener", "stiffener") / gammaM)  # 7.68
-        Ms2Rd = Wes * (self.fr(0.8 * length if self._panel._stiffener.dist_between_lateral_supp is None else
-                                   self._panel._stiffener.dist_between_lateral_supp * 1000, "stiffener", "stiffener") / gammaM)  # 7.69
+        logger.debug("self.buckling_input.panel.stiffener.dist_between_lateral_supp: %s", self.buckling_input.panel.stiffener.dist_between_lateral_supp_mm)
+        Ms1Rd = Wes * (self.buckling_input.fr(0.4 * length if self.buckling_input.panel.stiffener.dist_between_lateral_supp_mm is None else
+                                   self.buckling_input.panel.stiffener.dist_between_lateral_supp_mm, "stiffener", "stiffener") / gammaM)  # 7.68
+        Ms2Rd = Wes * (self.buckling_input.fr(0.8 * length if self.buckling_input.panel.stiffener.dist_between_lateral_supp_mm is None else
+                                   self.buckling_input.panel.stiffener.dist_between_lateral_supp_mm, "stiffener", "stiffener") / gammaM)  # 7.69
 
         MstRd = Wes * (fy / gammaM) # 7.70 checked ok
         MpRd = Wep * (fy / gammaM) # 7.71 checked ok
 
-        lk = self.lk(Vsd, "stiffener")
+        lk = self.buckling_input.lk(Vsd, "stiffener")
         ie = 0.0001 if As + se * thickness == 0 else math.sqrt(Iy / (As + se * thickness))
         Ne = ((math.pow(math.pi, 2)) * E * Ae) / (math.pow(lk / ie, 2))# eq7.72 , checked ok
 
@@ -2489,12 +2452,12 @@ class DNVBuckling(BucklingInput):
         tau_Rd = min([tau_Rdy,tau_Rdl,tau_Rds])
 
         logger.debug("Stiffener properties")
-        logger.debug("Area stiffener: %s", self._panel._stiffener.As)
+        logger.debug("Area stiffener: %s", self.buckling_input.panel.stiffener.As)
         logger.debug("zp: %s Zt: %s Iy: %s Wes %s Wep: %s Reduced properties used: %s", zp, zt, Iy, Wes, Wep, reduced_properties_used)
 
         logger.debug("7.2 Forces in the idealised stiffened plate")
         logger.debug("kc: %s mc: %s Wes: %s stress_ratio_trans %s C0: %s P0: %s", kc, mc, Wes, stress_ratio_trans, Co, Po)
-        logger.debug("qsd_plate_side %s qsd_stf_side: %s kl: %s tau_crl: %s kg: %s tau_crg: %s", qsd_plate_side, qsd_stf_side, kl, tau_crl, kg, tau_crg)
+        logger.debug("qsdplate_side %s qsd_stf_side: %s kl: %s tau_crl: %s kg: %s tau_crg: %s", qsdplate_side, qsd_stf_side, kl, tau_crl, kg, tau_crg)
         logger.debug("NSd: %s", NSd)
 
         logger.debug("7.3 Effective plate width")
@@ -2511,17 +2474,17 @@ class DNVBuckling(BucklingInput):
         logger.debug("Ne: %s MpRd: %s MstRd: %s Ms1Rd: %s Ms2Rd: %s NkpRd: %s NksRd: %s NRd: %s", Ne, MpRd, MstRd, Ms1Rd, Ms2Rd, NkpRd, NksRd, NRd)
 
         # 7.7 Interaction formulas for axial compression and lateral pressure
-        u = 0 if all([tsd>(tau_crl/gammaM), self._tension_field_action == 'allowed']) else math.pow(tsd/tau_Rd, 2)
+        u = 0 if all([tsd > (tau_crl / gammaM), self.buckling_input.tension_field_action == 'allowed']) else math.pow(tsd / tau_Rd, 2)
         zstar = zp
-        if self._panel._stiffener_end_support == EndSupport.SNIPED:
+        if self.buckling_input.panel.stiffener_end_support == "sniped":
             #Lateral pressure on plate side:
             #7.7.2 Simple supported stiffener (sniped stiffeners)
 
             #Lateral pressure on plate side:
             stf_pnl_data['UF Stiffener side'] = 0
             stf_pnl_data['UF Plate side'] = 0
-            uf_7_58 = NSd / NksRd - 2 * NSd / NRd + ((qsd_plate_side * math.pow(length, 2) / 8) + NSd * zstar) / (MstRd * (1 - NSd / Ne)) + u
-            uf_7_59 = NSd / NkpRd + ((qsd_plate_side * math.pow(length, 2) / 8) + NSd * zstar) / (MpRd * (1 - NSd / Ne)) + u
+            uf_7_58 = NSd / NksRd - 2 * NSd / NRd + ((qsdplate_side * math.pow(length, 2) / 8) + NSd * zstar) / (MstRd * (1 - NSd / Ne)) + u
+            uf_7_59 = NSd / NkpRd + ((qsdplate_side * math.pow(length, 2) / 8) + NSd * zstar) / (MpRd * (1 - NSd / Ne)) + u
             uf_max_simp_pl = max([uf_7_58, uf_7_59])
             stf_pnl_data['UF simply supported plate side'] = uf_max_simp_pl
 
@@ -2536,16 +2499,16 @@ class DNVBuckling(BucklingInput):
 
             uf_max_simp_stf = max([0, uf_7_62, uf_7_63]) if not test_qsd_l else max([0, uf_7_60, uf_7_61])
             stf_pnl_data['UF simply supported stf side'] = uf_max_simp_stf
-            logger.debug("uf_7_59: %s uf_7_60: %s uf_7_61: %s uf_7_62 %s uf_7_63: %s uf_7_64: %s z*: %s", uf_7_58, uf_7_59, uf_7_60, uf_7_61, uf_7_62, uf_7_63, zstar)
-        else:
+            logger.debug("uf_7_59: %s uf_7_60: %s uf_7_61: %s uf_7_62 %s uf_7_63: %s uf_7_64: %s u: %s z*: %s", uf_7_58, uf_7_59, uf_7_60, uf_7_61, uf_7_62, uf_7_63, u, zstar)
+        elif self.buckling_input.panel.stiffener_end_support == "continuous":
             stf_pnl_data['UF simply supported stf side'] = 0
             stf_pnl_data['UF simply supported plate side'] = 0
             
             #7.7.1 Continuous stiffeners
-            M1Sd_pl = abs(qsd_plate_side) * math.pow(length, 2) / self._stiffened_panel_calc_props._km3
-            M2Sd_pl = abs(qsd_plate_side) * math.pow(length, 2) / self._stiffened_panel_calc_props._km2
-            M1Sd_stf = abs(qsd_stf_side) * math.pow(length, 2) / self._stiffened_panel_calc_props._km3
-            M2Sd_stf = abs(qsd_stf_side) * math.pow(length, 2) / self._stiffened_panel_calc_props._km2
+            M1Sd_pl = abs(qsdplate_side) * math.pow(length, 2) / self.buckling_input.calc_props.km3
+            M2Sd_pl = abs(qsdplate_side) * math.pow(length, 2) / self.buckling_input.calc_props.km2
+            M1Sd_stf = abs(qsd_stf_side) * math.pow(length, 2) / self.buckling_input.calc_props.km3
+            M2Sd_stf = abs(qsd_stf_side) * math.pow(length, 2) / self.buckling_input.calc_props.km2
 
             logger.debug("M1Sd_pl: %s M2Sd_pl: %s M1Sd_stf: %s M2Sd_stf %s", M1Sd_pl, M2Sd_pl, M1Sd_stf, M2Sd_stf)
 
@@ -2559,7 +2522,7 @@ class DNVBuckling(BucklingInput):
                 eq7_53 = NSd / NkpRd + (M2Sd_pl + NSd * x) / (MpRd * (1 - NSd / Ne)) + u
                 if debug: logger.debug("eq7_50: %s eq7_51: %s eq7_52: %s eq7_53 %s z*: %s", eq7_50, eq7_51, eq7_52, eq7_53, x)
                 return max(eq7_50, eq7_51, eq7_52, eq7_53)
-            res_iter_pl = minimize_scalar(iteration_min_uf_pl_side, method="Bounded", bounds=(-zt+self._panel._stiffener.tf/2,zp), options={'xatol': tolerance})
+            res_iter_pl = minimize_scalar(iteration_min_uf_pl_side, method="Bounded", bounds=(-zt+self.buckling_input.panel.stiffener.tf/2,zp), options={'xatol': tolerance})
 
             if type(res_iter_pl.fun) == list:
                 stf_pnl_data['UF Plate side'] = res_iter_pl.fun[0]
@@ -2575,18 +2538,23 @@ class DNVBuckling(BucklingInput):
                 if debug: logger.debug("eq7_54: %s eq7_55: %s eq7_56: %s eq7_57 %s z*: %s", eq7_54, eq7_55, eq7_56, eq7_57, x)
                 return max(eq7_54, eq7_55, eq7_56, eq7_57)
 
-            res_iter_stf = minimize_scalar(iteration_min_uf_stf_side, method="Bounded", bounds=(-zt+self._panel._stiffener.tf/2,zp), options={'xatol': tolerance})
+            res_iter_stf = minimize_scalar(iteration_min_uf_stf_side, method="Bounded", bounds=(-zt+self.buckling_input.panel.stiffener.tf/2,zp), options={'xatol': tolerance})
             if type(res_iter_stf.fun) == list:
                 stf_pnl_data['UF Stiffener side'] = res_iter_stf.fun[0]
             else:
                 stf_pnl_data['UF Stiffener side'] = res_iter_stf.fun
             
+            # for debugging
             iteration_min_uf_pl_side(res_iter_pl.x, True)
             iteration_min_uf_stf_side(res_iter_stf.x, True)
+        else:
+            raise ValueError(f"{self.buckling_input.panel.stiffener_end_support} is not a valid value. Should be either 'continuous' or 'sniped'")
+        
         return stf_pnl_data
 
 
     def girder_buckling(self, optmizing = False) -> dict:
+        assert self.buckling_input.panel.girder is not None and self.buckling_input.panel.stiffener is not None and self.buckling_input.panel.girder_length is not None
         '''
         Buckling of girder.
         '''
@@ -2594,36 +2562,35 @@ class DNVBuckling(BucklingInput):
         girder_data = dict()
 
         # the next line pure for pylance in vscode
-        assert self._panel._girder is not None, "Data cannot be None"
+        assert self.buckling_input.panel.girder is not None, "Data cannot be None"
 
-        E = self._panel._girder._material._young / 1e6
-        v = self._panel._girder._material._poisson
-        fy = self._panel._girder._material._strength / 1e6
-        gammaM = self._panel._girder._material._mat_factor
-        thickness = self._panel._plate.th # mm
-        spacing = self._panel._plate.s # mm
-        length = self._panel._plate.l # mm
+        E = self.buckling_input.panel.girder.material.young / 1e6
+        fy = self.buckling_input.panel.girder.material.strength / 1e6
+        gammaM = self.buckling_input.panel.girder.material.mat_factor
+        thickness = self.buckling_input.panel.plate.th # mm
+        spacing = self.buckling_input.panel.plate.s # mm
+        length = self.buckling_input.panel.plate.l # mm
 
-        tsd = self._stress._tauxy * self._stiffened_panel_calc_props._stress_load_factor
-        psd = self._pressure * self._stiffened_panel_calc_props._lat_load_factor
+        tsd = self.buckling_input.stress.tauxy * self.buckling_input.calc_props.stress_load_factor
+        psd = self.buckling_input.pressure * self.buckling_input.calc_props.lat_load_factor
 
-        derived_stress_values: DerivedStressValues = self.calculate_derived_stress_values()
+        derived_stress_values: DerivedStressValues = self.buckling_input.calculate_derived_stress_values()
         sxsd: float = derived_stress_values._sxsd
         sysd: float = derived_stress_values._sysd
         sy1sd: float = derived_stress_values._sy1sd
 
         # psd_min_adj = psd if self._min_lat_press_adj_span is None else\
-        #     self._min_lat_press_adj_span * self._stiffened_panel_calc_props._lat_load_factor
+        #     self._min_lat_press_adj_span * self.calc_props._lat_load_factor
 
-        Lg = self._panel._girder_lg * 1000 # internal variables are in meter, this calculation is in mm
+        Lg = self.buckling_input.panel.girder_length * 1000 # internal variables are in meter, this calculation is in mm
 
-        Ltg = Lg if self._panel._girder.dist_between_lateral_supp == None else self._panel._girder.dist_between_lateral_supp
-        Lp = 0 if self._panel._girder_Lp is None else self._panel._girder_Lp
+        Ltg = Lg if self.buckling_input.panel.girder.dist_between_lateral_supp_mm == None else self.buckling_input.panel.girder.dist_between_lateral_supp_mm
+        Lp = 0 if self.buckling_input.panel.girder_panel_length is None else self.buckling_input.panel.girder_panel_length
         
         #Pnt.8:  Buckling of Girders
         #7.8  Check for shear force
         Vsd = psd * length * Lg / 2
-        Anet = self._panel._girder.hw * self._panel._girder.tw + self._panel._girder.tw * self._panel._girder.tf
+        Anet = self.buckling_input.panel.girder.hw * self.buckling_input.panel.girder.tw + self.buckling_input.panel.girder.tw * self.buckling_input.panel.girder.tf
         Vrd = Anet * fy / (gammaM * math.sqrt(3))
 
         Vsd_div_Vrd = Vsd / Vrd
@@ -2633,13 +2600,13 @@ class DNVBuckling(BucklingInput):
             return girder_data
 
         #8.2  Girder forces
-        As = self._panel._stiffener.As
-        Ag = self._panel._girder.As
+        As = self.buckling_input.panel.stiffener.As
+        Ag = self.buckling_input.panel.girder.As
 
         #sysd = 0 if self.get_method() == 2 else unstf_pl_data['sysd']
         NySd = sysd * (Ag + length * thickness)
 
-        Is = self._panel._stiffener.get_moment_of_intertia() * 1000**4
+        Is = self.buckling_input.panel.stiffener.get_moment_of_intertia() * 1000**4
 
         tau_cel = 18 * E / (thickness * math.pow(length, 2)) * math.pow(thickness * Is / spacing, 0.75)
         tau_ceg = 0 if Lp == 0 else tau_cel * math.pow(length, 2) / math.pow(Lp, 2)
@@ -2650,7 +2617,7 @@ class DNVBuckling(BucklingInput):
         tcrg = 0.6 * fy / math.pow(lambda_t1, 2) if lambda_t1 > 1 else 0.6 * fy
         tcrl = 0.6 * fy / math.pow(lambda_t2, 2) if lambda_t2 > 1 else 0.6 * fy
 
-        tcrg = tcrg if self._panel._stiffener_end_support == EndSupport.CONTINUOUS else 0
+        tcrg = tcrg if self.buckling_input.panel.stiffener_end_support == "continuous" else 0
 
         #8.4 Effective width of girders
         #Method 1:
@@ -2687,7 +2654,7 @@ class DNVBuckling(BucklingInput):
         CtG = math.sqrt(1 - 3 * math.pow(tsd / fy, 2)) if tsd < fy / math.sqrt(3) else 0
         le_method1 = length * CxG * CyG * CtG
 
-        lim_sniped_or_cont = 0.3 * Lg if self._panel._girder_end_support == EndSupport.CONTINUOUS else 0.4 * Lg
+        lim_sniped_or_cont = 0.3 * Lg if self.buckling_input.panel.girder_end_support == "continuous" else 0.4 * Lg
         tot_min_lim = min([le_method1, lim_sniped_or_cont])
 
         #Method 2:
@@ -2704,16 +2671,16 @@ class DNVBuckling(BucklingInput):
 
         AtotG = Ag + le * thickness
 
-        Iy = self._panel._girder.get_moment_of_intertia(plate_thickness=thickness/1000, plate_width=le/1000) * 1000 ** 4
-        zp = self._panel._girder.get_cross_section_centroid_with_effective_plate(plate_thickness=thickness/1000, plate_width=le/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
-        zt = (thickness / 2 + self._panel._girder.hw + self._panel._girder.tf) - zp  # ch 7.5.1 page 19
+        Iy = self.buckling_input.panel.girder.get_moment_of_intertia(plate_thickness=thickness/1000, plate_width=le/1000) * 1000 ** 4
+        zp = self.buckling_input.panel.girder.get_cross_section_centroid_with_effectiveplate(plate_thickness=thickness/1000, plate_width=le/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
+        zt = (thickness / 2 + self.buckling_input.panel.girder.hw + self.buckling_input.panel.girder.tf) - zp  # ch 7.5.1 page 19
 
         if Vsd_div_Vrd < 0.5:
             WeG = 0.0001 if zt == 0 else Iy / zt
             Wep = 0.0001 if zp == 0 else Iy / zp
             AeG = Ag + eff_width_other_calc * thickness
         else:
-            red_param = self.red_prop("girder")
+            red_param = self.buckling_input.red_prop("girder")
             WeG = red_param['WeG']
             Wep = red_param['Wep']
             AeG = red_param['Atot']
@@ -2723,7 +2690,7 @@ class DNVBuckling(BucklingInput):
         # pf = 0.0001 if length * spacing * gammaM == 0 else 12 * Wmin * fy / (math.pow(length, 2) * spacing * gammaM)
 
         lk = Lg
-        LGk = lk if self._stiffened_panel_calc_props._buckling_length_factor_girder is None else lk * self._stiffened_panel_calc_props._buckling_length_factor_girder
+        LGk = lk if self.buckling_input.calc_props.buckling_length_factorgirder is None else lk * self.buckling_input.calc_props.buckling_length_factorgirder
 
         ie = math.sqrt(Iy / AtotG)
         fE = 0 if LGk == 0 else math.pow(math.pi, 2) * E * math.pow(ie / LGk, 2)
@@ -2734,25 +2701,25 @@ class DNVBuckling(BucklingInput):
         C_for_tsd_trg = Q * (7 - 5 * math.pow(spacing / length, 2)) * math.pow((tsd - tcrg) / tcrl, 2)
         C = C_for_tsd_trg if tsd > tcrg else 0
         p0lim = 0.02 * (thickness + As / spacing) / length * (sxsd + C * tsd)
-        p0calc = 0 if spacing * self._panel._girder.hw * Lg * E * length == 0 else \
-                 0.4 * (thickness + As / spacing) / (self._panel._girder.hw * (1 - spacing / Lg)) * fy / E * math.pow(Lg / length, 2) * (sxsd + C * tsd)
+        p0calc = 0 if spacing * self.buckling_input.panel.girder.hw * Lg * E * length == 0 else \
+                 0.4 * (thickness + As / spacing) / (self.buckling_input.panel.girder.hw * (1 - spacing / Lg)) * fy / E * math.pow(Lg / length, 2) * (sxsd + C * tsd)
         p0_compression = max([p0lim, p0calc])
-        p0_tension = 0 if spacing * Lg * self._panel._girder.hw * E * length == 0 else \
-                     0.4 * (thickness + As / spacing) / (self._panel._girder.hw * (length - spacing / Lg)) * gammaM / E * math.pow(Lg / length, 2) * (C * tsd)
+        p0_tension = 0 if spacing * Lg * self.buckling_input.panel.girder.hw * E * length == 0 else \
+                     0.4 * (thickness + As / spacing) / (self.buckling_input.panel.girder.hw * (length - spacing / Lg)) * gammaM / E * math.pow(Lg / length, 2) * (C * tsd)
         p0 = p0_tension if sxsd < 0 else p0_compression
 
         qSd_pressure = (psd + p0_tension) * length if sxsd < 0 else (psd + p0_compression) * length
         qsd_oppsite = p0 * length if psd < p0 else 0
-        qSd_plate_side = qsd_oppsite if self._pressure_side == 'stiffener side' else qSd_pressure
-        qSd_girder_side = qsd_oppsite if self._pressure_side == 'plate side' else qSd_pressure
+        qSdplate_side = qsd_oppsite if self.buckling_input.pressure_side == 'stiffener side' else qSd_pressure
+        qSdgirder_side = qsd_oppsite if self.buckling_input.pressure_side == 'plate side' else qSd_pressure
 
         #8.5  Torsional buckling of girders
         
-        Af = self._panel._girder.tf * self._panel._girder.b
-        Aw = self._panel._girder.hw * self._panel._girder.tw
+        Af = self.buckling_input.panel.girder.tf * self.buckling_input.panel.girder.b
+        Aw = self.buckling_input.panel.girder.hw * self.buckling_input.panel.girder.tw
 
-        b = max([self._panel._girder.b, self._panel._girder.tw])
-        C = 0.55 if self._panel._girder.stiffener_type in ['T', 'FB'] else 1.1
+        b = max([self.buckling_input.panel.girder.b, self.buckling_input.panel.girder.tw])
+        C = 0.55 if self.buckling_input.panel.girder.type in ['T', 'FB'] else 1.1
         LGT0 = b * C * math.sqrt(E * Af / (fy * (Af + Aw / 3))) #TODO can add a automatic check/message if torsional buckling shall be considered
         girder_data['Torsional buckling'] = 'Torsional buckling to be considered' if Ltg > LGT0 else \
             "Torsional buckling need not to be considered"
@@ -2761,11 +2728,11 @@ class DNVBuckling(BucklingInput):
 
         NRd = 0.0001 if gammaM == 0 else AeG * (fy / gammaM)  # eq7.65, checked ok
 
-        NksRd = AeG * (self.fk_stiffener_side(Ltg, Vsd, "girder") / gammaM) #eq7.66
-        NkpRd = AeG * (self.fk_plate('girder') / gammaM)  # checked ok
+        NksRd = AeG * (self.buckling_input.fkstiffener_side(Ltg, Vsd, "girder") / gammaM) #eq7.66
+        NkpRd = AeG * (self.buckling_input.fkplate('girder') / gammaM)  # checked ok
         # MsRd = WeG * self.fr(Ltg, "stiffener", "girder") / gammaM # 'stiffener side' for a girder
-        Ms1Rd = WeG * (self.fr(0.4 * Lg, "stiffener", "girder") / gammaM)  # ok
-        Ms2Rd = WeG * (self.fr(0.8 * Lg, "stiffener", "girder") / gammaM)  # eq7.69 checked ok
+        Ms1Rd = WeG * (self.buckling_input.fr(0.4 * Lg, "stiffener", "girder") / gammaM)  # ok
+        Ms2Rd = WeG * (self.buckling_input.fr(0.8 * Lg, "stiffener", "girder") / gammaM)  # eq7.69 checked ok
 
         MstRd = WeG * (fy / gammaM) #eq7.70 checked ok
         MpRd = Wep * (fy / gammaM) #eq7.71 checked ok
@@ -2774,42 +2741,54 @@ class DNVBuckling(BucklingInput):
 
         #7.7  Interaction formulas for axial compression and lateral pressure
         #7.7.2 Simple supported girder (sniped girders)
-        if self._panel._girder_end_support == EndSupport.SNIPED: 
+        if self.buckling_input.panel.girder_end_support == "sniped": 
             u = 0
             zstar = zp
             girder_data['UF Cont. plate side'] = 0
             girder_data['UF Cont. girder side'] = 0
 
-            # Lateral pressure on plate side:
-            uf_7_58 = NySd / NksRd - 2 * NySd / NRd +((qSd_plate_side * math.pow(Lg, 2) / 8) + NySd * zstar) / (MstRd * (1 - NySd / NE)) + u
-            uf_7_59 = NySd / NkpRd + ((qSd_plate_side * math.pow(Lg, 2) / 8) + NySd * zstar) / (MpRd * (1 - NySd / NE)) + u
+            # Lateral pressure on plate side:    # def __init__(self, **kwargs):
+    #     super().__init__(**kwargs)
+    #     if self.stiffener is not None: # type: ignore -> somehow pydantic makes this a tuple...
+    #         assert self.stiffener_end_support is not None, "When a stiffener is defined, also the end support needs to be defined as 'continuous' or 'sniped'"
+    #         if not self.stiffener_end_support.strip().lower() in ["continuous", "sniped"]: raise ValueError(f"Type {self.stiffener_end_support} is not a valid input. only 'continuous' or 'sniped'.")
+    #         assert self.girder_length is not None, "When a stiffener is defined, also the girder length needs to be defined"
 
-            max_uf_simp_plate = max([0,uf_7_58, uf_7_59])
-            girder_data['UF Simplified plate side'] = max_uf_simp_plate
+    #     if self.girder is not None: # type: ignore -> somehow pydantic makes this a tuple...
+    #         assert self.stiffener is not None, "When a girder is defined, also the stiffener needs to be defined"
+    #         assert self.girder_end_support is not None, "When a girder is defined, also the end support needs to be defined as 'continuous' or 'sniped'"
+    #         if not self.girder_end_support.strip().lower() in ["continuous", "sniped"]: raise ValueError(f"Type {self.girder_end_support} is not a valid input. only 'continuous' or 'sniped'.")            
+    #         assert self.girder_length is not None, "When a girder is defined, also the girder length needs to be defined"
+    #         assert self.girder_panel_length is not None, "When a girder is defined, also the panel length needs to be defined"
+            uf_7_58 = NySd / NksRd - 2 * NySd / NRd +((qSdplate_side * math.pow(Lg, 2) / 8) + NySd * zstar) / (MstRd * (1 - NySd / NE)) + u
+            uf_7_59 = NySd / NkpRd + ((qSdplate_side * math.pow(Lg, 2) / 8) + NySd * zstar) / (MpRd * (1 - NySd / NE)) + u
+
+            max_uf_simpplate = max([0,uf_7_58, uf_7_59])
+            girder_data['UF Simplified plate side'] = max_uf_simpplate
 
             #Lateral pressure on girder side:
-            uf_7_60 = NySd / NksRd + ((qSd_girder_side * math.pow(Lg, 2) / 8) - NySd * zstar) / (Ms2Rd * (1 - NySd / NE)) + u
-            uf_7_61 = NySd / NkpRd - 2 * NySd / NRd + ((qSd_girder_side * math.pow(Lg, 2) / 8) - NySd * zstar) / (MpRd * (1 - NySd / NE)) + u
+            uf_7_60 = NySd / NksRd + ((qSdgirder_side * math.pow(Lg, 2) / 8) - NySd * zstar) / (Ms2Rd * (1 - NySd / NE)) + u
+            uf_7_61 = NySd / NkpRd - 2 * NySd / NRd + ((qSdgirder_side * math.pow(Lg, 2) / 8) - NySd * zstar) / (MpRd * (1 - NySd / NE)) + u
 
-            CHK_qSd_NSd = qSd_girder_side * math.pow(Lg, 2) / 8 < NySd * zstar
+            CHK_qSd_NSd = qSdgirder_side * math.pow(Lg, 2) / 8 < NySd * zstar
 
-            uf_7_62 = NySd / NksRd - 2 * NySd / NRd + (NySd * zstar - (qSd_girder_side * math.pow(Lg, 2) / 8)) / (MstRd * (1 - NySd / NE)) + u
-            uf_7_63 = NySd / NkpRd + (NySd * zstar - (qSd_girder_side * math.pow(Lg, 2) / 8)) / (MpRd * (1 - NySd / NE)) + u
+            uf_7_62 = NySd / NksRd - 2 * NySd / NRd + (NySd * zstar - (qSdgirder_side * math.pow(Lg, 2) / 8)) / (MstRd * (1 - NySd / NE)) + u
+            uf_7_63 = NySd / NkpRd + (NySd * zstar - (qSdgirder_side * math.pow(Lg, 2) / 8)) / (MpRd * (1 - NySd / NE)) + u
 
-            max_uf_simp_stiffener = max([0, uf_7_60, uf_7_61]) if CHK_qSd_NSd else max([0, uf_7_60, uf_7_61, uf_7_62, uf_7_63])
-            girder_data['UF Simplified girder side'] = max_uf_simp_stiffener
+            max_uf_simpstiffener = max([0, uf_7_60, uf_7_61]) if CHK_qSd_NSd else max([0, uf_7_60, uf_7_61, uf_7_62, uf_7_63])
+            girder_data['UF Simplified girder side'] = max_uf_simpstiffener
         else:
             u = 0
             girder_data['UF Simplified girder side'] = 0
             girder_data['UF Simplified plate side'] = 0
             #7.7.1 Continuous stiffeners
-            M1Sd_pl = abs(qSd_plate_side) * math.pow(Lg, 2) / 12
-            M2Sd_pl = abs(qSd_plate_side) * math.pow(Lg, 2) / 24
+            M1Sd_pl = abs(qSdplate_side) * math.pow(Lg, 2) / 12
+            M2Sd_pl = abs(qSdplate_side) * math.pow(Lg, 2) / 24
 
-            M1Sd_stf = abs(qSd_girder_side) * math.pow(Lg, 2) / 12
-            M2Sd_stf = abs(qSd_girder_side) * math.pow(Lg, 2) / 24
+            M1Sd_stf = abs(qSdgirder_side) * math.pow(Lg, 2) / 12
+            M2Sd_stf = abs(qSdgirder_side) * math.pow(Lg, 2) / 24
             # #Lateral pressure on plate side:
-            def iter_plate(zstar):
+            def iterplate(zstar):
                 uf_7_48 = NySd / NksRd + (M1Sd_pl - NySd * zstar) / (Ms1Rd * (1 - NySd / NE)) + u
                 uf_7_49 = NySd / NkpRd - 2 * NySd / NRd + (M1Sd_pl - NySd * zstar) / (MpRd * (1 - NySd / NE)) + u
                 uf_7_50 = NySd / NksRd - 2 * NySd / NRd + (M2Sd_pl + NySd * zstar) / (MstRd * (1 - NySd / NE)) + u
@@ -2818,26 +2797,26 @@ class DNVBuckling(BucklingInput):
 
             from scipy.optimize import minimize_scalar
             tolerance: float = (zp + zt) / 1000
-            res_iter_pl = minimize_scalar(iter_plate, method="Bounded", bounds=(-zt + self._panel._girder.tf / 2, zp), options={'xatol': tolerance})
+            res_iter_pl = minimize_scalar(iterplate, method="Bounded", bounds=(-zt + self.buckling_input.panel.girder.tf / 2, zp), options={'xatol': tolerance})
 
             if type(res_iter_pl.fun) == list:
                 girder_data['UF Cont. plate side'] = res_iter_pl.fun[0]
             else:
                 girder_data['UF Cont. plate side'] = res_iter_pl.fun
             #     Lateral pressure on girder side:
-            def iter_girder(zstar):
+            def itergirder(zstar):
                 uf_7_52 = NySd / NksRd - 2 * NySd / NRd + (M1Sd_stf + NySd * zstar) / (MstRd * (1 - NySd / NE)) + u
                 uf_7_53 = NySd / NkpRd + (M1Sd_stf + NySd * zstar) / (MpRd * (1 - NySd / NE)) + u
                 uf_7_54 = NySd / NksRd + (M2Sd_stf - NySd * zstar) / (Ms2Rd * (1 - NySd / NE)) + u
                 uf_7_55 = NySd / NkpRd - 2 * NySd / NRd + (M2Sd_stf - NySd * zstar) / (MpRd * (1 - NySd / NE)) + u
                 return max([uf_7_52, uf_7_53 ,uf_7_54 ,uf_7_55])
 
-            res_iter_girder = minimize_scalar(iter_girder, method="Bounded", bounds=(-zt + self._panel._girder.tf / 2, zp), options={'xatol': tolerance})
+            res_itergirder = minimize_scalar(itergirder, method="Bounded", bounds=(-zt + self.buckling_input.panel.girder.tf / 2, zp), options={'xatol': tolerance})
 
-            if type(res_iter_girder.fun) == list:
-                girder_data['UF Cont. girder side'] = res_iter_girder.fun[0]
+            if type(res_itergirder.fun) == list:
+                girder_data['UF Cont. girder side'] = res_itergirder.fun[0]
             else:
-                girder_data['UF Cont. girder side'] = res_iter_girder.fun
+                girder_data['UF Cont. girder side'] = res_itergirder.fun
 
         return girder_data
 
@@ -2847,38 +2826,40 @@ class DNVBuckling(BucklingInput):
         Checks for girders and stiffeners
         '''
         
-        if self._panel._stiffener is not None:
-            fy = self._panel._stiffener._material._strength
-            max_web_stf = 42 * self._panel._stiffener.tw * math.sqrt(235 / fy) if self._panel._stiffener.stiffener_type != 'FB' else 0
-            max_flange_stf = (14 if self._panel._stiffener._fabrication_method == 'welded' else 15) * self._panel._stiffener.tf * math.sqrt(235 / fy)
+        if self.buckling_input.panel.stiffener is not None:
+            fy = self.buckling_input.panel.stiffener.material.strength
+            max_web_stf = 42 * self.buckling_input.panel.stiffener.tw * math.sqrt(235 / fy) if self.buckling_input.panel.stiffener.type != 'FB' else 0
+            max_flange_stf = (14 if self.buckling_input.panel.stiffener.fabrication_method == 'welded' else 15) * self.buckling_input.panel.stiffener.tf * math.sqrt(235 / fy)
         else:
             max_web_stf = 0
             max_flange_stf = 0
 
-        if self._panel._girder is not None:
-            fy = self._panel._girder._material._strength
-            max_web_girder = 42 * self._panel._girder.tw * math.sqrt(235 / fy) if self._panel._girder.stiffener_type != 'FB' else 0
-            max_flange_girder = (14 if self._panel._girder._fabrication_method == 'welded' else 15) * self._panel._girder.tf * math.sqrt(235 / fy)
+        if self.buckling_input.panel.girder is not None:
+            fy = self.buckling_input.panel.girder.material.strength
+            max_webgirder = 42 * self.buckling_input.panel.girder.tw * math.sqrt(235 / fy) if self.buckling_input.panel.girder.type != 'FB' else 0
+            max_flangegirder = (14 if self.buckling_input.panel.girder.fabrication_method == 'welded' else 15) * self.buckling_input.panel.girder.tf * math.sqrt(235 / fy)
         else:
-            max_web_girder = 0
-            max_flange_girder = 0
+            max_webgirder = 0
+            max_flangegirder = 0
 
-        return {'Stiffener': [max_web_stf, max_flange_stf], 'Girder': [max_web_girder, max_flange_girder]}
+        return {'Stiffener': [max_web_stf, max_flange_stf], 'Girder': [max_webgirder, max_flangegirder]}
 
 
     def get_one_line_string_mixed(self):
+        assert self.buckling_input.panel.stiffener is not None
         ''' Returning a one line string. '''
-        return 'pl_' + str(round(self._panel._plate.s, 1)) + 'x' + str(round(self._panel._plate.th, 1)) + ' stf_' + \
-               self._panel._stiffener.stiffener_type + \
-               str(round(self._panel._stiffener.hw, 1)) + 'x' + str(round(self._panel._stiffener.tw, 1)) + '+' + \
-               str(round(self._panel._stiffener.b, 1)) + 'x' + \
-               str(round(self._panel._stiffener.tf, 1))
+        return 'pl_' + str(round(self.buckling_input.panel.plate.s, 1)) + 'x' + str(round(self.buckling_input.panel.plate.th, 1)) + ' stf_' + \
+               self.buckling_input.panel.stiffener.type + \
+               str(round(self.buckling_input.panel.stiffener.hw, 1)) + 'x' + str(round(self.buckling_input.panel.stiffener.tw, 1)) + '+' + \
+               str(round(self.buckling_input.panel.stiffener.b, 1)) + 'x' + \
+               str(round(self.buckling_input.panel.stiffener.tf, 1))
 
 
     def get_extended_string_mixed(self):
+        assert self.buckling_input.panel.stiffener is not None
         ''' Some more information returned. '''
-        return 'span: '+str(round(self._panel._plate.s, 4)) + ' stf. type: ' + \
-               self._panel._stiffener.stiffener_type + ' pressure side: ' + self._pressure_side
+        return 'span: '+str(round(self.buckling_input.panel.plate.s, 4)) + ' stf. type: ' + \
+               self.buckling_input.panel.stiffener.type + ' pressure side: ' + self.buckling_input.pressure_side
 
 
 # still to add Shell()
@@ -2900,15 +2881,15 @@ def main():
         ch.setFormatter(formatter)
         logger.addHandler(ch)
 
-    mat_steel_355: Material = Material(206000e6, 0.3, 355e6)
-    plate: Plate = Plate(0.32, 8.5, 0.020, mat_steel_355)
-    stiffener: Stiffener = Stiffener("L", 0.200, 0.010, 0.100, 0.010, material=mat_steel_355)    
-    stiffened_panel: StiffenedPanel = StiffenedPanel(plate, stiffener, "continuous", girder_length=5)
-    stress: Stress = Stress(130e6, 130e6, 0, 0, 10e6)
+    mat_steel_355: Material = Material(young=206800e6, poisson=0.3, strength=355e6)
+    plate: Plate = Plate(spacing=0.32, span=8.5, thickness=0.020, material=mat_steel_355)
+    stiffener: Stiffener = Stiffener(type="L", web_height=0.200, web_th=0.010, flange_width=0.100, flange_th=0.010, material=mat_steel_355, dist_between_lateral_supp=None)    
+    stiffened_panel: StiffenedPanel = StiffenedPanel(plate=plate, stiffener=stiffener, stiffener_end_support="continuous", girder_length=5)
+    stress: Stress = Stress(sigma_x1=130e6, sigma_x2=130e6, sigma_y1=0, sigma_y2=0, tauxy=10e6)
 
-    buckling_input: BucklingInput = BucklingInput(stiffened_panel, 0, "both sides", stress)
+    buckling_input: BucklingInput = BucklingInput(panel=stiffened_panel, pressure=0, pressure_side="both sides", stress=stress)
 
-    dNVBuckling: DNVBuckling = DNVBuckling(buckling_input, None)
+    dNVBuckling: DNVBuckling = DNVBuckling(buckling_input=buckling_input, calculation_domain=None)
 
     results: Dict[str, Any] = dNVBuckling.plated_structures_buckling()
     for key, value in results.items():
