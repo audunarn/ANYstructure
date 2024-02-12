@@ -1,4 +1,4 @@
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator
 import math
 from typing import Optional, Union
 
@@ -28,11 +28,11 @@ class StiffenedPanel(BaseModel):
     #         assert self.girder_length is not None, "When a girder is defined, also the girder length needs to be defined"
     #         assert self.girder_panel_length is not None, "When a girder is defined, also the panel length needs to be defined"
     
-    @validator('stiffener_end_support')
+    @field_validator('stiffener_end_support')
     def prevent_stf_end_supp(cls, v):
         assert v is not None, 'stiffener_end_support should be either "continuous" or "sniped"'
         return v
-    @validator('girder_end_support')
+    @field_validator('girder_end_support')
     def prevent_grd_end_supp(cls, v):
         assert v is not None, 'girder_end_support should be either "continuous" or "sniped"'
         return v
