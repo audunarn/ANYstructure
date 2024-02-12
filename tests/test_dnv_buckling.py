@@ -12,67 +12,69 @@ def structure_cls():
 
 
 def test_section_modulus(structure_cls):
-    sec_mod1 = structure_cls[0].panel.stiffener.get_section_modulus()
-    sec_mod2 = structure_cls[1].panel.stiffener.get_section_modulus()
-    sec_mod3 = structure_cls[2].panel.stiffener.get_section_modulus()
-    print(sec_mod1, sec_mod2, sec_mod3)
-    assert sec_mod1 == (0.0019287090971451923, 0.004261170917709274)
+    sec_mod1 = structure_cls[0].panel.stiffener.get_section_modulus(plate_width=structure_cls[0].panel.plate.spacing, plate_thickness=structure_cls[0].panel.plate.thickness)
+    sec_mod2 = structure_cls[1].panel.stiffener.get_section_modulus(plate_width=structure_cls[1].panel.plate.spacing, plate_thickness=structure_cls[1].panel.plate.thickness)
+    sec_mod3 = structure_cls[2].panel.stiffener.get_section_modulus(plate_width=structure_cls[2].panel.plate.spacing, plate_thickness=structure_cls[2].panel.plate.thickness)
+    assert sec_mod1 == (0.0006303271987905085, 0.003096298566158356)
     assert sec_mod2 == (0.001514995958173724, 0.004116734923760761)
-    assert sec_mod3 == (0.0002956956857932298, 0.0009820952365724583)
+    assert sec_mod3 == (0.0018379700862006152, 0.005438443157566722)
 
 
 def test_shear_center(structure_cls):
     item1 = structure_cls[0].panel.get_shear_center()
     item2 = structure_cls[1].panel.get_shear_center()
     item3 = structure_cls[2].panel.get_shear_center()
-    assert item1 == 0.12363562558813218
+    assert item1 == 0.03894073197367731
     assert item2 == 0.09396749072714805
-    assert item3 == 0.042793744159682734
+    assert item3 == 0.10696231835880587
 
 
 def test_shear_area(structure_cls):
     item1 = structure_cls[0].panel.get_shear_area()
     item2 = structure_cls[1].panel.get_shear_area()
     item3 = structure_cls[2].panel.get_shear_area()
-    assert item1 == 0.00783
+    assert item1 == 0.0036600000000000005
     assert item2 == 0.004776
-    assert item3 == 0.00189
+    assert item3 == 0.006466600000000001
 
 
 def test_plastic_sec_mod(structure_cls):
     item1 = structure_cls[0].panel.get_plasic_section_modulus()
     item2 = structure_cls[1].panel.get_plasic_section_modulus()
     item3 = structure_cls[2].panel.get_plasic_section_modulus()
-    assert item1 == 0.006603262500000001
+    assert item1 == 0.01781929526454241
     assert item2 == 0.009138647999999996
-    assert item3 == 0.00281844
+    assert item3 == 0.012164186637142855
 
 
 def test_moment_of_intertia(structure_cls):
-    item1 = structure_cls[0].panel.stiffener.get_moment_of_intertia()
-    item2 = structure_cls[1].panel.stiffener.get_moment_of_intertia()
-    item3 = structure_cls[2].panel.stiffener.get_moment_of_intertia()
-    assert item1 == 0.0005775674497377624
+    item1 = structure_cls[0].panel.stiffener.get_moment_of_intertia(plate_width=structure_cls[0].panel.plate.spacing, plate_thickness=structure_cls[0].panel.plate.thickness)
+    item2 = structure_cls[1].panel.stiffener.get_moment_of_intertia(plate_width=structure_cls[1].panel.plate.spacing, plate_thickness=structure_cls[1].panel.plate.thickness)
+    item3 = structure_cls[2].panel.stiffener.get_moment_of_intertia(plate_width=structure_cls[2].panel.plate.spacing, plate_thickness=structure_cls[2].panel.plate.thickness)
+    assert item1 == 0.0001597323702732991
     assert item2 == 0.0004407634325301207
-    assert item3 == 4.772633540902878e-05
+    assert item3 == 0.0006345175505307731
 
 
 def test_weight(structure_cls):
-    item1 = structure_cls[0].panel.get_weight()
-    item2 = structure_cls[1].panel.get_weight()
-    item3 = structure_cls[2].panel.get_weight()
-    assert item1 == 673.53
-    assert item2 == 625.4879999999999
-    assert item3 == 137.7204
+    item1: float = structure_cls[0].panel.get_weight(panel_width=2*structure_cls[0].panel.plate.spacing)
+    item2 = structure_cls[1].panel.get_weight(panel_width=2*structure_cls[1].panel.plate.spacing)
+    item3 = structure_cls[2].panel.get_weight(panel_width=2*structure_cls[2].panel.plate.spacing)
+    value1: float = item1 / 2 / structure_cls[0].panel.plate.span
+    value2: float = item2 / 2 / structure_cls[1].panel.plate.span
+    value3: float = item3 / 2 / structure_cls[2].panel.plate.span
+    assert value1 == 558.2036776404001 
+    assert value2 == 625.4879999999999
+    assert value3 == 664.697808
 
 
 def test_cross_section_area(structure_cls):
-    item1 = structure_cls[0].panel.get_cross_section_area()
-    item2 = structure_cls[1].panel.get_cross_section_area()
-    item3 = structure_cls[2].panel.get_cross_section_area()
-    assert item1 == 0.021449999999999997
+    item1 = structure_cls[0].panel.get_cross_section_area(efficient_se=structure_cls[0].panel.plate.spacing)
+    item2 = structure_cls[1].panel.get_cross_section_area(efficient_se=structure_cls[1].panel.plate.spacing)
+    item3 = structure_cls[2].panel.get_cross_section_area(efficient_se=structure_cls[2].panel.plate.spacing)
+    assert item1 == 0.021548105680000002
     assert item2 == 0.01992
-    assert item3 == 0.008772
+    assert item3 == 0.0235208
 
 
 

@@ -1,4 +1,6 @@
 import pytest
+import sys
+sys.path.append(".")
 from anystruct import example_data as ex, calc_structure as calc
 
 
@@ -12,57 +14,57 @@ def test_section_modulus(structure_cls):
     sec_mod1 = structure_cls[0].get_section_modulus()
     sec_mod2 = structure_cls[1].get_section_modulus()
     sec_mod3 = structure_cls[2].get_section_modulus()
-    assert sec_mod1 == (0.0019287090971451923, 0.004261170917709274)
+    assert sec_mod1 == (0.0006303271987905085, 0.003096298566158356)
     assert sec_mod2 == (0.001514995958173724, 0.004116734923760761)
-    assert sec_mod3 == (0.0002956956857932298, 0.0009820952365724583)
+    assert sec_mod3 == (0.0018379700862006152, 0.005438443157566722)
 
 def test_shear_center(structure_cls):
     item1 = structure_cls[0].get_shear_center()
     item2 = structure_cls[1].get_shear_center()
     item3 = structure_cls[2].get_shear_center()
-    assert item1 == 0.12363562558813218
+    assert item1 == 0.03894073197367731
     assert item2 == 0.09396749072714805
-    assert item3 == 0.042793744159682734
+    assert item3 == 0.10696231835880587
 
 def test_shear_area(structure_cls):
     item1 = structure_cls[0].get_shear_area()
     item2 = structure_cls[1].get_shear_area()
     item3 = structure_cls[2].get_shear_area()
-    assert item1 == 0.00783
+    assert item1 == 0.0036600000000000005
     assert item2 == 0.004776
-    assert item3 == 0.00189
+    assert item3 == 0.006466600000000001
 
 def test_plastic_sec_mod(structure_cls):
     item1 = structure_cls[0].get_plasic_section_modulus()
     item2 = structure_cls[1].get_plasic_section_modulus()
     item3 = structure_cls[2].get_plasic_section_modulus()
-    assert item1 == 0.006603262500000001
+    assert item1 == 0.01781929526454241
     assert item2 == 0.009138647999999996
-    assert item3 == 0.00281844
+    assert item3 == 0.012164186637142855
 
-def test_moment_of_intertia(structure_cls):
+def test_moment_of_inertia(structure_cls):
     item1 = structure_cls[0].get_moment_of_intertia()
     item2 = structure_cls[1].get_moment_of_intertia()
     item3 = structure_cls[2].get_moment_of_intertia()
-    assert item1 == 0.0005775674497377624
+    assert item1 == 0.0001597323702732991
     assert item2 == 0.0004407634325301207
-    assert item3 == 4.772633540902878e-05
+    assert item3 == 0.0006345175505307731
 
 def test_weight(structure_cls):
     item1 = structure_cls[0].get_weight()
     item2 = structure_cls[1].get_weight()
     item3 = structure_cls[2].get_weight()
-    assert item1 == 673.53
+    assert item1 == 558.2036776404001 
     assert item2 == 625.4879999999999
-    assert item3 == 137.7204
+    assert item3 == 664.697808
 
 def test_cross_section_area(structure_cls):
     item1 = structure_cls[0].get_cross_section_area()
     item2 = structure_cls[1].get_cross_section_area()
     item3 = structure_cls[2].get_cross_section_area()
-    assert item1 == 0.021449999999999997
+    assert item1 == 0.021548105680000002
     assert item2 == 0.01992
-    assert item3 == 0.008772
+    assert item3 == 0.0235208
 
 def test_input_properties(structure_cls):
     item1 = structure_cls[0].get_structure_prop()

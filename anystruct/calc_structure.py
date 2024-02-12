@@ -108,7 +108,7 @@ class Structure():
                 self._pressure_side = main_dict['press_side'][0]
             except KeyError:
                 self._pressure_side = 'both sides'
-            self._panel_or_shell = main_dict['panel or shell'][0]
+            # self._panel_or_shell = main_dict['panel or shell'][0] # set earlier
 
     # Property decorators are used in buckling of shells. IN mm!
     @property # in mm
