@@ -11,7 +11,7 @@ class Stiffener(BaseModel):
     web_th: float
     flange_width: float
     flange_th: float
-    dist_between_lateral_supp: Optional[float]
+    dist_between_lateral_supp: Optional[float] = None
     fabrication_method: str = 'welded'
     # flange_eccentricity: float = 0
     material: Material
