@@ -30,13 +30,13 @@ class DNVBuckling(BaseModel):
         #stf_opt = ['allowed', 'not allowed']
         # if self.calculation_domain == "Flat plate, stiffened with girder":
 
-        if self.buckling_input.stifplate_effective_aginst_sigy == True:
-            self.buckling_input.stifplate_effective_aginst_sigy = gird_opt[0] # type: ignore
-        elif self.buckling_input.stifplate_effective_aginst_sigy == False:
-            self.buckling_input.stifplate_effective_aginst_sigy = gird_opt[1] # type: ignore
+        if self.buckling_input.stifplate_effective_against_sigy == True:
+            self.buckling_input.stifplate_effective_against_sigy = gird_opt[0] # type: ignore
+        elif self.buckling_input.stifplate_effective_against_sigy == False:
+            self.buckling_input.stifplate_effective_against_sigy = gird_opt[1] # type: ignore
 
         if self.calculation_domain == "Flat plate, stiffened with girder":
-            if self.buckling_input.stifplate_effective_aginst_sigy == gird_opt[0]:
+            if self.buckling_input.stifplate_effective_against_sigy == gird_opt[0]:
                 return 1
             else:
                 return 2
@@ -676,7 +676,7 @@ class DNVBuckling(BaseModel):
         # pf = 0.0001 if length * spacing * gammaM == 0 else 12 * Wmin * fy / (math.pow(length, 2) * spacing * gammaM)
 
         lk = Lg
-        LGk = lk if self.buckling_input.calc_props.buckling_length_factorgirder is None else lk * self.buckling_input.calc_props.buckling_length_factorgirder
+        LGk = lk if self.buckling_input.calc_props.buckling_length_factor_girder is None else lk * self.buckling_input.calc_props.buckling_length_factor_girder
 
         ie = math.sqrt(Iy / AtotG)
         fE = 0 if LGk == 0 else math.pow(math.pi, 2) * E * math.pow(ie / LGk, 2)

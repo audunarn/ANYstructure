@@ -29,7 +29,7 @@ class BucklingInput(BaseModel):
     pressure_side: str='both sides'
     stress: Stress=Stress(sigma_x1=0, sigma_x2=0, sigma_y1=0, sigma_y2=0, tauxy=0)
     tension_field_action: str = "not allowed"
-    stifplate_effective_aginst_sigy: bool = True
+    stifplate_effective_against_sigy: bool = True
     min_lat_press_adj_span: Optional[float] = None
     calc_props: Stiffened_panel_calc_props = Stiffened_panel_calc_props()
     puls_input: Puls = Puls()

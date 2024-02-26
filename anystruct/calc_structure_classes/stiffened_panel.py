@@ -30,11 +30,13 @@ class StiffenedPanel(BaseModel):
     
     @field_validator('stiffener_end_support')
     def prevent_stf_end_supp(cls, v):
-        assert v is not None, 'stiffener_end_support should be either "continuous" or "sniped"'
+        if v is not None:
+            assert v.lower() in ["continuous", "sniped"], 'stiffener_end_support should be either "continuous" or "sniped"'
         return v
     @field_validator('girder_end_support')
     def prevent_grd_end_supp(cls, v):
-        assert v is not None, 'girder_end_support should be either "continuous" or "sniped"'
+        if v is not None:
+            assert v.lower() in ["continuous", "sniped"], 'girder_end_support should be either "continuous" or "sniped"'
         return v
 
 
@@ -240,7 +242,7 @@ class Stiffened_panel_calc_props(BaseModel):
     lat_load_factor: float = 1
     stress_load_factor: float = 1
     buckling_length_factor_stf: float = 1
-    buckling_length_factorgirder: float = 1
+    buckling_length_factor_girder: float = 1
     # def __init__(self, zstar_optimization: bool = True, 
     #                     plate_kpp: float = 1,
     #                     stf_kps: float =1 ,
