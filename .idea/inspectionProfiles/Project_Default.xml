@@ -4,8 +4,20 @@
     <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
       <option name="ignoredPackages">
         <value>
-          <list size="1">
+          <list size="13">
             <item index="0" class="java.lang.String" itemvalue="sklearn" />
+            <item index="1" class="java.lang.String" itemvalue="annotated-types" />
+            <item index="2" class="java.lang.String" itemvalue="scipy" />
+            <item index="3" class="java.lang.String" itemvalue="pydantic" />
+            <item index="4" class="java.lang.String" itemvalue="pytest" />
+            <item index="5" class="java.lang.String" itemvalue="scikit-learn" />
+            <item index="6" class="java.lang.String" itemvalue="iniconfig" />
+            <item index="7" class="java.lang.String" itemvalue="pluggy" />
+            <item index="8" class="java.lang.String" itemvalue="reportlab" />
+            <item index="9" class="java.lang.String" itemvalue="numpy" />
+            <item index="10" class="java.lang.String" itemvalue="fonttools" />
+            <item index="11" class="java.lang.String" itemvalue="pydantic_core" />
+            <item index="12" class="java.lang.String" itemvalue="pillow" />
           </list>
         </value>
       </option>
