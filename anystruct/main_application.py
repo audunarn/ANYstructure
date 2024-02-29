@@ -3097,7 +3097,7 @@ class Application():
                 mat_fac_error = ''
                 if obj_scnt_calc_pl.get_puls_sp_or_up() == 'UP':
                     buckling_ml_input = obj_scnt_calc_pl.get_buckling_ml_input(design_lat_press=design_pressure)
-                    mat_fac = self._new_material_factor.get()
+                    mat_fac = obj_scnt_calc_pl.mat_factor
                     mat_fac_error = ''
                     if mat_fac not in [1.1, 1.15]:
                         mat_fac_error = ' MATERIAL FACTOR MUST BE 1.1 or 1.15 -> using 1.15'
@@ -3145,7 +3145,7 @@ class Application():
                                                                               float('inf'), float('inf')]}
                 else:
                     buckling_ml_input = obj_scnt_calc_stf.get_buckling_ml_input(design_lat_press=design_pressure)
-                    mat_fac = self._new_material_factor.get()
+                    mat_fac = obj_scnt_calc_pl.mat_factor
                     mat_fac_error = ''
                     if mat_fac not in [1.1, 1.15]:
                         mat_fac = 1.15
