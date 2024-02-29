@@ -3177,7 +3177,7 @@ class Application():
 
                     x_csr = self._ML_buckling[mat_fac]['CSR scaler SP'].transform(x_csr)
                     csr_pl, csr_web, csr_web_fl, csr_fl = self._ML_buckling[mat_fac]['CSR predictor SP'].predict(x_csr)[0]
-                    if self._new_material_factor.get() == 1.1:
+                    if obj_scnt_calc_pl.mat_factor == 1.1:
                         accept = 'below or equal 0.91'
                     else:
                         accept = 'below or equal 0.87'
