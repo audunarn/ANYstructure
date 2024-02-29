@@ -1,3 +1,4 @@
+import math
 import os  # -*- coding: utf-8 -*-
 
 import tkinter as tk
@@ -34,6 +35,7 @@ try:
     import anystruct.load_factor_window as load_factors
     from anystruct.report_generator import LetterMaker
     import anystruct.sesam_interface as sesam
+    import anystruct.excel_inteface as excel_interface
 except ModuleNotFoundError:
     # This is due to pyinstaller issues.
     from ANYstructure.anystruct.calc_structure import *
@@ -53,6 +55,7 @@ except ModuleNotFoundError:
     import ANYstructure.anystruct.load_factor_window as load_factors
     from ANYstructure.anystruct.report_generator import LetterMaker
     import ANYstructure.anystruct.sesam_interface as sesam
+    import ANYstructure.anystruct.excel_inteface as excel_interface
 
 class Application():
     '''
@@ -134,6 +137,7 @@ class Application():
         sub_menu.add_command(label='Save project, Alt-S', command=self.save_no_dialogue)
         sub_menu.add_command(label='Open project', command=self.openfile)
         sub_menu.add_command(label='Restore previous', command=self.restore_previous)
+        sub_menu.add_command(label='Open excel input', command=self.open_excel_file)
         self._shortcut_text = 'CTRL-Z Undo geometry action\n' \
                               'CTRL-P Copy selected point\n' \
                               'CTRL-M Move selected point)\n' \
@@ -184,6 +188,7 @@ class Application():
         sub_sesam.add_command(label = 'Export geometry to SESAM GeniE JS', command = self.export_to_js)
         sub_sesam.add_command(label='Run all PULS lines', command=self.puls_run_all_lines)
         sub_sesam.add_command(label='Delete all PULS results', command=self.puls_delete_all)
+        sub_sesam.add_command(label='Import excel file', command=self.open_excel_file)
 
         sub_help = tk.Menu(menu)
         menu.add_cascade(label='Help', menu = sub_help)
@@ -191,6 +196,7 @@ class Application():
         sub_help.add_command(label='Open documentation pdf', command=self.open_documentation_pdf)
         sub_help.add_command(label='Donate!', command=self.open_donate)
         sub_help.add_command(label = 'Open example file', command = self.open_example)
+        sub_help.add_command(label='Open example excel input file', command=self.open_example_excel_file)
         sub_help.add_command(label='About ANYstructure', command=self.open_about)
 
         sub_colors = tk.Menu(menu)
@@ -322,61 +328,54 @@ class Application():
         self._center_of_buoyancy = dict()   # Center of buoyancy for all and for carious static drafts
                                             # Example {8: (5,20), 22: (12,20), 'all': (16,20)}
 
-        self._ML_buckling = dict()  # Buckling machine learning algorithm
-        for name, file_base in zip(['cl SP buc int predictor', 'cl SP buc int scaler',
-                                    'cl SP ult int predictor', 'cl SP ult int scaler',
-                                    'cl SP buc GLGT predictor', 'cl SP buc GLGT scaler',
-                                    'cl SP ult GLGT predictor', 'cl SP ult GLGT scaler',
-                                    'cl UP buc int predictor', 'cl UP buc int scaler',
-                                    'cl UP ult int predictor', 'cl UP ult int scaler',
-                                    'cl UP buc GLGT predictor', 'cl UP buc GLGT scaler',
-                                    'cl UP ult GLGT predictor', 'cl UP ult GLGT scaler',
-                                    'CSR predictor UP', 'CSR scaler UP',
-                                    'CSR predictor SP', 'CSR scaler SP'
-                                    ],
-                                   ["ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_1_SP",
-                                    "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_1_SP",
-                                    "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_1_SP",
-                                    "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_1_SP",
-                                    "ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_SP",
-                                    "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_SP",
-                                    "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_SP",
-                                    "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_SP",
-                                    "ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_1_UP",
-                                    "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_1_UP",
-                                    "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_1_UP",
-                                    "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_1_UP",
-                                    "ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_UP",
-                                    "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_UP",
-                                    "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_UP",
-                                    "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_UP",
-                                    "ml_files\\CL_CSR-Tank_req_cl_predictor",
-                                    "ml_files\\CL_CSR-Tank_req_cl_UP_scaler",
-                                    "ml_files\\CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_predictor",
-                                    "ml_files\\CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_SP_scaler"]):
-            self._ML_buckling[name] = None
+        self._ML_buckling = {1.1 : dict(), 1.15: dict()}# Buckling machine learning algorithm
+        for mat_fac in [1.1, 1.15]:
+            for name, file_base in zip(['cl SP buc int predictor', 'cl SP buc int scaler',
+                                        'cl SP ult int predictor', 'cl SP ult int scaler',
+                                        'cl SP buc GLGT predictor', 'cl SP buc GLGT scaler',
+                                        'cl SP ult GLGT predictor', 'cl SP ult GLGT scaler',
+                                        'cl UP buc int predictor', 'cl UP buc int scaler',
+                                        'cl UP ult int predictor', 'cl UP ult int scaler',
+                                        'cl UP buc GLGT predictor', 'cl UP buc GLGT scaler',
+                                        'cl UP ult GLGT predictor', 'cl UP ult GLGT scaler',
+                                        'CSR predictor UP', 'CSR scaler UP',
+                                        'CSR predictor SP', 'CSR scaler SP'
+                                        ],
+                                       ["ml_files\\CL_output_cl_str_buc_XXX_predictor_In-plane_support_cl_1_SP",
+                                        "ml_files\\CL_output_cl_str_buc_XXX_scaler_In-plane_support_cl_1_SP",
+                                        "ml_files\\CL_output_cl_str_ult_XXX_predictor_In-plane_support_cl_1_SP",
+                                        "ml_files\\CL_output_cl_str_ult_XXX_scaler_In-plane_support_cl_1_SP",
+                                        "ml_files\\CL_output_cl_str_buc_XXX_predictor_In-plane_support_cl_2,_3_SP",
+                                        "ml_files\\CL_output_cl_str_buc_XXX_scaler_In-plane_support_cl_2,_3_SP",
+                                        "ml_files\\CL_output_cl_str_ult_XXX_predictor_In-plane_support_cl_2,_3_SP",
+                                        "ml_files\\CL_output_cl_str_ult_XXX_scaler_In-plane_support_cl_2,_3_SP",
+                                        "ml_files\\CL_output_cl_str_buc_XXX_predictor_In-plane_support_cl_1_UP",
+                                        "ml_files\\CL_output_cl_str_buc_XXX_scaler_In-plane_support_cl_1_UP",
+                                        "ml_files\\CL_output_cl_str_ult_XXX_predictor_In-plane_support_cl_1_UP",
+                                        "ml_files\\CL_output_cl_str_ult_XXX_scaler_In-plane_support_cl_1_UP",
+                                        "ml_files\\CL_output_cl_str_buc_XXX_predictor_In-plane_support_cl_2,_3_UP",
+                                        "ml_files\\CL_output_cl_str_buc_XXX_scaler_In-plane_support_cl_2,_3_UP",
+                                        "ml_files\\CL_output_cl_str_ult_XXX_predictor_In-plane_support_cl_2,_3_UP",
+                                        "ml_files\\CL_output_cl_str_ult_XXX_scaler_In-plane_support_cl_2,_3_UP",
+                                        "ml_files\\CL_CSR-Tank_req_cl_predictor",
+                                        "ml_files\\CL_CSR-Tank_req_cl_scaler",
+                                        "ml_files\\CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_predictor",
+                                        "ml_files\\CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_scaler"]):
 
-            if os.path.isfile(file_base + '.pickle'):
-                file = open(file_base + '.pickle', 'rb')
-                self._ML_buckling[name] = pickle.load(file)
-                file.close()
-            else:
-                #file = open(self._root_dir +'\\' + file_base + '.pickle', 'rb')
+                mat_fac_str = [str(round(mat_fac,2)).replace('.','')+'0'][0][0:3]
+                self._ML_buckling[mat_fac][name] = None
+                file_base = file_base.replace('XXX', mat_fac_str)
+                if os.path.isfile(file_base + '.pickle'):
+                    file = open(file_base + '.pickle', 'rb')
+                    self._ML_buckling[mat_fac][name] = pickle.load(file)
+                    file.close()
+                else:
+                    #file = open(self._root_dir +'\\' + file_base + '.pickle', 'rb')
 
-                ml_file = os.path.join(self._root_dir, file_base + '.pickle')
-                file = open(ml_file, 'rb')
-                self._ML_buckling[name] = pickle.load(file)
-                file.close()
-
-        self._ML_classes ={0: 'N/A',
-                           1: 'A negative utilisation factor is found.',
-                           2: 'At least one of the in-plane loads must be non-zero.',
-                           3: 'Division by zero',
-                           4: 'Overflow',
-                           5: 'The aspect ratio exceeds the PULS code limit',
-                           6: 'The global slenderness exceeds 4. Please reduce stiffener span or increase stiffener height.',
-                           7: 'The applied pressure is too high for this plate field.', 8: 'web-flange-ratio',
-                           9:  'UF below or equal 0.87', 10: 'UF between 0.87 and 1.0', 11: 'UF above 1.0'}
+                    ml_file = os.path.join(self._root_dir, file_base + '.pickle')
+                    file = open(ml_file, 'rb')
+                    self._ML_buckling[mat_fac][name] = pickle.load(file)
+                    file.close()
 
         # Used to select parameter
         self._stuctural_definition = ['mat_yield','mat_factor', 'span', 'spacing', 'plate_thk', 'stf_web_height',
@@ -840,7 +839,7 @@ class Application():
                                               font = self._text_size['Text 8 bold']),
                                     ttk.Label(self._tab_prop, text='Load/stresses input',
                                               font = self._text_size['Text 8 bold']),
-                                    ttk.Label(self._tab_prop, text='Special provitions input',
+                                    ttk.Label(self._tab_prop, text='Special provisions input',
                                               font = self._text_size['Text 8 bold']),
                                     ttk.Label(self._tab_prop, text='Buckling input',
                                               font = self._text_size['Text 8 bold']),
@@ -1438,7 +1437,7 @@ class Application():
         self._flat_btn_load_info =  ttk.Button(self._tab_prop, text='Load info',
                                                 command=lambda id= "flat": self.stress_information_notebooks(id),
                                                 style = "Bold.TButton")
-        self._flat_btn_fixation_info =  ttk.Button(self._tab_prop, text='Parameter info',
+        self._flat_btn_fixation_info =  ttk.Button(self._tab_prop, text='Param. info',
                                                 command=lambda id= "fixation": self.stress_information_notebooks(id),
                                                 style = "Bold.TButton")
         self._shell_btn_length_info =  ttk.Button(self._tab_prop, text='Length info',
@@ -1919,14 +1918,14 @@ class Application():
             self._flat_btn_load_info.place(relx=hor_start + 5 * delta_x,
                                             rely=vert_start + (idx+1) * delta_y)
             self._flat_btn_fixation_info.place(relx=hor_start + 5 * delta_x,
-                                            rely=vert_start+ (idx-7) * delta_y)
+                                            rely=vert_start+ (idx-7.5) * delta_y)
             self._button_str_type.place(relx=hor_start + 5 * delta_x,
                                             rely=vert_start + (idx+3) * delta_y)
             idx = idx_now
             self._flat_gui_headlines[5].place(relx=hor_start + 0 * delta_x, rely=vert_start + idx * delta_y)
             idx += 1
             self._lab_buckling_method.place(relx=hor_start + 0 * delta_x, rely=vert_start + idx * delta_y)
-            self._buckling_method.place(relx=hor_start + 4 * delta_x, rely=vert_start + idx * delta_y)
+            self._buckling_method.place(relx=hor_start + 4 * delta_x, rely=vert_start + idx * delta_y*0.99)
             idx += 1
             if flat_panel_stf_girder:
                 self._flat_gui_headlines[7].place(relx=hor_start + 6 * delta_x, rely=vert_start + idx * delta_y)
@@ -2640,7 +2639,6 @@ class Application():
                 name = ('manual', self._active_line, 'manual')  # tuple to identify combinations on line
                 if name in self._new_load_comb_dict.keys():
                     self._manual_created.append(ttk.Label(self._main_fr, text='Manual (pressure/LF)',
-
                                                          ))
                     self._manual_created.append(
                         ttk.Entry(self._main_fr, textvariable=self._new_load_comb_dict[name][0], width=15,
@@ -2833,12 +2831,19 @@ class Application():
                     self._new_load_comb_dict[name][2].set(1)
         else:
             pass
-
         name = ('manual', line, 'manual')
         self._new_load_comb_dict[name] = [tk.DoubleVar(), tk.DoubleVar(), tk.IntVar()]
         self._new_load_comb_dict[name][0].set(0)
         self._new_load_comb_dict[name][1].set(0)
         self._new_load_comb_dict[name][2].set(0)
+        self._new_load_comb_dict[name][0].trace('w', self.trace_acceptance_change)
+        self._new_load_comb_dict[name][1].trace('w', self.trace_acceptance_change)
+
+    def trace_update_load(self, *args):
+        try:
+            self._line_to_struc[self._active_line][0].need_recalc = True
+        except BaseException as error:
+            pass
 
     def trace_shift_change(self, *args):
         try:
@@ -3089,83 +3094,102 @@ class Application():
                         'cl SP buc GLGT predictor', 'cl SP buc GLGT scaler',
                         'cl SP ult GLGT predictor', 'cl SP ult GLGT scaler']
                 '''
-
+                mat_fac_error = ''
                 if obj_scnt_calc_pl.get_puls_sp_or_up() == 'UP':
                     buckling_ml_input = obj_scnt_calc_pl.get_buckling_ml_input(design_lat_press=design_pressure)
-
+                    mat_fac = self._new_material_factor.get()
+                    mat_fac_error = ''
+                    if mat_fac not in [1.1, 1.15]:
+                        mat_fac_error = ' MATERIAL FACTOR MUST BE 1.1 or 1.15 -> using 1.15'
+                        mat_fac = 1.15
                     if obj_scnt_calc_pl.get_puls_boundary() == 'Int':
-                        if self._ML_buckling['cl UP buc int predictor'] != None:
-                            x_buc = self._ML_buckling['cl UP buc int scaler'].transform(buckling_ml_input)
-                            y_pred_buc = self._ML_buckling['cl UP buc int predictor'].predict(x_buc)[0]
+                        if self._ML_buckling[mat_fac]['cl UP buc int predictor'] != None:
+                            x_buc = self._ML_buckling[mat_fac]['cl UP buc int scaler'].transform(buckling_ml_input)
+                            y_pred_buc = self._ML_buckling[mat_fac]['cl UP buc int predictor'].predict(x_buc)[0]
                         else:
                             y_pred_buc = 0
-                        if self._ML_buckling['cl UP ult int predictor'] != None:
-                            x_ult = self._ML_buckling['cl UP ult int scaler'].transform(buckling_ml_input)
-                            y_pred_ult = self._ML_buckling['cl UP ult int predictor'].predict(x_ult)[0]
+                        if self._ML_buckling[mat_fac]['cl UP ult int predictor'] != None:
+                            x_ult = self._ML_buckling[mat_fac]['cl UP ult int scaler'].transform(buckling_ml_input)
+                            y_pred_ult = self._ML_buckling[mat_fac]['cl UP ult int predictor'].predict(x_ult)[0]
                         else:
                             y_pred_ult = 0
                     else:
-                        if self._ML_buckling['cl UP buc GLGT predictor'] != None:
-                            x_buc = self._ML_buckling['cl UP buc GLGT scaler'].transform(buckling_ml_input)
-                            y_pred_buc = self._ML_buckling['cl UP buc GLGT predictor'].predict(x_buc)[0]
+                        if self._ML_buckling[mat_fac]['cl UP buc GLGT predictor'] != None:
+                            x_buc = self._ML_buckling[mat_fac]['cl UP buc GLGT scaler'].transform(buckling_ml_input)
+                            y_pred_buc = self._ML_buckling[mat_fac]['cl UP buc GLGT predictor'].predict(x_buc)[0]
                         else:
                             y_pred_buc = 0
-                        if self._ML_buckling['cl UP ult GLGT predictor'] != None:
-                            x_ult = self._ML_buckling['cl UP ult GLGT scaler'].transform(buckling_ml_input)
-                            y_pred_ult = self._ML_buckling['cl UP ult GLGT predictor'].predict(x_ult)[0]
+                        if self._ML_buckling[mat_fac]['cl UP ult GLGT predictor'] != None:
+                            x_ult = self._ML_buckling[mat_fac]['cl UP ult GLGT scaler'].transform(buckling_ml_input)
+                            y_pred_ult = self._ML_buckling[mat_fac]['cl UP ult GLGT predictor'].predict(x_ult)[0]
                         else:
                             y_pred_ult = 0
 
                     x_csr = obj_scnt_calc_pl.get_buckling_ml_input(design_lat_press=design_pressure, csr = True)
-                    x_csr = self._ML_buckling['CSR scaler UP'].transform(x_csr)
-                    csr_pl = self._ML_buckling['CSR predictor UP'].predict(x_csr)[0]
+                    x_csr = self._ML_buckling[mat_fac]['CSR scaler UP'].transform(x_csr)
+                    csr_pl = self._ML_buckling[mat_fac]['CSR predictor UP'].predict(x_csr)[0]
+
+                    if self._new_material_factor.get() == 1.1:
+                        accept = 'below or equal 0.91'
+                    else:
+                        accept = 'below or equal 0.87'
 
                     return_dict['ML buckling colors'][current_line] = \
-                        {'buckling': 'green' if int(y_pred_buc) == 9 else 'red',
-                         'ultimate': 'green' if int(y_pred_ult) == 9 else 'red',
+                        {'buckling': 'green' if y_pred_buc == accept else 'red',
+                         'ultimate': 'green' if y_pred_ult == accept else 'red',
                          'CSR requirement': 'green' if csr_pl == 1 else 'red'}
 
-                    return_dict['ML buckling class'][current_line] = {'buckling': int(y_pred_buc),
-                                                                      'ultimate': int(y_pred_ult),
+                    return_dict['ML buckling class'][current_line] = {'buckling': y_pred_buc + mat_fac_error,
+                                                                      'ultimate': y_pred_ult + mat_fac_error,
                                                                       'CSR': [csr_pl, float('inf'),
                                                                               float('inf'), float('inf')]}
                 else:
                     buckling_ml_input = obj_scnt_calc_stf.get_buckling_ml_input(design_lat_press=design_pressure)
+                    mat_fac = self._new_material_factor.get()
+                    mat_fac_error = ''
+                    if mat_fac not in [1.1, 1.15]:
+                        mat_fac = 1.15
+                        mat_fac_error = ' MATERIAL FACTOR MUST BE 1.1 or 1.15 -> using 1.15'
                     if obj_scnt_calc_stf.get_puls_boundary() == 'Int':
-                        if self._ML_buckling['cl SP buc int predictor'] != None:
-                            x_buc = self._ML_buckling['cl SP buc int scaler'].transform(buckling_ml_input)
-                            y_pred_buc = self._ML_buckling['cl SP buc int predictor'].predict(x_buc)[0]
+                        if self._ML_buckling[mat_fac]['cl SP buc int predictor'] != None:
+                            x_buc = self._ML_buckling[mat_fac]['cl SP buc int scaler'].transform(buckling_ml_input)
+                            y_pred_buc = self._ML_buckling[mat_fac]['cl SP buc int predictor'].predict(x_buc)[0]
                         else:
                             y_pred_buc = 0
-                        if self._ML_buckling['cl SP ult int predictor'] != None:
-                            x_ult = self._ML_buckling['cl SP ult int scaler'].transform(buckling_ml_input)
-                            y_pred_ult = self._ML_buckling['cl SP ult int predictor'].predict(x_ult)[0]
+                        if self._ML_buckling[mat_fac]['cl SP ult int predictor'] != None:
+                            x_ult = self._ML_buckling[mat_fac]['cl SP ult int scaler'].transform(buckling_ml_input)
+                            y_pred_ult = self._ML_buckling[mat_fac]['cl SP ult int predictor'].predict(x_ult)[0]
                         else:
                             y_pred_ult = 0
                     else:
-                        if self._ML_buckling['cl SP buc GLGT predictor'] != None:
-                            x_buc = self._ML_buckling['cl SP buc GLGT scaler'].transform(buckling_ml_input)
-                            y_pred_buc = self._ML_buckling['cl SP buc GLGT predictor'].predict(x_buc)[0]
+                        if self._ML_buckling[mat_fac]['cl SP buc GLGT predictor'] != None:
+                            x_buc = self._ML_buckling[mat_fac]['cl SP buc GLGT scaler'].transform(buckling_ml_input)
+                            y_pred_buc = self._ML_buckling[mat_fac]['cl SP buc GLGT predictor'].predict(x_buc)[0]
                         else:
                             y_pred_buc = 0
-                        if self._ML_buckling['cl SP ult GLGT predictor'] != None:
-                            x_ult = self._ML_buckling['cl SP ult GLGT scaler'].transform(buckling_ml_input)
-                            y_pred_ult = self._ML_buckling['cl SP ult GLGT predictor'].predict(x_ult)[0]
+                        if self._ML_buckling[mat_fac]['cl SP ult GLGT predictor'] != None:
+                            x_ult = self._ML_buckling[mat_fac]['cl SP ult GLGT scaler'].transform(buckling_ml_input)
+                            y_pred_ult = self._ML_buckling[mat_fac]['cl SP ult GLGT predictor'].predict(x_ult)[0]
                         else:
                             y_pred_ult = 0
 
                     x_csr = obj_scnt_calc_stf.get_buckling_ml_input(design_lat_press=design_pressure, csr = True)
 
-                    x_csr = self._ML_buckling['CSR scaler SP'].transform(x_csr)
-                    csr_pl, csr_web, csr_web_fl, csr_fl = self._ML_buckling['CSR predictor SP'].predict(x_csr)[0]
+                    x_csr = self._ML_buckling[mat_fac]['CSR scaler SP'].transform(x_csr)
+                    csr_pl, csr_web, csr_web_fl, csr_fl = self._ML_buckling[mat_fac]['CSR predictor SP'].predict(x_csr)[0]
+                    if self._new_material_factor.get() == 1.1:
+                        accept = 'below or equal 0.91'
+                    else:
+                        accept = 'below or equal 0.87'
+
 
                     return_dict['ML buckling colors'][current_line] = \
-                        {'buckling': 'green' if int(y_pred_buc) == 9 else 'red',
-                         'ultimate': 'green' if int(y_pred_ult) == 9 else 'red',
+                        {'buckling': 'green' if y_pred_buc == accept else 'red',
+                         'ultimate': 'green' if y_pred_ult == accept else 'red',
                          'CSR requirement': 'green' if
                          all([csr_pl == 1, csr_web == 1, csr_web_fl == 1, csr_fl == 1]) else 'red'}
-                    return_dict['ML buckling class'][current_line] = {'buckling': int(y_pred_buc),
-                                                                      'ultimate': int(y_pred_ult),
+                    return_dict['ML buckling class'][current_line] = {'buckling': y_pred_buc + mat_fac_error ,
+                                                                      'ultimate': y_pred_ult + mat_fac_error,
                                                                       'CSR': [csr_pl, csr_web, csr_web_fl, csr_fl]}
 
                 '''
@@ -4748,11 +4772,11 @@ class Application():
                                                     font=self._text_size["Text 9 bold"], anchor='nw',
                                                     fill = self._color_text)
                     self._result_canvas.create_text([x * 1, (y+(start_y+1)*dy) * 1],
-                                                    text='Buckling: ' + self._ML_classes[state['ML buckling class'][current_line]['buckling']],
+                                                    text='Buckling: ' + state['ML buckling class'][current_line]['buckling'],
                                                     font=self._text_size["Text 9 bold"],
                                                     anchor='nw', fill=state['ML buckling colors'][current_line]['buckling'])
                     self._result_canvas.create_text([x * 1, (y+(start_y+2)*dy) * 1],
-                                                    text='Ultimate: ' +self._ML_classes[state['ML buckling class'][current_line]['ultimate']],
+                                                    text='Ultimate: ' +state['ML buckling class'][current_line]['ultimate'],
                                                     font=self._text_size["Text 9 bold"],
                                                     anchor='nw', fill=state['ML buckling colors'][current_line]['ultimate'])
                     if obj_scnt_calc_pl.get_puls_sp_or_up() == 'SP':
@@ -4837,7 +4861,7 @@ class Application():
                                     if results['Column stability UF'] is None:
                                         text_value = 'N/A'
                                     else:
-                                        text_value = ('Column buckling does not need to be checked, but UF = ' +
+                                        text_value = ('Column buckling does not need to be checked\n- but UF = ' +
                                                       str(round(results['Column stability UF'],2)))
                                     uf_col = 'green'
                                 else:
@@ -5033,10 +5057,12 @@ class Application():
                     self.logger(point=current_point, move_coords=(current_coords,[x_coord, y_coord]))
                 else:
                     self.logger(point=current_point, move_coords=None)
-
             self.update_frame()
+
         except TclError:
             messagebox.showinfo(title='Input error', message='Input must be a number. Dots used not comma.')
+
+
 
     def move_line(self,event = None):
         if self._line_is_active:
@@ -5122,12 +5148,12 @@ class Application():
                     # making stings from two points difining the lines, e.g. for line 1 string could be 'p1p2' and 'p2p1'
                     self._line_point_to_point_string.append(line_str)
                     self._line_point_to_point_string.append(line_str_rev)
-
                     self.add_to_combinations_dict(current_name)
             for line, obj in self._line_to_struc.items():
                 obj[0].need_recalc = True
         except TclError:
             messagebox.showinfo(title='Input error', message='Input must be a line number.')
+        return current_name
 
     def new_structure(self, event = None, pasted_structure = None, multi_return = None, toggle_multi = None,
                       suspend_recalc = False, cylinder_return = None):
@@ -6973,6 +6999,214 @@ class Application():
         else:
             self.openfile(defined= self._root_dir + '/' + file_name)
 
+    def open_example_excel_file(self):
+        file_name = 'excel_input_example.xlsx'
+
+        if os.path.isfile(file_name) :
+            XLB = excel_interface.ExcelInterface(file_name, visible=True, read_only=True)
+        else:
+            XLB = excel_interface.ExcelInterface(self._root_dir + '/' + file_name, visible=True, read_only=True)
+
+    def open_excel_file(self):
+        ''' Open an excel file with data to read into ANYstructure '''
+
+        imp_file = filedialog.askopenfile(mode='r', defaultextension=".xlsx")
+        if imp_file is None:  # asksaveasfile return `None` if dialog closed with "cancel".
+            return
+
+        data_wb = excel_interface.ExcelInterface(imp_file.name, visible=False, read_only=True)
+        # if os.path.isfile(imp_file) : #kj
+        #     data_wb = excel_interface.ExcelInterface(imp_file, visible=False, read_only=True)
+        # else:
+        #     return
+        data_flat = data_wb.get_sheet_data('flat_plate')
+        data_cyl = data_wb.get_sheet_data('cylinder')
+        data_wb.close_book()
+
+        # Flat
+        #--------------------------------------------------------------------------------------------------------------
+        for row_data in data_flat[1:]:
+            l1x, l1y, l2x, l2y = row_data[1:5]
+            self._new_point_x.set(l1x)
+            self._new_point_y.set(l1y)
+            self.new_point()
+            self._new_point_x.set(l2x)
+            self._new_point_y.set(l2y)
+            self.new_point()
+        for row_data in data_cyl[1:]:
+            l1x, l1y, l2x, l2y = row_data[1:5]
+            self._new_point_x.set(l1x)
+            self._new_point_y.set(l1y)
+            self.new_point()
+            self._new_point_x.set(l2x)
+            self._new_point_y.set(l2y)
+            self.new_point()
+        # Creating lines
+        all_points = self.get_points()
+        for row_data in data_flat[1:]:
+            l1x, l1y, l2x, l2y = row_data[1:5]
+            p1_found = False
+            p2_found = False
+            for key, value in all_points.items():
+                if l1x/1000 == value[0] and l1y/1000 == value[1]:
+                    p1 = get_num(key)
+                    p1_found = True
+                if l2x/1000 == value[0] and l2y/1000 == value[1]:
+                    p2 = get_num(key)
+                    p2_found = True
+            if p1_found and p2_found:
+                self._new_line_p1.set(p1)
+                self._new_line_p2.set(p2)
+                this_line = self.new_line()
+                self._active_line = this_line
+                self._line_is_active = True
+                self._new_calculation_domain.set(row_data[0])
+                self._new_field_len.set(hlp.dist((l1x, l1y), (l2x, l2y)))
+                self._new_plate_thk.set(row_data[5])
+                self._new_stf_spacing.set(row_data[6])
+                self._new_stf_web_h.set(row_data[7])
+                self._new_stf_web_t.set(row_data[8])
+                self._new_stf_fl_w.set(row_data[9])
+                self._new_stf_fl_t.set(row_data[10])
+                sig_start = 12
+                self._new_sigma_x1.set(row_data[sig_start])
+                self._new_sigma_x2.set(row_data[sig_start+1])
+                self._new_sigma_y1.set(row_data[sig_start+2])
+                self._new_sigma_y2.set(row_data[sig_start+3])
+                self._new_tauxy.set(row_data[sig_start+4])
+                gird_start = 18
+                if row_data[0] == 'Flat plate, stiffened with girder':
+                    self._new_girder_length_LG.set(row_data[gird_start+0])
+                    self._new_girder_web_h.set(row_data[gird_start+1])
+                    self._new_girder_web_t.set(row_data[gird_start + 2])
+                    self._new_girder_fl_w.set(row_data[gird_start + 3])
+                    self._new_girder_fl_t.set(row_data[gird_start + 4])
+                    self._new_girder_type.set(row_data[gird_start + 5])
+
+                end_data_start = 24
+                for idx, var in enumerate([self._new_overpresure,self._new_stucture_type, self._new_buckling_stf_end_support,
+                            self._new_buckling_girder_end_support, self._new_buckling_fab_method_stf,
+                            self._new_buckling_fab_method_girder, self._new_buckling_length_factor_stf,
+                            self._new_buckling_length_factor_girder, self._new_buckling_stf_dist_bet_lat_supp,
+                            self._new_buckling_girder_dist_bet_lat_supp, self._new_buckling_tension_field,
+                            self._new_buckling_effective_against_sigy]):
+                    if row_data[end_data_start + idx] is not None:
+                        var.set(row_data[end_data_start + idx])
+
+
+
+                # self._new_overpresure.set(row_data[end_data_start + 0])
+                # self._new_stucture_type.set(row_data[end_data_start + 1])
+                # self._new_buckling_stf_end_support.set(row_data[end_data_start + 2])
+                # self._new_buckling_girder_end_support.set(row_data[end_data_start + 3])
+                # self._new_buckling_fab_method_stf.set(row_data[end_data_start + 4])
+                # self._new_buckling_fab_method_girder.set(row_data[end_data_start + 5])
+                # self._new_buckling_length_factor_stf.set(row_data[end_data_start + 6])
+                # self._new_buckling_length_factor_girder.set(row_data[end_data_start + 7])
+                # self._new_buckling_stf_dist_bet_lat_supp.set(row_data[end_data_start + 8])
+                # self._new_buckling_girder_dist_bet_lat_supp.set(row_data[end_data_start + 9])
+                # self._new_buckling_tension_field.set(row_data[end_data_start + 10])
+                # self._new_buckling_effective_against_sigy.set(row_data[end_data_start + 11])
+
+                self.new_structure()
+                self._new_load_comb_dict[('manual', this_line, 'manual')][0].set(row_data[16])
+                self._new_load_comb_dict[('manual', this_line, 'manual')][1].set(1)
+                self._new_load_comb_dict[('manual', this_line, 'manual')][2].set(1)
+                self._line_to_struc[this_line][0].need_recalc = True
+
+        # Cylinders
+        # ------------------------------------------------------------------------------------------------------------
+        for row_data in data_cyl[1:]:
+
+            l1x, l1y, l2x, l2y = row_data[1:5]
+            p1_found = False
+            p2_found = False
+            for key, value in all_points.items():
+                if l1x/1000 == value[0] and l1y/1000 == value[1]:
+                    p1 = get_num(key)
+                    p1_found = True
+                if l2x/1000 == value[0] and l2y/1000 == value[1]:
+                    p2 = get_num(key)
+                    p2_found = True
+
+            if p1_found and p2_found:
+                self._new_line_p1.set(p1)
+                self._new_line_p2.set(p2)
+                this_line = self.new_line()
+                self._active_line = this_line
+                self._line_is_active = True
+                self._new_calculation_domain.set(row_data[0])
+                main_start = 5
+                self._new_shell_thk.set(row_data[main_start + 0])
+                self._new_shell_radius.set(row_data[main_start + 1])
+                self._new_shell_dist_rings.set(row_data[main_start + 2])
+                self._new_shell_length.set(row_data[main_start + 3])
+                self._new_shell_tot_length.set(row_data[main_start + 4])
+                self._new_shell_k_factor.set(row_data[main_start + 5])
+                self._new_shell_mat_factor.set(row_data[main_start + 6])
+
+                long_start = 12
+                self._new_stf_web_h.set(row_data[long_start + 0])
+                self._new_stf_web_t.set(row_data[long_start + 1])
+                self._new_stf_fl_w.set(row_data[long_start + 2])
+                self._new_stf_fl_t.set(row_data[long_start + 3])
+                self._new_shell_panel_spacing.set(row_data[long_start + 4])
+                self._new_stf_type.set(row_data[long_start + 5])
+
+                ring_stf_start = 18
+                if row_data[ring_stf_start] is None:
+                    self._new_shell_exclude_ring_stf.set(True)
+                else:
+                    self._new_shell_exclude_ring_stf.set(False)
+                    self._new_shell_ring_stf_hw.set(row_data[ring_stf_start + 0])
+                    self._new_shell_ring_stf_tw.set(row_data[ring_stf_start + 1])
+                    self._new_shell_ring_stf_b.set(row_data[ring_stf_start + 2])
+                    self._new_shell_ring_stf_tf.set(row_data[ring_stf_start + 3])
+                    self._new_shell_ring_stf_type.set(row_data[ring_stf_start + 4])
+
+                ring_frame = 23
+                if row_data[ring_frame] is None:
+                    self._new_shell_exclude_ring_frame.set(True)
+                else:
+                    self._new_shell_exclude_ring_frame.set(False)
+                    self._new_shell_ring_frame_hw.set(row_data[ring_frame + 0])
+                    self._new_shell_ring_frame_tw.set(row_data[ring_frame + 1])
+                    self._new_shell_ring_frame_b.set(row_data[ring_frame + 2])
+                    self._new_shell_ring_frame_tf.set(row_data[ring_frame + 3])
+                    self._new_shell_ring_frame_length_between_girders.set(row_data[ring_frame + 4])
+                    self._new_shell_ring_frame_type.set(row_data[ring_frame + 5])
+
+                stress_start = 29
+                if row_data[stress_start] is None:
+                    pass
+                else:
+                    #mapper ={1: 'Force', 2: 'Stress'}
+                    self._new_shell_stress_or_force.set(2)
+                    self._new_shell_sasd.set(row_data[stress_start + 0])
+                    self._new_shell_smsd.set(row_data[stress_start + 1])
+                    self._new_shell_tTsd.set(row_data[stress_start + 2])
+                    self._new_shell_tQsd.set(row_data[stress_start + 3])
+                    self._new_shell_psd.set(row_data[stress_start + 4])
+                    self._new_shell_shsd.set(row_data[stress_start + 5])
+
+                force_start = 35
+                if row_data[force_start] is None:
+                    pass
+                else:
+                    self._new_shell_stress_or_force.set(1)
+                    self._new_shell_Nsd.set(row_data[force_start + 0])
+                    self._new_shell_Msd.set(row_data[force_start + 1])
+                    self._new_shell_Tsd.set(row_data[force_start + 2])
+                    self._new_shell_Qsd.set(row_data[force_start + 3])
+                    self._new_shell_psd.set(row_data[stress_start + 4])
+                end_data_start = 39
+                self._new_shell_uls_or_als.set(row_data[end_data_start + 0])
+                self._new_shell_yield.set(row_data[end_data_start + 1])
+                self._new_shell_end_cap_pressure_included.set(row_data[end_data_start + 1])
+                self._new_shell_fab_ring_stf.set(row_data[end_data_start + 2])
+                self._new_shell_fab_ring_frame.set(row_data[end_data_start + 3])
+                self.new_structure()
+
     def button_load_info_click(self, event = None):
         ''' Get the load information for one line.'''
         if self._active_line != '' and self._active_line in self._line_to_struc.keys():
@@ -7677,4 +7911,4 @@ if __name__ == '__main__':
     my_app = Application(root)
     root.mainloop()
 
-    #Application(None).openfile(r'C:\Github\ANYstructure\ANYstructure\ship_section_example.txt', alone=True)
+    #Application.openfile(r'C:\Github\ANYstructure\ANYstructure\ship_section_example.txt', alone=True)

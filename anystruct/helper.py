@@ -259,6 +259,7 @@ def helper_manual(line_name, comb_name,load_factors_all):
         return [0, 'Manual pressure: 0']
     load_factors = load_factors_all[(comb_name, line_name[0], 'manual')]
     man_press = load_factors[0].get() * load_factors[1].get() * load_factors[2].get()
+
     if print_it:
         load_print.append('Manual pressure:\n'+ str(load_factors[0].get())+' * '+ str(load_factors[1].get())+' * '+
                           str(load_factors[2].get()) + ' = '+ str(man_press) +'\n')
