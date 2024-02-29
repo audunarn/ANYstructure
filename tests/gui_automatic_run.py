@@ -34,47 +34,57 @@ def run_cc_chks():
         my_dict[chks].set(False)
 
 
-my_dict['_ML_buckling'] = dict()
+my_dict['_ML_buckling'] = {1.1: dict(), 1.15: dict()}
 
-for name, file_base in zip(['cl SP buc int predictor', 'cl SP buc int scaler',
-                                    'cl SP ult int predictor', 'cl SP ult int scaler',
-                                    'cl SP buc GLGT predictor', 'cl SP buc GLGT scaler',
-                                    'cl SP ult GLGT predictor', 'cl SP ult GLGT scaler',
-                                    'cl UP buc int predictor', 'cl UP buc int scaler',
-                                    'cl UP ult int predictor', 'cl UP ult int scaler',
-                                    'cl UP buc GLGT predictor', 'cl UP buc GLGT scaler',
-                                    'cl UP ult GLGT predictor', 'cl UP ult GLGT scaler',
-                                    'CSR predictor UP', 'CSR scaler UP',
-                                    'CSR predictor SP', 'CSR scaler SP'
-                                    ],
-                                   ["anystruct\\ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_1_SP",
-                                    "anystruct\\ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_1_SP",
-                                    "anystruct\\ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_1_SP",
-                                    "anystruct\\ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_1_SP",
-                                    "anystruct\\ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_SP",
-                                    "anystruct\\ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_SP",
-                                    "anystruct\\ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_SP",
-                                    "anystruct\\ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_SP",
-                                    "anystruct\\ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_1_UP",
-                                    "anystruct\\ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_1_UP",
-                                    "anystruct\\ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_1_UP",
-                                    "anystruct\\ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_1_UP",
-                                    "anystruct\\ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_UP",
-                                    "anystruct\\ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_UP",
-                                    "anystruct\\ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_UP",
-                                    "anystruct\\ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_UP",
-                                    "anystruct\\ml_files\\CL_CSR-Tank_req_cl_predictor",
-                                    "anystruct\\ml_files\\CL_CSR-Tank_req_cl_UP_scaler",
-                                    "anystruct\\ml_files\\CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_predictor",
-                                    "anystruct\\ml_files\\CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_SP_scaler"]):
-    my_dict['_ML_buckling'][name] = None
+for mat_fac in [1.1, 1.15]:
+    for name, file_base in zip(['cl SP buc int predictor', 'cl SP buc int scaler',
+                                'cl SP ult int predictor', 'cl SP ult int scaler',
+                                'cl SP buc GLGT predictor', 'cl SP buc GLGT scaler',
+                                'cl SP ult GLGT predictor', 'cl SP ult GLGT scaler',
+                                'cl UP buc int predictor', 'cl UP buc int scaler',
+                                'cl UP ult int predictor', 'cl UP ult int scaler',
+                                'cl UP buc GLGT predictor', 'cl UP buc GLGT scaler',
+                                'cl UP ult GLGT predictor', 'cl UP ult GLGT scaler',
+                                'CSR predictor UP', 'CSR scaler UP',
+                                'CSR predictor SP', 'CSR scaler SP'
+                                ],
+                               ["ml_files\\CL_output_cl_str_buc_XXX_predictor_In-plane_support_cl_1_SP",
+                                "ml_files\\CL_output_cl_str_buc_XXX_scaler_In-plane_support_cl_1_SP",
+                                "ml_files\\CL_output_cl_str_ult_XXX_predictor_In-plane_support_cl_1_SP",
+                                "ml_files\\CL_output_cl_str_ult_XXX_scaler_In-plane_support_cl_1_SP",
+                                "ml_files\\CL_output_cl_str_buc_XXX_predictor_In-plane_support_cl_2,_3_SP",
+                                "ml_files\\CL_output_cl_str_buc_XXX_scaler_In-plane_support_cl_2,_3_SP",
+                                "ml_files\\CL_output_cl_str_ult_XXX_predictor_In-plane_support_cl_2,_3_SP",
+                                "ml_files\\CL_output_cl_str_ult_XXX_scaler_In-plane_support_cl_2,_3_SP",
+                                "ml_files\\CL_output_cl_str_buc_XXX_predictor_In-plane_support_cl_1_UP",
+                                "ml_files\\CL_output_cl_str_buc_XXX_scaler_In-plane_support_cl_1_UP",
+                                "ml_files\\CL_output_cl_str_ult_XXX_predictor_In-plane_support_cl_1_UP",
+                                "ml_files\\CL_output_cl_str_ult_XXX_scaler_In-plane_support_cl_1_UP",
+                                "ml_files\\CL_output_cl_str_buc_XXX_predictor_In-plane_support_cl_2,_3_UP",
+                                "ml_files\\CL_output_cl_str_buc_XXX_scaler_In-plane_support_cl_2,_3_UP",
+                                "ml_files\\CL_output_cl_str_ult_XXX_predictor_In-plane_support_cl_2,_3_UP",
+                                "ml_files\\CL_output_cl_str_ult_XXX_scaler_In-plane_support_cl_2,_3_UP",
+                                "ml_files\\CL_CSR-Tank_req_cl_predictor",
+                                "ml_files\\CL_CSR-Tank_req_cl_scaler",
+                                "ml_files\\CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_predictor",
+                                "ml_files\\CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_scaler"]):
 
-    if os.path.isfile('C:\\Github\\ANYstructure\\'+file_base + '.pickle'):
+        mat_fac_str = [str(round(mat_fac, 2)).replace('.', '') + '0'][0][0:3]
+        file_base = file_base.replace('XXX', mat_fac_str)
+        my_dict['_ML_buckling'][mat_fac][name] = None
 
-        file = open('C:\\Github\\ANYstructure\\'+file_base + '.pickle', 'rb')
+        if os.path.isfile(file_base + '.pickle'):
+            file = open(file_base + '.pickle', 'rb')
+            my_dict['_ML_buckling'][mat_fac][name] = pickle.load(file)
+            file.close()
+        else:
+            # file = open(self._root_dir +'\\' + file_base + '.pickle', 'rb')
 
-        my_dict['_ML_buckling'] [name] = pickle.load(file)
-        file.close()
+            ml_file = os.path.join('C:\\Github\\ANYstructure\\anystruct\\'+file_base + '.pickle')
+            file = open(ml_file, 'rb')
+            my_dict['_ML_buckling'][mat_fac][name] = pickle.load(file)
+            file.close()
+
 
 my_dict['_ML_classes'] = {0: 'N/A',
                     1: 'A negative utilisation factor is found.',

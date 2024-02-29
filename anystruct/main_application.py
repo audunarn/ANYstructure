@@ -328,61 +328,54 @@ class Application():
         self._center_of_buoyancy = dict()   # Center of buoyancy for all and for carious static drafts
                                             # Example {8: (5,20), 22: (12,20), 'all': (16,20)}
 
-        self._ML_buckling = dict()  # Buckling machine learning algorithm
-        for name, file_base in zip(['cl SP buc int predictor', 'cl SP buc int scaler',
-                                    'cl SP ult int predictor', 'cl SP ult int scaler',
-                                    'cl SP buc GLGT predictor', 'cl SP buc GLGT scaler',
-                                    'cl SP ult GLGT predictor', 'cl SP ult GLGT scaler',
-                                    'cl UP buc int predictor', 'cl UP buc int scaler',
-                                    'cl UP ult int predictor', 'cl UP ult int scaler',
-                                    'cl UP buc GLGT predictor', 'cl UP buc GLGT scaler',
-                                    'cl UP ult GLGT predictor', 'cl UP ult GLGT scaler',
-                                    'CSR predictor UP', 'CSR scaler UP',
-                                    'CSR predictor SP', 'CSR scaler SP'
-                                    ],
-                                   ["ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_1_SP",
-                                    "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_1_SP",
-                                    "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_1_SP",
-                                    "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_1_SP",
-                                    "ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_SP",
-                                    "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_SP",
-                                    "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_SP",
-                                    "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_SP",
-                                    "ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_1_UP",
-                                    "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_1_UP",
-                                    "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_1_UP",
-                                    "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_1_UP",
-                                    "ml_files\\CL_output_cl_buc_predictor_In-plane_support_cl_2,_3_UP",
-                                    "ml_files\\CL_output_cl_buc_scaler_In-plane_support_cl_2,_3_UP",
-                                    "ml_files\\CL_output_cl_ult_predictor_In-plane_support_cl_2,_3_UP",
-                                    "ml_files\\CL_output_cl_ult_scaler_In-plane_support_cl_2,_3_UP",
-                                    "ml_files\\CL_CSR-Tank_req_cl_predictor",
-                                    "ml_files\\CL_CSR-Tank_req_cl_UP_scaler",
-                                    "ml_files\\CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_predictor",
-                                    "ml_files\\CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_SP_scaler"]):
-            self._ML_buckling[name] = None
+        self._ML_buckling = {1.1 : dict(), 1.15: dict()}# Buckling machine learning algorithm
+        for mat_fac in [1.1, 1.15]:
+            for name, file_base in zip(['cl SP buc int predictor', 'cl SP buc int scaler',
+                                        'cl SP ult int predictor', 'cl SP ult int scaler',
+                                        'cl SP buc GLGT predictor', 'cl SP buc GLGT scaler',
+                                        'cl SP ult GLGT predictor', 'cl SP ult GLGT scaler',
+                                        'cl UP buc int predictor', 'cl UP buc int scaler',
+                                        'cl UP ult int predictor', 'cl UP ult int scaler',
+                                        'cl UP buc GLGT predictor', 'cl UP buc GLGT scaler',
+                                        'cl UP ult GLGT predictor', 'cl UP ult GLGT scaler',
+                                        'CSR predictor UP', 'CSR scaler UP',
+                                        'CSR predictor SP', 'CSR scaler SP'
+                                        ],
+                                       ["ml_files\\CL_output_cl_str_buc_XXX_predictor_In-plane_support_cl_1_SP",
+                                        "ml_files\\CL_output_cl_str_buc_XXX_scaler_In-plane_support_cl_1_SP",
+                                        "ml_files\\CL_output_cl_str_ult_XXX_predictor_In-plane_support_cl_1_SP",
+                                        "ml_files\\CL_output_cl_str_ult_XXX_scaler_In-plane_support_cl_1_SP",
+                                        "ml_files\\CL_output_cl_str_buc_XXX_predictor_In-plane_support_cl_2,_3_SP",
+                                        "ml_files\\CL_output_cl_str_buc_XXX_scaler_In-plane_support_cl_2,_3_SP",
+                                        "ml_files\\CL_output_cl_str_ult_XXX_predictor_In-plane_support_cl_2,_3_SP",
+                                        "ml_files\\CL_output_cl_str_ult_XXX_scaler_In-plane_support_cl_2,_3_SP",
+                                        "ml_files\\CL_output_cl_str_buc_XXX_predictor_In-plane_support_cl_1_UP",
+                                        "ml_files\\CL_output_cl_str_buc_XXX_scaler_In-plane_support_cl_1_UP",
+                                        "ml_files\\CL_output_cl_str_ult_XXX_predictor_In-plane_support_cl_1_UP",
+                                        "ml_files\\CL_output_cl_str_ult_XXX_scaler_In-plane_support_cl_1_UP",
+                                        "ml_files\\CL_output_cl_str_buc_XXX_predictor_In-plane_support_cl_2,_3_UP",
+                                        "ml_files\\CL_output_cl_str_buc_XXX_scaler_In-plane_support_cl_2,_3_UP",
+                                        "ml_files\\CL_output_cl_str_ult_XXX_predictor_In-plane_support_cl_2,_3_UP",
+                                        "ml_files\\CL_output_cl_str_ult_XXX_scaler_In-plane_support_cl_2,_3_UP",
+                                        "ml_files\\CL_CSR-Tank_req_cl_predictor",
+                                        "ml_files\\CL_CSR-Tank_req_cl_scaler",
+                                        "ml_files\\CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_predictor",
+                                        "ml_files\\CL_CSR_plate_cl,_CSR_web_cl,_CSR_web_flange_cl,_CSR_flange_cl_scaler"]):
 
-            if os.path.isfile(file_base + '.pickle'):
-                file = open(file_base + '.pickle', 'rb')
-                self._ML_buckling[name] = pickle.load(file)
-                file.close()
-            else:
-                #file = open(self._root_dir +'\\' + file_base + '.pickle', 'rb')
+                mat_fac_str = [str(round(mat_fac,2)).replace('.','')+'0'][0][0:3]
+                self._ML_buckling[mat_fac][name] = None
+                file_base = file_base.replace('XXX', mat_fac_str)
+                if os.path.isfile(file_base + '.pickle'):
+                    file = open(file_base + '.pickle', 'rb')
+                    self._ML_buckling[mat_fac][name] = pickle.load(file)
+                    file.close()
+                else:
+                    #file = open(self._root_dir +'\\' + file_base + '.pickle', 'rb')
 
-                ml_file = os.path.join(self._root_dir, file_base + '.pickle')
-                file = open(ml_file, 'rb')
-                self._ML_buckling[name] = pickle.load(file)
-                file.close()
-
-        self._ML_classes ={0: 'N/A',
-                           1: 'A negative utilisation factor is found.',
-                           2: 'At least one of the in-plane loads must be non-zero.',
-                           3: 'Division by zero',
-                           4: 'Overflow',
-                           5: 'The aspect ratio exceeds the PULS code limit',
-                           6: 'The global slenderness exceeds 4. Please reduce stiffener span or increase stiffener height.',
-                           7: 'The applied pressure is too high for this plate field.', 8: 'web-flange-ratio',
-                           9:  'UF below or equal 0.87', 10: 'UF between 0.87 and 1.0', 11: 'UF above 1.0'}
+                    ml_file = os.path.join(self._root_dir, file_base + '.pickle')
+                    file = open(ml_file, 'rb')
+                    self._ML_buckling[mat_fac][name] = pickle.load(file)
+                    file.close()
 
         # Used to select parameter
         self._stuctural_definition = ['mat_yield','mat_factor', 'span', 'spacing', 'plate_thk', 'stf_web_height',
@@ -3101,83 +3094,102 @@ class Application():
                         'cl SP buc GLGT predictor', 'cl SP buc GLGT scaler',
                         'cl SP ult GLGT predictor', 'cl SP ult GLGT scaler']
                 '''
-
+                mat_fac_error = ''
                 if obj_scnt_calc_pl.get_puls_sp_or_up() == 'UP':
                     buckling_ml_input = obj_scnt_calc_pl.get_buckling_ml_input(design_lat_press=design_pressure)
-
+                    mat_fac = self._new_material_factor.get()
+                    mat_fac_error = ''
+                    if mat_fac not in [1.1, 1.15]:
+                        mat_fac_error = ' MATERIAL FACTOR MUST BE 1.1 or 1.15 -> using 1.15'
+                        mat_fac = 1.15
                     if obj_scnt_calc_pl.get_puls_boundary() == 'Int':
-                        if self._ML_buckling['cl UP buc int predictor'] != None:
-                            x_buc = self._ML_buckling['cl UP buc int scaler'].transform(buckling_ml_input)
-                            y_pred_buc = self._ML_buckling['cl UP buc int predictor'].predict(x_buc)[0]
+                        if self._ML_buckling[mat_fac]['cl UP buc int predictor'] != None:
+                            x_buc = self._ML_buckling[mat_fac]['cl UP buc int scaler'].transform(buckling_ml_input)
+                            y_pred_buc = self._ML_buckling[mat_fac]['cl UP buc int predictor'].predict(x_buc)[0]
                         else:
                             y_pred_buc = 0
-                        if self._ML_buckling['cl UP ult int predictor'] != None:
-                            x_ult = self._ML_buckling['cl UP ult int scaler'].transform(buckling_ml_input)
-                            y_pred_ult = self._ML_buckling['cl UP ult int predictor'].predict(x_ult)[0]
+                        if self._ML_buckling[mat_fac]['cl UP ult int predictor'] != None:
+                            x_ult = self._ML_buckling[mat_fac]['cl UP ult int scaler'].transform(buckling_ml_input)
+                            y_pred_ult = self._ML_buckling[mat_fac]['cl UP ult int predictor'].predict(x_ult)[0]
                         else:
                             y_pred_ult = 0
                     else:
-                        if self._ML_buckling['cl UP buc GLGT predictor'] != None:
-                            x_buc = self._ML_buckling['cl UP buc GLGT scaler'].transform(buckling_ml_input)
-                            y_pred_buc = self._ML_buckling['cl UP buc GLGT predictor'].predict(x_buc)[0]
+                        if self._ML_buckling[mat_fac]['cl UP buc GLGT predictor'] != None:
+                            x_buc = self._ML_buckling[mat_fac]['cl UP buc GLGT scaler'].transform(buckling_ml_input)
+                            y_pred_buc = self._ML_buckling[mat_fac]['cl UP buc GLGT predictor'].predict(x_buc)[0]
                         else:
                             y_pred_buc = 0
-                        if self._ML_buckling['cl UP ult GLGT predictor'] != None:
-                            x_ult = self._ML_buckling['cl UP ult GLGT scaler'].transform(buckling_ml_input)
-                            y_pred_ult = self._ML_buckling['cl UP ult GLGT predictor'].predict(x_ult)[0]
+                        if self._ML_buckling[mat_fac]['cl UP ult GLGT predictor'] != None:
+                            x_ult = self._ML_buckling[mat_fac]['cl UP ult GLGT scaler'].transform(buckling_ml_input)
+                            y_pred_ult = self._ML_buckling[mat_fac]['cl UP ult GLGT predictor'].predict(x_ult)[0]
                         else:
                             y_pred_ult = 0
 
                     x_csr = obj_scnt_calc_pl.get_buckling_ml_input(design_lat_press=design_pressure, csr = True)
-                    x_csr = self._ML_buckling['CSR scaler UP'].transform(x_csr)
-                    csr_pl = self._ML_buckling['CSR predictor UP'].predict(x_csr)[0]
+                    x_csr = self._ML_buckling[mat_fac]['CSR scaler UP'].transform(x_csr)
+                    csr_pl = self._ML_buckling[mat_fac]['CSR predictor UP'].predict(x_csr)[0]
+
+                    if self._new_material_factor.get() == 1.1:
+                        accept = 'below or equal 0.91'
+                    else:
+                        accept = 'below or equal 0.87'
 
                     return_dict['ML buckling colors'][current_line] = \
-                        {'buckling': 'green' if int(y_pred_buc) == 9 else 'red',
-                         'ultimate': 'green' if int(y_pred_ult) == 9 else 'red',
+                        {'buckling': 'green' if y_pred_buc == accept else 'red',
+                         'ultimate': 'green' if y_pred_ult == accept else 'red',
                          'CSR requirement': 'green' if csr_pl == 1 else 'red'}
 
-                    return_dict['ML buckling class'][current_line] = {'buckling': int(y_pred_buc),
-                                                                      'ultimate': int(y_pred_ult),
+                    return_dict['ML buckling class'][current_line] = {'buckling': y_pred_buc + mat_fac_error,
+                                                                      'ultimate': y_pred_ult + mat_fac_error,
                                                                       'CSR': [csr_pl, float('inf'),
                                                                               float('inf'), float('inf')]}
                 else:
                     buckling_ml_input = obj_scnt_calc_stf.get_buckling_ml_input(design_lat_press=design_pressure)
+                    mat_fac = self._new_material_factor.get()
+                    mat_fac_error = ''
+                    if mat_fac not in [1.1, 1.15]:
+                        mat_fac = 1.15
+                        mat_fac_error = ' MATERIAL FACTOR MUST BE 1.1 or 1.15 -> using 1.15'
                     if obj_scnt_calc_stf.get_puls_boundary() == 'Int':
-                        if self._ML_buckling['cl SP buc int predictor'] != None:
-                            x_buc = self._ML_buckling['cl SP buc int scaler'].transform(buckling_ml_input)
-                            y_pred_buc = self._ML_buckling['cl SP buc int predictor'].predict(x_buc)[0]
+                        if self._ML_buckling[mat_fac]['cl SP buc int predictor'] != None:
+                            x_buc = self._ML_buckling[mat_fac]['cl SP buc int scaler'].transform(buckling_ml_input)
+                            y_pred_buc = self._ML_buckling[mat_fac]['cl SP buc int predictor'].predict(x_buc)[0]
                         else:
                             y_pred_buc = 0
-                        if self._ML_buckling['cl SP ult int predictor'] != None:
-                            x_ult = self._ML_buckling['cl SP ult int scaler'].transform(buckling_ml_input)
-                            y_pred_ult = self._ML_buckling['cl SP ult int predictor'].predict(x_ult)[0]
+                        if self._ML_buckling[mat_fac]['cl SP ult int predictor'] != None:
+                            x_ult = self._ML_buckling[mat_fac]['cl SP ult int scaler'].transform(buckling_ml_input)
+                            y_pred_ult = self._ML_buckling[mat_fac]['cl SP ult int predictor'].predict(x_ult)[0]
                         else:
                             y_pred_ult = 0
                     else:
-                        if self._ML_buckling['cl SP buc GLGT predictor'] != None:
-                            x_buc = self._ML_buckling['cl SP buc GLGT scaler'].transform(buckling_ml_input)
-                            y_pred_buc = self._ML_buckling['cl SP buc GLGT predictor'].predict(x_buc)[0]
+                        if self._ML_buckling[mat_fac]['cl SP buc GLGT predictor'] != None:
+                            x_buc = self._ML_buckling[mat_fac]['cl SP buc GLGT scaler'].transform(buckling_ml_input)
+                            y_pred_buc = self._ML_buckling[mat_fac]['cl SP buc GLGT predictor'].predict(x_buc)[0]
                         else:
                             y_pred_buc = 0
-                        if self._ML_buckling['cl SP ult GLGT predictor'] != None:
-                            x_ult = self._ML_buckling['cl SP ult GLGT scaler'].transform(buckling_ml_input)
-                            y_pred_ult = self._ML_buckling['cl SP ult GLGT predictor'].predict(x_ult)[0]
+                        if self._ML_buckling[mat_fac]['cl SP ult GLGT predictor'] != None:
+                            x_ult = self._ML_buckling[mat_fac]['cl SP ult GLGT scaler'].transform(buckling_ml_input)
+                            y_pred_ult = self._ML_buckling[mat_fac]['cl SP ult GLGT predictor'].predict(x_ult)[0]
                         else:
                             y_pred_ult = 0
 
                     x_csr = obj_scnt_calc_stf.get_buckling_ml_input(design_lat_press=design_pressure, csr = True)
 
-                    x_csr = self._ML_buckling['CSR scaler SP'].transform(x_csr)
-                    csr_pl, csr_web, csr_web_fl, csr_fl = self._ML_buckling['CSR predictor SP'].predict(x_csr)[0]
+                    x_csr = self._ML_buckling[mat_fac]['CSR scaler SP'].transform(x_csr)
+                    csr_pl, csr_web, csr_web_fl, csr_fl = self._ML_buckling[mat_fac]['CSR predictor SP'].predict(x_csr)[0]
+                    if self._new_material_factor.get() == 1.1:
+                        accept = 'below or equal 0.91'
+                    else:
+                        accept = 'below or equal 0.87'
+
 
                     return_dict['ML buckling colors'][current_line] = \
-                        {'buckling': 'green' if int(y_pred_buc) == 9 else 'red',
-                         'ultimate': 'green' if int(y_pred_ult) == 9 else 'red',
+                        {'buckling': 'green' if y_pred_buc == accept else 'red',
+                         'ultimate': 'green' if y_pred_ult == accept else 'red',
                          'CSR requirement': 'green' if
                          all([csr_pl == 1, csr_web == 1, csr_web_fl == 1, csr_fl == 1]) else 'red'}
-                    return_dict['ML buckling class'][current_line] = {'buckling': int(y_pred_buc),
-                                                                      'ultimate': int(y_pred_ult),
+                    return_dict['ML buckling class'][current_line] = {'buckling': y_pred_buc + mat_fac_error ,
+                                                                      'ultimate': y_pred_ult + mat_fac_error,
                                                                       'CSR': [csr_pl, csr_web, csr_web_fl, csr_fl]}
 
                 '''
@@ -4760,11 +4772,11 @@ class Application():
                                                     font=self._text_size["Text 9 bold"], anchor='nw',
                                                     fill = self._color_text)
                     self._result_canvas.create_text([x * 1, (y+(start_y+1)*dy) * 1],
-                                                    text='Buckling: ' + self._ML_classes[state['ML buckling class'][current_line]['buckling']],
+                                                    text='Buckling: ' + state['ML buckling class'][current_line]['buckling'],
                                                     font=self._text_size["Text 9 bold"],
                                                     anchor='nw', fill=state['ML buckling colors'][current_line]['buckling'])
                     self._result_canvas.create_text([x * 1, (y+(start_y+2)*dy) * 1],
-                                                    text='Ultimate: ' +self._ML_classes[state['ML buckling class'][current_line]['ultimate']],
+                                                    text='Ultimate: ' +state['ML buckling class'][current_line]['ultimate'],
                                                     font=self._text_size["Text 9 bold"],
                                                     anchor='nw', fill=state['ML buckling colors'][current_line]['ultimate'])
                     if obj_scnt_calc_pl.get_puls_sp_or_up() == 'SP':
