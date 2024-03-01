@@ -387,8 +387,9 @@ class CylStru():
         :type calculation_domain: str
         '''
         super().__init__()
-        assert calculation_domain in self.geotypes, 'Geometry type must be either of: '+ str(self.geotypes)
+        assert calculation_domain in self.geotypes, 'Geometry type must be either of: ' + str(self.geotypes)
         self._load_type = 'Stress' if 'panel' in calculation_domain else 'Force'
+
         self._calculation_domain = calculation_domain + ' (' + self._load_type + ' input)'
         self._CylinderMain = CylinderAndCurvedPlate()
         self._CylinderMain.geometry = CylinderAndCurvedPlate.geomeries_map_no_input_spec[calculation_domain]
@@ -656,7 +657,7 @@ class CylStru():
         self._CylinderMain.LongStfObj.b = bf
         self._CylinderMain.LongStfObj.tf = tf
         self._CylinderMain.LongStfObj.stiffener_type = 'L-bulb' if stf_type in ['hp HP HP-bulb bulb'] else stf_type
-        self._CylinderMain.LongStfObj.s = spacing
+        self._CylinderMain.LongStfObj.spacing = spacing
         self._CylinderMain.LongStfObj.t = self._CylinderMain.ShellObj.thk
 
     def set_ring_stiffener(self, hw: float = 260, tw: float = 12, bf: float = 49,

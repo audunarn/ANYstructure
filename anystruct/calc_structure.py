@@ -3287,7 +3287,9 @@ class CylinderAndCurvedPlate():
         fy = self._mat_yield/1e6
         sasd = self._sasd/1e6
         smsd = self._smsd/1e6
+
         tsd = abs(self._tTsd/1e6+self._tQsd/1e6)
+
         psd = self._psd/1e6
 
         if self._RingStf is None:
@@ -3296,6 +3298,7 @@ class CylinderAndCurvedPlate():
             shsd = shell_data['shsd'][1]
 
         provide_data = dict()
+
 
         '''
         	Selections for: Type of Structure Geometry:
@@ -3319,8 +3322,9 @@ class CylinderAndCurvedPlate():
             sxsd = min(sasd, sasd+smsd, sasd-smsd)
 
         if smsd < 0:
-            smsd = -smsd
-            sm0sd = -smsd
+            smsd = abs(smsd)
+            sm0sd = abs(smsd)
+
         else:
             if geometry in [2, 6]:
                 smsd = 0
@@ -3492,7 +3496,6 @@ class CylinderAndCurvedPlate():
             lambda_s_pow = 0
         else:
             lambda_s_pow = (fy/sjsd) * (sa0sd/fEax + sm0sd/fEbend + sh0sd/fEh_used + tsd/fEt_used)
-
 
         lambda_s = math.sqrt(lambda_s_pow)
         fks = fy/math.sqrt(1+math.pow(lambda_s,4 ))
