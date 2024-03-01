@@ -731,7 +731,7 @@ class CylStru():
 if __name__ == '__main__':
 
     my_cyl = CylStru(calculation_domain='Orthogonally Stiffened shell')
-    my_cyl.set_stresses(sasd=-200, tQsd=5, shsd=-60)
+    my_cyl.set_stresses(sasd=-137.557, tQsd=78.2986, shsd=-3.8934)
     my_cyl.set_material(mat_yield=355, emodule=210000, material_factor=1.15, poisson=0.3)
     my_cyl.set_imperfection()
     my_cyl.set_fabrication_method()
@@ -740,27 +740,27 @@ if __name__ == '__main__':
     my_cyl.set_exclude_ring_stiffener()
     my_cyl.set_length_between_girder(val=3300)
     my_cyl.set_panel_spacing(val=680)
-    my_cyl.set_shell_geometry(radius=6500,thickness=24, tot_length_of_shell=20000, distance_between_rings=3300)
-    my_cyl.set_longitudinal_stiffener(hw=260, tw=23, bf=49, tf=28, spacing=680)
-    my_cyl.set_ring_girder(hw=500, tw=15, bf=200, tf=25, stf_type='T', spacing=700)
+    my_cyl.set_shell_geometry(radius=6500,thickness=19, tot_length_of_shell=20000, distance_between_rings=3300)
+    my_cyl.set_longitudinal_stiffener(hw=260-28, tw=12, bf=49, tf=28, spacing=680.367)
+    my_cyl.set_ring_girder(hw=500, tw=15, bf=200, tf=25, stf_type='T', spacing=3300)
     my_cyl.set_shell_buckling_parmeters()
     for key, val in my_cyl.get_buckling_results().items():
         print(key, val)
     print(my_cyl.get_buckling_results())
     # #
-    my_flat = FlatStru("Flat plate, stiffened with girder")
-    my_flat.set_material(mat_yield=355, emodule=210000, material_factor=1.15, poisson=0.3)
-    my_flat.set_plate_geometry()
-    my_flat.set_stresses(sigma_x1=50, sigma_x2=50, sigma_y1=150, sigma_y2=150, pressure=0.3)
-    my_flat.set_stiffener()
-    my_flat.set_girder()
-    my_flat.set_fixation_parameters()
-    my_flat.set_buckling_parameters(calculation_method='DNV-RP-C201 - prescriptive', buckling_acceptance='buckling',
-                                    stiffened_plate_effective_aginst_sigy=True)
-    for key, val in my_flat.get_buckling_results().items():
-        print(key, val)
-
-    print(my_flat.get_special_provisions_results())
+    # my_flat = FlatStru("Flat plate, stiffened with girder")
+    # my_flat.set_material(mat_yield=355, emodule=210000, material_factor=1.15, poisson=0.3)
+    # my_flat.set_plate_geometry()
+    # my_flat.set_stresses(sigma_x1=50, sigma_x2=50, sigma_y1=150, sigma_y2=150, pressure=0.3)
+    # my_flat.set_stiffener()
+    # my_flat.set_girder()
+    # my_flat.set_fixation_parameters()
+    # my_flat.set_buckling_parameters(calculation_method='DNV-RP-C201 - prescriptive', buckling_acceptance='buckling',
+    #                                 stiffened_plate_effective_aginst_sigy=True)
+    # for key, val in my_flat.get_buckling_results().items():
+    #     print(key, val)
+    #
+    # print(my_flat.get_special_provisions_results())
 
 
 

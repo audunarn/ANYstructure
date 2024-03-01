@@ -784,7 +784,7 @@ class Structure():
             ef = self._web_height
         # elif self._stiffener_type == 'L-bulb':
         #     ef = self._web_height-0.5*self._flange_th
-        elif self._stiffener_type in ['L', 'T', 'L-bulb', 'HP-profile', 'HP', 'HP-bulb']:
+        elif self._stiffener_type in ['L', 'T', 'L-bulb', 'HP-profile', 'HP', 'HP-bulb', 'bulb']:
             ef = self._web_height + 0.5*self._flange_th
         return ef
 
@@ -3863,6 +3863,7 @@ class CylinderAndCurvedPlate():
         provide_data['sxsd_used'] = sxsd_used
         sjsd_used = sjsd_panels if self._geometry in [2,6] else sjsd_shells
         provide_data['sjsd_used'] = sjsd_used
+
         lambda_s2_panel = fy_used/sjsd_panels*((sa0sd+sm0sd)/fEax+sh0sd/fElat+tsd/fEtors) if\
             sjsd_panels*fEax*fEtors*fElat>0 else 0
 
@@ -3873,6 +3874,7 @@ class CylinderAndCurvedPlate():
         lambda_s = math.sqrt(lambda_s2_panel) if shell_type == 1 else math.sqrt(lambda_s2_shell)
 
         fks = fy_used/math.sqrt(1+math.pow(lambda_s,4))
+
         #print('tsd',tsd, 'sasd', sasd, 'sjsd panels', sjsd_panels, 'fy_used', fy_used, 'lambda_T',data_col_buc['lambda_T'] )
         if lambda_s < 0.5:
             gammaM = self._mat_factor
@@ -3899,6 +3901,7 @@ class CylinderAndCurvedPlate():
         # Design buckling strength:
         fksd = fks/gammaM
         provide_data['fksd'] = fksd
+        # print(sjsd_panels, sjsd_shells, fksd)
         # print('fksd', fksd, 'fks', fks, 'gammaM', gammaM, 'lambda_s', lambda_s, 'lambda_s^2 panel',
         #       lambda_s2_panel, 'sjsd', sjsd_used, 'worst_axial_comb',worst_axial_comb, 'sm0sd',sm0sd)
         #print('  ')
@@ -4013,6 +4016,7 @@ class CylinderAndCurvedPlate():
             else:
                 hs, It, Iz, Ipo, Iy = shell_buckling_data['cross section data'][idx-1]
                 fEt = beta * G * It / Ipo + math.pow(math.pi, 2) * E * math.pow(hs, 2) * Iz / (Ipo * math.pow(lT, 2))
+                #print(key, 'hs', hs, 'It', It, 'Iz', Iz, 'Ipo', Ipo, 'Iy', Iy)
 
             lambdaT = math.sqrt(fy/fEt)
 
