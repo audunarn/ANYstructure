@@ -421,3 +421,30 @@ class CalcScantlings(BaseModel):
         :return:
         '''
         raise NotImplementedError("Not implemented for scantling. Use the buckling functionality instead")
+
+
+    def get_special_provisions_results(self):
+        '''
+        Special provisions for plating and stiffeners in steel structures.\n
+        Return a dictionary:\n
+        \n
+        'Plate thickness' : The thickness of plates shall not be less than this check.\n
+        'Stiffener section modulus' : The section modulus for longitudinals, beams, frames and other stiffeners\n
+                                      subjected to lateral pressure shall not be less than this check.\n
+        'Stiffener shear area' : The shear area of the plate/stiffener shall not be less than this ckeck.\n
+        :return: minium dimensions and actual dimensions for the current structure in mm/mm^2/mm^3
+        :rtype: dict
+        '''
+        min_pl_thk = self.get_dnv_min_thickness(design_pressure_kpa=self.buckling_input.pressure * 1000)
+        min_sec_mod = self.get_dnv_min_section_modulus(design_pressure_kpa=self.buckling_input.pressure * 1000, printit=False) * 1000**3
+        min_area = self.get_minimum_shear_area(pressure=self.buckling_input.pressure * 1000) * 1000**2  
+
+        this_pl_thk = self.buckling_input.panel.plate.thickness
+        if self.buckling_input.panel.stiffener is not None:
+            this_secmod = self.buckling_input.panel.stiffener.get_section_modulus()
+            this_area = self.buckling_input.panel.stiffener.get_shear_area() * 1000**2
+            return {'Plate thickness':{'minimum': min_pl_thk, 'actual': this_pl_thk},
+                    'Stiffener section modulus': {'minimum': min_sec_mod, 'actual': min(this_secmod)* 1000**3},
+                    'Stiffener shear area': {'minimum': min_area, 'actual': this_area}}
+        else:
+            return {'Plate thickness':{'minimum': min_pl_thk, 'actual': this_pl_thk}}

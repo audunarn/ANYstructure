@@ -294,14 +294,14 @@ class BucklingInput(BaseModel):
 
         stress_ratio_long = 1 if Use_Smax_x == 0 else Use_Smin_x / Use_Smax_x
         stress_ratio_trans = 1 if Use_Smax_y == 0 else Use_Smin_y / Use_Smax_y
-        derived_stress_values._stress_ratio_long = stress_ratio_long
-        derived_stress_values._stress_ratio_trans = stress_ratio_trans
+        derived_stress_values.stress_ratio_long = stress_ratio_long
+        derived_stress_values.stress_ratio_trans = stress_ratio_trans
         
         max_vonMises_x = sig_x1 if abs(sig_x1) > abs(sig_x2) else sig_x2
-        derived_stress_values._max_vonMises_x = max_vonMises_x
+        derived_stress_values.max_vonMises_x = max_vonMises_x
 
-        derived_stress_values._sxsd = sxsd
-        derived_stress_values._sy1sd = sy1sd
+        derived_stress_values.sxsd = sxsd
+        derived_stress_values.sy1sd = sy1sd
 
         l1 = min(length / 4, spacing / 2)
         if length == 0:
@@ -311,7 +311,7 @@ class BucklingInput(BaseModel):
 
 
         sysd = 0.75 * Use_Smax_y if abs(0.75 * Use_Smax_y) > abs(Use_Smax_y) else sig_trans_l1
-        derived_stress_values._sysd = sysd
+        derived_stress_values.sysd = sysd
 
         l1 = min(length / 4, spacing / 2)
         if length == 0:
@@ -321,7 +321,7 @@ class BucklingInput(BaseModel):
 
         #5  Lateral loaded plates
         sjsd =math.sqrt(math.pow(max_vonMises_x, 2) + math.pow(sysd, 2) - max_vonMises_x * sysd + 3 * math.pow(tsd, 2))
-        derived_stress_values._sjsd = sjsd
+        derived_stress_values.sjsd = sjsd
 
         #6.3 & 6.8 Transverse stresses:
         ha = 0 if thickness == 0 else max([0, 0.05 * spacing / thickness - 0.75])
@@ -342,7 +342,7 @@ class BucklingInput(BaseModel):
             kappa = 0 if lambda_c == 0 else 1 / (2 * math.pow(lambda_c, 2)) + 0.07
 
         syR = 0 if length * fy == 0 else (1.3 * thickness / length * math.sqrt(E / fy) + kappa * (1 - 1.3 * thickness / length * math.sqrt(E / fy))) * fy * kp
-        derived_stress_values._syR = syR
+        derived_stress_values.syR = syR
 
         #logger.debug("sxsd: %s sysd: %s sy1sd: %s sjsd: %s max_vonMises_x: %s syR: %s shear_ratio_long: %s shear_ratio_trans: %s",sxsd, sysd, sy1sd, sjsd, max_vonMises_x, syR, shear_ratio_long, shear_ratio_trans)
 
@@ -358,9 +358,9 @@ class BucklingInput(BaseModel):
         derived_stress_values: DerivedStressValues = self.calculate_derived_stress_values()
         
         # 7.3 Effective plate width
-        syR = derived_stress_values._syR
-        sysd = derived_stress_values._sysd
-        sxsd = derived_stress_values._sxsd
+        syR = derived_stress_values.syR
+        sysd = derived_stress_values.sysd
+        sxsd = derived_stress_values.sxsd
 
         Cys = 0.5 * (math.sqrt(4 - 3 * math.pow(sysd / fy, 2)) + sysd / fy)
 
@@ -458,8 +458,8 @@ class BucklingInput(BaseModel):
         c = 0 if length == 0 else 2 - (spacing / length) # eq 7.41, checked, ok
 
         derived_stress_values: DerivedStressValues = self.calculate_derived_stress_values()
-        sysd = derived_stress_values._sysd
-        sxsd = derived_stress_values._sxsd
+        sysd = derived_stress_values.sysd
+        sxsd = derived_stress_values.sxsd
         # This sjSd is different from the one used in unstiffened plate: sigmax and sigmay can be set to zero for tension.
         # Question is if this is only for the calculation of lambda_e or also for the vonMises?
         sjSd = math.sqrt(

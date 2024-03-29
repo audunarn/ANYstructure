@@ -227,7 +227,6 @@ class StiffenedPanel(BaseModel):
                     number_ofgirders * girder_density * self.girder_panel_length * (self.girder.web_height * self.girder.web_th + self.girder.flange_width * self.girder.flange_th)
 
 
-
 class Stiffened_panel_calc_props(BaseModel):
     # looks like these are parameters for both scantlings and buckling.
     # Maybe can split up in props for scantling calculations and props for buckling calculations

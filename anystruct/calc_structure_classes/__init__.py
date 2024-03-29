@@ -6,3 +6,4 @@ from .stress import Stress
 from .puls import Puls
 from .buckling_input import BucklingInput, Stiffened_panel_calc_props
 from .dnv_buckling import DNVBuckling
+from .calc_scantlings import CalcScantlings

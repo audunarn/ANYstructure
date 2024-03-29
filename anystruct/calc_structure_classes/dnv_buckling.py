@@ -4,7 +4,7 @@ from typing import Optional, Dict, Any
 import logging
 
 from .stress import DerivedStressValues
-from.buckling_input import BucklingInput
+from .buckling_input import BucklingInput
 
 
 # Create a custom logger
@@ -130,12 +130,12 @@ class DNVBuckling(BaseModel):
         sig_y2 = self.buckling_input.stress.sigma_y2 * self.buckling_input.calc_props.stress_load_factor / 1e6
 
         derived_stress_values: DerivedStressValues = self.buckling_input.calculate_derived_stress_values()
-        sxsd: float = derived_stress_values._sxsd
-        sysd: float = derived_stress_values._sysd
-        sy1sd: float = derived_stress_values._sy1sd
-        max_vonMises_x: float = derived_stress_values._max_vonMises_x
-        shear_ratio_long: float = derived_stress_values._stress_ratio_long
-        sjsd: float = derived_stress_values._sjsd
+        sxsd: float = derived_stress_values.sxsd
+        sysd: float = derived_stress_values.sysd
+        sy1sd: float = derived_stress_values.sy1sd
+        max_vonMises_x: float = derived_stress_values.max_vonMises_x
+        shear_ratio_long: float = derived_stress_values.stress_ratio_long
+        sjsd: float = derived_stress_values.sjsd
 
         #Pnt. 5  Lateral loaded plates
         sjsd =math.sqrt(math.pow(max_vonMises_x, 2) + math.pow(sysd, 2) - max_vonMises_x * sysd + 3 * math.pow(tsd, 2))
@@ -308,10 +308,10 @@ class DNVBuckling(BaseModel):
         sig_y2 = self.buckling_input.stress.sigma_y2 * self.buckling_input.calc_props.stress_load_factor / 1e6
 
         derived_stress_values: DerivedStressValues = self.buckling_input.calculate_derived_stress_values()
-        sxsd: float = derived_stress_values._sxsd
-        sysd: float = derived_stress_values._sysd
-        sy1sd: float = derived_stress_values._sy1sd
-        stress_ratio_trans = derived_stress_values._stress_ratio_trans
+        sxsd: float = derived_stress_values.sxsd
+        sysd: float = derived_stress_values.sysd
+        sy1sd: float = derived_stress_values.sy1sd
+        stress_ratio_trans = derived_stress_values.stress_ratio_trans
 
         Lg = self.buckling_input.panel.girder_length * 1000
 
@@ -377,7 +377,7 @@ class DNVBuckling(BaseModel):
 
         #7.4  Resistance of plate between stiffeners
         ksp = math.sqrt(1 - 3 * math.pow(tsd / fy, 2)) if tsd < (fy / math.sqrt(3)) else 0
-        syRd = derived_stress_values._syR if not all([sig_y1 < 0, sig_y2 < 0]) else fy
+        syRd = derived_stress_values.syR if not all([sig_y1 < 0, sig_y2 < 0]) else fy
         syrd_unstf = syRd / gammaM * ksp
         tau_sd_7_4 = fy / (math.sqrt(3) * gammaM)
         uf_stf_panel_res_betplate = max([sysd / syrd_unstf if all([syrd_unstf > 0, sysd > 0]) else 0, tsd / tau_sd_7_4])
@@ -561,9 +561,9 @@ class DNVBuckling(BaseModel):
         psd = self.buckling_input.pressure * self.buckling_input.calc_props.lat_load_factor
 
         derived_stress_values: DerivedStressValues = self.buckling_input.calculate_derived_stress_values()
-        sxsd: float = derived_stress_values._sxsd
-        sysd: float = derived_stress_values._sysd
-        sy1sd: float = derived_stress_values._sy1sd
+        sxsd: float = derived_stress_values.sxsd
+        sysd: float = derived_stress_values.sysd
+        sy1sd: float = derived_stress_values.sy1sd
 
         # psd_min_adj = psd if self._min_lat_press_adj_span is None else\
         #     self._min_lat_press_adj_span * self.calc_props._lat_load_factor
@@ -608,9 +608,9 @@ class DNVBuckling(BaseModel):
         #8.4 Effective width of girders
         #Method 1:
         # calculation of Cxs and Cys according 7.14 and 7.16
-        syR = derived_stress_values._syR
-        sysd = derived_stress_values._sysd
-        sxsd = derived_stress_values._sxsd
+        syR = derived_stress_values.syR
+        sysd = derived_stress_values.sysd
+        sxsd = derived_stress_values.sxsd
 
         Cys = 0.5 * (math.sqrt(4 - 3 * math.pow(sysd / fy, 2)) + sysd / fy)
 

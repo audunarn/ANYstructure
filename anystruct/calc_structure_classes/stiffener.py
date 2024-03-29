@@ -434,3 +434,19 @@ class Stiffener(BaseModel):
 
         return effana
 
+
+    def get_shear_area(self) -> float:
+        """
+        Calculate and return the shear area in square meters.
+
+        Returns:
+        --------
+        float
+            Shear area in square meters.
+
+        Notes:
+        ------
+        The shear area is computed based on the dimensions and properties of the plate and stiffener elements in the structure.
+        """
+        return ((self.flange_th * self.web_th) + \
+                (self.web_height * self.web_th))
