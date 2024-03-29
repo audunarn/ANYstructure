@@ -140,12 +140,21 @@ class DerivedStressValues(BaseModel):
         stress_ratio_trans (float): The value of stress_ratio_trans.
     """
 
-    def __init__(self):
-        self.sxsd: float = 0
-        self.sysd: float = 0
-        self.sy1sd: float = 0
-        self.syR: float = 0
-        self.sjsd: float = 0
-        self.max_vonMises_x: float = 0
-        self.stress_ratio_long: float = 0
-        self.stress_ratio_trans: float = 0
+    sxsd: float = 0
+    sysd: float = 0
+    sy1sd: float = 0
+    syR: float = 0
+    sjsd: float = 0
+    max_vonMises_x: float = 0
+    stress_ratio_long: float = 0
+    stress_ratio_trans: float = 0
+
+    # def __init__(self):
+    #     self.sxsd: float = 0
+    #     self.sysd: float = 0
+    #     self.sy1sd: float = 0
+    #     self.syR: float = 0
+    #     self.sjsd: float = 0
+    #     self.max_vonMises_x: float = 0
+    #     self.stress_ratio_long: float = 0
+    #     self.stress_ratio_trans: float = 0

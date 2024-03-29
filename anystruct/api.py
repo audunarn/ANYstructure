@@ -432,7 +432,7 @@ if __name__ == '__main__':
     my_plate: clc.Plate = clc.Plate(spacing=0.700, thickness=0.020, span=4, material=my_material)
     my_stiffener: clc.Stiffener = clc.Stiffener(type='L-bulb', web_height=0.260, web_th=0.012, flange_width=0.049, flange_th=0.0273, material=my_material)
     my_stress: clc.Stress = clc.Stress(sigma_x1=50, sigma_x2=50, sigma_y1=150, sigma_y2=150, tauxy=0.3)
-    my_stiffened_panel: clc.StiffenedPanel = clc.StiffenedPanel(plate=my_plate, stiffener=my_stiffener, stiffener_end_support='Continuous', girder_length=5)
+    my_stiffened_panel: clc.StiffenedPanel = clc.StiffenedPanel(plate=my_plate, stiffener=my_stiffener, stiffener_end_support='continuous', girder_length=5)
     # set the calculation properties if different from default
     my_stiffened_panel_calc_props: clc.Stiffened_panel_calc_props = clc.Stiffened_panel_calc_props(plate_kpp=1, stf_kps=1, km1=12, km2=24, km3=12)
     my_buckling_input: clc.BucklingInput = clc.BucklingInput(panel=my_stiffened_panel, pressure=0, pressure_side='both sides', stress=my_stress)
