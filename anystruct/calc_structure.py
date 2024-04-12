@@ -3226,6 +3226,7 @@ class CylinderAndCurvedPlate():
                 assert +self._tQsd is not None, 'Input missing: self._tQsd'
 
                 if stucture_objects['Ring Stiffeners'] == None:
+                    # does the following not add shsd twice?
                     shsd.append(shsd[0]+self._shsd/1e6)
                 else:
                     shsd_ring = ((self._psd/1e6)*r/t)-parameters[0][0]*parameters[0][3]/(parameters[0][0]+1)*\

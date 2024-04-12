@@ -1,9 +1,9 @@
-from pydantic import BaseModel
 import math
 from typing import Optional
 
-from .material import Material
+from pydantic import BaseModel, field_validator
 
+from .material import Material
 
 class Stiffener(BaseModel):
     type: str
@@ -17,8 +17,12 @@ class Stiffener(BaseModel):
     material: Material
 
 
-    def ToShortString(self) -> str:
-        return 'wHxwTxfWxfT' + str(round(self.web_height, 3)) + 'x' + str(round(self.web_th, 3)) + 'x' + str(round(self.flange_width, 3)) + 'x' + str(round(self.flange_th, 3))
+    @field_validator('type')
+    def check_type(cls, value):
+        if value.upper() not in ['FB', 'T', 'L', 'BULB', 'HP', 'HP-BULB', 'HP-PROFILE', 'L-BULB']:
+            raise ValueError('Invalid stiffener type')
+        return value.upper()
+
 
     # Property decorators are used in buckling. IN mm!    
     @property # in mm
@@ -54,7 +58,7 @@ class Stiffener(BaseModel):
     def dist_between_lateral_supp_mm(self):
         if self.dist_between_lateral_supp == None:
             return None
-        return self.dist_between_lateral_supp* 1000
+        return self.dist_between_lateral_supp * 1000
     @dist_between_lateral_supp_mm.setter  # in mm
     def dist_between_lateral_supp_mm(self, val):
         if self.dist_between_lateral_supp == None:
@@ -64,6 +68,10 @@ class Stiffener(BaseModel):
     @property  # in mm
     def As(self):
         return self.tw * self.hw + self.b * self.tf
+
+
+    def ToShortString(self) -> str:
+        return 'wHxwTxfWxfT' + str(round(self.web_height, 3)) + 'x' + str(round(self.web_th, 3)) + 'x' + str(round(self.flange_width, 3)) + 'x' + str(round(self.flange_th, 3))
 
 
     def get_beam_string(self) -> str:
@@ -243,7 +251,7 @@ class Stiffener(BaseModel):
         b1 = plate_width
 
         h = self.flange_th + self.web_height + tf1
-        tw = self.web_th if reduced_tw == None else reduced_tw / 1000
+        tw = self.web_th if reduced_tw == None else reduced_tw
         hw = self.web_height
         tf2 = self.flange_th
         b2 = self.flange_width
@@ -255,6 +263,25 @@ class Stiffener(BaseModel):
              tf2 * b2 * math.pow(tf2 / 2, 2)) - Ax * math.pow(ez, 2)
 
         return Iy
+
+
+    def get_cross_section_area(self,  plate_thickness: float=0, plate_width: float=0) -> float:
+        """
+        Calculate and return the cross-sectional area.
+
+        Parameters:
+        -----------
+        plate_thickness : float, optional
+            Plate thickness to be included in the cross-sectional area. Default is 0.
+        plate_width : bool, optional
+            Plate width to be included in the cross-sectional area. Default is 0.
+
+        Returns:
+        --------
+        float
+            Cross-sectional area.
+        """
+        return plate_width * plate_thickness + self.flange_width * self.flange_th + self.web_height * self.web_th
 
 
     def get_Iz_moment_of_inertia(self, reduced_tw=None) -> float:
@@ -397,18 +424,19 @@ class Stiffener(BaseModel):
         return Wey1, Wey2
 
 
-    def get_cross_section_centroid_with_effectiveplate(self, plate_thickness: float, plate_width: float, reduced_tw=None) -> float:
+    def get_cross_section_centroid(self, plate_thickness: float=0, plate_width: float=0, reduced_tw=None) -> float:
         """
-        Calculate and return the cross-sectional centroid with effective plate.
+        Calculate and return the cross-sectional centroid.
+        Optionally with effective plate.
 
         Parameters:
         -----------
         Parameters:
         -----------
-        plate_thickness : float
-            Thickness of the plate to used in the calculation of stiffener with plate, in meter
-        plate_width : bool
-            Width of the plate to used in the calculation of stiffener with plate, in meter
+        plate_thickness : float, optional
+            Thickness of the plate to used in the calculation of stiffener with plate, in meter. Default is 0 (without plate)
+        plate_width : float, optional
+            Width of the plate to used in the calculation of stiffener with plate, in meter. Default is 0 (without plate)
         reduced_tw : float, optional
             Reduced web thickness for the stiffener. If not provided, the original web thickness is used.
 

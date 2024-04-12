@@ -147,7 +147,7 @@ class PulsExcel():
         return return_dict
 
     def get_all_results_batch(self, sp = True, up = False):
-
+        # TODO: implement a class object, iso a dict. will make life much easier
         spup = {(True, True) : ['SP', 'UP'], (True, False) : ['SP'], (False, True) : ['UP']}
 
         return_dict = {}

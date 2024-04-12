@@ -332,7 +332,7 @@ class DNVBuckling(BaseModel):
         kc = 0 if thickness * spacing == 0 else 2 * (1 + math.sqrt(1 + 10.9 * Is / (math.pow(thickness, 3) * spacing)))
         mc = 13.3 if self.buckling_input.panel.stiffener_end_support == "continuous" else 8.9
 
-        zp = self.buckling_input.panel.stiffener.get_cross_section_centroid_with_effectiveplate(plate_thickness=thickness/1000, plate_width=se/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
+        zp = self.buckling_input.panel.stiffener.get_cross_section_centroid(plate_thickness=thickness/1000, plate_width=se/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
         zt = (self.buckling_input.panel.stiffener.hw + self.buckling_input.panel.stiffener.tf) - zp + thickness / 2
 
         Weff = 0.0001 if zt == 0 else Iy / zt
@@ -658,7 +658,7 @@ class DNVBuckling(BaseModel):
         AtotG = Ag + le * thickness
 
         Iy = self.buckling_input.panel.girder.get_moment_of_intertia(plate_thickness=thickness/1000, plate_width=le/1000) * 1000 ** 4
-        zp = self.buckling_input.panel.girder.get_cross_section_centroid_with_effectiveplate(plate_thickness=thickness/1000, plate_width=le/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
+        zp = self.buckling_input.panel.girder.get_cross_section_centroid(plate_thickness=thickness/1000, plate_width=le/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
         zt = (thickness / 2 + self.buckling_input.panel.girder.hw + self.buckling_input.panel.girder.tf) - zp  # ch 7.5.1 page 19
 
         if Vsd_div_Vrd < 0.5:

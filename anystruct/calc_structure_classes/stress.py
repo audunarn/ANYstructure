@@ -126,7 +126,6 @@ class Stress(BaseModel):
 class DerivedStressValues(BaseModel):
     """
     Class representing derived stress values.
-
     This class is used for returning stress values instead of a tuple.
 
     Attributes:

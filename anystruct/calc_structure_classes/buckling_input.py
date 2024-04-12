@@ -421,7 +421,7 @@ class BucklingInput(BaseModel):
         Ipo_red  = member.get_polar_moment(reduced_tw=tw_red )
 
         Iy_red = member.get_moment_of_intertia(plate_thickness=thickness/1000, plate_width=se/1000, reduced_tw=tw_red) * 1000**4
-        zp_red  = member.get_cross_section_centroid_with_effectiveplate(plate_thickness=thickness/1000, plate_width=se/1000, reduced_tw=tw_red ) \
+        zp_red  = member.get_cross_section_centroid(plate_thickness=thickness/1000, plate_width=se/1000, reduced_tw=tw_red ) \
                     * 1000 - thickness / 2  # ch7.5.1 page 19
         zt_red  = (member.hw + member.tf) - zp_red + thickness / 2  # ch 7.5.1 page 19
         Wes_red  = 0.0001 if zt_red == 0 else Iy_red / zt_red
@@ -471,10 +471,10 @@ class BucklingInput(BaseModel):
                                                    math.pow(abs(taud_Sd) / fEpt, c), 1 / c)) # eq 7.40
 
         fep = fy / math.sqrt(1 + math.pow(lambda_e, 4)) # eq 7.39
-        eta = min(sjSd / fep, 1) # eq. 7.377
+        nu = min(sjSd / fep, 1) # eq. 7.37
 
         C = 0 if member.tw == 0 else (member.hw / spacing) * math.pow(thickness / member.tw, 3) * \
-                                              math.sqrt((1 - eta)) # e 7.36, checked ok
+                                              math.sqrt((1 - nu)) # e 7.36, checked ok
 
         beta = (3 * C + 0.2) / (C + 0.2) # eq 7.35
         It = member.get_torsional_moment_venant()
@@ -490,8 +490,9 @@ class BucklingInput(BaseModel):
             fET = 0.001
 
         logger.debug("7.5 Characteristic buckling")
-        logger.debug("fEpt: %s fEpy: %s fEpx: %s c: %s sxsd: %s sysd: %s sjSd: %s tsd: %s", fEpt, fEpy, fEpx, c, sxsd, sysd, sjSd, taud_Sd)
-        logger.debug("lambda_e: %s fep: %s eta: %s C: %s beta: %s lT: %s fET: %s", lambda_e, fep, eta, C, beta, lT, fET)
+        logger.debug(f"fEpt: {fEpt} fEpy: {fEpy} fEpx: {fEpx} c: {c} sxsd: {sxsd} sysd: {sysd} sjSd: {sjSd} tsd: {taud_Sd}")
+        logger.debug(f"lambda_e: {lambda_e} fep: {fep} nu: {nu} C: {C} beta: {beta} lT: {lT} fET: {fET}")
+
         return fET
 
 
@@ -575,7 +576,7 @@ class BucklingInput(BaseModel):
 
         As = member.As
         se = self.effectiveplate_width()
-        zp = member.get_cross_section_centroid_with_effectiveplate(plate_thickness=thickness/1000, plate_width=se/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
+        zp = member.get_cross_section_centroid(plate_thickness=thickness/1000, plate_width=se/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
         zt = (member.hw + member.tf) - zp + thickness / 2
         Iy = member.get_moment_of_intertia(plate_thickness=thickness/1000, plate_width=se/1000) * 1000**4
         
@@ -621,7 +622,7 @@ class BucklingInput(BaseModel):
         thickness = self.panel.plate.th # mm
         As = member.As
         se = self.effectiveplate_width()
-        zp = member.get_cross_section_centroid_with_effectiveplate(plate_thickness=thickness/1000, plate_width=se/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
+        zp = member.get_cross_section_centroid(plate_thickness=thickness/1000, plate_width=se/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
         zt  = (member.hw + member.tf) - zp + thickness / 2  # ch 7.5.1 page 19
         Iy = member.get_moment_of_intertia(plate_thickness=thickness/1000, plate_width=se/1000) * 1000**4
         ie = 0.0001 if As + se * thickness == 0 else math.sqrt(Iy / (As + se * thickness))
@@ -655,7 +656,7 @@ class BucklingInput(BaseModel):
         length = self.panel.plate.l # mm
         As = member.As
         se = self.effectiveplate_width()
-        zp = member.get_cross_section_centroid_with_effectiveplate(plate_thickness=thickness/1000, plate_width=se/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
+        zp = member.get_cross_section_centroid(plate_thickness=thickness/1000, plate_width=se/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
         Iy = member.get_moment_of_intertia(plate_thickness=thickness/1000, plate_width=se/1000) * 1000**4
         ie = 0.0001 if As + se * thickness == 0 else math.sqrt(Iy / (As + se * thickness))
         lk = length
