@@ -9,3 +9,5 @@ from .dnv_buckling import DNVBuckling
 from .calc_scantlings import CalcScantlings
 from .puls_panel import PULSpanel
 from .fatigue import FatigueInput, CalcFatigue
+from .curved_panel import CurvedPanel
+from .cylinder_and_curved_plate import ShellStressAndPressure, CylindricalShell

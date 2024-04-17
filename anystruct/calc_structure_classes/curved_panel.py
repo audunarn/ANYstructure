@@ -52,19 +52,21 @@ class CurvedPanel(BaseModel):
         return value
 
 
-    @property # in mm
+    @property
     def Zs(self):
+        # note that the formula is unitless
         Zs = (math.pow(self.s, 2) / \
               (self.radius * self.thickness)) * \
                 math.sqrt(1 - math.pow(self.material.poisson, 2))  # The curvature parameter Zs (3.3.3)
         
-        return Zs * 1000
+        return Zs
     
     
-    @ property # in mm
+    @ property
     def Zl(self):
+        # note that the formula is unitless
         Zl = math.pow(self.l, 2) * math.sqrt(1 - math.pow(self.material.poisson, 2)) / (self.radius * self.thickness)
-        return Zl * 1000
+        return Zl
 
 
     def get_effective_width_shell_plate(self):
