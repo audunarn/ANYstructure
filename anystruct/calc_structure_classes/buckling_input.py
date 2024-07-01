@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 import math
 from typing import Optional
 import logging
@@ -30,7 +30,7 @@ class BucklingInput(BaseModel):
     stress: Stress=Stress(sigma_x1=0, sigma_x2=0, sigma_y1=0, sigma_y2=0, tauxy=0)
     tension_field_action: str = "not allowed"
     stifplate_effective_against_sigy: bool = True
-    min_lat_press_adj_span: Optional[float] = None
+    min_lat_press_adj_span: Optional[float] = None # is not used anywhere
     calc_props: Stiffened_panel_calc_props = Stiffened_panel_calc_props()
     puls_input: Puls = Puls()
     # def __init__(self, 
@@ -56,6 +56,12 @@ class BucklingInput(BaseModel):
     #         self.stifplate_effective_aginst_sigy = True
     #     else:
     #         self.stifplate_effective_aginst_sigy = False
+
+    @field_validator('pressure')
+    def check_pressure(cls, value):
+        if value < 0:
+            raise ValueError('Pressure must be zero or positive')
+        return value
 
 
     def __str__(self):
@@ -362,7 +368,10 @@ class BucklingInput(BaseModel):
         sysd = derived_stress_values.sysd
         sxsd = derived_stress_values.sxsd
 
-        Cys = 0.5 * (math.sqrt(4 - 3 * math.pow(sysd / fy, 2)) + sysd / fy)
+        if 3 * math.pow(sysd / fy, 2) > 4: # This is an fea edge case: sysd much bigger than yield for this to happen.
+            Cys = 1
+        else:
+            Cys = 0.5 * (math.sqrt(4 - 3 * math.pow(sysd / fy, 2)) + sysd / fy)
 
         lambda_p = 0 if thickness*E == 0 else 0.525 * (spacing / thickness) * math.sqrt(fy / E)  # reduced plate slenderness, checked not calculated with ex
         Cxs = (lambda_p - 0.22) / math.pow(lambda_p, 2) if lambda_p > 0.673 else 1
@@ -672,3 +681,28 @@ class BucklingInput(BaseModel):
 
         # logger.debug("fk plate side: %s", fk)
         return fk
+
+
+    def flip_l_s(self):
+
+        # The calculations are only valid if length is greater than spacing.
+        # When performing a spot check on a panel, where one wants to add a stiffener later,
+        # one does not want to change the stresses from longitudinal to transverse.
+        # Instead, one want to provide the sigma_x1 and sigma_x2 values in the direction of the future stiffener, 
+        # even though the future stiffener direction is the short direction of the plate.
+        # The next flips the length and spacing and also the stresses, if the flip_l_s is True.
+        # obviously the default is false, as this can give unexpected behaviour.
+        logger.warning("Flipping length and spacing and also the stresses")
+        spacing = self.panel.plate.spacing
+        span = self.panel.plate.span
+        sigma_x1 = self.stress.sigma_x1
+        sigma_x2 = self.stress.sigma_x2
+        sigma_y1 = self.stress.sigma_y1
+        sigma_y2 = self.stress.sigma_y2
+
+        self.stress.sigma_x1 = sigma_y1
+        self.stress.sigma_x2 = sigma_y2
+        self.stress.sigma_y1 = sigma_x1
+        self.stress.sigma_y2 = sigma_x2
+        self.panel.plate.spacing = span
+        self.panel.plate.span = spacing

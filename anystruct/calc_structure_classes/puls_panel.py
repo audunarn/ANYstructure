@@ -5,7 +5,7 @@ import json
 import random
 from typing import Optional, Dict
 
-import excel_inteface as pulsxl
+import anystruct.excel_inteface as pulsxl
 import numpy as np
 from pydantic import BaseModel
 

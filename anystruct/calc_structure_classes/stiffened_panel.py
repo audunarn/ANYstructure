@@ -29,15 +29,19 @@ class StiffenedPanel(BaseModel):
     #         assert self.girder_panel_length is not None, "When a girder is defined, also the panel length needs to be defined"
     
     @field_validator('stiffener_end_support')
-    def prevent_stf_end_supp(cls, v):
+    def check_stf_end_supp(cls, v):
         if v is not None:
             assert v.lower() in ["continuous", "sniped"], 'stiffener_end_support should be either "continuous" or "sniped"'
         return v
+    
     @field_validator('girder_end_support')
-    def prevent_grd_end_supp(cls, v):
+    def check_grd_end_supp(cls, v):
         if v is not None:
             assert v.lower() in ["continuous", "sniped"], 'girder_end_support should be either "continuous" or "sniped"'
         return v
+
+    # TODO: add validation for girder_length and girder_panel_length
+    # girder length, not required when no stiffener present.
 
 
     def ToShortString(self) -> str:
@@ -229,7 +233,7 @@ class StiffenedPanel(BaseModel):
 
 class Stiffened_panel_calc_props(BaseModel):
     # looks like these are parameters for both scantlings and buckling.
-    # Maybe can split up in props for scantling calculations and props for buckling calculations
+    # TODO: split up in props for scantling calculations and props for buckling calculations
     zstar_optimization: bool = True
     plate_kpp: float = 1
     stf_kps: float = 1

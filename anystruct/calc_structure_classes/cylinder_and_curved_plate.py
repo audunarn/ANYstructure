@@ -1,6 +1,6 @@
 import math
 import logging
-from typing import Optional, List, Dict, Union
+from typing import Optional, List, Dict, Union, Any
 from enum import IntEnum
 
 from pydantic import BaseModel, model_validator, field_validator, PrivateAttr, Field
@@ -256,7 +256,7 @@ class CylindricalShell(BaseModel):
             '\n Additional hoop stress         ' + str(self.load.shSd_add/1e6)+' MPa')
 
 
-    def get_utilization_factors(self, optimizing = False, empty_result_dict = False):
+    def get_utilization_factors(self, optimizing = False, empty_result_dict = False) -> Dict[str, Any]:
         '''
         If optimizing running time must be reduced.
         '''
@@ -1159,7 +1159,7 @@ class CylindricalShell(BaseModel):
         
         # If lightly stiffened, it's in essence checked as an unstiffened cylinder and caught get_utilization_factors
         # Else, it should checked according 3.6.2 which is 3.3.2 which is unstiffened panel.
-        fks = data['fks - Unstifffed curved panel']
+        fks = data['fks - Unstiffened curved panel']
 
         sxSd = min([saSd + smSd, saSd - smSd])
 
@@ -1399,7 +1399,11 @@ class CylindricalShell(BaseModel):
             a = 1 + math.pow(fy, 2) / math.pow(fEa, 2) # 3.8.9
             b = ((2 * math.pow(fy, 2) / (fEa * fEh)) - 1) * shSd # 3.8.10
             c = math.pow(shSd, 2) + math.pow(fy, 2) * math.pow(shSd, 2) / math.pow(fEh, 2) - math.pow(fy, 2) # 3.8.11
-            fak = (b + math.sqrt(math.pow(b, 2) - 4 * a * c)) / (2 * a) # 3.8.8
+            try:
+                fak = (b + math.sqrt(math.pow(b, 2) - 4 * a * c)) / (2 * a) # 3.8.8
+            except:
+                logger.warning(f'Column buckling: Error calulating fak for the special case of unstiffened shell, setting fak as unstiffened circular cylinder')
+                fak = unstf_shell_data['max axial stress - 3.4.2 Shell buckling']
             gammaM = unstf_shell_data['gammaM - Unstiffened circular cylinder']
         else:
             # note that ShellType.UNSTIFFENED_PANEL = 3 will raise this error.

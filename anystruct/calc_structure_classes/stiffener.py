@@ -20,7 +20,13 @@ class Stiffener(BaseModel):
     @field_validator('type')
     def check_type(cls, value):
         if value.upper() not in ['FB', 'T', 'L', 'BULB', 'HP', 'HP-BULB', 'HP-PROFILE', 'L-BULB']:
-            raise ValueError('Invalid stiffener type')
+            raise ValueError('Invalid stiffener type. Should be either "FB", "T", "L", "BULB", "HP", "HP-BULB", "HP-PROFILE", or "L-BULB"')
+        return value.upper()
+
+    @field_validator('fabrication_method')
+    def check_fabrication_method(cls, value):
+        if value.upper() not in ['welded', 'rolled']:
+            raise ValueError('Invalid fabrication method. Should be either "welded" or "rolled"')
         return value.upper()
 
 
@@ -245,7 +251,7 @@ class Stiffener(BaseModel):
         """
         if plate_thickness != 0:
             assert plate_thickness > 0, "Cannot have a negative plate thickness"
-            assert plate_width > 0, "If plate thickness is provided, also the width must be provided and positive."
+            assert plate_width >= 0, "If plate thickness is provided, also the width must be provided and positive."
 
         tf1 = plate_thickness
         b1 = plate_width

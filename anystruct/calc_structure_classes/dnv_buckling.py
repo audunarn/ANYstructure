@@ -44,7 +44,7 @@ class DNVBuckling(BaseModel):
             return 1
 
 
-    def plated_structures_buckling(self, optimizing: bool=False) -> dict:
+    def plated_structures_buckling(self, optimizing: bool=False, flip_l_s: bool=False) -> dict:
         '''
         Summary
         '''
@@ -54,7 +54,7 @@ class DNVBuckling(BaseModel):
                         'Girder': {'Overpressure plate side': 0, 'Overpressure girder side': 0, 'Shear capacity': 0},
                         'Local buckling': 0}
 
-        unstf_pl = self.unstiffenedplate_buckling(optimizing = optimizing)
+        unstf_pl = self.unstiffenedplate_buckling(optimizing = optimizing, flip_l_s=flip_l_s)
         up_buckling = max([unstf_pl['UF Pnt. 5  Lateral loaded plates'], unstf_pl['UF sjsd'],
                            max([unstf_pl['UF Longitudinal stress'],  unstf_pl['UF transverse stresses'],
                                 unstf_pl['UF Shear stresses'], unstf_pl['UF Combined stresses']])
@@ -109,8 +109,24 @@ class DNVBuckling(BaseModel):
                 'Local buckling': 0 if optimizing else local_buckling}
 
 
-    def unstiffenedplate_buckling(self, optimizing: bool=False) -> dict:
+    def unstiffenedplate_buckling(self, optimizing: bool=False, flip_l_s: bool=False) -> dict:
         # internal calculations are in mm (millimeter) and MPa (mega pascal)
+        
+        # The calculations for unstiffened are only valid if length is greater than spacing.
+        if self.buckling_input.panel.plate.span < self.buckling_input.panel.plate.spacing:
+            # When performing a spot check on a panel, where one wants to add a stiffener later,
+            # one does not want to change the stresses from longitudinal to transverse.
+            # Instead, one wants to provide the sigma_x1 and sigma_x2 values in the direction of the stiffener, 
+            # even though the future stiffener direction is the short direction of the plate.
+            # The next flips the length and spacing and also the stresses, if the flip_l_s is True.
+            # obviously the default is false, as this can give unexpected behaviour.
+            if flip_l_s:
+                self.buckling_input.flip_l_s()
+            else:
+                logger.error(f'The span (l) {self.buckling_input.panel.plate.span} of the plate must be greater than the spacing (s) {self.buckling_input.panel.plate.spacing} of the plate')
+                raise ValueError('The span (l) of the plate must be greater than the spacing (s) of the plate')
+        
+        
         unstf_pl_data = dict()
 
         E = self.buckling_input.panel.plate.material.young / 1e6
@@ -191,8 +207,8 @@ class DNVBuckling(BaseModel):
 
         Cx =(lambda_p - 0.055 * (3 + max([-2, shear_ratio_long]))) / math.pow(lambda_p, 2)
 
-        # Formulas of 6.2 and 6.6 are mixed. Is this correct?
-
+        # Formulas of 6.2 and 6.6 are mixed:
+        # In fact, 6.2 is just a special case of 6.6 and 6.3, where both longitudinal and transverse stress are constant.
         sxRd = Cx * fy / gammaM if not all([sig_x1 < 0, sig_x2 < 0]) else 1 * fy / gammaM # Corrected 07.08.2023, issue 126
 
         uf_unstf_pl_long_stress = 0 if sxRd == 0 else abs(sxsd / sxRd)
