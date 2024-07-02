@@ -1,7 +1,8 @@
-from pydantic import BaseModel, field_validator
 import math
 from typing import Optional
 import logging
+
+from pydantic import BaseModel, field_validator, Field
 
 from .stress import Stress, DerivedStressValues
 from .stiffener import Stiffener
@@ -25,37 +26,17 @@ if not logger.hasHandlers():
 class BucklingInput(BaseModel):
     # The material factor is part of the material definition. But could also be part of the calculation_properties or even here
     panel: StiffenedPanel
-    pressure: float
-    pressure_side: str='both sides'
-    stress: Stress=Stress(sigma_x1=0, sigma_x2=0, sigma_y1=0, sigma_y2=0, tauxy=0)
-    tension_field_action: str = "not allowed"
-    stifplate_effective_against_sigy: bool = True
-    min_lat_press_adj_span: Optional[float] = None # is not used anywhere
-    calc_props: Stiffened_panel_calc_props = Stiffened_panel_calc_props()
-    puls_input: Puls = Puls()
-    # def __init__(self, 
-    #              panel: StiffenedPanel, 
-    #              pressure: float, 
-    #              pressure_side: str='both sides', 
-    #              stress: Stress=Stress(0, 0, 0, 0, 0), 
-    #              tension_field_action: str="not allowed", 
-    #              stiffenedplate_effective_aginst_sigy: bool=True,
-    #              min_lat_press_adj_span: float=None, # type: ignore
-    #              calc_props: Stiffened_panel_calc_props=Stiffened_panel_calc_props(), 
-    #              puls_input: Puls=Puls()):
+    pressure: float =Field(ge=0) # pydantic for greater or equal to zero
+    pressure_side: str = Field(default='both sides')
+    stress: Stress = Field(default=Stress(sigma_x1=0, sigma_x2=0, sigma_y1=0, sigma_y2=0, tauxy=0))
+    tension_field_action: str = Field(default="not allowed")
+    stifplate_effective_against_sigy: bool = Field(default=True)
+    min_lat_press_adj_span: Optional[float] = Field(default=None) # is not used anywhere
+    calc_props: Stiffened_panel_calc_props = Field(default=Stiffened_panel_calc_props())
+    puls_input: Puls = Field(default=Puls())
 
-    # @property # in mm
-    # def stiffenedplate_effective_aginst_sigy_enum(self) -> GirderOpt:
-    #     if self.stifplate_effective_aginst_sigy == True:
-    #         return GirderOpt.STF_PL_EFFECTIVE_AGAINST_SIGMA_Y
-    #     else:
-    #         return GirderOpt.ALL_SIMGA_Y_TOgirder
-    # @stiffenedplate_effective_aginst_sigy_enum.setter # in mm
-    # def stiffenedplate_effective_aginst_sigy_enum(self, val: GirderOpt):
-    #     if val == GirderOpt.STF_PL_EFFECTIVE_AGAINST_SIGMA_Y:
-    #         self.stifplate_effective_aginst_sigy = True
-    #     else:
-    #         self.stifplate_effective_aginst_sigy = False
+    class Config:
+        extra = 'forbid'
 
     @field_validator('pressure')
     def check_pressure(cls, value):

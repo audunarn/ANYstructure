@@ -24,6 +24,9 @@ class DNVBuckling(BaseModel):
     buckling_input: BucklingInput
     calculation_domain: Optional[str]
 
+    class Config:
+        # Pydantic configuration, such that no extra fields (eg attributes) are allowed
+        extra = 'forbid'
 
     def get_method(self):
         gird_opt = ['Stf. pl. effective against sigma y', 'All sigma y to girder']

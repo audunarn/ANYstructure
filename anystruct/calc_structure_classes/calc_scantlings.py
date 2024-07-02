@@ -17,21 +17,10 @@ class CalcScantlings(BaseModel):
     lat_press: bool
     category: str
     need_recalc: bool
-    # def __init__(self, buckling_input: BucklingInput, lat_press: bool=True, category: str='secondary'):
-    #     super(CalcScantlings, self).__init__(buckling_input.panel, 
-    #                                          buckling_input.pressure, 
-    #                                          buckling_input.pressure_side, 
-    #                                          buckling_input.stress, 
-    #                                          buckling_input.tension_field_action,
-    #                                          buckling_input.stiffenedplate_effective_aginst_sigy,
-    #                                          buckling_input.min_lat_press_adj_span,
-    #                                          buckling_input.stiffened_panel_calc_props, 
-    #                                          buckling_input.puls)
-    #     # pressure is defined as a property, but doesn't seem to be using in the functions, where a parameter is passed.
-    #     self.lat_press: bool = lat_press
-    #     self.category: str = category
-    #     self._need_recalc: bool = True
 
+    class Config:
+        # Pydantic configuration, such that no extra fields (eg attributes) are allowed
+        extra = 'forbid'
 
 
     def get_results_for_report(self, lat_press: float=0) -> str:

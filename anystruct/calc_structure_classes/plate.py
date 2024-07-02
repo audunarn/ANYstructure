@@ -8,16 +8,13 @@ class Plate(BaseModel):
     span: float
     thickness: float
     material: Material
-    # def __init__(self, spacing: float, span: float, thickness:float=0, material: Material=Material(206e9, 0.3, 235e6)):
-    #     self._spacing: float = spacing
-    #     self._span: float = span
-    #     self._thickness: float = thickness
-    #     self._material: Material = material
 
+    class Config:
+        # Pydantic configuration, such that no extra fields (eg attributes) are allowed
+        extra = 'forbid'
 
     def ToShortString(self) -> str:
         return 'lxb' + str(self.span) + 'x' + str(self.spacing)
-
 
     # Property decorators are used in buckling. IN mm!    
     @property # in mm

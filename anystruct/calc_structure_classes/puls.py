@@ -1,24 +1,15 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 class Puls(BaseModel):
-    puls_method: int = 1
-    puls_boundary: str = 'Int'
-    puls_stf_end: str = 'C'
-    puls_sp_or_up: str = 'SP'
-    puls_up_boundary: str = 'SSSS'
+    puls_method: int = Field(default=1)
+    puls_boundary: str = Field(default='Int') # still to add patterns for the other options
+    puls_stf_end: str = Field(default='C') # still to add patterns for the other options
+    puls_sp_or_up: str = Field(default='SP') # still to add patterns for the other options
+    puls_up_boundary: str = Field(default='SSSS') # still to add patterns for the other options
 
-    # def __init__(self, puls_method: int=1, 
-    #                    puls_boundary: str='Int',
-    #                    puls_stf_end: str='C',
-    #                    puls_sp_or_up: str='SP',
-    #                    puls_up_boundary: str='SSSS') -> None:
-        
-    #     self._puls_method: int = puls_method
-    #     self._puls_boundary: str = puls_boundary
-    #     self._puls_stf_end: str = puls_stf_end
-    #     self._puls_sp_or_up: str = puls_sp_or_up
-    #     self._puls_up_boundary: str = puls_up_boundary
-
+    class Config:
+        # Pydantic configuration, such that no extra fields (eg attributes) are allowed
+        extra = 'forbid'
 
     def get_puls_method(self):
         return self.puls_method

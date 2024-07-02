@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Material(BaseModel):
@@ -16,9 +16,12 @@ class Material(BaseModel):
     young: float
     poisson: float
     strength: float
-    mat_factor: float = 1.15
-    density: float = 78550
+    mat_factor: float = Field(default=1.15)
+    density: float = Field(default=78550)
 
+    class Config:
+        # Pydantic configuration, such that no extra fields (eg attributes) are allowed
+        extra = 'forbid'
 
     def __str__(self) -> str:
         return 'Young\'s modulus: ' + str(self.young) + ' Poisson ratio: ' + str(self.poisson) + ' Yield strength: ' + str(self.strength)

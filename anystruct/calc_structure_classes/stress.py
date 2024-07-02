@@ -37,6 +37,10 @@ class Stress(BaseModel):
     sigma_y2: float
     tauxy: float
 
+    class Config:
+        # Pydantic configuration, such that no extra fields (eg attributes) are allowed
+        extra = 'forbid'
+
     def get_sigma_y1(self) -> float:
         """
         Return the larger design stress in the transverse direction, with tensile stresses taken as negative.

@@ -26,43 +26,10 @@ class PULSpanel(BaseModel):
     puls_acceptance: float = 0.87
     puls_sheet_location: Optional[str] = None
     all_uf: dict = {'buckling': list(), 'ultimate': list()}
-    # def __init__(self, run_dict: dict = {}, puls_acceptance: float = 0.87, puls_sheet_location: str = None):
-    #     super(PULSpanel, self).__init__()
 
-    #     self._all_to_run = run_dict
-    #     self._run_results = {}
-    #     self._puls_acceptance = puls_acceptance
-    #     self._puls_sheet_location = puls_sheet_location
-    #     self._all_uf = {'buckling': list(), 'ultimate': list()}
-
-    # @property
-    # def all_uf(self):
-    #     return self._all_uf
-
-    # @property
-    # def puls_acceptance(self):
-    #     return self._puls_acceptance
-
-    # @puls_acceptance.setter
-    # def puls_acceptance(self, val):
-    #     self._puls_acceptance = val
-
-    # @property
-    # def puls_sheet_location(self):
-    #     return self._puls_sheet_location
-
-    # @puls_sheet_location.setter
-    # def puls_sheet_location(self, val):
-    #     self._puls_sheet_location = val
-
-    # def set_all_to_run(self, val):
-    #     self._all_to_run = val
-
-    # def get_all_to_run(self):
-    #     return self._all_to_run
-
-    # def get_run_results(self):
-    #     return self._run_results
+    class Config:
+        # Pydantic configuration, such that no extra fields (eg attributes) are allowed
+        extra = 'forbid'
 
     def set_run_results(self, val):
         self.run_results = val

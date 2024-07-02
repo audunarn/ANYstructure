@@ -36,6 +36,10 @@ class ShellStressAndPressure(BaseModel):
     # Should pSd be removed as it is a force? Then shSd is simply the hoop stress.
     shSd_add: float = 0 # additional hoop stress
 
+    class Config:
+        # Pydantic configuration, such that no extra fields (eg attributes) are allowed
+        extra = 'forbid'
+
     # this is a pydantic feature that allows us to run some code after the initialization of the class
     def __post_init__(self):
         # tQsd is the shear stress and always positive
@@ -111,6 +115,10 @@ class TorsionalProperties(BaseModel):
     lambda_T: float
     fT: float
 
+    class Config:
+        # Pydantic configuration, such that no extra fields (eg attributes) are allowed
+        extra = 'forbid'
+
 
 class CylindricalShell(BaseModel):
     '''
@@ -118,21 +126,25 @@ class CylindricalShell(BaseModel):
     All input in SI units.
     '''
     curved_panel: CurvedPanel
-    long_stf: Optional[Stiffener] = None
+    long_stf: Optional[Stiffener] = Field(default=None)
     # long_stf_spacing: Optional[float] # should this not be taken from 's' in the panel?
-    ring_stf: Optional[Stiffener] = None
+    ring_stf: Optional[Stiffener] = Field(default=None)
     # ring_stf_spacing: Optional[float] # should this not be taken from 'l' in the panel?
-    ring_frame: Optional[Stiffener] = None
-    ring_frame_spacing: Optional[float] = None # L: distance between effective supports (Figure 3-1)
+    ring_frame: Optional[Stiffener] = Field(default=None)
+    ring_frame_spacing: Optional[float] = Field(default=None) # L: distance between effective supports (Figure 3-1)
     load: ShellStressAndPressure
     _geometry: ShellType = PrivateAttr(default=None) # It is determined from the given parameters
-    tot_cyl_length: Optional[float] = None
-    k_factor: Optional[float] = None
-    delta0: Optional[float] = None # THIS IS THE VALUE INCLUDING RADIUS in line with (3.5.26)
-    fab_method_ring_stf: Optional[str] = 'cold formed' # or 'fabricated' cold formed is conservative
-    fab_method_ring_frame: Optional[str] = 'cold formed' # or 'fabricated' cold formed is conservative
-    end_cap_pressure_included: bool = False # default is conservative
-    uls_or_als: Optional[str] = 'ULS' # or 'ALS' ULS is conservative
+    tot_cyl_length: Optional[float] = Field(default=None)
+    k_factor: Optional[float] = Field(default=None)
+    delta0: Optional[float] = Field(default=None) # THIS IS THE VALUE INCLUDING RADIUS in line with (3.5.26)
+    fab_method_ring_stf: Optional[str] = Field(default='cold formed', pattern='(?i)^(cold formed|fabricated)$') # or 'fabricated' cold formed is conservative
+    fab_method_ring_frame: Optional[str] = Field(default='cold formed', pattern='(?i)^(cold formed|fabricated)$') # or 'fabricated' cold formed is conservative
+    end_cap_pressure_included: bool = Field(default=False) # default is conservative
+    uls_or_als: Optional[str] = Field(default='ULS', pattern='(?i)^(cold ULS|ALS)$') # or 'ALS' ULS is conservative
+
+    class Config:
+        # Pydantic configuration, such that no extra fields (eg attributes) are allowed
+        extra = 'forbid'
 
     # Lots of checks to be done here
     # 1. If a ring stiffener is provided:

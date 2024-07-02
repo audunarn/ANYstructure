@@ -1,7 +1,7 @@
 import math
 from typing import Optional
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, Field
 
 from .material import Material
 
@@ -11,11 +11,14 @@ class Stiffener(BaseModel):
     web_th: float
     flange_width: float
     flange_th: float
-    dist_between_lateral_supp: Optional[float] = None
-    fabrication_method: str = 'welded'
+    dist_between_lateral_supp: Optional[float] = Field(default=None)
+    fabrication_method: str = Field(default='welded', pattern='(?i)^(welded|rolled)$')
     # flange_eccentricity: float = 0
     material: Material
 
+    class Config:
+        # Pydantic configuration, such that no extra fields (eg attributes) are allowed
+        extra = 'forbid'
 
     @field_validator('type')
     def check_type(cls, value):

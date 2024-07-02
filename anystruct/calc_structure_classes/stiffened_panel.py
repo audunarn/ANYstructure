@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, Field
 import math
 from typing import Optional, Union
 
@@ -8,12 +8,12 @@ from .stiffener import Stiffener
 
 class StiffenedPanel(BaseModel):
     plate: Plate
-    stiffener: Optional[Stiffener] = None
-    stiffener_end_support: Optional[str] = None
-    girder: Optional[Stiffener] = None
-    girder_end_support: Optional[str] = None
-    girder_length: Optional[float] = None
-    girder_panel_length: Optional[float] = None
+    stiffener: Optional[Stiffener] = Field(default=None)
+    stiffener_end_support: Optional[str] = Field(default=None, pattern='(?i)^(continuous|sniped)$')
+    girder: Optional[Stiffener] = Field(default=None)
+    girder_end_support: Optional[str] = Field(default=None, pattern='(?i)^(continuous|sniped)$')
+    girder_length: Optional[float] = Field(default=None)
+    girder_panel_length: Optional[float] = Field(default=None)
     # def __init__(self, **kwargs):
     #     super().__init__(**kwargs)
     #     if self.stiffener is not None: # type: ignore -> somehow pydantic makes this a tuple...
@@ -27,7 +27,11 @@ class StiffenedPanel(BaseModel):
     #         if not self.girder_end_support.strip().lower() in ["continuous", "sniped"]: raise ValueError(f"Type {self.girder_end_support} is not a valid input. only 'continuous' or 'sniped'.")            
     #         assert self.girder_length is not None, "When a girder is defined, also the girder length needs to be defined"
     #         assert self.girder_panel_length is not None, "When a girder is defined, also the panel length needs to be defined"
-    
+
+    class Config:
+        # Pydantic configuration, such that no extra fields (eg attributes) are allowed
+        extra = 'forbid'
+
     @field_validator('stiffener_end_support')
     def check_stf_end_supp(cls, v):
         if v is not None:
@@ -234,50 +238,23 @@ class StiffenedPanel(BaseModel):
 class Stiffened_panel_calc_props(BaseModel):
     # looks like these are parameters for both scantlings and buckling.
     # TODO: split up in props for scantling calculations and props for buckling calculations
-    zstar_optimization: bool = True
-    plate_kpp: float = 1
-    stf_kps: float = 1
-    km1: float = 12
-    km2: float = 24
-    km3: float = 12
-    structure_type: str = 'BOTTOM'
-    structure_types: str = 'structure_types'
-    lat_load_factor: float = 1
-    stress_load_factor: float = 1
-    buckling_length_factor_stf: float = 1
-    buckling_length_factor_girder: float = 1
-    flip_l_s: bool = False
-    # def __init__(self, zstar_optimization: bool = True, 
-    #                     plate_kpp: float = 1,
-    #                     stf_kps: float =1 ,
-    #                     km1: float = 12,
-    #                     km2: float = 24,
-    #                     km3: float = 12,
-    #                     structure_type: str = 'BOTTOM',
-    #                     structure_types: str = 'structure_types',
-    #                     lat_load_factor: float=1,
-    #                     stress_load_factor: float=1,
-    #                     buckling_length_factor_stf: Union[float, None]=None,
-    #                     buckling_length_factorgirder: Union[float, None]=None) -> None:
-        
-        # self._zstar_optimization: bool = zstar_optimization
-        # self.plate_kpp: float = plate_kpp
-        # self._stf_kps: float = stf_kps
-        # self._km1: float = km1
-        # self._km2: float = km2
-        # self._km3: float = km3
-        # self._structure_type: str = structure_type
-        # self._structure_types: str = structure_types
-        # self._lat_load_factor: float = lat_load_factor
-        # self._stress_load_factor: float = stress_load_factor
-        # self._buckling_length_factor_stf: Union[float, None] = buckling_length_factor_stf
-        # self._buckling_length_factorgirder: Union[float, None] = buckling_length_factorgirder
-        # self._dynamic_variable_orientation: float
-        # if self.structure_type in self.structure_types['vertical']:
-        #     self._dynamic_variable_orientation = 'z - vertical'
-        # elif self.structure_type in self.structure_types['horizontal']:
-        #     self._dynamic_variable_orientation = 'x - horizontal'
+    zstar_optimization: bool = Field(default=True)
+    plate_kpp: float = Field(default=1)
+    stf_kps: float = Field(default=1)
+    km1: float = Field(default=12)
+    km2: float = Field(default=24)
+    km3: float = Field(default=12)
+    structure_type: str = Field(default='BOTTOM')
+    structure_types: str = Field(default='structure_types')
+    lat_load_factor: float = Field(default=1)
+    stress_load_factor: float = Field(default=1)
+    buckling_length_factor_stf: float = Field(default=1)
+    buckling_length_factor_girder: float = Field(default=1)
+    flip_l_s: bool = Field(default=False)
 
+    class Config:
+        # Pydantic configuration, such that no extra fields (eg attributes) are allowed
+        extra = 'forbid'
 
     def get_structure_types(self):
         return self.structure_types
