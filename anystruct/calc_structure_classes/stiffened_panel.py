@@ -246,6 +246,7 @@ class Stiffened_panel_calc_props(BaseModel):
     stress_load_factor: float = 1
     buckling_length_factor_stf: float = 1
     buckling_length_factor_girder: float = 1
+    flip_l_s: bool = False
     # def __init__(self, zstar_optimization: bool = True, 
     #                     plate_kpp: float = 1,
     #                     stf_kps: float =1 ,
@@ -328,3 +329,10 @@ class Stiffened_panel_calc_props(BaseModel):
         :return:
         '''
         return self.km3
+    
+    def get_flip_l_s(self):
+        '''
+        Return var
+        :return:
+        '''
+        return self.flip_l_s

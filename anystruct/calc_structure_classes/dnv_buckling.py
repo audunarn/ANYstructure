@@ -44,7 +44,7 @@ class DNVBuckling(BaseModel):
             return 1
 
 
-    def plated_structures_buckling(self, optimizing: bool=False, flip_l_s: bool=False) -> dict:
+    def plated_structures_buckling(self, optimizing: bool=False) -> dict:
         '''
         Summary
         '''
@@ -54,7 +54,7 @@ class DNVBuckling(BaseModel):
                         'Girder': {'Overpressure plate side': 0, 'Overpressure girder side': 0, 'Shear capacity': 0},
                         'Local buckling': 0}
 
-        unstf_pl = self.unstiffenedplate_buckling(optimizing = optimizing, flip_l_s=flip_l_s)
+        unstf_pl = self.unstiffenedplate_buckling(optimizing = optimizing)
         up_buckling = max([unstf_pl['UF Pnt. 5  Lateral loaded plates'], unstf_pl['UF sjsd'],
                            max([unstf_pl['UF Longitudinal stress'],  unstf_pl['UF transverse stresses'],
                                 unstf_pl['UF Shear stresses'], unstf_pl['UF Combined stresses']])
@@ -109,7 +109,7 @@ class DNVBuckling(BaseModel):
                 'Local buckling': 0 if optimizing else local_buckling}
 
 
-    def unstiffenedplate_buckling(self, optimizing: bool=False, flip_l_s: bool=False) -> dict:
+    def unstiffenedplate_buckling(self, optimizing: bool=False) -> dict:
         # internal calculations are in mm (millimeter) and MPa (mega pascal)
         
         # The calculations for unstiffened are only valid if length is greater than spacing.
@@ -120,10 +120,13 @@ class DNVBuckling(BaseModel):
             # even though the future stiffener direction is the short direction of the plate.
             # The next flips the length and spacing and also the stresses, if the flip_l_s is True.
             # obviously the default is false, as this can give unexpected behaviour.
-            if flip_l_s:
+            if self.buckling_input.calc_props.flip_l_s:
+                logger.warning(f'The span (l) {self.buckling_input.panel.plate.span} of the plate is less than the spacing (s) {self.buckling_input.panel.plate.spacing} of the plate')
                 self.buckling_input.flip_l_s()
             else:
                 logger.error(f'The span (l) {self.buckling_input.panel.plate.span} of the plate must be greater than the spacing (s) {self.buckling_input.panel.plate.spacing} of the plate')
+                logger.error(f'Use the option flip_l_s=True to flip the span and spacing of the plate, but note that this will also flip the stresses.')
+                logger.error(f'This means that x-stresses need to correspond to the span direction and y-stresses to the spacing direction (as if there was a stiffener present).')
                 raise ValueError('The span (l) of the plate must be greater than the spacing (s) of the plate')
         
         
