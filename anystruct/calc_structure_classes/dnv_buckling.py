@@ -66,7 +66,7 @@ class DNVBuckling(BaseModel):
             return_dummy['Plate']['Plate buckling'] = up_buckling
             return return_dummy
 
-        local_buckling = self.local_buckling(optimizing=optimizing)
+        local_buckling = self.local_buckling_uc(optimizing=optimizing)
 
         stf_pla: dict = {}
         if self.buckling_input.panel.stiffener is not None:
@@ -836,8 +836,11 @@ class DNVBuckling(BaseModel):
 
     def local_buckling(self, optimizing: bool=False):
         '''
-        Checks for girders and stiffeners
+        Returns the maximum values for web height and flange width.
         '''
+
+        # this should be replaced with a unity check, iso returning the max allowable values.
+        # a separate function could return these.
         
         if self.buckling_input.panel.stiffener is not None:
             fy = self.buckling_input.panel.stiffener.material.strength
@@ -856,6 +859,33 @@ class DNVBuckling(BaseModel):
             max_flangegirder = 0
 
         return {'Stiffener': [max_web_stf, max_flange_stf], 'Girder': [max_webgirder, max_flangegirder]}
+    
+
+    def local_buckling_uc(self, optimizing: bool=False):
+        '''
+        Returns the maximum values for web height and flange width.
+        '''
+
+        # this should be replaced with a unity check, iso returning the max allowable values.
+        # a separate function could return these.
+        
+        if self.buckling_input.panel.stiffener is not None:
+            max_web_stf, max_flange_stf = self.local_buckling(optimizing)['Stiffener']
+            stf_uc_web = self.buckling_input.panel.stiffener.web_height / max_web_stf
+            stf_uc_flange = self.buckling_input.panel.stiffener.flange_width / max_flange_stf
+        else:
+            stf_uc_web = 0
+            stf_uc_flange = 0
+
+        if self.buckling_input.panel.girder is not None:
+            max_web_grd, max_flange_grd = self.local_buckling(optimizing)['Girder']
+            grd_uc_web = self.buckling_input.panel.girder.web_height / max_web_grd
+            grd_uc_flange = self.buckling_input.panel.girder.flange_width/ max_flange_grd
+        else:
+            grd_uc_web = 0
+            grd_uc_flange = 0
+
+        return {'Stiffener': [stf_uc_web, stf_uc_flange], 'Girder': [grd_uc_web, grd_uc_flange]}
 
 
     def get_one_line_string_mixed(self):
