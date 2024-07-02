@@ -401,7 +401,7 @@ class BucklingInput(BaseModel):
         Vsd_div_Vrd = Vsd / Vrd
 
         As = member.tw * member.hw + member.b * member.tf
-        se = self.effectiveplate_width()
+        se = self.effectiveplate_width()[0]
         
         tw_red =max(0, member.tw * (1 - Vsd_div_Vrd))
         
@@ -567,7 +567,7 @@ class BucklingInput(BaseModel):
             self.min_lat_press_adj_span*self.calc_props.lat_load_factor
 
         As = member.As
-        se = self.effectiveplate_width()
+        se = self.effectiveplate_width()[0]
         zp = member.get_cross_section_centroid(plate_thickness=thickness/1000, plate_width=se/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
         zt = (member.hw + member.tf) - zp + thickness / 2
         Iy = member.get_moment_of_intertia(plate_thickness=thickness/1000, plate_width=se/1000) * 1000**4
@@ -613,7 +613,7 @@ class BucklingInput(BaseModel):
         E = member.material.young / 1e6
         thickness = self.panel.plate.th # mm
         As = member.As
-        se = self.effectiveplate_width()
+        se = self.effectiveplate_width()[0]
         zp = member.get_cross_section_centroid(plate_thickness=thickness/1000, plate_width=se/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
         zt  = (member.hw + member.tf) - zp + thickness / 2  # ch 7.5.1 page 19
         Iy = member.get_moment_of_intertia(plate_thickness=thickness/1000, plate_width=se/1000) * 1000**4
@@ -647,7 +647,7 @@ class BucklingInput(BaseModel):
         thickness = self.panel.plate.th # mm
         length = self.panel.plate.l # mm
         As = member.As
-        se = self.effectiveplate_width()
+        se = self.effectiveplate_width()[0]
         zp = member.get_cross_section_centroid(plate_thickness=thickness/1000, plate_width=se/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
         Iy = member.get_moment_of_intertia(plate_thickness=thickness/1000, plate_width=se/1000) * 1000**4
         ie = 0.0001 if As + se * thickness == 0 else math.sqrt(Iy / (As + se * thickness))
