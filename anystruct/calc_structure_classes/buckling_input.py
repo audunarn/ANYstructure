@@ -336,7 +336,7 @@ class BucklingInput(BaseModel):
         return derived_stress_values
 
 
-    def effectiveplate_width(self) -> float:
+    def effectiveplate_width(self) -> tuple[float, float, float, float]:
         E = self.panel.plate.material.young / 1e6
         fy = self.panel.plate.material.strength / 1e6
         thickness = self.panel.plate.th # mm
@@ -372,7 +372,7 @@ class BucklingInput(BaseModel):
         se = spacing * se_div_s
 
         # logger.debug("effective plate width: %s", se)
-        return se
+        return se, Cxs, Cys, lambda_p
 
 
     def red_prop(self, stiffener_or_girder: str) -> dict:
@@ -421,6 +421,8 @@ class BucklingInput(BaseModel):
 
 
     def fET(self, lT, stiffener_or_girder: str) -> float:
+        # it looks like this function gets called twice.
+        # should fix this for performance reasons
         if stiffener_or_girder.strip().lower() == "stiffener":
             assert self.panel.stiffener is not None
             member: Stiffener = self.panel.stiffener
@@ -479,7 +481,7 @@ class BucklingInput(BaseModel):
         else:
             fET = 0.001
 
-        logger.debug("7.5 Characteristic buckling")
+        logger.debug("Section 7.5 Characteristic buckling")
         logger.debug(f"fEpt: {fEpt} fEpy: {fEpy} fEpx: {fEpx} c: {c} sxsd: {sxsd} sysd: {sysd} sjSd: {sjSd} tsd: {taud_Sd}")
         logger.debug(f"lambda_e: {lambda_e} fep: {fep} nu: {nu} C: {C} beta: {beta} lT: {lT} fET: {fET}")
 

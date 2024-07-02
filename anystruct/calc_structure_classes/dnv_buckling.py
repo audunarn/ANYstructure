@@ -188,7 +188,8 @@ class DNVBuckling(BaseModel):
         else:
             uf_lat_load_pl_press = 9 if psd_max_press < 0 else abs(psd / psd_max_press)
 
-        logger.debug("psi_x: %s psi_y: %s sjsd: %s psd: %s", psi_x, psi_y, sjsd, psd)
+        logger.debug("Section 5:")
+        logger.debug(f"psi_x: {psi_x} psi_y: {psi_y} sjsd: {sjsd} psd: {psd}")
         logger.debug("uf_lat_load_pl_press: %s", uf_lat_load_pl_press)
 
         unstf_pl_data['UF Pnt. 5  Lateral loaded plates'] = uf_lat_load_pl_press
@@ -220,7 +221,8 @@ class DNVBuckling(BaseModel):
         uf_unstf_pl_long_stress = 0 if sxRd == 0 else abs(sxsd / sxRd)
         unstf_pl_data['UF Longitudinal stress'] = uf_unstf_pl_long_stress
         
-        logger.debug("Section 6.2 & 6.6: sigma2/sigma1: %s ksigma: %s lambda_p: %s Cx: %s sxRd: %s", shear_ratio_long, ksigma, lambda_p, Cx, sxRd)
+        logger.debug("Section 6.2 & 6.6:" )
+        logger.debug(f"sigma2/sigma1: {shear_ratio_long} ksigma: {ksigma} lambda_p: {lambda_p} Cx: {Cx} sxRd: {sxRd}")
         logger.debug("uf_unstf_pl_long_stress: %s", uf_unstf_pl_long_stress)
 
         #6.3 & 6.8 Transverse stresses:
@@ -248,7 +250,8 @@ class DNVBuckling(BaseModel):
 
         unstf_pl_data['UF transverse stresses'] = uf_unstf_pl_trans_stress
         
-        logger.debug("Section 6.3: ha: %s kp: %s lambda_c: %s mu: %s kappa: %s", ha, kp, lambda_c, mu, kappa)
+        logger.debug("Section 6.3:")
+        logger.debug(f"ha: {ha} kp: {kp} lambda_c: {lambda_c} mu: {mu} kappa: {kappa}")
         logger.debug("uf_unstf_pl_trans_stress: %s", uf_unstf_pl_trans_stress)
 
         #6.4  Shear stress
@@ -269,7 +272,8 @@ class DNVBuckling(BaseModel):
         uf_unstf_pl_shear_stress = 0 if tauRd == 0 else tsd / tauRd
         unstf_pl_data['UF Shear stresses'] = uf_unstf_pl_shear_stress
         
-        logger.debug("Section 6.4: kl: %s lambda_w: %s Ctau: %s tauRd: %s", kl, lambda_w, Ctau, tauRd)
+        logger.debug("Section 6.4:")
+        logger.debug(f"kl: {kl} lambda_w: {lambda_w} Ctau: {Ctau} tauRd: {tauRd}")
         logger.debug("uf_unstf_pl_shear_stress: %s", uf_unstf_pl_shear_stress)
 
         #6.5  Combined stresses
@@ -302,7 +306,8 @@ class DNVBuckling(BaseModel):
         uf_unstf_pl_comb_stress = comb_req
         unstf_pl_data['UF Combined stresses'] = uf_unstf_pl_comb_stress
         
-        logger.debug("Section 6.5: lambda_w: %s Ctaue: %s tauRd_comb: %s ci: %s syRd_comb: %s", lambda_w, Ctaue, tauRd_comb, ci, syRd_comb)
+        logger.debug("Section 6.5:")
+        logger.debug(f"lambda_w: {lambda_w} Ctaue: {Ctaue} tauRd_comb: {tauRd_comb} ci: {ci} syRd_comb: {syRd_comb}")
         logger.debug("uf_unstf_pl_comb_stress: %s", uf_unstf_pl_comb_stress)
 
         return unstf_pl_data
@@ -348,7 +353,7 @@ class DNVBuckling(BaseModel):
 
         #Pnt.7:  Buckling of stiffened plates
         # 7.2  Forces in idealised stiffened plate
-        se = self.buckling_input.effectiveplate_width()
+        se, Cxs, Cys, lambda_p = self.buckling_input.effectiveplate_width()
         Iy = Is = self.buckling_input.panel.stiffener.get_moment_of_intertia(plate_thickness=thickness/1000, plate_width=se/1000) * 1000**4
 
         kc = 0 if thickness * spacing == 0 else 2 * (1 + math.sqrt(1 + 10.9 * Is / (math.pow(thickness, 3) * spacing)))
@@ -459,27 +464,27 @@ class DNVBuckling(BaseModel):
         tau_Rds = tau_crs / gammaM
         tau_Rd = min([tau_Rdy,tau_Rdl,tau_Rds])
 
-        logger.debug("Stiffener properties")
-        logger.debug("Area stiffener: %s", self.buckling_input.panel.stiffener.As)
-        logger.debug("zp: %s Zt: %s Iy: %s Wes %s Wep: %s Reduced properties used: %s", zp, zt, Iy, Wes, Wep, reduced_properties_used)
+        logger.debug("Section Stiffener properties")
+        logger.debug(f"Area stiffener: {self.buckling_input.panel.stiffener.As}")
+        logger.debug(f"zp: {zp} Zt: {zt} Iy: {Iy} Wes: {Wes} Wep: {Wep} Reduced properties used: {reduced_properties_used}")
 
-        logger.debug("7.2 Forces in the idealised stiffened plate")
-        logger.debug("kc: %s mc: %s Wes: %s stress_ratio_trans %s C0: %s P0: %s", kc, mc, Wes, stress_ratio_trans, Co, Po)
-        logger.debug("qsdplate_side %s qsd_stf_side: %s kl: %s tau_crl: %s kg: %s tau_crg: %s", qsdplate_side, qsd_stf_side, kl, tau_crl, kg, tau_crg)
-        logger.debug("NSd: %s", NSd)
+        logger.debug("Section 7.2 Forces in the idealised stiffened plate")
+        logger.debug(f"sxsd: {sxsd} sysd: {sysd} sy1sd: {sy1sd} stress_ratio_trans: {stress_ratio_trans}")
+        logger.debug(f"kc: {kc} mc: {mc} Wes: {Wes} stress_ratio_trans: {stress_ratio_trans} C0: {Co} P0: {Po}")
+        logger.debug(f"qsdplate_side: {qsdplate_side} qsd_stf_side: {qsd_stf_side} kl: {kl} tau_crl: {tau_crl} kg: {kg} tau_crg: {tau_crg}")
 
-        logger.debug("7.3 Effective plate width")
-        logger.debug("se: %s", se)
+        logger.debug("Section 7.3 Effective plate width")
+        logger.debug(f"se: {se} Cxs: {Cxs} Cys: {Cys} lambda_p: {lambda_p}")
 
-        logger.debug("7.4 Resistance between stiffeners")
-        logger.debug("ksp: %s tau_Rd: %s", ksp, tau_Rd)
+        logger.debug("Section 7.4 Resistance between stiffeners")
+        logger.debug(f"ksp: {ksp} tau_sd_7_4: {tau_sd_7_4}")
 
-        logger.debug("7.6 Resistance of stiffened panels to shear stresses")
-        logger.debug("Ip: %s tau_crs: %s tau_Rds: %s tau_Rdy: %s", Ip, tau_crs, tau_Rds, tau_Rdy)
+        logger.debug("Section 7.6 Resistance of stiffened panels to shear stresses")
+        logger.debug(f"Ip: {Ip} tau_crs: {tau_crs} tau_Rds: {tau_Rds} tau_Rdy: {tau_Rdy} tau_Rdl: {tau_Rdl} tau_Rd: {tau_Rd}")
 
-        logger.debug("sxsd: %s sysd: %s sy1sd: %s tau_sd_7_4 %s shear_ratio_trans: %s", sxsd, sysd, sy1sd, tau_sd_7_4, stress_ratio_trans)
-        logger.debug("ie %s Ae %s", ie, Ae)
-        logger.debug("Ne: %s MpRd: %s MstRd: %s Ms1Rd: %s Ms2Rd: %s NkpRd: %s NksRd: %s NRd: %s", Ne, MpRd, MstRd, Ms1Rd, Ms2Rd, NkpRd, NksRd, NRd)
+        logger.debug("Section 7.7 Interaction formulas for axial compression and lateral pressure")
+        logger.debug(f"ie: {ie} Ae: {Ae}")
+        logger.debug(f"NSd: {NSd} Ne: {Ne} MpRd: {MpRd} MstRd: {MstRd} Ms1Rd: {Ms1Rd} Ms2Rd: {Ms2Rd} NkpRd: {NkpRd} NksRd: {NksRd} NRd: {NRd}")
 
         # 7.7 Interaction formulas for axial compression and lateral pressure
         u = 0 if all([tsd > (tau_crl / gammaM), self.buckling_input.tension_field_action == 'allowed']) else math.pow(tsd / tau_Rd, 2)
@@ -507,7 +512,7 @@ class DNVBuckling(BaseModel):
 
             uf_max_simp_stf = max([0, uf_7_62, uf_7_63]) if not test_qsd_l else max([0, uf_7_60, uf_7_61])
             stf_pnl_data['UF simply supported stf side'] = uf_max_simp_stf
-            logger.debug("uf_7_59: %s uf_7_60: %s uf_7_61: %s uf_7_62 %s uf_7_63: %s uf_7_64: %s u: %s z*: %s", uf_7_58, uf_7_59, uf_7_60, uf_7_61, uf_7_62, uf_7_63, u, zstar)
+            logger.debug(f"uf_7_59: {uf_7_58} uf_7_60: {uf_7_59} uf_7_61: {uf_7_60} uf_7_62: {uf_7_61} uf_7_63: {uf_7_62} uf_7_64: {uf_7_63} u: {u} z*: {zstar}")
         elif self.buckling_input.panel.stiffener_end_support == "continuous":
             stf_pnl_data['UF simply supported stf side'] = 0
             stf_pnl_data['UF simply supported plate side'] = 0
@@ -518,7 +523,7 @@ class DNVBuckling(BaseModel):
             M1Sd_stf = abs(qsd_stf_side) * math.pow(length, 2) / self.buckling_input.calc_props.km3
             M2Sd_stf = abs(qsd_stf_side) * math.pow(length, 2) / self.buckling_input.calc_props.km2
 
-            logger.debug("M1Sd_pl: %s M2Sd_pl: %s M1Sd_stf: %s M2Sd_stf %s", M1Sd_pl, M2Sd_pl, M1Sd_stf, M2Sd_stf)
+            logger.debug("M1Sd_pl: %s M2Sd_pl: %s M1Sd_stf: %s M2Sd_stf: %s", M1Sd_pl, M2Sd_pl, M1Sd_stf, M2Sd_stf)
 
             from scipy.optimize import minimize_scalar
             tolerance: float = (zp + zt) / 1000
@@ -528,7 +533,7 @@ class DNVBuckling(BaseModel):
                 eq7_51 = NSd / NkpRd - 2 * NSd / NRd +(M1Sd_pl - NSd * x) / (MpRd * (1 - NSd / Ne)) + u
                 eq7_52 = NSd / NksRd - 2 * NSd / NRd + (M2Sd_pl + NSd * x) / (MstRd * (1 - NSd / Ne)) + u
                 eq7_53 = NSd / NkpRd + (M2Sd_pl + NSd * x) / (MpRd * (1 - NSd / Ne)) + u
-                if debug: logger.debug("eq7_50: %s eq7_51: %s eq7_52: %s eq7_53 %s z*: %s", eq7_50, eq7_51, eq7_52, eq7_53, x)
+                if debug: logger.debug(f"eq7_50: {eq7_50} eq7_51: {eq7_51} eq7_52: {eq7_52} eq7_53: {eq7_53} z*: {x}")
                 return max(eq7_50, eq7_51, eq7_52, eq7_53)
             res_iter_pl = minimize_scalar(iteration_min_uf_pl_side, method="Bounded", bounds=(-zt+self.buckling_input.panel.stiffener.tf/2,zp), options={'xatol': tolerance})
 
@@ -543,7 +548,7 @@ class DNVBuckling(BaseModel):
                 eq7_55 = NSd / NkpRd + (M1Sd_stf + NSd * x) / (MpRd * (1 - NSd / Ne)) + u
                 eq7_56 = NSd / NksRd + (M2Sd_stf - NSd * x) / (Ms2Rd * (1 - NSd / Ne)) + u
                 eq7_57 = NSd / NkpRd - 2 * NSd / NRd + (M2Sd_stf - NSd * x) / (MpRd * (1 - NSd / Ne)) + u
-                if debug: logger.debug("eq7_54: %s eq7_55: %s eq7_56: %s eq7_57 %s z*: %s", eq7_54, eq7_55, eq7_56, eq7_57, x)
+                if debug: logger.debug(f"eq7_54: {eq7_54} eq7_55: {eq7_55} eq7_56: {eq7_56} eq7_57: {eq7_57} z*: {x}")
                 return max(eq7_54, eq7_55, eq7_56, eq7_57)
 
             res_iter_stf = minimize_scalar(iteration_min_uf_stf_side, method="Bounded", bounds=(-zt+self.buckling_input.panel.stiffener.tf/2,zp), options={'xatol': tolerance})

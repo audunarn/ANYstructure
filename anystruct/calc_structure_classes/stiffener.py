@@ -16,20 +16,16 @@ class Stiffener(BaseModel):
     # flange_eccentricity: float = 0
     material: Material
 
+
     class Config:
         # Pydantic configuration, such that no extra fields (eg attributes) are allowed
         extra = 'forbid'
+
 
     @field_validator('type')
     def check_type(cls, value):
         if value.upper() not in ['FB', 'T', 'L', 'BULB', 'HP', 'HP-BULB', 'HP-PROFILE', 'L-BULB']:
             raise ValueError('Invalid stiffener type. Should be either "FB", "T", "L", "BULB", "HP", "HP-BULB", "HP-PROFILE", or "L-BULB"')
-        return value.upper()
-
-    @field_validator('fabrication_method')
-    def check_fabrication_method(cls, value):
-        if value.upper() not in ['welded', 'rolled']:
-            raise ValueError('Invalid fabrication method. Should be either "welded" or "rolled"')
         return value.upper()
 
 
