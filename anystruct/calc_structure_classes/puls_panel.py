@@ -7,7 +7,7 @@ from typing import Optional, Dict
 
 import anystruct.excel_inteface as pulsxl
 import numpy as np
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 try:
     import anystruct.helper as hlp
@@ -27,9 +27,7 @@ class PULSpanel(BaseModel):
     puls_sheet_location: Optional[str] = None
     all_uf: dict = {'buckling': list(), 'ultimate': list()}
 
-    class Config:
-        # Pydantic configuration, such that no extra fields (eg attributes) are allowed
-        extra = 'forbid'
+    model_config = ConfigDict(extra='forbid')
 
     def set_run_results(self, val):
         self.run_results = val

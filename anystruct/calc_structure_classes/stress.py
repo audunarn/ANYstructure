@@ -1,5 +1,4 @@
-from pydantic import BaseModel
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class Stress(BaseModel):
@@ -37,9 +36,7 @@ class Stress(BaseModel):
     sigma_y2: float
     tauxy: float
 
-    class Config:
-        # Pydantic configuration, such that no extra fields (eg attributes) are allowed
-        extra = 'forbid'
+    model_config = ConfigDict(extra='forbid')
 
     def get_sigma_y1(self) -> float:
         """

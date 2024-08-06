@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 import math
 from typing import Optional, Dict, Any
 import logging
@@ -24,9 +24,7 @@ class DNVBuckling(BaseModel):
     buckling_input: BucklingInput
     calculation_domain: Optional[str]
 
-    class Config:
-        # Pydantic configuration, such that no extra fields (eg attributes) are allowed
-        extra = 'forbid'
+    model_config = ConfigDict(extra='forbid')
 
     def get_method(self):
         gird_opt = ['Stf. pl. effective against sigma y', 'All sigma y to girder']
@@ -871,16 +869,16 @@ class DNVBuckling(BaseModel):
         
         if self.buckling_input.panel.stiffener is not None:
             max_web_stf, max_flange_stf = self.local_buckling(optimizing)['Stiffener']
-            stf_uc_web = self.buckling_input.panel.stiffener.web_height / max_web_stf
-            stf_uc_flange = self.buckling_input.panel.stiffener.flange_width / max_flange_stf
+            stf_uc_web = self.buckling_input.panel.stiffener.web_height / max_web_stf if max_web_stf != 0 else 0
+            stf_uc_flange = self.buckling_input.panel.stiffener.flange_width / max_flange_stf if max_flange_stf != 0 else 0
         else:
             stf_uc_web = 0
             stf_uc_flange = 0
 
         if self.buckling_input.panel.girder is not None:
             max_web_grd, max_flange_grd = self.local_buckling(optimizing)['Girder']
-            grd_uc_web = self.buckling_input.panel.girder.web_height / max_web_grd
-            grd_uc_flange = self.buckling_input.panel.girder.flange_width/ max_flange_grd
+            grd_uc_web = self.buckling_input.panel.girder.web_height / max_web_grd if max_web_grd != 0 else 0
+            grd_uc_flange = self.buckling_input.panel.girder.flange_width/ max_flange_grd if max_flange_grd != 0 else 0
         else:
             grd_uc_web = 0
             grd_uc_flange = 0

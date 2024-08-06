@@ -1,7 +1,7 @@
 import math
 from typing import Optional
 
-from pydantic import BaseModel, field_validator, Field
+from pydantic import BaseModel, ConfigDict, field_validator, Field
 
 from .material import Material
 
@@ -17,9 +17,7 @@ class Stiffener(BaseModel):
     material: Material
 
 
-    class Config:
-        # Pydantic configuration, such that no extra fields (eg attributes) are allowed
-        extra = 'forbid'
+    model_config = ConfigDict(extra='forbid')
 
 
     @field_validator('type')

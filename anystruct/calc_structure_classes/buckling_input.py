@@ -2,7 +2,7 @@ import math
 from typing import Optional
 import logging
 
-from pydantic import BaseModel, field_validator, Field
+from pydantic import BaseModel, ConfigDict, field_validator, Field
 
 from .stress import Stress, DerivedStressValues
 from .stiffener import Stiffener
@@ -35,8 +35,7 @@ class BucklingInput(BaseModel):
     calc_props: Stiffened_panel_calc_props = Field(default=Stiffened_panel_calc_props())
     puls_input: Puls = Field(default=Puls())
 
-    class Config:
-        extra = 'forbid'
+    model_config = ConfigDict(extra='forbid')
 
     @field_validator('pressure')
     def check_pressure(cls, value):

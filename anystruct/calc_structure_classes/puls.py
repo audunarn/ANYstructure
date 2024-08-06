@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 class Puls(BaseModel):
     puls_method: int = Field(default=1)
@@ -7,9 +7,7 @@ class Puls(BaseModel):
     puls_sp_or_up: str = Field(default='SP') # still to add patterns for the other options
     puls_up_boundary: str = Field(default='SSSS') # still to add patterns for the other options
 
-    class Config:
-        # Pydantic configuration, such that no extra fields (eg attributes) are allowed
-        extra = 'forbid'
+    model_config = ConfigDict(extra='forbid')
 
     def get_puls_method(self):
         return self.puls_method

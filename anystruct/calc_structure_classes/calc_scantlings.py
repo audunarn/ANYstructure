@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 import math
 from typing import Union
 
@@ -18,9 +18,7 @@ class CalcScantlings(BaseModel):
     category: str
     need_recalc: bool
 
-    class Config:
-        # Pydantic configuration, such that no extra fields (eg attributes) are allowed
-        extra = 'forbid'
+    model_config = ConfigDict(extra='forbid')
 
 
     def get_results_for_report(self, lat_press: float=0) -> str:

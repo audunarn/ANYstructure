@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from .material import Material
 
@@ -9,9 +9,7 @@ class Plate(BaseModel):
     thickness: float
     material: Material
 
-    class Config:
-        # Pydantic configuration, such that no extra fields (eg attributes) are allowed
-        extra = 'forbid'
+    model_config = ConfigDict(extra='forbid')
 
     def ToShortString(self) -> str:
         return 'lxb' + str(self.span) + 'x' + str(self.spacing)

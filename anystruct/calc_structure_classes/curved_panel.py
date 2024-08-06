@@ -1,7 +1,7 @@
 import math
 from typing import Optional
 
-from pydantic import BaseModel, field_validator, Field
+from pydantic import BaseModel, ConfigDict, field_validator, Field
 
 from .material import Material
 
@@ -38,9 +38,7 @@ class CurvedPanel(BaseModel):
     cone_r2: Optional[float] = Field(default=None)
     cone_alpha: Optional[float] = Field(default=None)
 
-    class Config:
-        # Pydantic configuration, such that no extra fields (eg attributes) are allowed
-        extra = 'forbid'
+    model_config = ConfigDict(extra='forbid')
 
     # check that the thickness is not zero and positive
     @field_validator('thickness')

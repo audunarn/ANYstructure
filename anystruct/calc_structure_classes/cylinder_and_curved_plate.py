@@ -3,7 +3,7 @@ import logging
 from typing import Optional, List, Dict, Union, Any
 from enum import IntEnum
 
-from pydantic import BaseModel, model_validator, field_validator, PrivateAttr, Field
+from pydantic import BaseModel, ConfigDict, model_validator, field_validator, PrivateAttr, Field
 import numpy as np
 
 from .curved_panel import CurvedPanel
@@ -36,9 +36,7 @@ class ShellStressAndPressure(BaseModel):
     # Should pSd be removed as it is a force? Then shSd is simply the hoop stress.
     shSd_add: float = 0 # additional hoop stress
 
-    class Config:
-        # Pydantic configuration, such that no extra fields (eg attributes) are allowed
-        extra = 'forbid'
+    model_config = ConfigDict(extra='forbid')
 
     # this is a pydantic feature that allows us to run some code after the initialization of the class
     def __post_init__(self):
@@ -115,9 +113,7 @@ class TorsionalProperties(BaseModel):
     lambda_T: float
     fT: float
 
-    class Config:
-        # Pydantic configuration, such that no extra fields (eg attributes) are allowed
-        extra = 'forbid'
+    model_config = ConfigDict(extra='forbid')
 
 
 class CylindricalShell(BaseModel):
@@ -142,9 +138,7 @@ class CylindricalShell(BaseModel):
     end_cap_pressure_included: bool = Field(default=False) # default is conservative
     uls_or_als: Optional[str] = Field(default='ULS', pattern='(?i)^(cold ULS|ALS)$') # or 'ALS' ULS is conservative
 
-    class Config:
-        # Pydantic configuration, such that no extra fields (eg attributes) are allowed
-        extra = 'forbid'
+    model_config = ConfigDict(extra='forbid')
 
     # Lots of checks to be done here
     # 1. If a ring stiffener is provided:

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator, Field
+from pydantic import BaseModel, ConfigDict, field_validator, Field
 import math
 from typing import Optional, Union
 
@@ -28,21 +28,19 @@ class StiffenedPanel(BaseModel):
     #         assert self.girder_length is not None, "When a girder is defined, also the girder length needs to be defined"
     #         assert self.girder_panel_length is not None, "When a girder is defined, also the panel length needs to be defined"
 
-    class Config:
-        # Pydantic configuration, such that no extra fields (eg attributes) are allowed
-        extra = 'forbid'
+    model_config = ConfigDict(extra='forbid')
 
     @field_validator('stiffener_end_support')
     def check_stf_end_supp(cls, v):
         if v is not None:
             assert v.lower() in ["continuous", "sniped"], 'stiffener_end_support should be either "continuous" or "sniped"'
-        return v
+        return v.lower()
     
     @field_validator('girder_end_support')
     def check_grd_end_supp(cls, v):
         if v is not None:
             assert v.lower() in ["continuous", "sniped"], 'girder_end_support should be either "continuous" or "sniped"'
-        return v
+        return v.lower()
 
     # TODO: add validation for girder_length and girder_panel_length
     # girder length, not required when no stiffener present.
@@ -252,9 +250,7 @@ class Stiffened_panel_calc_props(BaseModel):
     buckling_length_factor_girder: float = Field(default=1)
     flip_l_s: bool = Field(default=False)
 
-    class Config:
-        # Pydantic configuration, such that no extra fields (eg attributes) are allowed
-        extra = 'forbid'
+    model_config = ConfigDict(extra='forbid')
 
     def get_structure_types(self):
         return self.structure_types

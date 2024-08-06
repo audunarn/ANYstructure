@@ -1,7 +1,7 @@
 import math
 from typing import List, Tuple
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from scipy.special import gammaln
 from scipy.stats import gamma as gammadist
 
@@ -28,9 +28,7 @@ class FatigueInput(BaseModel):
     acc: Tuple[float]
     dff: float = Field(default=2.0)
 
-    class Config:
-        # Pydantic configuration, such that no extra fields (eg attributes) are allowed
-        extra = 'forbid'
+    model_config = ConfigDict(extra='forbid')
 
 class CalcFatigue(BaseModel):
     '''
@@ -41,9 +39,7 @@ class CalcFatigue(BaseModel):
     panel: StiffenedPanel
     fatigue_data: FatigueInput
 
-    class Config:
-        # Pydantic configuration, such that no extra fields (eg attributes) are allowed
-        extra = 'forbid'
+    model_config = ConfigDict(extra='forbid')
 
     def get_sn_curve(self):
         return self.fatigue_data.sn_curve
