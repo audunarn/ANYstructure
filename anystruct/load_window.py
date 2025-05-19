@@ -255,11 +255,11 @@ class CreateLoadWindow():
         self._ent_assosiate_load.place(relx=0.85,rely=0.21)
 
         # --- Button to assosiate selecte lines to load
-        tk.Button(self._frame, text = 'Press to add selected lines to selecte load',
+        tk.Button(self._frame, text = 'Press to add selected lines to selected load',
                   command=self.append_line_to_load, fg = 'yellow', bg='green',font='Verdana 9 bold')\
             .place(relx=0.32,rely=0.215)
-        tk.Label(self._frame,text='Select a load in "3." to and then choose lines to apply to load\n '
-                                 '(select by clicking lines). Alterntively define manually ------>')\
+        tk.Label(self._frame,text='Select a load in "3." and then choose lines to apply to load\n '
+                                 '(select by clicking lines). Alternatively define manually ------>')\
             .place(relx=0.56,rely=0.205)
 
         # --- delete a created load ---
