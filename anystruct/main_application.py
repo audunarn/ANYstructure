@@ -17,6 +17,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics._pairwise_distances_reduction import _datasets_pair,_middle_term_computer
 
+
 try:
     from anystruct.calc_structure import *
     from anystruct.calc_loads import *
@@ -95,9 +96,11 @@ class Application():
         
         # vista theme not available in linux
         try:
-            self._style.theme_use('ITFT1')
-            #self._style.theme_use('vista')
+            #self._style.theme_use('xpnative')
+            #self._style.theme_use('ITFT1')
+            self._style.theme_use('vista')
         except:
+            print('Alternative theme')
             # available themes in linux:
             # ('clam', 'alt', 'default', 'classic')
             self._style.theme_use('clam')
@@ -213,7 +216,7 @@ class Application():
 
         #base_mult = 1.2
         #base_canvas_dim = [int(1000 * base_mult),int(720*base_mult)]  #do not modify this, sets the "orignal" canvas dimensions.
-        base_canvas_dim = [1000,720]  #do not modify this, sets the "orignal" canvas dimensions.
+        base_canvas_dim = (1000,720)  #do not modify this, sets the "orignal" canvas dimensions.
 
         self._canvas_dim = [int(base_canvas_dim[0] *1),
                            int(base_canvas_dim[1] *1)]

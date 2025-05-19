@@ -1,7 +1,7 @@
 from scipy.special import gammaln
 from scipy.stats import gamma as gammadist
 import numpy as np
-from scipy.integrate import simps
+from scipy.integrate import simpson
 import os, time, datetime, json, random, math
 from scipy.optimize import minimize
 
@@ -622,7 +622,7 @@ class Structure():
                 # Integrate to find moment of inertia
                 integrand = lambda x: self._integrand(x, c, r)
                 y = self._distance(x, c, r)
-                I = simps(y * integrand(x), x)
+                I = simpson(y * integrand(x), x)
 
                 return I
 

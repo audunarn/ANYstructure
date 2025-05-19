@@ -1,4 +1,5 @@
 import numpy as np
+import copy
 # Not used in releases
 
 from api import CylStru
@@ -6,8 +7,20 @@ import pandas as pd
 
 def get_stresses(file = 'C:\DNV\RTHfisk\stress_results.txt'):
     if 'txt' in file:
-        pd_data = pd.read_csv(file,header=0, sep=r'\t', engine='python', na_values = 'N/A')
+        nas = ['',]
+        spaces = ''
+        for val in range(20):
+            spaces += ' '
+            nas.append(spaces)
+        nas_final = list()
+        for val in nas:
+            nas_final.append(val + 'N/A')
+
+        pd_data = pd.read_csv(file,header=0, sep=r'\t', engine='python',
+                              na_values = nas_final)
         pd_data.columns = [val.strip() for val in pd_data.columns.values]
+        pd.set_option('display.max_columns', None)
+        print(pd_data)
     else:
         pd_data = pd.read_excel(file)
     # for val in pd_data.iterrows():
@@ -74,18 +87,25 @@ def read_generated_csv(file = r'C:\DNV\RTHfisk\|.csv'):
 
 def calc_cyl_buckling_from_folder(folder, files, add_to_file_name: str = ''):
     reslist = list()
+    reslist_puls = list()
     for file in files:
         stress_file = get_stresses(folder + file)
         for stress in stress_file.iterrows():
-            this_result = calc_buckling_single(stress)
-            element = this_result[8]
-            this_result.insert(0, file)
-            this_result.insert(0, str(element)+ '_' + file)
-            reslist.append(tuple(this_result))
+            if not np.isnan(stress[1].Thickness):
+                this_result = calc_buckling_single(stress)
+                element = this_result[8]
+                this_result.insert(0, file)
+                this_result.insert(0, str(element)+ '_' + file)
+                reslist.append(tuple(this_result))
 
     all_res = pd.DataFrame(reslist, columns=['id', 'File', 'ScanIndex', 'x', 'y', 'z', 'thk', 'SIGMX', 'SIGMY',
                                              'TAUMXY', 'Element', 'Unstiffened shell', 'Longitudinal stiffened shell',
                                              'Ring stiffened shell', 'Max UF'])
+    all_res['PULS SIGMX'] = -1*all_res['SIGMX'].values/1e6
+    all_res['PULS SIGMY1'] = -1 * all_res['SIGMY'].values / 1e6
+    all_res['PULS SIGMY2'] = -1 * all_res['SIGMY'].values / 1e6
+    all_res['PULS TAUMXY'] = -1 * all_res['TAUMXY'].values / 1e6
+    all_res['PULS THICKNESS'] = all_res['thk'].values * 1000
     all_res.to_excel(folder + 'buckling_results' + add_to_file_name+'.xlsx')
 
 
@@ -94,7 +114,7 @@ if __name__ == '__main__':
     # stresses = get_stresses()
     # buckling = calc_buckling(stresses=stresses)
 
-    folder = 'C:\DNV\Workspaces\\OV15MW_Disc25m\\GenieeGen2_Det_NoCone\\Analysis_max_min_1\\'
+    folder = 'C:\DNV\Workspaces\\OV15MW_Disc25m\\OV_Octa_Gen2_SaAr_NoCo_D1\\Analysis_max_min_1\\'
     files = ['Dstress_TAUXY_absmax', 'Dstress_SIGMY_max', 'Dstress_SIGMY_min', 'Dstress_SIGMX_max', 'Dstress_SIGMX_min']
     files = [file + '.txt' for file in files]
-    calc_cyl_buckling_from_folder(folder, files, add_to_file_name='_bending')
+    calc_cyl_buckling_from_folder(folder, files, add_to_file_name='_1')
