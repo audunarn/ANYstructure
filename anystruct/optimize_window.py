@@ -1061,7 +1061,7 @@ class CreateOptimizeWindow():
             # TODO for both stiffeners and girders
 
             self._initial_calc_obj.Stiffener.t = self._initial_calc_obj.Plate.t
-            self._initial_calc_obj.Stiffener.s = self._initial_calc_obj.Plate.s
+            self._initial_calc_obj.Stiffener.s = self._initial_calc_obj.Plate.spacing
             predefined_stiffener_iter = hlp.helper_read_section_file(files=list(open_files),
                                                                      obj=self._initial_calc_obj.Stiffener)
         if predefined_stiffener_iter == []:
