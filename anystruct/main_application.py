@@ -7254,7 +7254,7 @@ class Application():
         weight = np.array(self._weight_logger['new structure']['weight'])/\
                  max(self._weight_logger['new structure']['weight'])
         time_stamp = np.array(self._weight_logger['new structure']['time'])
-        time_stamp = [mdate.epoch2num(val) for val in time_stamp]
+        time_stamp = [mdate.date2num(val) for val in time_stamp]
         structure = self.get_unique_plates_and_beams()
 
         hlp.plot_weights(time_stamp=time_stamp, cog=cog,structure=structure,weight=weight)

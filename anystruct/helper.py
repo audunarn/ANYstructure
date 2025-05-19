@@ -449,7 +449,7 @@ def plot_weights(time_stamp = None, cog = None, structure = None, weight = None)
     fig = plt.figure(figsize=(14, 8))
     gs = GridSpec(2, 3, figure=fig)
 
-    time_stamp = [mdate.epoch2num(val) for val in time_stamp]
+    time_stamp = [mdate.date2num(val) for val in time_stamp]
 
     ax3 = plt.subplot(gs[1, 0:2])
     plt.plot(time_stamp, weight, 'tab:green')
