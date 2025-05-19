@@ -208,7 +208,7 @@ class LetterMaker(object):
                                         '  sigma_y2 = '+ str(struc_obj.Plate.sigma_y2) +
                                         '  tau_xy = ' + str(struc_obj.Plate.tau_xy))
                     textobject.textLine('ULS max pressure for line: '+ str(round(pressure,2)*1000)
-                                        + ' [kPa]'+'      Pressure applied at: '+struc_obj.overpressure_side)
+                                        + ' []'+'      Pressure applied at: '+struc_obj.overpressure_side)
 
                     if fo is not None:
                         textobject.textLine('Fatigue pressure [Pa]: '+' p_int:'+' loaded/ballast/part = '
