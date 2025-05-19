@@ -195,7 +195,7 @@ class CreateGridWindow():
         if animate:
             all_grids.append(self._grid.get_matrix())
 
-        barriers_where = np.where(self._grid.cells.reshape((1,np.product(self._grid.cells.shape))) == -1)
+        barriers_where = np.where(self._grid.cells.reshape((1,np.prod(self._grid.cells.shape))) == -1)
         barrier_comp_count = dict()
 
         for startrow in range(0, self._child_dimensions[1], 20):
