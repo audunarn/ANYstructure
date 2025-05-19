@@ -1484,7 +1484,7 @@ def plot_optimization_results(results, multiple = False):
                              'girder width', 'stiffener type', 'uf weight', 'uf sec mod', 'uf loc stf buc',
                              'uf buckling', 'uf min pl', 'uf shear', 'uf fatigue', 'uf slamming'])
 
-    for check_ok, check, section, ufres in results[4]:
+    for check_ok, check, section, ufres in results[3]:
         check_ok_array.append(check_ok)
         check_array.append(check)
         section_array.append(section)
