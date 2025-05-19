@@ -900,7 +900,7 @@ def create_new_calc_obj(init_obj,x, fat_dict=None, fdwn = 1, fup = 0.5):
         except IndexError:
             stf_type = init_obj.get_stiffener_type()
 
-        main_dict = {'mat_yield': [init_obj.get_fy(), 'Pa'],'mat_factor': [init_obj.Plate.mat_factor, ''],
+        main_dict = {'mat_yield': [init_obj.get_fy(), 'Pa'],'mat_factor': [init_obj.mat_factor, ''],
                      'span': [init_obj.span, 'm'],
                      'spacing': [x[0], 'm'],'plate_thk': [x[1], 'm'],'stf_web_height':[ x[2], 'm'],
                      'stf_web_thk': [x[3], 'm'],'stf_flange_width': [x[4], 'm'],
