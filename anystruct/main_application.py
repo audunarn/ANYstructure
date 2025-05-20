@@ -5351,8 +5351,8 @@ class Application():
                     geometry = self._shell_geometries_map[self._new_calculation_domain.get()]
 
                     if self._new_shell_stress_or_force.get() == 1:
-                        forces = [self._new_shell_Nsd.get(), self._new_shell_Msd.get(), \
-                                 self._new_shell_Tsd.get(), self._new_shell_Qsd.get()]
+                        forces = [self._new_shell_Nsd.get(), self._new_shell_Msd.get(),
+                                  self._new_shell_Tsd.get(), self._new_shell_Qsd.get()]
                         sasd, smsd, tTsd, tQsd, shsd = hlp.helper_cylinder_stress_to_force_to_stress(
                             stresses=None, forces=forces,  geometry=geometry, shell_t=self._new_shell_thk.get(),
                             shell_radius=self._new_shell_radius.get(), shell_spacing=self._new_stf_spacing.get(),
