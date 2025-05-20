@@ -3424,6 +3424,8 @@ class Application():
                     cyl_thickness = round(cyl_obj.ShellObj.thk * 1000, 2)
                     if cyl_obj.LongStfObj is not None:
                         cyl_long_str = cyl_obj.LongStfObj.get_beam_string()
+                    else:
+                        cyl_long_str = None
                     # cyl_ring_stf = cyl_obj.LongStfObj.get_beam_string()
                     # cyl_heavy_ring = cyl_obj.LongStfObj.get_beam_string()
                     # cyl_span = round(cyl_obj.ShellObj.dist_between_rings, 1)
@@ -3447,7 +3449,6 @@ class Application():
                                          cyl_results['Heavy ring frame'],2)])
                 else:
                     cyl_uf = 0
-                    cyl_long_str = ' '
                     cyl_long_str = None
                     cyl_thickness = None
 
