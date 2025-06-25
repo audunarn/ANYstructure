@@ -40,12 +40,13 @@ class CurvedPanel(BaseModel):
 
     model_config = ConfigDict(extra='forbid')
 
-    # check that the thickness is not zero and positive
-    @field_validator('thickness')
-    def check_thickness(cls, value):
-        if value <= 0:
-            raise ValueError('thickness must be positive')
-        return value
+    # this check give issues when performing FEA buckling calculations (as the zero thickness is a flag to read thickness from the FEA data)
+    # # check that the thickness is not zero and positive
+    # @field_validator('thickness')
+    # def check_thickness(cls, value):
+    #     if value <= 0:
+    #         raise ValueError('thickness must be positive')
+    #     return value
     
     @field_validator('radius')
     def check_radius(cls, value):

@@ -837,24 +837,23 @@ class DNVBuckling(BaseModel):
         Returns the maximum values for web height and flange width.
         '''
 
-        # this should be replaced with a unity check, iso returning the max allowable values.
-        # a separate function could return these.
+        # the calculation of local buckling should move to the stiffener class.
         
         if self.buckling_input.panel.stiffener is not None:
             fy = self.buckling_input.panel.stiffener.material.strength
             max_web_stf = 42 * self.buckling_input.panel.stiffener.tw * math.sqrt(235 / fy) if self.buckling_input.panel.stiffener.type != 'FB' else 0
             max_flange_stf = (14 if self.buckling_input.panel.stiffener.fabrication_method == 'welded' else 15) * self.buckling_input.panel.stiffener.tf * math.sqrt(235 / fy)
         else:
-            max_web_stf = 0
-            max_flange_stf = 0
+            max_web_stf = 0.0
+            max_flange_stf = 0.0
 
         if self.buckling_input.panel.girder is not None:
             fy = self.buckling_input.panel.girder.material.strength
             max_webgirder = 42 * self.buckling_input.panel.girder.tw * math.sqrt(235 / fy) if self.buckling_input.panel.girder.type != 'FB' else 0
             max_flangegirder = (14 if self.buckling_input.panel.girder.fabrication_method == 'welded' else 15) * self.buckling_input.panel.girder.tf * math.sqrt(235 / fy)
         else:
-            max_webgirder = 0
-            max_flangegirder = 0
+            max_webgirder = 0.0
+            max_flangegirder = 0.0
 
         return {'Stiffener': [max_web_stf, max_flange_stf], 'Girder': [max_webgirder, max_flangegirder]}
     
