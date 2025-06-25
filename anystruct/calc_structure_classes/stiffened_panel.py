@@ -34,13 +34,15 @@ class StiffenedPanel(BaseModel):
     def check_stf_end_supp(cls, v):
         if v is not None:
             assert v.lower() in ["continuous", "sniped"], 'stiffener_end_support should be either "continuous" or "sniped"'
-        return v.lower()
+            return v.lower()
+        return v
     
     @field_validator('girder_end_support')
     def check_grd_end_supp(cls, v):
         if v is not None:
             assert v.lower() in ["continuous", "sniped"], 'girder_end_support should be either "continuous" or "sniped"'
-        return v.lower()
+            return v.lower()
+        return v
 
     # TODO: add validation for girder_length and girder_panel_length
     # girder length, not required when no stiffener present.
