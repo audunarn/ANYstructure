@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, field_validator, Field
 import math
-from typing import Optional, Union
+from typing import Optional, Union, List, Dict
 
 from .plate import Plate
 from .stiffener import Stiffener
@@ -245,7 +245,7 @@ class Stiffened_panel_calc_props(BaseModel):
     km2: float = Field(default=24)
     km3: float = Field(default=12)
     structure_type: str = Field(default='BOTTOM')
-    structure_types: str = Field(default='structure_types')
+    structure_types: Dict[str, List[str]] = {} # str = Field(default='structure_types')
     lat_load_factor: float = Field(default=1)
     stress_load_factor: float = Field(default=1)
     buckling_length_factor_stf: float = Field(default=1)

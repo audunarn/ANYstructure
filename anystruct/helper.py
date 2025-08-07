@@ -3,7 +3,11 @@ Helper funations to be used.
 '''
 
 import math, copy, csv, os
+from typing import List, Dict, Any, Union
+
 import numpy as np
+
+from calc_structure_classes import Material, Stiffener
 
 print_it = True
 root_dir = os.path.dirname(os.path.abspath(__file__))
@@ -63,7 +67,7 @@ def helper_dnva_dnvb(line_name_obj, coord, defined_loads, load_condition,
     # calculate the defined loads
     calc_load, load_print, prt_conditions = [], ['',], []
     line_name = line_name_obj[0]
-    structure_type = line_name_obj[1].get_structure_type()
+    structure_type = line_name_obj[1].buckling_input.calc_props.get_structure_type()
     # if line_name_obj[0] == 'line12':
     #     print('Load calculation for '+line_name_obj[0] + ' ' + comb_name+ ' ' + load_condition)
 
@@ -195,7 +199,7 @@ def helper_tank_test(line_name_obj, coord, defined_loads, load_condition,
     calc_load, load_print = [], ['',]
     static_pressure, dynamic_pressure = 0, 0
     line_name = line_name_obj[0]
-    structure_type = line_name_obj[1].get_structure_type()
+    structure_type = line_name_obj[1].buckling_input.calc_props.get_structure_type()
 
     if len(defined_loads) != 0:
         for load in defined_loads:
@@ -264,11 +268,11 @@ def helper_manual(line_name, comb_name,load_factors_all):
                           str(load_factors[2].get()) + ' = '+ str(man_press) +'\n')
     return [man_press, load_print]
 
-def helper_read_section_file(files, obj = None, to_json = False, to_csv = None):
+def helper_read_section_file(files: Union[List[str], str], obj = None, to_json = False, to_csv = None) -> List[Stiffener]:
     ''' Read a xml file. '''
     import json
     from xml.dom import minidom
-    to_return_final, to_return, return_csv = list(),  dict(), list()
+    sections: List[Stiffener] = []
     if type(files) != list:
         files = [files,]
     for file in files:
@@ -282,6 +286,10 @@ def helper_read_section_file(files, obj = None, to_json = False, to_csv = None):
                 if sec_types == []:
                     continue
                 for item, itemdata in zip(sectionlist, sec_type_get):
+                    stf_web_h, stf_web_thk = '', ''
+                    stf_flange_width, stf_flange_thk  = '', ''
+                    stiffener_type = ''
+                    mult = 1 / 1000
                     if sec_type == sec_types[0]:
                         stf_web_h, stf_web_thk = 'h', 'tw'
                         stf_flange_width, stf_flange_thk  = 'bfbot', 'tfbot'
@@ -298,84 +306,57 @@ def helper_read_section_file(files, obj = None, to_json = False, to_csv = None):
                         stiffener_type = 'FB'
                         mult = 1 / 1000
                     section_name = item.getAttribute('name')
-                    to_return[section_name] = {'stf_web_height': [float(itemdata.getAttribute(stf_web_h)) *mult, 'm'],
-                                               'stf_web_thk': [float(itemdata.getAttribute(stf_web_thk)) *mult,'m'],
-                                               'stf_flange_width': [0 if stf_flange_width is None else
-                                               float(itemdata.getAttribute(stf_flange_width)) *mult,'m'],
-                                               'stf_flange_thk': [0 if stf_flange_thk is None else
-                                               float(itemdata.getAttribute(stf_flange_thk)) *mult, 'm'],
-                                               'stf_type': [stiffener_type, '']}
-
-                    return_csv.append([to_return[section_name][var][0] for var in ['stf_web_height', 'stf_web_thk',
-                                                                                   'stf_flange_width', 'stf_flange_thk',
-                                                                                   'stf_type']])
+                    sections.append(Stiffener(type=stiffener_type, 
+                                                        web_height=float(itemdata.getAttribute(stf_web_h)) *mult,
+                                                        web_th=float(itemdata.getAttribute(stf_web_thk)) *mult,
+                                                        flange_width=0 if stf_flange_width is None else
+                                               float(itemdata.getAttribute(stf_flange_width)) *mult,
+                                               flange_th=0 if stf_flange_thk is None else
+                                               float(itemdata.getAttribute(stf_flange_thk)) *mult,
+                                               material=Material(young=206800e6, poisson=0.3, strength=235e6)))
             if to_json:
                 with open('sections.json', 'w') as file:
-                    json.dump(to_return, file)
+                    json.dump(sections, file)
             if to_csv:
                 with open('sections.csv', 'w', newline='') as file:
                     section_writer = csv.writer(file)
-                    for line in return_csv:
-                        section_writer.writerow(line)
+                    for section in sections:
+                        section_writer.writerow(f'{section.web_height}, {section.web_th}, {section.flange_width}, {section.flange_th}, {section.type}')
 
         elif file.endswith('json'):
             with open(file, 'r') as json_file:
-                to_return = json.load(json_file)
+                sections = json.load(json_file)
 
         elif file.endswith('csv'):
             with open(file, 'r') as csv_file:
                 csv_reader = csv.reader(csv_file, delimiter=',')
                 for idx, section in enumerate(csv_reader):
                     if section[4] in ['L-bulb', 'bulb', 'hp']:
-                        to_return[str(idx)] = {'stf_web_height': [float(section[0]) - float(section[3]), 'm'],
-                                               'stf_web_thk': [float(section[1]),'m'],
-                                               'stf_flange_width': [float(section[2]),'m'],
-                                               'stf_flange_thk': [float(section[3]), 'm'],
-                                               'stf_type': [section[4], '']}
-                    else:
-                        to_return[str(idx)] = {'stf_web_height': [float(section[0]), 'm'],
-                                               'stf_web_thk': [float(section[1]),'m'],
-                                               'stf_flange_width': [float(section[2]),'m'],
-                                               'stf_flange_thk': [float(section[3]), 'm'],
-                                               'stf_type': [section[4], '']}
+                        sections.append(Stiffener(type=section[4], 
+                                                        web_height=float(section[0]) - float(section[3]),
+                                                        web_th=float(section[1]),
+                                                        flange_width=float(section[2]),
+                                                        flange_th=float(section[3]),
+                                                        material=Material(young=206800e6, poisson=0.3, strength=235e6)))
 
+                    else:
+                        sections.append(Stiffener(type=section[4], 
+                                                        web_height=float(section[0]),
+                                                        web_th=float(section[1]),
+                                                        flange_width=float(section[2]),
+                                                        flange_th=float(section[3]),
+                                                        material=Material(young=206800e6, poisson=0.3, strength=235e6)))
     if to_json:
         with open('sections.json', 'w') as file:
-            json.dump(to_return, file)
+            json.dump(sections, file)
 
     if to_csv is not None:
         with open(to_csv, 'w', newline = '') as file:
             section_writer = csv.writer(file)
-            for line in return_csv:
-                section_writer.writerow(line)
-    if obj is not None:  # This will return a modified object.
-        if type(obj) is not list:
-            obj = [obj, ]
-            append_list = [[],]
-        else:
-            append_list = [list() for dummy in obj]
-    else:
-        append_list = list()
-
-    for key, value in to_return.items():
-        if obj is not None:  # This will return a modified object.
-            for idx, iter_obj in enumerate(obj):
-                new_obj = copy.deepcopy(iter_obj)
-                new_obj_prop = new_obj.get_structure_prop()
-                for prop_name, prop_val in value.items():
-                    new_obj_prop[prop_name] = prop_val
-                new_obj.set_main_properties(new_obj_prop)
-                append_list[idx].append(new_obj)
-        else:
-            to_return_final.append(value)
-    if len(append_list) == 1:
-        to_return_final = append_list[0]
-    elif len(append_list) == 0:
-        pass
-    elif len(append_list) > 1:
-        to_return_final = append_list
-
-    return to_return_final
+            for section in sections:
+                section_writer.writerow(f'{section.web_height}, {section.web_th}, {section.flange_width}, {section.flange_th}, {section.type}')
+    
+    return sections
 
 def open_example_file(root_path = None):
     import os
@@ -387,16 +368,15 @@ def open_example_file(root_path = None):
 
 def add_new_section(section_list, new_section):
     ''' Checking if a section is already in the list. '''
+    # should improve by checking the object, not the string representation.
+    # for this, the stiffener needs to have the __eq__ implemented. If also implementing __hass__ then sets also work
     existing_section = False
 
     for section in section_list:
-
         if section.__str__() == new_section.__str__():
             existing_section = True
 
     if existing_section == False:
-        # print('The new section', new_section)
-        # print('The section list', section_list)
         section_list.append(new_section)
 
     return section_list

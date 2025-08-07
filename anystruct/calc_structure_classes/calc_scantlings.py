@@ -1,10 +1,22 @@
 from pydantic import BaseModel, ConfigDict
 import math
 from typing import Union
+import logging
 
 from .buckling_input import BucklingInput
 from .dnv_buckling import DNVBuckling
 
+# Create a custom logger
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+
+# so not to create another handler if it has already been defined in another module
+# doesn't seem to be working for file, but there the problem of multiple logs does not occur
+if not logger.hasHandlers():
+    ch = logging.StreamHandler()
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
 
 class CalcScantlings(BaseModel):
 
@@ -45,7 +57,7 @@ class CalcScantlings(BaseModel):
                +str(buc[2]) + ' eq7_52: ' + str(buc[3]) + ' eq7_53: ' + str(buc[4])
 
 
-    def calculate_slammingplate(self, slamming_pressure: float, red_fac: float=1) -> float:
+    def calculate_slamming_plate(self, slamming_pressure: float, red_fac: float=1) -> float:
         """
         Plate slamming according DNV
         Parameters:
@@ -72,7 +84,7 @@ class CalcScantlings(BaseModel):
         return 0.0158 * ka * self.buckling_input.panel.plate.spacing * 1000 * math.sqrt(psl / (Cd * sigmaf))
 
 
-    def calculate_slammingstiffener(self, slamming_pressure: float, angle: float=90, red_fac: float=1) -> dict[str, Union[float, None]]:
+    def calculate_slamming_stiffener(self, slamming_pressure: float, angle: float=90, red_fac: float=1) -> dict[str, Union[float, None]]:
         """
         Stiffener slamming according DNV
         Parameters:
@@ -138,12 +150,12 @@ class CalcScantlings(BaseModel):
             The float is the check value if the check is not ok, None otherwise.
         """
         assert self.buckling_input.panel.stiffener is not None
-        pl_chk = self.calculate_slammingplate(slamming_pressure, red_fac=pl_red_fact)
+        pl_chk = self.calculate_slamming_plate(slamming_pressure, red_fac=pl_red_fact)
         if self.buckling_input.panel.plate.thickness * 1000 < pl_chk:
             chk1 = pl_chk / self.buckling_input.panel.plate.thickness * 1000
             return False, chk1
 
-        stf_res = self.calculate_slammingstiffener(slamming_pressure, angle=angle, red_fac=stf_red_fact)
+        stf_res = self.calculate_slamming_stiffener(slamming_pressure, angle=angle, red_fac=stf_red_fact)
         if stf_res['tw_req'] is not None: # this is always the case though
             if self.buckling_input.panel.stiffener.web_th * 1000 < stf_res['tw_req']:
                 chk2 = stf_res['tw_req'] / self.buckling_input.panel.stiffener.web_th * 1000
@@ -322,7 +334,7 @@ class CalcScantlings(BaseModel):
         s = self.buckling_input.panel.plate.spacing
         fy = self.buckling_input.panel.plate.material.strength
 
-        fyd = (fy / self.buckling_input.panel.plate.material.mat_factor) / 1e6 # yield strength
+        fyd = (fy / self.buckling_input.panel.plate.material.mat_factor) # yield strength
         sig_x1 = self.buckling_input.stress.sigma_x1
         sig_x2 = self.buckling_input.stress.sigma_x2
         if sig_x1 * sig_x2 >= 0:
@@ -330,6 +342,8 @@ class CalcScantlings(BaseModel):
         else:
             sigxd =max(sig_x1 , sig_x2)
 
+        if math.pow(fyd, 2) - math.pow(sigxd, 2) < 0:
+            logger.error(f'Value for square root is negative in "get_minimum_shear_area" fyd: {fyd} sigxd: {sigxd}')
         taupds = 0.577 * math.sqrt(math.pow(fyd, 2) - math.pow(sigxd, 2))
 
         As = ((l * s * pressure) / (2 * taupds)) * math.pow(10, 3)
@@ -435,3 +449,10 @@ class CalcScantlings(BaseModel):
                     'Stiffener shear area': {'minimum': min_area, 'actual': this_area}}
         else:
             return {'Plate thickness':{'minimum': min_pl_thk, 'actual': this_pl_thk}}
+
+
+    def get_main_properties(self):
+        # copied from calc_structure, making maximum use of pydantic model dump.
+        return {'main dict': self.model_dump(), 'Plate': self.buckling_input.panel.plate.model_dump(),
+                'Stiffener': None if self.buckling_input.panel.stiffener is None else self.buckling_input.panel.stiffener.model_dump(),
+                'Girder': None if self.buckling_input.panel.girder is None else self.buckling_input.panel.girder.model_dump()}

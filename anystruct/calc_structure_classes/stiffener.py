@@ -26,6 +26,7 @@ class Stiffener(BaseModel):
             raise ValueError('Invalid stiffener type. Should be either "FB", "T", "L", "BULB", "HP", "HP-BULB", "HP-PROFILE", or "L-BULB"')
         return value.upper()
 
+    # still implement __eq__ and __hash__ such that comparisons can be done on object and that sets work on stiffeners.
 
     # Property decorators are used in buckling. IN mm!    
     @property # in mm

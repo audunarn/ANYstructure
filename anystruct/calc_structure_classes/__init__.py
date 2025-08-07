@@ -27,5 +27,7 @@ from .puls_panel import PULSpanel
 from .fatigue import FatigueInput, CalcFatigue
 from .curved_panel import CurvedPanel
 from .cylinder_and_curved_plate import ShellStressAndPressure, CylindricalShell
-
+from .load import Load
+from .tank import Tank
+from .combination import Combination
 __all__ = ['Material', 'Plate', 'Stiffener', 'StiffenedPanel', 'Stress', 'Puls', 'BucklingInput', 'Stiffened_panel_calc_props', 'DNVBuckling', 'CalcScantlings', 'PULSpanel', 'FatigueInput', 'CalcFatigue', 'CurvedPanel', 'ShellStressAndPressure', 'CylindricalShell']
