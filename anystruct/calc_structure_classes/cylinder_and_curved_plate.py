@@ -96,13 +96,25 @@ class ShellStressAndPressure(BaseModel):
     #     self._CylinderMain.shsd = shsd
 
 
-class ShellType(IntEnum):
+class CylindricalShellType(IntEnum):
+    # The cases for a long, ring, orth stiffened panel are not implemented.
+    # should still add the distinction between panel and cylinder for the stiffened ones
+    # can be done by checking if the curved_panel s is full circumference or not (using the radius).
     # following the numbering in the standard
     UNSTIFFENED_PANEL = 3 # 3.3 Elastic buckling strength of unstiffened curved panels
     UNSTIFFENED_CYCLINDER = 4 # 3.4 Elastic buckling strength of unstiffened circular cylinders
-    RING_STIFFENED_SHELL = 5 # 3.5 Ring stiffened shells
-    LONGITUDINAL_STIFFENED_SHELL = 6 # 3.6 Longitudinal stiffened shells
-    ORTHOGONALLY_STIFFENED_SHELL = 7 # 3.7 Orthogonally stiffened shells
+    RING_STIFFENED_CYLINDER = 5 # 3.5 Ring stiffened shells
+    LONGITUDINAL_STIFFENED_CYLINDER = 6 # 3.6 Longitudinal stiffened shells
+    ORTHOGONALLY_STIFFENED_CYLINDER = 7 # 3.7 Orthogonally stiffened shells
+
+    @classmethod
+    def names(cls) -> List[str]:
+        return [member.name for member in cls]
+
+
+    @classmethod
+    def geometries_map(cls) -> List[int]:
+        return [member.value for member in cls]
 
 
 class TorsionalProperties(BaseModel):
@@ -129,14 +141,14 @@ class CylindricalShell(BaseModel):
     ring_frame: Optional[Stiffener] = Field(default=None)
     ring_frame_spacing: Optional[float] = Field(default=None) # L: distance between effective supports (Figure 3-1)
     load: ShellStressAndPressure
-    _geometry: ShellType = PrivateAttr(default=None) # It is determined from the given parameters
+    _geometry: CylindricalShellType = PrivateAttr(default=None) # It is determined from the given parameters
     tot_cyl_length: Optional[float] = Field(default=None)
     k_factor: Optional[float] = Field(default=None)
     delta0: Optional[float] = Field(default=None) # THIS IS THE VALUE INCLUDING RADIUS in line with (3.5.26)
     fab_method_ring_stf: Optional[str] = Field(default='cold formed', pattern='(?i)^(cold formed|fabricated)$') # or 'fabricated' cold formed is conservative
     fab_method_ring_frame: Optional[str] = Field(default='cold formed', pattern='(?i)^(cold formed|fabricated)$') # or 'fabricated' cold formed is conservative
     end_cap_pressure_included: bool = Field(default=False) # default is conservative
-    uls_or_als: Optional[str] = Field(default='ULS', pattern='(?i)^(cold ULS|ALS)$') # or 'ALS' ULS is conservative
+    uls_or_als: Optional[str] = Field(default='ULS', pattern='(?i)^(ULS|ALS)$') # or 'ALS' ULS is conservative
 
     model_config = ConfigDict(extra='forbid')
 
@@ -164,18 +176,21 @@ class CylindricalShell(BaseModel):
         if self.long_stf is None and self.ring_stf is None and self.ring_frame is None:
             # providing total cylinder length will determine if it is an unstiffened panel or cylinder
             if self.tot_cyl_length is None:
-                self._geometry = ShellType.UNSTIFFENED_PANEL
+                self._geometry = CylindricalShellType.UNSTIFFENED_PANEL
             else:
-                self._geometry = ShellType.UNSTIFFENED_CYCLINDER
+                self._geometry = CylindricalShellType.UNSTIFFENED_CYCLINDER
         elif self.long_stf and self.ring_stf is None and self.ring_frame is None:
             # only longitudinal stiffener defined
-            self._geometry = ShellType.LONGITUDINAL_STIFFENED_SHELL
+            # should still add the distinction between panel and cylinder
+            self._geometry = CylindricalShellType.LONGITUDINAL_STIFFENED_CYLINDER
         elif self.long_stf is None and (self.ring_stf or self.ring_frame):
             # no longitudinal stiffener but ring stiffener or ring frame
-            self._geometry = ShellType.RING_STIFFENED_SHELL
+            # should still add the distinction between panel and cylinder
+            self._geometry = CylindricalShellType.RING_STIFFENED_CYLINDER
         elif self.long_stf and (self.ring_stf or self.ring_frame):
             # both longitudinal stiffener and ring stiffener or ring frame
-            self._geometry = ShellType.ORTHOGONALLY_STIFFENED_SHELL
+            # should still add the distinction between panel and cylinder
+            self._geometry = CylindricalShellType.ORTHOGONALLY_STIFFENED_CYLINDER
         else:
             raise ValueError('Could not determine geometry from the given parameters')
         
@@ -220,6 +235,8 @@ class CylindricalShell(BaseModel):
         if self.delta0 < 0:
             raise ValueError('delta0 must be positive')
         return self
+    
+    # still to implement __eq__
 
 
     def __str__(self):
@@ -284,7 +301,7 @@ class CylindricalShell(BaseModel):
         shell_results, column_buckling_results = None, None
         
         # UF for unstiffened shell
-        if self._geometry in [ShellType.UNSTIFFENED_CYCLINDER, ShellType.RING_STIFFENED_SHELL]:
+        if self._geometry in [CylindricalShellType.UNSTIFFENED_CYCLINDER, CylindricalShellType.RING_STIFFENED_CYLINDER]:
             shell_results = self.shell_unstiffened_cylinder(shell_data=data_shell_buckling)
             uf_unstf_shell = shell_results['UF - Unstiffened circular cylinder']
             results['Unstiffened shell'] = uf_unstf_shell
@@ -304,7 +321,7 @@ class CylindricalShell(BaseModel):
                 return False, 'UF unstiffened', results
         
         # column buckling for unstiffened cylinder
-        if self._geometry == ShellType.UNSTIFFENED_CYCLINDER:
+        if self._geometry == CylindricalShellType.UNSTIFFENED_CYCLINDER:
             column_buckling_results= self.column_buckling(unstf_shell_data=shell_results)
 
             results['Column stability check'] = column_buckling_results['Column stability check']
@@ -313,11 +330,11 @@ class CylindricalShell(BaseModel):
         
 
         # UF for longitudinal stiffener
-        if self._geometry in [ShellType.LONGITUDINAL_STIFFENED_SHELL, ShellType.ORTHOGONALLY_STIFFENED_SHELL]:
+        if self._geometry in [CylindricalShellType.LONGITUDINAL_STIFFENED_CYLINDER, CylindricalShellType.ORTHOGONALLY_STIFFENED_CYLINDER]:
             shell_results = self.shell_curved_panel(shell_data=data_shell_buckling)
             
             lightly_stiffened_check = self.curved_panel.s / self.curved_panel.thickness > 3 * math.sqrt(self.curved_panel.radius / self.curved_panel.thickness)
-            if lightly_stiffened_check and not self._geometry == ShellType.ORTHOGONALLY_STIFFENED_SHELL:
+            if lightly_stiffened_check and not self._geometry == CylindricalShellType.ORTHOGONALLY_STIFFENED_CYLINDER:
                 logger.warning('The structure is a lightly stiffened shell, thus calculated as an unstiffened cylinder')
                 column_buckling_results= self.column_buckling(unstf_shell_data=shell_results)
 
@@ -352,7 +369,7 @@ class CylindricalShell(BaseModel):
                     return False, 'UF longitudinal stiffeners', results
 
         # UF for ring stiffener and/or ring frame
-        if self._geometry in [ShellType.RING_STIFFENED_SHELL, ShellType.ORTHOGONALLY_STIFFENED_SHELL]:
+        if self._geometry in [CylindricalShellType.RING_STIFFENED_CYLINDER, CylindricalShellType.ORTHOGONALLY_STIFFENED_CYLINDER]:
             # UF for panel ring buckling
             ring_stf_shell_results = None
             column_buckling_results = self.column_buckling(unstf_shell_data=shell_results)
@@ -475,7 +492,7 @@ class CylindricalShell(BaseModel):
             if key == 'Unstiffened':
                 shSd.append((self.load.pSd / 1e6) * r / t + self.load.shSd_add / 1e6)
                 # why difference in calculation for sxSd?
-                sxSd.append(self.load.saSd / 1e6 + self.load.smSd / 1e6 if self._geometry in [ShellType.UNSTIFFENED_PANEL, ShellType.RING_STIFFENED_SHELL] else
+                sxSd.append(self.load.saSd / 1e6 + self.load.smSd / 1e6 if self._geometry in [CylindricalShellType.UNSTIFFENED_PANEL, CylindricalShellType.RING_STIFFENED_CYLINDER] else
                             min([self.load.saSd / 1e6, self.load.saSd / 1e6 - self.load.smSd / 1e6, self.load.saSd / 1e6 + self.load.smSd / 1e6]))
                 # whould this not be the sum of the absolute value of the two. There exists a point where these to add up.
                 tSd.append(self.load.tTSd / 1e6 + self.load.tQSd / 1e6)
@@ -579,7 +596,7 @@ class CylindricalShell(BaseModel):
         geometry = self._geometry
 
         # why is sxSd not the most conservative in all cases?
-        if geometry in [ShellType.UNSTIFFENED_PANEL, ShellType.RING_STIFFENED_SHELL]:
+        if geometry in [CylindricalShellType.UNSTIFFENED_PANEL, CylindricalShellType.RING_STIFFENED_CYLINDER]:
             sxSd = saSd + smSd
         else:
             sxSd = min(saSd, saSd + smSd, saSd - smSd)
@@ -589,7 +606,7 @@ class CylindricalShell(BaseModel):
             sm0sd = -smSd
         else:
             # should this not only be unstiffened? ring stiffend shell is according section 3.4.2
-            if geometry in [ShellType.UNSTIFFENED_PANEL, ShellType.RING_STIFFENED_SHELL]:
+            if geometry in [CylindricalShellType.UNSTIFFENED_PANEL, CylindricalShellType.RING_STIFFENED_CYLINDER]:
                 smSd = 0
                 sm0sd = 0
             else:
@@ -678,7 +695,7 @@ class CylindricalShell(BaseModel):
         uf_max =  self.curved_panel.material.mat_factor * sjSd_max / fy
 
         # No column buckling check for unstiffened panel, thus not need to calculate the max axial stress
-        if self._geometry == ShellType.UNSTIFFENED_PANEL:
+        if self._geometry == CylindricalShellType.UNSTIFFENED_PANEL:
             return results
         
         # is iter_table_1 and iter_table_2 not the same?
@@ -689,7 +706,7 @@ class CylindricalShell(BaseModel):
 
             while not found:
                 # Iteration
-                sigmSd_iter = smSd if geometry == ShellType.UNSTIFFENED_PANEL else min([-smSd, smSd])
+                sigmSd_iter = smSd if geometry == CylindricalShellType.UNSTIFFENED_PANEL else min([-smSd, smSd])
                 siga0Sd_iter = 0 if saSd_iter >= 0 else -saSd_iter  # (3.2.4)
                 sigm0Sd_iter = 0 if sigmSd_iter >= 0 else -sigmSd_iter  # (3.2.5)
                 sigh0Sd_iter = 0 if shSd >= 0 else -shSd  # (3.2.6)
@@ -1253,7 +1270,7 @@ class CylindricalShell(BaseModel):
         sjSd_shells = math.sqrt(math.pow(worst_axial_comb, 2) - worst_axial_comb * shSd + math.pow(shSd, 2) + 3 * math.pow(tSd, 2))
         sxSd_used = worst_axial_comb
         results['sxSd_used'] = sxSd_used
-        sjSd_used = sjSd_panels if self._geometry in [ShellType.UNSTIFFENED_PANEL, ShellType.RING_STIFFENED_SHELL] else sjSd_shells
+        sjSd_used = sjSd_panels if self._geometry in [CylindricalShellType.UNSTIFFENED_PANEL, CylindricalShellType.RING_STIFFENED_CYLINDER] else sjSd_shells
         results['sjSd_used'] = sjSd_used
 
         lambda_s2_panel = fy_used / sjSd_panels * ((sa0Sd + sm0Sd) / fEax + sh0Sd / fElat + tSd / fEtors) if \
@@ -1391,15 +1408,15 @@ class CylindricalShell(BaseModel):
         # 3.4.2 is for:
         #  - ShellType.UNSTIFFENED_CYCLINDER = 4
         #  - ShellType.RING_STIFFENED_SHELL = 5
-        if self._geometry in [ShellType.LONGITUDINAL_STIFFENED_SHELL, ShellType.ORTHOGONALLY_STIFFENED_SHELL]:
+        if self._geometry in [CylindricalShellType.LONGITUDINAL_STIFFENED_CYLINDER, CylindricalShellType.ORTHOGONALLY_STIFFENED_CYLINDER]:
             fak = unstf_shell_data['max axial stress - 3.3 Unstiffened curved panel']
             gammaM = unstf_shell_data['gammaM - Unstiffened curved panel']
-        elif self._geometry == ShellType.RING_STIFFENED_SHELL:
+        elif self._geometry == CylindricalShellType.RING_STIFFENED_CYLINDER:
             fEa = unstf_shell_data['fEax - Unstiffened circular cylinder']
             fEh = unstf_shell_data['fEh - Unstiffened circular cylinder - Psi=4']
             fak = unstf_shell_data['max axial stress - 3.4.2 Shell buckling']
             gammaM = unstf_shell_data['gammaM - Unstiffened circular cylinder']
-        elif self._geometry == ShellType.UNSTIFFENED_CYCLINDER:
+        elif self._geometry == CylindricalShellType.UNSTIFFENED_CYCLINDER:
             fEa = unstf_shell_data['fEax - Unstiffened circular cylinder']
             fEh = unstf_shell_data['fEh - Unstiffened circular cylinder - Psi=4']
             a = 1 + math.pow(fy, 2) / math.pow(fEa, 2) # 3.8.9
@@ -1665,3 +1682,102 @@ class CylindricalShell(BaseModel):
             ring_fr = [0 for dummy in range(8)]
 
         return [shell, long, ring_stf, ring_fr]
+
+
+    def get_I_tot(self) -> float:
+        # still to implement
+        logger.warning(f'get_I_tot not implemented in class CylindricalShell')
+        return 1.0
+
+
+    def get_long_stiffener_area(self) -> float:
+        if self.long_stf == None: 
+            return 0.0
+        else:
+            return self.long_stf.As
+
+
+    def get_all_properties(self):
+        # still to implement
+        logger.warning(f'get_all_properties not implemented for CylindricalShell')
+        return {}
+
+
+    def get_calculation_domain(self) -> str:
+        # this is an implicit coupling between the GUI and calc_structure_classes.
+        # not ideal, but for now ok
+        logger.warning(f'Long, ring, orth Stiffened panel not implemented yet in get_calculation_domain in CylindricalShell class')
+        if self._geometry == CylindricalShellType.UNSTIFFENED_PANEL:
+            return 'Unstiffened panel (Stress input)'
+        elif self._geometry == CylindricalShellType.UNSTIFFENED_CYCLINDER:
+            return 'Unstiffened cylinder (Force input)'
+        elif self._geometry == CylindricalShellType.LONGITUDINAL_STIFFENED_CYLINDER:
+            return 'Longitudinal Stiffened cylinder (Force input)'
+        elif self._geometry == CylindricalShellType.RING_STIFFENED_CYLINDER:
+            return 'Ring Stiffened cylinder (Force input)'
+        elif self._geometry == CylindricalShellType.ORTHOGONALLY_STIFFENED_CYLINDER:
+            return 'Orthogonally Stiffened cylinder (Force input)'
+        else:
+            raise ValueError(f'{self._geometry} not implemented in get_calculation_domain in CylindricalShell class')
+
+
+
+# to be implemented inside the class, without the need to pass all info, as it is already in the class.        
+def helper_cylinder_stress_to_force_to_stress(stresses = None, forces = None, shell_t = 0,
+                                              shell_radius = 0, shell_spacing = 0,
+                                              hw = 0, tw = 0, b = 0, tf = 0, cylindrical_shell: CylindricalShell = None,
+                                              conical = False, psd = 0, cone_r1 = 0, cone_r2 = 0, cone_alpha = 0,
+                                              shell_lenght_l = 0):
+    # this should be moved to CylindricalShell class, so it can work on the
+    # object itself where it has all info, including load attributte
+    
+    A = cylindrical_shell.get_long_stiffener_area()
+    eq_thk = shell_t if A == 0.0 else shell_t + A/shell_spacing
+
+    Itot = cylindrical_shell.get_I_tot()
+
+    if forces is not None and stresses is None:
+        if not conical:
+            Nsd, Msd, Tsd, Qsd = forces
+            sasd = (Nsd / 2) / (math.pi * shell_radius * eq_thk) * 1000
+            smsd = (Msd/ Itot) * \
+                   (shell_radius + shell_t / 2) * 1000000
+            tTsd = (Tsd* 10 ** 6) / (2 * math.pi * shell_t * math.pow(shell_radius, 2))
+            tQsd = Qsd / (math.pi * shell_radius * shell_t) * 1000
+            shsd = 0
+            return sasd, smsd, tTsd, tQsd, shsd
+        else:
+            Nsd, M1sd, M2sd, Tsd, Q1sd, Q2sd = forces
+            re = (cone_r1+cone_r2) / (2*math.cos(math.radians(cone_alpha)))
+            le = shell_lenght_l / math.cos(math.radians(cone_alpha))
+            te = shell_t *math.cos(math.radians(cone_alpha))
+            sasd = psd*re/2*te + Nsd/(2*math.pi*re*te) * 1000
+            smsd = ((M1sd*math.sin(math.radians(cone_alpha)) / (math.pi*math.pow(re,2)*te)) + \
+                   (M2sd*math.cos(math.radians(cone_alpha)) / (math.pi*math.pow(re,2)*te))) * 1000000
+            shsd = psd*re/te
+            tTsd = Tsd/(2*math.pi*math.pow(re,2)*te)
+            tQsd = -(Q1sd*math.cos(math.radians(cone_alpha)) / (math.pi*re*te)) + \
+                   (Q2sd*math.sin(math.radians(cone_alpha)) / (math.pi*re*te))
+            return sasd, smsd, tTsd, tQsd, shsd
+
+    else:
+        if not conical:
+            sasd, smsd, tTsd, tQsd, shsd = stresses
+            Nsd = (sasd * 2 * math.pi * shell_radius * eq_thk) / 1000
+            Msd = (smsd / (shell_radius * shell_t / 2)) * Itot / 1000000
+            Tsd = tTsd * 2 * math.pi * shell_t * math.pow(shell_radius, 2) / 1000000
+            Qsd = tQsd * math.pi * shell_radius * shell_t / 1000
+        else:
+            re = (cone_r1+cone_r2) / (2*math.cos(math.radians(cone_alpha)))
+            le = shell_lenght_l / math.cos(math.radians(cone_alpha))
+            te = shell_t *math.cos(math.radians(cone_alpha))
+            Itot = cylindrical_shell.get_I_tot()
+            sasd, smsd, tTsd, tQsd, shsd = stresses
+            Nsd = (sasd * 2 * math.pi * re * te) / 1000
+            Msd = (smsd / (re * te / 2)) * Itot / 1000000
+            Tsd = tTsd * 2 * math.pi * te * math.pow(re, 2) / 1000000
+            Qsd = tQsd * math.pi * re * te/ 1000
+
+        return Nsd, Msd, Tsd, Qsd, shsd
+    
+

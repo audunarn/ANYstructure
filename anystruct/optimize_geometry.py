@@ -13,15 +13,11 @@ try:
     import anystruct.main_application
     import anystruct.optimize as op
     import anystruct.example_data as test
-    from anystruct.calc_structure import *
-    import anystruct.calc_structure
     from anystruct.helper import *
 except ModuleNotFoundError:
     import ANYstructure.anystruct.main_application
     import ANYstructure.anystruct.optimize as op
     import ANYstructure.anystruct.example_data as test
-    from ANYstructure.anystruct.calc_structure import *
-    import ANYstructure.anystruct.calc_structure
     from ANYstructure.anystruct.helper import *
 
 

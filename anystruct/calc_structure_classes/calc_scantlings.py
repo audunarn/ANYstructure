@@ -29,6 +29,7 @@ class CalcScantlings(BaseModel):
     lat_press: bool
     category: str
     need_recalc: bool
+    structure_type: str = ''
 
     model_config = ConfigDict(extra='forbid')
 

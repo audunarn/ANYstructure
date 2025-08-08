@@ -16,7 +16,7 @@ if __name__ == '__main__':
     my_stress: Stress = Stress(sigma_x1=50, sigma_x2=50, sigma_y1=150, sigma_y2=150, tauxy=0.3)
     my_stiffened_panel: StiffenedPanel = StiffenedPanel(plate=my_plate, stiffener=my_stiffener, stiffener_end_support='continuous', girder_length=5)
     # set the calculation properties if different from default
-    my_stiffened_panel_calc_props: Stiffened_panel_calc_props = Stiffened_panel_calc_props(plate_kpp=1, stf_kps=1, km1=12, km2=24, km3=12)
+    my_stiffened_panel_calc_props: StiffenedPanelCalcProps = StiffenedPanelCalcProps(plate_kpp=1, stf_kps=1, km1=12, km2=24, km3=12)
     my_buckling_input: BucklingInput = BucklingInput(panel=my_stiffened_panel, pressure=0, pressure_side='both sides', stress=my_stress)
     dnv_bucklng: DNVBuckling = DNVBuckling(buckling_input=my_buckling_input, calculation_domain = '')
     

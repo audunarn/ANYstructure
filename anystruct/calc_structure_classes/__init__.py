@@ -20,14 +20,14 @@ from .stiffener import Stiffener
 from .stiffened_panel import StiffenedPanel
 from .stress import Stress
 from .puls import Puls
-from .buckling_input import BucklingInput, Stiffened_panel_calc_props
+from .buckling_input import BucklingInput, StiffenedPanelCalcProps
 from .dnv_buckling import DNVBuckling
 from .calc_scantlings import CalcScantlings
-from .puls_panel import PULSpanel
+from .puls_panel import PulsRun
 from .fatigue import FatigueInput, CalcFatigue
 from .curved_panel import CurvedPanel
-from .cylinder_and_curved_plate import ShellStressAndPressure, CylindricalShell
+from .cylinder_and_curved_plate import ShellStressAndPressure, CylindricalShell, CylindricalShellType
 from .load import Load
 from .tank import Tank
 from .combination import Combination
-__all__ = ['Material', 'Plate', 'Stiffener', 'StiffenedPanel', 'Stress', 'Puls', 'BucklingInput', 'Stiffened_panel_calc_props', 'DNVBuckling', 'CalcScantlings', 'PULSpanel', 'FatigueInput', 'CalcFatigue', 'CurvedPanel', 'ShellStressAndPressure', 'CylindricalShell']
+__all__ = ['Material', 'Plate', 'Stiffener', 'StiffenedPanel', 'Stress', 'Puls', 'BucklingInput', 'StiffenedPanelCalcProps', 'DNVBuckling', 'CalcScantlings', 'PulsRun', 'FatigueInput', 'CalcFatigue', 'CurvedPanel', 'ShellStressAndPressure', 'CylindricalShell']

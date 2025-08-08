@@ -7,6 +7,10 @@ from .stress import DerivedStressValues
 from .buckling_input import BucklingInput
 
 
+# The logic in this file should be moved to "buckling_input.py"
+# then the "plated_structures_buckling" could be a method on "BucklingInput" and renamed to "get_utilization_factors()"
+# similar to "cylinder_and_curved_plate.py" which has a method "get_utilization_factors()"
+
 # Create a custom logger
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -55,7 +59,7 @@ class DNVBuckling(BaseModel):
                         'Girder': {'Overpressure plate side': 0, 'Overpressure girder side': 0, 'Shear capacity': 0},
                         'Local buckling': 0}
 
-        unstf_pl = self.unstiffenedplate_buckling(optimizing = optimizing)
+        unstf_pl = self.unstiffened_plate_buckling(optimizing = optimizing)
         up_buckling = max([unstf_pl['UF Pnt. 5  Lateral loaded plates'], unstf_pl['UF sjsd'],
                            max([unstf_pl['UF Longitudinal stress'],  unstf_pl['UF transverse stresses'],
                                 unstf_pl['UF Shear stresses'], unstf_pl['UF Combined stresses']])
@@ -110,7 +114,7 @@ class DNVBuckling(BaseModel):
                 'Local buckling': 0 if optimizing else local_buckling}
 
 
-    def unstiffenedplate_buckling(self, optimizing: bool=False) -> dict:
+    def unstiffened_plate_buckling(self, optimizing: bool=False) -> dict:
         # internal calculations are in mm (millimeter) and MPa (mega pascal)
         
         # The calculations for unstiffened are only valid if length is greater than spacing.

@@ -5,11 +5,9 @@ from calc_structure_classes import *
 
 try:
     import anystruct.calc_loads as load
-    import anystruct.calc_structure as calc_structure
     import anystruct.make_grid_numpy as grid
 except ModuleNotFoundError:
     import ANYstructure.anystruct.calc_loads as load
-    import ANYstructure.anystruct.calc_structure as calc_structure
     import ANYstructure.anystruct.make_grid_numpy as grid
 
 import random

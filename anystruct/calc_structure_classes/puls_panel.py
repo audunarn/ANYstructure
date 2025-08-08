@@ -16,7 +16,7 @@ except ModuleNotFoundError:
     import ANYstructure.anystruct.helper as hlp # type: ignore
     import ANYstructure.anystruct.SN_curve_parameters as snc # type: ignore
 
-class PULSpanel(BaseModel):
+class PulsRun(BaseModel):
     '''
     Takes care of puls runs
     '''

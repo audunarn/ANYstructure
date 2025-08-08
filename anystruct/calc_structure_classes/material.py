@@ -21,6 +21,28 @@ class Material(BaseModel):
 
     model_config = ConfigDict(extra='forbid')
 
+    def __eq__(self, other) -> bool:
+        """
+        Check equality between two Material instances.
+        
+        Args:
+            other: Another object to compare with
+            
+        Returns:
+            bool: True if both objects are Material instances with identical attributes
+        """
+        if not isinstance(other, Material):
+            return False
+        
+        return (
+            self.young == other.young and
+            self.poisson == other.poisson and
+            self.strength == other.strength and
+            self.mat_factor == other.mat_factor and
+            self.density == other.density
+        )
+
+
     def __str__(self) -> str:
         return 'Young\'s modulus: ' + str(self.young) + ' Poisson ratio: ' + str(self.poisson) + ' Yield strength: ' + str(self.strength)
 

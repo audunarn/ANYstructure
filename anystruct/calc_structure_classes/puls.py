@@ -9,6 +9,27 @@ class Puls(BaseModel):
 
     model_config = ConfigDict(extra='forbid')
 
+    def __eq__(self, other) -> bool:
+        """
+        Check equality between two Puls instances.
+        
+        Args:
+            other: Another object to compare with
+            
+        Returns:
+            bool: True if both objects are Puls instances with identical attributes
+        """
+        if not isinstance(other, Puls):
+            return False
+        
+        return (
+            self.puls_method == other.puls_method and
+            self.puls_boundary == other.puls_boundary and
+            self.puls_stf_end == other.puls_stf_end and
+            self.puls_sp_or_up == other.puls_sp_or_up and
+            self.puls_up_boundary == other.puls_up_boundary
+        )
+
     def get_puls_method(self):
         return self.puls_method
 

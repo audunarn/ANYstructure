@@ -8,13 +8,11 @@ from tkinter.filedialog import askopenfilenames
 from multiprocessing import cpu_count
 
 try:
-    from anystruct.calc_structure import CalcScantlings, AllStructure
     import anystruct.example_data as test
     import anystruct.example_data as ex
     import anystruct.helper as hlp
     import anystruct.optimize as op
 except ModuleNotFoundError:
-    from ANYstructure.anystruct.calc_structure import CalcScantlings, AllStructure
     import ANYstructure.anystruct.example_data as test
     import ANYstructure.anystruct.example_data as ex
     import ANYstructure.anystruct.helper as hlp

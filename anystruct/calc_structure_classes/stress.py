@@ -38,6 +38,27 @@ class Stress(BaseModel):
 
     model_config = ConfigDict(extra='forbid')
 
+    def __eq__(self, other) -> bool:
+        """
+        Check equality between two Stress instances.
+        
+        Args:
+            other: Another object to compare with
+            
+        Returns:
+            bool: True if both objects are Stress instances with identical attributes
+        """
+        if not isinstance(other, Stress):
+            return False
+        
+        return (
+            self.sigma_x1 == other.sigma_x1 and
+            self.sigma_x2 == other.sigma_x2 and
+            self.sigma_y1 == other.sigma_y1 and
+            self.sigma_y2 == other.sigma_y2 and
+            self.tauxy == other.tauxy
+        )
+
     def get_sigma_y1(self) -> float:
         """
         Return the larger design stress in the transverse direction, with tensile stresses taken as negative.

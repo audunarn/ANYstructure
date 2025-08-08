@@ -13,11 +13,11 @@ from tkinter.filedialog import asksaveasfilename
 import csv
 
 try:
-    import anystruct.calc_structure as calc
     import anystruct.helper as hlp
+    from anystruct.calc_structure_classes import CurvedPanel, Stiffener, CylindricalShell, DNVBuckling, PulsRun, CalcScantlings, CalcFatigue
 except ModuleNotFoundError:
-    import ANYstructure.anystruct.calc_structure as calc
     import ANYstructure.anystruct.helper as hlp
+    from ANYstructure.anystruct.calc_structure_classes import CurvedPanel, Stiffener, CylindricalShell, DNVBuckling, PulsRun, CalcScantlings, CalcFatigue
 
 
 def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lateral_pressure=None,
@@ -107,6 +107,7 @@ def run_optmizataion(initial_structure_obj=None, min_var=None, max_var=None, lat
     else:
         return None
 
+
 def any_optimize_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure, init_filter = float('inf'),
                       side='p',const_chk=(True,True,True,True,True,False), fat_dict = None, fat_press = None,
                       slamming_press = 0):
@@ -154,6 +155,7 @@ def any_optimize_loop(min_var,max_var,deltas,initial_structure_obj,lateral_press
     new_calc_obj = create_new_calc_obj(initial_structure_obj,[item for item in ass_var])[0]
 
     return new_struc_obj, new_calc_obj, fat_dict, True, main_fail
+
 
 def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure, init_filter = float('inf'),
                    side='p',const_chk=(True,True,True,True,True,True,True, False, False,False), fat_dict = None,
@@ -217,6 +219,7 @@ def any_smart_loop(min_var,max_var,deltas,initial_structure_obj,lateral_pressure
     calc_object.lat_press = lateral_pressure
 
     return calc_object, fat_dict, True, main_fail
+
 
 def any_smart_loop_cylinder(min_var,max_var,deltas,initial_structure_obj,lateral_pressure = None,
                             init_filter = float('inf'),
@@ -334,6 +337,7 @@ def any_smart_loop_geometric(min_var,max_var,deltas,initial_structure_obj,latera
         idx += 1
 
     return all_obj
+
 
 def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_structure_obj=None,lateral_pressure=None,
                              init_filter = float('inf'),side='p',const_chk=(True,True,True,True, True, True),
@@ -535,9 +539,11 @@ def geometric_summary_search(min_var=None,max_var=None,deltas = None, initial_st
     #     print(val)
     return results
 
+
 def any_find_min_weight_var(var):
     '''
     Find the minimum weight of the inpu
+
     :param min:
     :param max:
     :return:
@@ -545,7 +551,8 @@ def any_find_min_weight_var(var):
 
     return min(map(calc_weight))
 
-def any_constraints_cylinder(x,obj: calc.CylinderAndCurvedPlate,init_weight, lat_press = None,side='p',
+
+def any_constraints_cylinder(x, obj: CylindricalShell, init_weight, lat_press = None,side='p',
                              chk=(True,True,True,True, True, True, True, False, False, False),
                              fat_dict = None, fat_press = None, slamming_press = 0,fdwn = 1, fup = 0.5,
                              ml_results = None):
@@ -562,9 +569,9 @@ def any_constraints_cylinder(x,obj: calc.CylinderAndCurvedPlate,init_weight, lat
     check_map = {'weight': 0, 'UF unstiffened': 1, 'Column stability': 2, 'UF longitudinal stiffeners':3,
                  'Stiffener check': 4, 'UF ring stiffeners':5, 'UF ring frame': 6, 'Check OK': 7}
 
-    calc_obj = create_new_cylinder_obj(obj, x)
+    calc_obj: CylindricalShell = create_new_cylinder_obj(obj, x)
 
-    optimizing = True if any([calc_obj.RingStfObj is None, calc_obj.RingFrameObj is None]) else False
+    optimizing = True if any([calc_obj.ring_stf is None, calc_obj.ring_frame is None]) else False
     # Weigth
     if init_weight != False:
         this_weight = calc_weight_cylinder(x)
@@ -584,9 +591,9 @@ def any_constraints_cylinder(x,obj: calc.CylinderAndCurvedPlate,init_weight, lat
             return False, results[1], x, all_checks, calc_obj
 
 
-def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True,True, True, True, True, False,
+def any_constraints_all(x, obj: DNVBuckling, lat_press,init_weight,side='p',chk=(True,True,True,True, True, True, True, False,
                                                                   False, False),
-                        fat_dict = None, fat_press = None, slamming_press = 0, PULSrun: calc.PULSpanel = None,
+                        fat_dict = None, fat_press = None, slamming_press = 0, PULSrun: PulsRun = None,
                         print_result = False, fdwn = 1, fup = 0.5, ml_results = None, random_result_return = False):
     '''
     Checking all constraints defined.
@@ -604,19 +611,13 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
             return False, 'Random result', x, [1.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5]
     all_checks = [0,0,0,0,0,0,0,0,0,0,0]
     print_result = False
-    calc_object_stf = None if obj.Stiffener is None else create_new_calc_obj(obj.Stiffener, x, fat_dict, fdwn = fdwn, fup = fup)
-    calc_object_pl = create_new_calc_obj(obj.Plate, x, fat_dict, fdwn=fdwn, fup=fup)
-    calc_object = [calc.AllStructure(Plate=calc_object_pl[0],
-                                     Stiffener=None if obj.Stiffener is None else calc_object_stf[0], Girder=None,
-                                     main_dict=obj.get_main_properties()['main dict']), calc_object_pl[1]]
-    calc_object[0].lat_press = lat_press
 
     # PULS buckling check
     if chk[7] and PULSrun is not None:
         x_id = x_to_string(x)
-        if calc_object[0].Plate.get_puls_method() == 'buckling':
+        if obj.buckling_input.puls_input.get_puls_method() == 'buckling':
             puls_uf = PULSrun.get_puls_line_results(x_id)["Buckling strength"]["Actual usage Factor"][0]
-        elif calc_object[0].Plate.get_puls_method() == 'ultimate':
+        elif obj.buckling_input.puls_input.get_puls_method() == 'ultimate':
             puls_uf = PULSrun.get_puls_line_results(x_id)["Ultimate capacity"]["Actual usage Factor"][0]
         if type(puls_uf) == str or puls_uf is None:
             return False, 'PULS', x, all_checks
@@ -628,10 +629,10 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
 
     # Buckling ml-cl
     if chk[8]:
-        if any([calc_object[0].Plate.get_puls_method() == 'buckling' and ml_results[0] != 9,
-                calc_object[0].Plate.get_puls_method() == 'ultimate' and ml_results[1] != 9]):
+        if any([obj.buckling_input.puls_input.get_puls_method() == 'buckling' and ml_results[0] != 9,
+                obj.buckling_input.puls_input.get_puls_method() == 'ultimate' and ml_results[1] != 9]):
             if print_result:
-                print('Buckling ML-CL', calc_object[0].Stiffener.get_one_line_string(), False)
+                print('Buckling ML-CL', obj.buckling_input.panel.stiffener.get_beam_string(), False)
             return False, 'Buckling ML-CL', x, all_checks
 
     # Buckling ml-reg
@@ -650,30 +651,31 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
         return False, 'Weight filter', x, all_checks
 
     # Section modulus
-    if chk[0] and calc_object[0].Stiffener is not None:
-        section_modulus = min(calc_object[0].Stiffener.get_section_modulus())
-        min_section_modulus = calc_object[0].Stiffener.get_dnv_min_section_modulus(lat_press*1000)
+    calc_scantlings = CalcScantlings(buckling_input=obj.buckling_input, lat_press=lat_press, category="", need_recalc=False)
+    if chk[0] and obj.buckling_input.panel.stiffener is not None:
+        section_modulus = min(obj.buckling_input.panel.stiffener.get_section_modulus())
+        min_section_modulus = calc_scantlings.get_dnv_min_section_modulus(lat_press*1000)
         section_frac = section_modulus / min_section_modulus
         #print(section_modulus, min_section_modulus, section_frac, lat_press)
         all_checks[1] = section_frac
         if not section_modulus > min_section_modulus :
             if print_result:
-                print('Section modulus',calc_object[0].get_one_line_string(), False)
+                print('Section modulus', str(obj.buckling_input), False)
             return False, 'Section modulus', x, all_checks
 
 
     # Local stiffener buckling
-    if chk[6] and calc_object[0].Stiffener is not None:
-        buckling_local = calc_object[0].local_buckling(optimizing=True)
-        check = all([buckling_local['Stiffener'][0] < calc_object[0].Stiffener.hw,
-                     buckling_local['Stiffener'][1] < calc_object[0].Stiffener.b])
+    if chk[6] and obj.buckling_input.panel.stiffener is not None:
+        buckling_local = obj.local_buckling(optimizing=True)
+        check = all([buckling_local['Stiffener'][0] < obj.buckling_input.panel.stiffener.hw,
+                     buckling_local['Stiffener'][1] < obj.buckling_input.panel.stiffener.b])
         all_checks[2] = max([0 if buckling_local['Stiffener'][0] == 0 else
-                             calc_object[0].Stiffener.hw/buckling_local['Stiffener'][0],
+                             obj.buckling_input.panel.stiffener.hw/buckling_local['Stiffener'][0],
                             0 if buckling_local['Stiffener'][1] == 0 else
-                            calc_object[0].Stiffener.b/buckling_local['Stiffener'][1]])
+                            obj.buckling_input.panel.stiffener.b/buckling_local['Stiffener'][1]])
         if not check:
             if print_result:
-                print('Local stiffener buckling',calc_object[0].get_one_line_string(), False)
+                print('Local stiffener buckling',str(obj), False)
             return False, 'Local stiffener buckling', x, all_checks
 
     # Buckling
@@ -688,7 +690,7 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
                            'Shear capacity': girder_shear_capacity},
                 'Local buckling': local_buckling}
                 '''
-        buckling_results = calc_object[0].plate_buckling(optimizing=True)
+        buckling_results = obj.unstiffened_plate_buckling(optimizing=True)
         res = [buckling_results['Plate']['Plate buckling'],]
         for val in buckling_results['Stiffener'].values():
             res.append(val)
@@ -699,19 +701,19 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
         all_checks[3] = max(buckling_results)
         if not all([uf<=1 for uf in buckling_results]):
             if print_result:
-                print('Buckling',calc_object[0].get_one_line_string(), False)
+                print('Buckling', str(obj.buckling_input), False)
             return False, 'Buckling', x, all_checks
 
 
     # Minimum plate thickness
     if chk[1]:
-        act_pl_thk = calc_object[0].Plate.get_pl_thk()
-        min_pl_thk = calc_object[0].Plate.get_dnv_min_thickness(lat_press*1000)/1000
+        act_pl_thk = obj.buckling_input.panel.plate.thickness
+        min_pl_thk = calc_scantlings.get_dnv_min_thickness(lat_press*1000)/1000
         plate_frac = min_pl_thk / act_pl_thk
         all_checks[4] = plate_frac
         if not act_pl_thk > min_pl_thk:
             if print_result:
-                print('Minimum plate thickeness',calc_object[0].get_one_line_string(), False)
+                print('Minimum plate thickeness', str(obj.buckling_input), False)
             return False, 'Minimum plate thickness', x, all_checks
 
     # Shear area
@@ -728,27 +730,27 @@ def any_constraints_all(x,obj,lat_press,init_weight,side='p',chk=(True,True,True
 
     # Fatigue
     if chk[4] and fat_dict is not None and fat_press is not None:
-
-        fatigue_uf = calc_object[1].get_total_damage(ext_press=fat_press[0],
-                                                     int_press=fat_press[1])*calc_object[1].get_dff()
+        calc_fatigue = CalcFatigue(panel=obj.buckling_input.panel, fatigue_data=None)
+        fatigue_uf = calc_fatigue.get_total_damage(ext_press=fat_press[0],
+                                                     int_press=fat_press[1])*calc_fatigue.get_dff()
         all_checks[6] = fatigue_uf
         if fatigue_uf > 1:
             if print_result:
-                print('Fatigue',calc_object[0].Stiffener.get_one_line_string(), False)
+                print('Fatigue', str(obj.buckling_input.panel.stiffener), False)
             return False, 'Fatigue', x, all_checks
 
     # Slamming
 
-    if chk[5] and slamming_press != 0 and calc_object[0].Stiffener is not None:
-        slam_check = calc_object[0].Stiffener.check_all_slamming(slamming_press)
+    if chk[5] and slamming_press != 0 and obj.buckling_input.panel.stiffener is not None:
+        slam_check = calc_scantlings.check_all_slamming(slamming_press)
         all_checks[7] = slam_check[1]
         if slam_check[0] is False:
             if print_result:
-                print('Slamming',calc_object[0].Stiffener.get_one_line_string(), False)
+                print('Slamming', str(obj.buckling_input.panel.stiffener), False)
             return False, 'Slamming', x, all_checks
 
     if print_result:
-        print('OK Section', calc_object[0].Stiffener.get_one_line_string(), True)
+        print('OK Section', str(obj.buckling_input.panel.stiffener), True)
 
     return True, 'Check OK', x, all_checks
 
@@ -759,31 +761,31 @@ def pso_constraint_geometric(x,*args):
     ''' The sum of the fractions must be 1.'''
     return 1-sum(x)
 
-def create_new_cylinder_obj(init_obj, x_new):
+def create_new_cylinder_obj(init_obj: CylindricalShell, x_new) -> CylindricalShell:
     '''
     shell       (0.02, 2.5, 5, 5, 10, nan, nan, nan),
     long        (0.875, nan, 0.3, 0.01, 0.1, 0.01, nan, nan),
     ring        (nan, nan, 0.3, 0.01, 0.1, 0.01, nan, nan),
     ring        (nan, nan, 0.7, 0.02, 0.2, 0.02, nan, nan)]
     '''
-
-    stress_press = [init_obj.sasd, init_obj.smsd, init_obj.tTsd, init_obj.tQsd, init_obj.shsd]
-    shell_obj = init_obj.ShellObj
-    long_obj = init_obj.LongStfObj
+    init_obj: CylindricalShell = CylindricalShell()
+    stress_press = [init_obj.load.saSd, init_obj.load.smSd, init_obj.load.tTSd, init_obj.load.tQSd, init_obj.load.shSd_add]
+    curved_panel: CurvedPanel = init_obj.curved_panel
+    long_obj: Stiffener = init_obj.long_stf
     '''
     t1, r1, s1, hw1, tw1, b1, tf1 = x1
     t1, r1, s2, hw2, tw2, b2, tf2 = x2
     '''
 
-    x_old = shell_obj.thk, shell_obj.radius,  \
-            init_obj.panel_spacing if long_obj is None else long_obj.s/1000, \
+    x_old = curved_panel.thickness, curved_panel.radius,  \
+            curved_panel.s, \
             0 if long_obj is None else long_obj.hw/1000, \
             0 if long_obj is None else long_obj.tw/1000,\
             0 if long_obj is None else long_obj.b/1000,\
             0 if long_obj is None else long_obj.tf/1000,
 
-    x_new_stress_scaling = x_new[0][0] if not np.isnan(x_new[0][0]) else shell_obj.thk, \
-                           x_new[0][1] if not np.isnan(x_new[0][1]) else shell_obj.radius,\
+    x_new_stress_scaling = x_new[0][0] if not np.isnan(x_new[0][0]) else curved_panel.thickness, \
+                           x_new[0][1] if not np.isnan(x_new[0][1]) else curved_panel.radius,\
                            x_new[0][5] if long_obj is None else x_new[1][0], \
                            0 if long_obj is None else x_new[1][2], \
                            0 if long_obj is None else x_new[1][3],\
@@ -793,16 +795,17 @@ def create_new_cylinder_obj(init_obj, x_new):
     new_stresses = stress_scaling_cylinder(x_old, x_new_stress_scaling, stress_press)
     new_obj = copy.deepcopy(init_obj)
     new_obj.sasd, new_obj.smsd, new_obj.tTsd, new_obj.tQsd, new_obj.shsd = new_stresses
-    new_obj.ShellObj.radius = x_new[0][1]
-    new_obj.ShellObj.thk = x_new[0][0]
+    new_obj.curved_panel.radius = x_new[0][1]
+    new_obj.curved_panel.thk = x_new[0][0]
     if long_obj is None:
-        new_obj.panel_spacing = x_new[0][5]
+        new_obj.curved_panel.s = x_new[0][5]
     else:
-        new_obj.LongStfObj.s = x_new[1][0]*1000
-        new_obj.LongStfObj.hw = x_new[1][2]*1000
-        new_obj.LongStfObj.tw = x_new[1][3]*1000
-        new_obj.LongStfObj.b = x_new[1][4]*1000
-        new_obj.LongStfObj.tf = x_new[1][5]*1000
+        new_obj.curved_panel.s = x_new[1][0]*1000
+        assert new_obj.long_stf is not None # only for intellisense in the next lines
+        new_obj.long_stf.hw = x_new[1][2]*1000
+        new_obj.long_stf.tw = x_new[1][3]*1000
+        new_obj.long_stf.b = x_new[1][4]*1000
+        new_obj.long_stf.tf = x_new[1][5]*1000
 
         #new_obj.LongStfObj.stiffener_type = x_new[1][7] # TODO should be 8
 

@@ -11,6 +11,26 @@ class Plate(BaseModel):
 
     model_config = ConfigDict(extra='forbid')
 
+    def __eq__(self, other):
+        """
+        Check equality between two Plate instances.
+        
+        Args:
+            other: Another object to compare with
+            
+        Returns:
+            bool: True if both objects are Plate instances with identical attributes
+        """
+        if not isinstance(other, Plate):
+            return False
+        
+        return (
+            self.spacing == other.spacing and
+            self.span == other.span and
+            self.thickness == other.thickness and
+            self.material == other.material
+        )
+
     def ToShortString(self) -> str:
         return 'lxb' + str(self.span) + 'x' + str(self.spacing)
 

@@ -30,6 +30,7 @@ class FatigueInput(BaseModel):
 
     model_config = ConfigDict(extra='forbid')
 
+
 class CalcFatigue(BaseModel):
     '''
     This Class does the calculations for the plate fields. 

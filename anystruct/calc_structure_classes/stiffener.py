@@ -28,6 +28,31 @@ class Stiffener(BaseModel):
 
     # still implement __eq__ and __hash__ such that comparisons can be done on object and that sets work on stiffeners.
 
+    def __eq__(self, other):
+        """
+        Check equality between two Stiffener instances.
+        
+        Args:
+            other: Another object to compare with
+            
+        Returns:
+            bool: True if both objects are Stiffener instances with identical attributes
+        """
+        if not isinstance(other, Stiffener):
+            return False
+        
+        return (
+            self.type == other.type and
+            self.web_height == other.web_height and
+            self.web_th == other.web_th and
+            self.flange_width == other.flange_width and
+            self.flange_th == other.flange_th and
+            self.dist_between_lateral_supp == other.dist_between_lateral_supp and
+            self.fabrication_method == other.fabrication_method and
+            self.material == other.material
+        )
+
+
     # Property decorators are used in buckling. IN mm!    
     @property # in mm
     def hw(self):

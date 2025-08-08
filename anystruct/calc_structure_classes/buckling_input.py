@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, field_validator, Field
 
 from .stress import Stress, DerivedStressValues
 from .stiffener import Stiffener
-from .stiffened_panel import StiffenedPanel, Stiffened_panel_calc_props
+from .stiffened_panel import StiffenedPanel, StiffenedPanelCalcProps
 from .puls import Puls
 
 
@@ -32,7 +32,7 @@ class BucklingInput(BaseModel):
     tension_field_action: str = Field(default="not allowed")
     stifplate_effective_against_sigy: bool = Field(default=True)
     min_lat_press_adj_span: Optional[float] = Field(default=None) # is not used anywhere
-    calc_props: Stiffened_panel_calc_props = Field(default=Stiffened_panel_calc_props())
+    calc_props: StiffenedPanelCalcProps = Field(default=StiffenedPanelCalcProps())
     puls_input: Puls = Field(default=Puls())
 
     model_config = ConfigDict(extra='forbid')
@@ -42,6 +42,31 @@ class BucklingInput(BaseModel):
         if value < 0:
             raise ValueError('Pressure must be zero or positive')
         return value
+
+    def __eq__(self, other) -> bool:
+        """
+        Check equality between two BucklingInput instances.
+        
+        Args:
+            other: Another object to compare with
+            
+        Returns:
+            bool: True if both objects are BucklingInput instances with identical attributes
+        """
+        if not isinstance(other, BucklingInput):
+            return False
+        
+        return (
+            self.panel == other.panel and
+            self.pressure == other.pressure and
+            self.pressure_side == other.pressure_side and
+            self.stress == other.stress and
+            self.tension_field_action == other.tension_field_action and
+            self.stifplate_effective_against_sigy == other.stifplate_effective_against_sigy and
+            self.min_lat_press_adj_span == other.min_lat_press_adj_span and
+            self.calc_props == other.calc_props and
+            self.puls_input == other.puls_input
+        )
 
 
     def __str__(self):
@@ -181,7 +206,7 @@ class BucklingInput(BaseModel):
         'global slenderness': 6, 'pressure': 7, 'web-flange-ratio': 8,  'below 0.87': 9,
                   'between 0.87 and 1': 10, 'above 1': 11}
         '''
-        stf_type = {'T-bar': 1,'T': 1,  'L-bulb': 2, 'Angle': 3, 'Flatbar': 4, 'FB': 4, 'L': 3}
+        stf_type = {'T': 1,  'L-BULB': 2, 'Angle': 3, 'Flatbar': 4, 'FB': 4, 'L': 3}
         stf_end = {'Cont': 1, 'C':1 , 'Sniped': 2, 'S': 2}
         field_type = {'Integrated': 1,'Int': 1, 'Girder - long': 2,'GL': 2, 'Girder - trans': 3,  'GT': 3}
         up_boundary = {'SS': 1, 'CL': 2}
