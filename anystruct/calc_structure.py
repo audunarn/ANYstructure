@@ -1,7 +1,7 @@
 from scipy.special import gammaln
 from scipy.stats import gamma as gammadist
 import numpy as np
-from scipy.integrate import simps
+from scipy.integrate import simpson as simps
 import os, time, datetime, json, random, math
 from scipy.optimize import minimize
 
