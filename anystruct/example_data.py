@@ -1,12 +1,13 @@
 # This scripts provide dtat to be used for testing the code
+from typing import Any
+
+from calc_structure_classes import *
 
 try:
     import anystruct.calc_loads as load
-    import anystruct.calc_structure as calc_structure
     import anystruct.make_grid_numpy as grid
 except ModuleNotFoundError:
     import ANYstructure.anystruct.calc_loads as load
-    import ANYstructure.anystruct.calc_structure as calc_structure
     import ANYstructure.anystruct.make_grid_numpy as grid
 
 import random
@@ -17,17 +18,25 @@ structure_types = {'vertical': ['BBS', 'SIDE_SHELL', 'SSS'],
                          'internals': ['INNER_SIDE', 'FRAME_WT', 'GENERAL_INTERNAL_WT',
                                        'INTERNAL_ZERO_STRESS_WT', 'INTERNAL_LOW_STRESS_WT']}
 
-obj_dict = {'mat_yield': [355e6, 'Pa'], 'mat_factor': [1.10, ''],'span': [3.3, 'm'], 'spacing': [0.68, 'm'],
-            'plate_thk': [0.025, 'm'],
-            'stf_web_height': [0.250297358, 'm'], 'stf_web_thk': [0.012, 'm'], 'stf_flange_width': [0.052, 'm'],
-            'stf_flange_thk': [0.029702642, 'm'], 'structure_type': ['BOTTOM', ''], 'plate_kpp': [1, ''],
-            'stf_kps': [1, ''], 'stf_km1': [12, ''], 'stf_km2': [24, ''], 'stf_km3': [12, ''],
-            'sigma_y1': [100, 'MPa'], 'sigma_y2': [100, 'MPa'], 'sigma_x2': [102.7, 'MPa'], 'sigma_x1': [102.7, 'MPa'],
-            'tau_xy': [5, 'MPa'],
-            'stf_type': ['T', ''], 'structure_types': [structure_types, ''], 'zstar_optimization': [True, ''],
-            'puls buckling method':[1,''], 'puls boundary':['Int',''], 'puls stiffener end':['C',''],
-            'puls sp or up':['SP',''], 'puls up boundary' :['SSSS',''], 'panel or shell': ['panel', ''],
-            'pressure side': ['both sides', ''], 'girder_lg': [5, 'm']}
+# obj_dict = {'mat_yield': [355e6, 'Pa'], 'mat_factor': [1.10, ''],'span': [3.3, 'm'], 'spacing': [0.68, 'm'],
+#             'plate_thk': [0.025, 'm'],
+#             'stf_web_height': [0.250297358, 'm'], 'stf_web_thk': [0.012, 'm'], 'stf_flange_width': [0.052, 'm'],
+#             'stf_flange_thk': [0.029702642, 'm'], 'structure_type': ['BOTTOM', ''], 'plate_kpp': [1, ''],
+#             'stf_kps': [1, ''], 'stf_km1': [12, ''], 'stf_km2': [24, ''], 'stf_km3': [12, ''],
+#             'sigma_y1': [100, 'MPa'], 'sigma_y2': [100, 'MPa'], 'sigma_x2': [102.7, 'MPa'], 'sigma_x1': [102.7, 'MPa'],
+#             'tau_xy': [5, 'MPa'],
+#             'stf_type': ['T', ''], 'structure_types': [structure_types, ''], 'zstar_optimization': [True, ''],
+#             'puls buckling method':[1,''], 'puls boundary':['Int',''], 'puls stiffener end':['C',''],
+#             'puls sp or up':['SP',''], 'puls up boundary' :['SSSS',''], 'panel or shell': ['panel', ''],
+#             'pressure side': ['both sides', ''], 'girder_lg': [5, 'm']}
+
+obj_mat: Material = Material(young=206800e6, poisson=0.3, strength=355e6, mat_factor=1.10)
+obj_plate: Plate = Plate(spacing=0.74, span=2.5, thickness=0.018, material=obj_mat)
+obj_stiffener: Stiffener = Stiffener(type="T", web_height=0.250297358, web_th=0.012, flange_width=0.052, flange_th=0.029702642, material=obj_mat, dist_between_lateral_supp=None)    
+obj_stiffened_panel: StiffenedPanel = StiffenedPanel(plate=obj_plate, stiffener=obj_stiffener, stiffener_end_support="continuous", girder_length=5)
+obj_stress: Stress = Stress(sigma_x1=102.7, sigma_x2=102.7e6, sigma_y1=100e6, sigma_y2=100e6, tauxy=5e6)
+obj_puls: Puls = Puls(puls_method=1, puls_boundary='Int', puls_stf_end='C', puls_sp_or_up='SP', puls_up_boundary='SSSS')
+obj: BucklingInput = BucklingInput(panel=obj_stiffened_panel, pressure=0, pressure_side="both sides", stress=obj_stress)
 
 obj_dict_cyl_long = {'mat_yield': [355e6, 'Pa'], 'mat_factor': [1.15, ''],'span': [5, 'm'], 'spacing': [0.6, 'm'],
                     'plate_thk': [0.015, 'm'],
@@ -131,15 +140,24 @@ obj_dict_L = {'mat_yield': [355e6, 'Pa'], 'mat_factor': [1.15, ''], 'span': [3.6
               'puls buckling method':[2,''], 'puls boundary':['Int',''], 'puls stiffener end':['C',''],
             'puls sp or up':['SP',''], 'puls up boundary' :['SSSS',''] , 'panel or shell': ['panel', ''], 'pressure side': ['both sides', ''] }
 
-obj_dict_fr = {'mat_yield': [355e6, 'Pa'], 'mat_factor': [1.15, ''],'span': [2.5, 'm'], 'spacing': [0.74, 'm'],
-               'plate_thk': [0.018, 'm'],
-               'stf_web_height': [0.2, 'm'], 'stf_web_thk': [0.018, 'm'], 'stf_flange_width': [0, 'm'],
-               'stf_flange_thk': [0, 'm'], 'structure_type': ['FRAME', ''], 'plate_kpp': [1, ''],
-               'stf_kps': [1, ''], 'stf_km1': [12, ''], 'stf_km2': [24, ''], 'stf_km3': [12, ''],
-               'sigma_y1': [150, 'MPa'], 'sigma_y2': [92.22, 'MPa'], 'sigma_x2': [-54.566, 'MPa'], 'sigma_x1': [-54.566, 'MPa'], 'tau_xy': [16.67, 'MPa'],
-               'stf_type': ['FB', ''], 'structure_types': [structure_types, ''], 'zstar_optimization': [True, ''],
-               'puls buckling method':[2,''], 'puls boundary':['Int',''], 'puls stiffener end':['C',''],
-            'puls sp or up':['SP',''], 'puls up boundary' :['SSSS',''], 'panel or shell': ['panel', ''], 'pressure side': ['both sides', ''] }
+# obj_dict_fr = {'mat_yield': [355e6, 'Pa'], 'mat_factor': [1.15, ''],'span': [2.5, 'm'], 'spacing': [0.74, 'm'],
+#                'plate_thk': [0.018, 'm'],
+#                'stf_web_height': [0.2, 'm'], 'stf_web_thk': [0.018, 'm'], 'stf_flange_width': [0, 'm'],
+#                'stf_flange_thk': [0, 'm'], 'structure_type': ['FRAME', ''], 'plate_kpp': [1, ''],
+#                'stf_kps': [1, ''], 'stf_km1': [12, ''], 'stf_km2': [24, ''], 'stf_km3': [12, ''],
+#                'sigma_y1': [150, 'MPa'], 'sigma_y2': [92.22, 'MPa'], 'sigma_x2': [-54.566, 'MPa'], 'sigma_x1': [-54.566, 'MPa'], 'tau_xy': [16.67, 'MPa'],
+#                'stf_type': ['FB', ''], 'structure_types': [structure_types, ''], 'zstar_optimization': [True, ''],
+#                'puls buckling method':[2,''], 'puls boundary':['Int',''], 'puls stiffener end':['C',''],
+#             'puls sp or up':['SP',''], 'puls up boundary' :['SSSS',''], 'panel or shell': ['panel', ''], 'pressure side': ['both sides', ''] }
+
+obj_fr_material: Material = Material(young=206800e6, poisson=0.3, strength=355e6, mat_factor=1.15)
+obj_fr_plate: Plate = Plate(spacing=0.74, span=2.5, thickness=0.018, material=obj_fr_material)
+obj_fr_stiffener: Stiffener = Stiffener(type="FB", web_height=0.200, web_th=0.018, flange_width=0.0, flange_th=0.0, material=obj_fr_material, dist_between_lateral_supp=None)    
+obj_fr_stiffened_panel: StiffenedPanel = StiffenedPanel(plate=obj_fr_plate, stiffener=obj_fr_stiffener, stiffener_end_support="continuous", girder_length=5)
+obj_fr_stress: Stress = Stress(sigma_x1=-54.566e6, sigma_x2=-54.566e6, sigma_y1=150e6, sigma_y2=92.22e6, tauxy=16.67e6)
+obj_fr_puls: Puls = Puls(puls_method=2, puls_boundary='Int', puls_stf_end='C', puls_sp_or_up='SP', puls_up_boundary='Int')
+obj_fr: BucklingInput = BucklingInput(panel=obj_fr_stiffened_panel, pressure=0, pressure_side="both sides", stress=obj_fr_stress, puls_input=obj_fr_puls)
+
 
 point_dict = {'point5': [12.0, 2.5], 'point8': [0.0, 2.5], 'point3': [8.0, 0.0], 'point2': [4.0, 0.0],
               'point6': [8.0, 2.5], 'point7': [4.0, 2.5], 'point9': [0.0, 20.0], 'point4': [12.0, 0.0],
@@ -358,23 +376,23 @@ def get_bal_fls_load():
 def get_bal_uls_load():
     return load.Loads(bal_uls)
 
-def get_object_dictionary():
-    return obj_dict
+def get_object() -> BucklingInput:
+    return obj
 
-def get_structure_object(line=None):
+def get_structure_object(line=None) -> BucklingInput:
     if line in ('line12','line13','line11','line4'):
-        return calc_structure.CalcScantlings(obj_dict_fr)
+        return obj_fr
     else:
-        return calc_structure.CalcScantlings(obj_dict)
+        return obj
 
-def get_structure_calc_object(line=None, heavy = False):
+def get_structure_calc_object(line=None, heavy = False) -> BucklingInput:
     if line in ('line12','line13','line11','line4'):
-        return calc_structure.CalcScantlings(obj_dict_fr)
+        return obj_fr
     else:
-        return calc_structure.CalcScantlings(obj_dict if not heavy else obj_dict_heavy)
+        return obj if not heavy else obj_dict_heavy
 
 def get_fatigue_object():
-    return calc_structure.CalcFatigue(obj_dict, fat_obj_dict)
+    return calc_structure.CalcFatigue(obj, fat_obj_dict)
 
 def get_fatigue_object_problematic():
     return calc_structure.CalcFatigue(obj_dict_sec_error, fat_obj_dict_problematic)

@@ -498,7 +498,7 @@ class CreateOptimizeCylinderWindow():
 
         main_application.Application.draw_cylinder(text_size='Verdana 8 bold',
                                                    canvas = self._canvas_opt,
-                                                   CylObj=self._initial_cylinder_obj,
+                                                   cylindrical_shell=self._initial_cylinder_obj,
                                                    start_x_cyl=350, start_y_cyl=300, text_x=230,
                                                    text_y=120)
 
@@ -632,7 +632,7 @@ class CreateOptimizeCylinderWindow():
 
             main_application.Application.draw_cylinder(text_size='Verdana 8 bold',
                                                        canvas = self._canvas_opt,
-                                                       CylObj=self._opt_results[0],
+                                                       cylindrical_shell=self._opt_results[0],
                                                        start_x_cyl=350, start_y_cyl=300, text_x=230,
                                                        text_y=120)
             self._new_sasd.set(self._opt_results[0].sasd)

@@ -3,7 +3,9 @@ import tkinter as tk
 from _tkinter import TclError
 from tkinter.ttk import Combobox
 import os
+from typing import List, Dict, Any, Union
 
+from calc_structure_classes import Stiffener, BucklingInput
 try:
     import anystruct.example_data as test
     import anystruct.helper as hlp
@@ -30,18 +32,11 @@ class CreateStructureWindow():
         self._frame.grab_set()
         self._root_dir = os.path.dirname(os.path.abspath(__file__))
         if __name__ == '__main__':
-            self._initial_structure_obj = test.get_structure_calc_object()
-            self._initial_calc_obj = test.get_structure_calc_object()
+            self._initial_structure_obj: BucklingInput = test.get_structure_calc_object()
+            self._initial_calc_obj: BucklingInput = test.get_structure_calc_object()
 
             self._section_list = []
-            self._section_objects = []
-            for section in hlp.helper_read_section_file('bulb_anglebar_tbar_flatbar.csv'):
-                SecObj = Section(section)
-                self._section_list = hlp.add_new_section(self._section_list, SecObj)
-                self._section_objects.append(SecObj)
-                # m = self._ent_section_list.children['menu']
-                # m.add_command(label=SecObj.__str__(), command=self.section_choose)
-
+            self._section_objects: List[Stiffener] = hlp.helper_read_section_file('bulb_anglebar_tbar_flatbar.csv')
             self._clicked_button = ["long stf", "ring stf", "ring frame", "flat long stf", 'flat stf', 'flat girder'][0]
         else:
             self.app = app
@@ -159,13 +154,13 @@ class CreateStructureWindow():
         init_dim,init_thk = 0.05,0.002
 
         if self._initial_structure_obj != None:
-            self._new_stiffener_type.set(self._initial_structure_obj.get_stiffener_type())
-            self._new_spacing.set(self._initial_structure_obj.get_s()*1000)
-            self._new_pl_thk.set(self._initial_structure_obj.get_pl_thk()*1000)
-            self._new_web_h.set(self._initial_structure_obj.get_web_h()*1000)
-            self._new_web_thk.set(self._initial_structure_obj.get_web_thk()*1000)
-            self._new_fl_w.set(self._initial_structure_obj.get_fl_w()*1000)
-            self._new_fl_thk.set(self._initial_structure_obj.get_fl_thk()*1000)
+            self._new_stiffener_type.set(self._initial_structure_obj.panel.stiffener.type)
+            self._new_spacing.set(self._initial_structure_obj.panel.plate.spacing * 1000)
+            self._new_pl_thk.set(self._initial_structure_obj.panel.plate.th * 1000)
+            self._new_web_h.set(self._initial_structure_obj.panel.stiffener.web_height * 1000)
+            self._new_web_thk.set(self._initial_structure_obj.panel.stiffener.web_th * 1000)
+            self._new_fl_w.set(self._initial_structure_obj.panel.stiffener.flange_width * 1000)
+            self._new_fl_thk.set(self._initial_structure_obj.panel.stiffener.flange_th * 1000)
         else:
             self._new_spacing.set(0)
             self._new_pl_thk.set(0)
@@ -249,7 +244,7 @@ class CreateStructureWindow():
             sections = self._section_list
         else:
             for sec_obj in self._section_objects:
-                if sec_obj.stf_type == self._new_stiffener_filter.get():
+                if sec_obj.type == self._new_stiffener_filter.get():
                     sections.append(sec_obj.__str__())
         start_x, start_y, dx, dy = 20, 70, 60, 33
         # self._ent_section_list = tk.OptionMenu(self._frame, self._new_section, command=self.section_choose,
@@ -381,11 +376,11 @@ class CreateStructureWindow():
         chosen_section = event.widget.get()
         for section in self._section_objects:
             if chosen_section == section.__str__():
-                self._new_web_h.set(section.stf_web_height*1000)
-                self._new_web_thk.set(section.stf_web_thk*1000)
-                self._new_fl_w.set(section.stf_flange_width*1000)
-                self._new_fl_thk.set(section.stf_flange_thk*1000)
-                self._new_stiffener_type.set(section.stf_type)
+                self._new_web_h.set(section.web_height*1000)
+                self._new_web_thk.set(section.web_th*1000)
+                self._new_fl_w.set(section.flange_width*1000)
+                self._new_fl_thk.set(section.flange_th*1000)
+                self._new_stiffener_type.set(section.type)
         self.option_choose(None)
 
     def read_sections(self):
@@ -397,14 +392,13 @@ class CreateStructureWindow():
         from pathlib import Path
 
         file = filedialog.askopenfile('r')
-        file = Path(file.name)
-        #m = self._ent_section_list.children['menu']
-
-        for section in hlp.helper_read_section_file(file.name):
-            SecObj = Section(section)
-            self._section_list = hlp.add_new_section(self._section_list, SecObj)
-            self._section_objects.append(SecObj)
-            #m.add_command(label=SecObj.__str__(), command=self.section_choose)
+        if file is None:
+            return
+        file_paths = Path(file.name)
+        self._section_objects = hlp.helper_read_section_file(file.name)
+        for section_obj in self._section_objects:
+            self._section_list = hlp.add_new_section(self._section_list, section_obj)
+        self.regen_option_menu()
 
     def read_sections_built_in(self):
         '''
@@ -416,145 +410,10 @@ class CreateStructureWindow():
         else:
             libfile = 'bulb_anglebar_tbar_flatbar.csv'
             libfile = self._root_dir + '/' + libfile
-        for section in hlp.helper_read_section_file(libfile):
-            SecObj = Section(section)
-            self._section_list = hlp.add_new_section(self._section_list, SecObj)
-            self._section_objects.append(SecObj)
-            #m.add_command(label=SecObj.__str__(), command=self.section_choose)
-
+        self._section_objects = hlp.helper_read_section_file(libfile)
+        for section_obj in self._section_objects:
+            self._section_list = hlp.add_new_section(self._section_list, section_obj)
         self.regen_option_menu()
-
-class Section:
-    '''
-    Creates a section property.
-    'stf_type': [self._new_stf_type.get(), ''],
-    'stf_web_height': [self._new_stf_web_h.get()/1000, 'm'],
-    'stf_web_thk': [self._new_sft_web_t.get()/1000, 'm'],
-    'stf_flange_width': [self._new_stf_fl_w.get()/1000, 'm'],
-    'stf_flange_thk': [self._new_stf_fl_t.get()/1000, 'm'],
-    '''
-    def __init__(self, input_dict):
-        super(Section, self).__init__()
-        self._stf_type = input_dict['stf_type'] if type(input_dict['stf_type']) != list \
-            else input_dict['stf_type'][0]
-        self._stf_web_height = input_dict['stf_web_height']if type(input_dict['stf_web_height']) != list \
-            else input_dict['stf_web_height'][0]
-        self._stf_web_thk = input_dict['stf_web_thk']if type(input_dict['stf_web_thk']) != list \
-            else input_dict['stf_web_thk'][0]
-        self._stf_flange_width = input_dict['stf_flange_width']if type(input_dict['stf_flange_width']) != list \
-            else input_dict['stf_flange_width'][0]
-        self._stf_flange_thk = input_dict['stf_flange_thk']if type(input_dict['stf_flange_thk']) != list \
-            else input_dict['stf_flange_thk'][0]
-
-    def __str__(self):
-        ''' Returning a string. '''
-        base_name = self.stf_type+ '_' + str(round(self.stf_web_height*1000, 0)) + 'x' + \
-                   str(round(self.stf_web_thk*1000, 0))
-        if self._stf_type == 'FB':
-            ret_str = base_name
-        elif self._stf_type in ['L-bulb', 'bulb', 'hp']:
-            ret_str = 'Bulb'+str(int(self.stf_web_height*1000 + self.stf_flange_thk*1000))+'x'+\
-                      str(round(self.stf_web_thk*1000, 0))+ '__' +str(round(self.stf_web_height*1000, 0)) + 'x' + \
-                   str(round(self.stf_web_thk*1000, 0))+ str(round(self.stf_flange_width*1000, 0)) + 'x' + \
-                      str(round(self.stf_flange_thk*1000, 0))
-        else:
-            ret_str = base_name + '__' + str(round(self.stf_flange_width*1000, 0)) + 'x' + \
-                      str(round(self.stf_flange_thk*1000, 0))
-
-        ret_str = ret_str.replace('.', '_')
-
-        return ret_str
-
-
-    @property
-    def stf_type(self):
-        return self._stf_type
-
-    @stf_type.setter
-    def stf_type(self, value):
-        self._stf_type = value
-
-    @property
-    def stf_web_height(self):
-        return self._stf_web_height
-
-    @stf_web_height.setter
-    def stf_web_height(self, value):
-        self._stf_web_height = value
-
-    @property
-    def stf_web_thk(self):
-        return self._stf_web_thk
-
-    @stf_web_thk.setter
-    def stf_web_thk(self, value):
-        self._stf_web_thk = value
-
-    @property
-    def stf_flange_width(self):
-        return self._stf_flange_width
-
-    @stf_flange_width.setter
-    def stf_flange_width(self, value):
-        self._stf_flange_width = value
-
-    @property
-    def stf_flange_thk(self):
-        return self._stf_flange_thk
-
-    @stf_flange_thk.setter
-    def stf_flange_thk(self, value):
-        self._stf_flange_thk = value
-
-    def return_puls_input(self):
-        '''
-        Returns as input good for PULS
-        :return:
-        '''
-        return {'Stiffener type (L,T,F)': self.stf_type,  'Stiffener boundary': 'C',
-                'Stiff. Height': self.stf_web_height*1000,
-                   'Web thick.': self.stf_web_thk*1000, 'Flange width': self.stf_flange_width*1000,
-                          'Flange thick.': self.stf_flange_thk*1000}
-
-# def run_section_properties(pl_s = 0.75, pl_t = 0.015, hw = 0.4, tw = 0.018, bf = 0.15, tf = 0.02):
-#     import sectionproperties.pre.sections as sections
-#     from sectionproperties.analysis.cross_section import CrossSection
-#     from matplotlib import pyplot as plt
-#
-#     # create a 50 diameter circle discretised by 64 points
-#     geometry = sections.MonoISection(
-#         d=(pl_t+hw+tf)*1000, b_t=bf*1000, b_b=pl_s*1000, t_ft=tf*1000, t_fb=pl_t*1000, t_w=tw*1000, r=8, n_r=16
-#     )
-#     mesh = geometry.create_mesh(mesh_sizes=[3.0])
-#     section = CrossSection(geometry, mesh)  # create a CrossSection object
-#     mesh_nodes = section.mesh_nodes
-#     mesh_elements = section.mesh_elements
-#     # plot the mesh
-#     (fig, ax) = plt.subplots(figsize=(4, 4), dpi=100)
-#     ax.triplot(mesh_nodes[:, 0], mesh_nodes[:, 1], mesh_elements[:, 0:3], lw=0.5)
-#     # #section.display_mesh_info()  # display the mesh information
-#     # ax = section.plot_mesh(pause=True)  # plot the generated mesh
-#     #
-#     # # perform a geometric, warping and plastic analysis, displaying the time info
-#     # section.calculate_geometric_properties(time_info=True)
-#     # section.calculate_warping_properties(time_info=True)
-#     # section.calculate_plastic_properties(time_info=True)
-#     #
-#     # # print the results to the terminal
-#     # section.display_results()
-#     #
-#     # # get the second moments of area and the torsion constant
-#     # (ixx_c, iyy_c, ixy_c) = section.get_ic()
-#     # j = section.get_j()
-#     #
-#     # # print the sum of the second moments of area and the torsion constant
-#     # print("Ixx + Iyy = {0:.3f}".format(ixx_c + iyy_c))
-#     # print("J = {0:.3f}".format(j))
-#     return fig, ax
-#
-#
-
-
 
 if __name__ == '__main__':
 

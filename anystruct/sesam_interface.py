@@ -2,8 +2,9 @@
 Main file for handeling interface toward DNVGL software.
 Consist mainly of helper functions.
 '''
+from typing import List, Dict, Any, Union
 
-
+from calc_structure_classes import Stiffener
 try:
     import anystruct.pl_stf_window as plstf
     import anystruct.helper as hlp
@@ -30,23 +31,23 @@ def line_to_js_command_reference(from_point, to_point, curve_name):
     return curve_name +' = CreateLineTwoPoints(' + 'point'+str(from_point)+','+ ' point' + \
            str(to_point) + ');\n'
 
-def section_property_to_js(section: plstf.Section = None):
+def section_property_to_js(section: Stiffener) -> str:
     '''
     Sct3 = BarSection(0.25, 0.015);
     Sct1 = UnsymISection(0.35, 0.02, 0, 0, 0, 0.15, 0.075, 0.02);
     Sct2 = LSection(0.3, 0.012, 0.1, 0.02);
     '''
 
-    if section.stf_type == 'T':
-        js_def =  'UnsymISection('+str(section.stf_web_height)+', '+str(section.stf_web_thk)+', 0, 0, 0, '+ \
-                  str(section.stf_flange_width)+', '+str(section.stf_flange_width/2)+', '+\
-                  str(section.stf_flange_thk)+');\n'
+    if section.type == 'T':
+        js_def =  'UnsymISection('+str(section.web_height)+', '+str(section.web_th)+', 0, 0, 0, '+ \
+                  str(section.flange_width)+', '+str(section.flange_width/2)+', '+\
+                  str(section.flange_th)+');\n'
 
-    elif section.stf_type in ['L', 'L-bulb']:
-        js_def =  'LSection('+str(section.stf_web_height)+', '+str(section.stf_web_thk)+', '+ \
-                  str(section.stf_flange_width)+', '+ str(section.stf_flange_thk)+');\n'
+    elif section.type in ['L', 'L-bulb']:
+        js_def =  'LSection('+str(section.web_height)+', '+str(section.web_th)+', '+ \
+                  str(section.flange_width)+', '+ str(section.flange_th)+');\n'
     else:
-        js_def =  'BarSection('+str(section.stf_web_height)+', '+str(section.stf_web_thk)+');\n'
+        js_def =  'BarSection('+str(section.web_height)+', '+str(section.web_th)+');\n'
     ret_str = section.__str__() +  ' = ' + js_def
     ret_str.replace('-', '_')
     return ret_str
@@ -54,8 +55,10 @@ def section_property_to_js(section: plstf.Section = None):
 class JSfile:
     '''
     An object representation of the js file.
+    This is the DNVGL .js file type, which is a scripting file
     '''
-    def __init__(self, points, lines, sections: plstf.Section = None, line_to_struc = None):
+    def __init__(self, points, lines, sections: List[Stiffener] = None, line_to_struc = None):
+        # what kind of object is line_to_struc ?
         super(JSfile, self).__init__()
         self._output_lines = list()
         self._points = points
@@ -92,7 +95,7 @@ class JSfile:
             if line_prop[0].Stiffener is not None:
                 beam_name = 'ANYbm'+str(hlp.get_num(line_name))
                 self.output_lines.append(beam_name+' = Beam('+line_name+');\n')
-                section = plstf.Section(line_prop[0].Stiffener.get_structure_prop())
+                section = plstf.Section(line_prop[0].Stiffener.get_structure_prop()) # still to update this 
                 self.output_lines.append(beam_name + '.section = '+section.__str__()+';\n')
 
 if __name__ == '__main__':

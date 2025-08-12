@@ -1,10 +1,22 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 import math
 from typing import Union
+import logging
 
 from .buckling_input import BucklingInput
 from .dnv_buckling import DNVBuckling
 
+# Create a custom logger
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+
+# so not to create another handler if it has already been defined in another module
+# doesn't seem to be working for file, but there the problem of multiple logs does not occur
+if not logger.hasHandlers():
+    ch = logging.StreamHandler()
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
 
 class CalcScantlings(BaseModel):
 
@@ -17,21 +29,9 @@ class CalcScantlings(BaseModel):
     lat_press: bool
     category: str
     need_recalc: bool
-    # def __init__(self, buckling_input: BucklingInput, lat_press: bool=True, category: str='secondary'):
-    #     super(CalcScantlings, self).__init__(buckling_input.panel, 
-    #                                          buckling_input.pressure, 
-    #                                          buckling_input.pressure_side, 
-    #                                          buckling_input.stress, 
-    #                                          buckling_input.tension_field_action,
-    #                                          buckling_input.stiffenedplate_effective_aginst_sigy,
-    #                                          buckling_input.min_lat_press_adj_span,
-    #                                          buckling_input.stiffened_panel_calc_props, 
-    #                                          buckling_input.puls)
-    #     # pressure is defined as a property, but doesn't seem to be using in the functions, where a parameter is passed.
-    #     self.lat_press: bool = lat_press
-    #     self.category: str = category
-    #     self._need_recalc: bool = True
+    structure_type: str = ''
 
+    model_config = ConfigDict(extra='forbid')
 
 
     def get_results_for_report(self, lat_press: float=0) -> str:
@@ -58,7 +58,7 @@ class CalcScantlings(BaseModel):
                +str(buc[2]) + ' eq7_52: ' + str(buc[3]) + ' eq7_53: ' + str(buc[4])
 
 
-    def calculate_slammingplate(self, slamming_pressure: float, red_fac: float=1) -> float:
+    def calculate_slamming_plate(self, slamming_pressure: float, red_fac: float=1) -> float:
         """
         Plate slamming according DNV
         Parameters:
@@ -85,7 +85,7 @@ class CalcScantlings(BaseModel):
         return 0.0158 * ka * self.buckling_input.panel.plate.spacing * 1000 * math.sqrt(psl / (Cd * sigmaf))
 
 
-    def calculate_slammingstiffener(self, slamming_pressure: float, angle: float=90, red_fac: float=1) -> dict[str, Union[float, None]]:
+    def calculate_slamming_stiffener(self, slamming_pressure: float, angle: float=90, red_fac: float=1) -> dict[str, Union[float, None]]:
         """
         Stiffener slamming according DNV
         Parameters:
@@ -151,12 +151,12 @@ class CalcScantlings(BaseModel):
             The float is the check value if the check is not ok, None otherwise.
         """
         assert self.buckling_input.panel.stiffener is not None
-        pl_chk = self.calculate_slammingplate(slamming_pressure, red_fac=pl_red_fact)
+        pl_chk = self.calculate_slamming_plate(slamming_pressure, red_fac=pl_red_fact)
         if self.buckling_input.panel.plate.thickness * 1000 < pl_chk:
             chk1 = pl_chk / self.buckling_input.panel.plate.thickness * 1000
             return False, chk1
 
-        stf_res = self.calculate_slammingstiffener(slamming_pressure, angle=angle, red_fac=stf_red_fact)
+        stf_res = self.calculate_slamming_stiffener(slamming_pressure, angle=angle, red_fac=stf_red_fact)
         if stf_res['tw_req'] is not None: # this is always the case though
             if self.buckling_input.panel.stiffener.web_th * 1000 < stf_res['tw_req']:
                 chk2 = stf_res['tw_req'] / self.buckling_input.panel.stiffener.web_th * 1000
@@ -335,7 +335,7 @@ class CalcScantlings(BaseModel):
         s = self.buckling_input.panel.plate.spacing
         fy = self.buckling_input.panel.plate.material.strength
 
-        fyd = (fy / self.buckling_input.panel.plate.material.mat_factor) / 1e6 # yield strength
+        fyd = (fy / self.buckling_input.panel.plate.material.mat_factor) # yield strength
         sig_x1 = self.buckling_input.stress.sigma_x1
         sig_x2 = self.buckling_input.stress.sigma_x2
         if sig_x1 * sig_x2 >= 0:
@@ -343,6 +343,8 @@ class CalcScantlings(BaseModel):
         else:
             sigxd =max(sig_x1 , sig_x2)
 
+        if math.pow(fyd, 2) - math.pow(sigxd, 2) < 0:
+            logger.error(f'Value for square root is negative in "get_minimum_shear_area" fyd: {fyd} sigxd: {sigxd}')
         taupds = 0.577 * math.sqrt(math.pow(fyd, 2) - math.pow(sigxd, 2))
 
         As = ((l * s * pressure) / (2 * taupds)) * math.pow(10, 3)
@@ -421,3 +423,37 @@ class CalcScantlings(BaseModel):
         :return:
         '''
         raise NotImplementedError("Not implemented for scantling. Use the buckling functionality instead")
+
+
+    def get_special_provisions_results(self):
+        '''
+        Special provisions for plating and stiffeners in steel structures.\n
+        Return a dictionary:\n
+        \n
+        'Plate thickness' : The thickness of plates shall not be less than this check.\n
+        'Stiffener section modulus' : The section modulus for longitudinals, beams, frames and other stiffeners\n
+                                      subjected to lateral pressure shall not be less than this check.\n
+        'Stiffener shear area' : The shear area of the plate/stiffener shall not be less than this ckeck.\n
+        :return: minium dimensions and actual dimensions for the current structure in mm/mm^2/mm^3
+        :rtype: dict
+        '''
+        min_pl_thk = self.get_dnv_min_thickness(design_pressure_kpa=self.buckling_input.pressure * 1000)
+        min_sec_mod = self.get_dnv_min_section_modulus(design_pressure_kpa=self.buckling_input.pressure * 1000, printit=False) * 1000**3
+        min_area = self.get_minimum_shear_area(pressure=self.buckling_input.pressure * 1000) * 1000**2  
+
+        this_pl_thk = self.buckling_input.panel.plate.thickness
+        if self.buckling_input.panel.stiffener is not None:
+            this_secmod = self.buckling_input.panel.stiffener.get_section_modulus()
+            this_area = self.buckling_input.panel.stiffener.get_shear_area() * 1000**2
+            return {'Plate thickness':{'minimum': min_pl_thk, 'actual': this_pl_thk},
+                    'Stiffener section modulus': {'minimum': min_sec_mod, 'actual': min(this_secmod)* 1000**3},
+                    'Stiffener shear area': {'minimum': min_area, 'actual': this_area}}
+        else:
+            return {'Plate thickness':{'minimum': min_pl_thk, 'actual': this_pl_thk}}
+
+
+    def get_main_properties(self):
+        # copied from calc_structure, making maximum use of pydantic model dump.
+        return {'main dict': self.model_dump(), 'Plate': self.buckling_input.panel.plate.model_dump(),
+                'Stiffener': None if self.buckling_input.panel.stiffener is None else self.buckling_input.panel.stiffener.model_dump(),
+                'Girder': None if self.buckling_input.panel.girder is None else self.buckling_input.panel.girder.model_dump()}

@@ -1,19 +1,29 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator, Field, PrivateAttr, model_validator
 import math
-from typing import Optional, Union
+from typing import Optional, Union, List, Dict
+from enum import IntEnum
 
 from .plate import Plate
 from .stiffener import Stiffener
 
 
+class StiffenedPanelType(IntEnum):
+    # following the numbering in the geometries in main
+    UNSTIFFENED_PLATE = 10
+    STIFFENED_PANEL = 11
+    STIFFENED_PANEL_WITH_GIRDER = 12
+
+
 class StiffenedPanel(BaseModel):
     plate: Plate
-    stiffener: Optional[Stiffener] = None
-    stiffener_end_support: Optional[str] = None
-    girder: Optional[Stiffener] = None
-    girder_end_support: Optional[str] = None
-    girder_length: Optional[float] = None
-    girder_panel_length: Optional[float] = None
+    stiffener: Optional[Stiffener] = Field(default=None)
+    stiffener_end_support: Optional[str] = Field(default=None, pattern='(?i)^(continuous|sniped)$')
+    girder: Optional[Stiffener] = Field(default=None)
+    girder_end_support: Optional[str] = Field(default=None, pattern='(?i)^(continuous|sniped)$')
+    girder_length: Optional[float] = Field(default=None)
+    girder_panel_length: Optional[float] = Field(default=None)
+    # this is an attribute used in the GUI. Not ideal, as it implicitly links this code with the GUI code
+    _geometry: StiffenedPanelType = PrivateAttr(default=None) # It is determined from the given parameters
     # def __init__(self, **kwargs):
     #     super().__init__(**kwargs)
     #     if self.stiffener is not None: # type: ignore -> somehow pydantic makes this a tuple...
@@ -27,16 +37,65 @@ class StiffenedPanel(BaseModel):
     #         if not self.girder_end_support.strip().lower() in ["continuous", "sniped"]: raise ValueError(f"Type {self.girder_end_support} is not a valid input. only 'continuous' or 'sniped'.")            
     #         assert self.girder_length is not None, "When a girder is defined, also the girder length needs to be defined"
     #         assert self.girder_panel_length is not None, "When a girder is defined, also the panel length needs to be defined"
-    
+
+    model_config = ConfigDict(extra='forbid')
+
+    # Derive the StiffenedPanelType from the given parameters.
+    @model_validator(mode='after')
+    def determine_geometry(self):
+        if self.stiffener is None and self.girder is None:
+            self._geometry = StiffenedPanelType.UNSTIFFENED_PLATE
+        elif self.stiffener and self.girder is None:
+            # only stiffener defined
+            self._geometry = StiffenedPanelType.STIFFENED_PANEL
+        elif self.stiffener  and self.girder:
+            self._geometry = StiffenedPanelType.STIFFENED_PANEL_WITH_GIRDER
+        else:
+            raise ValueError('Could not determine geometry from the given parameters')
+        
+        return self
+
+
     @field_validator('stiffener_end_support')
-    def prevent_stf_end_supp(cls, v):
-        assert v is not None, 'stiffener_end_support should be either "continuous" or "sniped"'
+    def check_stf_end_supp(cls, v):
+        if v is not None:
+            assert v.lower() in ["continuous", "sniped"], 'stiffener_end_support should be either "continuous" or "sniped"'
+            return v.lower()
         return v
+    
     @field_validator('girder_end_support')
-    def prevent_grd_end_supp(cls, v):
-        assert v is not None, 'girder_end_support should be either "continuous" or "sniped"'
+    def check_grd_end_supp(cls, v):
+        if v is not None:
+            assert v.lower() in ["continuous", "sniped"], 'girder_end_support should be either "continuous" or "sniped"'
+            return v.lower()
         return v
 
+    # TODO: add validation for girder_length and girder_panel_length
+    # girder length, not required when no stiffener present.
+
+
+    def __eq__(self, other):
+        """
+        Check equality between two StiffenedPanel instances.
+        
+        Args:
+            other: Another object to compare with
+            
+        Returns:
+            bool: True if both objects are StiffenedPanel instances with identical attributes
+        """
+        if not isinstance(other, StiffenedPanel):
+            return False
+        
+        return (
+            self.plate == other.plate and
+            self.stiffener == other.stiffener and
+            self.girder_end_support == other.girder_end_support and
+            self.girder == other.girder and
+            self.girder_end_support == other.girder_end_support and
+            self.girder_length == other.girder_length and
+            self.girder_panel_length == other.girder_panel_length
+        )
 
     def ToShortString(self) -> str:
         assert self.stiffener is not None
@@ -225,52 +284,68 @@ class StiffenedPanel(BaseModel):
                     number_ofgirders * girder_density * self.girder_panel_length * (self.girder.web_height * self.girder.web_th + self.girder.flange_width * self.girder.flange_th)
 
 
+    def get_calculation_domain(self) -> str:
+        # this is an implicit coupling between the GUI and calc_structure_classes.
+        # not ideal, but for now ok
+        if self._geometry == StiffenedPanelType.UNSTIFFENED_PLATE:
+            return 'Flat plate, unstiffened'
+        elif self._geometry == StiffenedPanelType.STIFFENED_PANEL:
+            return 'Flat plate, stiffened'
+        elif self._geometry == StiffenedPanelType.STIFFENED_PANEL_WITH_GIRDER:
+            return 'Flat plate, stiffened with girder'
+        else:
+            raise ValueError(f'{self._geometry} not implemented in get_calculation_domain in StiffenedPanel class')
 
-class Stiffened_panel_calc_props(BaseModel):
+
+class StiffenedPanelCalcProps(BaseModel):
     # looks like these are parameters for both scantlings and buckling.
-    # Maybe can split up in props for scantling calculations and props for buckling calculations
-    zstar_optimization: bool = True
-    plate_kpp: float = 1
-    stf_kps: float = 1
-    km1: float = 12
-    km2: float = 24
-    km3: float = 12
-    structure_type: str = 'BOTTOM'
-    structure_types: str = 'structure_types'
-    lat_load_factor: float = 1
-    stress_load_factor: float = 1
-    buckling_length_factor_stf: float = 1
-    buckling_length_factorgirder: float = 1
-    # def __init__(self, zstar_optimization: bool = True, 
-    #                     plate_kpp: float = 1,
-    #                     stf_kps: float =1 ,
-    #                     km1: float = 12,
-    #                     km2: float = 24,
-    #                     km3: float = 12,
-    #                     structure_type: str = 'BOTTOM',
-    #                     structure_types: str = 'structure_types',
-    #                     lat_load_factor: float=1,
-    #                     stress_load_factor: float=1,
-    #                     buckling_length_factor_stf: Union[float, None]=None,
-    #                     buckling_length_factorgirder: Union[float, None]=None) -> None:
+    # TODO: split up in props for scantling calculations and props for buckling calculations
+    zstar_optimization: bool = Field(default=True)
+    plate_kpp: float = Field(default=1)
+    stf_kps: float = Field(default=1)
+    km1: float = Field(default=12)
+    km2: float = Field(default=24)
+    km3: float = Field(default=12)
+    structure_type: str = Field(default='BOTTOM')
+    structure_types: Dict[str, List[str]] = {} # str = Field(default='structure_types')
+    lat_load_factor: float = Field(default=1)
+    stress_load_factor: float = Field(default=1)
+    buckling_length_factor_stf: float = Field(default=1)
+    buckling_length_factor_girder: float = Field(default=1)
+    flip_l_s: bool = Field(default=False)
+
+    model_config = ConfigDict(extra='forbid')
+
+
+    def __eq__(self, other) -> bool:
+        """
+        Check equality between two Stiffened_panel_calc_props instances.
         
-        # self._zstar_optimization: bool = zstar_optimization
-        # self.plate_kpp: float = plate_kpp
-        # self._stf_kps: float = stf_kps
-        # self._km1: float = km1
-        # self._km2: float = km2
-        # self._km3: float = km3
-        # self._structure_type: str = structure_type
-        # self._structure_types: str = structure_types
-        # self._lat_load_factor: float = lat_load_factor
-        # self._stress_load_factor: float = stress_load_factor
-        # self._buckling_length_factor_stf: Union[float, None] = buckling_length_factor_stf
-        # self._buckling_length_factorgirder: Union[float, None] = buckling_length_factorgirder
-        # self._dynamic_variable_orientation: float
-        # if self.structure_type in self.structure_types['vertical']:
-        #     self._dynamic_variable_orientation = 'z - vertical'
-        # elif self.structure_type in self.structure_types['horizontal']:
-        #     self._dynamic_variable_orientation = 'x - horizontal'
+        Args:
+            other: Another object to compare with
+            
+        Returns:
+            bool: True if both objects are Stiffened_panel_calc_props instances with identical attributes
+        """
+        if not isinstance(other, StiffenedPanelCalcProps):
+            return False
+        
+        return (
+            self.zstar_optimization == other.zstar_optimization and
+            self.plate_kpp == other.plate_kpp and
+            self.stf_kps == other.stf_kps and
+            self.km1 == other.km1 and
+            self.km2 == other.km2 and
+            self.km3 == other.km3 and
+            self.structure_type == other.structure_type and
+            self.structure_types == other.structure_types and
+            self.lat_load_factor == other.lat_load_factor and
+            self.lat_load_factor == other.lat_load_factor and
+            self.stress_load_factor == other.stress_load_factor and
+            self.buckling_length_factor_stf == other.buckling_length_factor_stf and
+            self.buckling_length_factor_girder == other.buckling_length_factor_girder and
+            self.flip_l_s == other.flip_l_s
+        )
 
 
     def get_structure_types(self):
@@ -323,3 +398,10 @@ class Stiffened_panel_calc_props(BaseModel):
         :return:
         '''
         return self.km3
+    
+    def get_flip_l_s(self):
+        '''
+        Return var
+        :return:
+        '''
+        return self.flip_l_s

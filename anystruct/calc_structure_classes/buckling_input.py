@@ -1,11 +1,12 @@
-from pydantic import BaseModel
 import math
 from typing import Optional
 import logging
 
+from pydantic import BaseModel, ConfigDict, field_validator, Field
+
 from .stress import Stress, DerivedStressValues
 from .stiffener import Stiffener
-from .stiffened_panel import StiffenedPanel, Stiffened_panel_calc_props
+from .stiffened_panel import StiffenedPanel, StiffenedPanelCalcProps
 from .puls import Puls
 
 
@@ -25,37 +26,47 @@ if not logger.hasHandlers():
 class BucklingInput(BaseModel):
     # The material factor is part of the material definition. But could also be part of the calculation_properties or even here
     panel: StiffenedPanel
-    pressure: float
-    pressure_side: str='both sides'
-    stress: Stress=Stress(sigma_x1=0, sigma_x2=0, sigma_y1=0, sigma_y2=0, tauxy=0)
-    tension_field_action: str = "not allowed"
-    stifplate_effective_aginst_sigy: bool = True
-    min_lat_press_adj_span: Optional[float] = None
-    calc_props: Stiffened_panel_calc_props = Stiffened_panel_calc_props()
-    puls_input: Puls = Puls()
-    # def __init__(self, 
-    #              panel: StiffenedPanel, 
-    #              pressure: float, 
-    #              pressure_side: str='both sides', 
-    #              stress: Stress=Stress(0, 0, 0, 0, 0), 
-    #              tension_field_action: str="not allowed", 
-    #              stiffenedplate_effective_aginst_sigy: bool=True,
-    #              min_lat_press_adj_span: float=None, # type: ignore
-    #              calc_props: Stiffened_panel_calc_props=Stiffened_panel_calc_props(), 
-    #              puls_input: Puls=Puls()):
+    pressure: float =Field(ge=0) # pydantic for greater or equal to zero
+    pressure_side: str = Field(default='both sides')
+    stress: Stress = Field(default=Stress(sigma_x1=0, sigma_x2=0, sigma_y1=0, sigma_y2=0, tauxy=0))
+    tension_field_action: str = Field(default="not allowed")
+    stifplate_effective_against_sigy: bool = Field(default=True)
+    min_lat_press_adj_span: Optional[float] = Field(default=None) # is not used anywhere
+    calc_props: StiffenedPanelCalcProps = Field(default=StiffenedPanelCalcProps())
+    puls_input: Puls = Field(default=Puls())
 
-    # @property # in mm
-    # def stiffenedplate_effective_aginst_sigy_enum(self) -> GirderOpt:
-    #     if self.stifplate_effective_aginst_sigy == True:
-    #         return GirderOpt.STF_PL_EFFECTIVE_AGAINST_SIGMA_Y
-    #     else:
-    #         return GirderOpt.ALL_SIMGA_Y_TOgirder
-    # @stiffenedplate_effective_aginst_sigy_enum.setter # in mm
-    # def stiffenedplate_effective_aginst_sigy_enum(self, val: GirderOpt):
-    #     if val == GirderOpt.STF_PL_EFFECTIVE_AGAINST_SIGMA_Y:
-    #         self.stifplate_effective_aginst_sigy = True
-    #     else:
-    #         self.stifplate_effective_aginst_sigy = False
+    model_config = ConfigDict(extra='forbid')
+
+    @field_validator('pressure')
+    def check_pressure(cls, value):
+        if value < 0:
+            raise ValueError('Pressure must be zero or positive')
+        return value
+
+    def __eq__(self, other) -> bool:
+        """
+        Check equality between two BucklingInput instances.
+        
+        Args:
+            other: Another object to compare with
+            
+        Returns:
+            bool: True if both objects are BucklingInput instances with identical attributes
+        """
+        if not isinstance(other, BucklingInput):
+            return False
+        
+        return (
+            self.panel == other.panel and
+            self.pressure == other.pressure and
+            self.pressure_side == other.pressure_side and
+            self.stress == other.stress and
+            self.tension_field_action == other.tension_field_action and
+            self.stifplate_effective_against_sigy == other.stifplate_effective_against_sigy and
+            self.min_lat_press_adj_span == other.min_lat_press_adj_span and
+            self.calc_props == other.calc_props and
+            self.puls_input == other.puls_input
+        )
 
 
     def __str__(self):
@@ -195,7 +206,7 @@ class BucklingInput(BaseModel):
         'global slenderness': 6, 'pressure': 7, 'web-flange-ratio': 8,  'below 0.87': 9,
                   'between 0.87 and 1': 10, 'above 1': 11}
         '''
-        stf_type = {'T-bar': 1,'T': 1,  'L-bulb': 2, 'Angle': 3, 'Flatbar': 4, 'FB': 4, 'L': 3}
+        stf_type = {'T': 1,  'L-BULB': 2, 'Angle': 3, 'Flatbar': 4, 'FB': 4, 'L': 3}
         stf_end = {'Cont': 1, 'C':1 , 'Sniped': 2, 'S': 2}
         field_type = {'Integrated': 1,'Int': 1, 'Girder - long': 2,'GL': 2, 'Girder - trans': 3,  'GT': 3}
         up_boundary = {'SS': 1, 'CL': 2}
@@ -294,14 +305,14 @@ class BucklingInput(BaseModel):
 
         stress_ratio_long = 1 if Use_Smax_x == 0 else Use_Smin_x / Use_Smax_x
         stress_ratio_trans = 1 if Use_Smax_y == 0 else Use_Smin_y / Use_Smax_y
-        derived_stress_values._stress_ratio_long = stress_ratio_long
-        derived_stress_values._stress_ratio_trans = stress_ratio_trans
+        derived_stress_values.stress_ratio_long = stress_ratio_long
+        derived_stress_values.stress_ratio_trans = stress_ratio_trans
         
         max_vonMises_x = sig_x1 if abs(sig_x1) > abs(sig_x2) else sig_x2
-        derived_stress_values._max_vonMises_x = max_vonMises_x
+        derived_stress_values.max_vonMises_x = max_vonMises_x
 
-        derived_stress_values._sxsd = sxsd
-        derived_stress_values._sy1sd = sy1sd
+        derived_stress_values.sxsd = sxsd
+        derived_stress_values.sy1sd = sy1sd
 
         l1 = min(length / 4, spacing / 2)
         if length == 0:
@@ -311,7 +322,7 @@ class BucklingInput(BaseModel):
 
 
         sysd = 0.75 * Use_Smax_y if abs(0.75 * Use_Smax_y) > abs(Use_Smax_y) else sig_trans_l1
-        derived_stress_values._sysd = sysd
+        derived_stress_values.sysd = sysd
 
         l1 = min(length / 4, spacing / 2)
         if length == 0:
@@ -321,7 +332,7 @@ class BucklingInput(BaseModel):
 
         #5  Lateral loaded plates
         sjsd =math.sqrt(math.pow(max_vonMises_x, 2) + math.pow(sysd, 2) - max_vonMises_x * sysd + 3 * math.pow(tsd, 2))
-        derived_stress_values._sjsd = sjsd
+        derived_stress_values.sjsd = sjsd
 
         #6.3 & 6.8 Transverse stresses:
         ha = 0 if thickness == 0 else max([0, 0.05 * spacing / thickness - 0.75])
@@ -342,14 +353,14 @@ class BucklingInput(BaseModel):
             kappa = 0 if lambda_c == 0 else 1 / (2 * math.pow(lambda_c, 2)) + 0.07
 
         syR = 0 if length * fy == 0 else (1.3 * thickness / length * math.sqrt(E / fy) + kappa * (1 - 1.3 * thickness / length * math.sqrt(E / fy))) * fy * kp
-        derived_stress_values._syR = syR
+        derived_stress_values.syR = syR
 
         #logger.debug("sxsd: %s sysd: %s sy1sd: %s sjsd: %s max_vonMises_x: %s syR: %s shear_ratio_long: %s shear_ratio_trans: %s",sxsd, sysd, sy1sd, sjsd, max_vonMises_x, syR, shear_ratio_long, shear_ratio_trans)
 
         return derived_stress_values
 
 
-    def effectiveplate_width(self) -> float:
+    def effectiveplate_width(self) -> tuple[float, float, float, float]:
         E = self.panel.plate.material.young / 1e6
         fy = self.panel.plate.material.strength / 1e6
         thickness = self.panel.plate.th # mm
@@ -358,11 +369,14 @@ class BucklingInput(BaseModel):
         derived_stress_values: DerivedStressValues = self.calculate_derived_stress_values()
         
         # 7.3 Effective plate width
-        syR = derived_stress_values._syR
-        sysd = derived_stress_values._sysd
-        sxsd = derived_stress_values._sxsd
+        syR = derived_stress_values.syR
+        sysd = derived_stress_values.sysd
+        sxsd = derived_stress_values.sxsd
 
-        Cys = 0.5 * (math.sqrt(4 - 3 * math.pow(sysd / fy, 2)) + sysd / fy)
+        if 3 * math.pow(sysd / fy, 2) > 4: # This is an fea edge case: sysd much bigger than yield for this to happen.
+            Cys = 1
+        else:
+            Cys = 0.5 * (math.sqrt(4 - 3 * math.pow(sysd / fy, 2)) + sysd / fy)
 
         lambda_p = 0 if thickness*E == 0 else 0.525 * (spacing / thickness) * math.sqrt(fy / E)  # reduced plate slenderness, checked not calculated with ex
         Cxs = (lambda_p - 0.22) / math.pow(lambda_p, 2) if lambda_p > 0.673 else 1
@@ -382,7 +396,7 @@ class BucklingInput(BaseModel):
         se = spacing * se_div_s
 
         # logger.debug("effective plate width: %s", se)
-        return se
+        return se, Cxs, Cys, lambda_p
 
 
     def red_prop(self, stiffener_or_girder: str) -> dict:
@@ -411,7 +425,7 @@ class BucklingInput(BaseModel):
         Vsd_div_Vrd = Vsd / Vrd
 
         As = member.tw * member.hw + member.b * member.tf
-        se = self.effectiveplate_width()
+        se = self.effectiveplate_width()[0]
         
         tw_red =max(0, member.tw * (1 - Vsd_div_Vrd))
         
@@ -421,7 +435,7 @@ class BucklingInput(BaseModel):
         Ipo_red  = member.get_polar_moment(reduced_tw=tw_red )
 
         Iy_red = member.get_moment_of_intertia(plate_thickness=thickness/1000, plate_width=se/1000, reduced_tw=tw_red) * 1000**4
-        zp_red  = member.get_cross_section_centroid_with_effectiveplate(plate_thickness=thickness/1000, plate_width=se/1000, reduced_tw=tw_red ) \
+        zp_red  = member.get_cross_section_centroid(plate_thickness=thickness/1000, plate_width=se/1000, reduced_tw=tw_red ) \
                     * 1000 - thickness / 2  # ch7.5.1 page 19
         zt_red  = (member.hw + member.tf) - zp_red + thickness / 2  # ch 7.5.1 page 19
         Wes_red  = 0.0001 if zt_red == 0 else Iy_red / zt_red
@@ -431,6 +445,8 @@ class BucklingInput(BaseModel):
 
 
     def fET(self, lT, stiffener_or_girder: str) -> float:
+        # it looks like this function gets called twice.
+        # should fix this for performance reasons
         if stiffener_or_girder.strip().lower() == "stiffener":
             assert self.panel.stiffener is not None
             member: Stiffener = self.panel.stiffener
@@ -458,8 +474,8 @@ class BucklingInput(BaseModel):
         c = 0 if length == 0 else 2 - (spacing / length) # eq 7.41, checked, ok
 
         derived_stress_values: DerivedStressValues = self.calculate_derived_stress_values()
-        sysd = derived_stress_values._sysd
-        sxsd = derived_stress_values._sxsd
+        sysd = derived_stress_values.sysd
+        sxsd = derived_stress_values.sxsd
         # This sjSd is different from the one used in unstiffened plate: sigmax and sigmay can be set to zero for tension.
         # Question is if this is only for the calculation of lambda_e or also for the vonMises?
         sjSd = math.sqrt(
@@ -471,10 +487,10 @@ class BucklingInput(BaseModel):
                                                    math.pow(abs(taud_Sd) / fEpt, c), 1 / c)) # eq 7.40
 
         fep = fy / math.sqrt(1 + math.pow(lambda_e, 4)) # eq 7.39
-        eta = min(sjSd / fep, 1) # eq. 7.377
+        nu = min(sjSd / fep, 1) # eq. 7.37
 
         C = 0 if member.tw == 0 else (member.hw / spacing) * math.pow(thickness / member.tw, 3) * \
-                                              math.sqrt((1 - eta)) # e 7.36, checked ok
+                                              math.sqrt((1 - nu)) # e 7.36, checked ok
 
         beta = (3 * C + 0.2) / (C + 0.2) # eq 7.35
         It = member.get_torsional_moment_venant()
@@ -489,9 +505,10 @@ class BucklingInput(BaseModel):
         else:
             fET = 0.001
 
-        logger.debug("7.5 Characteristic buckling")
-        logger.debug("fEpt: %s fEpy: %s fEpx: %s c: %s sxsd: %s sysd: %s sjSd: %s tsd: %s", fEpt, fEpy, fEpx, c, sxsd, sysd, sjSd, taud_Sd)
-        logger.debug("lambda_e: %s fep: %s eta: %s C: %s beta: %s lT: %s fET: %s", lambda_e, fep, eta, C, beta, lT, fET)
+        logger.debug("Section 7.5 Characteristic buckling")
+        logger.debug(f"fEpt: {fEpt} fEpy: {fEpy} fEpx: {fEpx} c: {c} sxsd: {sxsd} sysd: {sysd} sjSd: {sjSd} tsd: {taud_Sd}")
+        logger.debug(f"lambda_e: {lambda_e} fep: {fep} nu: {nu} C: {C} beta: {beta} lT: {lT} fET: {fET}")
+
         return fET
 
 
@@ -574,8 +591,8 @@ class BucklingInput(BaseModel):
             self.min_lat_press_adj_span*self.calc_props.lat_load_factor
 
         As = member.As
-        se = self.effectiveplate_width()
-        zp = member.get_cross_section_centroid_with_effectiveplate(plate_thickness=thickness/1000, plate_width=se/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
+        se = self.effectiveplate_width()[0]
+        zp = member.get_cross_section_centroid(plate_thickness=thickness/1000, plate_width=se/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
         zt = (member.hw + member.tf) - zp + thickness / 2
         Iy = member.get_moment_of_intertia(plate_thickness=thickness/1000, plate_width=se/1000) * 1000**4
         
@@ -620,8 +637,8 @@ class BucklingInput(BaseModel):
         E = member.material.young / 1e6
         thickness = self.panel.plate.th # mm
         As = member.As
-        se = self.effectiveplate_width()
-        zp = member.get_cross_section_centroid_with_effectiveplate(plate_thickness=thickness/1000, plate_width=se/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
+        se = self.effectiveplate_width()[0]
+        zp = member.get_cross_section_centroid(plate_thickness=thickness/1000, plate_width=se/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
         zt  = (member.hw + member.tf) - zp + thickness / 2  # ch 7.5.1 page 19
         Iy = member.get_moment_of_intertia(plate_thickness=thickness/1000, plate_width=se/1000) * 1000**4
         ie = 0.0001 if As + se * thickness == 0 else math.sqrt(Iy / (As + se * thickness))
@@ -654,8 +671,8 @@ class BucklingInput(BaseModel):
         thickness = self.panel.plate.th # mm
         length = self.panel.plate.l # mm
         As = member.As
-        se = self.effectiveplate_width()
-        zp = member.get_cross_section_centroid_with_effectiveplate(plate_thickness=thickness/1000, plate_width=se/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
+        se = self.effectiveplate_width()[0]
+        zp = member.get_cross_section_centroid(plate_thickness=thickness/1000, plate_width=se/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
         Iy = member.get_moment_of_intertia(plate_thickness=thickness/1000, plate_width=se/1000) * 1000**4
         ie = 0.0001 if As + se * thickness == 0 else math.sqrt(Iy / (As + se * thickness))
         lk = length
@@ -671,3 +688,28 @@ class BucklingInput(BaseModel):
 
         # logger.debug("fk plate side: %s", fk)
         return fk
+
+
+    def flip_l_s(self):
+
+        # The calculations are only valid if length is greater than spacing.
+        # When performing a spot check on a panel, where one wants to add a stiffener later,
+        # one does not want to change the stresses from longitudinal to transverse.
+        # Instead, one want to provide the sigma_x1 and sigma_x2 values in the direction of the future stiffener, 
+        # even though the future stiffener direction is the short direction of the plate.
+        # The next flips the length and spacing and also the stresses, if the flip_l_s is True.
+        # obviously the default is false, as this can give unexpected behaviour.
+        logger.warning("Flipping length and spacing and also the stresses")
+        spacing = self.panel.plate.spacing
+        span = self.panel.plate.span
+        sigma_x1 = self.stress.sigma_x1
+        sigma_x2 = self.stress.sigma_x2
+        sigma_y1 = self.stress.sigma_y1
+        sigma_y2 = self.stress.sigma_y2
+
+        self.stress.sigma_x1 = sigma_y1
+        self.stress.sigma_x2 = sigma_y2
+        self.stress.sigma_y1 = sigma_x1
+        self.stress.sigma_y2 = sigma_x2
+        self.panel.plate.spacing = span
+        self.panel.plate.span = spacing

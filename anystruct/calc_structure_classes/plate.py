@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from .material import Material
 
@@ -8,16 +8,31 @@ class Plate(BaseModel):
     span: float
     thickness: float
     material: Material
-    # def __init__(self, spacing: float, span: float, thickness:float=0, material: Material=Material(206e9, 0.3, 235e6)):
-    #     self._spacing: float = spacing
-    #     self._span: float = span
-    #     self._thickness: float = thickness
-    #     self._material: Material = material
 
+    model_config = ConfigDict(extra='forbid')
+
+    def __eq__(self, other):
+        """
+        Check equality between two Plate instances.
+        
+        Args:
+            other: Another object to compare with
+            
+        Returns:
+            bool: True if both objects are Plate instances with identical attributes
+        """
+        if not isinstance(other, Plate):
+            return False
+        
+        return (
+            self.spacing == other.spacing and
+            self.span == other.span and
+            self.thickness == other.thickness and
+            self.material == other.material
+        )
 
     def ToShortString(self) -> str:
         return 'lxb' + str(self.span) + 'x' + str(self.spacing)
-
 
     # Property decorators are used in buckling. IN mm!    
     @property # in mm

@@ -1,11 +1,15 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 import math
 from typing import Optional, Dict, Any
 import logging
 
 from .stress import DerivedStressValues
-from.buckling_input import BucklingInput
+from .buckling_input import BucklingInput
 
+
+# The logic in this file should be moved to "buckling_input.py"
+# then the "plated_structures_buckling" could be a method on "BucklingInput" and renamed to "get_utilization_factors()"
+# similar to "cylinder_and_curved_plate.py" which has a method "get_utilization_factors()"
 
 # Create a custom logger
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.DEBUG)
@@ -24,19 +28,20 @@ class DNVBuckling(BaseModel):
     buckling_input: BucklingInput
     calculation_domain: Optional[str]
 
+    model_config = ConfigDict(extra='forbid')
 
     def get_method(self):
         gird_opt = ['Stf. pl. effective against sigma y', 'All sigma y to girder']
         #stf_opt = ['allowed', 'not allowed']
         # if self.calculation_domain == "Flat plate, stiffened with girder":
 
-        if self.buckling_input.stifplate_effective_aginst_sigy == True:
-            self.buckling_input.stifplate_effective_aginst_sigy = gird_opt[0] # type: ignore
-        elif self.buckling_input.stifplate_effective_aginst_sigy == False:
-            self.buckling_input.stifplate_effective_aginst_sigy = gird_opt[1] # type: ignore
+        if self.buckling_input.stifplate_effective_against_sigy == True:
+            self.buckling_input.stifplate_effective_against_sigy = gird_opt[0] # type: ignore
+        elif self.buckling_input.stifplate_effective_against_sigy == False:
+            self.buckling_input.stifplate_effective_against_sigy = gird_opt[1] # type: ignore
 
         if self.calculation_domain == "Flat plate, stiffened with girder":
-            if self.buckling_input.stifplate_effective_aginst_sigy == gird_opt[0]:
+            if self.buckling_input.stifplate_effective_against_sigy == gird_opt[0]:
                 return 1
             else:
                 return 2
@@ -54,7 +59,7 @@ class DNVBuckling(BaseModel):
                         'Girder': {'Overpressure plate side': 0, 'Overpressure girder side': 0, 'Shear capacity': 0},
                         'Local buckling': 0}
 
-        unstf_pl = self.unstiffenedplate_buckling(optimizing = optimizing)
+        unstf_pl = self.unstiffened_plate_buckling(optimizing = optimizing)
         up_buckling = max([unstf_pl['UF Pnt. 5  Lateral loaded plates'], unstf_pl['UF sjsd'],
                            max([unstf_pl['UF Longitudinal stress'],  unstf_pl['UF transverse stresses'],
                                 unstf_pl['UF Shear stresses'], unstf_pl['UF Combined stresses']])
@@ -63,7 +68,7 @@ class DNVBuckling(BaseModel):
             return_dummy['Plate']['Plate buckling'] = up_buckling
             return return_dummy
 
-        local_buckling = self.local_buckling(optimizing=optimizing)
+        local_buckling = self.local_buckling_uc(optimizing=optimizing)
 
         stf_pla: dict = {}
         if self.buckling_input.panel.stiffener is not None:
@@ -109,8 +114,27 @@ class DNVBuckling(BaseModel):
                 'Local buckling': 0 if optimizing else local_buckling}
 
 
-    def unstiffenedplate_buckling(self, optimizing: bool=False) -> dict:
+    def unstiffened_plate_buckling(self, optimizing: bool=False) -> dict:
         # internal calculations are in mm (millimeter) and MPa (mega pascal)
+        
+        # The calculations for unstiffened are only valid if length is greater than spacing.
+        if self.buckling_input.panel.plate.span < self.buckling_input.panel.plate.spacing:
+            # When performing a spot check on a panel, where one wants to add a stiffener later,
+            # one does not want to change the stresses from longitudinal to transverse.
+            # Instead, one wants to provide the sigma_x1 and sigma_x2 values in the direction of the stiffener, 
+            # even though the future stiffener direction is the short direction of the plate.
+            # The next flips the length and spacing and also the stresses, if the flip_l_s is True.
+            # obviously the default is false, as this can give unexpected behaviour.
+            if self.buckling_input.calc_props.flip_l_s:
+                logger.warning(f'The span (l) {self.buckling_input.panel.plate.span} of the plate is less than the spacing (s) {self.buckling_input.panel.plate.spacing} of the plate')
+                self.buckling_input.flip_l_s()
+            else:
+                logger.error(f'The span (l) {self.buckling_input.panel.plate.span} of the plate must be greater than the spacing (s) {self.buckling_input.panel.plate.spacing} of the plate')
+                logger.error(f'Use the option flip_l_s=True to flip the span and spacing of the plate, but note that this will also flip the stresses.')
+                logger.error(f'This means that x-stresses need to correspond to the span direction and y-stresses to the spacing direction (as if there was a stiffener present).')
+                raise ValueError('The span (l) of the plate must be greater than the spacing (s) of the plate')
+        
+        
         unstf_pl_data = dict()
 
         E = self.buckling_input.panel.plate.material.young / 1e6
@@ -130,12 +154,12 @@ class DNVBuckling(BaseModel):
         sig_y2 = self.buckling_input.stress.sigma_y2 * self.buckling_input.calc_props.stress_load_factor / 1e6
 
         derived_stress_values: DerivedStressValues = self.buckling_input.calculate_derived_stress_values()
-        sxsd: float = derived_stress_values._sxsd
-        sysd: float = derived_stress_values._sysd
-        sy1sd: float = derived_stress_values._sy1sd
-        max_vonMises_x: float = derived_stress_values._max_vonMises_x
-        shear_ratio_long: float = derived_stress_values._stress_ratio_long
-        sjsd: float = derived_stress_values._sjsd
+        sxsd: float = derived_stress_values.sxsd
+        sysd: float = derived_stress_values.sysd
+        sy1sd: float = derived_stress_values.sy1sd
+        max_vonMises_x: float = derived_stress_values.max_vonMises_x
+        shear_ratio_long: float = derived_stress_values.stress_ratio_long
+        sjsd: float = derived_stress_values.sjsd
 
         #Pnt. 5  Lateral loaded plates
         sjsd =math.sqrt(math.pow(max_vonMises_x, 2) + math.pow(sysd, 2) - max_vonMises_x * sysd + 3 * math.pow(tsd, 2))
@@ -166,7 +190,8 @@ class DNVBuckling(BaseModel):
         else:
             uf_lat_load_pl_press = 9 if psd_max_press < 0 else abs(psd / psd_max_press)
 
-        logger.debug("psi_x: %s psi_y: %s sjsd: %s psd: %s", psi_x, psi_y, sjsd, psd)
+        logger.debug("Section 5:")
+        logger.debug(f"psi_x: {psi_x} psi_y: {psi_y} sjsd: {sjsd} psd: {psd}")
         logger.debug("uf_lat_load_pl_press: %s", uf_lat_load_pl_press)
 
         unstf_pl_data['UF Pnt. 5  Lateral loaded plates'] = uf_lat_load_pl_press
@@ -191,14 +216,15 @@ class DNVBuckling(BaseModel):
 
         Cx =(lambda_p - 0.055 * (3 + max([-2, shear_ratio_long]))) / math.pow(lambda_p, 2)
 
-        # Formulas of 6.2 and 6.6 are mixed. Is this correct?
-
+        # Formulas of 6.2 and 6.6 are mixed:
+        # In fact, 6.2 is just a special case of 6.6 and 6.3, where both longitudinal and transverse stress are constant.
         sxRd = Cx * fy / gammaM if not all([sig_x1 < 0, sig_x2 < 0]) else 1 * fy / gammaM # Corrected 07.08.2023, issue 126
 
         uf_unstf_pl_long_stress = 0 if sxRd == 0 else abs(sxsd / sxRd)
         unstf_pl_data['UF Longitudinal stress'] = uf_unstf_pl_long_stress
         
-        logger.debug("Section 6.2 & 6.6: sigma2/sigma1: %s ksigma: %s lambda_p: %s Cx: %s sxRd: %s", shear_ratio_long, ksigma, lambda_p, Cx, sxRd)
+        logger.debug("Section 6.2 & 6.6:" )
+        logger.debug(f"sigma2/sigma1: {shear_ratio_long} ksigma: {ksigma} lambda_p: {lambda_p} Cx: {Cx} sxRd: {sxRd}")
         logger.debug("uf_unstf_pl_long_stress: %s", uf_unstf_pl_long_stress)
 
         #6.3 & 6.8 Transverse stresses:
@@ -226,7 +252,8 @@ class DNVBuckling(BaseModel):
 
         unstf_pl_data['UF transverse stresses'] = uf_unstf_pl_trans_stress
         
-        logger.debug("Section 6.3: ha: %s kp: %s lambda_c: %s mu: %s kappa: %s", ha, kp, lambda_c, mu, kappa)
+        logger.debug("Section 6.3:")
+        logger.debug(f"ha: {ha} kp: {kp} lambda_c: {lambda_c} mu: {mu} kappa: {kappa}")
         logger.debug("uf_unstf_pl_trans_stress: %s", uf_unstf_pl_trans_stress)
 
         #6.4  Shear stress
@@ -247,7 +274,8 @@ class DNVBuckling(BaseModel):
         uf_unstf_pl_shear_stress = 0 if tauRd == 0 else tsd / tauRd
         unstf_pl_data['UF Shear stresses'] = uf_unstf_pl_shear_stress
         
-        logger.debug("Section 6.4: kl: %s lambda_w: %s Ctau: %s tauRd: %s", kl, lambda_w, Ctau, tauRd)
+        logger.debug("Section 6.4:")
+        logger.debug(f"kl: {kl} lambda_w: {lambda_w} Ctau: {Ctau} tauRd: {tauRd}")
         logger.debug("uf_unstf_pl_shear_stress: %s", uf_unstf_pl_shear_stress)
 
         #6.5  Combined stresses
@@ -280,7 +308,8 @@ class DNVBuckling(BaseModel):
         uf_unstf_pl_comb_stress = comb_req
         unstf_pl_data['UF Combined stresses'] = uf_unstf_pl_comb_stress
         
-        logger.debug("Section 6.5: lambda_w: %s Ctaue: %s tauRd_comb: %s ci: %s syRd_comb: %s", lambda_w, Ctaue, tauRd_comb, ci, syRd_comb)
+        logger.debug("Section 6.5:")
+        logger.debug(f"lambda_w: {lambda_w} Ctaue: {Ctaue} tauRd_comb: {tauRd_comb} ci: {ci} syRd_comb: {syRd_comb}")
         logger.debug("uf_unstf_pl_comb_stress: %s", uf_unstf_pl_comb_stress)
 
         return unstf_pl_data
@@ -308,10 +337,10 @@ class DNVBuckling(BaseModel):
         sig_y2 = self.buckling_input.stress.sigma_y2 * self.buckling_input.calc_props.stress_load_factor / 1e6
 
         derived_stress_values: DerivedStressValues = self.buckling_input.calculate_derived_stress_values()
-        sxsd: float = derived_stress_values._sxsd
-        sysd: float = derived_stress_values._sysd
-        sy1sd: float = derived_stress_values._sy1sd
-        stress_ratio_trans = derived_stress_values._stress_ratio_trans
+        sxsd: float = derived_stress_values.sxsd
+        sysd: float = derived_stress_values.sysd
+        sy1sd: float = derived_stress_values.sy1sd
+        stress_ratio_trans = derived_stress_values.stress_ratio_trans
 
         Lg = self.buckling_input.panel.girder_length * 1000
 
@@ -326,13 +355,13 @@ class DNVBuckling(BaseModel):
 
         #Pnt.7:  Buckling of stiffened plates
         # 7.2  Forces in idealised stiffened plate
-        se = self.buckling_input.effectiveplate_width()
+        se, Cxs, Cys, lambda_p = self.buckling_input.effectiveplate_width()
         Iy = Is = self.buckling_input.panel.stiffener.get_moment_of_intertia(plate_thickness=thickness/1000, plate_width=se/1000) * 1000**4
 
         kc = 0 if thickness * spacing == 0 else 2 * (1 + math.sqrt(1 + 10.9 * Is / (math.pow(thickness, 3) * spacing)))
         mc = 13.3 if self.buckling_input.panel.stiffener_end_support == "continuous" else 8.9
 
-        zp = self.buckling_input.panel.stiffener.get_cross_section_centroid_with_effectiveplate(plate_thickness=thickness/1000, plate_width=se/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
+        zp = self.buckling_input.panel.stiffener.get_cross_section_centroid(plate_thickness=thickness/1000, plate_width=se/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
         zt = (self.buckling_input.panel.stiffener.hw + self.buckling_input.panel.stiffener.tf) - zp + thickness / 2
 
         Weff = 0.0001 if zt == 0 else Iy / zt
@@ -377,7 +406,7 @@ class DNVBuckling(BaseModel):
 
         #7.4  Resistance of plate between stiffeners
         ksp = math.sqrt(1 - 3 * math.pow(tsd / fy, 2)) if tsd < (fy / math.sqrt(3)) else 0
-        syRd = derived_stress_values._syR if not all([sig_y1 < 0, sig_y2 < 0]) else fy
+        syRd = derived_stress_values.syR if not all([sig_y1 < 0, sig_y2 < 0]) else fy
         syrd_unstf = syRd / gammaM * ksp
         tau_sd_7_4 = fy / (math.sqrt(3) * gammaM)
         uf_stf_panel_res_betplate = max([sysd / syrd_unstf if all([syrd_unstf > 0, sysd > 0]) else 0, tsd / tau_sd_7_4])
@@ -437,27 +466,27 @@ class DNVBuckling(BaseModel):
         tau_Rds = tau_crs / gammaM
         tau_Rd = min([tau_Rdy,tau_Rdl,tau_Rds])
 
-        logger.debug("Stiffener properties")
-        logger.debug("Area stiffener: %s", self.buckling_input.panel.stiffener.As)
-        logger.debug("zp: %s Zt: %s Iy: %s Wes %s Wep: %s Reduced properties used: %s", zp, zt, Iy, Wes, Wep, reduced_properties_used)
+        logger.debug("Section Stiffener properties")
+        logger.debug(f"Area stiffener: {self.buckling_input.panel.stiffener.As}")
+        logger.debug(f"zp: {zp} Zt: {zt} Iy: {Iy} Wes: {Wes} Wep: {Wep} Reduced properties used: {reduced_properties_used}")
 
-        logger.debug("7.2 Forces in the idealised stiffened plate")
-        logger.debug("kc: %s mc: %s Wes: %s stress_ratio_trans %s C0: %s P0: %s", kc, mc, Wes, stress_ratio_trans, Co, Po)
-        logger.debug("qsdplate_side %s qsd_stf_side: %s kl: %s tau_crl: %s kg: %s tau_crg: %s", qsdplate_side, qsd_stf_side, kl, tau_crl, kg, tau_crg)
-        logger.debug("NSd: %s", NSd)
+        logger.debug("Section 7.2 Forces in the idealised stiffened plate")
+        logger.debug(f"sxsd: {sxsd} sysd: {sysd} sy1sd: {sy1sd} stress_ratio_trans: {stress_ratio_trans}")
+        logger.debug(f"kc: {kc} mc: {mc} Wes: {Wes} stress_ratio_trans: {stress_ratio_trans} C0: {Co} P0: {Po}")
+        logger.debug(f"qsdplate_side: {qsdplate_side} qsd_stf_side: {qsd_stf_side} kl: {kl} tau_crl: {tau_crl} kg: {kg} tau_crg: {tau_crg}")
 
-        logger.debug("7.3 Effective plate width")
-        logger.debug("se: %s", se)
+        logger.debug("Section 7.3 Effective plate width")
+        logger.debug(f"se: {se} Cxs: {Cxs} Cys: {Cys} lambda_p: {lambda_p}")
 
-        logger.debug("7.4 Resistance between stiffeners")
-        logger.debug("ksp: %s tau_Rd: %s", ksp, tau_Rd)
+        logger.debug("Section 7.4 Resistance between stiffeners")
+        logger.debug(f"ksp: {ksp} tau_sd_7_4: {tau_sd_7_4}")
 
-        logger.debug("7.6 Resistance of stiffened panels to shear stresses")
-        logger.debug("Ip: %s tau_crs: %s tau_Rds: %s tau_Rdy: %s", Ip, tau_crs, tau_Rds, tau_Rdy)
+        logger.debug("Section 7.6 Resistance of stiffened panels to shear stresses")
+        logger.debug(f"Ip: {Ip} tau_crs: {tau_crs} tau_Rds: {tau_Rds} tau_Rdy: {tau_Rdy} tau_Rdl: {tau_Rdl} tau_Rd: {tau_Rd}")
 
-        logger.debug("sxsd: %s sysd: %s sy1sd: %s tau_sd_7_4 %s shear_ratio_trans: %s", sxsd, sysd, sy1sd, tau_sd_7_4, stress_ratio_trans)
-        logger.debug("ie %s Ae %s", ie, Ae)
-        logger.debug("Ne: %s MpRd: %s MstRd: %s Ms1Rd: %s Ms2Rd: %s NkpRd: %s NksRd: %s NRd: %s", Ne, MpRd, MstRd, Ms1Rd, Ms2Rd, NkpRd, NksRd, NRd)
+        logger.debug("Section 7.7 Interaction formulas for axial compression and lateral pressure")
+        logger.debug(f"ie: {ie} Ae: {Ae}")
+        logger.debug(f"NSd: {NSd} Ne: {Ne} MpRd: {MpRd} MstRd: {MstRd} Ms1Rd: {Ms1Rd} Ms2Rd: {Ms2Rd} NkpRd: {NkpRd} NksRd: {NksRd} NRd: {NRd}")
 
         # 7.7 Interaction formulas for axial compression and lateral pressure
         u = 0 if all([tsd > (tau_crl / gammaM), self.buckling_input.tension_field_action == 'allowed']) else math.pow(tsd / tau_Rd, 2)
@@ -485,7 +514,7 @@ class DNVBuckling(BaseModel):
 
             uf_max_simp_stf = max([0, uf_7_62, uf_7_63]) if not test_qsd_l else max([0, uf_7_60, uf_7_61])
             stf_pnl_data['UF simply supported stf side'] = uf_max_simp_stf
-            logger.debug("uf_7_59: %s uf_7_60: %s uf_7_61: %s uf_7_62 %s uf_7_63: %s uf_7_64: %s u: %s z*: %s", uf_7_58, uf_7_59, uf_7_60, uf_7_61, uf_7_62, uf_7_63, u, zstar)
+            logger.debug(f"uf_7_59: {uf_7_58} uf_7_60: {uf_7_59} uf_7_61: {uf_7_60} uf_7_62: {uf_7_61} uf_7_63: {uf_7_62} uf_7_64: {uf_7_63} u: {u} z*: {zstar}")
         elif self.buckling_input.panel.stiffener_end_support == "continuous":
             stf_pnl_data['UF simply supported stf side'] = 0
             stf_pnl_data['UF simply supported plate side'] = 0
@@ -496,7 +525,7 @@ class DNVBuckling(BaseModel):
             M1Sd_stf = abs(qsd_stf_side) * math.pow(length, 2) / self.buckling_input.calc_props.km3
             M2Sd_stf = abs(qsd_stf_side) * math.pow(length, 2) / self.buckling_input.calc_props.km2
 
-            logger.debug("M1Sd_pl: %s M2Sd_pl: %s M1Sd_stf: %s M2Sd_stf %s", M1Sd_pl, M2Sd_pl, M1Sd_stf, M2Sd_stf)
+            logger.debug("M1Sd_pl: %s M2Sd_pl: %s M1Sd_stf: %s M2Sd_stf: %s", M1Sd_pl, M2Sd_pl, M1Sd_stf, M2Sd_stf)
 
             from scipy.optimize import minimize_scalar
             tolerance: float = (zp + zt) / 1000
@@ -506,7 +535,7 @@ class DNVBuckling(BaseModel):
                 eq7_51 = NSd / NkpRd - 2 * NSd / NRd +(M1Sd_pl - NSd * x) / (MpRd * (1 - NSd / Ne)) + u
                 eq7_52 = NSd / NksRd - 2 * NSd / NRd + (M2Sd_pl + NSd * x) / (MstRd * (1 - NSd / Ne)) + u
                 eq7_53 = NSd / NkpRd + (M2Sd_pl + NSd * x) / (MpRd * (1 - NSd / Ne)) + u
-                if debug: logger.debug("eq7_50: %s eq7_51: %s eq7_52: %s eq7_53 %s z*: %s", eq7_50, eq7_51, eq7_52, eq7_53, x)
+                if debug: logger.debug(f"eq7_50: {eq7_50} eq7_51: {eq7_51} eq7_52: {eq7_52} eq7_53: {eq7_53} z*: {x}")
                 return max(eq7_50, eq7_51, eq7_52, eq7_53)
             res_iter_pl = minimize_scalar(iteration_min_uf_pl_side, method="Bounded", bounds=(-zt+self.buckling_input.panel.stiffener.tf/2,zp), options={'xatol': tolerance})
 
@@ -521,7 +550,7 @@ class DNVBuckling(BaseModel):
                 eq7_55 = NSd / NkpRd + (M1Sd_stf + NSd * x) / (MpRd * (1 - NSd / Ne)) + u
                 eq7_56 = NSd / NksRd + (M2Sd_stf - NSd * x) / (Ms2Rd * (1 - NSd / Ne)) + u
                 eq7_57 = NSd / NkpRd - 2 * NSd / NRd + (M2Sd_stf - NSd * x) / (MpRd * (1 - NSd / Ne)) + u
-                if debug: logger.debug("eq7_54: %s eq7_55: %s eq7_56: %s eq7_57 %s z*: %s", eq7_54, eq7_55, eq7_56, eq7_57, x)
+                if debug: logger.debug(f"eq7_54: {eq7_54} eq7_55: {eq7_55} eq7_56: {eq7_56} eq7_57: {eq7_57} z*: {x}")
                 return max(eq7_54, eq7_55, eq7_56, eq7_57)
 
             res_iter_stf = minimize_scalar(iteration_min_uf_stf_side, method="Bounded", bounds=(-zt+self.buckling_input.panel.stiffener.tf/2,zp), options={'xatol': tolerance})
@@ -561,9 +590,9 @@ class DNVBuckling(BaseModel):
         psd = self.buckling_input.pressure * self.buckling_input.calc_props.lat_load_factor
 
         derived_stress_values: DerivedStressValues = self.buckling_input.calculate_derived_stress_values()
-        sxsd: float = derived_stress_values._sxsd
-        sysd: float = derived_stress_values._sysd
-        sy1sd: float = derived_stress_values._sy1sd
+        sxsd: float = derived_stress_values.sxsd
+        sysd: float = derived_stress_values.sysd
+        sy1sd: float = derived_stress_values.sy1sd
 
         # psd_min_adj = psd if self._min_lat_press_adj_span is None else\
         #     self._min_lat_press_adj_span * self.calc_props._lat_load_factor
@@ -608,9 +637,9 @@ class DNVBuckling(BaseModel):
         #8.4 Effective width of girders
         #Method 1:
         # calculation of Cxs and Cys according 7.14 and 7.16
-        syR = derived_stress_values._syR
-        sysd = derived_stress_values._sysd
-        sxsd = derived_stress_values._sxsd
+        syR = derived_stress_values.syR
+        sysd = derived_stress_values.sysd
+        sxsd = derived_stress_values.sxsd
 
         Cys = 0.5 * (math.sqrt(4 - 3 * math.pow(sysd / fy, 2)) + sysd / fy)
 
@@ -658,7 +687,7 @@ class DNVBuckling(BaseModel):
         AtotG = Ag + le * thickness
 
         Iy = self.buckling_input.panel.girder.get_moment_of_intertia(plate_thickness=thickness/1000, plate_width=le/1000) * 1000 ** 4
-        zp = self.buckling_input.panel.girder.get_cross_section_centroid_with_effectiveplate(plate_thickness=thickness/1000, plate_width=le/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
+        zp = self.buckling_input.panel.girder.get_cross_section_centroid(plate_thickness=thickness/1000, plate_width=le/1000) * 1000 - thickness / 2  # ch7.5.1 page 19
         zt = (thickness / 2 + self.buckling_input.panel.girder.hw + self.buckling_input.panel.girder.tf) - zp  # ch 7.5.1 page 19
 
         if Vsd_div_Vrd < 0.5:
@@ -676,7 +705,7 @@ class DNVBuckling(BaseModel):
         # pf = 0.0001 if length * spacing * gammaM == 0 else 12 * Wmin * fy / (math.pow(length, 2) * spacing * gammaM)
 
         lk = Lg
-        LGk = lk if self.buckling_input.calc_props.buckling_length_factorgirder is None else lk * self.buckling_input.calc_props.buckling_length_factorgirder
+        LGk = lk if self.buckling_input.calc_props.buckling_length_factor_girder is None else lk * self.buckling_input.calc_props.buckling_length_factor_girder
 
         ie = math.sqrt(Iy / AtotG)
         fE = 0 if LGk == 0 else math.pow(math.pi, 2) * E * math.pow(ie / LGk, 2)
@@ -809,26 +838,55 @@ class DNVBuckling(BaseModel):
 
     def local_buckling(self, optimizing: bool=False):
         '''
-        Checks for girders and stiffeners
+        Returns the maximum values for web height and flange width.
         '''
+
+        # the calculation of local buckling should move to the stiffener class.
         
         if self.buckling_input.panel.stiffener is not None:
             fy = self.buckling_input.panel.stiffener.material.strength
             max_web_stf = 42 * self.buckling_input.panel.stiffener.tw * math.sqrt(235 / fy) if self.buckling_input.panel.stiffener.type != 'FB' else 0
             max_flange_stf = (14 if self.buckling_input.panel.stiffener.fabrication_method == 'welded' else 15) * self.buckling_input.panel.stiffener.tf * math.sqrt(235 / fy)
         else:
-            max_web_stf = 0
-            max_flange_stf = 0
+            max_web_stf = 0.0
+            max_flange_stf = 0.0
 
         if self.buckling_input.panel.girder is not None:
             fy = self.buckling_input.panel.girder.material.strength
             max_webgirder = 42 * self.buckling_input.panel.girder.tw * math.sqrt(235 / fy) if self.buckling_input.panel.girder.type != 'FB' else 0
             max_flangegirder = (14 if self.buckling_input.panel.girder.fabrication_method == 'welded' else 15) * self.buckling_input.panel.girder.tf * math.sqrt(235 / fy)
         else:
-            max_webgirder = 0
-            max_flangegirder = 0
+            max_webgirder = 0.0
+            max_flangegirder = 0.0
 
         return {'Stiffener': [max_web_stf, max_flange_stf], 'Girder': [max_webgirder, max_flangegirder]}
+    
+
+    def local_buckling_uc(self, optimizing: bool=False):
+        '''
+        Returns the maximum values for web height and flange width.
+        '''
+
+        # this should be replaced with a unity check, iso returning the max allowable values.
+        # a separate function could return these.
+        
+        if self.buckling_input.panel.stiffener is not None:
+            max_web_stf, max_flange_stf = self.local_buckling(optimizing)['Stiffener']
+            stf_uc_web = self.buckling_input.panel.stiffener.web_height / max_web_stf if max_web_stf != 0 else 0
+            stf_uc_flange = self.buckling_input.panel.stiffener.flange_width / max_flange_stf if max_flange_stf != 0 else 0
+        else:
+            stf_uc_web = 0
+            stf_uc_flange = 0
+
+        if self.buckling_input.panel.girder is not None:
+            max_web_grd, max_flange_grd = self.local_buckling(optimizing)['Girder']
+            grd_uc_web = self.buckling_input.panel.girder.web_height / max_web_grd if max_web_grd != 0 else 0
+            grd_uc_flange = self.buckling_input.panel.girder.flange_width/ max_flange_grd if max_flange_grd != 0 else 0
+        else:
+            grd_uc_web = 0
+            grd_uc_flange = 0
+
+        return {'Stiffener': [stf_uc_web, stf_uc_flange], 'Girder': [grd_uc_web, grd_uc_flange]}
 
 
     def get_one_line_string_mixed(self):
