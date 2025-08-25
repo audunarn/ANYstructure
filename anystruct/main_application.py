@@ -5267,6 +5267,7 @@ class Application():
             self.save_no_dialogue(backup=True) #keeping a backup
 
         if all([pasted_structure == None, multi_return == None]):
+            # This is just a check for missing input.
             missing_input = False
             if self._new_calculation_domain.get() in ['Flat plate, stiffened', 'Flat plate, unstiffened',
                                                           'Flat plate, stiffened with girder']:
@@ -5282,6 +5283,7 @@ class Application():
                 return
 
         if self._line_is_active or multi_return != None:
+            # If you have clicked a line
             # structure dictionary: name of line : [ 0.Structure class, 1.calc scantling class,
             # 2.calc fatigue class, 3.load object, 4.load combinations result ]
             CylinderObj = None
@@ -5320,6 +5322,7 @@ class Application():
                                                     fabrication_method=self._new_buckling_fab_method_girder.get())
                 except:
                     obj_girder = None
+
                 obj_stress: Stress = Stress(sigma_x1=self._new_sigma_x1.get()*1e6, 
                                             sigma_x2=self._new_sigma_x2.get()*1e6, 
                                             sigma_y1=self._new_sigma_y1.get()*1e6, 
@@ -5340,6 +5343,7 @@ class Application():
                                                            girder_end_support=self._new_buckling_girder_end_support.get(), 
                                                            girder_length=self._new_girder_length_LG.get()/1000)
                 print("Still to implement translation of GUI input to 'puls_method' for stiffened panel")
+                # Note! Puls calculation using DNV excel sheet to be removed from GUI. It is based on old versions.
                 obj_puls: Puls = Puls(puls_method=1, #  needs to be updated self._new_puls_method.get()
                                       puls_boundary=self._new_puls_panel_boundary.get(), 
                                       puls_stf_end=self._new_buckling_stf_end_support.get(), 
@@ -5486,7 +5490,7 @@ class Application():
                 prop_dict = pasted_structure.get_main_properties()
 
 
-            if self._active_line not in self._line_to_struc.keys() :
+            if self._active_line not in self._line_to_struc.keys():
                 self._line_to_struc[self._active_line] = [None, None, None, [None], {}, None]
                 logger.debug(f'First entry')
                 # Flat plate domains: 'Flat plate, stiffened with girder', 'Flat plate, stiffened', Flat plate, unstiffened'
