@@ -5248,6 +5248,34 @@ class Application():
         except TclError:
             messagebox.showinfo(title='Input error', message='Input must be a line number.')
 
+    def _store_structure_on_active_line(self, scantling_obj, cylinder_obj=None):
+        """Store structure data for the currently active line.
+
+        This helper centralises how ``self._line_to_struc`` is populated.  If the
+        active line does not yet exist, a new entry is created.  For existing
+        lines the fatigue, load and combination information is preserved while
+        the structural objects are replaced.
+        """
+        if self._active_line not in self._line_to_struc:
+            self._line_to_struc[self._active_line] = [
+                scantling_obj,
+                None,
+                None,
+                [None],
+                {},
+                cylinder_obj,
+            ]
+        else:
+            old = self._line_to_struc[self._active_line]
+            self._line_to_struc[self._active_line] = [
+                scantling_obj,
+                old[1],
+                old[2],
+                old[3],
+                old[4],
+                cylinder_obj,
+            ]
+
     def new_structure(self, event = None, pasted_structure = None, multi_return = None, toggle_multi = None,
                       suspend_recalc = False, cylinder_return = None):
         '''
@@ -5490,83 +5518,103 @@ class Application():
                 prop_dict = pasted_structure.get_main_properties()
 
 
+            if (
+                CylinderObj is not None
+                and self._active_line in self._line_to_struc
+                and self._line_to_struc[self._active_line][5] is not None
+                and self._new_scale_stresses.get()
+            ):
+                scaled_cyl = op.create_new_cylinder_obj(
+                    self._line_to_struc[self._active_line][5], CylinderObj.get_x_opt()
+                )
+                scaled_cyl.LongStfObj = (
+                    None if CylinderObj.LongStfObj is None else scaled_cyl.LongStfObj
+                )
+                scaled_cyl.RingStfObj = (
+                    None if CylinderObj.RingStfObj is None else scaled_cyl.RingStfObj
+                )
+                scaled_cyl.RingFrameObj = (
+                    None if CylinderObj.RingFrameObj is None else scaled_cyl.RingFrameObj
+                )
+                CylinderObj = scaled_cyl
+
+            cylinder_obj = cylinder_return or CylinderObj or obj_cylindircal_shell
+
             if self._active_line not in self._line_to_struc.keys():
-                self._line_to_struc[self._active_line] = [None, None, None, [None], {}, None]
-                logger.debug(f'First entry')
+                logger.debug('First entry')
                 # Flat plate domains: 'Flat plate, stiffened with girder', 'Flat plate, stiffened', Flat plate, unstiffened'
                 cdom = self._new_calculation_domain.get()
 
-                self._sections = add_new_section(self._sections, obj_stiffener) # TODO error when pasting
-                self._line_to_struc[self._active_line][0] = obj_scantling
-                self._line_to_struc[self._active_line][5] = obj_cylindircal_shell
+                self._sections = add_new_section(self._sections, obj_stiffener)  # TODO error when pasting
+                self._store_structure_on_active_line(obj_scantling, cylinder_obj)
+
                 if self._line_to_struc[self._active_line][0].buckling_input.calc_props.get_structure_type() not in \
                         self._structure_types['non-wt']:
                     self._tank_dict = {}
                     self._main_grid.clear()
                     self._compartments_listbox.delete(0, 'end')
-                if self._new_calculation_domain.get() not in ['Flat plate, stiffened','Flat plate, unstiffened',
-                                                  'Flat plate, stiffened with girder']:
-                    self._line_to_struc[self._active_line][5] = obj_cylindircal_shell
             else:
-                # if self._new_calculation_domain.get() in ['Flat plate, stiffened','Flat plate, unstiffened',
-                #                                   'Flat plate, stiffened with girder'] and \
-                #         self._line_to_struc[self._active_line][5] is not None:
-                #     self._line_to_struc[self._active_line][5] = None
-                logger.debug(f'Updating entry')
+                logger.debug('Updating entry')
                 prev_type = self._line_to_struc[self._active_line][0].buckling_input.calc_props.get_structure_type()
-                prev_all_obj = copy.deepcopy(self._line_to_struc[self._active_line][0])
-                self._line_to_struc[self._active_line][0] = prev_all_obj
 
-                if self._new_scale_stresses.get() and prev_all_obj == self._line_to_struc[self._active_line][0]:
-                    # why do we need a calc_tup, can we not pass the object
-                    if prev_all_obj.buckling_input.panel.stiffener is not None:
-                        plate: Plate = self._line_to_struc[self._active_line][0].buckling_input.panel.plate
-                        stiffener: Stiffener = self._line_to_struc[self._active_line][0].buckling_input.panel.stiffener
-                        girder: Stiffener = self._line_to_struc[self._active_line][0].buckling_input.panel.girder
-                        calc_tup = (plate.s, plate.th, stiffener.web_height, stiffener.web_th,
-                                    stiffener.flange_width,
-                                    stiffener.flange_th, plate.l, prev_all_obj.buckling_input.panel.girder_length, stiffener.type)
+                self._store_structure_on_active_line(obj_scantling, cylinder_obj)
+                current_obj = self._line_to_struc[self._active_line][0]
+
+                if self._new_scale_stresses.get():
+                    if current_obj.buckling_input.panel.stiffener is not None:
+                        plate: Plate = current_obj.buckling_input.panel.plate
+                        stiffener: Stiffener = current_obj.buckling_input.panel.stiffener
+                        girder: Stiffener = current_obj.buckling_input.panel.girder
+                        calc_tup = (
+                            plate.s,
+                            plate.th,
+                            stiffener.web_height,
+                            stiffener.web_th,
+                            stiffener.flange_width,
+                            stiffener.flange_th,
+                            plate.l,
+                            current_obj.buckling_input.panel.girder_length,
+                            stiffener.type,
+                        )
                     else:
-                        calc_tup = self._line_to_struc[self._active_line][0].Plate.get_tuple()
-                        panel: StiffenedPanel = prev_all_obj.buckling_input.panel
-                        calc_tup = (panel.plate.s, panel.plate.th, 0.0, 0.0, 0.0, 0.0, panel.plate.l, 0.0, '')
-                    self._line_to_struc[self._active_line][0] = op.create_new_calc_obj(prev_all_obj, calc_tup,
-                                                                                       fup=self._new_fup.get(),
-                                                                                       fdwn=self._new_fdwn.get())[0]
+                        panel: StiffenedPanel = current_obj.buckling_input.panel
+                        calc_tup = (
+                            panel.plate.s,
+                            panel.plate.th,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            panel.plate.l,
+                            0.0,
+                            '',
+                        )
+                    self._line_to_struc[self._active_line][0] = op.create_new_calc_obj(
+                        current_obj,
+                        calc_tup,
+                        fup=self._new_fup.get(),
+                        fdwn=self._new_fdwn.get(),
+                    )[0]
 
                 self._line_to_struc[self._active_line][0].need_recalc = True
 
-                # 'line1':[Structure,CalcScantlings,Fatigue,Load,Combinations]
-                if self._line_to_struc[self._active_line][2] is not None: # is this fatigue?
+                if self._line_to_struc[self._active_line][2] is not None:
                     calc_dom = self._line_to_struc[self._active_line][0].calculation_domain
                     if calc_dom == 'Flat plate, unstiffened':
                         self._line_to_struc[self._active_line][2] = None
                     else:
                         self._line_to_struc[self._active_line][2].set_main_properties(prop_dict['Stiffener'])
 
-                if prev_type in self._structure_types['non-wt'] and prop_dict['Plate']['structure_type'][0] in \
-                                        self._structure_types['internals'] + self._structure_types['horizontal'] + \
-                                self._structure_types['vertical']:
+                if (
+                    prev_type in self._structure_types['non-wt']
+                    and self._line_to_struc[self._active_line][0].buckling_input.calc_props.get_structure_type()
+                    in self._structure_types['internals']
+                    + self._structure_types['horizontal']
+                    + self._structure_types['vertical']
+                ):
                     self._tank_dict = {}
                     self._main_grid.clear()
                     self._compartments_listbox.delete(0, 'end')
-
-                if all([CylinderObj is None, cylinder_return is None,
-                                  self._line_to_struc[self._active_line][5] is not None]):
-                    self._line_to_struc[self._active_line][5] = None
-                elif CylinderObj is not None:
-                    if self._line_to_struc[self._active_line][5] is not None and self._new_scale_stresses.get():
-                        NewCylinderObj = op.create_new_cylinder_obj(self._line_to_struc[self._active_line][5],
-                                                                 CylinderObj.get_x_opt())
-                        NewCylinderObj.LongStfObj = None if CylinderObj.LongStfObj is None \
-                            else NewCylinderObj.LongStfObj
-                        NewCylinderObj.RingStfObj = None if CylinderObj.RingStfObj is None \
-                            else NewCylinderObj.RingStfObj
-                        NewCylinderObj.RingFrameObj = None if CylinderObj.RingFrameObj is None \
-                            else NewCylinderObj.RingFrameObj
-                    self._line_to_struc[self._active_line][5] = CylinderObj
-                elif cylinder_return is not None:
-                    self._line_to_struc[self._active_line][5] = cylinder_return
             try:
                 self.calculate_all_load_combinations_for_line_all_lines()
             except (KeyError, AttributeError):
