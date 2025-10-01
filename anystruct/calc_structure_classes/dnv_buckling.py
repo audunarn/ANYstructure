@@ -659,7 +659,10 @@ class DNVBuckling(BaseModel):
 
         #Method 1 cont'd
         fkx = Cxs * fy
-        CxG = math.sqrt(1 - math.pow(sxsd / fkx, 2)) if sxsd < fkx else 0
+        if sxsd < fkx:
+            CxG = math.sqrt(1 - math.pow(sxsd / fkx, 2))
+        else:
+            CxG = 0
         if 4 - math.pow(Lg / length, 2) != 0:
             CyG_tens = 1 if Lg > 2 * length else Lg / (length * math.sqrt(4 - math.pow(Lg / length, 2)))
         else:
