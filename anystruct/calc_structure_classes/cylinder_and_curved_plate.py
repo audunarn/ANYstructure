@@ -740,7 +740,7 @@ class CylindricalShell(BaseModel):
             # return 0 if len(history) == 1 else max(history[-2],0)
             # Should this not be absolute value? Othwerwise negative values become zero
             # The note in 3.8.2 mentions sa0Sd (saSd)
-            return 0 if len(history) == 1 else abs(history[-2])
+            return 0 if len(history) == 1 else max(max(history[:-1]),0)
 
         results['max axial stress - 3.3 Unstiffened curved panel'] = iter_table_1()
         logger.debug(f"Max axial stress {results['max axial stress - 3.3 Unstiffened curved panel']}")
@@ -928,7 +928,7 @@ class CylindricalShell(BaseModel):
                 fksd_iter = fks_iter / gammaM_iter
 
                 UF = sjsd_iter / fksd_iter
-                history.append(sasd_iter)
+                history.append(siga0sd_iter)
 
                 logger.debug(f'UF {UF} saSd {sasd_iter} sjSd {sjsd_iter} fksd {fksd_iter} fks {fks} gammaM {gammaM_iter} lambdas_iter {lambdas_iter}')
 
@@ -950,7 +950,7 @@ class CylindricalShell(BaseModel):
             # return 0 if len(history) == 1 else max(history[-2],0)
             # Should this not be absolute value? Othwerwise negative values become zero
             # The note in 3.8.2 mentions sa0Sd (saSd)
-            return 0 if len(history) == 1 else abs(history[-2])
+            return 0 if len(history) == 1 else max(max(history[:-1]),0)
 
         results['max axial stress - 3.4.2 Shell buckling'] = iter_table_2()
         results['shSd'] = shSd
