@@ -23,7 +23,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from .calc_structure_classes import (
+from anystruct.calc_structure_classes import (
     BucklingInput,
     CalcScantlings,
     Material,
