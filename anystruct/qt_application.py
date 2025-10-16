@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 from PySide6.QtCore import QPointF, QSize, Qt, Signal
+from PySide6.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -373,6 +374,86 @@ class GeometryCanvas(QWidget):
         super().mousePressEvent(event)
 
 
+class WidgetWorkspace(QWidget):
+    """Droppable area that activates widgets dragged from the palette."""
+
+    widgetDropped = Signal(str)
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.setAcceptDrops(True)
+
+        self._layout = QVBoxLayout(self)
+        self._layout.setContentsMargins(8, 8, 8, 8)
+        self._layout.setSpacing(12)
+
+        self._selected_line_label = QLabel("Selected line: None")
+        self._selected_line_label.setObjectName("selectedLineLabel")
+        self._layout.addWidget(self._selected_line_label)
+
+        self._active_widget_label = QLabel("Active widget: None")
+        self._active_widget_label.setObjectName("activeWidgetLabel")
+        self._layout.addWidget(self._active_widget_label)
+
+        self._placeholder = QLabel("Drag a widget from the palette onto this area.")
+        self._placeholder.setAlignment(Qt.AlignCenter)
+        self._placeholder.setStyleSheet(
+            "border: 2px dashed #5a5a5a; border-radius: 6px; color: #cccccc; padding: 40px;"
+        )
+        self._layout.addWidget(self._placeholder, stretch=1)
+
+        self._current_widget: QWidget | None = None
+
+    def dragEnterEvent(self, event: QDragEnterEvent) -> None:  # type: ignore[override]
+        if event.mimeData().hasText():
+            event.acceptProposedAction()
+        else:
+            super().dragEnterEvent(event)
+
+    def dragMoveEvent(self, event: QDragMoveEvent) -> None:  # type: ignore[override]
+        if event.mimeData().hasText():
+            event.acceptProposedAction()
+        else:
+            super().dragMoveEvent(event)
+
+    def dropEvent(self, event: QDropEvent) -> None:  # type: ignore[override]
+        text = event.mimeData().text().strip()
+        if text:
+            widget_name = text.splitlines()[0]
+            self.widgetDropped.emit(widget_name)
+            event.acceptProposedAction()
+            return
+        super().dropEvent(event)
+
+    def set_active_widget(self, name: str, widget: QWidget) -> None:
+        if self._current_widget is widget:
+            self._active_widget_label.setText(f"Active widget: {name}")
+            return
+
+        if self._current_widget is not None:
+            self._layout.removeWidget(self._current_widget)
+            self._current_widget.setParent(None)
+
+        self._current_widget = widget
+        self._placeholder.setVisible(False)
+        self._active_widget_label.setText(f"Active widget: {name}")
+        widget.setParent(self)
+        widget.show()
+        self._layout.addWidget(widget, stretch=1)
+
+    def set_selected_line(self, line_name: str | None) -> None:
+        label = line_name if line_name else "None"
+        self._selected_line_label.setText(f"Selected line: {label}")
+
+    def clear_active_widget(self) -> None:
+        if self._current_widget is None:
+            return
+        self._layout.removeWidget(self._current_widget)
+        self._current_widget.setParent(None)
+        self._current_widget = None
+        self._active_widget_label.setText("Active widget: None")
+        self._placeholder.setVisible(True)
+
 @dataclass
 class ModelLine:
     """Representation of a line connecting two points with structural data."""
@@ -405,6 +486,43 @@ class DemoWindow(QMainWindow):
         self._stiffener_checkbox: QCheckBox | None = None
         self._stiffener_field_widgets: list[QWidget] = []
         self._updating_overview: bool = False
+        self._section_definitions: Dict[str, list[str]] = {
+            "Flat Plate Input": ["include_flat_plate", "span", "spacing", "plate_thk"],
+            "Stiffener Input": [
+                "include_stiffener",
+                "stf_type",
+                "stf_web_height",
+                "stf_web_thk",
+                "stf_flange_width",
+                "stf_flange_thk",
+                "girder_lg",
+            ],
+            "Material Input": ["mat_yield", "mat_factor"],
+            "Buckling Parameters Input": [
+                "plate_kpp",
+                "stf_kps",
+                "stf_km1",
+                "stf_km2",
+                "stf_km3",
+                "structure_type",
+                "zstar_optimization",
+                "puls_buckling_method",
+                "puls_boundary",
+                "puls_stiffener_end",
+                "puls_sp_or_up",
+                "puls_up_boundary",
+                "sigma_y1",
+                "sigma_y2",
+                "sigma_x2",
+                "sigma_x1",
+                "tau_xy",
+                "pressure_side",
+            ],
+            "Cylinder Input": ["include_cylinder", "panel_or_shell"],
+        }
+        self._section_widgets: Dict[str, QWidget] = {}
+        self._widget_palette: QListWidget | None = None
+        self._widget_workspace: WidgetWorkspace | None = None
 
         self._info_label = QLabel(
             "The demo instantiates the CalcScantlings object used in testCalc\n"
@@ -427,6 +545,8 @@ class DemoWindow(QMainWindow):
         self._next_line_combo_target = "start"
         self._last_loaded_file: Path | None = None
 
+        self._initialise_section_widgets()
+
         self._recalc_btn = QPushButton("Recalculate Demo Input")
         self._recalc_btn.clicked.connect(self._handle_manual_recalc)  # type: ignore[arg-type]
         self._load_input_btn = QPushButton("Load Input From File…")
@@ -442,27 +562,35 @@ class DemoWindow(QMainWindow):
         central_placeholder = QWidget()
         self.setCentralWidget(central_placeholder)
 
+        palette_widget = self._build_widget_palette()
         overview_widget = self._build_overview_widget()
         properties_widget = self._build_properties_widget()
         model_widget = self._build_model_widget()
         results_widget = self._build_results_widget()
         load_widget = self._build_load_widget()
 
+        palette_dock = self._create_dock("Widget Palette", palette_widget)
         overview_dock = self._create_dock("Widget Overview", overview_widget)
         properties_dock = self._create_dock("Line Properties", properties_widget)
         model_dock = self._create_dock("Drawing Canvas", model_widget)
         results_dock = self._create_dock("Results", results_widget)
         load_dock = self._create_dock("Load Input", load_widget)
 
+        self.addDockWidget(Qt.LeftDockWidgetArea, palette_dock)
         self.addDockWidget(Qt.LeftDockWidgetArea, overview_dock)
         self.addDockWidget(Qt.LeftDockWidgetArea, properties_dock)
         self.addDockWidget(Qt.RightDockWidgetArea, model_dock)
         self.addDockWidget(Qt.BottomDockWidgetArea, results_dock)
         self.addDockWidget(Qt.TopDockWidgetArea, load_dock)
         self.splitDockWidget(model_dock, results_dock, Qt.Vertical)
-        self.resizeDocks([overview_dock, properties_dock, model_dock], [200, 260, 820], Qt.Horizontal)
+        self.resizeDocks(
+            [palette_dock, overview_dock, properties_dock, model_dock],
+            [180, 200, 260, 780],
+            Qt.Horizontal,
+        )
 
         for title, dock in (
+            ("Widget Palette", palette_dock),
             ("Widget Overview", overview_dock),
             ("Line Properties", properties_dock),
             ("Drawing Canvas", model_dock),
@@ -568,7 +696,33 @@ class DemoWindow(QMainWindow):
         widget = QWidget()
         layout = QVBoxLayout(widget)
         layout.addWidget(self._info_label)
-        layout.addWidget(self._build_input_form())
+        self._widget_workspace = WidgetWorkspace()
+        self._widget_workspace.widgetDropped.connect(self._handle_workspace_drop)  # type: ignore[arg-type]
+        self._widget_workspace.set_selected_line(self._selected_line_name)
+        layout.addWidget(self._widget_workspace, stretch=1)
+        return widget
+
+    def _build_widget_palette(self) -> QWidget:
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+        layout.addWidget(QLabel("Available Widgets"))
+
+        palette = QListWidget()
+        palette.setDragEnabled(True)
+        palette.setSelectionMode(QListWidget.SingleSelection)
+        palette.setDefaultDropAction(Qt.CopyAction)
+
+        for name in self._section_definitions:
+            item = QListWidgetItem(name)
+            item.setFlags(item.flags() | Qt.ItemIsDragEnabled | Qt.ItemIsEnabled | Qt.ItemIsSelectable)
+            palette.addItem(item)
+
+        palette.itemDoubleClicked.connect(  # type: ignore[arg-type]
+            lambda item: self._handle_widget_palette_activation(item.text())
+        )
+
+        self._widget_palette = palette
+        layout.addWidget(palette)
         layout.addStretch(1)
         return widget
 
@@ -698,6 +852,9 @@ class DemoWindow(QMainWindow):
             self._set_combo_to_point(self._line_start_combo, current_start)
             self._set_combo_to_point(self._line_end_combo, current_end)
 
+        if self._widget_workspace is not None:
+            self._widget_workspace.set_selected_line(self._selected_line_name)
+
     def _set_combo_to_point(self, combo: QComboBox, point_name: str | None) -> None:
         if not point_name:
             return
@@ -727,58 +884,46 @@ class DemoWindow(QMainWindow):
                 return
         self._point_list.clearSelection()
 
-    def _build_input_form(self) -> QWidget:
-        """Create the grouped form widgets for the line properties."""
+    def _handle_widget_palette_activation(self, widget_name: str) -> None:
+        self._activate_widget(widget_name)
+
+    def _handle_workspace_drop(self, widget_name: str) -> None:
+        self._activate_widget(widget_name)
+
+    def _activate_widget(self, widget_name: str) -> None:
+        widget = self._section_widgets.get(widget_name)
+        if widget is None:
+            self._info_label.setText(f"Widget '{widget_name}' is not available.")
+            return
+
+        if self._widget_workspace is not None:
+            self._widget_workspace.set_active_widget(widget_name, widget)
+
+        if self._widget_palette is not None:
+            matches = self._widget_palette.findItems(widget_name, Qt.MatchExactly)
+            if matches:
+                self._widget_palette.setCurrentItem(matches[0])
+
+        self._info_label.setText(
+            f"Editing {widget_name}. Adjust the values and press 'Apply To Selected Line'."
+        )
+
+    def _initialise_section_widgets(self) -> None:
+        """Create the individual widgets that can be activated from the palette."""
 
         from PySide6.QtWidgets import QGroupBox
-
-        container = QWidget()
-        container_layout = QVBoxLayout(container)
 
         defaults = DemoInput()
         field_lookup = {field.name: field for field in fields(DemoInput)}
 
-        sections: Dict[str, list[str]] = {
-            "Flat Plate Input": ["include_flat_plate", "span", "spacing", "plate_thk"],
-            "Stiffener Input": [
-                "include_stiffener",
-                "stf_type",
-                "stf_web_height",
-                "stf_web_thk",
-                "stf_flange_width",
-                "stf_flange_thk",
-                "girder_lg",
-            ],
-            "Material Input": ["mat_yield", "mat_factor"],
-            "Buckling Parameters Input": [
-                "plate_kpp",
-                "stf_kps",
-                "stf_km1",
-                "stf_km2",
-                "stf_km3",
-                "structure_type",
-                "zstar_optimization",
-                "puls_buckling_method",
-                "puls_boundary",
-                "puls_stiffener_end",
-                "puls_sp_or_up",
-                "puls_up_boundary",
-                "sigma_y1",
-                "sigma_y2",
-                "sigma_x2",
-                "sigma_x1",
-                "tau_xy",
-                "pressure_side",
-            ],
-            "Cylinder Input": ["include_cylinder", "panel_or_shell"],
-        }
-
+        self._input_widgets.clear()
+        self._section_widgets.clear()
         self._flat_plate_checkbox = None
         self._cylinder_checkbox = None
         self._stiffener_checkbox = None
         self._stiffener_field_widgets = []
 
-        for section_title, field_names in sections.items():
+        for section_title, field_names in self._section_definitions.items():
             group = QGroupBox(section_title)
             group_layout = QFormLayout()
             for field_name in field_names:
@@ -795,13 +940,36 @@ class DemoWindow(QMainWindow):
                 if section_title == "Stiffener Input" and field_name != "include_stiffener":
                     self._stiffener_field_widgets.append(widget)
 
-            group.setLayout(group_layout)
-            container_layout.addWidget(group)
+            apply_button = QPushButton("Apply To Selected Line")
+            apply_button.clicked.connect(  # type: ignore[arg-type]
+                lambda _checked=False, name=section_title: self._handle_apply_to_selected_line(name)
+            )
+            group_layout.addRow(apply_button)
 
-        container_layout.addStretch(1)
+            group.setLayout(group_layout)
+            self._section_widgets[section_title] = group
+
         self._update_stiffener_fields_enabled()
         self._enforce_geometry_selection()
-        return container
+
+    def _handle_apply_to_selected_line(self, section_name: str) -> None:
+        if not self._selected_line_name:
+            self._info_label.setText("Select a line before applying widget changes.")
+            return
+
+        line = self._lines.get(self._selected_line_name)
+        if line is None:
+            self._info_label.setText("Selected line is no longer available. Please select another line.")
+            return
+
+        updated_properties = self._gather_input_data()
+        line.properties = updated_properties
+
+        self.update_results()
+
+        self._info_label.setText(
+            f"Applied {section_name} to {self._selected_line_name}."
+        )
 
     @staticmethod
     def _format_label(name: str) -> str:
@@ -1021,6 +1189,8 @@ class DemoWindow(QMainWindow):
         self._set_combo_to_point(self._line_end_combo, line.end_point)
         self._next_line_combo_target = "start"
         self._select_line_in_list(line_name)
+        if self._widget_workspace is not None:
+            self._widget_workspace.set_selected_line(line_name)
 
     def _handle_canvas_point_selected(self, point_name: str) -> None:
         if point_name not in self._points:
