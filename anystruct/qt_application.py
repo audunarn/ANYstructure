@@ -1263,6 +1263,29 @@ class DemoWindow(QMainWindow):
             elif self._cylinder_checkbox is not None:
                 self._set_checkbox_state(self._cylinder_checkbox, True)
 
+    def _apply_properties_to_inputs(self, properties: DemoInput | None) -> None:
+        """Populate the input widgets using the provided line properties."""
+
+        data = properties or DemoInput()
+
+        for field in fields(DemoInput):
+            widget = self._input_widgets.get(field.name)
+            if widget is None:
+                continue
+
+            value = getattr(data, field.name)
+
+            if isinstance(widget, QCheckBox):
+                self._set_checkbox_state(widget, bool(value))
+            elif isinstance(widget, QLineEdit):
+                was_blocked = widget.blockSignals(True)
+                widget.setText(str(value))
+                widget.blockSignals(was_blocked)
+
+        self._update_stiffener_fields_enabled()
+        self._enforce_geometry_selection()
+        self._latest_properties = data
+
     def _gather_input_data(self) -> DemoInput:
         """Collect the data from the widgets and convert them to ``DemoInput``."""
 
@@ -1393,6 +1416,7 @@ class DemoWindow(QMainWindow):
             self._widget_workspace.set_selected_line(line_name)
         self._ensure_drop_zone_visible()
         self._restore_workspace_for_line(line_name)
+        self._apply_properties_to_inputs(line.properties)
 
     def _handle_canvas_point_selected(self, point_name: str) -> None:
         if point_name not in self._points:
