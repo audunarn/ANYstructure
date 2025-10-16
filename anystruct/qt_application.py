@@ -12,21 +12,25 @@ from __future__ import annotations
 
 import sys
 from dataclasses import dataclass, fields
-from typing import Any, Dict
+from typing import Any, Dict, Iterable, List, Tuple
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QPointF, QSize, Qt
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
+    QComboBox,
     QFormLayout,
     QLineEdit,
     QLabel,
+    QListWidget,
     QMainWindow,
     QPushButton,
     QTextEdit,
     QVBoxLayout,
     QWidget,
 )
+
+from shapely.geometry import LineString, Point
 
 from anystruct.calc_structure_classes import (
     BucklingInput,
@@ -169,6 +173,102 @@ def build_demo_calc_scantlings(input_data: DemoInput | None = None) -> CalcScant
     )
 
 
+class GeometryCanvas(QWidget):
+    """Simple canvas that renders the modelling geometries."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._points: List[Point] = []
+        self._lines: List[LineString] = []
+
+    def set_geometries(self, points: Iterable[Point], lines: Iterable[LineString]) -> None:
+        self._points = list(points)
+        self._lines = list(lines)
+        self.update()
+
+    def minimumSizeHint(self) -> QSize:  # type: ignore[override]
+        return QSize(320, 240)
+
+    def sizeHint(self) -> QSize:  # type: ignore[override]
+        return QSize(480, 360)
+
+    def _bounding_box(self) -> Tuple[float, float, float, float] | None:
+        xs: List[float] = []
+        ys: List[float] = []
+
+        for point in self._points:
+            xs.append(point.x)
+            ys.append(point.y)
+
+        for line in self._lines:
+            line_xs, line_ys = line.xy
+            xs.extend(line_xs)
+            ys.extend(line_ys)
+
+        if not xs or not ys:
+            return None
+
+        return min(xs), min(ys), max(xs), max(ys)
+
+    def _transform_point(
+        self, x: float, y: float, bounds: Tuple[float, float, float, float]
+    ) -> QPointF:
+        min_x, min_y, max_x, max_y = bounds
+        width = max_x - min_x or 1.0
+        height = max_y - min_y or 1.0
+
+        canvas_width = max(self.width() - 20, 1)
+        canvas_height = max(self.height() - 20, 1)
+        scale = min(canvas_width / width, canvas_height / height)
+
+        offset_x = (self.width() - width * scale) / 2.0
+        offset_y = (self.height() - height * scale) / 2.0
+
+        mapped_x = offset_x + (x - min_x) * scale
+        mapped_y = self.height() - (offset_y + (y - min_y) * scale)
+        return QPointF(mapped_x, mapped_y)
+
+    def paintEvent(self, event) -> None:  # type: ignore[override]
+        from PySide6.QtGui import QBrush, QColor, QPainter, QPen
+
+        painter = QPainter(self)
+        painter.fillRect(self.rect(), QColor("#1e1e1e"))
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        bounds = self._bounding_box()
+        if bounds is None:
+            painter.setPen(QPen(QColor("#888")))
+            painter.drawText(self.rect(), Qt.AlignCenter, "No geometry defined")
+            return
+
+        # Draw lines first
+        line_pen = QPen(QColor("#4cc9f0"), 2)
+        painter.setPen(line_pen)
+        for line in self._lines:
+            xs, ys = line.xy
+            points = [self._transform_point(x, y, bounds) for x, y in zip(xs, ys)]
+            for start, end in zip(points[:-1], points[1:]):
+                painter.drawLine(start, end)
+
+        # Draw points on top
+        point_brush = QBrush(QColor("#f72585"))
+        painter.setBrush(point_brush)
+        painter.setPen(QPen(QColor("#000")))
+        radius = 5
+        for point in self._points:
+            mapped_point = self._transform_point(point.x, point.y, bounds)
+            painter.drawEllipse(mapped_point, radius, radius)
+
+
+@dataclass
+class ModelLine:
+    """Representation of a line connecting two points with structural data."""
+
+    name: str
+    geometry: LineString
+    properties: DemoInput
+
+
 class DemoWindow(QMainWindow):
     """Minimal Qt window that showcases a calculation run."""
 
@@ -183,6 +283,7 @@ class DemoWindow(QMainWindow):
             "The demo instantiates the CalcScantlings object used in testCalc\n"
             "and prints a short summary alongside the report string."
         )
+        self._default_info_text = self._info_label.text()
         self._info_label.setWordWrap(True)
 
         self._results = QTextEdit()
@@ -192,9 +293,16 @@ class DemoWindow(QMainWindow):
         self._recalc_btn = QPushButton("Recalculate demo input")
         self._recalc_btn.clicked.connect(self.update_results)  # type: ignore[arg-type]
 
+        self._canvas = GeometryCanvas()
+        self._point_name_counter = 1
+        self._points: Dict[str, Point] = {}
+        self._lines: Dict[str, ModelLine] = {}
+        self._latest_properties = DemoInput()
+
         layout = QVBoxLayout()
         layout.addWidget(self._info_label)
         layout.addLayout(self._build_input_form())
+        layout.addLayout(self._build_model_layout())
         layout.addWidget(self._recalc_btn, alignment=Qt.AlignLeft)
         layout.addWidget(self._results)
 
@@ -203,6 +311,97 @@ class DemoWindow(QMainWindow):
         self.setCentralWidget(container)
 
         self.update_results()
+
+    def _build_model_layout(self) -> QVBoxLayout:
+        """Build the canvas and modelling controls."""
+
+        from PySide6.QtWidgets import QGroupBox, QHBoxLayout
+
+        outer_layout = QVBoxLayout()
+
+        canvas_group = QGroupBox("Geometry Canvas")
+        canvas_layout = QVBoxLayout()
+        canvas_layout.addWidget(self._canvas)
+        canvas_group.setLayout(canvas_layout)
+
+        controls_group = QGroupBox("Geometry Input")
+        controls_layout = QVBoxLayout()
+        controls_layout.addLayout(self._build_point_controls())
+        controls_layout.addLayout(self._build_line_controls())
+        controls_group.setLayout(controls_layout)
+
+        main_layout = QHBoxLayout()
+        main_layout.addWidget(canvas_group, stretch=2)
+        main_layout.addWidget(controls_group, stretch=1)
+
+        outer_layout.addLayout(main_layout)
+        return outer_layout
+
+    def _build_point_controls(self) -> QVBoxLayout:
+        from PySide6.QtWidgets import QHBoxLayout
+
+        layout = QVBoxLayout()
+        layout.addWidget(QLabel("Add Point"))
+
+        coord_layout = QHBoxLayout()
+        self._point_x_input = QLineEdit()
+        self._point_x_input.setPlaceholderText("X coordinate")
+        self._point_y_input = QLineEdit()
+        self._point_y_input.setPlaceholderText("Y coordinate")
+        coord_layout.addWidget(self._point_x_input)
+        coord_layout.addWidget(self._point_y_input)
+        layout.addLayout(coord_layout)
+
+        self._add_point_btn = QPushButton("Add Point")
+        self._add_point_btn.clicked.connect(self._handle_add_point)  # type: ignore[arg-type]
+        layout.addWidget(self._add_point_btn)
+
+        self._point_list = QListWidget()
+        layout.addWidget(self._point_list)
+
+        return layout
+
+    def _build_line_controls(self) -> QVBoxLayout:
+        from PySide6.QtWidgets import QHBoxLayout
+
+        layout = QVBoxLayout()
+        layout.addWidget(QLabel("Add Line"))
+
+        selector_layout = QHBoxLayout()
+        self._line_start_combo = QComboBox()
+        self._line_end_combo = QComboBox()
+        selector_layout.addWidget(self._line_start_combo)
+        selector_layout.addWidget(self._line_end_combo)
+        layout.addLayout(selector_layout)
+
+        self._add_line_btn = QPushButton("Add Line With Current Properties")
+        self._add_line_btn.clicked.connect(self._handle_add_line)  # type: ignore[arg-type]
+        layout.addWidget(self._add_line_btn)
+
+        self._line_list = QListWidget()
+        layout.addWidget(self._line_list)
+
+        return layout
+
+    def _update_geometry_display(self) -> None:
+        self._canvas.set_geometries(self._points.values(), (line.geometry for line in self._lines.values()))
+        self._point_list.clear()
+        for name, point in self._points.items():
+            self._point_list.addItem(f"{name}: ({point.x:.2f}, {point.y:.2f})")
+
+        self._line_list.clear()
+        for name, line in self._lines.items():
+            start, end = line.geometry.coords[0], line.geometry.coords[-1]
+            self._line_list.addItem(
+                f"{name}: ({start[0]:.2f}, {start[1]:.2f}) -> ({end[0]:.2f}, {end[1]:.2f})"
+                f" | type={line.properties.structure_type}"
+            )
+
+        self._line_start_combo.clear()
+        self._line_end_combo.clear()
+        for name in self._points:
+            self._line_start_combo.addItem(name)
+            self._line_end_combo.addItem(name)
 
     def _build_input_form(self) -> QFormLayout:
         """Create the form layout that hosts all input widgets."""
@@ -284,6 +483,7 @@ class DemoWindow(QMainWindow):
             scantlings = build_demo_calc_scantlings(input_data)
             report = scantlings.get_results_for_report()
             summary = str(scantlings.buckling_input)
+            self._latest_properties = input_data
         except Exception as exc:  # pragma: no cover - UI diagnostic message
             self._results.setPlainText(f"Failed to evaluate demo input:\n{exc}")
             return
@@ -295,6 +495,48 @@ class DemoWindow(QMainWindow):
             f"{report}\n"
         )
         self._results.setPlainText(output)
+        self._update_geometry_display()
+
+    def _handle_add_point(self) -> None:
+        try:
+            x = float(self._point_x_input.text())
+            y = float(self._point_y_input.text())
+        except ValueError:
+            self._info_label.setText("Invalid point coordinates. Please enter numeric values.")
+            return
+
+        name = f"P{self._point_name_counter}"
+        self._point_name_counter += 1
+        self._points[name] = Point(x, y)
+        self._point_x_input.clear()
+        self._point_y_input.clear()
+        self._info_label.setText(self._default_info_text)
+        self._update_geometry_display()
+
+    def _handle_add_line(self) -> None:
+        if self._line_start_combo.count() < 2:
+            self._info_label.setText("Create at least two points before adding a line.")
+            return
+
+        start_name = self._line_start_combo.currentText()
+        end_name = self._line_end_combo.currentText()
+
+        if start_name == end_name:
+            self._info_label.setText("Select two different points for a valid line.")
+            return
+
+        start_point = self._points.get(start_name)
+        end_point = self._points.get(end_name)
+        if not start_point or not end_point:
+            self._info_label.setText("Selected points are not available. Please refresh and try again.")
+            return
+
+        geometry = LineString([(start_point.x, start_point.y), (end_point.x, end_point.y)])
+        line_name = f"L{len(self._lines) + 1}"
+        properties = getattr(self, "_latest_properties", DemoInput())
+        self._lines[line_name] = ModelLine(name=line_name, geometry=geometry, properties=properties)
+        self._info_label.setText(self._default_info_text)
+        self._update_geometry_display()
 
 
 def main() -> int:
