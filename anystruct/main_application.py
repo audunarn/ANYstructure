@@ -170,6 +170,7 @@ class Application():
     '''
     The Application class sets up the GUI using Tkinter.
     It is the main part of the code and calls up all other classes etc.
+    To be remade in QT
     '''
     def __init__(self, parent):
         '''
