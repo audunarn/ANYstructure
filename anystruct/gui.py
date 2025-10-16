@@ -1,24 +1,31 @@
-import sys, multiprocessing, ctypes, os
-import tkinter as tk
-from anystruct.main_application import Application
+"""Qt based entry point for the ANYstructure GUI.
 
-def main(args=None):
-    """The main routine."""
+This module replaces the previous Tkinter implementation with a
+light‑weight PySide6 window.  The window focuses on demonstrating how the
+existing calculation engine can be initialised by reusing the data that is
+employed in ``anystruct/testCalc.py``.  The example is intentionally kept
+compact so the wider port to Qt can evolve iteratively.
+"""
 
-    if args is None:
-        args = sys.argv[1:]
+from __future__ import annotations
 
-    multiprocessing.freeze_support()
-    errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
-    root = tk.Tk()
-    width = root.winfo_screenwidth()
-    height = root.winfo_screenheight()
-    root.geometry(f'{width}x{height}')
-    my_app = Application(root)
-    root.mainloop()
+import sys
+from typing import Sequence
 
-    # Do argument parsing here (eg. with argparse) and anything else
-    # you want your project to do.
+from PySide6.QtWidgets import QApplication
 
-if __name__ == "__main__":
-    main()
+from .qt_application import DemoWindow
+
+
+def main(args: Sequence[str] | None = None) -> int:
+    """Launch the Qt demonstration window."""
+
+    argv = list(sys.argv if args is None else [sys.argv[0], *args])
+    app = QApplication(argv)
+    window = DemoWindow()
+    window.show()
+    return app.exec()
+
+
+if __name__ == "__main__":  # pragma: no cover - manual execution only
+    raise SystemExit(main())
