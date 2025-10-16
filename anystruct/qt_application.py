@@ -394,7 +394,7 @@ class WidgetWorkspace(QWidget):
 
         self._drop_zone = QFrame()
         self._drop_zone.setStyleSheet(
-            "border: 2px dashed #5a5a5a; border-radius: 6px; color: #cccccc;"
+            "border: 2px dashed #5a5a5a; border-radius: 6px; color: #000000;"
         )
         self._drop_zone.setObjectName("lineDropZone")
         drop_layout = QVBoxLayout(self._drop_zone)
@@ -412,7 +412,7 @@ class WidgetWorkspace(QWidget):
         self._assigned_widget_list.setFocusPolicy(Qt.NoFocus)
         self._assigned_widget_list.setSelectionMode(QListWidget.NoSelection)
         self._assigned_widget_list.setStyleSheet(
-            "border: none; background: transparent; color: #ffffff;"
+            "border: none; background: transparent; color: #000000;"
         )
         drop_layout.addWidget(self._assigned_widget_list)
 
@@ -555,9 +555,7 @@ class DemoWindow(QMainWindow):
         self._section_docks: Dict[str, QDockWidget] = {}
         self._line_widget_assignments: Dict[str, list[str]] = {}
         self._dock_palette_entries: Dict[str, str] = {
-            "Drop Zone": "Line Properties",
-            "Drawing Canvas": "Drawing Canvas",
-            "Results": "Results",
+            "Load Input": "Load Input",
         }
         self._widget_palette: QListWidget | None = None
         self._widget_workspace: WidgetWorkspace | None = None
@@ -719,7 +717,7 @@ class DemoWindow(QMainWindow):
     def _build_overview_widget(self) -> QWidget:
         widget = QWidget()
         layout = QVBoxLayout(widget)
-        overview_label = QLabel("Available Widgets")
+        overview_label = QLabel("Geometry Widgets")
         overview_label.setWordWrap(True)
         layout.addWidget(overview_label)
 
@@ -744,7 +742,7 @@ class DemoWindow(QMainWindow):
     def _build_widget_palette(self) -> QWidget:
         widget = QWidget()
         layout = QVBoxLayout(widget)
-        layout.addWidget(QLabel("Available Widgets"))
+        layout.addWidget(QLabel("Geometry Widgets"))
 
         palette = QListWidget()
         palette.setDragEnabled(True)
@@ -764,6 +762,8 @@ class DemoWindow(QMainWindow):
         palette.itemDoubleClicked.connect(  # type: ignore[arg-type]
             lambda item: self._handle_widget_palette_activation(item.text())
         )
+
+        palette.clearSelection()
 
         self._widget_palette = palette
         layout.addWidget(palette)
