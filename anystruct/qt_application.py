@@ -10,11 +10,13 @@ calculation back-end can be driven from the Qt layer.
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
 from typing import Dict
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QApplication,
     QLabel,
     QMainWindow,
     QPushButton,
@@ -214,3 +216,16 @@ class DemoWindow(QMainWindow):
             f"{report}\n"
         )
         self._results.setPlainText(output)
+
+
+def main() -> int:
+    """Launch the demo Qt application."""
+
+    app = QApplication(sys.argv)
+    window = DemoWindow()
+    window.show()
+    return app.exec()
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
