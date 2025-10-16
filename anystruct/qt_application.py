@@ -41,7 +41,7 @@ from PySide6.QtWidgets import (
 
 from shapely.geometry import LineString, Point
 
-from anystruct.calc_structure_classes import (
+from calc_structure_classes import (
     BucklingInput,
     CalcScantlings,
     Material,
