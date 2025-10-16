@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
     QDockWidget,
     QFileDialog,
     QFormLayout,
+    QFrame,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -391,17 +392,32 @@ class WidgetWorkspace(QWidget):
         self._selected_line_label.setObjectName("selectedLineLabel")
         self._layout.addWidget(self._selected_line_label)
 
-        self._assigned_widget_label = QLabel("Assigned widget: None")
-        self._assigned_widget_label.setObjectName("assignedWidgetLabel")
-        self._layout.addWidget(self._assigned_widget_label)
-
-        self._drop_zone = QLabel("Drag a widget from the palette onto this area.")
-        self._drop_zone.setAlignment(Qt.AlignCenter)
+        self._drop_zone = QFrame()
         self._drop_zone.setStyleSheet(
-            "border: 2px dashed #5a5a5a; border-radius: 6px; color: #cccccc; padding: 40px;"
+            "border: 2px dashed #5a5a5a; border-radius: 6px; color: #cccccc;"
         )
         self._drop_zone.setObjectName("lineDropZone")
+        drop_layout = QVBoxLayout(self._drop_zone)
+        drop_layout.setContentsMargins(20, 20, 20, 20)
+        drop_layout.setSpacing(12)
+
+        instruction_label = QLabel("Drag a widget from the palette onto this area.")
+        instruction_label.setAlignment(Qt.AlignCenter)
+        instruction_label.setWordWrap(True)
+        instruction_label.setObjectName("dropZoneInstructionLabel")
+        drop_layout.addWidget(instruction_label)
+
+        self._assigned_widget_list = QListWidget()
+        self._assigned_widget_list.setObjectName("assignedWidgetList")
+        self._assigned_widget_list.setFocusPolicy(Qt.NoFocus)
+        self._assigned_widget_list.setSelectionMode(QListWidget.NoSelection)
+        self._assigned_widget_list.setStyleSheet(
+            "border: none; background: transparent; color: #ffffff;"
+        )
+        drop_layout.addWidget(self._assigned_widget_list)
+
         self._layout.addWidget(self._drop_zone, stretch=1)
+        self.clear_assigned_widgets()
 
     def dragEnterEvent(self, event: QDragEnterEvent) -> None:  # type: ignore[override]
         if self._extract_widget_name(event.mimeData()):
@@ -427,12 +443,22 @@ class WidgetWorkspace(QWidget):
         label = line_name if line_name else "None"
         self._selected_line_label.setText(f"Selected line: {label}")
 
-    def set_assigned_widget_name(self, widget_name: str | None) -> None:
-        label = widget_name if widget_name else "None"
-        self._assigned_widget_label.setText(f"Assigned widget: {label}")
+    def set_assigned_widgets(self, widget_names: list[str]) -> None:
+        self._assigned_widget_list.clear()
 
-    def clear_assignment(self) -> None:
-        self.set_assigned_widget_name(None)
+        if not widget_names:
+            placeholder = QListWidgetItem("No widgets assigned.")
+            placeholder.setFlags(Qt.NoItemFlags)
+            self._assigned_widget_list.addItem(placeholder)
+            return
+
+        for name in widget_names:
+            item = QListWidgetItem(name)
+            item.setFlags(Qt.ItemIsEnabled)
+            self._assigned_widget_list.addItem(item)
+
+    def clear_assigned_widgets(self) -> None:
+        self.set_assigned_widgets([])
 
     def _extract_widget_name(self, mime_data: QMimeData) -> str | None:
         text = mime_data.text().strip() if mime_data.hasText() else ""
@@ -467,7 +493,7 @@ class ModelLine:
     start_point: str
     end_point: str
     geometry: LineString
-    properties: DemoInput
+    properties: DemoInput | None = None
 
 
 class DemoWindow(QMainWindow):
@@ -527,7 +553,7 @@ class DemoWindow(QMainWindow):
         }
         self._section_widgets: Dict[str, QWidget] = {}
         self._section_docks: Dict[str, QDockWidget] = {}
-        self._line_widget_assignments: Dict[str, str] = {}
+        self._line_widget_assignments: Dict[str, list[str]] = {}
         self._dock_palette_entries: Dict[str, str] = {
             "Drop Zone": "Line Properties",
             "Drawing Canvas": "Drawing Canvas",
@@ -820,7 +846,7 @@ class DemoWindow(QMainWindow):
         selector_layout.addWidget(self._line_end_combo)
         layout.addLayout(selector_layout)
 
-        self._add_line_btn = QPushButton("Add Line With Current Properties")
+        self._add_line_btn = QPushButton("Add Line")
         self._add_line_btn.clicked.connect(self._handle_add_line)  # type: ignore[arg-type]
         layout.addWidget(self._add_line_btn)
 
@@ -844,14 +870,15 @@ class DemoWindow(QMainWindow):
         for name, line in self._lines.items():
             start_coords = self._points.get(line.start_point)
             end_coords = self._points.get(line.end_point)
+            structure_type = line.properties.structure_type if line.properties else "Unset"
             if start_coords and end_coords:
                 self._line_list.addItem(
                     f"{name}: {line.start_point} ({start_coords.x:.2f}, {start_coords.y:.2f}) -> "
-                    f"{line.end_point} ({end_coords.x:.2f}, {end_coords.y:.2f}) | type={line.properties.structure_type}"
+                    f"{line.end_point} ({end_coords.x:.2f}, {end_coords.y:.2f}) | type={structure_type}"
                 )
             else:
                 self._line_list.addItem(
-                    f"{name}: {line.start_point} -> {line.end_point} | type={line.properties.structure_type}"
+                    f"{name}: {line.start_point} -> {line.end_point} | type={structure_type}"
                 )
 
         self._select_line_in_list(self._selected_line_name)
@@ -875,16 +902,20 @@ class DemoWindow(QMainWindow):
 
         if self._widget_workspace is not None:
             self._widget_workspace.set_selected_line(self._selected_line_name)
-            assigned_widget = None
+            assigned_widgets: list[str] = []
             if self._selected_line_name:
-                candidate = self._line_widget_assignments.get(self._selected_line_name)
-                if candidate in self._section_widgets:
-                    assigned_widget = candidate
+                assigned_widgets = [
+                    name
+                    for name in self._line_widget_assignments.get(self._selected_line_name, [])
+                    if name in self._section_widgets
+                ]
+                if not assigned_widgets:
+                    self._line_widget_assignments.pop(self._selected_line_name, None)
 
-            if assigned_widget:
-                self._widget_workspace.set_assigned_widget_name(assigned_widget)
+            if assigned_widgets:
+                self._widget_workspace.set_assigned_widgets(assigned_widgets)
             else:
-                self._widget_workspace.clear_assignment()
+                self._widget_workspace.clear_assigned_widgets()
 
     def _set_combo_to_point(self, combo: QComboBox, point_name: str | None) -> None:
         if not point_name:
@@ -935,7 +966,7 @@ class DemoWindow(QMainWindow):
                     self._restore_workspace_for_line(self._selected_line_name)
                 else:
                     if self._widget_workspace is not None:
-                        self._widget_workspace.clear_assignment()
+                        self._widget_workspace.clear_assigned_widgets()
                     self._info_label.setText(self._default_info_text)
             else:
                 if not dock.isVisible():
@@ -955,9 +986,13 @@ class DemoWindow(QMainWindow):
 
         self._show_section_dock(widget_name)
 
-        if self._selected_line_name and self._line_widget_assignments.get(
-            self._selected_line_name
-        ) == widget_name:
+        current_assignments = []
+        if self._selected_line_name:
+            current_assignments = self._line_widget_assignments.get(
+                self._selected_line_name, []
+            )
+
+        if self._selected_line_name and widget_name in current_assignments:
             self._info_label.setText(
                 f"Editing {widget_name}. Adjust the values and press 'Apply To Selected Line'."
             )
@@ -979,20 +1014,20 @@ class DemoWindow(QMainWindow):
         if self._widget_workspace is None:
             return
 
-        widget_name = self._line_widget_assignments.get(line_name)
-        if not widget_name:
+        assigned_widgets = [
+            name
+            for name in self._line_widget_assignments.get(line_name, [])
+            if name in self._section_widgets
+        ]
+
+        if not assigned_widgets:
             self._line_widget_assignments.pop(line_name, None)
-            self._widget_workspace.clear_assignment()
+            self._widget_workspace.clear_assigned_widgets()
             self._info_label.setText(self._default_info_text)
             return
 
-        if widget_name not in self._section_widgets:
-            self._line_widget_assignments.pop(line_name, None)
-            self._widget_workspace.clear_assignment()
-            self._info_label.setText(self._default_info_text)
-            return
-
-        self._widget_workspace.set_assigned_widget_name(widget_name)
+        self._widget_workspace.set_assigned_widgets(assigned_widgets)
+        widget_name = assigned_widgets[-1]
         if self._widget_palette is not None:
             matches = self._widget_palette.findItems(widget_name, Qt.MatchExactly)
             if matches:
@@ -1013,9 +1048,13 @@ class DemoWindow(QMainWindow):
             self._info_label.setText("Select a line before dropping a widget.")
             return
 
-        self._line_widget_assignments[self._selected_line_name] = widget_name
+        line_assignments = self._line_widget_assignments.setdefault(
+            self._selected_line_name, []
+        )
+        if widget_name not in line_assignments:
+            line_assignments.append(widget_name)
         if self._widget_workspace is not None:
-            self._widget_workspace.set_assigned_widget_name(widget_name)
+            self._widget_workspace.set_assigned_widgets(line_assignments)
 
         if self._widget_palette is not None:
             matches = self._widget_palette.findItems(widget_name, Qt.MatchExactly)
@@ -1096,7 +1135,6 @@ class DemoWindow(QMainWindow):
         }
         self._point_name_counter = len(self._points) + 1
 
-        properties = self._latest_properties
         self._lines.clear()
         self._line_widget_assignments.clear()
 
@@ -1109,7 +1147,6 @@ class DemoWindow(QMainWindow):
                 start_point=start,
                 end_point=end,
                 geometry=geometry,
-                properties=properties,
             )
 
         build_line("L1", "P1", "P2")
@@ -1332,13 +1369,11 @@ class DemoWindow(QMainWindow):
 
         geometry = LineString([(start_point.x, start_point.y), (end_point.x, end_point.y)])
         line_name = f"L{len(self._lines) + 1}"
-        properties = getattr(self, "_latest_properties", DemoInput())
         self._lines[line_name] = ModelLine(
             name=line_name,
             start_point=start_name,
             end_point=end_name,
             geometry=geometry,
-            properties=properties,
         )
         self._info_label.setText(self._default_info_text)
         self._update_geometry_display()
