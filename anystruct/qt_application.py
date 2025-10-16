@@ -16,7 +16,7 @@ from dataclasses import dataclass, fields
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
-from PySide6.QtCore import QPointF, QSize, Qt, Signal
+from PySide6.QtCore import QByteArray, QDataStream, QMimeData, QPointF, QSize, Qt, Signal
 from PySide6.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
 from PySide6.QtWidgets import (
     QApplication,
@@ -391,68 +391,73 @@ class WidgetWorkspace(QWidget):
         self._selected_line_label.setObjectName("selectedLineLabel")
         self._layout.addWidget(self._selected_line_label)
 
-        self._active_widget_label = QLabel("Active widget: None")
-        self._active_widget_label.setObjectName("activeWidgetLabel")
-        self._layout.addWidget(self._active_widget_label)
+        self._assigned_widget_label = QLabel("Assigned widget: None")
+        self._assigned_widget_label.setObjectName("assignedWidgetLabel")
+        self._layout.addWidget(self._assigned_widget_label)
 
-        self._placeholder = QLabel("Drag a widget from the palette onto this area.")
-        self._placeholder.setAlignment(Qt.AlignCenter)
-        self._placeholder.setStyleSheet(
+        self._drop_zone = QLabel("Drag a widget from the palette onto this area.")
+        self._drop_zone.setAlignment(Qt.AlignCenter)
+        self._drop_zone.setStyleSheet(
             "border: 2px dashed #5a5a5a; border-radius: 6px; color: #cccccc; padding: 40px;"
         )
-        self._layout.addWidget(self._placeholder, stretch=1)
-
-        self._current_widget: QWidget | None = None
+        self._drop_zone.setObjectName("lineDropZone")
+        self._layout.addWidget(self._drop_zone, stretch=1)
 
     def dragEnterEvent(self, event: QDragEnterEvent) -> None:  # type: ignore[override]
-        if event.mimeData().hasText():
+        if self._extract_widget_name(event.mimeData()):
             event.acceptProposedAction()
         else:
             super().dragEnterEvent(event)
 
     def dragMoveEvent(self, event: QDragMoveEvent) -> None:  # type: ignore[override]
-        if event.mimeData().hasText():
+        if self._extract_widget_name(event.mimeData()):
             event.acceptProposedAction()
         else:
             super().dragMoveEvent(event)
 
     def dropEvent(self, event: QDropEvent) -> None:  # type: ignore[override]
-        text = event.mimeData().text().strip()
-        if text:
-            widget_name = text.splitlines()[0]
+        widget_name = self._extract_widget_name(event.mimeData())
+        if widget_name:
             self.widgetDropped.emit(widget_name)
             event.acceptProposedAction()
             return
         super().dropEvent(event)
 
-    def set_active_widget(self, name: str, widget: QWidget) -> None:
-        if self._current_widget is widget:
-            self._active_widget_label.setText(f"Active widget: {name}")
-            return
-
-        if self._current_widget is not None:
-            self._layout.removeWidget(self._current_widget)
-            self._current_widget.setParent(None)
-
-        self._current_widget = widget
-        self._placeholder.setVisible(False)
-        self._active_widget_label.setText(f"Active widget: {name}")
-        widget.setParent(self)
-        widget.show()
-        self._layout.addWidget(widget, stretch=1)
-
     def set_selected_line(self, line_name: str | None) -> None:
         label = line_name if line_name else "None"
         self._selected_line_label.setText(f"Selected line: {label}")
 
-    def clear_active_widget(self) -> None:
-        if self._current_widget is None:
-            return
-        self._layout.removeWidget(self._current_widget)
-        self._current_widget.setParent(None)
-        self._current_widget = None
-        self._active_widget_label.setText("Active widget: None")
-        self._placeholder.setVisible(True)
+    def set_assigned_widget_name(self, widget_name: str | None) -> None:
+        label = widget_name if widget_name else "None"
+        self._assigned_widget_label.setText(f"Assigned widget: {label}")
+
+    def clear_assignment(self) -> None:
+        self.set_assigned_widget_name(None)
+
+    def _extract_widget_name(self, mime_data: QMimeData) -> str | None:
+        text = mime_data.text().strip() if mime_data.hasText() else ""
+        if text:
+            return text.splitlines()[0]
+
+        mime_format = "application/x-qabstractitemmodeldatalist"
+        if not mime_data.hasFormat(mime_format):
+            return None
+
+        raw_data = mime_data.data(mime_format)
+        if not isinstance(raw_data, QByteArray):
+            raw_data = QByteArray(raw_data)
+
+        stream = QDataStream(raw_data)
+        while not stream.atEnd():
+            _row = stream.readInt32()
+            _column = stream.readInt32()
+            map_items = stream.readInt32()
+            for _ in range(map_items):
+                role = stream.readInt32()
+                value = stream.readQVariant()
+                if role == Qt.DisplayRole and isinstance(value, str):
+                    return value
+        return None
 
 @dataclass
 class ModelLine:
@@ -521,6 +526,7 @@ class DemoWindow(QMainWindow):
             "Cylinder Input": ["include_cylinder", "panel_or_shell"],
         }
         self._section_widgets: Dict[str, QWidget] = {}
+        self._section_docks: Dict[str, QDockWidget] = {}
         self._line_widget_assignments: Dict[str, str] = {}
         self._dock_palette_entries: Dict[str, str] = {
             "Drop Zone": "Line Properties",
@@ -552,6 +558,7 @@ class DemoWindow(QMainWindow):
         self._last_loaded_file: Path | None = None
 
         self._initialise_section_widgets()
+        self._initialise_default_geometry()
 
         self._recalc_btn = QPushButton("Recalculate Demo Input")
         self._recalc_btn.clicked.connect(self._handle_manual_recalc)  # type: ignore[arg-type]
@@ -868,6 +875,16 @@ class DemoWindow(QMainWindow):
 
         if self._widget_workspace is not None:
             self._widget_workspace.set_selected_line(self._selected_line_name)
+            assigned_widget = None
+            if self._selected_line_name:
+                candidate = self._line_widget_assignments.get(self._selected_line_name)
+                if candidate in self._section_widgets:
+                    assigned_widget = candidate
+
+            if assigned_widget:
+                self._widget_workspace.set_assigned_widget_name(assigned_widget)
+            else:
+                self._widget_workspace.clear_assignment()
 
     def _set_combo_to_point(self, combo: QComboBox, point_name: str | None) -> None:
         if not point_name:
@@ -902,7 +919,7 @@ class DemoWindow(QMainWindow):
         self._activate_widget(widget_name)
 
     def _handle_workspace_drop(self, widget_name: str) -> None:
-        self._activate_widget(widget_name)
+        self._assign_widget_to_selected_line(widget_name)
 
     def _activate_widget(self, widget_name: str) -> None:
         dock_title = self._dock_palette_entries.get(widget_name)
@@ -918,7 +935,7 @@ class DemoWindow(QMainWindow):
                     self._restore_workspace_for_line(self._selected_line_name)
                 else:
                     if self._widget_workspace is not None:
-                        self._widget_workspace.clear_active_widget()
+                        self._widget_workspace.clear_assignment()
                     self._info_label.setText(self._default_info_text)
             else:
                 if not dock.isVisible():
@@ -927,25 +944,27 @@ class DemoWindow(QMainWindow):
                 self._info_label.setText(f"Restored {dock_title}.")
             return
 
-        widget = self._section_widgets.get(widget_name)
-        if widget is None:
+        if widget_name not in self._section_widgets:
             self._info_label.setText(f"Widget '{widget_name}' is not available.")
             return
-
-        if self._widget_workspace is not None:
-            self._widget_workspace.set_active_widget(widget_name, widget)
 
         if self._widget_palette is not None:
             matches = self._widget_palette.findItems(widget_name, Qt.MatchExactly)
             if matches:
                 self._widget_palette.setCurrentItem(matches[0])
 
-        if self._selected_line_name:
-            self._line_widget_assignments[self._selected_line_name] = widget_name
+        self._show_section_dock(widget_name)
 
-        self._info_label.setText(
-            f"Editing {widget_name}. Adjust the values and press 'Apply To Selected Line'."
-        )
+        if self._selected_line_name and self._line_widget_assignments.get(
+            self._selected_line_name
+        ) == widget_name:
+            self._info_label.setText(
+                f"Editing {widget_name}. Adjust the values and press 'Apply To Selected Line'."
+            )
+        else:
+            self._info_label.setText(
+                f"Opened {widget_name}. Drag it to the drop zone to assign it to a line."
+            )
 
     def _ensure_drop_zone_visible(self) -> None:
         dock = self._dock_registry.get("Line Properties")
@@ -963,25 +982,66 @@ class DemoWindow(QMainWindow):
         widget_name = self._line_widget_assignments.get(line_name)
         if not widget_name:
             self._line_widget_assignments.pop(line_name, None)
-            self._widget_workspace.clear_active_widget()
+            self._widget_workspace.clear_assignment()
             self._info_label.setText(self._default_info_text)
             return
 
-        widget = self._section_widgets.get(widget_name)
-        if widget is None:
+        if widget_name not in self._section_widgets:
             self._line_widget_assignments.pop(line_name, None)
-            self._widget_workspace.clear_active_widget()
+            self._widget_workspace.clear_assignment()
             self._info_label.setText(self._default_info_text)
             return
 
-        self._widget_workspace.set_active_widget(widget_name, widget)
+        self._widget_workspace.set_assigned_widget_name(widget_name)
         if self._widget_palette is not None:
             matches = self._widget_palette.findItems(widget_name, Qt.MatchExactly)
             if matches:
                 self._widget_palette.setCurrentItem(matches[0])
+        self._show_section_dock(widget_name)
         self._info_label.setText(
             f"Editing {widget_name}. Adjust the values and press 'Apply To Selected Line'."
         )
+
+    def _assign_widget_to_selected_line(self, widget_name: str) -> None:
+        if widget_name not in self._section_widgets:
+            self._info_label.setText(
+                f"Widget '{widget_name}' cannot be assigned to a line."
+            )
+            return
+
+        if not self._selected_line_name:
+            self._info_label.setText("Select a line before dropping a widget.")
+            return
+
+        self._line_widget_assignments[self._selected_line_name] = widget_name
+        if self._widget_workspace is not None:
+            self._widget_workspace.set_assigned_widget_name(widget_name)
+
+        if self._widget_palette is not None:
+            matches = self._widget_palette.findItems(widget_name, Qt.MatchExactly)
+            if matches:
+                self._widget_palette.setCurrentItem(matches[0])
+
+        self._show_section_dock(widget_name)
+
+        self._info_label.setText(
+            f"Assigned {widget_name} to {self._selected_line_name}."
+        )
+
+    def _show_section_dock(self, widget_name: str) -> None:
+        dock = self._section_docks.get(widget_name)
+        if dock is None:
+            widget = self._section_widgets.get(widget_name)
+            if widget is None:
+                return
+            dock = self._create_dock(widget_name, widget)
+            self._section_docks[widget_name] = dock
+            self.addDockWidget(Qt.RightDockWidgetArea, dock)
+            self._register_dock_for_overview(widget_name, dock)
+
+        if not dock.isVisible():
+            dock.show()
+        dock.raise_()
 
     def _initialise_section_widgets(self) -> None:
         """Create the individual widgets that can be activated from the palette."""
@@ -1026,6 +1086,36 @@ class DemoWindow(QMainWindow):
 
         self._update_stiffener_fields_enabled()
         self._enforce_geometry_selection()
+
+    def _initialise_default_geometry(self) -> None:
+        self._points = {
+            "P1": Point(0.0, 0.0),
+            "P2": Point(10.0, 0.0),
+            "P3": Point(0.0, 10.0),
+            "P4": Point(10.0, 10.0),
+        }
+        self._point_name_counter = len(self._points) + 1
+
+        properties = self._latest_properties
+        self._lines.clear()
+        self._line_widget_assignments.clear()
+
+        def build_line(name: str, start: str, end: str) -> None:
+            start_point = self._points[start]
+            end_point = self._points[end]
+            geometry = LineString([(start_point.x, start_point.y), (end_point.x, end_point.y)])
+            self._lines[name] = ModelLine(
+                name=name,
+                start_point=start,
+                end_point=end,
+                geometry=geometry,
+                properties=properties,
+            )
+
+        build_line("L1", "P1", "P2")
+        build_line("L2", "P2", "P4")
+        build_line("L3", "P4", "P3")
+        build_line("L4", "P3", "P1")
 
     def _handle_apply_to_selected_line(self, section_name: str) -> None:
         if not self._selected_line_name:
