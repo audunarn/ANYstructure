@@ -10,8 +10,10 @@ calculation back-end can be driven from the Qt layer.
 
 from __future__ import annotations
 
+import json
 import sys
 from dataclasses import dataclass, fields
+from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 from PySide6.QtCore import QPointF, QSize, Qt, Signal
@@ -19,11 +21,15 @@ from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
     QComboBox,
+    QDockWidget,
+    QFileDialog,
     QFormLayout,
-    QLineEdit,
+    QHBoxLayout,
     QLabel,
+    QLineEdit,
     QListWidget,
     QMainWindow,
+    QMessageBox,
     QPushButton,
     QTextEdit,
     QVBoxLayout,
@@ -366,7 +372,12 @@ class DemoWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle("ANYstructure – Qt demo")
-        self.resize(760, 480)
+        self.resize(1080, 720)
+        self.setDockOptions(
+            QMainWindow.AnimatedDocks
+            | QMainWindow.AllowTabbedDocks
+            | QMainWindow.AllowNestedDocks
+        )
 
         self._input_widgets: Dict[str, QWidget] = {}
 
@@ -381,9 +392,6 @@ class DemoWindow(QMainWindow):
         self._results.setReadOnly(True)
         self._results.setFontFamily("monospace")
 
-        self._recalc_btn = QPushButton("Recalculate demo input")
-        self._recalc_btn.clicked.connect(self.update_results)  # type: ignore[arg-type]
-
         self._canvas = GeometryCanvas()
         self._point_name_counter = 1
         self._points: Dict[str, Point] = {}
@@ -392,31 +400,75 @@ class DemoWindow(QMainWindow):
         self._selected_point_name: str | None = None
         self._selected_line_name: str | None = None
         self._next_line_combo_target = "start"
+        self._last_loaded_file: Path | None = None
+
+        self._recalc_btn = QPushButton("Recalculate Demo Input")
+        self._recalc_btn.clicked.connect(self._handle_manual_recalc)  # type: ignore[arg-type]
+        self._load_input_btn = QPushButton("Load Input From File…")
+        self._load_input_btn.clicked.connect(self._handle_load_input)  # type: ignore[arg-type]
+        self._load_status_label = QLabel(
+            "Load inputs from a JSON file or recalculate the current configuration."
+        )
+        self._load_status_label.setWordWrap(True)
 
         self._canvas.line_selected.connect(self._handle_canvas_line_selected)  # type: ignore[arg-type]
         self._canvas.point_selected.connect(self._handle_canvas_point_selected)  # type: ignore[arg-type]
 
-        layout = QVBoxLayout()
-        layout.addWidget(self._info_label)
-        layout.addLayout(self._build_input_form())
-        layout.addLayout(self._build_model_layout())
-        layout.addWidget(self._recalc_btn, alignment=Qt.AlignLeft)
-        layout.addWidget(self._results)
+        central_placeholder = QWidget()
+        self.setCentralWidget(central_placeholder)
 
-        container = QWidget()
-        container.setLayout(layout)
-        self.setCentralWidget(container)
+        geometry_widget = self._build_geometry_inputs_widget()
+        model_widget = self._build_model_widget()
+        results_widget = self._build_results_widget()
+        load_widget = self._build_load_widget()
+
+        geometry_dock = self._create_dock("Geometry Types", geometry_widget)
+        model_dock = self._create_dock("Drawing Canvas", model_widget)
+        results_dock = self._create_dock("Results", results_widget)
+        load_dock = self._create_dock("Load Input", load_widget)
+
+        self.addDockWidget(Qt.LeftDockWidgetArea, geometry_dock)
+        self.addDockWidget(Qt.RightDockWidgetArea, model_dock)
+        self.addDockWidget(Qt.BottomDockWidgetArea, results_dock)
+        self.addDockWidget(Qt.TopDockWidgetArea, load_dock)
+        self.splitDockWidget(model_dock, results_dock, Qt.Vertical)
+        self.resizeDocks([geometry_dock, model_dock], [260, 820], Qt.Horizontal)
 
         self.update_results()
 
-    def _build_model_layout(self) -> QVBoxLayout:
+    def _create_dock(self, title: str, widget: QWidget) -> QDockWidget:
+        dock = QDockWidget(title, self)
+        dock.setWidget(widget)
+        dock.setObjectName(title.replace(" ", "_"))
+        dock.setFeatures(
+            QDockWidget.DockWidgetMovable
+            | QDockWidget.DockWidgetFloatable
+            | QDockWidget.DockWidgetClosable
+        )
+        dock.setAllowedAreas(
+            Qt.LeftDockWidgetArea
+            | Qt.RightDockWidgetArea
+            | Qt.TopDockWidgetArea
+            | Qt.BottomDockWidgetArea
+        )
+        return dock
+
+    def _build_geometry_inputs_widget(self) -> QWidget:
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+        layout.addWidget(self._info_label)
+        layout.addLayout(self._build_input_form())
+        return widget
+
+    def _build_model_widget(self) -> QWidget:
         """Build the canvas and modelling controls."""
 
-        from PySide6.QtWidgets import QGroupBox, QHBoxLayout
+        from PySide6.QtWidgets import QGroupBox
 
-        outer_layout = QVBoxLayout()
+        widget = QWidget()
+        outer_layout = QVBoxLayout(widget)
 
-        canvas_group = QGroupBox("Geometry Canvas")
+        canvas_group = QGroupBox("Drawing Canvas")
         canvas_layout = QVBoxLayout()
         canvas_layout.addWidget(self._canvas)
         canvas_group.setLayout(canvas_layout)
@@ -432,11 +484,26 @@ class DemoWindow(QMainWindow):
         main_layout.addWidget(canvas_group, stretch=2)
 
         outer_layout.addLayout(main_layout)
-        return outer_layout
+        return widget
+
+    def _build_results_widget(self) -> QWidget:
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+        layout.addWidget(self._results)
+        return widget
+
+    def _build_load_widget(self) -> QWidget:
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+        button_row = QHBoxLayout()
+        button_row.addWidget(self._load_input_btn)
+        button_row.addWidget(self._recalc_btn)
+        button_row.addStretch(1)
+        layout.addLayout(button_row)
+        layout.addWidget(self._load_status_label)
+        return widget
 
     def _build_point_controls(self) -> QVBoxLayout:
-        from PySide6.QtWidgets import QHBoxLayout
-
         layout = QVBoxLayout()
         layout.addWidget(QLabel("Add Point"))
 
@@ -459,8 +526,6 @@ class DemoWindow(QMainWindow):
         return layout
 
     def _build_line_controls(self) -> QVBoxLayout:
-        from PySide6.QtWidgets import QHBoxLayout
-
         layout = QVBoxLayout()
         layout.addWidget(QLabel("Add Line"))
 
@@ -643,6 +708,15 @@ class DemoWindow(QMainWindow):
         )
         self._results.setPlainText(output)
         self._update_geometry_display()
+        self._info_label.setText(self._default_info_text)
+        if self._last_loaded_file:
+            self._load_status_label.setText(
+                f"Loaded inputs from {self._last_loaded_file.name}. Recalculation complete."
+            )
+        else:
+            self._load_status_label.setText(
+                "Using current in-memory configuration. Recalculation complete."
+            )
 
     def _handle_add_point(self) -> None:
         try:
@@ -717,6 +791,55 @@ class DemoWindow(QMainWindow):
         else:
             self._set_combo_to_point(self._line_end_combo, point_name)
             self._next_line_combo_target = "start"
+
+    def _handle_load_input(self) -> None:
+        filename, _ = QFileDialog.getOpenFileName(
+            self,
+            "Load Demo Input",
+            str(Path.cwd()),
+            "JSON Files (*.json);;All Files (*)",
+        )
+        if not filename:
+            return
+
+        try:
+            with open(filename, "r", encoding="utf-8") as handle:
+                payload = json.load(handle)
+        except (OSError, json.JSONDecodeError) as exc:
+            QMessageBox.warning(self, "Load Failed", f"Could not load input file:\n{exc}")
+            return
+
+        updated = False
+        for field in fields(DemoInput):
+            if field.name not in payload:
+                continue
+            widget = self._input_widgets[field.name]
+            value = payload[field.name]
+            if isinstance(widget, QCheckBox):
+                widget.setChecked(bool(value))
+                updated = True
+            elif isinstance(widget, QLineEdit):
+                widget.setText(str(value))
+                updated = True
+
+        if not updated:
+            QMessageBox.information(
+                self,
+                "No Changes Applied",
+                "The selected file did not contain any recognised fields.",
+            )
+            return
+
+        self._last_loaded_file = Path(filename)
+        self._load_status_label.setText(
+            f"Loaded inputs from {self._last_loaded_file.name}. Recalculating…"
+        )
+        self.update_results()
+
+    def _handle_manual_recalc(self) -> None:
+        self._last_loaded_file = None
+        self._load_status_label.setText("Recalculating current configuration…")
+        self.update_results()
 
 
 def main() -> int:
