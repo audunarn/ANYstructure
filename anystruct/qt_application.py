@@ -12,9 +12,9 @@ from __future__ import annotations
 
 import sys
 from dataclasses import dataclass, fields
-from typing import Any, Dict, Iterable, List, Tuple
+from typing import Any, Dict, List, Tuple
 
-from PySide6.QtCore import QPointF, QSize, Qt
+from PySide6.QtCore import QPointF, QSize, Qt, Signal
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -176,14 +176,34 @@ def build_demo_calc_scantlings(input_data: DemoInput | None = None) -> CalcScant
 class GeometryCanvas(QWidget):
     """Simple canvas that renders the modelling geometries."""
 
+    line_selected = Signal(str)
+    point_selected = Signal(str)
+
     def __init__(self) -> None:
         super().__init__()
-        self._points: List[Point] = []
-        self._lines: List[LineString] = []
+        self._points: Dict[str, Point] = {}
+        self._lines: Dict[str, ModelLine] = {}
+        self._selected_point_name: str | None = None
+        self._selected_line_name: str | None = None
+        self._transform_data: tuple[Tuple[float, float, float, float], float, float, float] | None = None
 
-    def set_geometries(self, points: Iterable[Point], lines: Iterable[LineString]) -> None:
-        self._points = list(points)
-        self._lines = list(lines)
+    def set_geometries(
+        self, points: Dict[str, Point], lines: Dict[str, ModelLine]
+    ) -> None:
+        self._points = dict(points)
+        self._lines = dict(lines)
+        if self._selected_point_name not in self._points:
+            self._selected_point_name = None
+        if self._selected_line_name not in self._lines:
+            self._selected_line_name = None
+        self.update()
+
+    def set_selected_point(self, name: str | None) -> None:
+        self._selected_point_name = name if name in self._points else None
+        self.update()
+
+    def set_selected_line(self, name: str | None) -> None:
+        self._selected_line_name = name if name in self._lines else None
         self.update()
 
     def minimumSizeHint(self) -> QSize:  # type: ignore[override]
@@ -196,12 +216,12 @@ class GeometryCanvas(QWidget):
         xs: List[float] = []
         ys: List[float] = []
 
-        for point in self._points:
+        for point in self._points.values():
             xs.append(point.x)
             ys.append(point.y)
 
-        for line in self._lines:
-            line_xs, line_ys = line.xy
+        for line in self._lines.values():
+            line_xs, line_ys = line.geometry.xy
             xs.extend(line_xs)
             ys.extend(line_ys)
 
@@ -210,9 +230,9 @@ class GeometryCanvas(QWidget):
 
         return min(xs), min(ys), max(xs), max(ys)
 
-    def _transform_point(
-        self, x: float, y: float, bounds: Tuple[float, float, float, float]
-    ) -> QPointF:
+    def _compute_transform(
+        self, bounds: Tuple[float, float, float, float]
+    ) -> tuple[float, float, float]:
         min_x, min_y, max_x, max_y = bounds
         width = max_x - min_x or 1.0
         height = max_y - min_y or 1.0
@@ -224,9 +244,31 @@ class GeometryCanvas(QWidget):
         offset_x = (self.width() - width * scale) / 2.0
         offset_y = (self.height() - height * scale) / 2.0
 
+        return scale, offset_x, offset_y
+
+    def _transform_point(self, x: float, y: float) -> QPointF:
+        if self._transform_data is None:
+            return QPointF()
+
+        bounds, scale, offset_x, offset_y = self._transform_data
+        min_x, min_y, _, _ = bounds
+
         mapped_x = offset_x + (x - min_x) * scale
         mapped_y = self.height() - (offset_y + (y - min_y) * scale)
         return QPointF(mapped_x, mapped_y)
+
+    def _map_to_world(self, pos: QPointF) -> Tuple[float, float] | None:
+        if self._transform_data is None:
+            return None
+
+        bounds, scale, offset_x, offset_y = self._transform_data
+        if scale == 0:
+            return None
+
+        min_x, min_y, _, _ = bounds
+        world_x = (pos.x() - offset_x) / scale + min_x
+        world_y = ((self.height() - pos.y()) - offset_y) / scale + min_y
+        return world_x, world_y
 
     def paintEvent(self, event) -> None:  # type: ignore[override]
         from PySide6.QtGui import QBrush, QColor, QPainter, QPen
@@ -239,14 +281,19 @@ class GeometryCanvas(QWidget):
         if bounds is None:
             painter.setPen(QPen(QColor("#888")))
             painter.drawText(self.rect(), Qt.AlignCenter, "No geometry defined")
+            self._transform_data = None
             return
 
+        scale, offset_x, offset_y = self._compute_transform(bounds)
+        self._transform_data = (bounds, scale, offset_x, offset_y)
+
         # Draw lines first
-        line_pen = QPen(QColor("#4cc9f0"), 2)
-        painter.setPen(line_pen)
-        for line in self._lines:
-            xs, ys = line.xy
-            points = [self._transform_point(x, y, bounds) for x, y in zip(xs, ys)]
+        for name, line in self._lines.items():
+            width = 4 if name == self._selected_line_name else 2
+            line_pen = QPen(QColor("#4cc9f0"), width)
+            painter.setPen(line_pen)
+            xs, ys = line.geometry.xy
+            points = [self._transform_point(x, y) for x, y in zip(xs, ys)]
             for start, end in zip(points[:-1], points[1:]):
                 painter.drawLine(start, end)
 
@@ -254,10 +301,52 @@ class GeometryCanvas(QWidget):
         point_brush = QBrush(QColor("#f72585"))
         painter.setBrush(point_brush)
         painter.setPen(QPen(QColor("#000")))
-        radius = 5
-        for point in self._points:
-            mapped_point = self._transform_point(point.x, point.y, bounds)
+        for name, point in self._points.items():
+            radius = 8 if name == self._selected_point_name else 5
+            mapped_point = self._transform_point(point.x, point.y)
             painter.drawEllipse(mapped_point, radius, radius)
+
+    def mousePressEvent(self, event) -> None:  # type: ignore[override]
+        if self._transform_data is None:
+            return
+
+        world_point = self._map_to_world(event.position())
+        if world_point is None:
+            return
+
+        click_point = Point(world_point)
+        _, scale, _, _ = self._transform_data
+        pixel_tolerance = 8.0
+        world_tolerance = pixel_tolerance / scale if scale else float("inf")
+
+        if event.button() == Qt.LeftButton:
+            selected_name: str | None = None
+            min_distance = world_tolerance
+            for name, line in self._lines.items():
+                distance = line.geometry.distance(click_point)
+                if distance <= min_distance:
+                    min_distance = distance
+                    selected_name = name
+
+            if selected_name:
+                self._selected_line_name = selected_name
+                self.line_selected.emit(selected_name)
+                self.update()
+        elif event.button() == Qt.RightButton:
+            selected_point: str | None = None
+            min_distance = world_tolerance
+            for name, point in self._points.items():
+                distance = point.distance(click_point)
+                if distance <= min_distance:
+                    min_distance = distance
+                    selected_point = name
+
+            if selected_point:
+                self._selected_point_name = selected_point
+                self.point_selected.emit(selected_point)
+                self.update()
+
+        super().mousePressEvent(event)
 
 
 @dataclass
@@ -265,6 +354,8 @@ class ModelLine:
     """Representation of a line connecting two points with structural data."""
 
     name: str
+    start_point: str
+    end_point: str
     geometry: LineString
     properties: DemoInput
 
@@ -298,6 +389,12 @@ class DemoWindow(QMainWindow):
         self._points: Dict[str, Point] = {}
         self._lines: Dict[str, ModelLine] = {}
         self._latest_properties = DemoInput()
+        self._selected_point_name: str | None = None
+        self._selected_line_name: str | None = None
+        self._next_line_combo_target = "start"
+
+        self._canvas.line_selected.connect(self._handle_canvas_line_selected)  # type: ignore[arg-type]
+        self._canvas.point_selected.connect(self._handle_canvas_point_selected)  # type: ignore[arg-type]
 
         layout = QVBoxLayout()
         layout.addWidget(self._info_label)
@@ -331,8 +428,8 @@ class DemoWindow(QMainWindow):
         controls_group.setLayout(controls_layout)
 
         main_layout = QHBoxLayout()
-        main_layout.addWidget(canvas_group, stretch=2)
         main_layout.addWidget(controls_group, stretch=1)
+        main_layout.addWidget(canvas_group, stretch=2)
 
         outer_layout.addLayout(main_layout)
         return outer_layout
@@ -384,24 +481,74 @@ class DemoWindow(QMainWindow):
         return layout
 
     def _update_geometry_display(self) -> None:
-        self._canvas.set_geometries(self._points.values(), (line.geometry for line in self._lines.values()))
+        self._canvas.set_geometries(self._points, self._lines)
         self._point_list.clear()
         for name, point in self._points.items():
             self._point_list.addItem(f"{name}: ({point.x:.2f}, {point.y:.2f})")
 
+        self._select_point_in_list(self._selected_point_name)
+
         self._line_list.clear()
         for name, line in self._lines.items():
-            start, end = line.geometry.coords[0], line.geometry.coords[-1]
-            self._line_list.addItem(
-                f"{name}: ({start[0]:.2f}, {start[1]:.2f}) -> ({end[0]:.2f}, {end[1]:.2f})"
-                f" | type={line.properties.structure_type}"
-            )
+            start_coords = self._points.get(line.start_point)
+            end_coords = self._points.get(line.end_point)
+            if start_coords and end_coords:
+                self._line_list.addItem(
+                    f"{name}: {line.start_point} ({start_coords.x:.2f}, {start_coords.y:.2f}) -> "
+                    f"{line.end_point} ({end_coords.x:.2f}, {end_coords.y:.2f}) | type={line.properties.structure_type}"
+                )
+            else:
+                self._line_list.addItem(
+                    f"{name}: {line.start_point} -> {line.end_point} | type={line.properties.structure_type}"
+                )
 
+        self._select_line_in_list(self._selected_line_name)
+
+        current_start = self._line_start_combo.currentText()
+        current_end = self._line_end_combo.currentText()
         self._line_start_combo.clear()
         self._line_end_combo.clear()
         for name in self._points:
             self._line_start_combo.addItem(name)
             self._line_end_combo.addItem(name)
+
+        if self._selected_line_name:
+            line = self._lines.get(self._selected_line_name)
+            if line:
+                self._set_combo_to_point(self._line_start_combo, line.start_point)
+                self._set_combo_to_point(self._line_end_combo, line.end_point)
+        else:
+            self._set_combo_to_point(self._line_start_combo, current_start)
+            self._set_combo_to_point(self._line_end_combo, current_end)
+
+    def _set_combo_to_point(self, combo: QComboBox, point_name: str | None) -> None:
+        if not point_name:
+            return
+        index = combo.findText(point_name)
+        if index >= 0:
+            combo.setCurrentIndex(index)
+
+    def _select_line_in_list(self, line_name: str | None) -> None:
+        if not line_name:
+            self._line_list.clearSelection()
+            return
+        for row in range(self._line_list.count()):
+            item = self._line_list.item(row)
+            if item.text().startswith(f"{line_name}:"):
+                self._line_list.setCurrentRow(row)
+                return
+        self._line_list.clearSelection()
+
+    def _select_point_in_list(self, point_name: str | None) -> None:
+        if not point_name:
+            self._point_list.clearSelection()
+            return
+        for row in range(self._point_list.count()):
+            item = self._point_list.item(row)
+            if item.text().startswith(f"{point_name}:"):
+                self._point_list.setCurrentRow(row)
+                return
+        self._point_list.clearSelection()
 
     def _build_input_form(self) -> QFormLayout:
         """Create the form layout that hosts all input widgets."""
@@ -534,9 +681,42 @@ class DemoWindow(QMainWindow):
         geometry = LineString([(start_point.x, start_point.y), (end_point.x, end_point.y)])
         line_name = f"L{len(self._lines) + 1}"
         properties = getattr(self, "_latest_properties", DemoInput())
-        self._lines[line_name] = ModelLine(name=line_name, geometry=geometry, properties=properties)
+        self._lines[line_name] = ModelLine(
+            name=line_name,
+            start_point=start_name,
+            end_point=end_name,
+            geometry=geometry,
+            properties=properties,
+        )
         self._info_label.setText(self._default_info_text)
         self._update_geometry_display()
+
+    def _handle_canvas_line_selected(self, line_name: str) -> None:
+        line = self._lines.get(line_name)
+        if not line:
+            return
+
+        self._selected_line_name = line_name
+        self._canvas.set_selected_line(line_name)
+        self._set_combo_to_point(self._line_start_combo, line.start_point)
+        self._set_combo_to_point(self._line_end_combo, line.end_point)
+        self._next_line_combo_target = "start"
+        self._select_line_in_list(line_name)
+
+    def _handle_canvas_point_selected(self, point_name: str) -> None:
+        if point_name not in self._points:
+            return
+
+        self._selected_point_name = point_name
+        self._canvas.set_selected_point(point_name)
+        self._select_point_in_list(point_name)
+
+        if self._next_line_combo_target == "start":
+            self._set_combo_to_point(self._line_start_combo, point_name)
+            self._next_line_combo_target = "end"
+        else:
+            self._set_combo_to_point(self._line_end_combo, point_name)
+            self._next_line_combo_target = "start"
 
 
 def main() -> int:
