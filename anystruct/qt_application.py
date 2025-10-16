@@ -521,6 +521,12 @@ class DemoWindow(QMainWindow):
             "Cylinder Input": ["include_cylinder", "panel_or_shell"],
         }
         self._section_widgets: Dict[str, QWidget] = {}
+        self._line_widget_assignments: Dict[str, str] = {}
+        self._dock_palette_entries: Dict[str, str] = {
+            "Drop Zone": "Line Properties",
+            "Drawing Canvas": "Drawing Canvas",
+            "Results": "Results",
+        }
         self._widget_palette: QListWidget | None = None
         self._widget_workspace: WidgetWorkspace | None = None
 
@@ -717,6 +723,11 @@ class DemoWindow(QMainWindow):
             item.setFlags(item.flags() | Qt.ItemIsDragEnabled | Qt.ItemIsEnabled | Qt.ItemIsSelectable)
             palette.addItem(item)
 
+        for name in self._dock_palette_entries:
+            item = QListWidgetItem(name)
+            item.setFlags(item.flags() | Qt.ItemIsDragEnabled | Qt.ItemIsEnabled | Qt.ItemIsSelectable)
+            palette.addItem(item)
+
         palette.itemDoubleClicked.connect(  # type: ignore[arg-type]
             lambda item: self._handle_widget_palette_activation(item.text())
         )
@@ -813,6 +824,9 @@ class DemoWindow(QMainWindow):
 
     def _update_geometry_display(self) -> None:
         self._canvas.set_geometries(self._points, self._lines)
+        for line_name in list(self._line_widget_assignments):
+            if line_name not in self._lines:
+                self._line_widget_assignments.pop(line_name, None)
         self._point_list.clear()
         for name, point in self._points.items():
             self._point_list.addItem(f"{name}: ({point.x:.2f}, {point.y:.2f})")
@@ -891,6 +905,28 @@ class DemoWindow(QMainWindow):
         self._activate_widget(widget_name)
 
     def _activate_widget(self, widget_name: str) -> None:
+        dock_title = self._dock_palette_entries.get(widget_name)
+        if dock_title is not None:
+            dock = self._dock_registry.get(dock_title)
+            if dock is None:
+                self._info_label.setText(f"Widget '{widget_name}' is not available.")
+                return
+
+            if dock_title == "Line Properties":
+                self._ensure_drop_zone_visible()
+                if self._selected_line_name:
+                    self._restore_workspace_for_line(self._selected_line_name)
+                else:
+                    if self._widget_workspace is not None:
+                        self._widget_workspace.clear_active_widget()
+                    self._info_label.setText(self._default_info_text)
+            else:
+                if not dock.isVisible():
+                    dock.show()
+                dock.raise_()
+                self._info_label.setText(f"Restored {dock_title}.")
+            return
+
         widget = self._section_widgets.get(widget_name)
         if widget is None:
             self._info_label.setText(f"Widget '{widget_name}' is not available.")
@@ -904,6 +940,45 @@ class DemoWindow(QMainWindow):
             if matches:
                 self._widget_palette.setCurrentItem(matches[0])
 
+        if self._selected_line_name:
+            self._line_widget_assignments[self._selected_line_name] = widget_name
+
+        self._info_label.setText(
+            f"Editing {widget_name}. Adjust the values and press 'Apply To Selected Line'."
+        )
+
+    def _ensure_drop_zone_visible(self) -> None:
+        dock = self._dock_registry.get("Line Properties")
+        if dock is None:
+            return
+
+        if not dock.isVisible():
+            dock.show()
+        dock.raise_()
+
+    def _restore_workspace_for_line(self, line_name: str) -> None:
+        if self._widget_workspace is None:
+            return
+
+        widget_name = self._line_widget_assignments.get(line_name)
+        if not widget_name:
+            self._line_widget_assignments.pop(line_name, None)
+            self._widget_workspace.clear_active_widget()
+            self._info_label.setText(self._default_info_text)
+            return
+
+        widget = self._section_widgets.get(widget_name)
+        if widget is None:
+            self._line_widget_assignments.pop(line_name, None)
+            self._widget_workspace.clear_active_widget()
+            self._info_label.setText(self._default_info_text)
+            return
+
+        self._widget_workspace.set_active_widget(widget_name, widget)
+        if self._widget_palette is not None:
+            matches = self._widget_palette.findItems(widget_name, Qt.MatchExactly)
+            if matches:
+                self._widget_palette.setCurrentItem(matches[0])
         self._info_label.setText(
             f"Editing {widget_name}. Adjust the values and press 'Apply To Selected Line'."
         )
@@ -1191,6 +1266,8 @@ class DemoWindow(QMainWindow):
         self._select_line_in_list(line_name)
         if self._widget_workspace is not None:
             self._widget_workspace.set_selected_line(line_name)
+        self._ensure_drop_zone_visible()
+        self._restore_workspace_for_line(line_name)
 
     def _handle_canvas_point_selected(self, point_name: str) -> None:
         if point_name not in self._points:
