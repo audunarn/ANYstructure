@@ -28,6 +28,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QListWidget,
+    QListWidgetItem,
     QMainWindow,
     QMessageBox,
     QPushButton,
@@ -55,6 +56,9 @@ from anystruct.calc_structure_classes import (
 class DemoInput:
     """Container for the numerical values used when instantiating the model."""
 
+    include_flat_plate: bool = True
+    include_cylinder: bool = False
+    include_stiffener: bool = True
     mat_yield: float = 355e6
     mat_factor: float = 1.15
     span: float = 3.7
@@ -106,6 +110,12 @@ def build_demo_calc_scantlings(input_data: DemoInput | None = None) -> CalcScant
 
     data = input_data or DemoInput()
 
+    if data.include_flat_plate and data.include_cylinder:
+        raise ValueError("A line cannot be both a flat plate and a cylinder.")
+
+    if not data.include_flat_plate and not data.include_cylinder:
+        raise ValueError("Select either flat plate or cylinder properties for the line.")
+
     material = Material(
         young=206_800e6,
         poisson=0.3,
@@ -118,15 +128,17 @@ def build_demo_calc_scantlings(input_data: DemoInput | None = None) -> CalcScant
         thickness=data.plate_thk,
         material=material,
     )
-    stiffener = Stiffener(
-        type=data.stf_type,
-        web_height=data.stf_web_height,
-        web_th=data.stf_web_thk,
-        flange_width=data.stf_flange_width,
-        flange_th=data.stf_flange_thk,
-        material=material,
-        fabrication_method="welded",
-    )
+    stiffener = None
+    if data.include_stiffener:
+        stiffener = Stiffener(
+            type=data.stf_type,
+            web_height=data.stf_web_height,
+            web_th=data.stf_web_thk,
+            flange_width=data.stf_flange_width,
+            flange_th=data.stf_flange_thk,
+            material=material,
+            fabrication_method="welded",
+        )
 
     calc_props = StiffenedPanelCalcProps(
         plate_kpp=data.plate_kpp,
@@ -142,8 +154,8 @@ def build_demo_calc_scantlings(input_data: DemoInput | None = None) -> CalcScant
     panel = StiffenedPanel(
         plate=plate,
         stiffener=stiffener,
-        stiffener_end_support="continuous",
-        girder_length=data.girder_lg,
+        stiffener_end_support="continuous" if stiffener else None,
+        girder_length=data.girder_lg if stiffener else None,
     )
 
     stress = Stress(
@@ -171,10 +183,16 @@ def build_demo_calc_scantlings(input_data: DemoInput | None = None) -> CalcScant
         puls_input=puls,
     )
 
+    category = data.panel_or_shell
+    if data.include_cylinder:
+        category = "shell"
+    elif data.include_flat_plate:
+        category = "panel"
+
     return CalcScantlings(
         buckling_input=buckling_input,
         lat_press=False,
-        category=data.panel_or_shell,
+        category=category,
         need_recalc=False,
     )
 
@@ -380,6 +398,13 @@ class DemoWindow(QMainWindow):
         )
 
         self._input_widgets: Dict[str, QWidget] = {}
+        self._dock_registry: Dict[str, QDockWidget] = {}
+        self._overview_list: QListWidget | None = None
+        self._flat_plate_checkbox: QCheckBox | None = None
+        self._cylinder_checkbox: QCheckBox | None = None
+        self._stiffener_checkbox: QCheckBox | None = None
+        self._stiffener_field_widgets: list[QWidget] = []
+        self._updating_overview: bool = False
 
         self._info_label = QLabel(
             "The demo instantiates the CalcScantlings object used in testCalc\n"
@@ -417,22 +442,34 @@ class DemoWindow(QMainWindow):
         central_placeholder = QWidget()
         self.setCentralWidget(central_placeholder)
 
-        geometry_widget = self._build_geometry_inputs_widget()
+        overview_widget = self._build_overview_widget()
+        properties_widget = self._build_properties_widget()
         model_widget = self._build_model_widget()
         results_widget = self._build_results_widget()
         load_widget = self._build_load_widget()
 
-        geometry_dock = self._create_dock("Geometry Types", geometry_widget)
+        overview_dock = self._create_dock("Widget Overview", overview_widget)
+        properties_dock = self._create_dock("Line Properties", properties_widget)
         model_dock = self._create_dock("Drawing Canvas", model_widget)
         results_dock = self._create_dock("Results", results_widget)
         load_dock = self._create_dock("Load Input", load_widget)
 
-        self.addDockWidget(Qt.LeftDockWidgetArea, geometry_dock)
+        self.addDockWidget(Qt.LeftDockWidgetArea, overview_dock)
+        self.addDockWidget(Qt.LeftDockWidgetArea, properties_dock)
         self.addDockWidget(Qt.RightDockWidgetArea, model_dock)
         self.addDockWidget(Qt.BottomDockWidgetArea, results_dock)
         self.addDockWidget(Qt.TopDockWidgetArea, load_dock)
         self.splitDockWidget(model_dock, results_dock, Qt.Vertical)
-        self.resizeDocks([geometry_dock, model_dock], [260, 820], Qt.Horizontal)
+        self.resizeDocks([overview_dock, properties_dock, model_dock], [200, 260, 820], Qt.Horizontal)
+
+        for title, dock in (
+            ("Widget Overview", overview_dock),
+            ("Line Properties", properties_dock),
+            ("Drawing Canvas", model_dock),
+            ("Results", results_dock),
+            ("Load Input", load_dock),
+        ):
+            self._register_dock_for_overview(title, dock)
 
         self.update_results()
 
@@ -453,11 +490,86 @@ class DemoWindow(QMainWindow):
         )
         return dock
 
-    def _build_geometry_inputs_widget(self) -> QWidget:
+    def _register_dock_for_overview(self, title: str, dock: QDockWidget) -> None:
+        self._dock_registry[title] = dock
+
+        if self._overview_list is not None:
+            self._updating_overview = True
+            try:
+                matches = self._overview_list.findItems(title, Qt.MatchExactly)
+                if not matches:
+                    item = QListWidgetItem(title)
+                    item.setFlags(
+                        item.flags()
+                        | Qt.ItemIsUserCheckable
+                        | Qt.ItemIsSelectable
+                        | Qt.ItemIsEnabled
+                    )
+                    item.setCheckState(Qt.Checked if dock.isVisible() else Qt.Unchecked)
+                    self._overview_list.addItem(item)
+                else:
+                    self._update_overview_item_state(title, dock.isVisible())
+            finally:
+                self._updating_overview = False
+
+        dock.visibilityChanged.connect(  # type: ignore[arg-type]
+            lambda visible, name=title: self._update_overview_item_state(name, visible)
+        )
+
+    def _update_overview_item_state(self, title: str, visible: bool) -> None:
+        if self._overview_list is None:
+            return
+
+        self._updating_overview = True
+        try:
+            for item in self._overview_list.findItems(title, Qt.MatchExactly):
+                item.setCheckState(Qt.Checked if visible else Qt.Unchecked)
+        finally:
+            self._updating_overview = False
+
+    def _handle_overview_item_changed(self, item: QListWidgetItem) -> None:
+        if self._updating_overview:
+            return
+
+        dock = self._dock_registry.get(item.text())
+        if dock is None:
+            return
+
+        should_show = item.checkState() == Qt.Checked
+        dock.setVisible(should_show)
+        if should_show:
+            dock.raise_()
+
+    def _handle_overview_item_activated(self, item: QListWidgetItem) -> None:
+        dock = self._dock_registry.get(item.text())
+        if dock is None:
+            return
+
+        if not dock.isVisible():
+            dock.show()
+        dock.raise_()
+
+    def _build_overview_widget(self) -> QWidget:
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+        overview_label = QLabel("Available Widgets")
+        overview_label.setWordWrap(True)
+        layout.addWidget(overview_label)
+
+        self._overview_list = QListWidget()
+        self._overview_list.itemActivated.connect(self._handle_overview_item_activated)  # type: ignore[arg-type]
+        self._overview_list.itemClicked.connect(self._handle_overview_item_activated)  # type: ignore[arg-type]
+        self._overview_list.itemChanged.connect(self._handle_overview_item_changed)  # type: ignore[arg-type]
+        layout.addWidget(self._overview_list)
+        layout.addStretch(1)
+        return widget
+
+    def _build_properties_widget(self) -> QWidget:
         widget = QWidget()
         layout = QVBoxLayout(widget)
         layout.addWidget(self._info_label)
-        layout.addLayout(self._build_input_form())
+        layout.addWidget(self._build_input_form())
+        layout.addStretch(1)
         return widget
 
     def _build_model_widget(self) -> QWidget:
@@ -615,19 +727,81 @@ class DemoWindow(QMainWindow):
                 return
         self._point_list.clearSelection()
 
-    def _build_input_form(self) -> QFormLayout:
-        """Create the form layout that hosts all input widgets."""
+    def _build_input_form(self) -> QWidget:
+        """Create the grouped form widgets for the line properties."""
 
-        form_layout = QFormLayout()
+        from PySide6.QtWidgets import QGroupBox
+
+        container = QWidget()
+        container_layout = QVBoxLayout(container)
+
         defaults = DemoInput()
+        field_lookup = {field.name: field for field in fields(DemoInput)}
 
-        for field in fields(DemoInput):
-            default_value = getattr(defaults, field.name)
-            widget = self._create_input_widget(field.type, default_value)
-            self._input_widgets[field.name] = widget
-            form_layout.addRow(self._format_label(field.name), widget)
+        sections: Dict[str, list[str]] = {
+            "Flat Plate Input": ["include_flat_plate", "span", "spacing", "plate_thk"],
+            "Stiffener Input": [
+                "include_stiffener",
+                "stf_type",
+                "stf_web_height",
+                "stf_web_thk",
+                "stf_flange_width",
+                "stf_flange_thk",
+                "girder_lg",
+            ],
+            "Material Input": ["mat_yield", "mat_factor"],
+            "Buckling Parameters Input": [
+                "plate_kpp",
+                "stf_kps",
+                "stf_km1",
+                "stf_km2",
+                "stf_km3",
+                "structure_type",
+                "zstar_optimization",
+                "puls_buckling_method",
+                "puls_boundary",
+                "puls_stiffener_end",
+                "puls_sp_or_up",
+                "puls_up_boundary",
+                "sigma_y1",
+                "sigma_y2",
+                "sigma_x2",
+                "sigma_x1",
+                "tau_xy",
+                "pressure_side",
+            ],
+            "Cylinder Input": ["include_cylinder", "panel_or_shell"],
+        }
 
-        return form_layout
+        self._flat_plate_checkbox = None
+        self._cylinder_checkbox = None
+        self._stiffener_checkbox = None
+        self._stiffener_field_widgets = []
+
+        for section_title, field_names in sections.items():
+            group = QGroupBox(section_title)
+            group_layout = QFormLayout()
+            for field_name in field_names:
+                field = field_lookup[field_name]
+                default_value = getattr(defaults, field_name)
+                widget = self._create_input_widget(field_name, field.type, default_value)
+                self._input_widgets[field_name] = widget
+
+                if isinstance(widget, QCheckBox):
+                    group_layout.addRow(widget)
+                else:
+                    group_layout.addRow(self._format_label(field_name), widget)
+
+                if section_title == "Stiffener Input" and field_name != "include_stiffener":
+                    self._stiffener_field_widgets.append(widget)
+
+            group.setLayout(group_layout)
+            container_layout.addWidget(group)
+
+        container_layout.addStretch(1)
+        self._update_stiffener_fields_enabled()
+        self._enforce_geometry_selection()
+        return container
 
     @staticmethod
     def _format_label(name: str) -> str:
@@ -636,17 +810,88 @@ class DemoWindow(QMainWindow):
         return name.replace("_", " ").title()
 
     @staticmethod
-    def _create_input_widget(field_type: type[Any], default_value: Any) -> QWidget:
+    def _set_checkbox_state(checkbox: QCheckBox | None, value: bool) -> None:
+        if checkbox is None:
+            return
+
+        was_blocked = checkbox.blockSignals(True)
+        checkbox.setChecked(value)
+        checkbox.blockSignals(was_blocked)
+
+    def _create_input_widget(
+        self, field_name: str, field_type: type[Any], default_value: Any
+    ) -> QWidget:
         """Return an appropriate widget for the given field type."""
 
         if field_type is bool:
-            widget = QCheckBox()
-            widget.setChecked(bool(default_value))
-            return widget
+            checkbox = QCheckBox(self._format_label(field_name))
+            checkbox.setChecked(bool(default_value))
+
+            if field_name == "include_flat_plate":
+                self._flat_plate_checkbox = checkbox
+                checkbox.stateChanged.connect(self._handle_flat_plate_toggled)  # type: ignore[arg-type]
+            elif field_name == "include_cylinder":
+                self._cylinder_checkbox = checkbox
+                checkbox.stateChanged.connect(self._handle_cylinder_toggled)  # type: ignore[arg-type]
+            elif field_name == "include_stiffener":
+                self._stiffener_checkbox = checkbox
+                checkbox.stateChanged.connect(self._handle_stiffener_toggled)  # type: ignore[arg-type]
+
+            return checkbox
 
         line_edit = QLineEdit()
         line_edit.setText(str(default_value))
         return line_edit
+
+    def _handle_flat_plate_toggled(self, state: int) -> None:
+        checked = state == Qt.Checked
+        if checked and self._cylinder_checkbox and self._cylinder_checkbox.isChecked():
+            self._set_checkbox_state(self._cylinder_checkbox, False)
+
+        self._enforce_geometry_selection("flat" if checked else "cylinder")
+
+        self._info_label.setText(self._default_info_text)
+
+    def _handle_cylinder_toggled(self, state: int) -> None:
+        checked = state == Qt.Checked
+        if checked and self._flat_plate_checkbox and self._flat_plate_checkbox.isChecked():
+            self._set_checkbox_state(self._flat_plate_checkbox, False)
+
+        self._enforce_geometry_selection("cylinder" if checked else "flat")
+
+        self._info_label.setText(self._default_info_text)
+
+    def _handle_stiffener_toggled(self, _state: int) -> None:
+        self._update_stiffener_fields_enabled()
+        self._info_label.setText(self._default_info_text)
+
+    def _update_stiffener_fields_enabled(self) -> None:
+        enabled = True
+        if self._stiffener_checkbox is not None:
+            enabled = self._stiffener_checkbox.isChecked()
+
+        for widget in self._stiffener_field_widgets:
+            widget.setEnabled(enabled)
+
+    def _enforce_geometry_selection(self, preferred: str | None = None) -> None:
+        flat_checked = self._flat_plate_checkbox.isChecked() if self._flat_plate_checkbox else False
+        cylinder_checked = self._cylinder_checkbox.isChecked() if self._cylinder_checkbox else False
+
+        if flat_checked and cylinder_checked:
+            if preferred == "cylinder":
+                self._set_checkbox_state(self._flat_plate_checkbox, False)
+                flat_checked = False
+            else:
+                self._set_checkbox_state(self._cylinder_checkbox, False)
+                cylinder_checked = False
+
+        if not flat_checked and not cylinder_checked:
+            if preferred == "cylinder" and self._cylinder_checkbox is not None:
+                self._set_checkbox_state(self._cylinder_checkbox, True)
+            elif self._flat_plate_checkbox is not None:
+                self._set_checkbox_state(self._flat_plate_checkbox, True)
+            elif self._cylinder_checkbox is not None:
+                self._set_checkbox_state(self._cylinder_checkbox, True)
 
     def _gather_input_data(self) -> DemoInput:
         """Collect the data from the widgets and convert them to ``DemoInput``."""
@@ -829,6 +1074,9 @@ class DemoWindow(QMainWindow):
                 "The selected file did not contain any recognised fields.",
             )
             return
+
+        self._update_stiffener_fields_enabled()
+        self._enforce_geometry_selection()
 
         self._last_loaded_file = Path(filename)
         self._load_status_label.setText(
