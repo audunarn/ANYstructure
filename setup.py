@@ -41,7 +41,7 @@ setup(
         'Topic :: Scientific/Engineering'],
     keywords='dnv-gl-os-c101 dnv-rp-c202 dnv-rp-c201 naval_architecture structural_engineering steel buckling fatigue local_scantlings optimization weight',
     include_package_data=True,
-    install_requires=['scipy', 'numpy', 'matplotlib', 'reportlab', 'xlwings', 'scikit-learn'],
+    install_requires=['scipy', 'numpy', 'matplotlib', 'reportlab', 'xlwings', 'scikit-learn', 'PySide6'],
     packages=['anystruct'],
     py_modules = [],
 )
