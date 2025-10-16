@@ -11,12 +11,15 @@ calculation back-end can be driven from the Qt layer.
 from __future__ import annotations
 
 import sys
-from dataclasses import dataclass
-from typing import Dict
+from dataclasses import dataclass, fields
+from typing import Any, Dict
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QApplication,
+    QCheckBox,
+    QFormLayout,
+    QLineEdit,
     QLabel,
     QMainWindow,
     QPushButton,
@@ -174,6 +177,8 @@ class DemoWindow(QMainWindow):
         self.setWindowTitle("ANYstructure – Qt demo")
         self.resize(760, 480)
 
+        self._input_widgets: Dict[str, QWidget] = {}
+
         self._info_label = QLabel(
             "The demo instantiates the CalcScantlings object used in testCalc\n"
             "and prints a short summary alongside the report string."
@@ -189,6 +194,7 @@ class DemoWindow(QMainWindow):
 
         layout = QVBoxLayout()
         layout.addWidget(self._info_label)
+        layout.addLayout(self._build_input_form())
         layout.addWidget(self._recalc_btn, alignment=Qt.AlignLeft)
         layout.addWidget(self._results)
 
@@ -198,11 +204,84 @@ class DemoWindow(QMainWindow):
 
         self.update_results()
 
+    def _build_input_form(self) -> QFormLayout:
+        """Create the form layout that hosts all input widgets."""
+
+        form_layout = QFormLayout()
+        defaults = DemoInput()
+
+        for field in fields(DemoInput):
+            default_value = getattr(defaults, field.name)
+            widget = self._create_input_widget(field.type, default_value)
+            self._input_widgets[field.name] = widget
+            form_layout.addRow(self._format_label(field.name), widget)
+
+        return form_layout
+
+    @staticmethod
+    def _format_label(name: str) -> str:
+        """Create a human readable label from a dataclass field name."""
+
+        return name.replace("_", " ").title()
+
+    @staticmethod
+    def _create_input_widget(field_type: type[Any], default_value: Any) -> QWidget:
+        """Return an appropriate widget for the given field type."""
+
+        if field_type is bool:
+            widget = QCheckBox()
+            widget.setChecked(bool(default_value))
+            return widget
+
+        line_edit = QLineEdit()
+        line_edit.setText(str(default_value))
+        return line_edit
+
+    def _gather_input_data(self) -> DemoInput:
+        """Collect the data from the widgets and convert them to ``DemoInput``."""
+
+        defaults = DemoInput()
+        kwargs: Dict[str, Any] = {}
+
+        for field in fields(DemoInput):
+            widget = self._input_widgets[field.name]
+            default_value = getattr(defaults, field.name)
+            field_type = field.type
+
+            if field_type is bool and isinstance(widget, QCheckBox):
+                kwargs[field.name] = widget.isChecked()
+                continue
+
+            if isinstance(widget, QLineEdit):
+                text = widget.text().strip()
+            else:  # Fallback to default if widget type is unexpected
+                kwargs[field.name] = default_value
+                continue
+
+            if not text:
+                kwargs[field.name] = default_value
+                continue
+
+            try:
+                if field_type is float:
+                    kwargs[field.name] = float(text)
+                elif field_type is int:
+                    kwargs[field.name] = int(text)
+                elif field_type is str:
+                    kwargs[field.name] = text
+                else:
+                    kwargs[field.name] = default_value
+            except ValueError:
+                kwargs[field.name] = default_value
+
+        return DemoInput(**kwargs)
+
     def update_results(self) -> None:
         """Rebuild the model and show the resulting text."""
 
         try:
-            scantlings = build_demo_calc_scantlings()
+            input_data = self._gather_input_data()
+            scantlings = build_demo_calc_scantlings(input_data)
             report = scantlings.get_results_for_report()
             summary = str(scantlings.buckling_input)
         except Exception as exc:  # pragma: no cover - UI diagnostic message
