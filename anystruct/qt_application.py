@@ -14,10 +14,28 @@ import json
 import sys
 from dataclasses import dataclass, fields
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Sequence, Tuple
 
-from PySide6.QtCore import QByteArray, QDataStream, QMimeData, QPointF, QSize, Qt, Signal
-from PySide6.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
+from PySide6.QtCore import (
+    QByteArray,
+    QDataStream,
+    QMimeData,
+    QPointF,
+    QRectF,
+    QSize,
+    Qt,
+    Signal,
+)
+from PySide6.QtGui import (
+    QColor,
+    QDragEnterEvent,
+    QDragMoveEvent,
+    QDropEvent,
+    QLinearGradient,
+    QPainter,
+    QPen,
+    QPolygonF,
+)
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -375,6 +393,236 @@ class GeometryCanvas(QWidget):
         super().mousePressEvent(event)
 
 
+class StructurePreviewWidget(QWidget):
+    """Widget that renders a simplified 3D representation of the structure."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._mode: str = "none"
+        self._has_stiffener: bool = False
+        self._status_text: str = "Select a line to preview its structure."
+        self.setMinimumHeight(220)
+
+    def sizeHint(self) -> QSize:  # type: ignore[override]
+        return QSize(420, 260)
+
+    @staticmethod
+    def _lerp(point_a: QPointF, point_b: QPointF, factor: float) -> QPointF:
+        return QPointF(
+            point_a.x() + (point_b.x() - point_a.x()) * factor,
+            point_a.y() + (point_b.y() - point_a.y()) * factor,
+        )
+
+    def update_preview(
+        self,
+        line: ModelLine | None,
+        assignments: Sequence[str],
+        properties: DemoInput | None,
+    ) -> None:
+        mode = "none"
+        has_stiffener = False
+        status = "Select a line to preview its structure."
+
+        if properties:
+            if properties.include_cylinder:
+                mode = "cylinder"
+            elif properties.include_flat_plate:
+                mode = "plate"
+            has_stiffener = bool(properties.include_stiffener)
+
+        if line is not None:
+            if mode == "none":
+                if "Cylinder Input" in assignments:
+                    mode = "cylinder"
+                elif "Flat Plate Input" in assignments:
+                    mode = "plate"
+            has_stiffener = has_stiffener or ("Stiffener Input" in assignments)
+            if mode == "none":
+                status = f"{line.name}: Assign plate or cylinder inputs to preview."
+            elif mode == "plate":
+                status = f"{line.name}: Flat plate preview"
+            else:
+                status = f"{line.name}: Cylinder preview"
+        elif properties:
+            if mode == "plate":
+                status = "Demo input preview: Flat plate"
+            elif mode == "cylinder":
+                status = "Demo input preview: Cylinder"
+
+        self._mode = mode
+        self._has_stiffener = has_stiffener
+        self._status_text = status
+        self.update()
+
+    def paintEvent(self, event) -> None:  # type: ignore[override]
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        background = QLinearGradient(0, 0, 0, self.height())
+        background.setColorAt(0.0, QColor("#1f2333"))
+        background.setColorAt(1.0, QColor("#0f111d"))
+        painter.fillRect(self.rect(), background)
+
+        frame_pen = QPen(QColor("#343b52"), 2)
+        painter.setPen(frame_pen)
+        painter.drawRoundedRect(self.rect().adjusted(1, 1, -1, -1), 12, 12)
+
+        content_rect = self.rect().adjusted(20, 24, -20, -28)
+        painter.setPen(Qt.NoPen)
+
+        if self._mode == "plate":
+            self._draw_plate(painter, content_rect)
+        elif self._mode == "cylinder":
+            self._draw_cylinder(painter, content_rect)
+
+        text_pen = QPen(QColor("#f4f6ff"))
+        painter.setPen(text_pen)
+        painter.drawText(
+            self.rect().adjusted(24, 16, -24, -16),
+            Qt.AlignLeft | Qt.AlignTop | Qt.TextWordWrap,
+            self._status_text,
+        )
+
+    def _draw_plate(self, painter: QPainter, area: QRectF) -> None:
+        base_y = area.bottom() - area.height() * 0.05
+        depth = area.height() * 0.55
+        left = area.left() + area.width() * 0.05
+        right = area.right() - area.width() * 0.05
+        offset = area.width() * 0.22
+
+        front_left = QPointF(left, base_y)
+        front_right = QPointF(right, base_y - area.height() * 0.08)
+        back_right = QPointF(right - offset, base_y - depth)
+        back_left = QPointF(left - offset, base_y - depth + area.height() * 0.08)
+
+        plate_gradient = QLinearGradient(front_left, back_right)
+        plate_gradient.setColorAt(0.0, QColor("#9caecb"))
+        plate_gradient.setColorAt(1.0, QColor("#4b566e"))
+
+        painter.setBrush(plate_gradient)
+        painter.setPen(QPen(QColor("#d7e1f5"), 1.6))
+        painter.drawPolygon(QPolygonF([front_left, front_right, back_right, back_left]))
+
+        if not self._has_stiffener:
+            return
+
+        ridge_offset = QPointF(-area.width() * 0.02, -area.height() * 0.15)
+        ridge_brush = QColor("#c7d2e6")
+        painter.setBrush(ridge_brush)
+        painter.setPen(QPen(QColor("#eef2ff"), 1.0))
+
+        for factor in (0.22, 0.45, 0.68):
+            front = self._lerp(front_left, front_right, factor)
+            back = self._lerp(back_left, back_right, factor)
+            ridge = QPolygonF(
+                [
+                    front,
+                    back,
+                    back + ridge_offset,
+                    front + ridge_offset,
+                ]
+            )
+            painter.drawPolygon(ridge)
+
+        cross_offset = QPointF(-area.width() * 0.015, -area.height() * 0.11)
+        cross_brush = QColor("#9faec6")
+        painter.setBrush(cross_brush)
+        painter.setPen(QPen(QColor("#d7e1f5"), 0.9))
+
+        for factor in (0.33, 0.66):
+            left_edge = self._lerp(front_left, back_left, factor)
+            right_edge = self._lerp(front_right, back_right, factor)
+            cross = QPolygonF(
+                [
+                    left_edge,
+                    right_edge,
+                    right_edge + cross_offset,
+                    left_edge + cross_offset,
+                ]
+            )
+            painter.drawPolygon(cross)
+
+    def _draw_cylinder(self, painter: QPainter, area: QRectF) -> None:
+        height = area.height() * 0.65
+        radius_y = height / 2.0
+        radius_x = area.width() * 0.18
+        center_y = area.bottom() - area.height() * 0.12
+        front_center_x = area.left() + area.width() * 0.3
+        back_center_x = area.left() + area.width() * 0.72
+
+        front_rect = QRectF(
+            front_center_x - radius_x,
+            center_y - radius_y,
+            radius_x * 2,
+            radius_y * 2,
+        )
+        back_rect = QRectF(
+            back_center_x - radius_x,
+            center_y - radius_y,
+            radius_x * 2,
+            radius_y * 2,
+        )
+        body_rect = QRectF(
+            front_rect.center().x(),
+            center_y - radius_y,
+            back_rect.center().x() - front_rect.center().x(),
+            radius_y * 2,
+        )
+
+        painter.setPen(QPen(QColor("#1a1f2d"), 1.0))
+        painter.setBrush(QColor("#1c2233"))
+        painter.drawEllipse(back_rect)
+
+        body_gradient = QLinearGradient(body_rect.left(), center_y, body_rect.right(), center_y)
+        body_gradient.setColorAt(0.0, QColor("#607090"))
+        body_gradient.setColorAt(1.0, QColor("#252c41"))
+        painter.setBrush(body_gradient)
+        painter.setPen(QPen(QColor("#d7e1f5"), 1.6))
+        painter.drawRoundedRect(body_rect, radius_y, radius_y)
+
+        front_gradient = QLinearGradient(
+            front_rect.center().x(),
+            front_rect.top(),
+            front_rect.center().x(),
+            front_rect.bottom(),
+        )
+        front_gradient.setColorAt(0.0, QColor("#9fb3d4"))
+        front_gradient.setColorAt(1.0, QColor("#5b6d8f"))
+        painter.setBrush(front_gradient)
+        painter.setPen(QPen(QColor("#eef2ff"), 1.8))
+        painter.drawEllipse(front_rect)
+
+        if not self._has_stiffener:
+            return
+
+        stiffener_pen = QPen(QColor("#dce6ff"), 1.2)
+        painter.setPen(stiffener_pen)
+        painter.setBrush(Qt.NoBrush)
+
+        stringer_count = 4
+        for index in range(1, stringer_count + 1):
+            factor = index / (stringer_count + 1)
+            x = front_rect.center().x() + (back_rect.center().x() - front_rect.center().x()) * factor
+            top = QPointF(x, center_y - radius_y + radius_y * 0.15)
+            bottom = QPointF(x, center_y + radius_y - radius_y * 0.15)
+            painter.drawLine(top, bottom)
+
+        ring_count = 3
+        arc_span = 120 * 16
+        start_angle_top = 30 * 16
+        start_angle_bottom = -210 * 16
+        for index in range(1, ring_count + 1):
+            factor = index / (ring_count + 1)
+            arc_center = front_rect.center().x() + (back_rect.center().x() - front_rect.center().x()) * factor
+            ring_rect = QRectF(
+                arc_center - radius_x * 0.9,
+                center_y - radius_y,
+                radius_x * 1.8,
+                radius_y * 2,
+            )
+            painter.drawArc(ring_rect, start_angle_top, arc_span)
+            painter.drawArc(ring_rect, start_angle_bottom, arc_span)
+
 class WidgetWorkspace(QWidget):
     """Droppable area that activates widgets dragged from the palette."""
 
@@ -572,6 +820,7 @@ class DemoWindow(QMainWindow):
         self._results.setFontFamily("monospace")
 
         self._canvas = GeometryCanvas()
+        self._structure_preview = StructurePreviewWidget()
         self._point_name_counter = 1
         self._points: Dict[str, Point] = {}
         self._lines: Dict[str, ModelLine] = {}
@@ -778,10 +1027,17 @@ class DemoWindow(QMainWindow):
         widget = QWidget()
         outer_layout = QVBoxLayout(widget)
 
-        canvas_group = QGroupBox("Drawing Canvas")
+        canvas_group = QGroupBox("2D Geometry Canvas")
         canvas_layout = QVBoxLayout()
+        canvas_layout.setContentsMargins(12, 12, 12, 12)
         canvas_layout.addWidget(self._canvas)
         canvas_group.setLayout(canvas_layout)
+
+        preview_group = QGroupBox("3D Structure Preview")
+        preview_layout = QVBoxLayout()
+        preview_layout.setContentsMargins(12, 12, 12, 12)
+        preview_layout.addWidget(self._structure_preview)
+        preview_group.setLayout(preview_layout)
 
         controls_group = QGroupBox("Geometry Input")
         controls_layout = QVBoxLayout()
@@ -789,9 +1045,13 @@ class DemoWindow(QMainWindow):
         controls_layout.addLayout(self._build_line_controls())
         controls_group.setLayout(controls_layout)
 
+        right_layout = QVBoxLayout()
+        right_layout.addWidget(preview_group, stretch=3)
+        right_layout.addWidget(canvas_group, stretch=4)
+
         main_layout = QHBoxLayout()
-        main_layout.addWidget(controls_group, stretch=1)
-        main_layout.addWidget(canvas_group, stretch=2)
+        main_layout.addWidget(controls_group, stretch=2)
+        main_layout.addLayout(right_layout, stretch=5)
 
         outer_layout.addLayout(main_layout)
         return widget
@@ -916,6 +1176,27 @@ class DemoWindow(QMainWindow):
                 self._widget_workspace.set_assigned_widgets(assigned_widgets)
             else:
                 self._widget_workspace.clear_assigned_widgets()
+
+        self._update_structure_preview()
+
+    def _update_structure_preview(self) -> None:
+        if not hasattr(self, "_structure_preview") or self._structure_preview is None:
+            return
+
+        line: ModelLine | None = None
+        assignments: list[str] = []
+        properties: DemoInput | None = None
+
+        if self._selected_line_name:
+            line = self._lines.get(self._selected_line_name)
+            assignments = list(self._line_widget_assignments.get(self._selected_line_name, []))
+            if line:
+                properties = line.properties
+
+        if properties is None:
+            properties = self._latest_properties
+
+        self._structure_preview.update_preview(line, assignments, properties)
 
     def _set_combo_to_point(self, combo: QComboBox, point_name: str | None) -> None:
         if not point_name:
@@ -1066,6 +1347,7 @@ class DemoWindow(QMainWindow):
         self._info_label.setText(
             f"Assigned {widget_name} to {self._selected_line_name}."
         )
+        self._update_structure_preview()
 
     def _show_section_dock(self, widget_name: str) -> None:
         dock = self._section_docks.get(widget_name)
@@ -1172,6 +1454,7 @@ class DemoWindow(QMainWindow):
         self._info_label.setText(
             f"Applied {section_name} to {self._selected_line_name}."
         )
+        self._update_structure_preview()
 
     @staticmethod
     def _format_label(name: str) -> str:
@@ -1417,6 +1700,7 @@ class DemoWindow(QMainWindow):
         self._ensure_drop_zone_visible()
         self._restore_workspace_for_line(line_name)
         self._apply_properties_to_inputs(line.properties)
+        self._update_structure_preview()
 
     def _handle_canvas_point_selected(self, point_name: str) -> None:
         if point_name not in self._points:
