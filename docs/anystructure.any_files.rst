@@ -132,14 +132,6 @@ anystructure.any\_files.make\_grid\_numpy module
    :undoc-members:
    :show-inheritance:
 
-anystructure.any\_files.make\_queue module
-------------------------------------------
-
-.. automodule:: anystructure.anystruct.make_queue
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 anystructure.any\_files.make\_stack module
 ------------------------------------------
 
@@ -224,14 +216,6 @@ anystructure.any\_files.stresses\_window module
 -----------------------------------------------
 
 .. automodule:: anystructure.anystruct.stresses_window
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-anystructure.any\_files.testCalc module
----------------------------------------
-
-.. automodule:: anystructure.anystruct.testCalc
    :members:
    :undoc-members:
    :show-inheritance:
