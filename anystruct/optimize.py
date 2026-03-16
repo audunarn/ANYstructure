@@ -232,7 +232,12 @@ def any_smart_loop_cylinder(min_var,max_var,deltas,initial_structure_obj,lateral
             structure_to_check = [(0, 0, 0, 0, 0, 0, 0, 0),]
         else:
             if any([predefiened_stiffener_iter is None, idx == 0]):
-                initial_structure_obj.LongStfObj.stiffener_type = 'T'
+                if initial_structure_obj.LongStfObj is not None:
+                    initial_structure_obj.LongStfObj.stiffener_type = 'T'
+                if initial_structure_obj.RingStfObj is not None:
+                    initial_structure_obj.RingStfObj.stiffener_type = 'T'
+                if initial_structure_obj.RingFrameObj is not None:
+                    initial_structure_obj.RingStfObj.stiffener_type = 'T'
                 structure_to_check = any_get_all_combs(min_var[idx], max_var[idx], deltas[idx])
 
             else:

@@ -3,6 +3,7 @@ import os  # -*- coding: utf-8 -*-
 
 import tkinter as tk
 from tkinter import ttk
+from ttkthemes import ThemedStyle
 from tkinter import filedialog
 from tkinter import messagebox
 import decimal, pickle
@@ -93,18 +94,20 @@ class Application():
         ''' Setting the style of ttk'''
         #
         self._style = ttk.Style(parent)
+        #self._style = ThemedStyle()
         
         # vista theme not available in linux
         try:
             #self._style.theme_use('xpnative')
             #self._style.theme_use('ITFT1')
-            self._style.theme_use('vista')
+            self._style.theme_use('arc')
+            #self._style.theme_use('winnative')
         except:
             print('Alternative theme')
             # available themes in linux:
             # ('clam', 'alt', 'default', 'classic')
             self._style.theme_use('clam')
-        
+
         self._style.layout("TNotebook", [])
         self._style.configure("TNotebook", tabmargins=0)
 
@@ -126,7 +129,6 @@ class Application():
 
         self._tabControl.place(relwidth=0.2585, relheight = 1)
         #self._tabControl.select(self._tab2)
-
 
         # Top open/save/new
         menu = tk.Menu(parent)
@@ -245,8 +247,6 @@ class Application():
         self._canvas_scale = 20 # Used for slider and can change
         self._base_scale_factor = 10 # Used for grid and will not change, 10 is default
         self._prop_canvas_scale = 100 # Scrolling for property canvas
-        # self._prop_canvas_x_base =
-        # self._prop_canvas_y_base =
 
         # # Creating the various canvas next.
         self._main_canvas = tk.Canvas(self._main_fr,
@@ -259,12 +259,6 @@ class Application():
                                        background=self._style.lookup('TFrame', 'background'), bd=0,
                                         highlightthickness=0, relief='ridge')
 
-        # # These frames are just visual separations in the GUI.
-        # frame_horizontal, frame_vertical = 0.73, 0.258
-        # self._frame_viz_hor = tk.Frame(self._main_fr, height=3, bg="black", colormap="new")
-        # self._frame_viz_hor.place(relx=0, rely=frame_horizontal, relwidth=1)
-        # self._frame_viz_ver = tk.Frame(self._main_fr, width=3, bg="black", colormap="new")
-        # self._frame_viz_ver.place(relx=frame_vertical,rely=0 * 1, relheight=1)
 
         x_canvas_place = 0.26
         self._main_canvas.place(relx=x_canvas_place, rely=0,relwidth=0.523, relheight = 0.73)
@@ -3292,18 +3286,6 @@ class Application():
             else:
                 thk_map = all_thicknesses
 
-            # if self._line_to_struc[current_line][5] is not None:
-            #     all_cyl_thk = all_cyl_thk.tolist()
-            #     if len(all_cyl_thk) > 1:
-            #         thk_map_cyl = np.arange(min(all_cyl_thk), max(all_cyl_thk) + (max(all_cyl_thk) -
-            #                                                                           min(all_cyl_thk)) / 10,
-            #                             (max(all_cyl_thk) - min(all_cyl_thk)) / 10)
-            #     else:
-            #         thk_map_cyl = all_cyl_thk
-            # else:
-            #     thk_map_cyl = [1,]
-
-
             try:
                 all_pressures = sorted([self.get_highest_pressure(line)['normal']
                                         for line in list(self._line_dict.keys())])
@@ -5107,8 +5089,11 @@ class Application():
                     coord1 = self._point_dict['point'+str(data[0])]
                     coord2 = self._point_dict['point'+str(data[1])]
                     if line in self._line_to_struc.keys():
-                        self._line_to_struc[line][0].Plate.set_span(dist(coord1,coord2))
                         self._line_to_struc[line][0].Plate.set_span(dist(coord1, coord2))
+                        self._line_to_struc[line][0].Plate.set_span(dist(coord1, coord2))
+                        if self._line_to_struc[line][5] is not None:
+                            self._line_to_struc[line][5].ShellObj.set_length(dist(coord1, coord2))
+
                         if self._PULS_results is not None:
                             self._PULS_results.result_changed(line)
                         if self._line_to_struc[line][0].Plate.get_structure_type() not in ['GENERAL_INTERNAL_NONWT',
@@ -5549,9 +5534,12 @@ class Application():
                 obj[0].need_recalc = True
             state = self.update_frame()
             if state != None and self._line_is_active:
-                self._weight_logger['new structure']['COG'].append(self.get_color_and_calc_state()['COG'])
-                self._weight_logger['new structure']['weight'].append(self.get_color_and_calc_state()['Total weight'])
-                self._weight_logger['new structure']['time'].append(time.time())
+                try:
+                    self._weight_logger['new structure']['COG'].append(self.get_color_and_calc_state()['COG'])
+                    self._weight_logger['new structure']['weight'].append(self.get_color_and_calc_state()['Total weight'])
+                    self._weight_logger['new structure']['time'].append(time.time())
+                except KeyError:
+                    pass
             self.cylinder_gui_mods()
 
         self.get_unique_plates_and_beams()
@@ -6507,6 +6495,10 @@ class Application():
             p1 = self._point_dict['point'+str(self._line_dict[self._active_line][0])]
             p2 = self._point_dict['point'+str(self._line_dict[self._active_line][1])]
             self._new_field_len.set(dist(p1,p2)*1000)
+            self._new_shell_radius.set(dist(p1, p2) * 1000 / 5)
+            self._new_shell_dist_rings.set(dist(p1,p2)*1000/2)
+            self._new_shell_length.set(dist(p1, p2) * 1000)
+            self._new_shell_tot_length.set(dist(p1,p2)*1000)
 
         if self._toggle_btn.config('relief')[-1] == 'sunken':
             if self._active_line not in self._multiselect_lines:

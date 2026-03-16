@@ -937,7 +937,7 @@ class Structure():
     def set_span(self,span):
         '''
         Setting the span. Used when moving a point.
-        :return: 
+        :return:
         '''
         self._span = span
         self._main_dict['span'][0] = span
@@ -2712,6 +2712,18 @@ class Shell():
         L = self.tot_cyl_length*1000
         Zl = math.pow(L,2)*math.sqrt(1-math.pow(0.3,2))/(self._radius*1000 * self._thk*1000) if self._thk*self._radius else 0
         return Zl
+
+    def set_length(self,length):
+        '''
+        Setting the span. Used when moving a point.
+        :return:
+        '''
+        self._length_of_shell = length
+        main_dict = self.get_main_properties()
+        main_dict['length of shell, L'] = [length, 'm']
+        main_dict['tot cyl length, Lc'] = [length, 'm']
+        self.set_main_properties(main_dict)
+
 
     def get_effective_width_shell_plate(self):
         return 1.56*math.sqrt(self._radius * self._thk)/(1+12*self.thk/self._radius)
