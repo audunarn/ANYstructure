@@ -669,10 +669,22 @@ class RuntimeFEMWindow:
         self.window.geometry("1100x760")
         self.window.minsize(980, 640)
         self.window.resizable(True, True)
-        if not use_parent_as_window:
-            self.window.transient(parent)
         try:
             self.window.attributes("-toolwindow", False)
+        except Exception:
+            pass
+        # Position window relative to parent if possible
+        try:
+            if not use_parent_as_window:
+                parent.update_idletasks()
+                root_x = parent.winfo_rootx()
+                root_y = parent.winfo_rooty()
+                root_w = parent.winfo_width()
+                root_h = parent.winfo_height()
+                win_w, win_h = 1100, 760
+                pos_x = root_x + max((root_w - win_w) // 2, 0)
+                pos_y = root_y + max((root_h - win_h) // 2, 0)
+                self.window.geometry(f'{win_w}x{win_h}+{pos_x}+{pos_y}')
         except Exception:
             pass
 
