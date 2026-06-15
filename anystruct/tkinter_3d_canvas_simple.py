@@ -163,6 +163,8 @@ class Camera3D:
         # Check if point is behind camera (in camera space, camera looks down -z, so points in front have negative z)
         # We need to clip points that are behind the camera (positive z in camera space)
         if camera_coords[2] >= -self.near:
+            # Debug output
+            print(f"DEBUG: Clipped point ({point.x:.1f}, {point.y:.1f}, {point.z:.1f}) -> cam_z={camera_coords[2]:.1f} (>= -{self.near})")
             return None
         
         # Perspective projection
@@ -374,6 +376,9 @@ class Tkinter3DCanvas(tk.Frame):
                 # For alpha, we can use a lighter color or implement alpha blending
                 # This is a simplified approach
                 pass
+        else:
+            # Debug: print when polygon is skipped
+            print(f"DEBUG: Skipped polygon with {len(projected_vertices)}/{len(vertices)} vertices projected")
     
     def _draw_3d_cylinder(self, obj: Dict[str, Any]):
         """Draw a 3D cylinder."""
