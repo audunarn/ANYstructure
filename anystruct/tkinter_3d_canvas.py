@@ -1298,58 +1298,101 @@ class Tkinter3DCanvas(tk.Frame):
 
 
 def populate_stiffened_cylinder(canvas_3d: Tkinter3DCanvas) -> None:
-    """Populate a canvas with a stiffened cylinder."""
+    """Populate a canvas with a single semi-transparent cylinder showing inside structure.
+    
+    The cylinder shell is semi-transparent, and internal stiffeners are color-coded
+    by plate thickness for visual distinction.
+    """
     cylinder_radius = 2.0
     cylinder_height = 4.0
 
+    # Add semi-transparent cylinder shell
     canvas_3d.add_cylinder(
         radius=cylinder_radius,
         height=cylinder_height,
         center=Point3D(0.0, 0.0, 0.0),
-        color="#d8e2ea",
+        color="#e8f4f8",  # Very light blue, semi-transparent
         outline="#708090",
         segments=48,
         height_segments=24,
         capped=True,
-        opacity=1.0,
-        show_backfaces=False,
+        opacity=0.4,  # Semi-transparent to see inside
+        show_backfaces=True,
     )
 
+    # Define different plate thicknesses and corresponding colors
+    # Thicker plates = darker/more saturated colors
+    thickness_colors = {
+        0.010: "#ffcccc",  # Thin plates - light red
+        0.015: "#ff9999",  # Medium-thin plates - medium red
+        0.020: "#ff6666",  # Medium plates - darker red
+        0.025: "#ff3333",  # Thick plates - dark red
+        0.030: "#ff0000",  # Very thick plates - solid red
+    }
+    
+    # Add longitudinal stiffeners with different thicknesses (color-coded)
     number_of_longitudinals = 8
     for index in range(number_of_longitudinals):
         angle = 2.0 * math.pi * index / number_of_longitudinals
+        
+        # Vary thickness based on position (alternating thick/thin)
+        if index % 2 == 0:
+            web_thickness = 0.010
+            flange_thickness = 0.015
+        else:
+            web_thickness = 0.020
+            flange_thickness = 0.025
+        
+        # Get color based on flange thickness
+        color = thickness_colors.get(flange_thickness, "#ff6666")
+        outline = "#800000"  # Dark red outline
+        
         canvas_3d.add_longitudinal_stiffener(
             radius=cylinder_radius,
             height=cylinder_height,
             angle=angle,
             web_height=0.15,
-            web_thickness=0.01,
+            web_thickness=web_thickness,
             flange_width=0.10,
-            flange_thickness=0.02,
-            color="#a0a0ff",
-            outline="#404080",
+            flange_thickness=flange_thickness,
+            color=color,
+            outline=outline,
             segments=4,
             height_segments=16,
-            inside=False,
+            inside=True,  # Inside the cylinder
         )
 
+    # Add ring stiffeners with different thicknesses (color-coded)
     number_of_rings = 4
     for index in range(number_of_rings):
         z_position = (
             -cylinder_height / 2.0
             + (index + 1) * cylinder_height / (number_of_rings + 1)
         )
+        
+        # Vary thickness based on position
+        if index % 2 == 0:
+            web_thickness = 0.015
+            flange_thickness = 0.020
+        else:
+            web_thickness = 0.025
+            flange_thickness = 0.030
+        
+        # Get color based on flange thickness
+        color = thickness_colors.get(flange_thickness, "#ff3333")
+        outline = "#800000"  # Dark red outline
+        
         canvas_3d.add_ring_stiffener(
             radius=cylinder_radius,
             z_position=z_position,
             web_height=0.12,
-            web_thickness=0.02,
+            web_thickness=web_thickness,
             flange_width=0.08,
-            flange_thickness=0.015,
-            color="#ffa0a0",
-            outline="#804040",
+            flange_thickness=flange_thickness,
+            color=color,
+            outline=outline,
             segments=48,
-            inside=False,
+            inside=True,  # Inside the cylinder
         )
 
     canvas_3d.after_idle(canvas_3d.fit_to_scene)
@@ -1387,370 +1430,65 @@ def create_stiffened_cylinder_demo(root: tk.Misc) -> tk.Toplevel:
     return demo_window
 
 
-def populate_eight_examples(canvas_3d: Tkinter3DCanvas) -> None:
-    """Populate canvas with 8 different examples arranged in a 2x4 grid.
+def create_legend_frame(parent: tk.Misc) -> tk.Frame:
+    """Create a legend frame showing plate thickness color coding."""
+    legend_frame = tk.Frame(parent, bd=2, relief=tk.GROOVE, padx=10, pady=10)
     
-    Examples demonstrate:
-    1. Cylinder with outside stiffeners (opaque)
-    2. Cylinder with inside stiffeners (opaque)
-    3. Cylinder with outside stiffeners (transparent)
-    4. Cylinder with inside stiffeners (transparent)
-    5. Cylinder with outside girders (ring stiffeners)
-    6. Cylinder with inside girders (ring stiffeners)
-    7. Cylinder with both outside stiffeners and girders
-    8. Cylinder with both inside stiffeners and girders
-    """
-    
-    # Spacing between examples
-    spacing = 6.0
-    
-    # Example dimensions
-    cylinder_radius = 1.5
-    cylinder_height = 3.0
-    
-    # Define positions for 2 rows x 4 columns
-    positions = [
-        (-spacing, -spacing, 0),   # Row 1, Col 1
-        (spacing, -spacing, 0),    # Row 1, Col 2
-        (-spacing*3, spacing, 0),  # Row 2, Col 1
-        (-spacing, spacing, 0),    # Row 2, Col 2
-        (spacing, spacing, 0),      # Row 2, Col 3
-        (spacing*3, spacing, 0),   # Row 2, Col 4
-        (-spacing*3, -spacing*3, 0),  # Row 3, Col 1
-        (spacing*3, -spacing*3, 0),   # Row 3, Col 2
-    ]
-    
-    # Example 1: Cylinder with outside stiffeners (opaque)
-    center = Point3D(positions[0][0], positions[0][1], positions[0][2])
-    canvas_3d.add_cylinder(
-        radius=cylinder_radius,
-        height=cylinder_height,
-        center=center,
-        color="#d8e2ea",
-        outline="#708090",
-        segments=24,
-        height_segments=12,
-        capped=True,
-        opacity=1.0,
-        show_backfaces=False,
-    )
-    for i in range(6):  # 6 longitudinal stiffeners
-        angle = 2.0 * math.pi * i / 6
-        canvas_3d.add_longitudinal_stiffener(
-            radius=cylinder_radius,
-            height=cylinder_height,
-            angle=angle,
-            web_height=0.10,
-            web_thickness=0.01,
-            flange_width=0.08,
-            flange_thickness=0.015,
-            color="#a0a0ff",
-            outline="#404080",
-            segments=3,
-            height_segments=8,
-            inside=False,
-        )
-    
-    # Example 2: Cylinder with inside stiffeners (opaque)
-    center = Point3D(positions[1][0], positions[1][1], positions[1][2])
-    canvas_3d.add_cylinder(
-        radius=cylinder_radius,
-        height=cylinder_height,
-        center=center,
-        color="#d8e2ea",
-        outline="#708090",
-        segments=24,
-        height_segments=12,
-        capped=True,
-        opacity=1.0,
-        show_backfaces=False,
-    )
-    for i in range(6):
-        angle = 2.0 * math.pi * i / 6
-        canvas_3d.add_longitudinal_stiffener(
-            radius=cylinder_radius,
-            height=cylinder_height,
-            angle=angle,
-            web_height=0.10,
-            web_thickness=0.01,
-            flange_width=0.08,
-            flange_thickness=0.015,
-            color="#ffa0a0",
-            outline="#804040",
-            segments=3,
-            height_segments=8,
-            inside=True,
-        )
-    
-    # Example 3: Cylinder with outside stiffeners (transparent)
-    center = Point3D(positions[2][0], positions[2][1], positions[2][2])
-    canvas_3d.add_cylinder(
-        radius=cylinder_radius,
-        height=cylinder_height,
-        center=center,
-        color="#d8e2ea",
-        outline="#708090",
-        segments=24,
-        height_segments=12,
-        capped=True,
-        opacity=0.5,
-        show_backfaces=True,
-    )
-    for i in range(6):
-        angle = 2.0 * math.pi * i / 6
-        canvas_3d.add_longitudinal_stiffener(
-            radius=cylinder_radius,
-            height=cylinder_height,
-            angle=angle,
-            web_height=0.10,
-            web_thickness=0.01,
-            flange_width=0.08,
-            flange_thickness=0.015,
-            color="#a0a0ff",
-            outline="#404080",
-            segments=3,
-            height_segments=8,
-            inside=False,
-        )
-    
-    # Example 4: Cylinder with inside stiffeners (transparent)
-    center = Point3D(positions[3][0], positions[3][1], positions[3][2])
-    canvas_3d.add_cylinder(
-        radius=cylinder_radius,
-        height=cylinder_height,
-        center=center,
-        color="#d8e2ea",
-        outline="#708090",
-        segments=24,
-        height_segments=12,
-        capped=True,
-        opacity=0.5,
-        show_backfaces=True,
-    )
-    for i in range(6):
-        angle = 2.0 * math.pi * i / 6
-        canvas_3d.add_longitudinal_stiffener(
-            radius=cylinder_radius,
-            height=cylinder_height,
-            angle=angle,
-            web_height=0.10,
-            web_thickness=0.01,
-            flange_width=0.08,
-            flange_thickness=0.015,
-            color="#ffa0a0",
-            outline="#804040",
-            segments=3,
-            height_segments=8,
-            inside=True,
-        )
-    
-    # Example 5: Cylinder with outside girders (ring stiffeners)
-    center = Point3D(positions[4][0], positions[4][1], positions[4][2])
-    canvas_3d.add_cylinder(
-        radius=cylinder_radius,
-        height=cylinder_height,
-        center=center,
-        color="#d8e2ea",
-        outline="#708090",
-        segments=24,
-        height_segments=12,
-        capped=True,
-        opacity=1.0,
-        show_backfaces=False,
-    )
-    for i in range(3):  # 3 ring girders
-        z_position = -cylinder_height / 2.0 + (i + 1) * cylinder_height / 4
-        canvas_3d.add_ring_stiffener(
-            radius=cylinder_radius,
-            z_position=z_position + center.z,  # Adjust for center position
-            web_height=0.12,
-            web_thickness=0.02,
-            flange_width=0.08,
-            flange_thickness=0.015,
-            color="#ffa0a0",
-            outline="#804040",
-            segments=24,
-            inside=False,
-        )
-    
-    # Example 6: Cylinder with inside girders (ring stiffeners)
-    center = Point3D(positions[5][0], positions[5][1], positions[5][2])
-    canvas_3d.add_cylinder(
-        radius=cylinder_radius,
-        height=cylinder_height,
-        center=center,
-        color="#d8e2ea",
-        outline="#708090",
-        segments=24,
-        height_segments=12,
-        capped=True,
-        opacity=1.0,
-        show_backfaces=False,
-    )
-    for i in range(3):
-        z_position = -cylinder_height / 2.0 + (i + 1) * cylinder_height / 4
-        canvas_3d.add_ring_stiffener(
-            radius=cylinder_radius,
-            z_position=z_position + center.z,
-            web_height=0.12,
-            web_thickness=0.02,
-            flange_width=0.08,
-            flange_thickness=0.015,
-            color="#a0a0ff",
-            outline="#404080",
-            segments=24,
-            inside=True,
-        )
-    
-    # Example 7: Cylinder with both outside stiffeners and girders
-    center = Point3D(positions[6][0], positions[6][1], positions[6][2])
-    canvas_3d.add_cylinder(
-        radius=cylinder_radius,
-        height=cylinder_height,
-        center=center,
-        color="#d8e2ea",
-        outline="#708090",
-        segments=24,
-        height_segments=12,
-        capped=True,
-        opacity=1.0,
-        show_backfaces=False,
-    )
-    # Add longitudinal stiffeners
-    for i in range(6):
-        angle = 2.0 * math.pi * i / 6
-        canvas_3d.add_longitudinal_stiffener(
-            radius=cylinder_radius,
-            height=cylinder_height,
-            angle=angle,
-            web_height=0.10,
-            web_thickness=0.01,
-            flange_width=0.08,
-            flange_thickness=0.015,
-            color="#a0a0ff",
-            outline="#404080",
-            segments=3,
-            height_segments=8,
-            inside=False,
-        )
-    # Add ring girders
-    for i in range(3):
-        z_position = -cylinder_height / 2.0 + (i + 1) * cylinder_height / 4
-        canvas_3d.add_ring_stiffener(
-            radius=cylinder_radius,
-            z_position=z_position + center.z,
-            web_height=0.12,
-            web_thickness=0.02,
-            flange_width=0.08,
-            flange_thickness=0.015,
-            color="#ffa0a0",
-            outline="#804040",
-            segments=24,
-            inside=False,
-        )
-    
-    # Example 8: Cylinder with both inside stiffeners and girders
-    center = Point3D(positions[7][0], positions[7][1], positions[7][2])
-    canvas_3d.add_cylinder(
-        radius=cylinder_radius,
-        height=cylinder_height,
-        center=center,
-        color="#d8e2ea",
-        outline="#708090",
-        segments=24,
-        height_segments=12,
-        capped=True,
-        opacity=0.7,
-        show_backfaces=True,
-    )
-    # Add longitudinal stiffeners (inside)
-    for i in range(6):
-        angle = 2.0 * math.pi * i / 6
-        canvas_3d.add_longitudinal_stiffener(
-            radius=cylinder_radius,
-            height=cylinder_height,
-            angle=angle,
-            web_height=0.10,
-            web_thickness=0.01,
-            flange_width=0.08,
-            flange_thickness=0.015,
-            color="#ffa0a0",
-            outline="#804040",
-            segments=3,
-            height_segments=8,
-            inside=True,
-        )
-    # Add ring girders (inside)
-    for i in range(3):
-        z_position = -cylinder_height / 2.0 + (i + 1) * cylinder_height / 4
-        canvas_3d.add_ring_stiffener(
-            radius=cylinder_radius,
-            z_position=z_position + center.z,
-            web_height=0.12,
-            web_thickness=0.02,
-            flange_width=0.08,
-            flange_thickness=0.015,
-            color="#a0a0ff",
-            outline="#404080",
-            segments=24,
-            inside=True,
-        )
-    
-    # Fit camera to show all examples
-    canvas_3d.after_idle(canvas_3d.fit_to_scene)
-
-
-def create_eight_examples_demo(root: tk.Misc) -> tk.Toplevel:
-    """Open a demonstration with 8 different cylinder configurations."""
-    demo_window = tk.Toplevel(root)
-    demo_window.title("Tkinter 3D - Eight Cylinder Examples")
-    demo_window.geometry("1200x900")
-    demo_window.minsize(800, 600)
-
-    canvas_3d = Tkinter3DCanvas(demo_window, width=1200, height=800, bg="white")
-    _add_controls(demo_window, canvas_3d)
-    canvas_3d.pack(side=tk.TOP, fill=tk.BOTH, expand=True, padx=8, pady=(4, 8))
-    
-    # Add a label describing the examples
-    info_frame = tk.Frame(demo_window)
-    info_frame.pack(side=tk.TOP, fill=tk.X, padx=8, pady=(0, 4))
     tk.Label(
-        info_frame,
-        text="8 Examples: (1) Outside stiffeners opaque, (2) Inside stiffeners opaque, "
-             "(3) Outside stiffeners transparent, (4) Inside stiffeners transparent, "
-             "(5) Outside girders, (6) Inside girders, (7) Outside stiffeners+girders, "
-             "(8) Inside stiffeners+girders",
-        wraplength=1200,
-        justify=tk.LEFT,
-    ).pack(side=tk.LEFT)
+        legend_frame,
+        text="Plate Thickness Legend",
+        font=('Arial', 12, 'bold')
+    ).pack(side=tk.TOP, pady=(0, 10))
     
-    populate_eight_examples(canvas_3d)
-    return demo_window
+    # Color samples with thickness values
+    thickness_colors = {
+        0.010: "#ffcccc",
+        0.015: "#ff9999",
+        0.020: "#ff6666",
+        0.025: "#ff3333",
+        0.030: "#ff0000",
+    }
+    
+    for thickness, color in sorted(thickness_colors.items(), key=lambda x: x[0]):
+        color_frame = tk.Frame(legend_frame, bg=color, width=30, height=20)
+        color_frame.pack(side=tk.TOP, fill=tk.X, pady=2)
+        color_frame.pack_propagate(False)
+        
+        tk.Label(
+            legend_frame,
+            text=f"{thickness*1000:.0f} mm",
+            font=('Arial', 10)
+        ).pack(side=tk.TOP, anchor=tk.W)
+    
+    tk.Label(
+        legend_frame,
+        text="\nLongitudinal Stiffeners: Alternating thin/thick\nRing Girders: Alternating thin/thick",
+        font=('Arial', 9),
+        justify=tk.LEFT
+    ).pack(side=tk.TOP, pady=(10, 0))
+    
+    return legend_frame
 
 
 if __name__ == "__main__":
     root = tk.Tk()
-    root.title("Tkinter 3D - Eight Cylinder Examples")
-    root.geometry("1200x900")
+    root.title("Tkinter 3D - Semi-Transparent Cylinder with Inside Structure")
+    root.geometry("1200x800")
     root.minsize(800, 600)
 
-    canvas_3d = Tkinter3DCanvas(root, width=1200, height=800, bg="white")
-    _add_controls(root, canvas_3d)
-    canvas_3d.pack(side=tk.TOP, fill=tk.BOTH, expand=True, padx=8, pady=(4, 8))
+    # Create a main frame for canvas and legend
+    main_frame = tk.Frame(root)
+    main_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True, padx=8, pady=8)
+
+    # Create canvas on the left
+    canvas_3d = Tkinter3DCanvas(main_frame, width=900, height=720, bg="white")
+    _add_controls(main_frame, canvas_3d)
+    canvas_3d.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
     
-    # Add info label
-    info_frame = tk.Frame(root)
-    info_frame.pack(side=tk.TOP, fill=tk.X, padx=8, pady=(0, 4))
-    tk.Label(
-        info_frame,
-        text="8 Examples: (1) Outside stiffeners opaque, (2) Inside stiffeners opaque, "
-             "(3) Outside stiffeners transparent, (4) Inside stiffeners transparent, "
-             "(5) Outside girders, (6) Inside girders, (7) Outside stiffeners+girders, "
-             "(8) Inside stiffeners+girders",
-        wraplength=1200,
-        justify=tk.LEFT,
-    ).pack(side=tk.LEFT)
+    # Create legend on the right
+    legend_frame = create_legend_frame(main_frame)
+    legend_frame.pack(side=tk.RIGHT, fill=tk.Y, padx=(8, 0))
     
-    populate_eight_examples(canvas_3d)
+    populate_stiffened_cylinder(canvas_3d)
 
     root.mainloop()
