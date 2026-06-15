@@ -93,13 +93,13 @@ class Camera3D:
         self.target = Point3D(0, 0, 0)    # Look-at target
         self.up = Point3D(0, 1, 0)        # Up vector
         self.fov = math.radians(60)      # Field of view in radians
-        self.near = 0.1                   # Near clipping plane
+        self.near = 1.0                   # Near clipping plane (increased to avoid clipping)
         self.far = 100.0                  # Far clipping plane
         
         # Rotation angles for orbit control
         self.azimuth = math.radians(-45)  # Rotation around y-axis
         self.elevation = math.radians(30) # Rotation around x-axis
-        self.distance = 5.0               # Distance from target
+        self.distance = 10.0              # Distance from target (increased to ensure cylinder is visible)
         
         self._update_view_matrix()
     
