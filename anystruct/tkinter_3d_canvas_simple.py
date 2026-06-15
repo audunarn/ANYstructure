@@ -189,7 +189,7 @@ class Camera3D:
         return result
 
 
-class Tkinter3DCanvas:
+class Tkinter3DCanvas(tk.Frame):
     """A Tkinter canvas that supports 3D drawing primitives."""
     
     def __init__(self, master: tk.Widget, width: int = 800, height: int = 600,
@@ -204,13 +204,14 @@ class Tkinter3DCanvas:
             bg: Background color
             **kwargs: Additional canvas arguments
         """
+        super().__init__(master)
         self.master = master
         self.width = width
         self.height = height
         self.bg = bg
         
         # Create the canvas
-        self.canvas = tk.Canvas(master, width=width, height=height, bg=bg, **kwargs)
+        self.canvas = tk.Canvas(self, width=width, height=height, bg=bg, **kwargs)
         self.canvas.pack(fill=tk.BOTH, expand=True)
         
         # Camera
