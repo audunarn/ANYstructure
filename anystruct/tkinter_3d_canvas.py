@@ -160,8 +160,9 @@ class Camera3D:
         view_matrix = self.get_view_matrix()
         camera_coords = np.dot(view_matrix, np.array([point.x, point.y, point.z, 1]))
         
-        # Check if point is behind camera
-        if camera_coords[2] <= self.near:
+        # Check if point is behind camera (in camera space, camera looks down -z, so points in front have negative z)
+        # We need to clip points that are behind the camera (positive z in camera space)
+        if camera_coords[2] >= -self.near:
             return None
         
         # Perspective projection
