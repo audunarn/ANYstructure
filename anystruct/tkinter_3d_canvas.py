@@ -227,11 +227,25 @@ class Tkinter3DCanvas(tk.Frame):
         # Bind keyboard events for debugging
         self.canvas.bind('<Configure>', self._on_resize)
         
+        # Bind to the Frame's Configure event as well
+        self.bind('<Configure>', self._on_frame_configure)
+        
         # Initial draw
         self.clear()
+        
+        # Force initial update
+        self.after(100, self.redraw)
     
     def _on_resize(self, event):
         """Handle canvas resize."""
+        self.width = event.width
+        self.height = event.height
+        self.redraw()
+    
+    def _on_frame_configure(self, event):
+        """Handle frame resize."""
+        # Update the canvas size to match the frame
+        self.canvas.configure(width=event.width, height=event.height)
         self.width = event.width
         self.height = event.height
         self.redraw()

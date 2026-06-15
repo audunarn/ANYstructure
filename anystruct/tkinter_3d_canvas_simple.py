@@ -204,7 +204,7 @@ class Tkinter3DCanvas(tk.Frame):
             bg: Background color
             **kwargs: Additional canvas arguments
         """
-        super().__init__(master)
+        super().__init__(master, width=width, height=height, bg=bg)
         self.master = master
         self.width = width
         self.height = height
@@ -237,9 +237,23 @@ class Tkinter3DCanvas(tk.Frame):
         
         # Initial draw
         self.clear()
+        
+        # Bind to the Frame's Configure event as well
+        self.bind('<Configure>', self._on_frame_configure)
+        
+        # Force initial update
+        self.after(100, self.redraw)
     
     def _on_resize(self, event):
         """Handle canvas resize."""
+        self.width = event.width
+        self.height = event.height
+        self.redraw()
+    
+    def _on_frame_configure(self, event):
+        """Handle frame resize."""
+        # Update the canvas size to match the frame
+        self.canvas.configure(width=event.width, height=event.height)
         self.width = event.width
         self.height = event.height
         self.redraw()
