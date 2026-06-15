@@ -197,7 +197,7 @@ class Tkinter3DCanvas(tk.Frame):
             bg: Background color
             **kwargs: Additional canvas arguments
         """
-        super().__init__(master)
+        super().__init__(master, bg=bg)
         self.master = master
         self.width = width
         self.height = height
@@ -780,12 +780,75 @@ def create_stiffened_cylinder_demo(root: tk.Tk):
 if __name__ == "__main__":
     # Test the Tkinter 3D canvas with a stiffened cylinder
     root = tk.Tk()
-    root.withdraw()  # Hide the main window
+    root.title("Tkinter 3D - Stiffened Cylinder Demo")
+    root.geometry("1000x800")
     
-    demo_window = create_stiffened_cylinder_demo(root)
+    # Create the canvas directly on root
+    canvas_3d = Tkinter3DCanvas(root, width=1000, height=800, bg='white')
+    canvas_3d.pack(fill=tk.BOTH, expand=True)
     
-    # Add some instructions
-    info_frame = tk.Frame(demo_window)
+    # Add a cylinder
+    cylinder_radius = 2.0
+    cylinder_height = 4.0
+    cylinder_center = Point3D(0, 0, 0)
+    
+    canvas_3d.add_cylinder(
+        radius=cylinder_radius,
+        height=cylinder_height,
+        center=cylinder_center,
+        color='#e0e0e0',
+        outline='black',
+        segments=64
+    )
+    
+    # Add longitudinal stiffeners
+    num_longitudinal = 8
+    for i in range(num_longitudinal):
+        angle = 2 * math.pi * i / num_longitudinal
+        canvas_3d.add_longitudinal_stiffener(
+            radius=cylinder_radius,
+            height=cylinder_height,
+            angle=angle,
+            web_height=0.15,
+            web_thickness=0.01,
+            flange_width=0.1,
+            flange_thickness=0.02,
+            color='#a0a0ff',
+            outline='black',
+            segments=4
+        )
+    
+    # Add ring stiffeners
+    num_rings = 4
+    for i in range(num_rings):
+        z_position = -cylinder_height / 2 + (i + 1) * cylinder_height / (num_rings + 1)
+        canvas_3d.add_ring_stiffener(
+            radius=cylinder_radius,
+            z_position=z_position,
+            web_height=0.12,
+            web_thickness=0.01,
+            flange_width=0.08,
+            flange_thickness=0.015,
+            color='#ffa0a0',
+            outline='black',
+            segments=64
+        )
+    
+    # Add control buttons
+    control_frame = tk.Frame(root)
+    control_frame.pack(fill=tk.X, padx=10, pady=10)
+    
+    tk.Button(control_frame, text="Reset View", 
+              command=canvas_3d.reset_camera).pack(side=tk.LEFT, padx=5)
+    tk.Button(control_frame, text="Top View", 
+              command=lambda: canvas_3d.camera.orbit(0, math.radians(90), 0) or canvas_3d.redraw()).pack(side=tk.LEFT, padx=5)
+    tk.Button(control_frame, text="Side View", 
+              command=lambda: canvas_3d.camera.orbit(math.radians(90), 0, 0) or canvas_3d.redraw()).pack(side=tk.LEFT, padx=5)
+    tk.Button(control_frame, text="Iso View", 
+              command=lambda: canvas_3d.camera.orbit(math.radians(-45), math.radians(30), 0) or canvas_3d.redraw()).pack(side=tk.LEFT, padx=5)
+    
+    # Add instructions
+    info_frame = tk.Frame(root)
     info_frame.pack(fill=tk.X, padx=10, pady=5)
     tk.Label(info_frame, text="Mouse: Left-click and drag to rotate, Scroll to zoom").pack()
     
