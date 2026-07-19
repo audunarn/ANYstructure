@@ -49,15 +49,16 @@ class CreateCompartmentWindow():
             for point in self.grid.get_points_along_line(points[0],points[1]):
                 self.grid.set_barrier(point[0],point[1])
 
+        # Gridded layout: action row on top, plot canvas filling the rest.
+        self.frame.columnconfigure(0, weight=1)
+        self.frame.rowconfigure(1, weight=1)
+
         fig = plt.figure()
         self.draw_grid()
         self.canvas_plt = FigureCanvasTkAgg(fig,self.frame)
-        self.canvas_plt.show()
-        self.canvas_plt.get_tk_widget().place(relx=0.5,rely=0.5)
-
-
-        #self.draw_grid()
-        tk.Button(self.frame,text='DRAW',command=self.draw_grid).place(relx=0.1,rely=0.1)
+        self.canvas_plt.draw()
+        tk.Button(self.frame,text='DRAW',command=self.draw_grid).grid(row=0, column=0, sticky=tk.W, padx=8, pady=8)
+        self.canvas_plt.get_tk_widget().grid(row=1, column=0, sticky=tk.NSEW, padx=8, pady=(0, 8))
 
     def __str__(self):
         return 'class CreateCompartmentWindow(): Compartment string not implemented'

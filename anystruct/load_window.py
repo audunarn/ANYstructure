@@ -81,16 +81,37 @@ class CreateLoadWindow():
 
         self._frame.protocol("WM_DELETE_WINDOW", self.on_closing)
 
-        tk.Frame(self._frame, width=5, height=980, bg="black", colormap="new").place(x =450, y = 0)
-        tk.Frame(self._frame, width=455, height=5, bg="black", colormap="new").place(x = 0, y = 320)
-        tk.Frame(self._frame, width=5, height=190, bg="black", colormap="new").place(x =1000, y = 0)
-        tk.Frame(self._frame, width=5, height=190, bg="black", colormap="new").place(x=1250, y=0)
-        tk.Frame(self._frame, width=1100, height=5, bg="black", colormap="new").place(x = 450, y = 190)
+        # Gridded layout: left column holds the dynamic-load form, created
+        # loads and the load-property canvas; the right column holds the
+        # static/slamming/save row on top, then the line-association row and
+        # the main line canvas with its zoom slider.  Frame borders replace
+        # the old hand-placed black divider strips.
+        options_cond = tuple(options_cond)
+        self._frame.columnconfigure(1, weight=1)
+        self._frame.rowconfigure(2, weight=1)
+
+        left_top = tk.Frame(self._frame, relief='groove', borderwidth=1)
+        left_top.grid(row=0, column=0, rowspan=2, sticky=tk.NSEW, padx=(8, 4), pady=(8, 4))
+        left_loads = tk.Frame(self._frame, relief='groove', borderwidth=1)
+        left_loads.grid(row=2, column=0, sticky=tk.NSEW, padx=(8, 4), pady=4)
+        left_props = tk.Frame(self._frame)
+        left_props.grid(row=3, column=0, sticky=tk.NW, padx=(8, 4), pady=(4, 8))
+
+        top_right = tk.Frame(self._frame)
+        top_right.grid(row=0, column=1, sticky=tk.NW, padx=(4, 8), pady=(8, 4))
+        assoc_row = tk.Frame(self._frame)
+        assoc_row.grid(row=1, column=1, sticky=tk.EW, padx=(4, 8), pady=2)
+        canvas_area = tk.Frame(self._frame)
+        canvas_area.grid(row=2, column=1, rowspan=2, sticky=tk.NSEW, padx=(4, 8), pady=(2, 8))
+
+        static_frame = tk.Frame(top_right, relief='groove', borderwidth=1)
+        static_frame.grid(row=0, column=0, sticky=tk.NW, padx=(0, 8))
+        slamming_frame = tk.Frame(top_right, relief='groove', borderwidth=1)
+        slamming_frame.grid(row=0, column=1, sticky=tk.NW, padx=8)
 
         # Main canvas creation
-        self._main_canvas = tk.Canvas(self._frame,width=self._canvas_dim[0], height=self._canvas_dim[1],
+        self._main_canvas = tk.Canvas(canvas_area,width=self._canvas_dim[0], height=self._canvas_dim[1],
                                      background='azure', relief = 'groove', borderwidth=2)
-        self._main_canvas.place(relx=0.32,rely=0.25)
         self._global_shrink = 1
         base_canvas_dim = [1000, 720]  # do not modify this, sets the "orignal" canvas dimensions.
         self._canvas_dim = [int(base_canvas_dim[0] *self._global_shrink),
@@ -100,32 +121,31 @@ class CreateLoadWindow():
         self._previous_drag_mouse = list(self._canvas_draw_origo)
 
         # --- slider (used to zoom) ----
-        self._slider = tk.Scale(self._frame,from_=60,to = 1, command = self.slider_used,
+        self._slider = tk.Scale(canvas_area,from_=60,to = 1, command = self.slider_used,
                                background='azure', relief = 'groove', borderwidth=2)
         self._slider.set(self._canvas_scale)
-        self._slider.place(relx=0.32,rely=0.25)
+        self._slider.grid(row=0, column=0, sticky=tk.NS, padx=(0, 4))
+        self._main_canvas.grid(row=0, column=1, sticky=tk.NSEW)
+        canvas_area.columnconfigure(1, weight=1)
+        canvas_area.rowconfigure(0, weight=1)
 
         # --- Dynamic load input ---
-        ent_x = 200
-        delta_y = 30
-        options_cond = tuple(options_cond)
-        load_vert_start = 90
-        tk.Label(self._frame, text='1. Dynamic loads', font='Verdana 10 bold', fg = 'red')\
-            .place(x=10, y=load_vert_start - 80)
-        tk.Label(self._frame, text='Define dynamic loads as an polynominal curve.\n'
+        tk.Label(left_top, text='1. Dynamic loads', font='Verdana 10 bold', fg = 'red')\
+            .grid(row=0, column=0, columnspan=2, sticky=tk.W, padx=6, pady=(6, 0))
+        tk.Label(left_top, text='Define dynamic loads as an polynominal curve.\n'
                                   'Can be third degree, second degree, linear or constant \n'
 ,
-                 font="Verdana 8 bold",justify = tk.LEFT).place(x=10, y=load_vert_start - 50)
+                 font="Verdana 8 bold",justify = tk.LEFT).grid(row=1, column=0, columnspan=2, sticky=tk.W, padx=6)
 
-        tk.Button(self._frame, text='Create dynamic load',  command=self.create_dynamic_load_object,
+        tk.Button(left_top, text='Create dynamic load',  command=self.create_dynamic_load_object,
                   font='Verdana 9 bold', fg='yellow', bg = 'green' )\
-            .place(x=270, y=load_vert_start + delta_y *6)
+            .grid(row=9, column=1, sticky=tk.W, padx=6, pady=(4, 6))
 
-        self.close_window= tk.Button(self._frame, text='Press this to: \n'
+        self.close_window= tk.Button(top_right, text='Press this to: \n'
                                                       'Save loads and \n'
                                                       'close the load window. ',font="Verdana 9 bold",
                                      command=self.save_and_close, bg = 'green', fg = 'yellow')
-        self.close_window.place(x=ent_x*6.35, y=load_vert_start-20)
+        self.close_window.grid(row=0, column=2, sticky=tk.NW, padx=8)
 
         self._new_dynamic_load_name = tk.StringVar()
         self._new_dynamic_load_name.set('load' + str(self._load_count))
@@ -146,135 +166,126 @@ class CreateLoadWindow():
         self._new_slamming_stf_mult.set(1.0)
 
         ent_w = 15
-        ent_dyn_load_name = tk.Entry(self._frame, textvariable=self._new_dynamic_load_name, width=ent_w*2)
-        ent_load_poly_third = tk.Entry(self._frame, textvariable=self._new_load_poly_third, width=ent_w)
-        ent_load_poly_second = tk.Entry(self._frame, textvariable=self._new_load_poly_second, width=ent_w)
-        ent_load_poly_first = tk.Entry(self._frame, textvariable=self._new_load_poly_first,width=ent_w)
-        ent_load_poly_constant = tk.Entry(self._frame, textvariable=self._new_load_poly_const,width=ent_w)
-        ent_load_condition = tk.OptionMenu(self._frame, self._new_dyn_load_condition, *options_cond)
-        ent_limit_state = tk.OptionMenu(self._frame, self._new_limit_state, *limit_states)
+        ent_dyn_load_name = tk.Entry(left_top, textvariable=self._new_dynamic_load_name, width=ent_w*2)
+        ent_load_poly_third = tk.Entry(left_top, textvariable=self._new_load_poly_third, width=ent_w)
+        ent_load_poly_second = tk.Entry(left_top, textvariable=self._new_load_poly_second, width=ent_w)
+        ent_load_poly_first = tk.Entry(left_top, textvariable=self._new_load_poly_first,width=ent_w)
+        ent_load_poly_constant = tk.Entry(left_top, textvariable=self._new_load_poly_const,width=ent_w)
+        ent_load_condition = tk.OptionMenu(left_top, self._new_dyn_load_condition, *options_cond)
+        ent_limit_state = tk.OptionMenu(left_top, self._new_limit_state, *limit_states)
+
+        for offset, (text, widget) in enumerate((
+                ('Input load name:', ent_dyn_load_name),
+                ('Third degree poly [x^3]', ent_load_poly_third),
+                ('Second degree poly [x^2]', ent_load_poly_second),
+                ('First degree poly [x]', ent_load_poly_first),
+                ('Constant [C]', ent_load_poly_constant),
+                ('Load condition', ent_load_condition),
+                ('Limit state', ent_limit_state),
+        )):
+            tk.Label(left_top, text=text).grid(row=2 + offset, column=0, sticky=tk.W, padx=6, pady=1)
+            widget.grid(row=2 + offset, column=1, sticky=tk.W, padx=(4, 6), pady=1)
 
         # Slamming pressures
-        slx, sly = ent_x*5.6, load_vert_start-40
-        tk.Label(self._frame,text = 'Load name:').place(x = slx-90, y = sly)
-        ent_slamming_pressure = tk.Entry(self._frame, textvariable=self._new_slamming_pressure, width=ent_w)
-        ent_slamming_pressure.place(x = slx, y = sly+delta_y)
-
-        ent_slamming_pl_mult = tk.Entry(self._frame, textvariable=self._new_slamming_pl_mult, width=7)
-        ent_slamming_pl_mult.place(x = slx + 50, y = sly + 1.8*delta_y)
-
-        ent_slamming_stf_mult = tk.Entry(self._frame, textvariable=self._new_slamming_stf_mult, width=7)
-        ent_slamming_stf_mult.place(x = slx + 50, y = sly+2.6*delta_y)
-
-        tk.Label(self._frame,text='Pressure [Pa]:').place(x=slx - 90, y=sly+delta_y)
-        tk.Label(self._frame, text='Plate multiplier, Ppl').place(x=slx - 90, y=sly + 1.8*delta_y)
-        tk.Label(self._frame, text='Stiffener multiplier, Pst:').place(x=slx - 90, y=sly + 2.6*delta_y)
-        ent_slamming_pressure_name = tk.Entry(self._frame, textvariable=self._new_slamming_pressure_name, width=ent_w)
-        ent_slamming_pressure_name.place(x=slx, y=sly)
-        tk.Button(self._frame, text = 'Create slamming load', command = self.create_slamming_load,
+        tk.Label(slamming_frame, text='3. Slamming pressure', font='Verdana 10 bold', fg = 'red') \
+            .grid(row=0, column=0, columnspan=2, sticky=tk.W, padx=6, pady=(6, 2))
+        ent_slamming_pressure = tk.Entry(slamming_frame, textvariable=self._new_slamming_pressure, width=ent_w)
+        ent_slamming_pl_mult = tk.Entry(slamming_frame, textvariable=self._new_slamming_pl_mult, width=7)
+        ent_slamming_stf_mult = tk.Entry(slamming_frame, textvariable=self._new_slamming_stf_mult, width=7)
+        ent_slamming_pressure_name = tk.Entry(slamming_frame, textvariable=self._new_slamming_pressure_name,
+                                              width=ent_w)
+        for offset, (text, widget) in enumerate((
+                ('Load name:', ent_slamming_pressure_name),
+                ('Pressure [Pa]:', ent_slamming_pressure),
+                ('Plate multiplier, Ppl', ent_slamming_pl_mult),
+                ('Stiffener multiplier, Pst:', ent_slamming_stf_mult),
+        )):
+            tk.Label(slamming_frame, text=text).grid(row=1 + offset, column=0, sticky=tk.W, padx=6, pady=1)
+            widget.grid(row=1 + offset, column=1, sticky=tk.W, padx=(4, 6), pady=1)
+        tk.Button(slamming_frame, text = 'Create slamming load', command = self.create_slamming_load,
                   font='Verdana 9 bold', fg='yellow', bg = 'green' ) \
-            .place(x=slx - 80, y=sly + 3.5*delta_y)
-
-        ent_dyn_load_name.place(x=ent_x, y=load_vert_start + 0 * delta_y)
-        ent_load_poly_third.place(x=ent_x, y=load_vert_start + 1 * delta_y)
-        ent_load_poly_second.place(x=ent_x, y=load_vert_start + 2 * delta_y)
-        ent_load_poly_first.place(x=ent_x, y=load_vert_start +3 * delta_y)
-        ent_load_poly_constant.place(x=ent_x, y=load_vert_start + 4 * delta_y)
-        ent_load_condition.place(x=ent_x - 5, y=load_vert_start + 5 * delta_y - 5)
-        ent_limit_state.place(x=ent_x - 5, y=load_vert_start + 6 * delta_y - 5)
-
-        tk.Label(self._frame, text='Input load name:').place(x=10, y=load_vert_start + 0*delta_y)
-        tk.Label(self._frame, text='Third degree poly [x^3]').place(x=10, y=load_vert_start+delta_y)
-        tk.Label(self._frame, text='Second degree poly [x^2]').place(x=10, y=load_vert_start + 2*delta_y)
-        tk.Label(self._frame, text='First degree poly [x]').place(x=10, y=load_vert_start + 3*delta_y)
-        tk.Label(self._frame, text='Constant [C]').place(x=10, y=load_vert_start + 4 * delta_y)
-        tk.Label(self._frame, text='Load condition').place(x=10, y=load_vert_start + 5 * delta_y)
-        tk.Label(self._frame, text='Limit state').place(x=10, y=load_vert_start + 6 * delta_y)
+            .grid(row=5, column=0, columnspan=2, sticky=tk.W, padx=6, pady=(4, 6))
 
         # --- Static load input ---
-        horizontal_start = 500
-        tk.Label(self._frame, text='2. Static loads', font='Verdana 10 bold', fg = 'red') \
-            .place(x=horizontal_start, y=load_vert_start - 80)
-        tk.Label(self._frame, text='3. Slamming pressure', font='Verdana 10 bold', fg = 'red') \
-            .place(x=horizontal_start+520, y=load_vert_start - 80)
-        tk.Label(self._frame, text = 'Hydrostatic loads defined by draft.',
-                 font="Verdana 8 bold")\
-            .place(x = horizontal_start,y = load_vert_start-1.5*delta_y)
-        tk.Label(self._frame, text = 'Define static draft from sea [m]:')\
-            .place(x = horizontal_start,y = load_vert_start + delta_y)
-        tk.Label(self._frame, text='Define name of static load:').place(x=horizontal_start,y=load_vert_start)
-        tk.Label(self._frame, text='Select load condition:').place(x=horizontal_start,y=load_vert_start + delta_y*2)
+        tk.Label(static_frame, text='2. Static loads', font='Verdana 10 bold', fg = 'red') \
+            .grid(row=0, column=0, columnspan=3, sticky=tk.W, padx=6, pady=(6, 2))
+        tk.Label(static_frame, text = 'Hydrostatic loads defined by draft.',
+                 font="Verdana 8 bold").grid(row=1, column=0, columnspan=3, sticky=tk.W, padx=6)
 
         self._new_static_load_name = tk.StringVar()
         self._new_static_draft = tk.DoubleVar()
         self._new_static_condition = tk.StringVar()
         self._new_static_load_name.set('static'+str(self._load_count))
 
-        tk.Entry(self._frame, textvariable = self._new_static_load_name,width=ent_w)\
-            .place(x = horizontal_start+200, y = load_vert_start,)
-        tk.Entry(self._frame, textvariable = self._new_static_draft,width=ent_w)\
-            .place(x = horizontal_start+200, y = load_vert_start + delta_y)
-        tk.OptionMenu(self._frame, self._new_static_condition, *options_cond)\
-            .place(x = horizontal_start+200, y = load_vert_start + 2*delta_y)
-        tk.Button(self._frame, text = 'Create static load', command = self.create_static_load_object,
+        tk.Label(static_frame, text='Define name of static load:').grid(row=2, column=0, sticky=tk.W, padx=6, pady=1)
+        tk.Entry(static_frame, textvariable = self._new_static_load_name,width=ent_w)\
+            .grid(row=2, column=1, sticky=tk.W, padx=(4, 6), pady=1)
+        tk.Label(static_frame, text = 'Define static draft from sea [m]:')\
+            .grid(row=3, column=0, sticky=tk.W, padx=6, pady=1)
+        tk.Entry(static_frame, textvariable = self._new_static_draft,width=ent_w)\
+            .grid(row=3, column=1, sticky=tk.W, padx=(4, 6), pady=1)
+        tk.Label(static_frame, text='Select load condition:').grid(row=4, column=0, sticky=tk.W, padx=6, pady=1)
+        tk.OptionMenu(static_frame, self._new_static_condition, *options_cond)\
+            .grid(row=4, column=1, sticky=tk.W, padx=(4, 6), pady=1)
+        tk.Button(static_frame, text = 'Create static load', command = self.create_static_load_object,
                   font='Verdana 9 bold', fg='yellow', bg = 'green' )\
-            .place(x = horizontal_start + 340, y = load_vert_start )
+            .grid(row=2, column=2, rowspan=2, sticky=tk.NW, padx=6, pady=1)
 
         # --- showing created loads ---
-        start_y = 340
-        tk.Label(self._frame, text='3. Created loads are seen below\n'
+        tk.Label(left_loads, text='3. Created loads are seen below\n'
                                    '(scroll if not all is shown.)\n'
                                    'DOUBLE CLICK load to see assosiated lines.:',
-                 font="Verdana 10 bold", fg='red').place(x=10, y=start_y)
-        self._load_obj_box = tk.Listbox(self._frame, height = 15, selectmode = listbox_select, bg='azure',
+                 font="Verdana 10 bold", fg='red', justify=tk.LEFT)\
+            .grid(row=0, column=0, columnspan=4, sticky=tk.W, padx=6, pady=(6, 2))
+        tk.Label(left_loads, text = 'Select to see assosiated lines: ')\
+            .grid(row=1, column=0, columnspan=4, sticky=tk.W, padx=6)
+        self._load_obj_box = tk.Listbox(left_loads, height = 15, selectmode = listbox_select, bg='azure',
                                        relief = 'groove', borderwidth=2)
-        self._load_obj_box.place(x=10, y=start_y + 3 * delta_y)
+        self._load_obj_box.grid(row=2, column=0, sticky=tk.NSEW, padx=(6, 0), pady=2)
         self._load_obj_box.bind('<<ListboxSelect>>', self.left_click_load_box)
-        loads_scrollbar = tk.Scrollbar(self._frame)
+        loads_scrollbar = tk.Scrollbar(left_loads)
         loads_scrollbar.config(command = self._load_obj_box.yview)
-        loads_scrollbar.place(x=140, y=start_y + 3 * delta_y)
+        loads_scrollbar.grid(row=2, column=1, sticky=tk.NS, pady=2)
         self._load_obj_box.config(yscrollcommand=loads_scrollbar.set)
-        tk.Label(self._frame, text = 'Select to see assosiated lines: ').place(x=10, y=start_y +  2*delta_y)
 
         # --- showing the lines applied to the load above ---
-        self._load_obj_lines_box = tk.Listbox(self._frame, height = 15, selectmode = listbox_select, bg = 'azure',
+        self._load_obj_lines_box = tk.Listbox(left_loads, height = 15, selectmode = listbox_select, bg = 'azure',
                                              relief = 'groove', borderwidth=2)
-        lines_scrollbar = tk.Scrollbar(self._frame)
+        lines_scrollbar = tk.Scrollbar(left_loads)
         lines_scrollbar.config(command = self._load_obj_lines_box.yview)
-        lines_scrollbar.place(x=330, y=start_y+ 3 * delta_y)
         self._load_obj_lines_box.config(yscrollcommand=lines_scrollbar.set)
-
-        self._load_obj_lines_box.place(x=200, y=start_y+ 3 * delta_y)
+        self._load_obj_lines_box.grid(row=2, column=2, sticky=tk.NSEW, padx=(12, 0), pady=2)
+        lines_scrollbar.grid(row=2, column=3, sticky=tk.NS, pady=2)
         self._load_obj_lines_box.bind('<<ListboxSelect>>', self.left_click_load_box)
-        tk.Label(self._frame, text = '-->',font="Verdana 8 bold").place(x=160, y= load_vert_start + 15 * delta_y )
 
         # --- dropdown meny to choose load to assosiate with lines ---
         self._load_options = ['']
         self._new_assisiate_load = tk.StringVar()
-        self._ent_assosiate_load = tk.OptionMenu(self._frame, self._new_assisiate_load, *tuple(self._load_options))
-        self._ent_assosiate_load.place(relx=0.85,rely=0.21)
+        self._assoc_dropdown_holder = assoc_row
+        self._ent_assosiate_load = tk.OptionMenu(assoc_row, self._new_assisiate_load, *tuple(self._load_options))
+        self._ent_assosiate_load.grid(row=0, column=2, sticky=tk.W, padx=8)
 
         # --- Button to assosiate selecte lines to load
-        tk.Button(self._frame, text = 'Press to add selected lines to selected load',
+        tk.Button(assoc_row, text = 'Press to add selected lines to selected load',
                   command=self.append_line_to_load, fg = 'yellow', bg='green',font='Verdana 9 bold')\
-            .place(relx=0.32,rely=0.215)
-        tk.Label(self._frame,text='Select a load in "3." and then choose lines to apply to load\n '
+            .grid(row=0, column=0, sticky=tk.W)
+        tk.Label(assoc_row,text='Select a load in "3." and then choose lines to apply to load\n '
                                  '(select by clicking lines). Alternatively define manually ------>')\
-            .place(relx=0.56,rely=0.205)
+            .grid(row=0, column=1, sticky=tk.W, padx=12)
 
         # --- delete a created load ---
-        tk.Button(self._frame, text="Delete selected load",command=self.delete_load,
+        tk.Button(left_loads, text="Delete selected load",command=self.delete_load,
                   font='Verdana 9 bold', fg='yellow', bg = 'red' )\
-            .place(x=10, y=start_y + 12 * delta_y)
+            .grid(row=3, column=0, columnspan=2, sticky=tk.W, padx=6, pady=(4, 6))
 
         # --- updating the imported loads from main window ---
         if len(self._load_objects) > 0:
             self.import_update()
 
         # --- properties canvas to show variables for load ---
-        self._canvas_properties = tk.Canvas(self._frame, height=200, width=350,
+        self._canvas_properties = tk.Canvas(left_props, height=200, width=350,
                                            background='azure', relief = 'groove', borderwidth=2)
-        self._canvas_properties.place(x= 10, y = load_vert_start + delta_y*22.5)
+        self._canvas_properties.grid(row=0, column=0, sticky=tk.NW)
 
         self.controls()
         self.draw_canvas()
@@ -451,8 +462,9 @@ class CreateLoadWindow():
         self._load_objects[name_of_load] = [Loads(current_load_dict),[] if existing_load is None else existing_load[1]]
         self._load_options.append(name_of_load)
         self._ent_assosiate_load.destroy()
-        self._ent_assosiate_load = tk.OptionMenu(self._frame, self._new_assisiate_load, *tuple(self._load_options))
-        self._ent_assosiate_load.place(relx=0.85,rely=0.21)
+        self._ent_assosiate_load = tk.OptionMenu(self._assoc_dropdown_holder, self._new_assisiate_load,
+                                                 *tuple(self._load_options))
+        self._ent_assosiate_load.grid(row=0, column=2, sticky=tk.W, padx=8)
         self._load_obj_box.insert('end',name_of_load)
         if not slamming_load:
             self._load_count += 1
@@ -499,8 +511,9 @@ class CreateLoadWindow():
 
         self._load_options.append(name_of_load)
         self._ent_assosiate_load.destroy()
-        self._ent_assosiate_load = tk.OptionMenu(self._frame, self._new_assisiate_load, *tuple(self._load_options))
-        self._ent_assosiate_load.place(relx=0.85,rely=0.21)
+        self._ent_assosiate_load = tk.OptionMenu(self._assoc_dropdown_holder, self._new_assisiate_load,
+                                                 *tuple(self._load_options))
+        self._ent_assosiate_load.grid(row=0, column=2, sticky=tk.W, padx=8)
 
         self._load_obj_box.insert('end', name_of_load)
         self._load_count += 1
@@ -712,8 +725,9 @@ class CreateLoadWindow():
             self._load_options.append(load)
 
         self._ent_assosiate_load.destroy()
-        self._ent_assosiate_load = tk.OptionMenu(self._frame, self._new_assisiate_load, *tuple(self._load_options))
-        self._ent_assosiate_load.place(relx=0.85,rely=0.21)
+        self._ent_assosiate_load = tk.OptionMenu(self._assoc_dropdown_holder, self._new_assisiate_load,
+                                                 *tuple(self._load_options))
+        self._ent_assosiate_load.grid(row=0, column=2, sticky=tk.W, padx=8)
 
 if __name__ == '__main__':
     root = tk.Tk()

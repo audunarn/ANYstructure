@@ -119,14 +119,14 @@ def test_geometric_optimizer_header_layout_keeps_objective_and_canvas_separate()
     optimize_geometry_source = Path(__file__).resolve().parents[1] / "anystruct" / "optimize_geometry.py"
     source = optimize_geometry_source.read_text(encoding="utf-8")
 
-    assert "status_y = 170" in source
-    assert "objective_y = 205" in source
-    assert "canvas_y = 300" in source
-    assert "self._running_time_info_label.place(x=start_x, y=status_y)" in source
-    assert "self._result_label.place(x=start_x + 4.8 * dx, y=status_y)" in source
-    assert "self._canvas_select.place(x=start_x + 0 * dx, y=canvas_y)" in source
-    assert "self._canvas_opt.place(x=start_x + 10.5 * dx, y=canvas_y)" in source
-    assert "obj_x, obj_y = 20, objective_y" in source
+    # The gridded layout keeps the status labels, the objective block and the
+    # canvases in separate rows/holders, so they cannot overlap by design.
+    assert "self._running_time_info_label.grid(row=4, column=0, columnspan=4, sticky=tk.W, pady=(6, 0))" in source
+    assert "self._result_label.grid(row=4, column=4, columnspan=3, sticky=tk.W, pady=(6, 0))" in source
+    assert "self._canvas_select.grid(row=0, column=0, sticky=tk.NW)" in source
+    assert "self._canvas_opt.grid(row=0, column=0, sticky=tk.NW)" in source
+    assert "self._objective_frame.grid(row=2, column=0, sticky=tk.NW, padx=10, pady=(6, 0))" in source
+    assert "self._select_canvas_holder.grid(row=3, column=0, sticky=tk.NW, padx=10, pady=(8, 8))" in source
     assert "start_y + 5.0 * dy" not in source
     assert "obj_x, obj_y = 20, 175" not in source
 

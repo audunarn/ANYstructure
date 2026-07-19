@@ -268,16 +268,39 @@ class CreateOptGeoWindow():
         self._opt_resutls = {}
         self._geo_results = None
         self._last_weight_plot_data = None
-        self._opt_actual_running_time = tk.Label(self._frame, text='')
         self._running_time_after_id = None
 
-        tk.Frame(self._frame, width=770, height=5, bg="grey", colormap="new").place(x=20, y=95)
-        tk.Frame(self._frame, width=770, height=5, bg="grey", colormap="new").place(x=20, y=135)
+        # Gridded layout scaffolding: header, bounds table + run controls,
+        # objective row, then the selection canvas with the result canvas,
+        # constraint checks and girder data on the right.
+        self._frame.columnconfigure(0, weight=1)
+        self._frame.rowconfigure(3, weight=1)
+        self._header_frame = tk.Frame(self._frame)
+        self._header_frame.grid(row=0, column=0, columnspan=2, sticky=tk.W, padx=10, pady=(8, 4))
+        self._bounds_frame = tk.Frame(self._frame)
+        self._bounds_frame.grid(row=1, column=0, sticky=tk.NW, padx=10)
+        self._controls_frame = tk.Frame(self._frame)
+        self._controls_frame.grid(row=1, column=1, rowspan=2, sticky=tk.NW, padx=(10, 10))
+        self._algo_params_frame = tk.Frame(self._controls_frame)
+        self._objective_frame = tk.Frame(self._frame)
+        self._objective_frame.grid(row=2, column=0, sticky=tk.NW, padx=10, pady=(6, 0))
+        self._select_canvas_holder = tk.Frame(self._frame)
+        self._select_canvas_holder.grid(row=3, column=0, sticky=tk.NW, padx=10, pady=(8, 8))
+        self._right_column = tk.Frame(self._frame)
+        self._right_column.grid(row=3, column=1, sticky=tk.NW, padx=(10, 10), pady=(8, 8))
+        self._opt_canvas_holder = tk.Frame(self._right_column)
+        self._opt_canvas_holder.grid(row=0, column=0, columnspan=2, sticky=tk.NW)
+        self._checks_frame = tk.Frame(self._right_column)
+        self._checks_frame.grid(row=1, column=0, sticky=tk.NW, pady=(8, 0))
+        self._girder_data_frame = tk.Frame(self._right_column)
+        self._girder_data_frame.grid(row=1, column=1, sticky=tk.NW, padx=(16, 0), pady=(8, 0))
+
+        self._opt_actual_running_time = tk.Label(self._controls_frame, text='')
 
         algorithms = ('anysmart', 'scipy_de')
 
-        tk.Label(self._frame, text='-- Plate field span optimizer for plate fields separated by frames. --',
-                 font='Verdana 15 bold').place(x=10, y=10)
+        tk.Label(self._header_frame, text='-- Plate field span optimizer for plate fields separated by frames. --',
+                 font='Verdana 15 bold').grid(row=0, column=0, sticky=tk.W, padx=(0, 20))
 
         # upper and lower bounds for optimization
         # [0.6, 0.012, 0.3, 0.01, 0.1, 0.01]
@@ -327,57 +350,57 @@ class CreateOptGeoWindow():
         self._new_include_builtup_weld = tk.BooleanVar()
 
         ent_w = 10
-        self._ent_spacing_upper = tk.Entry(self._frame, textvariable=self._new_spacing_upper, width=ent_w)
-        self._ent_spacing_lower = tk.Entry(self._frame, textvariable=self._new_spacing_lower, width=ent_w)
-        self._ent_pl_thk_upper = tk.Entry(self._frame, textvariable=self._new_pl_thk_upper, width=ent_w)
-        self._ent_pl_thk_lower = tk.Entry(self._frame, textvariable=self._new_pl_thk_lower, width=ent_w)
-        self._ent_web_h_upper = tk.Entry(self._frame, textvariable=self._new_web_h_upper, width=ent_w)
-        self._ent_web_h_lower = tk.Entry(self._frame, textvariable=self._new_web_h_lower, width=ent_w)
-        self._ent_web_thk_upper = tk.Entry(self._frame, textvariable=self._new_web_thk_upper, width=ent_w)
-        self._ent_web_thk_lower = tk.Entry(self._frame, textvariable=self._new_web_thk_lower, width=ent_w)
-        self._ent_fl_w_upper = tk.Entry(self._frame, textvariable=self._new_fl_w_upper, width=ent_w)
-        self._ent_fl_w_lower = tk.Entry(self._frame, textvariable=self._new_fl_w_lower, width=ent_w)
-        self._ent_fl_thk_upper = tk.Entry(self._frame, textvariable=self._new_fl_thk_upper, width=ent_w)
-        self._ent_fl_thk_lower = tk.Entry(self._frame, textvariable=self._new_fl_thk_lower, width=ent_w)
+        self._ent_spacing_upper = tk.Entry(self._bounds_frame, textvariable=self._new_spacing_upper, width=ent_w)
+        self._ent_spacing_lower = tk.Entry(self._bounds_frame, textvariable=self._new_spacing_lower, width=ent_w)
+        self._ent_pl_thk_upper = tk.Entry(self._bounds_frame, textvariable=self._new_pl_thk_upper, width=ent_w)
+        self._ent_pl_thk_lower = tk.Entry(self._bounds_frame, textvariable=self._new_pl_thk_lower, width=ent_w)
+        self._ent_web_h_upper = tk.Entry(self._bounds_frame, textvariable=self._new_web_h_upper, width=ent_w)
+        self._ent_web_h_lower = tk.Entry(self._bounds_frame, textvariable=self._new_web_h_lower, width=ent_w)
+        self._ent_web_thk_upper = tk.Entry(self._bounds_frame, textvariable=self._new_web_thk_upper, width=ent_w)
+        self._ent_web_thk_lower = tk.Entry(self._bounds_frame, textvariable=self._new_web_thk_lower, width=ent_w)
+        self._ent_fl_w_upper = tk.Entry(self._bounds_frame, textvariable=self._new_fl_w_upper, width=ent_w)
+        self._ent_fl_w_lower = tk.Entry(self._bounds_frame, textvariable=self._new_fl_w_lower, width=ent_w)
+        self._ent_fl_thk_upper = tk.Entry(self._bounds_frame, textvariable=self._new_fl_thk_upper, width=ent_w)
+        self._ent_fl_thk_lower = tk.Entry(self._bounds_frame, textvariable=self._new_fl_thk_lower, width=ent_w)
         self._ent_span = tk.Entry(self._frame, textvariable=self._new_span, width=ent_w)
         self._ent_width_lg = tk.Entry(self._frame, textvariable=self._new_width_lg, width=ent_w)
-        self._ent_algorithm = tk.OptionMenu(self._frame, self._new_algorithm, command=self.selected_algorithm,
+        self._ent_algorithm = tk.OptionMenu(self._controls_frame, self._new_algorithm, command=self.selected_algorithm,
                                             *algorithms)
-        self._ent_random_trials = tk.Entry(self._frame, textvariable=self._new_algorithm_random_trials)
-        self._ent_delta_spacing = tk.Entry(self._frame, textvariable=self._new_delta_spacing, width=ent_w)
-        self._ent_delta_pl_thk = tk.Entry(self._frame, textvariable=self._new_delta_pl_thk, width=ent_w)
-        self._ent_delta_web_h = tk.Entry(self._frame, textvariable=self._new_delta_web_h, width=ent_w)
-        self._ent_delta_web_thk = tk.Entry(self._frame, textvariable=self._new_delta_web_thk, width=ent_w)
-        self._ent_delta_fl_w = tk.Entry(self._frame, textvariable=self._new_delta_fl_w, width=ent_w)
-        self._ent_delta_fl_thk = tk.Entry(self._frame, textvariable=self._new_delta_fl_thk, width=ent_w)
+        self._ent_random_trials = tk.Entry(self._algo_params_frame, textvariable=self._new_algorithm_random_trials)
+        self._ent_delta_spacing = tk.Entry(self._bounds_frame, textvariable=self._new_delta_spacing, width=ent_w)
+        self._ent_delta_pl_thk = tk.Entry(self._bounds_frame, textvariable=self._new_delta_pl_thk, width=ent_w)
+        self._ent_delta_web_h = tk.Entry(self._bounds_frame, textvariable=self._new_delta_web_h, width=ent_w)
+        self._ent_delta_web_thk = tk.Entry(self._bounds_frame, textvariable=self._new_delta_web_thk, width=ent_w)
+        self._ent_delta_fl_w = tk.Entry(self._bounds_frame, textvariable=self._new_delta_fl_w, width=ent_w)
+        self._ent_delta_fl_thk = tk.Entry(self._bounds_frame, textvariable=self._new_delta_fl_thk, width=ent_w)
 
         pso_width = 10
-        self._ent_swarm_size = tk.Entry(self._frame, textvariable=self._new_swarm_size, width=pso_width)
-        self._ent_omega = tk.Entry(self._frame, textvariable=self._new_omega, width=pso_width)
-        self._ent_phip = tk.Entry(self._frame, textvariable=self._new_phip, width=pso_width)
-        self._ent_phig = tk.Entry(self._frame, textvariable=self._new_phig, width=pso_width)
-        self._ent_maxiter = tk.Entry(self._frame, textvariable=self._new_maxiter, width=pso_width)
-        self._ent_minstep = tk.Entry(self._frame, textvariable=self._new_minstep, width=pso_width)
-        self._ent_minfunc = tk.Entry(self._frame, textvariable=self._new_minfunc, width=pso_width)
+        self._ent_swarm_size = tk.Entry(self._algo_params_frame, textvariable=self._new_swarm_size, width=pso_width)
+        self._ent_omega = tk.Entry(self._algo_params_frame, textvariable=self._new_omega, width=pso_width)
+        self._ent_phip = tk.Entry(self._algo_params_frame, textvariable=self._new_phip, width=pso_width)
+        self._ent_phig = tk.Entry(self._algo_params_frame, textvariable=self._new_phig, width=pso_width)
+        self._ent_maxiter = tk.Entry(self._algo_params_frame, textvariable=self._new_maxiter, width=pso_width)
+        self._ent_minstep = tk.Entry(self._algo_params_frame, textvariable=self._new_minstep, width=pso_width)
+        self._ent_minfunc = tk.Entry(self._algo_params_frame, textvariable=self._new_minfunc, width=pso_width)
 
-        self._ent_opt_girder_thk = tk.Entry(self._frame, textvariable=self._new_opt_girder_thk, width=ent_w)
-        self._ent_opt_girder_stf_web_h = tk.Entry(self._frame, textvariable=self._new_opt_girder_stf_web_h,
+        self._ent_opt_girder_thk = tk.Entry(self._girder_data_frame, textvariable=self._new_opt_girder_thk, width=ent_w)
+        self._ent_opt_girder_stf_web_h = tk.Entry(self._girder_data_frame, textvariable=self._new_opt_girder_stf_web_h,
                                                   width=ent_w)
-        self._ent_opt_girder_stf_web_thk = tk.Entry(self._frame, textvariable=self._new_opt_girder_stf_web_thk,
+        self._ent_opt_girder_stf_web_thk = tk.Entry(self._girder_data_frame, textvariable=self._new_opt_girder_stf_web_thk,
                                                     width=ent_w)
-        self._ent_opt_girder_stf_fl_b = tk.Entry(self._frame, textvariable=self._new_opt_girder_stf_flange_b,
+        self._ent_opt_girder_stf_fl_b = tk.Entry(self._girder_data_frame, textvariable=self._new_opt_girder_stf_flange_b,
                                                  width=ent_w)
-        self._ent_opt_girder_stf_fl_thk = tk.Entry(self._frame, textvariable=self._new_opt_girder_stf_flange_thk,
+        self._ent_opt_girder_stf_fl_thk = tk.Entry(self._girder_data_frame, textvariable=self._new_opt_girder_stf_flange_thk,
                                                    width=ent_w)
 
-        self._ent_opt_girder_scale_high = tk.Entry(self._frame, textvariable=self._new_opt_girder_scale_high,
+        self._ent_opt_girder_scale_high = tk.Entry(self._girder_data_frame, textvariable=self._new_opt_girder_scale_high,
                                                    width=int(ent_w / 2))
-        self._ent_opt_girder_scale_low = tk.Entry(self._frame, textvariable=self._new_opt_girder_scale_low,
+        self._ent_opt_girder_scale_low = tk.Entry(self._girder_data_frame, textvariable=self._new_opt_girder_scale_low,
                                                   width=int(ent_w / 2))
 
-        self._ent_opt_max_span = tk.Entry(self._frame, textvariable=self._new_opt_span_max,
+        self._ent_opt_max_span = tk.Entry(self._girder_data_frame, textvariable=self._new_opt_span_max,
                                           width=int(ent_w / 2))
-        self._ent_opt_min_span = tk.Entry(self._frame, textvariable=self._new_opt_span_min,
+        self._ent_opt_min_span = tk.Entry(self._girder_data_frame, textvariable=self._new_opt_span_min,
                                           width=int(ent_w / 2))
 
         start_x, start_y, dx, dy = 20, 70, 100, 40
@@ -385,79 +408,57 @@ class CreateOptGeoWindow():
         objective_y = 205
         canvas_y = 300
 
-        tk.Label(self._frame, text='Processes\n (CPUs)', font='Verdana 9 bold', bg='silver') \
-            .place(x=start_x + 8 * dx, y=start_y + 0.5 * dy)
-        tk.Entry(self._frame, textvariable=self._new_processes, width=12, bg='silver') \
-            .place(x=start_x + 8 * dx, y=start_y + 1.4 * dy)
+        tk.Label(self._header_frame, text='Processes\n (CPUs)', font='Verdana 9 bold', bg='silver') \
+            .grid(row=0, column=2, sticky=tk.W, padx=(20, 4))
+        tk.Entry(self._header_frame, textvariable=self._new_processes, width=12, bg='silver') \
+            .grid(row=0, column=3, sticky=tk.W)
 
         self._prop_canvas_dim = (500, 450)
         self._draw_scale = 500
-        self._canvas_opt = tk.Canvas(self._frame, width=self._prop_canvas_dim[0], height=self._prop_canvas_dim[1],
+        self._canvas_opt = tk.Canvas(self._opt_canvas_holder, width=self._prop_canvas_dim[0],
+                                     height=self._prop_canvas_dim[1],
                                      background='azure', relief='groove', borderwidth=2)
-        self._canvas_opt.place(x=start_x + 10.5 * dx, y=canvas_y)
+        self._canvas_opt.grid(row=0, column=0, sticky=tk.NW)
         self._select_canvas_dim = (1000, 720)
-        self._canvas_select = tk.Canvas(self._frame, width=self._select_canvas_dim[0],
+        self._canvas_select = tk.Canvas(self._select_canvas_holder, width=self._select_canvas_dim[0],
                                         height=self._select_canvas_dim[1],
                                         background='azure', relief='groove', borderwidth=2)
-        self._canvas_select.place(x=start_x + 0 * dx, y=canvas_y)
+        self._canvas_select.grid(row=0, column=0, sticky=tk.NW)
 
         # Labels for the pso
-        self._lb_swarm_size = tk.Label(self._frame, text='swarm size')
-        self._lb_omega = tk.Label(self._frame, text='omega')
-        self._lb_phip = tk.Label(self._frame, text='phip')
-        self._lb_phig = tk.Label(self._frame, text='phig')
-        self._lb_maxiter = tk.Label(self._frame, text='maxiter')
-        self._lb_minstep = tk.Label(self._frame, text='minstep')
-        self._lb_minfunc = tk.Label(self._frame, text='minfunc')
+        self._lb_swarm_size = tk.Label(self._algo_params_frame, text='swarm size')
+        self._lb_omega = tk.Label(self._algo_params_frame, text='omega')
+        self._lb_phip = tk.Label(self._algo_params_frame, text='phip')
+        self._lb_phig = tk.Label(self._algo_params_frame, text='phig')
+        self._lb_maxiter = tk.Label(self._algo_params_frame, text='maxiter')
+        self._lb_minstep = tk.Label(self._algo_params_frame, text='minstep')
+        self._lb_minfunc = tk.Label(self._algo_params_frame, text='minfunc')
 
-        tk.Label(self._frame, text='Upper bounds [mm]', font='Verdana 9').place(x=start_x, y=start_y)
-        tk.Label(self._frame, text='Iteration delta [mm]', font='Verdana 9').place(x=start_x, y=start_y + dy)
-        tk.Label(self._frame, text='Lower bounds [mm]', font='Verdana 9').place(x=start_x, y=start_y + 2 * dy)
-        tk.Label(self._frame, text='Spacing [mm]', font='Verdana 7 bold').place(x=start_x + 1.97 * dx,
-                                                                                y=start_y - 0.6 * dy)
-        tk.Label(self._frame, text='Plate thk. [mm]', font='Verdana 7 bold').place(x=start_x + 2.97 * dx,
-                                                                                   y=start_y - 0.6 * dy)
-        tk.Label(self._frame, text='Web height [mm]', font='Verdana 7 bold').place(x=start_x + 3.97 * dx,
-                                                                                   y=start_y - 0.6 * dy)
-        tk.Label(self._frame, text='Web thk. [mm]', font='Verdana 7 bold').place(x=start_x + 4.97 * dx,
-                                                                                 y=start_y - 0.6 * dy)
-        tk.Label(self._frame, text='Flange width [mm]', font='Verdana 7 bold').place(x=start_x + 5.97 * dx,
-                                                                                     y=start_y - 0.6 * dy)
-        tk.Label(self._frame, text='Flange thk. [mm]', font='Verdana 7 bold').place(x=start_x + 6.97 * dx,
-                                                                                    y=start_y - 0.6 * dy)
+        for column, header in enumerate(('Spacing [mm]', 'Plate thk. [mm]', 'Web height [mm]', 'Web thk. [mm]',
+                                         'Flange width [mm]', 'Flange thk. [mm]')):
+            tk.Label(self._bounds_frame, text=header, font='Verdana 7 bold') \
+                .grid(row=0, column=1 + column, sticky=tk.W, padx=2)
+        bound_rows = (
+            ('Upper bounds [mm]', (self._ent_spacing_upper, self._ent_pl_thk_upper, self._ent_web_h_upper,
+                                   self._ent_web_thk_upper, self._ent_fl_w_upper, self._ent_fl_thk_upper)),
+            ('Iteration delta [mm]', (self._ent_delta_spacing, self._ent_delta_pl_thk, self._ent_delta_web_h,
+                                      self._ent_delta_web_thk, self._ent_delta_fl_w, self._ent_delta_fl_thk)),
+            ('Lower bounds [mm]', (self._ent_spacing_lower, self._ent_pl_thk_lower, self._ent_web_h_lower,
+                                   self._ent_web_thk_lower, self._ent_fl_w_lower, self._ent_fl_thk_lower)),
+        )
+        for row, (text, entries) in enumerate(bound_rows):
+            tk.Label(self._bounds_frame, text=text, font='Verdana 9').grid(row=1 + row, column=0, sticky=tk.W, pady=1)
+            for column, entry in enumerate(entries):
+                entry.grid(row=1 + row, column=1 + column, sticky=tk.W, padx=2, pady=1)
         self._running_time_info_label = tk.Label(
-            self._frame,
+            self._bounds_frame,
             text='Estimated running time for algorithm not calculated.',
             font='Verdana 9 bold',
             justify=tk.LEFT,
         )
-        self._running_time_info_label.place(x=start_x, y=status_y)
-        tk.Label(self._frame, text='- Harmonize stiffener spacing for section.', font='Verdana 9 bold') \
-            .place(x=650, y=objective_y + 45)
-        # self._runnig_time_label = tk.Label(self._frame, text='', font='Verdana 9 bold')
-        # self._runnig_time_label.place(x=start_x + 2.7 * dx, y=start_y + 2.8 * dy)
-        # tk.Label(self._frame, text='seconds ', font='Verdana 9 bold').place(x=start_x + 3.3 * dx, y=start_y + 2.8 * dy)
-        self._result_label = tk.Label(self._frame, text='', font='Verdana 9 bold')
-        self._result_label.place(x=start_x + 4.8 * dx, y=status_y)
-
-        self._ent_spacing_upper.place(x=start_x + dx * 2, y=start_y)
-        self._ent_delta_spacing.place(x=start_x + dx * 2, y=start_y + dy)
-        self._ent_spacing_lower.place(x=start_x + dx * 2, y=start_y + 2 * dy)
-        self._ent_pl_thk_upper.place(x=start_x + dx * 3, y=start_y)
-        self._ent_delta_pl_thk.place(x=start_x + dx * 3, y=start_y + dy)
-        self._ent_pl_thk_lower.place(x=start_x + dx * 3, y=start_y + 2 * dy)
-        self._ent_web_h_upper.place(x=start_x + dx * 4, y=start_y)
-        self._ent_delta_web_h.place(x=start_x + dx * 4, y=start_y + dy)
-        self._ent_web_h_lower.place(x=start_x + dx * 4, y=start_y + 2 * dy)
-        self._ent_web_thk_upper.place(x=start_x + dx * 5, y=start_y)
-        self._ent_delta_web_thk.place(x=start_x + dx * 5, y=start_y + dy)
-        self._ent_web_thk_lower.place(x=start_x + dx * 5, y=start_y + 2 * dy)
-        self._ent_fl_w_upper.place(x=start_x + dx * 6, y=start_y)
-        self._ent_delta_fl_w.place(x=start_x + dx * 6, y=start_y + dy)
-        self._ent_fl_w_lower.place(x=start_x + dx * 6, y=start_y + 2 * dy)
-        self._ent_fl_thk_upper.place(x=start_x + dx * 7, y=start_y)
-        self._ent_delta_fl_thk.place(x=start_x + dx * 7, y=start_y + dy)
-        self._ent_fl_thk_lower.place(x=start_x + dx * 7, y=start_y + 2 * dy)
+        self._running_time_info_label.grid(row=4, column=0, columnspan=4, sticky=tk.W, pady=(6, 0))
+        self._result_label = tk.Label(self._bounds_frame, text='', font='Verdana 9 bold')
+        self._result_label.grid(row=4, column=4, columnspan=3, sticky=tk.W, pady=(6, 0))
 
         # setting default values
         init_dim = float(50)  # mm
@@ -524,22 +525,19 @@ class CreateOptGeoWindow():
 
         self.running_time_per_item = 4e-05
         # self._runnig_time_label.config(text=str(self.get_running_time()))
-        self._ent_algorithm.place(x=start_x + dx * 10, y=start_y + dy)
-        self.algorithm_random_label = tk.Label(self._frame, text='Number of trials')
-        tk.Button(self._frame, text='algorithm information', command=self.algorithm_info, bg='white') \
-            .place(x=start_x + dx * 10, y=start_y + dy * 2)
+        self.run_button = tk.Button(self._controls_frame, text='RUN OPTIMIZATION!', command=self.run_optimizaion,
+                                    bg='red', font='Verdana 10', fg='Yellow')
+        self.run_button.grid(row=0, column=0, sticky=tk.EW, pady=2)
+        self._ent_algorithm.grid(row=1, column=0, sticky=tk.EW, pady=2)
+        self.algorithm_random_label = tk.Label(self._algo_params_frame, text='Number of trials')
+        tk.Button(self._controls_frame, text='algorithm information', command=self.algorithm_info, bg='white') \
+            .grid(row=2, column=0, sticky=tk.EW, pady=2)
+        self._opt_actual_running_time.grid(row=3, column=0, columnspan=2, sticky=tk.W, pady=2)
+        self._algo_params_frame.grid(row=0, column=1, rowspan=3, sticky=tk.NW, padx=(16, 0))
 
-        self.run_button = tk.Button(self._frame, text='RUN OPTIMIZATION!', command=self.run_optimizaion, bg='red',
-                                    font='Verdana 10', fg='Yellow')
-        self.run_button.place(x=start_x + dx * 10, y=start_y)
-        self._opt_actual_running_time.place(x=start_x + dx * 8, y=start_y + dy * 1.5)
-        # self.close_and_save = tk.Button(self._frame, text='Return and replace with selected optimized structure',
-        #                                 command=self.save_and_close, bg='green', font='Verdana 10 bold', fg='yellow')
-        # self.close_and_save.place(x=start_x + dx * 10, y=10)
-
-        tk.Button(self._frame, text='Open predefined stiffeners example',
+        tk.Button(self._header_frame, text='Open predefined stiffeners example',
                   command=self.open_example_file, bg='white', font='Verdana 10') \
-            .place(x=start_x + dx * 10, y=10)
+            .grid(row=0, column=1, sticky=tk.W, padx=(0, 12))
 
         # Selection of constraints
         self._new_check_sec_mod = tk.BooleanVar()
@@ -577,61 +575,42 @@ class CreateOptGeoWindow():
         self._new_weld_bias.trace_add('write', self._update_weld_bias_label)
         self._new_weld_metric.trace_add('write', self._update_weld_bias_label)
 
-        start_y, start_x, dy = 655, 100, 25
-        tk.Label(self._frame, text='Check for minimum section modulus').place(x=start_x + dx * 9.7, y=start_y + 4 * dy)
-        tk.Label(self._frame, text='Check for minimum plate thk.').place(x=start_x + dx * 9.7, y=start_y + 5 * dy)
-        tk.Label(self._frame, text='Check for minimum shear area').place(x=start_x + dx * 9.7, y=start_y + 6 * dy)
-        tk.Label(self._frame, text='Check for buckling (RP-C201)').place(x=start_x + dx * 9.7, y=start_y + 7 * dy)
-        tk.Label(self._frame, text='Check for fatigue (RP-C203)').place(x=start_x + dx * 9.7, y=start_y + 8 * dy)
-        tk.Label(self._frame, text='Check for bow slamming').place(x=start_x + dx * 9.7, y=start_y + 9 * dy)
-        tk.Label(self._frame, text='Check for local stf. buckling').place(x=start_x + dx * 9.7, y=start_y + 10 * dy)
-        tk.Label(self._frame, text='Check for buckling, SemiAnalytical S3/U3').place(x=start_x + dx * 9.7,
-                                                                           y=start_y + 11 * dy)
-        tk.Label(self._frame, text='Check for buckling, ML-CL deactivated').place(x=start_x + dx * 9.7, y=start_y + 12 * dy)
-        tk.Label(self._frame, text='Check for buckling, ML-Numeric').place(x=start_x + dx * 9.7,
-                                                                           y=start_y + 13 * dy)
-
-        tk.Label(self._frame, text='Frame (girder data) for weight calculation:', font='Verdana 9 bold') \
-            .place(x=start_x + dx * 13,
-                   y=start_y + 4 * dy)
-        tk.Label(self._frame, text='Girder thickness').place(x=start_x + dx * 13, y=start_y + 5 * dy)
-        tk.Label(self._frame, text='Stiffener height').place(x=start_x + dx * 13, y=start_y + 6 * dy)
-        tk.Label(self._frame, text='Stiffener thickness').place(x=start_x + dx * 13, y=start_y + 7 * dy)
-        tk.Label(self._frame, text='Stf. flange width').place(x=start_x + dx * 13, y=start_y + 8 * dy)
-        tk.Label(self._frame, text='Stf. flange thickenss').place(x=start_x + dx * 13, y=start_y + 9 * dy)
-        tk.Label(self._frame, text='For weight calculation of girder: Max span mult / Min span mult') \
-            .place(x=start_x + dx * 13, y=start_y + 10 * dy)
-        tk.Label(self._frame, text='Maximum span / Minimum span ->') \
-            .place(x=start_x + dx * 13, y=start_y + 14 * dy)
-
-        self._ent_opt_girder_thk.place(x=start_x + dx * 15, y=start_y + 5 * dy)
-        self._ent_opt_girder_stf_web_h.place(x=start_x + dx * 15, y=start_y + 6 * dy)
-        self._ent_opt_girder_stf_web_thk.place(x=start_x + dx * 15, y=start_y + 7 * dy)
-        self._ent_opt_girder_stf_fl_b.place(x=start_x + dx * 15, y=start_y + 8 * dy)
-        self._ent_opt_girder_stf_fl_thk.place(x=start_x + dx * 15, y=start_y + 9 * dy)
-        self._ent_opt_girder_scale_high.place(x=start_x + dx * 15, y=start_y + 11 * dy)
-        self._ent_opt_girder_scale_low.place(x=start_x + dx * 15.5, y=start_y + 11 * dy)
-        self._ent_opt_max_span.place(x=start_x + dx * 15, y=start_y + 12 * dy)
-        self._ent_opt_min_span.place(x=start_x + dx * 15.5, y=start_y + 12 * dy)
-
-        tk.Checkbutton(self._frame, variable=self._new_check_sec_mod).place(x=start_x + dx * 12, y=start_y + 4 * dy)
-        tk.Checkbutton(self._frame, variable=self._new_check_min_pl_thk).place(x=start_x + dx * 12, y=start_y + 5 * dy)
-        tk.Checkbutton(self._frame, variable=self._new_check_shear_area).place(x=start_x + dx * 12, y=start_y + 6 * dy)
-        tk.Checkbutton(self._frame, variable=self._new_check_buckling).place(x=start_x + dx * 12, y=start_y + 7 * dy)
-        tk.Checkbutton(self._frame, variable=self._new_check_fatigue).place(x=start_x + dx * 12, y=start_y + 8 * dy)
-        tk.Checkbutton(self._frame, variable=self._new_check_slamming).place(x=start_x + dx * 12, y=start_y + 9 * dy)
-        tk.Checkbutton(self._frame, variable=self._new_check_local_buckling).place(x=start_x + dx * 12,
-                                                                                   y=start_y + 10 * dy)
-        tk.Checkbutton(self._frame, variable=self._new_check_buckling_semi_analytical).place(x=start_x + dx * 12,
-                                                                                     y=start_y + 11 * dy)
-        tk.Checkbutton(self._frame, variable=self._new_check_buckling_ml_cl, state='disabled').place(
-            x=start_x + dx * 12,
-            y=start_y + 12 * dy,
+        check_rows = (
+            ('Check for minimum section modulus', self._new_check_sec_mod, 'normal'),
+            ('Check for minimum plate thk.', self._new_check_min_pl_thk, 'normal'),
+            ('Check for minimum shear area', self._new_check_shear_area, 'normal'),
+            ('Check for buckling (RP-C201)', self._new_check_buckling, 'normal'),
+            ('Check for fatigue (RP-C203)', self._new_check_fatigue, 'normal'),
+            ('Check for bow slamming', self._new_check_slamming, 'normal'),
+            ('Check for local stf. buckling', self._new_check_local_buckling, 'normal'),
+            ('Check for buckling, SemiAnalytical S3/U3', self._new_check_buckling_semi_analytical, 'normal'),
+            ('Check for buckling, ML-CL deactivated', self._new_check_buckling_ml_cl, 'disabled'),
+            ('Check for buckling, ML-Numeric', self._new_check_buckling_ml_numeric, 'normal'),
         )
-        tk.Checkbutton(self._frame, variable=self._new_check_buckling_ml_numeric).place(x=start_x + dx * 12,
-                                                                                        y=start_y + 13 * dy)
+        for row, (text, variable, state) in enumerate(check_rows):
+            tk.Label(self._checks_frame, text=text).grid(row=row, column=0, sticky=tk.W)
+            tk.Checkbutton(self._checks_frame, variable=variable, state=state).grid(row=row, column=1, sticky=tk.W)
 
-        tk.Checkbutton(self._frame, variable=self._new_harmonize_spacing).place(x=620, y=objective_y + 41)
+        tk.Label(self._girder_data_frame, text='Frame (girder data) for weight calculation:',
+                 font='Verdana 9 bold').grid(row=0, column=0, columnspan=3, sticky=tk.W)
+        girder_data_rows = (
+            ('Girder thickness', self._ent_opt_girder_thk),
+            ('Stiffener height', self._ent_opt_girder_stf_web_h),
+            ('Stiffener thickness', self._ent_opt_girder_stf_web_thk),
+            ('Stf. flange width', self._ent_opt_girder_stf_fl_b),
+            ('Stf. flange thickenss', self._ent_opt_girder_stf_fl_thk),
+        )
+        for row, (text, entry) in enumerate(girder_data_rows):
+            tk.Label(self._girder_data_frame, text=text).grid(row=1 + row, column=0, sticky=tk.W)
+            entry.grid(row=1 + row, column=1, columnspan=2, sticky=tk.W, padx=(8, 0), pady=1)
+        tk.Label(self._girder_data_frame, text='For weight calculation of girder: Max span mult / Min span mult') \
+            .grid(row=6, column=0, columnspan=3, sticky=tk.W, pady=(6, 0))
+        self._ent_opt_girder_scale_high.grid(row=7, column=1, sticky=tk.W, padx=(8, 2))
+        self._ent_opt_girder_scale_low.grid(row=7, column=2, sticky=tk.W)
+        tk.Label(self._girder_data_frame, text='Maximum span / Minimum span ->') \
+            .grid(row=8, column=0, sticky=tk.W)
+        self._ent_opt_max_span.grid(row=8, column=1, sticky=tk.W, padx=(8, 2))
+        self._ent_opt_min_span.grid(row=8, column=2, sticky=tk.W)
 
         # Stress scaling
         self._new_fup = tk.DoubleVar()
@@ -639,66 +618,66 @@ class CreateOptGeoWindow():
         self._new_fdwn = tk.DoubleVar()
         self._new_fdwn.set(1)
 
-        tk.Label(self._frame, text='Factor when scaling stresses up, fup') \
-            .place(x=start_x + dx * 9.7, y=start_y + 14 * dy)
-        ent_fup = tk.Entry(self._frame, textvariable=self._new_fup, width=5)
-        ent_fup.place(x=start_x + dx * 12, y=start_y + 14 * dy)
-        tk.Label(self._frame, text='Factor when scaling stresses up, fdown') \
-            .place(x=start_x + dx * 9.7, y=start_y + 15 * dy)
-        ent_fdwn = tk.Entry(self._frame, textvariable=self._new_fdwn, width=5)
-        ent_fdwn.place(x=start_x + dx * 12, y=start_y + 15 * dy)
+        tk.Label(self._checks_frame, text='Factor when scaling stresses up, fup') \
+            .grid(row=len(check_rows), column=0, sticky=tk.W, pady=(8, 0))
+        ent_fup = tk.Entry(self._checks_frame, textvariable=self._new_fup, width=5)
+        ent_fup.grid(row=len(check_rows), column=1, sticky=tk.W, pady=(8, 0))
+        tk.Label(self._checks_frame, text='Factor when scaling stresses up, fdown') \
+            .grid(row=len(check_rows) + 1, column=0, sticky=tk.W)
+        ent_fdwn = tk.Entry(self._checks_frame, textvariable=self._new_fdwn, width=5)
+        ent_fdwn.grid(row=len(check_rows) + 1, column=1, sticky=tk.W)
 
-        self._toggle_btn = tk.Button(self._frame, text="Iterate predefiened stiffeners", relief="raised",
+        self._toggle_btn = tk.Button(self._controls_frame, text="Iterate predefiened stiffeners", relief="raised",
                                      command=self.toggle, bg='salmon')
-        self._toggle_btn.place(x=start_x + dx * 10.5, y=start_y - dy * 16.8)
+        self._toggle_btn.grid(row=4, column=0, sticky=tk.EW, pady=2)
         self._toggle_object, self._filez = None, None
 
         self._options_fractions = (None,)
         self._options_panels = (None,)
 
-        tk.Label(self._frame, text='Select number of panels:').place(x=start_x + dx * 12, y=start_y - dy * 20)
-        tk.Label(self._frame, text='Select panel to plot:   ').place(x=start_x + dx * 12, y=start_y - dy * 19)
-        self._ent_option_fractions = tk.OptionMenu(self._frame, self._new_option_fraction, *self._options_fractions,
+        self._panel_options_frame = tk.Frame(self._controls_frame)
+        self._panel_options_frame.grid(row=0, column=2, rowspan=5, sticky=tk.NW, padx=(16, 0))
+        tk.Label(self._panel_options_frame, text='Select number of panels:').grid(row=0, column=0, sticky=tk.W)
+        tk.Label(self._panel_options_frame, text='Select panel to plot:   ').grid(row=1, column=0, sticky=tk.W)
+        self._ent_option_fractions = tk.OptionMenu(self._panel_options_frame, self._new_option_fraction,
+                                                   *self._options_fractions,
                                                    command=self.get_plate_field_options)
-        self._ent_option_field = tk.OptionMenu(self._frame, self._new_option_panel, *self._options_panels,
+        self._ent_option_field = tk.OptionMenu(self._panel_options_frame, self._new_option_panel,
+                                               *self._options_panels,
                                                command=self.get_plate_field_options)
-        self._option_fractions_place = [start_x + dx * 13.5, start_y - dy * 20]
-        self._options_panels_place = [start_x + dx * 13.5, start_y - dy * 19]
-        self._ent_option_fractions.place(x=self._option_fractions_place[0], y=self._option_fractions_place[1])
-        self._ent_option_field.place(x=self._options_panels_place[0], y=self._options_panels_place[1])
+        self._ent_option_fractions.grid(row=0, column=1, sticky=tk.W, padx=8)
+        self._ent_option_field.grid(row=1, column=1, sticky=tk.W, padx=8)
 
-        self.run_results = tk.Button(self._frame, text='show calculated', command=self.plot_results, bg='white',
-                                     font='Verdana 10', fg='black')
-        self.run_results.place(x=start_x + dx * 13, y=start_y - dy * 18)
+        self.run_results = tk.Button(self._panel_options_frame, text='show calculated', command=self.plot_results,
+                                     bg='white', font='Verdana 10', fg='black')
+        self.run_results.grid(row=2, column=0, sticky=tk.EW, pady=2)
 
         self.reshow_figure_button = tk.Button(
-            self._frame,
+            self._panel_options_frame,
             text='re-show figure',
             command=self.reshow_weight_figure,
             bg='white',
             font='Verdana 10',
             fg='black',
         )
-        self.reshow_figure_button.place(x=start_x + dx * 13, y=start_y - dy * 16.7)
+        self.reshow_figure_button.grid(row=3, column=0, sticky=tk.EW, pady=2)
 
-        self.run_results_prev = tk.Button(self._frame, text='Show previous\n'
+        self.run_results_prev = tk.Button(self._panel_options_frame, text='Show previous\n'
                                                             'results', command=self.show_previous_results, bg='white',
                                           font='Verdana 10', fg='black')
-        self.run_results_prev.place(x=start_x + dx * 15, y=start_y - dy * 20)
+        self.run_results_prev.grid(row=2, column=1, rowspan=2, sticky=tk.NW, padx=8, pady=2)
 
         # Optimization objective bias.
         # For geometric optimization this is forwarded to optimize.py.
         # optimize.py must skip weld calculations when weld_bias == 0.0.
-        obj_x, obj_y = 20, objective_y
-
         tk.Label(
-            self._frame,
+            self._objective_frame,
             text='Optimization objective',
             font='Verdana 9 bold',
-        ).place(x=obj_x, y=obj_y)
+        ).grid(row=0, column=0, columnspan=2, sticky=tk.W)
 
         self._weld_bias_slider = tk.Scale(
-            self._frame,
+            self._objective_frame,
             variable=self._new_weld_bias,
             from_=0.0,
             to=1.0,
@@ -708,50 +687,53 @@ class CreateOptGeoWindow():
             showvalue=False,
             command=self._update_weld_bias_label,
         )
-        self._weld_bias_slider.place(x=obj_x, y=obj_y + 18)
+        self._weld_bias_slider.grid(row=1, column=0, columnspan=2, sticky=tk.W)
 
-        tk.Label(self._frame, text='Weight', font='Verdana 7').place(x=obj_x, y=obj_y + 52)
-        tk.Label(self._frame, text='Weld', font='Verdana 7').place(x=obj_x + 205, y=obj_y + 52)
+        tk.Label(self._objective_frame, text='Weight', font='Verdana 7').grid(row=2, column=0, sticky=tk.W)
+        tk.Label(self._objective_frame, text='Weld', font='Verdana 7').grid(row=2, column=1, sticky=tk.E)
 
         self._weld_bias_value_label = tk.Label(
-            self._frame,
+            self._objective_frame,
             text='Weld bias: 0.0',
             font='Verdana 8 bold',
         )
-        self._weld_bias_value_label.place(x=obj_x + 285, y=obj_y)
+        self._weld_bias_value_label.grid(row=0, column=2, sticky=tk.NW, padx=(30, 0))
 
         self._weld_bias_info_label = tk.Label(
-            self._frame,
+            self._objective_frame,
             text=self._get_weld_bias_text(),
             font='Verdana 7',
             wraplength=300,
             justify=tk.LEFT,
         )
-        self._weld_bias_info_label.place(x=obj_x + 285, y=obj_y + 22)
+        self._weld_bias_info_label.grid(row=1, column=2, rowspan=2, sticky=tk.NW, padx=(30, 0))
 
         self._weld_metric_menu = tk.OptionMenu(
-            self._frame,
+            self._objective_frame,
             self._new_weld_metric,
             'Weld consumables',
             'Weld length',
             command=self._update_weld_bias_label,
         )
-        self._weld_metric_menu.place(x=obj_x + 285, y=obj_y + 68, width=150)
+        self._weld_metric_menu.grid(row=3, column=2, sticky=tk.W, padx=(30, 0), pady=(4, 0))
 
         tk.Checkbutton(
-            self._frame,
+            self._objective_frame,
             variable=self._new_include_builtup_weld,
-        ).place(x=obj_x + 460, y=obj_y + 68)
+        ).grid(row=3, column=3, sticky=tk.W, padx=(12, 0), pady=(4, 0))
 
         tk.Label(
-            self._frame,
+            self._objective_frame,
             text='Include web-to-flange weld for built-up stiffeners',
             font='Verdana 7',
             wraplength=230,
             justify=tk.LEFT,
-        ).place(x=obj_x + 485, y=obj_y + 72)
+        ).grid(row=3, column=4, sticky=tk.W, pady=(4, 0))
 
-
+        tk.Checkbutton(self._objective_frame, variable=self._new_harmonize_spacing) \
+            .grid(row=3, column=0, sticky=tk.W, pady=(4, 0))
+        tk.Label(self._objective_frame, text='- Harmonize stiffener spacing for section.', font='Verdana 9 bold') \
+            .grid(row=3, column=1, sticky=tk.W, pady=(4, 0))
 
         # ----------------------------------END OF OPTIMIZE SINGLE COPY-----------------------------------------------
         self.progress_count = tk.IntVar()
@@ -783,93 +765,41 @@ class CreateOptGeoWindow():
 
     def selected_algorithm(self, event):
         '''
-        Action when selecting an algorithm in the optionm menu.
+        Action when selecting an algorithm in the option menu.
         :return:
         '''
-        start_x, start_y, dx, dy = 20, 100, 100, 40
-        if self._new_algorithm.get() == 'random' or self._new_algorithm.get() == 'random_no_delta':
-            self._ent_random_trials.place_forget()
-            self.algorithm_random_label.place_forget()
-            self._lb_swarm_size.place_forget()
-            self._lb_omega.place_forget()
-            self._lb_phip.place_forget()
-            self._lb_phig.place_forget()
-            self._lb_maxiter.place_forget()
-            self._lb_minstep.place_forget()
-            self._lb_minfunc.place_forget()
-            self._ent_swarm_size.place_forget()
-            self._ent_omega.place_forget()
-            self._ent_phip.place_forget()
-            self._ent_phig.place_forget()
-            self._ent_maxiter.place_forget()
-            self._ent_minstep.place_forget()
-            self._ent_minfunc.place_forget()
+        # Hide all algorithm-specific controls first (they live in the
+        # dedicated parameter sub-frame and are toggled with grid).
+        for widget in (self._ent_random_trials, self.algorithm_random_label,
+                       self._lb_swarm_size, self._lb_omega, self._lb_phip, self._lb_phig,
+                       self._lb_maxiter, self._lb_minstep, self._lb_minfunc,
+                       self._ent_swarm_size, self._ent_omega, self._ent_phip, self._ent_phig,
+                       self._ent_maxiter, self._ent_minstep, self._ent_minfunc):
+            widget.grid_forget()
+
+        if self._new_algorithm.get() in ('random', 'random_no_delta'):
             self.algorithm_random_label.config(text='Number of trials')
-            self._ent_random_trials.place(x=start_x + dx * 11.3, y=start_y + 1.2 * dy)
-            self.algorithm_random_label.place(x=start_x + dx * 11.3, y=start_y + 0.5 * dy)
+            self.algorithm_random_label.grid(row=0, column=0, sticky=tk.W)
+            self._ent_random_trials.grid(row=1, column=0, columnspan=2, sticky=tk.W)
 
         elif self._new_algorithm.get() == 'scipy_de':
-            self._ent_random_trials.place_forget()
-            self.algorithm_random_label.place_forget()
-            self._lb_swarm_size.place_forget()
-            self._lb_omega.place_forget()
-            self._lb_phip.place_forget()
-            self._lb_phig.place_forget()
-            self._lb_maxiter.place_forget()
-            self._lb_minstep.place_forget()
-            self._lb_minfunc.place_forget()
-            self._ent_swarm_size.place_forget()
-            self._ent_omega.place_forget()
-            self._ent_phip.place_forget()
-            self._ent_phig.place_forget()
-            self._ent_maxiter.place_forget()
-            self._ent_minstep.place_forget()
-            self._ent_minfunc.place_forget()
             self.algorithm_random_label.config(text='Max evaluations')
-            self._ent_random_trials.place(x=start_x + dx * 11.3, y=start_y + 1.2 * dy)
-            self.algorithm_random_label.place(x=start_x + dx * 11.3, y=start_y + 0.5 * dy)
-
-        elif self._new_algorithm.get() == 'anysmart' or self._new_algorithm.get() == 'anydetail':
-            self._ent_random_trials.place_forget()
-            self.algorithm_random_label.place_forget()
-            self._lb_swarm_size.place_forget()
-            self._lb_omega.place_forget()
-            self._lb_phip.place_forget()
-            self._lb_phig.place_forget()
-            self._lb_maxiter.place_forget()
-            self._lb_minstep.place_forget()
-            self._lb_minfunc.place_forget()
-            self._ent_swarm_size.place_forget()
-            self._ent_omega.place_forget()
-            self._ent_phip.place_forget()
-            self._ent_phig.place_forget()
-            self._ent_maxiter.place_forget()
-            self._ent_minstep.place_forget()
-            self._ent_minfunc.place_forget()
+            self.algorithm_random_label.grid(row=0, column=0, sticky=tk.W)
+            self._ent_random_trials.grid(row=1, column=0, columnspan=2, sticky=tk.W)
 
         elif self._new_algorithm.get() == 'pso':
-            y_place_label = 11.2
-            y_place = 12.2
-            self._ent_random_trials.place_forget()
-            start_x = 150
-
-            self._lb_swarm_size.place(x=start_x + dx * 11, y=start_y - 1 * dy)
-            self._lb_omega.place(x=start_x + dx * 11, y=start_y - 0 * dy)
-            self._lb_phip.place(x=start_x + dx * 11, y=start_y + 1 * dy)
-            self._lb_phig.place(x=start_x + dx * 11, y=start_y + 2 * dy)
-
-            self._lb_maxiter.place(x=start_x + dx * 14, y=start_y - 1 * dy)
-            self._lb_minstep.place(x=start_x + dx * 14, y=start_y + 0 * dy)
-            self._lb_minfunc.place(x=start_x + dx * 14, y=start_y + 1 * dy)
-
-            self._ent_swarm_size.place(x=start_x + dx * 12, y=start_y - 1 * dy)
-            self._ent_omega.place(x=start_x + dx * 12, y=start_y - 0 * dy)
-            self._ent_phip.place(x=start_x + dx * 12, y=start_y + 1 * dy)
-            self._ent_phig.place(x=start_x + dx * 12, y=start_y + 2 * dy)
-
-            self._ent_maxiter.place(x=start_x + dx * 15, y=start_y - 1 * dy)
-            self._ent_minstep.place(x=start_x + dx * 15, y=start_y + 0 * dy)
-            self._ent_minfunc.place(x=start_x + dx * 15, y=start_y + 1 * dy)
+            controls = [
+                (self._lb_swarm_size, self._ent_swarm_size),
+                (self._lb_omega, self._ent_omega),
+                (self._lb_phip, self._ent_phip),
+                (self._lb_phig, self._ent_phig),
+                (self._lb_maxiter, self._ent_maxiter),
+                (self._lb_minstep, self._ent_minstep),
+                (self._lb_minfunc, self._ent_minfunc),
+            ]
+            for idx, (label, entry) in enumerate(controls):
+                label.grid(row=idx, column=0, sticky=tk.W)
+                entry.grid(row=idx, column=1, sticky=tk.W, padx=4)
 
     def show_previous_results(self):
         # if type(self._geo_results) is not list():
@@ -1047,10 +977,10 @@ class CreateOptGeoWindow():
 
             if len([val * 2 for val in self._geo_results.keys()]) != 0:
                 self._ent_option_fractions.destroy()
-                self._ent_option_fractions = tk.OptionMenu(self._frame, self._new_option_fraction,
+                self._ent_option_fractions = tk.OptionMenu(self._panel_options_frame, self._new_option_fraction,
                                                            *tuple([val * 2 for val in self._geo_results.keys()]),
                                                            command=self.get_plate_field_options)
-                self._ent_option_fractions.place(x=self._option_fractions_place[0], y=self._option_fractions_place[1])
+                self._ent_option_fractions.grid(row=0, column=1, sticky=tk.W, padx=8)
 
             # SAVING RESULTS
             if save_results:
@@ -1061,10 +991,10 @@ class CreateOptGeoWindow():
                 self._geo_results = pickle.load(file)
 
             self._ent_option_fractions.destroy()
-            self._ent_option_fractions = tk.OptionMenu(self._frame, self._new_option_fraction,
+            self._ent_option_fractions = tk.OptionMenu(self._panel_options_frame, self._new_option_fraction,
                                                        *tuple([val * 2 for val in self._geo_results.keys()]),
                                                        command=self.get_plate_field_options)
-            self._ent_option_fractions.place(x=self._option_fractions_place[0], y=self._option_fractions_place[1])
+            self._ent_option_fractions.grid(row=0, column=1, sticky=tk.W, padx=8)
 
         save_file, filename = None, None
         if save_results:
@@ -2128,11 +2058,11 @@ class CreateOptGeoWindow():
 
         self._new_option_panel.set(None)
         self._ent_option_field = tk.OptionMenu(
-            self._frame,
+            self._panel_options_frame,
             self._new_option_panel,
             *to_add,
         )
-        self._ent_option_field.place(x=self._options_panels_place[0], y=self._options_panels_place[1])
+        self._ent_option_field.grid(row=1, column=1, sticky=tk.W, padx=8)
 
     def mouse_scroll(self, event):
         self._canvas_scale += event.delta / 50

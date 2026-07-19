@@ -148,6 +148,29 @@ class CreateOptimizeCylinderWindow():
                               [ring_stf_upper_bounds, ring_stf_deltas, ring_stf_lower_bounds],
                               [ring_frame_upper_bounds, ring_frame_deltas, ring_frame_lower_bounds]]
 
+        # Gridded layout scaffolding: header row on top, the bounds table on
+        # the left with the stress inputs and result text below it, and a
+        # right-hand column with the run controls, optimization objective and
+        # the drawing canvas.  Mirrors the old fixed-pixel arrangement.
+        self._frame.columnconfigure(0, weight=1)
+        self._frame.rowconfigure(3, weight=1)
+        self._header_frame = tk.Frame(self._frame)
+        self._header_frame.grid(row=0, column=0, columnspan=2, sticky=tk.W, padx=10, pady=(8, 4))
+        self._bounds_frame = tk.Frame(self._frame)
+        self._bounds_frame.grid(row=1, column=0, sticky=tk.NW, padx=10)
+        self._stress_frame = tk.Frame(self._frame)
+        self._stress_frame.grid(row=2, column=0, sticky=tk.NW, padx=10, pady=(8, 0))
+        self._footer_frame = tk.Frame(self._frame)
+        self._footer_frame.grid(row=3, column=0, sticky=tk.NW, padx=10, pady=(4, 8))
+        self._right_column = tk.Frame(self._frame)
+        self._right_column.grid(row=1, column=1, rowspan=3, sticky=tk.NW, padx=(10, 10))
+        self._run_controls_frame = tk.Frame(self._right_column)
+        self._run_controls_frame.grid(row=0, column=0, sticky=tk.NW)
+        self._objective_frame = tk.Frame(self._right_column)
+        self._objective_frame.grid(row=1, column=0, sticky=tk.NW, pady=(12, 0))
+        self._canvas_holder = tk.Frame(self._right_column)
+        self._canvas_holder.grid(row=2, column=0, sticky=tk.NW, pady=(12, 0))
+
         self._new_entries = list()
         map_type = {'shell': 0, 'long': 1, 'ring stf': 2, 'ring heavy': 3}
         map_type_idx = {
@@ -166,7 +189,7 @@ class CreateOptimizeCylinderWindow():
                 these_ents = list()
                 for idx_3, ent_i in enumerate(entries):
                     self._new_geo_data[idx_1][idx_2][idx_3].trace_add('write', self.schedule_running_time_update)
-                    these_ents.append(tk.Entry(self._frame,
+                    these_ents.append(tk.Entry(self._bounds_frame,
                                                textvariable=self._new_geo_data[idx_1][idx_2][idx_3], width=ent_w))
                     self._new_geo_data[idx_1][idx_2][idx_3].set(0 if self._default_data[idx_1][idx_2][idx_3] is None
                                                                 else self._default_data[idx_1][idx_2][idx_3] * 1000)
@@ -197,21 +220,19 @@ class CreateOptimizeCylinderWindow():
 
         self._opt_runned = False
         self._opt_results = ()
-        self._opt_actual_running_time = tk.Label(self._frame, text='', font='Verdana 12 bold')
+        self._opt_actual_running_time = tk.Label(self._run_controls_frame, text='', font='Verdana 12 bold')
 
         self._draw_scale = 600
         self._canvas_dim = (550, 490)
-        self._canvas_opt = tk.Canvas(self._frame, width=self._canvas_dim[0], height=self._canvas_dim[1],
+        self._canvas_opt = tk.Canvas(self._canvas_holder, width=self._canvas_dim[0], height=self._canvas_dim[1],
                                      background='azure', relief='groove', borderwidth=2)
 
-        # tk.Frame(self._frame,width=770,height=5, bg="grey", colormap="new").place(x=20,y=127)
-        # tk.Frame(self._frame, width=770, height=5, bg="grey", colormap="new").place(x=20, y=167)
-
-        self._canvas_opt.place(x=1050, y=500)
+        self._canvas_opt.grid(row=0, column=0, sticky=tk.NW)
 
         algorithms = ('anysmart cylinder', 'scipy_de cylinder', 'random', 'random_no_delta')
 
-        tk.Label(self._frame, text='-- Cylinder optimizer --', font='Verdana 15 bold').place(x=10, y=10)
+        tk.Label(self._header_frame, text='-- Cylinder optimizer --', font='Verdana 15 bold') \
+            .grid(row=0, column=0, sticky=tk.W, padx=(0, 20))
 
         # upper and lower bounds for optimization
         # [0.6, 0.012, 0.3, 0.01, 0.1, 0.01]
@@ -229,19 +250,22 @@ class CreateOptimizeCylinderWindow():
         self._new_fatigue_int_press = tk.DoubleVar()
         self._new_fatigue_ext_press = tk.DoubleVar()
 
-        # additional choices for the random and pso algorithm
-        self._ent_algorithm = tk.OptionMenu(self._frame, self._new_algorithm, command=self.selected_algorithm,
-                                            *algorithms)
-        self._ent_random_trials = tk.Entry(self._frame, textvariable=self._new_algorithm_random_trials)
+        # additional choices for the random and pso algorithm; the dynamic
+        # per-algorithm controls live in their own sub-frame so they can be
+        # shown/hidden with grid/grid_remove.
+        self._algo_params_frame = tk.Frame(self._run_controls_frame)
+        self._ent_algorithm = tk.OptionMenu(self._run_controls_frame, self._new_algorithm,
+                                            command=self.selected_algorithm, *algorithms)
+        self._ent_random_trials = tk.Entry(self._algo_params_frame, textvariable=self._new_algorithm_random_trials)
 
         pso_width = 10
-        self._ent_swarm_size = tk.Entry(self._frame, textvariable=self._new_swarm_size, width=pso_width)
-        self._ent_omega = tk.Entry(self._frame, textvariable=self._new_omega, width=pso_width)
-        self._ent_phip = tk.Entry(self._frame, textvariable=self._new_phip, width=pso_width)
-        self._ent_phig = tk.Entry(self._frame, textvariable=self._new_phig, width=pso_width)
-        self._ent_maxiter = tk.Entry(self._frame, textvariable=self._new_maxiter, width=pso_width)
-        self._ent_minstep = tk.Entry(self._frame, textvariable=self._new_minstep, width=pso_width)
-        self._ent_minfunc = tk.Entry(self._frame, textvariable=self._new_minfunc, width=pso_width)
+        self._ent_swarm_size = tk.Entry(self._algo_params_frame, textvariable=self._new_swarm_size, width=pso_width)
+        self._ent_omega = tk.Entry(self._algo_params_frame, textvariable=self._new_omega, width=pso_width)
+        self._ent_phip = tk.Entry(self._algo_params_frame, textvariable=self._new_phip, width=pso_width)
+        self._ent_phig = tk.Entry(self._algo_params_frame, textvariable=self._new_phig, width=pso_width)
+        self._ent_maxiter = tk.Entry(self._algo_params_frame, textvariable=self._new_maxiter, width=pso_width)
+        self._ent_minstep = tk.Entry(self._algo_params_frame, textvariable=self._new_minstep, width=pso_width)
+        self._ent_minfunc = tk.Entry(self._algo_params_frame, textvariable=self._new_minfunc, width=pso_width)
 
         # stresses in plate and stiffener
 
@@ -259,34 +283,31 @@ class CreateOptimizeCylinderWindow():
         self._new_design_pressure.set(self._initial_cylinder_obj.psd)
         self._new_shsd.set(self._initial_cylinder_obj.shsd)
 
-        self._ent_sasd = tk.Entry(self._frame, textvariable=self._new_sasd, width=ent_w)
-        self._ent_smsd = tk.Entry(self._frame, textvariable=self._new_smsd, width=ent_w)
-        self._ent_tTsd = tk.Entry(self._frame, textvariable=self._new_tTsd, width=ent_w)
-        self._ent_tQsd = tk.Entry(self._frame, textvariable=self._new_tQsd, width=ent_w)
-        self._ent_design_pressure = tk.Entry(self._frame, textvariable=self._new_design_pressure, width=ent_w)
-        self._ent_shsd = tk.Entry(self._frame, textvariable=self._new_shsd, width=ent_w)
-
-        start_x, start_y, dx, dy = 20, 100, 100, 40
+        self._ent_sasd = tk.Entry(self._stress_frame, textvariable=self._new_sasd, width=ent_w)
+        self._ent_smsd = tk.Entry(self._stress_frame, textvariable=self._new_smsd, width=ent_w)
+        self._ent_tTsd = tk.Entry(self._stress_frame, textvariable=self._new_tTsd, width=ent_w)
+        self._ent_tQsd = tk.Entry(self._stress_frame, textvariable=self._new_tQsd, width=ent_w)
+        self._ent_design_pressure = tk.Entry(self._stress_frame, textvariable=self._new_design_pressure, width=ent_w)
+        self._ent_shsd = tk.Entry(self._stress_frame, textvariable=self._new_shsd, width=ent_w)
 
         self._new_processes = tk.IntVar()
         self._new_processes.set(max(cpu_count() - 1, 1))
-        tk.Label(self._frame, text='Processes\n (CPUs)', font='Verdana 9 bold', bg='silver') \
-            .place(x=start_x + 10 * dx, y=start_y - 1.1 * dy)
-        tk.Entry(self._frame, textvariable=self._new_processes, width=12, bg='silver') \
-            .place(x=start_x + 10 * dx, y=start_y - 0.3 * dy)
+        tk.Label(self._header_frame, text='Processes\n (CPUs)', font='Verdana 9 bold', bg='silver') \
+            .grid(row=0, column=4, sticky=tk.W, padx=(20, 4))
+        tk.Entry(self._header_frame, textvariable=self._new_processes, width=12, bg='silver') \
+            .grid(row=0, column=5, sticky=tk.W)
 
         self._runnig_time_label = tk.Label(
-            self._frame,
+            self._objective_frame,
             text='',
             font='Verdana 12 bold',
             fg='red',
             wraplength=520,
             justify=tk.LEFT,
         )
-        self._runnig_time_label.place(x=1020, y=425, width=520)
-        # tk.Label(self._frame, text='seconds ',font='Verdana 9 bold').place(x=start_x+6*dx, y=start_y + 2.8 * dy)
-        self._result_label = tk.Label(self._frame, text='', font='Verdana 9 bold', wraplength=460, justify=tk.LEFT)
-        self._result_label.place(x=520, y=800)
+        self._result_label = tk.Label(self._footer_frame, text='', font='Verdana 9 bold', wraplength=460,
+                                      justify=tk.LEFT)
+        self._result_label.grid(row=1, column=0, sticky=tk.W, pady=(4, 0))
 
         '''
                 self._new_geo_data =  [[shell_upper_bounds,shell_deltas, shell_lower_bounds],
@@ -305,36 +326,42 @@ class CreateOptimizeCylinderWindow():
         all_label = [shell, stf_long, stf_ring, stf_ring]
         text_i = ['Upper bounds [mm]', 'Iteration delta [mm]', 'Lower bounds [mm]']
         kind = ['Shell or panel', 'Longitudinal stiffener', 'Ring stiffener', 'Ring frame/girder']
-        for idx_1, member in enumerate(self._new_entries):
-            if map_type_idx[idx_1] == False:
-                continue
+        # Grid rows advance per shown member group (4 rows each: heading with
+        # column labels, then upper/delta/lower), so hidden member types no
+        # longer leave blank bands in the table.
+        bounds_row = 0
+        # self._new_entries only holds the visible member groups, so keep a
+        # matching index into the label/kind lists.
+        visible_indices = [idx for idx in range(len(self._new_geo_data)) if map_type_idx[idx]]
+        for member_number, member in enumerate(self._new_entries):
+            idx_1 = visible_indices[member_number]
+            tk.Label(self._bounds_frame, text=kind[idx_1], font='Verdana 10 bold') \
+                .grid(row=bounds_row, column=0, sticky=tk.W, pady=(8, 0))
+            for idx_3, header in enumerate(all_label[idx_1]):
+                tk.Label(self._bounds_frame, text=header, font='Verdana 7 bold') \
+                    .grid(row=bounds_row, column=1 + idx_3, sticky=tk.W, padx=2, pady=(8, 0))
+            bounds_row += 1
             for idx_2, bounds in enumerate(member):
-                tk.Label(self._frame, text=text_i[idx_2], font='Verdana 9').place(x=start_x,
-                                                                                  y=start_y + dy * idx_1 * 4 + dy * idx_2)
-                if idx_2 == 0:
-                    tk.Label(self._frame, text=kind[idx_1], font='Verdana 10 bold') \
-                        .place(x=start_x, y=start_y + dy * idx_1 * 4 + dy * idx_2 - dy * 0.5)
+                tk.Label(self._bounds_frame, text=text_i[idx_2], font='Verdana 9') \
+                    .grid(row=bounds_row, column=0, sticky=tk.W, pady=1)
                 for idx_3, entry_i in enumerate(bounds):
-                    if idx_2 == 0:
-                        tk.Label(self._frame, text=all_label[idx_1][idx_3], font='Verdana 7 bold') \
-                            .place(x=start_x + dx * 2 + idx_3 * dx, y=start_y + dy * idx_1 * 4 + dy * idx_2 - dy * 0.5)
-
-                    entry_i.place(x=start_x + dx * 2 + idx_3 * dx, y=start_y + dy * idx_1 * 4 + dy * idx_2)
+                    entry_i.grid(row=bounds_row, column=1 + idx_3, sticky=tk.W, padx=2, pady=1)
                     if 'N/A' in all_label[idx_1][idx_3] or (
                             self._is_conical_optimizer and idx_1 == 0 and idx_3 in [1, 2, 3, 4]):
                         entry_i.configure(bg='grey')
+                bounds_row += 1
 
         ###
 
         # Labels for the pso
 
-        self._lb_swarm_size = tk.Label(self._frame, text='swarm size')
-        self._lb_omega = tk.Label(self._frame, text='omega')
-        self._lb_phip = tk.Label(self._frame, text='phip')
-        self._lb_phig = tk.Label(self._frame, text='phig')
-        self._lb_maxiter = tk.Label(self._frame, text='maxiter')
-        self._lb_minstep = tk.Label(self._frame, text='minstep')
-        self._lb_minfunc = tk.Label(self._frame, text='minfunc')
+        self._lb_swarm_size = tk.Label(self._algo_params_frame, text='swarm size')
+        self._lb_omega = tk.Label(self._algo_params_frame, text='omega')
+        self._lb_phip = tk.Label(self._algo_params_frame, text='phip')
+        self._lb_phig = tk.Label(self._algo_params_frame, text='phig')
+        self._lb_maxiter = tk.Label(self._algo_params_frame, text='maxiter')
+        self._lb_minstep = tk.Label(self._algo_params_frame, text='minstep')
+        self._lb_minfunc = tk.Label(self._algo_params_frame, text='minfunc')
 
         ###
         # ---------------------------------------------------------------------
@@ -342,60 +369,29 @@ class CreateOptimizeCylinderWindow():
         # Moved below the upper/lower-bound input fields. The weld-bias
         # objective block now uses the previous right-side stress area.
         # ---------------------------------------------------------------------
-        stress_x = 20
-        stress_y = 710
-        stress_dy = 32
-        stress_entry_x = stress_x + 300
-        stress_unit_x = stress_x + 430
-
-        tk.Label(self._frame, text='Design axial stress,          sa,sd', font='Verdana 9') \
-            .place(x=stress_x, y=stress_y + 0 * stress_dy)
-        tk.Label(self._frame, text='Pa', font='Verdana 9') \
-            .place(x=stress_unit_x, y=stress_y + 0 * stress_dy)
-
-        tk.Label(self._frame, text='Design bending stress,   sm,sd', font='Verdana 9') \
-            .place(x=stress_x, y=stress_y + 1 * stress_dy)
-        tk.Label(self._frame, text='Pa', font='Verdana 9') \
-            .place(x=stress_unit_x, y=stress_y + 1 * stress_dy)
-
-        tk.Label(self._frame, text='Design torsional stress,   tT,sd', font='Verdana 9') \
-            .place(x=stress_x, y=stress_y + 2 * stress_dy)
-        tk.Label(self._frame, text='Pa', font='Verdana 9') \
-            .place(x=stress_unit_x, y=stress_y + 2 * stress_dy)
-
-        tk.Label(self._frame, text='Design shear stress,        tQ,sd', font='Verdana 9') \
-            .place(x=stress_x, y=stress_y + 3 * stress_dy)
-        tk.Label(self._frame, text='Pa', font='Verdana 9') \
-            .place(x=stress_unit_x, y=stress_y + 3 * stress_dy)
-
-        tk.Label(self._frame, text='Design lateral pressure,    psd', font='Verdana 9 bold') \
-            .place(x=stress_x, y=stress_y + 4 * stress_dy)
-        tk.Label(self._frame, text='Pa', font='Verdana 9') \
-            .place(x=stress_unit_x, y=stress_y + 4 * stress_dy)
-
-        tk.Label(self._frame, text='Additional hoop stress, sh,sd,    psd', font='Verdana 9 bold') \
-            .place(x=stress_x, y=stress_y + 5 * stress_dy)
-        tk.Label(self._frame, text='Pa', font='Verdana 9') \
-            .place(x=stress_unit_x, y=stress_y + 5 * stress_dy)
-
-        self._ent_sasd.place(x=stress_entry_x, y=stress_y + 0 * stress_dy)
-        self._ent_smsd.place(x=stress_entry_x, y=stress_y + 1 * stress_dy)
-        self._ent_tTsd.place(x=stress_entry_x, y=stress_y + 2 * stress_dy)
-        self._ent_tQsd.place(x=stress_entry_x, y=stress_y + 3 * stress_dy)
-        self._ent_design_pressure.place(x=stress_entry_x, y=stress_y + 4 * stress_dy)
-        self._ent_shsd.place(x=stress_entry_x, y=stress_y + 5 * stress_dy)
+        for offset, (text, font, entry) in enumerate((
+                ('Design axial stress,          sa,sd', 'Verdana 9', self._ent_sasd),
+                ('Design bending stress,   sm,sd', 'Verdana 9', self._ent_smsd),
+                ('Design torsional stress,   tT,sd', 'Verdana 9', self._ent_tTsd),
+                ('Design shear stress,        tQ,sd', 'Verdana 9', self._ent_tQsd),
+                ('Design lateral pressure,    psd', 'Verdana 9 bold', self._ent_design_pressure),
+                ('Additional hoop stress, sh,sd,    psd', 'Verdana 9 bold', self._ent_shsd),
+        )):
+            tk.Label(self._stress_frame, text=text, font=font).grid(row=offset, column=0, sticky=tk.W, pady=1)
+            entry.grid(row=offset, column=1, sticky=tk.W, padx=(16, 4), pady=1)
+            tk.Label(self._stress_frame, text='Pa', font='Verdana 9').grid(row=offset, column=2, sticky=tk.W, pady=1)
 
         if self._fatigue_pressure is not None:
-            tk.Label(self._frame,
+            tk.Label(self._footer_frame,
                      text='Fatigue pressure: internal= ' + str(self._fatigue_pressure['p_int']) + ' external= '
                           + str(self._fatigue_pressure['p_ext']), font='Verdana 7',
                      wraplength=980, justify=tk.LEFT) \
-                .place(x=start_x, y=955)
+                .grid(row=0, column=0, sticky=tk.W)
         else:
-            tk.Label(self._frame, text='Fatigue pressure: internal= ' + str(0) + ' external= '
+            tk.Label(self._footer_frame, text='Fatigue pressure: internal= ' + str(0) + ' external= '
                                        + str(0), font='Verdana 7',
                      wraplength=980, justify=tk.LEFT) \
-                .place(x=start_x, y=955)
+                .grid(row=0, column=0, sticky=tk.W)
 
         # setting default values
         init_dim = float(5)  # mm
@@ -440,79 +436,78 @@ class CreateOptimizeCylinderWindow():
 
         # tk.Label(self._frame,text='Select algorithm', font = 'Verdana 8 bold').place(x=start_x+dx*11, y=start_y+7*dy)
         # self._ent_algorithm.place(x=start_x+dx*11, y=start_y+dy*8)
-        self.algorithm_random_label = tk.Label(self._frame, text='Number of trials')
+        self.algorithm_random_label = tk.Label(self._algo_params_frame, text='Number of trials')
 
-        # tk.Button(self._frame,text='algorithm information',command=self.algorithm_info,bg='white')\
-        #     .place(x=start_x+dx*12.5, y=start_y+dy*7)
-        self.run_button = tk.Button(self._frame, text='RUN OPTIMIZATION!', command=self.run_optimizaion, bg='red',
-                                    font='Verdana 10 bold', fg='Yellow', relief="raised")
-        self.run_button.place(x=1220, y=70, width=260, height=32)
+        self.run_button = tk.Button(self._run_controls_frame, text='RUN OPTIMIZATION!', command=self.run_optimizaion,
+                                    bg='red', font='Verdana 10 bold', fg='Yellow', relief="raised")
+        self.run_button.grid(row=0, column=0, sticky=tk.EW, pady=(0, 4))
 
-        self._opt_actual_running_time.place(x=1220, y=112)
+        self._opt_actual_running_time.grid(row=1, column=0, sticky=tk.W, pady=(0, 8))
 
         self.weight_weld_study_button = tk.Button(
-            self._frame,
+            self._run_controls_frame,
             text='weight/weld study',
             command=self.run_weight_weld_study,
             bg='white',
             font='Verdana 10',
             fg='black',
         )
-        self.weight_weld_study_button.place(x=1220, y=165, width=180, height=28)
-        tk.Label(self._frame, text='delta', font='Verdana 8').place(x=1410, y=171)
+        self.weight_weld_study_button.grid(row=2, column=0, sticky=tk.EW, pady=2)
+        weld_delta_row = tk.Frame(self._run_controls_frame)
+        weld_delta_row.grid(row=2, column=1, sticky=tk.W, padx=8)
+        tk.Label(weld_delta_row, text='delta', font='Verdana 8').grid(row=0, column=0, sticky=tk.W)
         self._ent_weld_study_delta = tk.Entry(
-            self._frame,
+            weld_delta_row,
             textvariable=self._new_weld_study_delta,
             width=5,
             bg='white',
         )
-        self._ent_weld_study_delta.place(x=1445, y=169)
+        self._ent_weld_study_delta.grid(row=0, column=1, sticky=tk.W, padx=4)
         self.show_previous_weld_study_button = tk.Button(
-            self._frame,
+            self._run_controls_frame,
             text='show previous study',
             command=self.show_previous_weight_weld_study,
             bg='white',
             font='Verdana 10',
             fg='black',
         )
-        self.show_previous_weld_study_button.place(x=1220, y=200, width=180, height=28)
+        self.show_previous_weld_study_button.grid(row=3, column=0, sticky=tk.EW, pady=2)
         self.cost_study_button = tk.Button(
-            self._frame,
+            self._run_controls_frame,
             text='cost study',
             command=self.open_cost_study_window,
             bg='white',
             font='Verdana 10',
             fg='black',
         )
-        self.cost_study_button.place(x=1220, y=235, width=180, height=28)
+        self.cost_study_button.grid(row=4, column=0, sticky=tk.EW, pady=2)
 
-        tk.Label(self._frame, text='Select algorithm', font='Verdana 8 bold').place(x=1480, y=70)
-        self._ent_algorithm.place(x=1480, y=95, width=165)
-        tk.Button(self._frame, text='algorithm information', command=self.algorithm_info, bg='white') \
-            .place(x=1480, y=130, width=165)
+        tk.Label(self._run_controls_frame, text='Select algorithm', font='Verdana 8 bold') \
+            .grid(row=0, column=2, sticky=tk.SW, padx=(16, 0))
+        self._ent_algorithm.grid(row=1, column=2, sticky=tk.EW, padx=(16, 0))
+        tk.Button(self._run_controls_frame, text='algorithm information', command=self.algorithm_info, bg='white') \
+            .grid(row=2, column=2, sticky=tk.EW, padx=(16, 0))
+        self._algo_params_frame.grid(row=3, column=2, rowspan=3, sticky=tk.NW, padx=(16, 0))
 
-        self.close_and_save = tk.Button(self._frame, text='Return and replace initial structure with optimized',
+        self.close_and_save = tk.Button(self._header_frame, text='Return and replace initial structure with optimized',
                                         command=self.save_and_close, bg='green', font='Verdana 10', fg='yellow')
-        self.close_and_save.place(x=start_x + dx * 5, y=10)
+        self.close_and_save.grid(row=0, column=1, sticky=tk.W, padx=(0, 12))
 
-        tk.Button(self._frame, text='Open predefined stiffeners example',
+        tk.Button(self._header_frame, text='Open predefined stiffeners example',
                   command=self.open_example_file, bg='white', font='Verdana 10') \
-            .place(x=start_x + dx * 10, y=10)
+            .grid(row=0, column=2, sticky=tk.W, padx=(0, 12))
 
         # ---------------------------------------------------------------------
         # Optimization objective bias
         # ---------------------------------------------------------------------
-        objective_x = start_x + 10 * dx
-        objective_y = 285
+        tk.Label(self._objective_frame, text='Optimization objective', font='Verdana 9 bold') \
+            .grid(row=0, column=0, columnspan=3, sticky=tk.W)
 
-        tk.Label(self._frame, text='Optimization objective', font='Verdana 9 bold') \
-            .place(x=objective_x, y=objective_y)
-
-        tk.Label(self._frame, text='Weight', font='Verdana 7') \
-            .place(x=objective_x, y=objective_y + 36)
+        tk.Label(self._objective_frame, text='Weight', font='Verdana 7') \
+            .grid(row=1, column=0, sticky=tk.S)
 
         self._weld_bias_slider = tk.Scale(
-            self._frame,
+            self._objective_frame,
             variable=self._new_weld_bias,
             from_=0.0,
             to=1.0,
@@ -522,53 +517,53 @@ class CreateOptimizeCylinderWindow():
             showvalue=False,
             command=self._update_weld_bias_label,
         )
-        self._weld_bias_slider.place(x=objective_x + 85, y=objective_y + 18)
+        self._weld_bias_slider.grid(row=1, column=1, sticky=tk.W, padx=8)
 
-        tk.Label(self._frame, text='Weld consumables', font='Verdana 7') \
-            .place(x=objective_x + 395, y=objective_y + 36)
+        tk.Label(self._objective_frame, text='Weld consumables', font='Verdana 7') \
+            .grid(row=1, column=2, sticky=tk.S)
 
         self._weld_bias_value_label = tk.Label(
-            self._frame,
+            self._objective_frame,
             text='Weld bias: 0.0',
             font='Verdana 8 bold',
         )
-        self._weld_bias_value_label.place(x=objective_x, y=objective_y + 62)
+        self._weld_bias_value_label.grid(row=2, column=0, columnspan=3, sticky=tk.W, pady=(4, 0))
 
         self._weld_bias_info_label = tk.Label(
-            self._frame,
+            self._objective_frame,
             text=self._get_weld_bias_text(),
             font='Verdana 7',
             wraplength=470,
             justify=tk.LEFT,
         )
-        self._weld_bias_info_label.place(x=objective_x, y=objective_y + 85)
+        self._weld_bias_info_label.grid(row=3, column=0, columnspan=3, sticky=tk.W)
 
+        weld_metric_row = tk.Frame(self._objective_frame)
+        weld_metric_row.grid(row=4, column=0, columnspan=3, sticky=tk.W, pady=(4, 0))
         self._weld_metric_menu = tk.OptionMenu(
-            self._frame,
+            weld_metric_row,
             self._new_weld_metric,
             'Weld consumables',
             'Weld length',
             command=self._update_weld_bias_label,
         )
-        self._weld_metric_menu.place(x=objective_x, y=objective_y + 112, width=150)
+        self._weld_metric_menu.grid(row=0, column=0, sticky=tk.W)
 
         tk.Checkbutton(
-            self._frame,
+            weld_metric_row,
             variable=self._new_include_builtup_weld
-        ).place(x=objective_x + 170, y=objective_y + 116)
+        ).grid(row=0, column=1, sticky=tk.W, padx=(16, 0))
 
         tk.Label(
-            self._frame,
+            weld_metric_row,
             text='Include web-to-flange weld for built-up stiffeners',
             font='Verdana 7',
             wraplength=300,
             justify=tk.LEFT,
-        ).place(x=objective_x + 195, y=objective_y + 120)
+        ).grid(row=0, column=2, sticky=tk.W)
 
         # Runtime estimate belongs to the optimization objective block.
-        # Keep it below the built-up weld checkbox so it does not collide
-        # with the geometry input table.
-        self._runnig_time_label.place(x=objective_x, y=425, width=520)
+        self._runnig_time_label.grid(row=5, column=0, columnspan=3, sticky=tk.W, pady=(8, 0))
 
         self._new_weld_bias.trace_add('write', self._update_weld_bias_label)
         self._new_weld_metric.trace_add('write', self._update_weld_bias_label)
@@ -579,21 +574,18 @@ class CreateOptimizeCylinderWindow():
         self._new_fdwn = tk.DoubleVar()
         self._new_fdwn.set(1)
 
-        tk.Label(self._frame, text='Factor when scaling stresses up, fup') \
-            .place(x=520, y=710)
-        ent_fup = tk.Entry(self._frame, textvariable=self._new_fup, width=10)
-        ent_fup.place(x=820, y=710)
-        tk.Label(self._frame, text='Factor when scaling stresses up, fdown') \
-            .place(x=520, y=742)
-        ent_fdwn = tk.Entry(self._frame, textvariable=self._new_fdwn, width=10)
-        ent_fdwn.place(x=820, y=742)
+        tk.Label(self._stress_frame, text='Factor when scaling stresses up, fup') \
+            .grid(row=0, column=3, sticky=tk.W, padx=(40, 8))
+        ent_fup = tk.Entry(self._stress_frame, textvariable=self._new_fup, width=10)
+        ent_fup.grid(row=0, column=4, sticky=tk.W)
+        tk.Label(self._stress_frame, text='Factor when scaling stresses up, fdown') \
+            .grid(row=1, column=3, sticky=tk.W, padx=(40, 8))
+        ent_fdwn = tk.Entry(self._stress_frame, textvariable=self._new_fdwn, width=10)
+        ent_fdwn.grid(row=1, column=4, sticky=tk.W)
 
-        # tk.Button(self._frame,text='Iterate predefiened stiffeners',command=self.open_multiple_files ,bg='yellow')\
-        #     .place(x=start_x, y=start_y - dy * 2)
-        # command=lambda id="default": self.set_colors(id)
-        self._toggle_btn = tk.Button(self._frame, text="Iterate predefiened stiffeners", relief="raised",
+        self._toggle_btn = tk.Button(self._header_frame, text="Iterate predefiened stiffeners", relief="raised",
                                      command=self.toggle, bg='salmon')
-        self._toggle_btn.place(x=+ 3 * dx, y=start_y - dy * 2)
+        self._toggle_btn.grid(row=0, column=3, sticky=tk.W, padx=(0, 12))
         self._toggle_object, self._filez = self._initial_structure_obj, None
         self.selected_algorithm(None)
         self.draw_properties()
@@ -609,40 +601,26 @@ class CreateOptimizeCylinderWindow():
         '''
         Action when selecting an algorithm.
         '''
-        # Hide all algorithm-specific controls first.
-        self._ent_random_trials.place_forget()
-        self.algorithm_random_label.place_forget()
-        self._lb_swarm_size.place_forget()
-        self._lb_omega.place_forget()
-        self._lb_phip.place_forget()
-        self._lb_phig.place_forget()
-        self._lb_maxiter.place_forget()
-        self._lb_minstep.place_forget()
-        self._lb_minfunc.place_forget()
-        self._ent_swarm_size.place_forget()
-        self._ent_omega.place_forget()
-        self._ent_phip.place_forget()
-        self._ent_phig.place_forget()
-        self._ent_maxiter.place_forget()
-        self._ent_minstep.place_forget()
-        self._ent_minfunc.place_forget()
+        # Hide all algorithm-specific controls first (they live in the
+        # dedicated parameter sub-frame and are toggled with grid).
+        for widget in (self._ent_random_trials, self.algorithm_random_label,
+                       self._lb_swarm_size, self._lb_omega, self._lb_phip, self._lb_phig,
+                       self._lb_maxiter, self._lb_minstep, self._lb_minfunc,
+                       self._ent_swarm_size, self._ent_omega, self._ent_phip, self._ent_phig,
+                       self._ent_maxiter, self._ent_minstep, self._ent_minfunc):
+            widget.grid_forget()
 
         if self._new_algorithm.get() in ('random', 'random_no_delta'):
             self.algorithm_random_label.config(text='Number of trials')
-            self.algorithm_random_label.place(x=1490, y=165)
-            self._ent_random_trials.place(x=1490, y=190, width=150)
+            self.algorithm_random_label.grid(row=0, column=0, sticky=tk.W)
+            self._ent_random_trials.grid(row=1, column=0, columnspan=2, sticky=tk.W)
 
         elif self._new_algorithm.get() == 'scipy_de cylinder':
             self.algorithm_random_label.config(text='Max evaluations')
-            self.algorithm_random_label.place(x=1490, y=165)
-            self._ent_random_trials.place(x=1490, y=190, width=150)
+            self.algorithm_random_label.grid(row=0, column=0, sticky=tk.W)
+            self._ent_random_trials.grid(row=1, column=0, columnspan=2, sticky=tk.W)
 
         elif self._new_algorithm.get() == 'pso':
-            label_x = 1490
-            entry_x = 1570
-            y0 = 165
-            step = 25
-
             controls = [
                 (self._lb_swarm_size, self._ent_swarm_size),
                 (self._lb_omega, self._ent_omega),
@@ -654,8 +632,8 @@ class CreateOptimizeCylinderWindow():
             ]
 
             for idx, (label, entry) in enumerate(controls):
-                label.place(x=label_x, y=y0 + idx * step)
-                entry.place(x=entry_x, y=y0 + idx * step, width=80)
+                label.grid(row=idx, column=0, sticky=tk.W)
+                entry.grid(row=idx, column=1, sticky=tk.W, padx=4)
 
         self.schedule_running_time_update()
 
@@ -808,10 +786,11 @@ class CreateOptimizeCylinderWindow():
         steel_cost.set(1.0)
         weld_cost.set(1.0)
 
-        tk.Label(cost_window, text='Steel cost per kg').place(x=20, y=25)
-        tk.Entry(cost_window, textvariable=steel_cost, width=12).place(x=210, y=22)
-        tk.Label(cost_window, text='Weld cost per ' + self._get_weld_metric_unit()).place(x=20, y=60)
-        tk.Entry(cost_window, textvariable=weld_cost, width=12).place(x=210, y=57)
+        tk.Label(cost_window, text='Steel cost per kg').grid(row=0, column=0, sticky=tk.W, padx=20, pady=(20, 4))
+        tk.Entry(cost_window, textvariable=steel_cost, width=12).grid(row=0, column=1, sticky=tk.W, pady=(20, 4))
+        tk.Label(cost_window, text='Weld cost per ' + self._get_weld_metric_unit()) \
+            .grid(row=1, column=0, sticky=tk.W, padx=20, pady=4)
+        tk.Entry(cost_window, textvariable=weld_cost, width=12).grid(row=1, column=1, sticky=tk.W, pady=4)
 
         def run_cost_study():
             try:
@@ -830,9 +809,9 @@ class CreateOptimizeCylinderWindow():
             self.run_cost_study(cost_factors)
 
         tk.Button(cost_window, text='Run cost optimization', command=run_cost_study, bg='white') \
-            .place(x=20, y=110, width=180)
+            .grid(row=2, column=0, sticky=tk.EW, padx=20, pady=(16, 8))
         tk.Button(cost_window, text='Cancel', command=cost_window.destroy, bg='white') \
-            .place(x=220, y=110, width=90)
+            .grid(row=2, column=1, sticky=tk.EW, pady=(16, 8))
 
     def run_cost_study(self, cost_factors):
         self.run_button.config(state=tk.DISABLED)

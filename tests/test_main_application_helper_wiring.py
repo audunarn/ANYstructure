@@ -174,7 +174,7 @@ def test_functional_modes_keep_3d_section_checkbox_visible():
     assert "def create_prop_3d_figure_for_line(self, line_name=None):" in source
     assert "self.draw_cylinder_prop_3d(self._line_to_struc[selected_line][5], embed=False)" in source
     assert "self.draw_flat_panel_prop_3d(self._line_to_struc[selected_line][0], embed=False)" in source
-    assert "self._chk_show_prop_3d.place(relx=0.637, rely=0.705)" in source
+    assert "self._mgrid(self._chk_show_prop_3d, relx=0.637, rely=0.705)" in source
     assert "self._chk_show_prop_3d.lift()" in source
     assert source.count("self._place_3d_section_view_checkbox()") >= 3
     single_mode_source = source[source.index("def switch_to_single_calculation_mode"):source.index("def switch_to_multiple_calculation_mode")]
@@ -315,7 +315,7 @@ def test_fea_result_buckling_mode_has_import_canvas_and_pressure_free_controls()
     assert "line_name = 'fea_panel_' + str(line_number).zfill(3)" in source
     assert "horizontal_gap_m = 0.5" in source
     assert "row_gap_m = 0.5" in source
-    assert "panel_frame.place(relx=0.785, rely=0.0, relwidth=0.215, relheight=1.0)" in source
+    assert "self._mgrid(panel_frame, relx=0.785, rely=0.0, relwidth=0.215, relheight=1.0)" in source
     assert "Selected Panel" in source
     assert "Import Summary" in source
     assert "def _fea_uf_color_limits(self):" in source
@@ -383,7 +383,7 @@ def test_fea_result_buckling_mode_has_import_canvas_and_pressure_free_controls()
     load_block = source[source.index("def _gui_fea_buckling_options"):source.index("def gui_load_combinations")]
     assert "Manual pressure [Pa]" not in load_block
     assert "self._lab_pressure" in load_block
-    assert "item.place_forget()" in load_block
+    assert "self._mgrid_forget(item)" in load_block
     assert "Import INP/FRD" in load_block
     assert "Reimport" in load_block
     assert "Analyse file" not in load_block
@@ -590,7 +590,7 @@ def test_initial_property_layout_uses_domain_selection_after_root_geometry_is_re
     main_source = Path(__file__).resolve().parents[1] / "anystruct" / "main_application.py"
     source = main_source.read_text(encoding="utf-8")
     init_tail = source[
-        source.index("self._chk_show_prop_3d.place(relx=0.637, rely=0.705)"):
+        source.index("self._mgrid(self._chk_show_prop_3d, relx=0.637, rely=0.705)"):
         source.index("# self._current_theme = 'default'")
     ]
 
@@ -1791,11 +1791,11 @@ def test_support_boundary_inputs_are_limited_to_semianalytical_and_numeric_metho
     assert "self.calculation_domain_selected(sync_cylinder_inputs=False)" in method_trace_block
     assert "self.update_frame(event)" in method_trace_block
     assert "self._flat_gui_lab_buckling, self._flat_gui_buckling" in layout_block
-    assert "buckling_lab.place_forget()" in layout_block
-    assert "buckling_ent.place_forget()" in layout_block
+    assert "self._pgrid_forget(buckling_lab)" in layout_block
+    assert "self._pgrid_forget(buckling_ent)" in layout_block
     assert "self._flat_gui_lab_buckling[:2]" in layout_block
     assert "self._flat_gui_buckling[:2]" in layout_block
     assert "if self._new_puls_sp_or_up.get() == 'UP':" in layout_block
-    assert "self._lab_puls_up_supp.place(" in layout_block
+    assert "self._pgrid(self._lab_puls_up_supp," in layout_block
     assert "self._new_buckling_method.get() in ['ML-Numeric (PULS based)', 'SemiAnalytical S3/U3']" in trace_block
-    assert "self._lab_puls_up_supp.place_forget()" in trace_block
+    assert "self._mgrid_forget(self._lab_puls_up_supp)" in trace_block

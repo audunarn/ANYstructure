@@ -52,9 +52,13 @@ class CreateFatigueWindow():
         self._frame.geometry('1300x810')
         self._frame.grab_set()
 
+        # Gridded layout: column 0 holds the row labels, columns 1-3 the
+        # loaded/ballast/part inputs, columns 4-5 the defined loads and their
+        # resulting pressures.  Same visual arrangement as the old fixed-pixel
+        # layout, but rows can grow without overlapping.
         tk.Label(self._frame, text='-- Fatigue calculation for plates according to DNVGL-RP-C203, '
                                    'Section 5 Simplified fatigue analysis --',
-                 font='Verdana 15 bold').place(x=10, y=10)
+                 font='Verdana 15 bold').grid(row=0, column=0, columnspan=6, sticky=tk.W, padx=10, pady=(10, 14))
 
         ent_w = 10
 
@@ -193,6 +197,55 @@ class CreateFatigueWindow():
 
         all_acc = (self.new_az_loa.get(), self.new_az_bal.get(), self.new_az_prt.get())
 
+        pad = {'padx': 10, 'pady': 3}
+        cell = {'padx': (0, 20), 'pady': 3}
+
+        # Top block: general fatigue parameters.
+        tk.Label(self._frame, text='Design life:', font='Verdana 8 bold') \
+            .grid(row=1, column=0, sticky=tk.W, **pad)
+        self.ent_new_design_life.grid(row=1, column=1, sticky=tk.W, **cell)
+        tk.Label(self._frame, text='Design Fatigue Factor (DFF):', font='Verdana 8 bold') \
+            .grid(row=1, column=2, sticky=tk.W, **cell)
+        self.ent_dff.grid(row=1, column=3, sticky=tk.W, **cell)
+        tk.Label(self._frame, text='SN-curve:', font='Verdana 8 bold') \
+            .grid(row=2, column=0, sticky=tk.W, **pad)
+        self.ent_sn_curve.grid(row=2, column=1, sticky=tk.W, **cell)
+        tk.Label(self._frame, text='Cycles in return period, n0', font='Verdana 8 bold') \
+            .grid(row=3, column=0, sticky=tk.W, **pad)
+        self.ent_no_of_cycles.grid(row=3, column=1, sticky=tk.W, **cell)
+        tk.Label(self._frame, text='Stress Concentration Factor, SCF', font='Verdana 8 bold') \
+            .grid(row=4, column=0, sticky=tk.W, **pad)
+        self.ent_k_factor.grid(row=4, column=1, sticky=tk.W, **cell)
+
+        # Header row for the condition columns and the load/pressure listing.
+        tk.Label(self._frame, text='Loaded', font='Verdana 8 bold') \
+            .grid(row=5, column=1, sticky=tk.W, **cell)
+        tk.Label(self._frame, text='Ballast', font='Verdana 8 bold') \
+            .grid(row=5, column=2, sticky=tk.W, **cell)
+        tk.Label(self._frame, text='Part', font='Verdana 8 bold') \
+            .grid(row=5, column=3, sticky=tk.W, **cell)
+        tk.Label(self._frame, text='Defined loads', font='Verdana 8 bold') \
+            .grid(row=5, column=4, sticky=tk.W, **cell)
+        tk.Label(self._frame, text='Resulting pressures', font='Verdana 8 bold') \
+            .grid(row=5, column=5, sticky=tk.W, **cell)
+
+        condition_rows = (
+            ('Fraction (sum of bal/part/loa is 1)',
+             self.ent_fraction_loa, self.ent_fraction_bal, self.ent_fraction_prt),
+            ('Weibull', self.ent_weibull_loa, self.ent_weibull_bal, self.ent_weibull_prt),
+            ('Period', self.ent_period_loa, self.ent_period_bal, self.ent_period_prt),
+            ('Corr. loc.', self.ent_corr_loc_loa, self.ent_corr_loc_bal, self.ent_corr_loc_prt),
+            ('Accelerations', self.ent_acc_loa, self.ent_acc_bal, self.ent_acc_prt),
+        )
+        for offset, (label, ent_loa, ent_bal, ent_prt) in enumerate(condition_rows):
+            row = 6 + offset
+            tk.Label(self._frame, text=label, font='Verdana 8 bold').grid(row=row, column=0, sticky=tk.W, **pad)
+            ent_loa.grid(row=row, column=1, sticky=tk.W, **cell)
+            ent_bal.grid(row=row, column=2, sticky=tk.W, **cell)
+            ent_prt.grid(row=row, column=3, sticky=tk.W, **cell)
+
+        # Defined loads and compartments listed beside the condition inputs;
+        # the grid grows with the number of entries instead of overlapping.
         count = 1
         for load in self.load_objects:
             if load == None:
@@ -200,7 +253,7 @@ class CreateFatigueWindow():
             press = []
             if load.get_limit_state() == 'FLS':
                 tk.Label(self._frame, text=str(count)+'. '+load.get_name(), font='Verdana 8')\
-                    .place(x=start_x + 5 * dx, y=start_y + (5+count) * dy)
+                    .grid(row=5 + count, column=4, sticky=tk.W, **cell)
                 idx = 0
                 for exist in fls_exist:
                     if exist:
@@ -210,14 +263,14 @@ class CreateFatigueWindow():
                         idx += 1
 
                 tk.Label(self._frame, text=press, font='Verdana 8') \
-                    .place(x=start_x + 6.5 * dx, y=start_y + (5 + count) * dy)
+                    .grid(row=5 + count, column=5, sticky=tk.W, **cell)
                 count += 1
         press = []
         for comp in self.comp_objects:
             if comp == None:
                 continue
             tk.Label(self._frame, text=str(count) + '. ' +str(comp.get_name()), font='Verdana 8') \
-                .place(x=start_x + 5 * dx, y=start_y + (5 + count) * dy)
+                .grid(row=5 + count, column=4, sticky=tk.W, **cell)
 
             idx = 0
 
@@ -229,79 +282,14 @@ class CreateFatigueWindow():
                 press.append(round(comp.get_calculated_pressure(self.pressure_coords, all_acc[2]), 1))
 
             tk.Label(self._frame, text=press, font='Verdana 8') \
-                .place(x=start_x + 6.5 * dx, y=start_y + (5 + count) * dy)
+                .grid(row=5 + count, column=5, sticky=tk.W, **cell)
 
             count += 1
 
-        tk.Label(self._frame, text='Design life:', font='Verdana 8 bold') \
-            .place(x=start_x , y=start_y + 0*dy)
-        tk.Label(self._frame, text='Design Fatigue Factor (DFF):', font='Verdana 8 bold') \
-            .place(x=start_x+ 3*dx , y=start_y + 0*dy)
-        tk.Label(self._frame, text='SN-curve:', font='Verdana 8 bold') \
-            .place(x=start_x , y=start_y + 1*dy)
-        tk.Label(self._frame, text='Cycles in return period, n0', font='Verdana 8 bold') \
-            .place(x=start_x , y=start_y + 2*dy)
-        tk.Label(self._frame, text='Stress Concentration Factor, SCF', font='Verdana 8 bold') \
-            .place(x=start_x , y=start_y + 3*dy)
-
-        tk.Label(self._frame, text='Loaded', font='Verdana 8 bold') \
-            .place(x=start_x+2*dx , y=start_y + 5*dy)
-        tk.Label(self._frame, text='Ballast', font='Verdana 8 bold') \
-            .place(x=start_x+3*dx , y=start_y + 5*dy)
-        tk.Label(self._frame, text='Part', font='Verdana 8 bold') \
-            .place(x=start_x+4*dx , y=start_y + 5*dy)
-        tk.Label(self._frame, text='Defined loads', font='Verdana 8 bold') \
-            .place(x=start_x+5*dx , y=start_y + 5*dy)
-        tk.Label(self._frame, text='Resulting pressures', font='Verdana 8 bold') \
-            .place(x=start_x+6.5*dx , y=start_y + 5*dy)
-
-        tk.Label(self._frame, text='Fraction (sum of bal/part/loa is 1)', font='Verdana 8 bold') \
-            .place(x=start_x, y=start_y + 6 * dy)
-        tk.Label(self._frame, text='Weibull', font='Verdana 8 bold') \
-            .place(x=start_x , y=start_y + 7*dy)
-        tk.Label(self._frame, text='Period', font='Verdana 8 bold') \
-            .place(x=start_x , y=start_y + 8*dy)
-        tk.Label(self._frame, text='Corr. loc.', font='Verdana 8 bold') \
-            .place(x=start_x , y=start_y + 9*dy)
-        tk.Label(self._frame, text='Accelerations', font='Verdana 8 bold') \
-            .place(x=start_x , y=start_y + 10*dy)
-
-        self.ent_new_design_life.place(x=start_x+2*dx, y=start_y + 0 * dy)
-        self.ent_dff.place(x=start_x + 5 * dx, y=start_y + 0 * dy)
-        self.ent_sn_curve.place(x=start_x+2*dx , y=start_y + 1*dy)
-        self.ent_no_of_cycles .place(x=start_x+2*dx , y=start_y + 2*dy)
-        self.ent_k_factor.place(x=start_x+2*dx , y=start_y + 3*dy)
-
-        self.ent_fraction_loa.place(x=start_x + 2 * dx, y=start_y + 6 * dy)
-        self.ent_fraction_bal.place(x=start_x+3*dx , y=start_y + 6*dy)
-        self.ent_fraction_prt.place(x=start_x+4*dx , y=start_y + 6*dy)
-
-        self.ent_weibull_loa.place(x=start_x + 2 * dx, y=start_y + 7 * dy)
-        self.ent_weibull_bal.place(x=start_x+3*dx , y=start_y + 7*dy)
-        self.ent_weibull_prt.place(x=start_x+4*dx , y=start_y + 7*dy)
-
-        self.ent_period_loa.place(x=start_x + 2 * dx, y=start_y + 8 * dy)
-        self.ent_period_bal.place(x=start_x+3*dx, y=start_y + 8*dy)
-        self.ent_period_prt.place(x=start_x+4*dx, y=start_y + 8*dy)
-
-        self.ent_corr_loc_loa.place(x=start_x + 2 * dx, y=start_y + 9 * dy)
-        self.ent_corr_loc_bal.place(x=start_x+3*dx, y=start_y + 9*dy)
-        self.ent_corr_loc_prt.place(x=start_x+4*dx, y=start_y + 9*dy)
-
-        self.ent_acc_loa.place(x=start_x + 2 * dx, y=start_y + 10 * dy)
-        self.ent_acc_bal.place(x=start_x + 3 * dx, y=start_y + 10 * dy)
-        self.ent_acc_prt.place(x=start_x + 4 * dx, y=start_y + 10 * dy)
-
-        # if not loaded_exist:
-        #     loa_fr.place(x=start_x + 2 * dx, y=start_y + 6 * dy)
-        # elif not ballast_exist:
-        #     bal_fr.place(x=start_x + 3 * dx, y=start_y + 6 * dy)
-        # elif not part_exist:
-        #     prt_fr.place(x=start_x + 4 * dx, y=start_y + 6 * dy)
-
         self._close_and_save = tk.Button(self._frame, text='Return fatigue parameters',
                                         command=self.save_and_close, bg='green', font='Verdana 15', fg='yellow')
-        self._close_and_save.place(x=start_x + dx, y=start_y + dy * 15)
+        self._close_and_save.grid(row=max(12, 6 + count), column=0, columnspan=3, sticky=tk.W,
+                                  padx=10, pady=(24, 12))
 
     def get_pressure_point_coord_from_two_points(self,p1,p2):
         ''' Finding the coordinates to use in pressure calculations '''

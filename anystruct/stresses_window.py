@@ -39,8 +39,22 @@ class CreateStressesWindow():
         self._draw_scale = 500
         self._canvas_dim = (500, 450)
 
+        # Gridded layout: title, reference images, pressure-side row, then the
+        # input form on the left with guidance text and the save button on the
+        # right.  Same visual order as the old fixed-pixel layout.
+        self._frame.columnconfigure(0, weight=1)
+        self._frame.rowconfigure(3, weight=1)
+
         tk.Label(self._frame, text='-- Global stresses and fixation parameter in plate/stiffener --',
-                 font='Verdana 15 bold').place(x=10, y=10)
+                 font='Verdana 15 bold').grid(row=0, column=0, sticky=tk.W, padx=10, pady=(10, 4))
+
+        self._images_row = tk.Frame(self._frame)
+        self._images_row.grid(row=1, column=0, sticky=tk.W, padx=10, pady=(0, 4))
+        pressure_row = tk.Frame(self._frame)
+        pressure_row.grid(row=2, column=0, sticky=tk.W, padx=10, pady=(0, 4))
+        content = tk.Frame(self._frame)
+        content.grid(row=3, column=0, sticky=tk.NSEW, padx=10, pady=(0, 10))
+        content.columnconfigure(3, weight=1)
 
         ent_w = 10
         # stresses in plate and stiffener
@@ -58,86 +72,45 @@ class CreateStressesWindow():
         self._new_kps = tk.DoubleVar()
         self._new_max_pressure_side = tk.StringVar()
 
-        self._ent_structure_type = tk.OptionMenu(self._frame,self._new_structure_type,command=self.change_option_menu,
+        self._ent_structure_type = tk.OptionMenu(content,self._new_structure_type,command=self.change_option_menu,
                                                 *self.default_stresses.keys())
-        self._ent_trans_stress_high = tk.Entry(self._frame, textvariable=self._new_trans_stress_high, width=ent_w)
-        self._ent_trans_stress_low = tk.Entry(self._frame, textvariable=self._new_trans_stress_low, width=ent_w)
-        self._ent_axial_stress_1 = tk.Entry(self._frame, textvariable=self._new_axial_stress_1, width=ent_w)
-        self._ent_axial_stress_2 = tk.Entry(self._frame, textvariable=self._new_axial_stress_2, width=ent_w)
-        self._ent_shear_stress = tk.Entry(self._frame, textvariable=self._new_shear_stress, width=ent_w)
-        self._ent_km1 = tk.Entry(self._frame, textvariable=self._new_km1, width=ent_w)
-        self._ent_km2 = tk.Entry(self._frame, textvariable=self._new_km2, width=ent_w)
-        self._ent_km3 = tk.Entry(self._frame, textvariable=self._new_km3, width=ent_w)
-        self._ent_kpp = tk.Entry(self._frame, textvariable=self._new_kpp, width=ent_w)
-        self._ent_kps = tk.Entry(self._frame, textvariable=self._new_kps, width=ent_w)
-        self._ent_pressure_side = tk.OptionMenu(self._frame,self._new_max_pressure_side,*('p','s'))
+        self._ent_trans_stress_high = tk.Entry(content, textvariable=self._new_trans_stress_high, width=ent_w)
+        self._ent_trans_stress_low = tk.Entry(content, textvariable=self._new_trans_stress_low, width=ent_w)
+        self._ent_axial_stress_1 = tk.Entry(content, textvariable=self._new_axial_stress_1, width=ent_w)
+        self._ent_axial_stress_2 = tk.Entry(content, textvariable=self._new_axial_stress_2, width=ent_w)
+        self._ent_shear_stress = tk.Entry(content, textvariable=self._new_shear_stress, width=ent_w)
+        self._ent_km1 = tk.Entry(content, textvariable=self._new_km1, width=ent_w)
+        self._ent_km2 = tk.Entry(content, textvariable=self._new_km2, width=ent_w)
+        self._ent_km3 = tk.Entry(content, textvariable=self._new_km3, width=ent_w)
+        self._ent_kpp = tk.Entry(content, textvariable=self._new_kpp, width=ent_w)
+        self._ent_kps = tk.Entry(content, textvariable=self._new_kps, width=ent_w)
+        self._ent_pressure_side = tk.OptionMenu(pressure_row,self._new_max_pressure_side,*('p','s'))
 
-        start_x,start_y,dx,dy = 20,100,100,35
+        tk.Label(pressure_row, text='Max pressure side (plate of stiffener)', font='Verdana 9 bold') \
+            .grid(row=0, column=0, sticky=tk.W, padx=(0, 8))
+        self._ent_pressure_side.grid(row=0, column=1, sticky=tk.W)
 
-        ###
-        # tk.Label(self._frame, text='Input stresses and parameters:', font='Verdana 12 bold',fg='red') \
-        #     .place(x=start_x , y=start_y + 9 * dy)
-
-        tk.Label(self._frame, text='Select strucutre type:', font='Verdana 9',fg='red') \
-            .place(x=start_x , y=start_y + 10 * dy)
-
-        tk.Label(self._frame, text='Sigma,y1_Sd - large transversal stress', font='Verdana 9') \
-            .place(x=start_x , y=start_y + 11 * dy)
-        tk.Label(self._frame, text='[MPa]', font='Verdana 9 bold') \
-            .place(x=start_x + dx * 4, y=start_y + 11 * dy)
-
-        tk.Label(self._frame, text='Sigma,y2_Sd - small transversal stress', font='Verdana 9') \
-            .place(x=start_x, y=start_y + 12* dy)
-        tk.Label(self._frame, text='[MPa]', font='Verdana 9 bold') \
-            .place(x=start_x + dx * 4, y=start_y + 12 * dy)
-
-        tk.Label(self._frame, text='Sigma,x_Sd - axial stress 1', font='Verdana 9') \
-            .place(x=start_x, y=start_y + 13 * dy)
-
-        tk.Label(self._frame, text='[MPa]', font='Verdana 9 bold') \
-            .place(x=start_x + dx * 4, y=start_y + 13 * dy)
-
-        tk.Label(self._frame, text='Sigma,x_Sd - axial stress 2', font='Verdana 9') \
-            .place(x=start_x, y=start_y + 14 * dy)
-
-        tk.Label(self._frame, text='[MPa]', font='Verdana 9 bold') \
-            .place(x=start_x + dx * 4, y=start_y + 14 * dy)
-
-        tk.Label(self._frame, text='Tau,xy - shear stress', font='Verdana 9') \
-            .place(x=start_x, y=start_y + 15 * dy)
-        tk.Label(self._frame, text='[MPa]', font='Verdana 9 bold') \
-            .place(x=start_x + dx * 4, y=start_y + 15 * dy)
-
-        tk.Label(self._frame, text='km1, bending moment factor', font='Verdana 9') \
-            .place(x=start_x, y=start_y + 16* dy)
-
-        tk.Label(self._frame, text='km2, bending moment factor', font='Verdana 9') \
-            .place(x=start_x, y=start_y + 17 * dy)
-
-        tk.Label(self._frame, text='km3, bending moment factor', font='Verdana 9') \
-            .place(x=start_x, y=start_y + 18 * dy)
-
-        tk.Label(self._frame, text='kpp, fixation parameter plate', font='Verdana 9') \
-            .place(x=start_x, y=start_y + 19 * dy)
-
-        tk.Label(self._frame, text='kps, fixation parameter stiffener', font='Verdana 9') \
-            .place(x=start_x, y=start_y + 20 * dy)
-
-        tk.Label(self._frame, text='Max pressure side (plate of stiffener)', font='Verdana 9 bold') \
-            .place(x=start_x+5*dx, y=start_y + 8 * dy)
-
-        self._ent_structure_type.place(x=start_x + dx * 3, y=start_y + 10 * dy)
-        self._ent_trans_stress_high.place(x=start_x + dx * 3, y=start_y + 11 * dy)
-        self._ent_trans_stress_low.place(x=start_x + dx * 3, y=start_y + 12 * dy)
-        self._ent_axial_stress_1.place(x=start_x + dx * 3, y=start_y + 13 * dy)
-        self._ent_axial_stress_2.place(x=start_x + dx * 3, y=start_y + 14 * dy)
-        self._ent_shear_stress.place(x=start_x + dx * 3, y=start_y + 15 * dy)
-        self._ent_km1.place(x=start_x + dx * 3, y=start_y + 16 * dy)
-        self._ent_km2.place(x=start_x + dx * 3, y=start_y + 17 * dy)
-        self._ent_km3.place(x=start_x + dx * 3, y=start_y + 18 * dy)
-        self._ent_kpp.place(x=start_x + dx * 3, y=start_y + 19 * dy)
-        self._ent_kps.place(x=start_x + dx * 3, y=start_y + 20 * dy)
-        self._ent_pressure_side.place(x=start_x+8*dx, y=start_y + 8 * dy)
+        form_rows = (
+            ('Select strucutre type:', self._ent_structure_type, '', 'Verdana 9', 'red'),
+            ('Sigma,y1_Sd - large transversal stress', self._ent_trans_stress_high, '[MPa]', 'Verdana 9', None),
+            ('Sigma,y2_Sd - small transversal stress', self._ent_trans_stress_low, '[MPa]', 'Verdana 9', None),
+            ('Sigma,x_Sd - axial stress 1', self._ent_axial_stress_1, '[MPa]', 'Verdana 9', None),
+            ('Sigma,x_Sd - axial stress 2', self._ent_axial_stress_2, '[MPa]', 'Verdana 9', None),
+            ('Tau,xy - shear stress', self._ent_shear_stress, '[MPa]', 'Verdana 9', None),
+            ('km1, bending moment factor', self._ent_km1, '', 'Verdana 9', None),
+            ('km2, bending moment factor', self._ent_km2, '', 'Verdana 9', None),
+            ('km3, bending moment factor', self._ent_km3, '', 'Verdana 9', None),
+            ('kpp, fixation parameter plate', self._ent_kpp, '', 'Verdana 9', None),
+            ('kps, fixation parameter stiffener', self._ent_kps, '', 'Verdana 9', None),
+        )
+        for row, (label, widget, unit, font, colour) in enumerate(form_rows):
+            options = {'font': font}
+            if colour:
+                options['fg'] = colour
+            tk.Label(content, text=label, **options).grid(row=row, column=0, sticky=tk.W, pady=2)
+            widget.grid(row=row, column=1, sticky=tk.W, padx=(12, 4), pady=2)
+            if unit:
+                tk.Label(content, text=unit, font='Verdana 9 bold').grid(row=row, column=2, sticky=tk.W, pady=2)
 
         # setting default values
         init_dim = 0.05
@@ -169,46 +142,23 @@ class CreateStressesWindow():
             self._new_kpp.set(1)
             self._new_kps.set(1)
             self._new_max_pressure_side.set('p')
-        try:
-            img_file_name = 'img_transverse_stress.gif'
-            if os.path.isfile('images/' + img_file_name):
-                file_path ='images/' + img_file_name
-            else:
-                file_path = app._root_dir + '/images/' + img_file_name
-            photo_transverse = tk.PhotoImage(file=file_path)
-            label_trans = tk.Label(self._frame, image=photo_transverse)
-            label_trans.image = photo_transverse  # keep a reference!
-            label_trans.place(x=start_x, y=60)
-        except TclError:
-            pass
+        for image_column, img_file_name in enumerate(
+                ('img_transverse_stress.gif', 'img_axial_stresses.gif', 'img_fixation_parameters.gif')):
+            try:
+                if os.path.isfile('images/' + img_file_name):
+                    file_path = 'images/' + img_file_name
+                else:
+                    file_path = app._root_dir + '/images/' + img_file_name
+                photo = tk.PhotoImage(file=file_path)
+                image_label = tk.Label(self._images_row, image=photo)
+                image_label.image = photo  # keep a reference!
+                image_label.grid(row=0, column=image_column, sticky=tk.NW, padx=(0, 12))
+            except TclError:
+                pass
 
-        try:
-            img_file_name = "img_axial_stresses.gif"
-            if os.path.isfile('images/' + img_file_name):
-                file_path ='images/' + img_file_name
-            else:
-                file_path = app._root_dir + '/images/' + img_file_name
-            photo_axial = tk.PhotoImage(file=file_path)
-            label_axial = tk.Label(self._frame, image=photo_axial)
-            label_axial.image = photo_axial  # keep a reference!
-            label_axial.place(x=start_x+5*dx, y=60)
-        except TclError:
-            pass
-
-        try:
-            img_file_name = 'img_fixation_parameters.gif'
-            if os.path.isfile('images/' + img_file_name):
-                file_path ='images/' + img_file_name
-            else:
-                file_path = app._root_dir + '/images/' + img_file_name
-            photo = tk.PhotoImage(file=file_path)
-            label_fix = tk.Label(self._frame, image=photo)
-            label_fix.image = photo  # keep a reference!
-            label_fix.place(x=start_x+9.5*dx, y=60)
-        except TclError:
-            pass
-
-        tk.Label(self._frame,text='The stresses are global values and is estimated '
+        side_panel = tk.Frame(content)
+        side_panel.grid(row=0, column=3, rowspan=len(form_rows), sticky=tk.NW, padx=(30, 0))
+        tk.Label(side_panel,text='The stresses are global values and is estimated '
                                  '\nby user.\n'
                                  'Alterntively read out stresses from FE-model.\n'
                                  'Suggestions for input:\n'
@@ -222,11 +172,11 @@ class CreateStressesWindow():
                                  '   - about 20 MPa\n'
                                  '   - non-conservative - about 1 MPa', justify=tk.LEFT,
                  font = 'Verdana 10', fg = 'blue',bg='white')\
-            .place(x=start_x+dx*4.5,y=start_y+dy*11)
+            .grid(row=0, column=0, sticky=tk.NW)
 
-        self._close_and_save = tk.Button(self._frame, text='Return and set stresses and fixation parameter',
+        self._close_and_save = tk.Button(side_panel, text='Return and set stresses and fixation parameter',
                                         command=self.save_and_close, bg='green', font='Verdana 10', fg='yellow')
-        self._close_and_save.place(x=start_x + dx * 4.5, y=start_y + dy * 19)
+        self._close_and_save.grid(row=1, column=0, sticky=tk.W, pady=(14, 0))
 
     def change_option_menu(self,event):
         '''

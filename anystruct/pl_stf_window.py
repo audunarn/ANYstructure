@@ -72,32 +72,34 @@ class CreateStructureWindow():
         self._draw_scale = 0.5
         self._canvas_dim = (500, 450)
         ent_w = 10
-        start_x, start_y, dx, dy = 20, 70, 60, 33
+        self.structure_types = ['T','L', 'L-bulb','FB']
+
+        # Gridded layout: title, then a content row with the dimension form on
+        # the left, the section-type image in the middle and the section
+        # library controls on the right.  The property canvas and panel image
+        # fill the bottom row.  Same visual order as the old pixel layout.
+        self._frame.columnconfigure(2, weight=1)
+        self._frame.rowconfigure(3, weight=1)
+
+        tk.Label(self._frame, text='-- Define structure properties here --', font='Verdana 15 bold') \
+            .grid(row=0, column=0, columnspan=3, sticky=tk.W, padx=10, pady=(10, 6))
+
+        self._form_frame = tk.Frame(self._frame)
+        self._form_frame.grid(row=1, column=0, sticky=tk.NW, padx=(10, 20))
+        self._image_holder = tk.Frame(self._frame)
+        self._image_holder.grid(row=1, column=1, sticky=tk.NW, padx=(0, 20))
+        self._sections_frame = tk.Frame(self._frame)
+        self._sections_frame.grid(row=1, column=2, sticky=tk.NW)
+
+        actions_frame = tk.Frame(self._frame)
+        actions_frame.grid(row=2, column=0, columnspan=3, sticky=tk.W, padx=10, pady=8)
+
         self._canvas_struc = tk.Canvas(self._frame, width=self._canvas_dim[0], height=self._canvas_dim[1],
                                        background='azure', relief='groove', borderwidth=2)
-        self.structure_types = ['T','L', 'L-bulb','FB']
-        self._canvas_struc.place(x=10, y=440)
-        tk.Label(self._frame, text='-- Define structure properties here --', font='Verdana 15 bold').place(x=10, y=10)
-        #
-        # ### Adding matplotlib
-        # fig, ax =  run_section_properties()# Figure(figsize=(4, 4), dpi=100)
-        # t = np.arange(0, 3, .01)
-        # #fig.add_subplot(111).plot(t, 2 * np.sin(2 * np.pi * t))
-        #
-        # canvas = FigureCanvasTkAgg(fig, master=master)  # A tk.DrawingArea.
-        # canvas.draw()
-        # canvas.get_tk_widget().place(x=start_x+17*dx, y=start_y+dy  )
-        #
-        # toolbar = NavigationToolbar2Tk(canvas, master)
-        # toolbar.update()
-        # canvas.get_tk_widget().place(x=start_x+17*dx, y=start_y+10*dy  )
-        #
-        # def on_key_press(event):
-        #     print("you pressed {}".format(event.key))
-        #     key_press_handler(event, canvas, toolbar)
-        #
-        # canvas.mpl_connect("key_press_event", on_key_press)
-        
+        self._canvas_struc.grid(row=3, column=0, columnspan=2, sticky=tk.NW, padx=10, pady=(0, 10))
+        self._panel_image_holder = tk.Frame(self._frame)
+        self._panel_image_holder.grid(row=3, column=2, sticky=tk.NW, pady=(0, 10))
+
         self._new_spacing = tk.DoubleVar()
         self._new_pl_thk = tk.DoubleVar()
         self._new_web_h = tk.DoubleVar()
@@ -111,50 +113,60 @@ class CreateStructureWindow():
         self._new_section = tk.StringVar()
 
 
-        self._ent_section_list = Combobox(self._frame, values = self._section_list, textvariable = self._new_section,
-                                          width = 40)
+        self._ent_section_list = Combobox(self._sections_frame, values = self._section_list,
+                                          textvariable = self._new_section, width = 40)
         self._ent_section_list.bind("<<ComboboxSelected>>", self.section_choose)
-        # self._ent_section_list = tk.OptionMenu(self._frame, self._new_section, command=self.section_choose,
-        #                                        *['',] if self._section_list == [] else self._section_list)
-        self._ent_structure_options = tk.OptionMenu(self._frame,self._new_stiffener_type,
+        self._ent_structure_options = tk.OptionMenu(self._form_frame,self._new_stiffener_type,
                                                    command=self.option_choose,*self.structure_types)
-        self._ent_filter_stf = tk.OptionMenu(self._frame,self._new_stiffener_filter,
+        self._ent_filter_stf = tk.OptionMenu(self._sections_frame,self._new_stiffener_filter,
                                                    command=self.regen_option_menu,*['No filter applied','L-bulb', 'L', 'FB', 'T'])
 
-        self._ent_spacing = tk.Entry(self._frame, textvariable=self._new_spacing, width=ent_w)
-        self._ent_pl_thk = tk.Entry(self._frame, textvariable=self._new_pl_thk, width=ent_w)
-        self._ent_web_h = tk.Entry(self._frame, textvariable=self._new_web_h, width=ent_w)
-        self._ent_web_thk = tk.Entry(self._frame, textvariable=self._new_web_thk, width=ent_w)
-        self._ent_fl_w = tk.Entry(self._frame, textvariable=self._new_fl_w, width=ent_w)
-        self._ent_fl_thk = tk.Entry(self._frame, textvariable=self._new_fl_thk, width=ent_w)
-        self._ent_girder_length = tk.Entry(self._frame, textvariable=self._new_girder_length, width=ent_w)
+        self._ent_spacing = tk.Entry(self._form_frame, textvariable=self._new_spacing, width=ent_w)
+        self._ent_pl_thk = tk.Entry(self._form_frame, textvariable=self._new_pl_thk, width=ent_w)
+        self._ent_web_h = tk.Entry(self._form_frame, textvariable=self._new_web_h, width=ent_w)
+        self._ent_web_thk = tk.Entry(self._form_frame, textvariable=self._new_web_thk, width=ent_w)
+        self._ent_fl_w = tk.Entry(self._form_frame, textvariable=self._new_fl_w, width=ent_w)
+        self._ent_fl_thk = tk.Entry(self._form_frame, textvariable=self._new_fl_thk, width=ent_w)
+        self._ent_girder_length = tk.Entry(actions_frame, textvariable=self._new_girder_length, width=ent_w)
 
+        tk.Label(self._form_frame, text='Stiffener type:', font='Verdana 9 bold') \
+            .grid(row=0, column=0, sticky=tk.W, pady=2)
+        self._ent_structure_options.grid(row=0, column=1, sticky=tk.W, padx=(8, 4), pady=2)
 
+        # Dimension rows are created once and toggled with grid/grid_remove
+        # (the old code re-created labels on every type change, which left
+        # stale flange labels visible for flat bars).
+        self._dim_rows = {}
+        for offset, (key, text, entry) in enumerate((
+                ('spacing', 'Spacing', self._ent_spacing),
+                ('pl_thk', 'Plate thk.', self._ent_pl_thk),
+                ('web_h', 'Web height', self._ent_web_h),
+                ('web_thk', 'Web thk.', self._ent_web_thk),
+                ('fl_w', 'Flange width', self._ent_fl_w),
+                ('fl_thk', 'Flange thk.', self._ent_fl_thk),
+        )):
+            label = tk.Label(self._form_frame, text=text, font='Verdana 9')
+            label.grid(row=1 + offset, column=0, sticky=tk.W, pady=2)
+            entry.grid(row=1 + offset, column=1, sticky=tk.W, padx=(8, 4), pady=2)
+            unit = tk.Label(self._form_frame, text='[mm]', font='Verdana 9 bold')
+            unit.grid(row=1 + offset, column=2, sticky=tk.W, pady=2)
+            self._dim_rows[key] = (label, entry, unit)
 
-        tk.Label(self._frame, text='Stiffener type:', font='Verdana 9 bold').place(x=start_x, y=start_y )
-        tk.Label(self._frame, text='Girder length (Lg)', font='Verdana 9 bold').place(x=start_x+9*dx,
-                                                                                     y=start_y + 15 * dy)
-        tk.Label(self._frame, text='[m]', font='Verdana 9 bold').place(x=start_x + 14 * dx,y=start_y + 15 * dy)
-        self._ent_girder_length.place(x=start_x + 12 * dx, y=start_y + 15 * dy)
+        tk.Label(self._sections_frame, text='Existing sections:', font='Verdana 9 bold') \
+            .grid(row=0, column=0, sticky=tk.W, pady=2)
+        self._ent_section_list.grid(row=0, column=1, sticky=tk.W, padx=8, pady=2)
+        tk.Label(self._sections_frame, text='filter ->', font='Verdana 9 bold') \
+            .grid(row=1, column=0, sticky=tk.E, pady=2)
+        self._ent_filter_stf.grid(row=1, column=1, sticky=tk.W, padx=8, pady=2)
 
-        tk.Label(self._frame, text='[mm]', font='Verdana 9 bold').place(x=start_x+3*dx, y=start_y+dy  )
-        tk.Label(self._frame, text='[mm]', font='Verdana 9 bold').place(x=start_x+3*dx, y=start_y + 2*dy)
-        tk.Label(self._frame, text='[mm]', font='Verdana 9 bold').place(x=start_x +3*dx, y=start_y + 3*dy)
-        tk.Label(self._frame, text='[mm]', font='Verdana 9 bold').place(x=start_x+3*dx, y=start_y + 4*dy)
-        tk.Label(self._frame, text='[mm]', font='Verdana 9 bold').place(x=start_x+3*dx, y=start_y + 5*dy)
-        tk.Label(self._frame, text='[mm]', font='Verdana 9 bold').place(x=start_x+3*dx, y=start_y + 6*dy)
+        tk.Button(self._sections_frame, text='Read section list from file', command=self.read_sections,
+                  font='Verdana 10 bold', bg = 'blue', fg = 'yellow').grid(row=0, column=2, sticky=tk.EW, padx=8, pady=2)
+        tk.Button(self._sections_frame, text='Load built in sections', command=self.read_sections_built_in,
+                  font='Verdana 10 bold', bg = 'azure', fg = 'black').grid(row=1, column=2, sticky=tk.EW, padx=8, pady=2)
 
-        tk.Label(self._frame, text='Existing sections:', font='Verdana 9 bold').place(x=start_x+4*dx, y=start_y + 6*dy)
-        tk.Label(self._frame, text='filter ->', font='Verdana 9 bold').place(x=start_x + 4 * dx,
-                                                                                      y=start_y + 7 * dy)
-
-        self._ent_section_list.place(x=start_x+7*dx, y=start_y + 6*dy)
-        self._ent_filter_stf.place(x=start_x+5*dx, y=start_y + 7*dy)
-
-        tk.Button(self._frame, text='Read section list from file', command=self.read_sections, font='Verdana 10 bold',
-                  bg = 'blue', fg = 'yellow').place(x=start_x+12*dx, y=start_y + 6*dy)
-        tk.Button(self._frame, text='Load built in sections', command=self.read_sections_built_in, font='Verdana 10 bold',
-                  bg = 'azure', fg = 'black').place(x=start_x+12*dx, y=start_y + 7*dy)
+        tk.Label(actions_frame, text='Girder length (Lg)', font='Verdana 9 bold').grid(row=0, column=0, sticky=tk.W)
+        self._ent_girder_length.grid(row=0, column=1, sticky=tk.W, padx=8)
+        tk.Label(actions_frame, text='[m]', font='Verdana 9 bold').grid(row=0, column=2, sticky=tk.W)
         # setting default values
         init_dim,init_thk = 0.05,0.002
 
@@ -176,26 +188,14 @@ class CreateStructureWindow():
 
         self._new_girder_length.set(10)
 
-        self._ent_structure_options.place(x=start_x + dx * 3, y=start_y)
-
-        if self._new_spacing.get() != 0:
-            tk.Label(self._frame, text='Spacing', font='Verdana 9').place(x=start_x, y=start_y + dy)
-            self._ent_spacing.place(x=start_x + dx * 2, y=start_y+dy)
-        if self._new_pl_thk.get() != 0:
-            tk.Label(self._frame, text='Plate thk.', font='Verdana 9').place(x=start_x, y=start_y + 2 * dy)
-            self._ent_pl_thk.place(x=start_x + dx * 2, y=start_y+2*dy)
-        if self._new_web_h.get() != 0:
-            tk.Label(self._frame, text='Web height', font='Verdana 9').place(x=start_x, y=start_y + 3 * dy)
-            self._ent_web_h.place(x=start_x + dx * 2, y=start_y+3*dy)
-        if self._new_web_thk.get() != 0:
-            tk.Label(self._frame, text='Web thk.', font='Verdana 9').place(x=start_x, y=start_y + 4 * dy)
-            self._ent_web_thk.place(x=start_x + dx * 2, y=start_y+4*dy)
-        if self._new_fl_w.get() != 0:
-            tk.Label(self._frame, text='Flange width', font='Verdana 9').place(x=start_x, y=start_y + 5 * dy)
-            self._ent_fl_w.place(x=start_x + dx * 2, y=start_y+5*dy)
-        if self._new_fl_thk.get() != 0:
-            tk.Label(self._frame, text='Flange thk.', font='Verdana 9').place(x=start_x, y=start_y + 6 * dy)
-            self._ent_fl_thk.place(x=start_x + dx * 2, y=start_y+6*dy)
+        # Only dimension rows with a value are shown initially, mirroring the
+        # old behaviour; choosing a stiffener type shows the relevant rows.
+        self._set_dim_row_visible('spacing', self._new_spacing.get() != 0)
+        self._set_dim_row_visible('pl_thk', self._new_pl_thk.get() != 0)
+        self._set_dim_row_visible('web_h', self._new_web_h.get() != 0)
+        self._set_dim_row_visible('web_thk', self._new_web_thk.get() != 0)
+        self._set_dim_row_visible('fl_w', self._new_fl_w.get() != 0)
+        self._set_dim_row_visible('fl_thk', self._new_fl_thk.get() != 0)
 
         self._new_spacing.trace('w',self.draw_trace)
         self._new_pl_thk.trace('w',self.draw_trace)
@@ -210,9 +210,9 @@ class CreateStructureWindow():
             else:
                 file_path = os.path.dirname(os.path.abspath(__file__)) + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
-            label = tk.Label(self._frame, image=photo)
+            label = tk.Label(self._panel_image_holder, image=photo)
             label.image = photo  # keep a reference!
-            label.place(x=550, y=610)
+            label.grid(row=0, column=0, sticky=tk.NW)
         except TclError:
             pass
         try:
@@ -222,23 +222,31 @@ class CreateStructureWindow():
             else:
                 file_path = os.path.dirname(os.path.abspath(__file__)) + '/images/' + img_file_name
             photo_T_L_FB = tk.PhotoImage(file=file_path)
-            label = tk.Label(self._frame, image=photo_T_L_FB )
+            label = tk.Label(self._image_holder, image=photo_T_L_FB )
             label.image = photo_T_L_FB   # keep a reference!
-            label.place(x=270, y=50)
+            label.grid(row=0, column=0, sticky=tk.NW)
         except TclError:
             pass
 
         # Close and save depending on input
         # "long stf", "ring stf", "ring frame", "flat long stf"
         if self._clicked_button is not None:
-            self.close_and_save = tk.Button(self._frame, text='Click to return section data to ' + self._clicked_button,
+            self.close_and_save = tk.Button(actions_frame, text='Click to return section data to ' + self._clicked_button,
                                             command=self.save_and_close, bg='green',
                                             font='Verdana 10 bold', fg='yellow')
-            self.close_and_save.place(x=start_x + dx * 9, y=start_y + dy * 12)
+            self.close_and_save.grid(row=0, column=3, sticky=tk.W, padx=(30, 0))
 
 
 
         self.draw_properties()
+
+    def _set_dim_row_visible(self, key, visible):
+        '''Show or hide one dimension row (label, entry, unit) in the form grid.'''
+        for widget in self._dim_rows[key]:
+            if visible:
+                widget.grid()
+            else:
+                widget.grid_remove()
 
     def regen_option_menu(self, event = None):
         self._ent_section_list.destroy()
@@ -251,14 +259,10 @@ class CreateStructureWindow():
             for sec_obj in self._section_objects:
                 if sec_obj.stf_type == self._new_stiffener_filter.get():
                     sections.append(sec_obj.__str__())
-        start_x, start_y, dx, dy = 20, 70, 60, 33
-        # self._ent_section_list = tk.OptionMenu(self._frame, self._new_section, command=self.section_choose,
-        #                                        *sections)
-        self._ent_section_list = Combobox(self._frame, values=sections, textvariable=self._new_section, width = 40)
+        self._ent_section_list = Combobox(self._sections_frame, values=sections, textvariable=self._new_section,
+                                          width = 40)
         self._ent_section_list.bind("<<ComboboxSelected>>", self.section_choose)
-        self._ent_section_list.place(x=start_x + 7 * dx, y=start_y + 6 * dy)
-
-        pass
+        self._ent_section_list.grid(row=0, column=1, sticky=tk.W, padx=8, pady=2)
 
     def option_choose(self, event):
         '''
@@ -266,29 +270,12 @@ class CreateStructureWindow():
         :param event:
         :return:
         '''
-        start_x, start_y, dx, dy = 20, 70, 50, 33
-
-        tk.Label(self._frame, text='Spacing', font='Verdana 9').place(x=start_x, y=start_y + dy)
-        self._ent_spacing.place(x=start_x + dx * 2, y=start_y+dy)
-
-        tk.Label(self._frame, text='Plate thk.', font='Verdana 9').place(x=start_x, y=start_y + 2 * dy)
-        self._ent_pl_thk.place(x=start_x + dx * 2, y=start_y+2*dy)
-
-        tk.Label(self._frame, text='Web height', font='Verdana 9').place(x=start_x, y=start_y + 3 * dy)
-        self._ent_web_h.place(x=start_x + dx * 2, y=start_y+3*dy)
-
-        tk.Label(self._frame, text='Web thk.', font='Verdana 9').place(x=start_x, y=start_y + 4 * dy)
-        self._ent_web_thk.place(x=start_x + dx * 2, y=start_y+4*dy)
-
-        if self._new_stiffener_type.get()!='FB':
-            tk.Label(self._frame, text='Flange width', font='Verdana 9').place(x=start_x, y=start_y + 5 * dy)
-            self._ent_fl_w.place(x=start_x + dx * 2, y=start_y+5*dy)
-        else: self._ent_fl_w.place_forget()
-        if self._new_stiffener_type.get()!='FB':
-            tk.Label(self._frame, text='Flange thk.', font='Verdana 9').place(x=start_x, y=start_y + 6 * dy)
-            self._ent_fl_thk.place(x=start_x + dx * 2, y=start_y+6*dy)
-        else: self._ent_fl_thk.place_forget()
-        if self._new_stiffener_type.get()=='FB':
+        for key in ('spacing', 'pl_thk', 'web_h', 'web_thk'):
+            self._set_dim_row_visible(key, True)
+        has_flange = self._new_stiffener_type.get() != 'FB'
+        self._set_dim_row_visible('fl_w', has_flange)
+        self._set_dim_row_visible('fl_thk', has_flange)
+        if not has_flange:
             self._new_fl_w.set(0)
             self._new_fl_thk.set(0)
         self.draw_properties()

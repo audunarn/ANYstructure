@@ -49,11 +49,13 @@ def test_cylinder_running_time_warns_for_weight_weld_combination():
 def test_cylinder_optimizer_layout_reserves_space_for_runtime_warning():
     source = read_optimize_cylinder_source()
 
+    # The gridded layout structurally reserves space: the runtime warning has
+    # its own objective-frame row and the canvas its own holder frame, so they
+    # can never overlap regardless of text length.
     assert "self._canvas_dim = (550, 490)" in source
-    assert "self._canvas_opt.place(x=1050, y=500)" in source
-    assert "self._runnig_time_label.place(x=objective_x, y=425, width=520)" in source
-    assert "stress_y = 710" in source
-    assert "self._result_label.place(x=520, y=800)" in source
+    assert "self._canvas_opt.grid(row=0, column=0, sticky=tk.NW)" in source
+    assert "self._runnig_time_label.grid(row=5, column=0, columnspan=3, sticky=tk.W, pady=(8, 0))" in source
+    assert "self._result_label.grid(row=1, column=0, sticky=tk.W, pady=(4, 0))" in source
 
 
 def test_cylinder_optimizer_has_weld_metric_selector():

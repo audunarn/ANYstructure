@@ -145,8 +145,29 @@ class Application():
         self._root_dir = os.path.dirname(os.path.abspath(__file__))
         # self._root_dir = os.path.dirname(os.path.abspath(__file__)).replace('anystruct','')
         # Main frame for the application
-        self._main_fr = ttk.Frame(parent)
-        self._main_fr.place(in_=parent, relwidth=1, relheight=0.99)
+        # Resizable three-pane main window: input tabs | drawing canvas |
+        # control panel.  A PanedWindow gives draggable sashes between the
+        # sections and lets every pane size cleanly with grid inside it.
+        self._main_paned = tk.PanedWindow(parent, orient=tk.HORIZONTAL, sashwidth=6,
+                                          sashrelief=tk.RAISED, background='#b8b8b8')
+        self._main_paned.pack(fill=tk.BOTH, expand=True)
+        self._canvas_frame = ttk.Frame(self._main_paned)
+        self._right_frame = ttk.Frame(self._main_paned)
+        # Right pane: control form on top, buckling/result text canvas below
+        # (lower-right, as in the original layout).
+        self._right_frame.columnconfigure(0, weight=1)
+        self._right_frame.rowconfigure(0, weight=3)
+        self._right_frame.rowconfigure(1, weight=2)
+        self._right_form = ttk.Frame(self._right_frame)
+        self._right_form.grid(row=0, column=0, sticky=tk.NSEW)
+        self._right_form.columnconfigure(0, weight=1)
+        self._right_form.rowconfigure(0, weight=1)
+        # Existing right-side widgets target _main_fr (the control form).
+        self._main_fr = self._right_form
+        # The accelerations / optimization / load-combination controls live in
+        # their own panel so FEA-result-buckling mode can hide them as a group.
+        self._loads_panel = ttk.Frame(self._right_form)
+        self._loads_panel.grid(row=0, column=0, sticky=tk.NSEW)
 
         # Definng general colors
         self._general_color = 'alice blue'  # "'azure2'  # Color for backgrounds.
@@ -175,7 +196,7 @@ class Application():
         self._style.configure("TNotebook", tabmargins=0)
 
         # tabbed frames
-        self._tabControl = ttk.Notebook(parent)
+        self._tabControl = ttk.Notebook(self._main_paned)
         self._tab_geo = ttk.Frame(self._tabControl, relief='flat')
         self._tab_prop = ttk.Frame(self._tabControl, relief='flat')
         self._tab_comp = ttk.Frame(self._tabControl, relief='flat')
@@ -190,7 +211,12 @@ class Application():
         self._tabControl.add(self._tab_information, text='Information')
         self._tabControl.add(self._tab_help, text='Help')
 
-        self._tabControl.place(relwidth=0.2585, relheight=1)
+        # Left-to-right panes: input tabs, drawing canvas, control panel.  The
+        # canvas pane absorbs extra width; the input and control panes keep a
+        # comfortable fixed width so their forms are not clipped.
+        self._main_paned.add(self._tabControl, minsize=420, width=720, stretch='never')
+        self._main_paned.add(self._canvas_frame, minsize=340, width=620, stretch='always')
+        self._main_paned.add(self._right_frame, minsize=380, width=600, stretch='never')
         # self._tabControl.select(self._tab2)
 
         # Top open/save/new
@@ -327,28 +353,30 @@ class Application():
         # self._prop_canvas_x_base =
         # self._prop_canvas_y_base =
 
-        # # Creating the various canvas next.
-        self._main_canvas = tk.Canvas(self._main_fr,
+        # # Creating the various canvas next.  They all live in the middle
+        # (canvas) pane: the 2D drawing fills the top, the 3D preview overlays
+        # it when active, and the bottom band holds the stiffener sketch (left)
+        # and the buckling/result text (right of the sketch).
+        self._main_canvas = tk.Canvas(self._canvas_frame,
                                       background=self._style.lookup('TFrame', 'background'), bd=0,
                                       highlightthickness=0, relief='ridge')
-        self._prop_canvas = tk.Canvas(self._main_fr,
+        self._prop_canvas = tk.Canvas(self._canvas_frame,
                                       background=self._style.lookup('TFrame', 'background'), bd=0,
                                       highlightthickness=0, relief='ridge')
-        self._result_canvas = tk.Canvas(self._main_fr,
+        self._result_canvas = tk.Canvas(self._canvas_frame,
                                         background=self._style.lookup('TFrame', 'background'), bd=0,
                                         highlightthickness=0, relief='ridge')
 
-        # # These frames are just visual separations in the GUI.
-        # frame_horizontal, frame_vertical = 0.73, 0.258
-        # self._frame_viz_hor = tk.Frame(self._main_fr, height=3, bg="black", colormap="new")
-        # self._frame_viz_hor.place(relx=0, rely=frame_horizontal, relwidth=1)
-        # self._frame_viz_ver = tk.Frame(self._main_fr, width=3, bg="black", colormap="new")
-        # self._frame_viz_ver.place(relx=frame_vertical,rely=0 * 1, relheight=1)
-
-        x_canvas_place = 0.26
-        self._main_canvas.place(relx=x_canvas_place, rely=0, relwidth=0.523, relheight=0.73)
-        self._prop_canvas.place(relx=x_canvas_place, rely=0.73, relwidth=0.38, relheight=0.27)
-        self._result_canvas.place(relx=x_canvas_place + 0.38, rely=0.73, relwidth=0.36, relheight=0.27)
+        # Canvas pane layout: the main drawing fills the top row (a 3D preview
+        # overlays it in the same cell when shown); the bottom band holds the
+        # stiffener sketch (left) and the result text (right).
+        self._canvas_frame.columnconfigure(0, weight=1)
+        self._canvas_frame.columnconfigure(1, weight=1)
+        self._canvas_frame.rowconfigure(0, weight=74)
+        self._canvas_frame.rowconfigure(1, weight=26)
+        self._main_canvas.grid(row=0, column=0, columnspan=2, sticky=tk.NSEW)
+        self._prop_canvas.grid(row=1, column=0, sticky=tk.NSEW)
+        self._result_canvas.grid(row=1, column=1, sticky=tk.NSEW)
 
         self._simplified_calculation_mode = False
         self._single_line_name = 'line1'
@@ -505,9 +533,9 @@ class Application():
         point_x_start, point_start = 0.005208333, 0.13
 
         # ----------------------INITIATION OF THE SMALLER PARTS OF THE GUI STARTS HERE--------------------------
-        # Help tab
+        # Help tab (gridded: heading/image pairs stacked in one column).
         ttk.Label(self._tab_help, text='Buckling paramenter, flat plates', font=self._text_size["Text 10 bold"], ) \
-            .place(relx=0.01, rely=0.05, )
+            .grid(row=0, column=0, sticky=tk.W, padx=8, pady=(8, 2))
         try:
             img_file_name = 'Panel_geometry_definitions.png'
             if os.path.isfile('images/' + img_file_name):
@@ -517,11 +545,11 @@ class Application():
             photo = tk.PhotoImage(file=file_path)
             label = tk.Label(self._tab_help, image=photo)
             label.image = photo  # keep a reference!
-            label.place(relx=0.01, rely=0.1)
+            label.grid(row=1, column=0, sticky=tk.NW, padx=8, pady=(0, 8))
         except TclError:
             pass
         ttk.Label(self._tab_help, text='Buckling parameters, cylinders', font=self._text_size["Text 10 bold"], ) \
-            .place(relx=0.01, rely=0.33)
+            .grid(row=2, column=0, sticky=tk.W, padx=8, pady=(0, 2))
         try:
             img_file_name = 'Buckling_Strength_of_Shells.png'
             if os.path.isfile('images/' + img_file_name):
@@ -531,11 +559,11 @@ class Application():
             photo = tk.PhotoImage(file=file_path)
             label = tk.Label(self._tab_help, image=photo)
             label.image = photo  # keep a reference!
-            label.place(relx=0.01, rely=0.35)
+            label.grid(row=3, column=0, sticky=tk.NW, padx=8, pady=(0, 8))
         except TclError:
             pass
         ttk.Label(self._tab_help, text='Buckling cylinder panels', font=self._text_size["Text 10 bold"], ) \
-            .place(relx=0.01, rely=0.6)
+            .grid(row=4, column=0, sticky=tk.W, padx=8, pady=(0, 2))
         try:
             img_file_name = 'buckling_cylinder_panel.png'
             if os.path.isfile('images/' + img_file_name):
@@ -545,7 +573,7 @@ class Application():
             photo = tk.PhotoImage(file=file_path)
             label = tk.Label(self._tab_help, image=photo)
             label.image = photo  # keep a reference!
-            label.place(relx=0.01, rely=0.62)
+            label.grid(row=5, column=0, sticky=tk.NW, padx=8, pady=(0, 8))
         except TclError:
             pass
 
@@ -558,39 +586,40 @@ class Application():
         self._new_zstar_optimization.set(True)
         ent_width = 6  # width of entries
 
-        self._project_information = tk.Text(self._tab_geo, wrap=tk.WORD, relief=tk.FLAT)
-        self._project_information.place(relx=0.005, rely=0.005, relwidth=0.95, relheight=0.1)
+        self._tab_geo.columnconfigure(2, weight=1)
+        self._project_information = tk.Text(self._tab_geo, wrap=tk.WORD, relief=tk.FLAT, height=5)
+        self._project_information.grid(row=0, column=0, columnspan=3, sticky=tk.EW, padx=4, pady=(4, 8))
 
         self._project_information.insert(1.0, 'No information on project provided. Input here.')
 
         ttk.Label(self._tab_geo, text='Input point coordinates [mm]', font=self._text_size['Text 9 bold'],
                   ) \
-            .place(rely=point_start, relx=point_x_start, anchor=tk.NW)
+            .grid(row=1, column=0, columnspan=2, sticky=tk.W, padx=4, pady=(4, 2))
         ttk.Label(self._tab_geo, text='Point x (horizontal) [mm]:', font=self._text_size["Text 9"], ) \
-            .place(relx=point_x_start, rely=point_start + delta_y, )
+            .grid(row=2, column=0, sticky=tk.W, padx=4)
         ttk.Label(self._tab_geo, text='Point y (vertical)   [mm]:', font=self._text_size["Text 9"], ) \
-            .place(relx=point_x_start, rely=point_start + delta_y * 2)
+            .grid(row=3, column=0, sticky=tk.W, padx=4)
 
         ttk.Entry(self._tab_geo, textvariable=self._new_point_x, width=int(ent_width * 1.5)) \
-            .place(relx=ent_x, rely=point_start + delta_y)
+            .grid(row=2, column=1, sticky=tk.W)
         ttk.Entry(self._tab_geo, textvariable=self._new_point_y, width=int(ent_width * 1.5)) \
-            .place(relx=ent_x, rely=point_start + delta_y * 2)
+            .grid(row=3, column=1, sticky=tk.W)
 
         ttk.Button(self._tab_geo, text='Add point (coords)', command=self.new_point, style="Bold.TButton") \
-            .place(relx=ent_x + 2 * delta_x, rely=point_start + 1 * delta_y, relwidth=0.3)
+            .grid(row=2, column=2, sticky=tk.EW, padx=(8, 4))
         ttk.Button(self._tab_geo, text='Copy point (relative)', command=self.copy_point, style="Bold.TButton") \
-            .place(relx=ent_x + 2 * delta_x, rely=point_start + 2 * delta_y, relwidth=0.3)
+            .grid(row=3, column=2, sticky=tk.EW, padx=(8, 4))
         ttk.Button(self._tab_geo, text='Move point', command=self.move_point, style="Bold.TButton") \
-            .place(relx=ent_x + 2 * delta_x, rely=point_start + 3 * delta_y, relwidth=0.3)
+            .grid(row=4, column=2, sticky=tk.EW, padx=(8, 4))
         ttk.Button(self._tab_geo, text='Move line', command=self.move_line, style="Bold.TButton") \
-            .place(relx=ent_x + 2 * delta_x, rely=point_start + 4 * delta_y, relwidth=0.3)
+            .grid(row=5, column=2, sticky=tk.EW, padx=(8, 4))
 
         self._new_draw_point_name = tk.BooleanVar()
         self._new_draw_point_name.set(False)
         ttk.Label(self._tab_geo, text='Show point names in GUI', font=self._text_size["Text 9"]) \
-            .place(relx=point_x_start, rely=point_start + 3 * delta_y)
+            .grid(row=4, column=0, sticky=tk.W, padx=4)
         ttk.Checkbutton(self._tab_geo, variable=self._new_draw_point_name, command=self.on_color_code_check) \
-            .place(relx=ent_x, rely=point_start + 3 * delta_y)
+            .grid(row=4, column=1, sticky=tk.W)
 
         self._new_line_name = tk.BooleanVar()
         self._new_line_name.set(False)
@@ -598,15 +627,15 @@ class Application():
         line_start, line_x = point_start + 0.2, 0.0055
         ttk.Label(self._tab_geo, text='Input line from "point number" to "point number"',
                   font=self._text_size['Text 9 bold'], ) \
-            .place(rely=line_start, relx=line_x, anchor=tk.NW)
+            .grid(row=6, column=0, columnspan=3, sticky=tk.W, padx=4, pady=(10, 2))
         ttk.Label(self._tab_geo, text='Line from point number:', font=self._text_size["Text 9"], ) \
-            .place(relx=line_x, rely=line_start + delta_y)
+            .grid(row=7, column=0, sticky=tk.W, padx=4)
         ttk.Label(self._tab_geo, text='Line to point number:', font=self._text_size["Text 9"], ) \
-            .place(relx=line_x, rely=line_start + 2 * delta_y)
-        ttk.Label(self._tab_geo, text='Show line names in GUI', font=self._text_size["Text 9"]).place(relx=point_x_start,
-                                                                                     rely=line_start + 3 * delta_y)
+            .grid(row=8, column=0, sticky=tk.W, padx=4)
+        ttk.Label(self._tab_geo, text='Show line names in GUI', font=self._text_size["Text 9"]) \
+            .grid(row=9, column=0, sticky=tk.W, padx=4)
         ttk.Checkbutton(self._tab_geo, variable=self._new_line_name,
-                        command=self.on_color_code_check).place(relx=ent_x, rely=line_start + 3 * delta_y)
+                        command=self.on_color_code_check).grid(row=9, column=1, sticky=tk.W)
 
         # --- line input/output ---
         self._new_line_p1 = tk.IntVar()
@@ -674,12 +703,12 @@ class Application():
         line_start, line_x = point_start + 0.2, 0.0055
 
         ttk.Spinbox(self._tab_geo, textvariable=self._new_line_p1, width=int(ent_width * 1), from_=0,
-                    to=float('inf')).place(relx=ent_x, rely=line_start + 1 * delta_y)
+                    to=float('inf')).grid(row=7, column=1, sticky=tk.W)
         ttk.Spinbox(self._tab_geo, textvariable=self._new_line_p2, width=int(ent_width * 1),
-                    from_=0, to=float('inf')).place(relx=ent_x, rely=line_start + 2 * delta_y)
+                    from_=0, to=float('inf')).grid(row=8, column=1, sticky=tk.W)
 
         ttk.Button(self._tab_geo, text='Add line', command=self.new_line, style="Bold.TButton") \
-            .place(relx=ent_x + 2 * delta_x, rely=line_start + delta_y, relwidth=0.3)
+            .grid(row=7, column=2, sticky=tk.EW, padx=(8, 4))
 
         # --- delete points and lines ---
         self._new_delete_line = tk.IntVar()
@@ -687,46 +716,43 @@ class Application():
         del_start, del_x = line_start + 0.2, 0.005208333
         ttk.Label(self._tab_geo, text='Delete lines and points (or left/right click and use "Delete key")',
                   font=self._text_size['Text 9 bold'], ) \
-            .place(rely=del_start - 0.02, relx=del_x, anchor=tk.NW)
+            .grid(row=10, column=0, columnspan=3, sticky=tk.W, padx=4, pady=(10, 2))
         self._ent_delete_line = ttk.Spinbox(self._tab_geo, textvariable=self._new_delete_line,
                                             from_=0, to=float('inf'),
                                             width=int(ent_width * 1))
-        self._ent_delete_line.place(relx=ent_x, rely=del_start + delta_y)
+        self._ent_delete_line.grid(row=11, column=1, sticky=tk.W)
 
         self._ent_delete_point = ttk.Spinbox(self._tab_geo, textvariable=self._new_delete_point,
                                              from_=0, to=float('inf'),
                                              width=int(ent_width * 1))
-        self._ent_delete_point.place(relx=ent_x, rely=del_start + delta_y * 2)
+        self._ent_delete_point.grid(row=12, column=1, sticky=tk.W)
 
         ttk.Label(self._tab_geo, text='Line number (left click):', font=self._text_size["Text 9"]) \
-            .place(relx=del_x, rely=del_start + delta_y)
+            .grid(row=11, column=0, sticky=tk.W, padx=4)
         ttk.Label(self._tab_geo, text='Point number (right click):', font=self._text_size["Text 9"], ) \
-            .place(relx=del_x, rely=del_start + delta_y * 2)
+            .grid(row=12, column=0, sticky=tk.W, padx=4)
 
         ttk.Button(self._tab_geo, text='Delete line', command=self.delete_line, style="Bold.TButton"
-                   ).place(relx=ent_x + delta_x * 2, rely=del_start + delta_y,
-                           relwidth=0.3)
+                   ).grid(row=11, column=2, sticky=tk.EW, padx=(8, 4))
         ttk.Button(self._tab_geo, text='Delete prop.', command=self.delete_properties_pressed, style="Bold.TButton"
-                   ).place(relx=ent_x + delta_x * 2, rely=del_start + delta_y * 2,
-                           relwidth=0.3)
+                   ).grid(row=12, column=2, sticky=tk.EW, padx=(8, 4))
 
         ttk.Button(self._tab_geo, text='Delete point', command=self.delete_point, style="Bold.TButton"
-                   ).place(relx=ent_x + 2 * delta_x, rely=del_start + delta_y * 3,
-                           relwidth=0.3)
+                   ).grid(row=13, column=2, sticky=tk.EW, padx=(8, 4))
 
         # Shifing of coordinate display
         shift_x = del_x
         shift_y = del_start + 0.2
         ttk.Label(self._tab_geo, text='Shift coordinate labeling [mm]: ', font=self._text_size['Text 8 bold']) \
-            .place(relx=shift_x, rely=shift_y - delta_y * 0.5)
+            .grid(row=14, column=0, columnspan=3, sticky=tk.W, padx=4, pady=(10, 0))
         ttk.Label(self._tab_geo, text='Used if you want a different origin of the repoted coordinates. \n'
-                                      'Does not affect loads.', font=self._text_size['Text 8']) \
-            .place(relx=shift_x, rely=shift_y + delta_y * 0.5)
+                                      'Does not affect loads.', font=self._text_size['Text 8'], justify=tk.LEFT) \
+            .grid(row=15, column=0, columnspan=3, sticky=tk.W, padx=4)
 
         ttk.Label(self._tab_geo, text='y shift', font=self._text_size['Text 8'],
-                  ).place(relx=shift_x, rely=shift_y + delta_y * 2)
+                  ).grid(row=16, column=0, sticky=tk.W, padx=4)
         ttk.Label(self._tab_geo, text='x shift ', font=self._text_size['Text 8'],
-                  ).place(relx=shift_x, rely=shift_y + delta_y * 3)
+                  ).grid(row=17, column=0, sticky=tk.W, padx=4)
 
         self._ent_shift_hor = ttk.Entry(self._tab_geo, textvariable=self._new_shift_viz_coord_hor,
                                         width=ent_width)
@@ -737,13 +763,13 @@ class Application():
                                         )
         self._ent_shift_ver.bind('<FocusOut>', self.trace_shift_change)
         # self._ent_shift_ver.trace('w', self.trace_shift_change)
-        self._ent_shift_hor.place(relx=ent_x, rely=shift_y + delta_y * 2)
-        self._ent_shift_ver.place(relx=ent_x, rely=shift_y + delta_y * 3)
+        self._ent_shift_hor.grid(row=16, column=1, sticky=tk.W)
+        self._ent_shift_ver.grid(row=17, column=1, sticky=tk.W)
 
         ttk.Label(self._tab_geo, text='Use shifted coordinates', font=self._text_size["Text 9"]) \
-            .place(relx=shift_x, rely=shift_y + delta_y * 4)
+            .grid(row=18, column=0, sticky=tk.W, padx=4)
         ttk.Checkbutton(self._tab_geo, variable=self._new_shifted_coords, command=self.update_frame) \
-            .place(relx=ent_x, rely=shift_y + delta_y * 4)
+            .grid(row=18, column=1, sticky=tk.W)
 
         # --- structure type information ---
 
@@ -780,39 +806,35 @@ class Application():
                                              '1. Press mulitple select button\n'
                                              '2. Select parameter in option menu\n'
                                              '3. Press Change parameters button', font=self._text_size['Text 9']) \
-            .place(relx=hor_start, rely=vert_start - 1 * delta_y)
+            .grid(row=0, column=0, columnspan=3, sticky=tk.W, padx=6, pady=(6, 8))
         self._toggle_btn = tk.Button(self._tab_prop_tools, text="Toggle select\nmultiple", relief="raised",
                                      command=self.toggle_select_multiple, bg='#E1E1E1', activebackground='#E5F1FB')
         self._toggle_change_param = ttk.Button(self._tab_prop_tools, text="Change parameters",
                                                command=self.toggle_set_variable)
         self._toggle_param_to_change = None
-        self._toggle_btn.place(relx=hor_start, rely=vert_start + 2 * delta_y, relwidth=0.2, relheight=0.06)
+        self._toggle_btn.grid(row=1, column=0, sticky=tk.EW, padx=6, pady=4)
 
-        self._toggle_change_param.place(relx=hor_start + delta_x * 6, rely=vert_start + 2 * delta_y, relwidth=0.25)
+        self._toggle_change_param.grid(row=1, column=2, sticky=tk.EW, padx=6, pady=4)
 
         self._toggle_choose = ttk.OptionMenu(self._tab_prop_tools, self._new_toggle_var, self._stuctural_definition[0],
                                              *self._stuctural_definition,
                                              command=self.update_frame)
-        self._toggle_choose.place(relx=hor_start + delta_x * 3, rely=vert_start + 2 * delta_y, relwidth=0.25)
-
-        ttk.Label(self._tab_prop_tools, text='Scale stresses when changing properties', font=self._text_size['Text 9']) \
-            .place(relx=hor_start + delta_x * 1, rely=vert_start + 6 * delta_y)
+        self._toggle_choose.grid(row=1, column=1, sticky=tk.EW, padx=6, pady=4)
 
         ttk.Checkbutton(self._tab_prop_tools, variable=self._new_scale_stresses, command=self.on_color_code_check) \
-            .place(relx=hor_start + delta_x * 0, rely=vert_start + 6 * delta_y)
+            .grid(row=2, column=0, sticky=tk.E, padx=6, pady=(10, 2))
+        ttk.Label(self._tab_prop_tools, text='Scale stresses when changing properties', font=self._text_size['Text 9']) \
+            .grid(row=2, column=1, columnspan=2, sticky=tk.W, pady=(10, 2))
 
+        ent_fup = ttk.Entry(self._tab_prop_tools, textvariable=self._new_fup, width=8)
+        ent_fup.grid(row=3, column=0, sticky=tk.E, padx=6, pady=2)
         ttk.Label(self._tab_prop_tools, text='Factor when scaling stresses up, fup',
-                  font=self._text_size['Text 8']).place(relx=hor_start + delta_x,
-                                                        rely=vert_start + 7 * delta_y)
+                  font=self._text_size['Text 8']).grid(row=3, column=1, columnspan=2, sticky=tk.W, pady=2)
+
+        ent_fdwn = ttk.Entry(self._tab_prop_tools, textvariable=self._new_fdwn, width=8)
+        ent_fdwn.grid(row=4, column=0, sticky=tk.E, padx=6, pady=2)
         ttk.Label(self._tab_prop_tools, text='Factor when scaling stresses down, fdown',
-                  font=self._text_size['Text 8']).place(relx=hor_start + delta_x,
-                                                        rely=vert_start + 8 * delta_y)
-
-        ent_fup = ttk.Entry(self._tab_prop_tools, textvariable=self._new_fup)
-        ent_fup.place(relx=hor_start, rely=vert_start + 7 * delta_y, relwidth=0.1)
-
-        ent_fdwn = ttk.Entry(self._tab_prop_tools, textvariable=self._new_fdwn)
-        ent_fdwn.place(relx=hor_start, rely=vert_start + 8 * delta_y, relwidth=0.1)
+                  font=self._text_size['Text 8']).grid(row=4, column=1, columnspan=2, sticky=tk.W, pady=2)
 
         # --- main variable to define the structural properties ---
         self._new_material = tk.DoubleVar()
@@ -1163,7 +1185,7 @@ class Application():
         chk_deltax = 0.1
         chk_deltay = 0.025
         (ttk.Label(self._tab_information, text='Labelling and color code options ', font=self._text_size["Text 9"])
-         .place(relx=0.02, rely=2 * chk_deltay))
+         .grid(row=0, column=0, columnspan=2, sticky=tk.W, padx=8, pady=(8, 4)))
         self._information_gui_chk_structure = [
             ttk.Checkbutton(self._tab_information,
                             variable=self._new_label_color_coding,
@@ -1222,10 +1244,10 @@ class Application():
             ttk.Label(self._tab_information, text='Structure type'),
             ttk.Label(self._tab_information, text='Buckling - SP or UP'),
             ttk.Label(self._tab_information, text='Buckling acceptance criteria')]
-        idx = 3
+        idx = 1
         for lab, ent in zip(self._information_gui_chk_structure, self._information_gui_lab_chk_structure):
-            lab.place(relx=0.02, rely=idx * chk_deltay)
-            ent.place(relx=0.02 + chk_deltax, rely=idx * chk_deltay)
+            lab.grid(row=idx, column=0, sticky=tk.W, padx=8)
+            ent.grid(row=idx, column=1, sticky=tk.W)
             idx += 1
 
         try:
@@ -1607,40 +1629,39 @@ class Application():
                                                       *options,
                                                       command=self.calculation_domain_selected)
 
+        # Header rows 0-1; the structural-properties engine grids its content
+        # below them (see _pgrid, which offsets engine rows by _pg_row_offset).
         ttk.Label(self._tab_prop, text='Structural and calculation properties input below:',
                   font=self._text_size['Text 9 bold'],
-                  ).place(rely=prop_vert_start - delta_y * 2.1, relx=types_start,
-                          anchor=tk.NW)
+                  ).grid(row=0, column=0, columnspan=12, sticky=tk.W, padx=4, pady=(4, 0))
         ttk.Label(self._tab_prop, text='Select calculation domain ->',
                   font=self._text_size['Text 10 bold'],
-                  ).place(rely=prop_vert_start, relx=types_start,
-                          anchor=tk.NW)
-        self._ent_calculation_domain.place(rely=prop_vert_start, relx=types_start + delta_x * 5)
+                  ).grid(row=1, column=0, columnspan=6, sticky=tk.W, padx=4)
+        self._ent_calculation_domain.grid(row=1, column=6, columnspan=6, sticky=tk.W)
 
         # --- Compartment/tank load input and information ---
         load_vert_start = 0.05  # frame_horizontal -0.03
 
         ttk.Label(self._tab_comp, text='Selected compartment from box below:', ) \
-            .place(relx=types_start, rely=load_vert_start + 8 * delta_y)
+            .grid(row=2, column=0, columnspan=3, sticky=tk.W, padx=6, pady=(10, 2))
 
         self._selected_tank = ttk.Label(self._tab_comp, text='', font='Verdana 20 bold')
-        self._selected_tank.place(relx=0.3, rely=load_vert_start + 10 * delta_y)
+        self._selected_tank.grid(row=3, column=1, sticky=tk.NW, padx=6)
 
         self._compartments_listbox = tk.Listbox(self._tab_comp, height=int(10 * 1),
                                                 width=int(5 * 1),
                                                 font=self._text_size["Text 10 bold"]
                                                 ,
                                                 selectmode='extended')
-        self._compartments_listbox.place(relx=types_start, rely=load_vert_start + 10 * delta_y)
+        self._compartments_listbox.grid(row=3, column=0, rowspan=8, sticky=tk.NW, padx=6)
         self._compartments_listbox.bind('<<ListboxSelect>>', self.button_1_click_comp_box)
 
         ttk.Button(self._tab_comp, text="Set compartment\n""properties.", command=self.update_tank,
                    style="Bold.TButton") \
-            .place(relx=types_start + delta_x * 4, rely=load_vert_start + delta_y * 10, relwidth=0.3)
+            .grid(row=4, column=2, sticky=tk.EW, padx=6, pady=2)
 
         ttk.Button(self._tab_comp, text="Delete all tanks", command=self.delete_all_tanks,
-                   style="Bold.TButton").place(relx=types_start + delta_x * 4, rely=load_vert_start + delta_y * 12,
-                                               relwidth=0.3)
+                   style="Bold.TButton").grid(row=5, column=2, sticky=tk.EW, padx=6, pady=2)
 
         self._ent_content_type = ttk.OptionMenu(self._tab_comp, self._new_content_type,
                                                 list(self._tank_options.keys())[0], *list(self._tank_options.keys()),
@@ -1667,26 +1688,20 @@ class Application():
         comp_dy = delta_y
         comp_ent_x = ent_x
         comp_ent_y = 0.4
-        ttk.Label(self._tab_comp, text='', ) \
-            .place(relx=0.052083333, rely=comp_ent_y + 3.4 * comp_dy)
-        ttk.Label(self._tab_comp, text='Tank content :', font=self._text_size['Text 8'], ) \
-            .place(relx=hor_start, rely=comp_ent_y + comp_dy * 4.5)
-        self._ent_content_type.place(relx=comp_ent_x + 0.35 * comp_dx, rely=comp_ent_y + comp_dy * 4.5)
-        ttk.Label(self._tab_comp, text='Tank density [kg/m^3]:', font=self._text_size['Text 8'], ) \
-            .place(relx=hor_start, rely=comp_ent_y + comp_dy * 6)
-        self._ent_density.place(relx=comp_ent_x + 0.4 * comp_dx, rely=comp_ent_y + comp_dy * 6)
-        ttk.Label(self._tab_comp, text='Overpressure [Pa]:', font=self._text_size['Text 8'], ) \
-            .place(relx=hor_start, rely=comp_ent_y + comp_dy * 7)
-        self._ent_overpressure.place(relx=comp_ent_x + 0.4 * comp_dx, rely=comp_ent_y + comp_dy * 7)
-        ttk.Label(self._tab_comp, text='Max elevation [m]:', font=self._text_size['Text 8'], ) \
-            .place(relx=hor_start, rely=comp_ent_y + comp_dy * 8)
-        self._ent_max_el.place(relx=comp_ent_x + 0.4 * comp_dx, rely=comp_ent_y + comp_dy * 8)
-        ttk.Label(self._tab_comp, text='Min elevation [m]:', font=self._text_size['Text 8'], ) \
-            .place(relx=hor_start, rely=comp_ent_y + comp_dy * 9)
-        self._ent_min_el.place(relx=comp_ent_x + 0.4 * comp_dx, rely=comp_ent_y + comp_dy * 9)
+        tank_rows = (
+            ('Tank content :', self._ent_content_type),
+            ('Tank density [kg/m^3]:', self._ent_density),
+            ('Overpressure [Pa]:', self._ent_overpressure),
+            ('Max elevation [m]:', self._ent_max_el),
+            ('Min elevation [m]:', self._ent_min_el),
+        )
+        for tank_row, (text, widget) in enumerate(tank_rows):
+            ttk.Label(self._tab_comp, text=text, font=self._text_size['Text 8'], ) \
+                .grid(row=11 + tank_row, column=0, sticky=tk.W, padx=6, pady=1)
+            widget.grid(row=11 + tank_row, column=1, sticky=tk.W, pady=1)
         self._tank_acc_label = ttk.Label(self._tab_comp, text='Acceleration [m/s^2]: ',
                                          font=self._text_size['Text 8'], )
-        self._tank_acc_label.place(relx=hor_start, rely=comp_ent_y + comp_dy * 10)
+        self._tank_acc_label.grid(row=16, column=0, columnspan=2, sticky=tk.W, padx=6, pady=1)
 
         # --- button to create compartments and define external pressures ---
 
@@ -1699,19 +1714,17 @@ class Application():
             photo = tk.PhotoImage(file=file_path)
             self._int_button = tk.Button(self._tab_comp, image=photo, command=self.grid_find_tanks, bg='white')
             self._int_button.image = photo
-            self._int_button.place(relx=types_start + delta_x, rely=load_vert_start + delta_y * 3,
-                                   relheight=0.07, relwidth=0.6)
+            self._int_button.grid(row=1, column=0, columnspan=3, sticky=tk.EW, padx=6, pady=2)
         except TclError:
             tk.Button(self._tab_comp, text='New tanks - start search \n'
                                            'to find compartments', command=self.grid_find_tanks,
                       bg=self._button_bg_color, fg=self._button_fg_color, ) \
-                .place(relx=types_start, rely=load_vert_start + 1.55 * delta_y,
-                       relheight=0.044, relwidth=0.3)
+                .grid(row=1, column=0, columnspan=3, sticky=tk.EW, padx=6, pady=2)
 
         show_compartment = ttk.Button(self._tab_comp, text='Display current\n compartments',
                                       command=self.grid_display_tanks,
                                       style="Bold.TButton")
-        show_compartment.place(relx=types_start + delta_x * 4, rely=load_vert_start + delta_y * 14, relwidth=0.3)
+        show_compartment.grid(row=6, column=2, sticky=tk.EW, padx=6, pady=2)
 
         try:
             img_file_name = 'img_ext_pressure_button.gif'
@@ -1724,97 +1737,83 @@ class Application():
             self._ext_button = tk.Button(self._tab_comp, image=photo, command=self.on_show_loads,
                                          bg='white')
             self._ext_button.image = photo
-            self._ext_button.place(relx=types_start + delta_x, rely=load_vert_start,
-                                   relheight=0.07, relwidth=0.6)
+            self._ext_button.grid(row=0, column=0, columnspan=3, sticky=tk.EW, padx=6, pady=(6, 2))
         except TclError:
             tk.Button(self._tab_comp, text='New external load window \nsea - static/dynamic',
                       command=self.on_show_loads
                       ) \
-                .place(relx=ent_x + delta_x * 1.5, rely=load_vert_start + 1.55 * delta_y,
-                       relheight=0.044, relwidth=0.11)
+                .grid(row=0, column=0, columnspan=3, sticky=tk.EW, padx=6, pady=(6, 2))
 
         lc_x, lc_x_delta, lc_y, lc_y_delta = 0.786458333, 0.015625, 0.12037037, 0.023148148
 
         # --- infomation on accelerations ----
-        ttk.Label(self._main_fr, text='Static and dynamic accelerations',
-                  ) \
-            .place(relx=lc_x, rely=lc_y - 5 * lc_y_delta)
-        ttk.Label(self._main_fr, text='Static acceleration [m/s^2]: ',
-                  ) \
-            .place(relx=lc_x, rely=lc_y - 4 * lc_y_delta)
-        ttk.Label(self._main_fr, text='Dyn. acc. loaded [m/s^2]:',
-                  ) \
-            .place(relx=lc_x, rely=lc_y - 3 * lc_y_delta)
-        ttk.Label(self._main_fr, text='Dyn. acc. ballast [m/s^2]:',
-                  ) \
-            .place(relx=lc_x, rely=lc_y - 2 * lc_y_delta)
+        self._mgrid(ttk.Label(self._loads_panel, text='Static and dynamic accelerations',
+                  ), relx=lc_x, rely=lc_y - 5 * lc_y_delta)
+        self._mgrid(ttk.Label(self._loads_panel, text='Static acceleration [m/s^2]: ',
+                  ), relx=lc_x, rely=lc_y - 4 * lc_y_delta)
+        self._mgrid(ttk.Label(self._loads_panel, text='Dyn. acc. loaded [m/s^2]:',
+                  ), relx=lc_x, rely=lc_y - 3 * lc_y_delta)
+        self._mgrid(ttk.Label(self._loads_panel, text='Dyn. acc. ballast [m/s^2]:',
+                  ), relx=lc_x, rely=lc_y - 2 * lc_y_delta)
         self._new_dyn_acc_loaded = tk.DoubleVar()
         self._new_dyn_acc_ballast = tk.DoubleVar()
         self._new_static_acc = tk.DoubleVar()
         self._new_static_acc.set(9.81), self._new_dyn_acc_loaded.set(0), self._new_dyn_acc_ballast.set(0)
         shift_x_acc = 0.08
-        ttk.Entry(self._main_fr, textvariable=self._new_static_acc, width=10,
-                  ) \
-            .place(relx=lc_x + shift_x_acc, rely=lc_y - 4 * lc_y_delta)
-        ttk.Entry(self._main_fr, textvariable=self._new_dyn_acc_loaded, width=10,
-                  ) \
-            .place(relx=lc_x + shift_x_acc, rely=lc_y - 3 * lc_y_delta)
-        ttk.Entry(self._main_fr, textvariable=self._new_dyn_acc_ballast, width=10,
-                  ) \
-            .place(relx=lc_x + shift_x_acc, rely=lc_y - 2 * lc_y_delta)
-        ttk.Button(self._main_fr, text='Set\naccelerations', command=self.create_accelerations,
-                   style="Bold.TButton") \
-            .place(relx=lc_x + shift_x_acc * 1.5, rely=lc_y - 4 * lc_y_delta)
+        self._mgrid(ttk.Entry(self._loads_panel, textvariable=self._new_static_acc, width=10,
+                  ), relx=lc_x + shift_x_acc, rely=lc_y - 4 * lc_y_delta)
+        self._mgrid(ttk.Entry(self._loads_panel, textvariable=self._new_dyn_acc_loaded, width=10,
+                  ), relx=lc_x + shift_x_acc, rely=lc_y - 3 * lc_y_delta)
+        self._mgrid(ttk.Entry(self._loads_panel, textvariable=self._new_dyn_acc_ballast, width=10,
+                  ), relx=lc_x + shift_x_acc, rely=lc_y - 2 * lc_y_delta)
+        self._mgrid(ttk.Button(self._loads_panel, text='Set\naccelerations', command=self.create_accelerations,
+                   style="Bold.TButton"), relx=lc_x + shift_x_acc * 1.5, rely=lc_y - 4 * lc_y_delta)
 
         # --- checkbuttons and labels ---
         self._dnv_a_chk, self._dnv_b_chk = tk.IntVar(), tk.IntVar()
         self._tank_test_chk, self._manual_chk = tk.IntVar(), tk.IntVar()
         self._check_button_load_comb = [self._dnv_a_chk, self._dnv_b_chk, self._tank_test_chk, self._manual_chk]
-        self._active_label = ttk.Label(self._main_fr, text='',
+        self._active_label = ttk.Label(self._loads_panel, text='',
                                        )
-        self._active_label.place(relx=lc_x + lc_x_delta * 10, rely=lc_y - lc_y_delta * 5)
-        ttk.Label(self._main_fr, text='Combination for line (select line). Change with slider.: ',
-                  ) \
-            .place(relx=lc_x, rely=lc_y + 2.5 * delta_y)
+        self._mgrid(self._active_label, relx=lc_x + lc_x_delta * 10, rely=lc_y - lc_y_delta * 5)
+        self._mgrid(ttk.Label(self._loads_panel, text='Combination for line (select line). Change with slider.: ',
+                  ), relx=lc_x, rely=lc_y + 2.5 * delta_y)
 
         lc_y += 0.148148148
-        self._combination_slider = ttk.Scale(self._main_fr, from_=1, to=4, command=self.gui_load_combinations,
+        self._combination_slider = ttk.Scale(self._loads_panel, from_=1, to=4, command=self.gui_load_combinations,
                                              length=400,
                                              orient='horizontal')
-        ttk.Label(self._main_fr, text='1: DNV a)                    2: DNV b)                    3: TankTest        '
-                                      '            4: Cylinder') \
-            .place(relx=lc_x + 0 * lc_x_delta, rely=lc_y - 2 * lc_y_delta)
+        self._mgrid(ttk.Label(self._loads_panel, text='1: DNV a)                    2: DNV b)                    3: TankTest        '
+                                      '            4: Cylinder'), relx=lc_x + 0 * lc_x_delta, rely=lc_y - 2 * lc_y_delta)
 
-        self._combination_slider.place(relx=lc_x + 0 * lc_x_delta, rely=lc_y - 3 * lc_y_delta)
+        self._mgrid(self._combination_slider, relx=lc_x + 0 * lc_x_delta, rely=lc_y - 3 * lc_y_delta)
         self._combination_slider_map = {1: 'dnva', 2: 'dnvb', 3: 'tanktest', 4: 'Cylinder'}
-        ttk.Label(self._main_fr, text='Name:', ) \
-            .place(relx=lc_x + 0 * lc_x_delta, rely=lc_y)
-        ttk.Label(self._main_fr, text='Stat LF', ) \
-            .place(relx=lc_x + 8.5 * lc_x_delta, rely=lc_y)
-        ttk.Label(self._main_fr, text='Dyn LF', ) \
-            .place(relx=lc_x + 10.2 * lc_x_delta, rely=lc_y)
-        ttk.Label(self._main_fr, text='Include?', font=self._text_size['Text 7'], ) \
-            .place(relx=lc_x + 11.8 * lc_x_delta, rely=lc_y)
+        # Header columns aligned with the data columns below (Stat LF/Dyn LF/
+        # Include entries are created at 5/6/7 * lc_x_delta) so the load-combo
+        # table stays compact in the narrow control pane.
+        self._mgrid(ttk.Label(self._loads_panel, text='Name:', ), relx=lc_x + 0 * lc_x_delta, rely=lc_y)
+        self._mgrid(ttk.Label(self._loads_panel, text='Stat LF', ), relx=lc_x + 5 * lc_x_delta, rely=lc_y)
+        self._mgrid(ttk.Label(self._loads_panel, text='Dyn LF', ), relx=lc_x + 6 * lc_x_delta, rely=lc_y)
+        self._mgrid(ttk.Label(self._loads_panel, text='Include?', font=self._text_size['Text 7'], ), relx=lc_x + 7 * lc_x_delta, rely=lc_y)
 
-        self._result_label_dnva = ttk.Label(self._main_fr, text='DNV a [Pa]: ', font='Text 8', )
-        self._result_label_dnvb = ttk.Label(self._main_fr, text='DNV b [Pa]: ', font=self._text_size["Text 8"],
+        self._result_label_dnva = ttk.Label(self._loads_panel, text='DNV a [Pa]: ', font='Text 8', )
+        self._result_label_dnvb = ttk.Label(self._loads_panel, text='DNV b [Pa]: ', font=self._text_size["Text 8"],
                                             )
-        self._result_label_tanktest = ttk.Label(self._main_fr, text='Tank test [Pa]: ', font=self._text_size["Text 8"],
+        self._result_label_tanktest = ttk.Label(self._loads_panel, text='Tank test [Pa]: ', font=self._text_size["Text 8"],
                                                 )
-        self._result_label_manual = ttk.Label(self._main_fr, text='Manual [Pa]: ', font=self._text_size["Text 8"],
+        self._result_label_manual = ttk.Label(self._loads_panel, text='Manual [Pa]: ', font=self._text_size["Text 8"],
                                               )
         self.results_gui_start = 0.6
-        self._lab_pressure = ttk.Label(self._main_fr,
+        self._lab_pressure = ttk.Label(self._loads_panel,
                                        text='Pressures for this line: \n(DNV a/b [loaded/ballast], tank test, manual)\n'
                                             'Note that ch. 4.3.7 and 4.3.8 is accounted for.',
                                        font=self._text_size["Text 10"],
                                        )
-        self._lab_pressure.place(relx=0.786458333, rely=self.results_gui_start)
+        self._mgrid(self._lab_pressure, relx=0.786458333, rely=self.results_gui_start)
 
         # --- optimize button ---
-        ttk.Label(self._main_fr, text='Optimize selected line/structure (right click line):',
-                  font=self._text_size['Text 9 bold'], ) \
-            .place(relx=lc_x, rely=lc_y - 7 * lc_y_delta)
+        self._mgrid(ttk.Label(self._loads_panel, text='Optimize selected line/structure (right click line):',
+                  font=self._text_size['Text 9 bold'], ), relx=lc_x, rely=lc_y - 7 * lc_y_delta)
         try:
             img_file_name = 'img_optimize.gif'
             if os.path.isfile('images/' + img_file_name):
@@ -1822,14 +1821,14 @@ class Application():
             else:
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
-            self._opt_button = tk.Button(self._main_fr, image=photo, command=self.on_optimize,
+            self._opt_button = tk.Button(self._loads_panel, image=photo, command=self.on_optimize,
                                          bg='white', fg=self._button_fg_color)
             self._opt_button.image = photo
-            self._opt_button.place(relx=lc_x, rely=lc_y - 6 * lc_y_delta, relheight=0.04, relwidth=0.098)
+            self._mgrid(self._opt_button, relx=lc_x, rely=lc_y - 6 * lc_y_delta, relheight=0.04, relwidth=0.098)
         except TclError:
-            self._opt_button = tk.Button(self._main_fr, text='Optimize', command=self.on_optimize,
+            self._opt_button = tk.Button(self._loads_panel, text='Optimize', command=self.on_optimize,
                                          bg=self._button_bg_color, fg=self._button_fg_color)
-            self._opt_button.place(relx=lc_x, rely=lc_y - 6 * lc_y_delta, relheight=0.04, relwidth=0.098)
+            self._mgrid(self._opt_button, relx=lc_x, rely=lc_y - 6 * lc_y_delta, relheight=0.04, relwidth=0.098)
         try:
             img_file_name = 'img_multi_opt.gif'
             if os.path.isfile('images/' + img_file_name):
@@ -1837,14 +1836,14 @@ class Application():
             else:
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
-            self._opt_button_mult = tk.Button(self._main_fr, image=photo, command=self.on_optimize_multiple,
+            self._opt_button_mult = tk.Button(self._loads_panel, image=photo, command=self.on_optimize_multiple,
                                               bg=self._button_bg_color, fg=self._button_fg_color)
             self._opt_button_mult.image = photo
-            self._opt_button_mult.place(relx=lc_x + 0.1, rely=lc_y - 6 * lc_y_delta, relheight=0.04, relwidth=0.065)
+            self._mgrid(self._opt_button_mult, relx=lc_x + 0.1, rely=lc_y - 6 * lc_y_delta, relheight=0.04, relwidth=0.065)
         except TclError:
-            self._opt_button_mult = tk.Button(self._main_fr, text='MultiOpt', command=self.on_optimize_multiple,
+            self._opt_button_mult = tk.Button(self._loads_panel, text='MultiOpt', command=self.on_optimize_multiple,
                                               bg=self._button_bg_color, fg=self._button_fg_color)
-            self._opt_button_mult.place(relx=lc_x + 0.1, rely=lc_y - 6 * lc_y_delta, relheight=0.04, relwidth=0.065)
+            self._mgrid(self._opt_button_mult, relx=lc_x + 0.1, rely=lc_y - 6 * lc_y_delta, relheight=0.04, relwidth=0.065)
 
         try:
             img_file_name = 'cylinder_opt.png'
@@ -1853,17 +1852,17 @@ class Application():
             else:
                 file_path = self._root_dir + '/images/' + img_file_name
             photo = tk.PhotoImage(file=file_path)
-            self._opt_cylinder = tk.Button(self._main_fr, image=photo, command=self.on_optimize_cylinder,
+            self._opt_cylinder = tk.Button(self._loads_panel, image=photo, command=self.on_optimize_cylinder,
                                            bg='white', fg='white')
             self._opt_cylinder.image = photo
         except TclError:
-            self._opt_cylinder = tk.Button(self._main_fr, text='Cylinder optimization',
+            self._opt_cylinder = tk.Button(self._loads_panel, text='Cylinder optimization',
                                            command=self.on_optimize_cylinder,
                                            bg=self._button_bg_color, fg=self._button_fg_color)
 
-        self._opt_button_span = ttk.Button(self._main_fr, text='SPAN', command=self.on_geometry_optimize,
+        self._opt_button_span = ttk.Button(self._loads_panel, text='SPAN', command=self.on_geometry_optimize,
                                            style="Bold.TButton")
-        self._opt_button_span.place(relx=lc_x + 0.167, rely=lc_y - 6 * lc_y_delta, relheight=0.04,
+        self._mgrid(self._opt_button_span, relx=lc_x + 0.167, rely=lc_y - 6 * lc_y_delta, relheight=0.04,
                                     relwidth=0.04)
 
         self._optimization_buttons = {'Flat plate, stiffened': [self._opt_button, self._opt_button_mult,
@@ -1881,14 +1880,12 @@ class Application():
                                       'cylinder place': [[lc_x, lc_y - 6 * lc_y_delta, 0.04, 0.175]]}
 
         # Load information button
-        ttk.Button(self._main_fr, text='Load info', command=self.button_load_info_click, style="Bold.TButton") \
-            .place(relx=0.78, rely=0.7, relwidth=0.04)
+        self._mgrid(ttk.Button(self._loads_panel, text='Load info', command=self.button_load_info_click, style="Bold.TButton"), relx=0.78, rely=0.7, relwidth=0.04)
 
-        # ttk.Button(self._main_fr, text='Load info', command=self.button_load_info_click,style = "Bold.TButton")\
+        # ttk.Button(self._loads_panel, text='Load info', command=self.button_load_info_click,style = "Bold.TButton")\
         #    .place(relx=0.78,rely=0.7, relwidth = 0.04)
         # Load information button
-        ttk.Button(self._main_fr, text='Load factors', command=self.on_open_load_factor_window, style="Bold.TButton") \
-            .place(relx=0.8225, rely=0.7, relwidth=0.05)
+        self._mgrid(ttk.Button(self._loads_panel, text='Load factors', command=self.on_open_load_factor_window, style="Bold.TButton"), relx=0.8225, rely=0.7, relwidth=0.05)
 
         # # Wight developement plot
         # self._weight_button = ttk.Button(self._main_fr, text='Weights',
@@ -1923,7 +1920,7 @@ class Application():
             variable=self._new_show_prop_3d,
             command=self.update_frame,
         )
-        self._chk_show_prop_3d.place(relx=0.637, rely=0.705)
+        self._mgrid(self._chk_show_prop_3d, relx=0.637, rely=0.705)
 
         # Minimum practical size for the current Tkinter layout.  Apply this
         # before the initial property placement so winfo_width() has a real
@@ -1969,27 +1966,19 @@ class Application():
             ent_bg = 'white'
             cavas_bg = '#ffd700'
         elif theme == 'modelling':
-            self._main_canvas.place_forget()
-            x_canvas_place = 0.26
-            self._main_canvas.place(relx=x_canvas_place, rely=0, relwidth=0.74, relheight=0.99)
-            tk.Misc.lift(self._main_canvas)
+            self._set_canvas_full_height(True)  # hide bottom canvases, drawing fills the pane
             self._gui_functional_look = 'modelling'
             self._place_3d_section_view_checkbox()
         elif theme == 'all items':
             self._gui_functional_look = 'all items'
-            self._main_canvas.place_forget()
-            x_canvas_place = 0.26
-            self._main_canvas.place(relx=x_canvas_place, rely=0, relwidth=0.523, relheight=0.73)
+            self._set_canvas_full_height(False)  # show property/result canvases
             self._place_3d_section_view_checkbox()
         elif theme == 'cylinder':
-            self._main_canvas.place_forget()
-            x_canvas_place = 0.26
-            self._main_canvas.place(relx=x_canvas_place, rely=0, relwidth=0.74, relheight=0.73)
-            tk.Misc.lift(self._main_canvas)
+            self._set_canvas_full_height(False)
             self._gui_functional_look = 'cylinder'
             self._place_3d_section_view_checkbox()
             placement = self._gui_functional_look_cylinder_opt  # [0.786458333, 0.12962963000000005, 0.04, 0.175]
-            self._opt_cylinder.place(relx=placement[0], rely=placement[1], relheight=placement[2],
+            self._mgrid(self._opt_cylinder, relx=placement[0], rely=placement[1], relheight=placement[2],
                                      relwidth=placement[3])
             tk.Misc.lift(self._opt_cylinder)
 
@@ -2020,7 +2009,7 @@ class Application():
     def _place_3d_section_view_checkbox(self):
         """Keep the 3D preview checkbox visible when functional modes move the main canvas."""
         try:
-            self._chk_show_prop_3d.place(relx=0.637, rely=0.705)
+            self._mgrid(self._chk_show_prop_3d, relx=0.637, rely=0.705)
             self._chk_show_prop_3d.lift()
         except Exception:
             pass
@@ -2029,10 +2018,10 @@ class Application():
         """Show the runtime FEM entry point only for single/multi modes."""
         try:
             if not getattr(self, '_fea_buckling_mode', False):
-                self._runtime_fem_button.place(relx=0.89, rely=0.69, relwidth=0.095)
+                self._mgrid(self._runtime_fem_button, relx=0.89, rely=0.69, relwidth=0.095)
                 self._runtime_fem_button.lift()
             else:
-                self._runtime_fem_button.place_forget()
+                self._mgrid_forget(self._runtime_fem_button)
         except Exception:
             pass
 
@@ -2253,7 +2242,13 @@ class Application():
         except Exception:
             pass
         try:
-            self._chk_show_prop_3d.place_forget()
+            self._mgrid_forget(self._chk_show_prop_3d)
+        except Exception:
+            pass
+        # Hide the accelerations / optimization / load-combination controls;
+        # FEA-result buckling has its own right-hand control panel.
+        try:
+            self._loads_panel.grid_remove()
         except Exception:
             pass
 
@@ -2274,6 +2269,10 @@ class Application():
     def _apply_simplified_calculation_layout(self):
         """Hide modelling tabs and make the line-property tab the primary input surface."""
         try:
+            self._loads_panel.grid()
+        except Exception:
+            pass
+        try:
             self._tabControl.hide(self._tab_geo)
             self._tabControl.hide(self._tab_comp)
             self._tabControl.select(self._tab_prop)
@@ -2288,6 +2287,10 @@ class Application():
     def _show_standard_calculation_layout(self):
         """Restore modelling tabs and controls for the standard multi-panel workflow."""
         self._clear_fea_buckling_option_widgets()
+        try:
+            self._loads_panel.grid()
+        except Exception:
+            pass
         try:
             self._tabControl.add(self._tab_geo, text='Geometry')
             self._tabControl.add(self._tab_comp, text='Compartments and loads')
@@ -2794,15 +2797,9 @@ class Application():
     def _ensure_fea_lower_panes_visible(self):
         """Keep FEA mode's selected-panel sketch and result text panes visible."""
         try:
-            main_place = self._main_canvas.place_info()
-            x_canvas_place = float(main_place.get('relx', 0.26))
-            right_limit = 0.915
-            total_width = max(right_limit - x_canvas_place, 0.30)
-            prop_width = total_width * 0.43
-            result_width = total_width - prop_width
-            self._prop_canvas.place(relx=x_canvas_place, rely=0.73, relwidth=prop_width, relheight=0.27)
-            self._result_canvas.place(relx=x_canvas_place + prop_width, rely=0.73,
-                                      relwidth=result_width, relheight=0.27)
+            # The property/result canvases share the bottom band of the canvas
+            # pane; make sure they are shown (they are grid-managed there).
+            self._set_canvas_full_height(False)
             tk.Misc.lift(self._prop_canvas)
             tk.Misc.lift(self._result_canvas)
         except Exception:
@@ -3060,6 +3057,97 @@ class Application():
         self.gui_load_combinations(self._combination_slider.get())
         return True
 
+    def _pgrid(self, widget, relx=0.0, rely=0.0, relwidth=None, relheight=None, anchor=None):
+        """Grid a property-tab widget from the engine's rel-coordinate scheme.
+
+        The structural-properties layout engine computes ``relx = hor_start +
+        M * delta_x`` (a logical column) and ``rely = base + N * delta_y`` (a
+        logical row).  This helper recovers those integer positions and places
+        the widget with grid instead of place, so the whole property tab is
+        grid-managed while the engine keeps its readable row/column logic.
+        """
+        col = int(round((float(relx) - self._pg_x0) / self._pg_dx))
+        row = int(round((float(rely) - self._pg_y0) / self._pg_dy)) + self._pg_row_offset
+        col = max(col, 0)
+        row = max(row, self._pg_row_offset)
+        columnspan = 1
+        if relwidth:
+            columnspan = max(1, int(round(float(relwidth) / self._pg_dx)))
+        widget.grid(row=row, column=col, columnspan=columnspan, sticky=tk.W, padx=2, pady=1)
+
+    @staticmethod
+    def _pgrid_forget(widget):
+        """Remove a property-tab widget from the grid (safe if never gridded)."""
+        try:
+            widget.grid_forget()
+        except Exception:
+            pass
+
+    _MAIN_GRID_N = 200
+
+    def _uniform_grid(self, container, n=None):
+        """Configure a fine uniform NxN grid so grid can reproduce the
+        proportional (relx/rely/relwidth/relheight) overlay layout the main
+        window used with place.  Every cell is an equal 1/N fraction."""
+        n = n or self._MAIN_GRID_N
+        for i in range(n):
+            container.rowconfigure(i, weight=1, uniform='mg')
+            container.columnconfigure(i, weight=1, uniform='mg')
+
+    # Control-panel pane coordinate origin/pitch (former window-relative
+    # placement of the right-hand region started at ~0.786 with a ~0.0156 x
+    # pitch and ~0.011 y pitch).  _mgrid maps those proportional coordinates to
+    # a logical grid in the right pane: empty cells collapse, so the widgets
+    # stack into a compact, non-overlapping form.
+    _RG_X0 = 0.786
+    _RG_DX = 0.0156
+    _RG_DY = 0.011
+
+    def _grid_prop_3d(self, place=None):
+        """Place the 3D preview in the middle (canvas) pane, overlaying the 2D
+        drawing so the 3D section view replaces the 2D view while it is shown.
+        The stiffener sketch and result text stay in the bottom band."""
+        self._prop_3d_frame.grid(row=0, column=0, columnspan=2, sticky=tk.NSEW)
+        self._prop_3d_frame.lift()
+
+    def _set_canvas_full_height(self, full_height):
+        """Toggle the drawing canvas between filling the whole canvas pane and
+        sharing it with the property/result canvases below."""
+        try:
+            if full_height:
+                self._prop_canvas.grid_remove()
+                self._result_canvas.grid_remove()
+                self._main_canvas.grid_configure(rowspan=2)
+            else:
+                self._main_canvas.grid_configure(rowspan=1)
+                self._prop_canvas.grid()
+                self._result_canvas.grid()
+        except Exception:
+            pass
+
+    def _mgrid(self, widget, relx=0.0, rely=0.0, relwidth=None, relheight=None,
+               anchor=None, in_=None, lift=False):
+        """Grid a control-panel widget from its former proportional position."""
+        col = max(0, int(round((float(relx) - self._RG_X0) / self._RG_DX)))
+        row = max(0, int(round(float(rely) / self._RG_DY)))
+        if relwidth is not None:
+            columnspan = max(1, int(round(float(relwidth) / self._RG_DX)))
+        else:
+            columnspan = 2
+        widget.grid(row=row, column=col, columnspan=columnspan, sticky=tk.W, padx=1, pady=1)
+        if lift:
+            try:
+                widget.lift()
+            except Exception:
+                pass
+
+    @staticmethod
+    def _mgrid_forget(widget):
+        try:
+            widget.grid_forget()
+        except Exception:
+            pass
+
     def gui_structural_properties(self, flat_panel_stf_girder=False, flat_unstf=False, flat_stf=True,
                                   shell=False, long_stf=False, ring_stf=False,
                                   ring_frame=False, force_input=False, stress_input=False, conical=False):
@@ -3074,6 +3162,14 @@ class Application():
         else:
             delta_y = 0.024
             delta_x = 0.13
+
+        # Base coordinates used by _pgrid to recover integer grid row/column.
+        # Engine content starts below the two header rows (domain selector).
+        self._pg_x0 = hor_start
+        self._pg_y0 = vert_start
+        self._pg_dx = delta_x
+        self._pg_dy = delta_y
+        self._pg_row_offset = 2
 
         ent_relx = hor_start + 6 * delta_x
 
@@ -3095,105 +3191,105 @@ class Application():
             '''
             # Top buttons
             top_button_shift = 0.2
-            self._stf_button.place(relx=hor_start, rely=vert_start + top_button_shift * delta_y)
-            self._stress_button.place(relx=hor_start + delta_x * 1.5, rely=vert_start + top_button_shift * delta_y)
-            self._fls_button.place(relx=hor_start + delta_x * 3, rely=vert_start + top_button_shift * delta_y)
-            self.add_stucture.place(relx=hor_start + delta_x * 4.5, rely=vert_start + top_button_shift * delta_y,
+            self._pgrid(self._stf_button, relx=hor_start, rely=vert_start + top_button_shift * delta_y)
+            self._pgrid(self._stress_button, relx=hor_start + delta_x * 1, rely=vert_start + top_button_shift * delta_y)
+            self._pgrid(self._fls_button, relx=hor_start + delta_x * 2, rely=vert_start + top_button_shift * delta_y)
+            self._pgrid(self.add_stucture, relx=hor_start + delta_x * 3, rely=vert_start + top_button_shift * delta_y,
                                     relheight=0.065, relwidth=0.39)
 
             # Input fields
             if any([shell, long_stf, ring_stf, ring_frame, force_input, stress_input]):
                 return
 
-            self._flat_gui_headlines[0].place(relx=hor_start, rely=vert_start + 3 * delta_y)
+            self._pgrid(self._flat_gui_headlines[0], relx=hor_start, rely=vert_start + 3 * delta_y)
 
             idx = 4
             for pl_lab, pl_ent in zip(self._flat_gui_lab_plate, self._flat_gui_plate):
-                pl_lab.place(relx=hor_start, rely=vert_start + idx * delta_y)
-                pl_ent.place(relx=hor_start + 3 * delta_x, rely=vert_start + idx * delta_y)
+                self._pgrid(pl_lab, relx=hor_start, rely=vert_start + idx * delta_y)
+                self._pgrid(pl_ent, relx=hor_start + 3 * delta_x, rely=vert_start + idx * delta_y)
                 idx += 1
 
             for stf_lab, stf_ent, girder_ent in zip(self._flat_gui_lab_stf, self._flat_gui_stf, self._flat_gui_girder):
                 if flat_panel_stf_girder:
-                    girder_ent.place(relx=hor_start + 5 * delta_x, rely=vert_start + idx * delta_y)
+                    self._pgrid(girder_ent, relx=hor_start + 5 * delta_x, rely=vert_start + idx * delta_y)
                 if flat_stf:
-                    stf_lab.place(relx=hor_start, rely=vert_start + idx * delta_y)
-                    stf_ent.place(relx=hor_start + 3 * delta_x, rely=vert_start + idx * delta_y)
+                    self._pgrid(stf_lab, relx=hor_start, rely=vert_start + idx * delta_y)
+                    self._pgrid(stf_ent, relx=hor_start + 3 * delta_x, rely=vert_start + idx * delta_y)
                     idx += 1
 
-            self._flat_gui_headlines[3].place(relx=hor_start + 0 * delta_x, rely=vert_start + idx * delta_y)
+            self._pgrid(self._flat_gui_headlines[3], relx=hor_start + 0 * delta_x, rely=vert_start + idx * delta_y)
             idx += 1
             this_count = 1
             for load_lab, load_ent in zip(self._flat_gui_lab_loads, self._flat_gui_loads):
-                load_lab.place(relx=hor_start, rely=vert_start + idx * delta_y)
-                load_ent.place(relx=hor_start + 3 * delta_x, rely=vert_start + idx * delta_y)
+                self._pgrid(load_lab, relx=hor_start, rely=vert_start + idx * delta_y)
+                self._pgrid(load_ent, relx=hor_start + 3 * delta_x, rely=vert_start + idx * delta_y)
                 idx += 1
                 this_count += 1
-            idx_now = idx
-            idx -= this_count
-            self._flat_gui_headlines[4].place(relx=hor_start + 5 * delta_x, rely=vert_start + idx * delta_y)
+            self._pgrid(self._flat_gui_headlines[5], relx=hor_start + 0 * delta_x, rely=vert_start + idx * delta_y)
             idx += 1
-            for prov_lab, prov_ent in zip(self._flat_gui_lab_os_c101_provisions, self._flat_gui_os_c101_provisions):
-                prov_lab.place(relx=hor_start + 5 * delta_x, rely=vert_start + idx * delta_y)
-                prov_ent.place(relx=hor_start + 6.5 * delta_x, rely=vert_start + idx * delta_y)
-                idx += 1
-            self._flat_btn_load_info.place(relx=hor_start + 5 * delta_x,
-                                           rely=vert_start + (idx + 1) * delta_y)
-            self._flat_btn_fixation_info.place(relx=hor_start + 6 * delta_x,
-                                               rely=vert_start + (idx - 7.5) * delta_y)
-            self._button_str_type.place(relx=hor_start + 5 * delta_x,
-                                        rely=vert_start + (idx + 3) * delta_y)
-            idx = idx_now
-            self._flat_gui_headlines[5].place(relx=hor_start + 0 * delta_x, rely=vert_start + idx * delta_y)
-            idx += 1
-            self._lab_buckling_method.place(relx=hor_start + 0 * delta_x, rely=vert_start + idx * delta_y)
-            self._buckling_method.place(relx=hor_start + 4 * delta_x, rely=vert_start + idx * delta_y * 0.99)
+            self._pgrid(self._lab_buckling_method, relx=hor_start + 0 * delta_x, rely=vert_start + idx * delta_y)
+            self._pgrid(self._buckling_method, relx=hor_start + 3 * delta_x, rely=vert_start + idx * delta_y * 0.99)
             idx += 1
             if flat_panel_stf_girder:
-                self._flat_gui_headlines[7].place(relx=hor_start + 6 * delta_x, rely=vert_start + idx * delta_y)
+                self._pgrid(self._flat_gui_headlines[7], relx=hor_start + 5 * delta_x, rely=vert_start + idx * delta_y)
             if flat_stf:
-                self._flat_gui_headlines[6].place(relx=hor_start + 4 * delta_x, rely=vert_start + idx * delta_y)
+                self._pgrid(self._flat_gui_headlines[6], relx=hor_start + 3 * delta_x, rely=vert_start + idx * delta_y)
                 idx += 1
 
             for buckling_lab, buckling_stf_ent, buckling_girder_ent in zip(self._flat_gui_buc_lab_stf_girder,
                                                                            self._flat_gui_buc_stf_opt,
                                                                            self._flat_gui_buc_girder_opt):
                 if flat_panel_stf_girder:
-                    buckling_girder_ent.place(relx=hor_start + 6 * delta_x, rely=vert_start + idx * delta_y)
+                    self._pgrid(buckling_girder_ent, relx=hor_start + 5 * delta_x, rely=vert_start + idx * delta_y)
                 if flat_stf:
-                    buckling_lab.place(relx=hor_start, rely=vert_start + idx * delta_y)
-                    buckling_stf_ent.place(relx=hor_start + 4 * delta_x, rely=vert_start + idx * delta_y)
+                    self._pgrid(buckling_lab, relx=hor_start, rely=vert_start + idx * delta_y)
+                    self._pgrid(buckling_stf_ent, relx=hor_start + 3 * delta_x, rely=vert_start + idx * delta_y)
                     idx += 1
 
             if flat_panel_stf_girder:
-                self._flat_gui_girder_moment_factor[0].place(relx=hor_start + 0 * delta_x,
+                self._pgrid(self._flat_gui_girder_moment_factor[0], relx=hor_start + 0 * delta_x,
                                                              rely=vert_start + idx * delta_y)
-                self._flat_gui_girder_moment_factor[1].place(relx=hor_start + 6 * delta_x,
+                self._pgrid(self._flat_gui_girder_moment_factor[1], relx=hor_start + 5 * delta_x,
                                                              rely=vert_start + idx * delta_y,
                                                              relwidth=0.08)
-                self._flat_gui_girder_moment_factor[2].place(relx=hor_start + 7 * delta_x,
+                self._pgrid(self._flat_gui_girder_moment_factor[2], relx=hor_start + 6 * delta_x,
                                                              rely=vert_start + idx * delta_y,
                                                              relwidth=0.08)
                 idx += 1
 
             for buckling_lab, buckling_ent in zip(self._flat_gui_buc_lab_common, self._flat_gui_buc_common_opt):
-                buckling_lab.place(relx=hor_start, rely=vert_start + idx * delta_y)
-                buckling_ent.place(relx=hor_start + 5 * delta_x, rely=vert_start + idx * delta_y)
+                self._pgrid(buckling_lab, relx=hor_start, rely=vert_start + idx * delta_y)
+                self._pgrid(buckling_ent, relx=hor_start + 3 * delta_x, rely=vert_start + idx * delta_y)
                 idx += 1
             for buckling_lab, buckling_ent in zip(self._flat_gui_lab_buckling, self._flat_gui_buckling):
-                buckling_lab.place_forget()
-                buckling_ent.place_forget()
+                self._pgrid_forget(buckling_lab)
+                self._pgrid_forget(buckling_ent)
 
             if self._new_buckling_method.get() in ['ML-Numeric (PULS based)', 'SemiAnalytical S3/U3']:
                 for buckling_lab, buckling_ent in zip(self._flat_gui_lab_buckling[:2],
                                                       self._flat_gui_buckling[:2]):
-                    buckling_lab.place(relx=hor_start, rely=vert_start + idx * delta_y)
-                    buckling_ent.place(relx=hor_start + 5 * delta_x, rely=vert_start + idx * delta_y)
+                    self._pgrid(buckling_lab, relx=hor_start, rely=vert_start + idx * delta_y)
+                    self._pgrid(buckling_ent, relx=hor_start + 3 * delta_x, rely=vert_start + idx * delta_y)
                     idx += 1
                 if self._new_puls_sp_or_up.get() == 'UP':
-                    self._lab_puls_up_supp.place(relx=hor_start, rely=vert_start + idx * delta_y)
-                    self._ent_puls_up_boundary.place(relx=hor_start + 5 * delta_x, rely=vert_start + idx * delta_y)
+                    self._pgrid(self._lab_puls_up_supp, relx=hor_start, rely=vert_start + idx * delta_y)
+                    self._pgrid(self._ent_puls_up_boundary, relx=hor_start + 3 * delta_x, rely=vert_start + idx * delta_y)
                     idx += 1
+
+            # Special provisions input: stacked below the main input column so
+            # it fits in the input tab without needing a cramped second column.
+            idx += 1
+            self._pgrid(self._flat_gui_headlines[4], relx=hor_start, rely=vert_start + idx * delta_y)
+            idx += 1
+            for prov_lab, prov_ent in zip(self._flat_gui_lab_os_c101_provisions, self._flat_gui_os_c101_provisions):
+                self._pgrid(prov_lab, relx=hor_start, rely=vert_start + idx * delta_y)
+                self._pgrid(prov_ent, relx=hor_start + 3 * delta_x, rely=vert_start + idx * delta_y)
+                idx += 1
+            self._pgrid(self._flat_btn_fixation_info, relx=hor_start, rely=vert_start + idx * delta_y)
+            self._pgrid(self._button_str_type, relx=hor_start + 3 * delta_x, rely=vert_start + idx * delta_y)
+            idx += 1
+            self._pgrid(self._flat_btn_load_info, relx=hor_start, rely=vert_start + idx * delta_y)
+            idx += 1
 
             # optimize buttons
 
@@ -3201,11 +3297,11 @@ class Application():
                         'cylinder']:
                 for btn, placement in zip(self._optimization_buttons[dom],
                                           self._optimization_buttons[dom + ' place']):
-                    btn.place_forget()
+                    self._pgrid_forget(btn)
 
             for btn, placement in zip(self._optimization_buttons[self._new_calculation_domain.get()],
                                       self._optimization_buttons[self._new_calculation_domain.get() + ' place']):
-                btn.place(relx=placement[0], rely=placement[1], relheight=placement[2], relwidth=placement[3])
+                self._mgrid(btn, relx=placement[0], rely=placement[1], relheight=placement[2], relwidth=placement[3], lift=True)
 
         if shell:
             '''
@@ -3214,7 +3310,7 @@ class Application():
                                      self._ent_shell_length,self._ent_shell_tot_length,self._ent_shell_k_factor]
             '''
 
-            self._lab_shell.place(relx=hor_start, rely=ent_geo_y + delta_y)
+            self._pgrid(self._lab_shell, relx=hor_start, rely=ent_geo_y + delta_y)
 
             tmp_unit_info = list()
             shell_labels = ['Shell plate thickness', 'Cone radius r1', 'Cone radius r2', 'Cone length, l',
@@ -3227,36 +3323,36 @@ class Application():
                 tmp_unit_info.append(ttk.Label(self._tab_prop, text=lab))
 
             for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
-                lab.place(relx=hor_start, rely=ent_geo_y + delta_y * (2 + idx))
+                self._pgrid(lab, relx=hor_start, rely=ent_geo_y + delta_y * (2 + idx))
                 self._unit_informations_dimensions.append(lab)
 
             for idx, entry in enumerate(shell_items[1:]):
-                entry.place(relx=hor_start + 5 * delta_x, rely=ent_geo_y + delta_y * (2 + idx), relwidth=geo_ent_width)
+                self._pgrid(entry, relx=hor_start + 5 * delta_x, rely=ent_geo_y + delta_y * (2 + idx), relwidth=geo_ent_width)
 
-            self._shell_btn_length_info.place(relx=hor_start + 6 * delta_x, rely=ent_geo_y + delta_y * (idx))
+            self._pgrid(self._shell_btn_length_info, relx=hor_start + 6 * delta_x, rely=ent_geo_y + delta_y * (idx))
 
             ent_geo_y += delta_y * (len(shell_items[1:]) + 1)
 
         if long_stf:
 
-            self._lab_shell_long_stiffener.place(relx=hor_start, rely=ent_geo_y + delta_y)
+            self._pgrid(self._lab_shell_long_stiffener, relx=hor_start, rely=ent_geo_y + delta_y)
 
             tmp_unit_info = list()
             for lab in ['Web, hw', 'Web, tw', 'Flange b', 'Flange, tf', 'Spacing, s', 'Stf. type', 'Load section']:
                 tmp_unit_info.append(ttk.Label(self._tab_prop, text=lab))
 
             for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
-                lab.place(relx=hor_start + idx * delta_x, rely=ent_geo_y + delta_y * 2)
+                self._pgrid(lab, relx=hor_start + idx * delta_x, rely=ent_geo_y + delta_y * 2)
                 self._unit_informations_dimensions.append(lab)
 
             for idx, entry in enumerate(self._shell_long_stf_gui_items[1:]):
-                entry.place(relx=hor_start + idx * delta_x, rely=ent_geo_y + delta_y * 3, relwidth=geo_ent_width)
+                self._pgrid(entry, relx=hor_start + idx * delta_x, rely=ent_geo_y + delta_y * 3, relwidth=geo_ent_width)
 
             self._unit_informations_dimensions.append(self._lab_shell_long_stiffener)
             ent_geo_y += delta_y * 3
 
         if ring_stf:
-            self._lab_shell_ring_stiffener.place(relx=hor_start, rely=ent_geo_y + delta_y * 1)
+            self._pgrid(self._lab_shell_ring_stiffener, relx=hor_start, rely=ent_geo_y + delta_y * 1)
             tmp_unit_info = list()
             for lab in ['Web, hw', 'Web, tw', 'Flange, b', 'Flange, tf', 'tr. br. dist', 'Stf. type',
                         'Exclude', 'Load section prop.']:
@@ -3265,34 +3361,34 @@ class Application():
             for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
 
                 if idx in [6, 7]:
-                    lab.place(relx=hor_start + (idx - 6) * delta_x * 3, rely=ent_geo_y + delta_y * 4)
+                    self._pgrid(lab, relx=hor_start + (idx - 6) * delta_x * 3, rely=ent_geo_y + delta_y * 4)
                 else:
-                    lab.place(relx=hor_start + idx * delta_x, rely=ent_geo_y + delta_y * 2)
+                    self._pgrid(lab, relx=hor_start + idx * delta_x, rely=ent_geo_y + delta_y * 2)
                 self._unit_informations_dimensions.append(lab)
             self._unit_informations_dimensions.append(self._lab_shell_ring_stiffener)
 
             for idx, entry in enumerate(self._shell_ring_stf_gui_items[1:]):
                 if idx in [6, 7]:
-                    entry.place(relx=hor_start + (idx - 6) * delta_x * 4 + delta_x, rely=ent_geo_y + delta_y * 4,
+                    self._pgrid(entry, relx=hor_start + (idx - 6) * delta_x * 4 + delta_x, rely=ent_geo_y + delta_y * 4,
                                 relwidth=geo_ent_width)
                 else:
-                    entry.place(relx=hor_start + idx * delta_x, rely=ent_geo_y + delta_y * 3, relwidth=geo_ent_width)
+                    self._pgrid(entry, relx=hor_start + idx * delta_x, rely=ent_geo_y + delta_y * 3, relwidth=geo_ent_width)
 
             if self._new_shell_exclude_ring_stf.get():
-                self._shell_exclude_ring_stf.place(relx=0.005, rely=ent_geo_y + delta_y * 3.15, relwidth=0.9)
+                self._pgrid(self._shell_exclude_ring_stf, relx=0.005, rely=ent_geo_y + delta_y * 3.15, relwidth=0.9)
                 self._unit_informations_dimensions.append(self._shell_exclude_ring_stf)
 
             ent_geo_y += delta_y * 4
 
         if ring_frame:
-            self._lab_shell_ring_frame.place(relx=hor_start, rely=ent_geo_y + delta_y * 1)
+            self._pgrid(self._lab_shell_ring_frame, relx=hor_start, rely=ent_geo_y + delta_y * 1)
 
             for idx, entry in enumerate(self._shell_ring_frame_gui_items[1:]):
                 if idx in [7, 8]:
-                    entry.place(relx=hor_start + (idx - 7) * delta_x * 4 + delta_x, rely=ent_geo_y + delta_y * 4,
+                    self._pgrid(entry, relx=hor_start + (idx - 7) * delta_x * 4 + delta_x, rely=ent_geo_y + delta_y * 4,
                                 relwidth=geo_ent_width)
                 else:
-                    entry.place(relx=hor_start + idx * delta_x, rely=ent_geo_y + delta_y * 3, relwidth=geo_ent_width)
+                    self._pgrid(entry, relx=hor_start + idx * delta_x, rely=ent_geo_y + delta_y * 3, relwidth=geo_ent_width)
 
             tmp_unit_info = list()
             for lab in ['Web, hw', 'Web, tw', 'Flange, b', 'Flange, tf', 'tr. br. dist', 'Lh bet. Gird.',
@@ -3301,14 +3397,14 @@ class Application():
 
             for lab, idx in zip(tmp_unit_info, range(len(tmp_unit_info))):
                 if idx in [7, 8]:
-                    lab.place(relx=hor_start + (idx - 7) * delta_x * 3, rely=ent_geo_y + delta_y * 4)
+                    self._pgrid(lab, relx=hor_start + (idx - 7) * delta_x * 3, rely=ent_geo_y + delta_y * 4)
                 else:
-                    lab.place(relx=hor_start + idx * delta_x, rely=ent_geo_y + delta_y * 2)
+                    self._pgrid(lab, relx=hor_start + idx * delta_x, rely=ent_geo_y + delta_y * 2)
 
                 self._unit_informations_dimensions.append(lab)
             self._unit_informations_dimensions.append(self._lab_shell_ring_frame)
             if self._new_shell_exclude_ring_frame.get():
-                self._shell_exclude_ring_frame.place(relx=0.005, rely=ent_geo_y + delta_y * 3.15, relwidth=0.9)
+                self._pgrid(self._shell_exclude_ring_frame, relx=0.005, rely=ent_geo_y + delta_y * 3.15, relwidth=0.9)
                 self._unit_informations_dimensions.append(self._shell_exclude_ring_frame)
 
             ent_geo_y += delta_y * 3
@@ -3320,18 +3416,18 @@ class Application():
                                    self._ent_shell_fab_ring_stf, self._ent_shell_fab_ring_frame]
             '''
 
-            self._lab_shell_limit_state.place(relx=hor_start,
+            self._pgrid(self._lab_shell_limit_state, relx=hor_start,
                                               rely=ent_geo_y + delta_y * 2.2)
-            self._ent_shell_uls_or_als.place(relx=hor_start + 1.6 * delta_x,
+            self._pgrid(self._ent_shell_uls_or_als, relx=hor_start + 1.6 * delta_x,
                                              rely=ent_geo_y + delta_y * 2.2,
                                              relwidth=geo_ent_width * 2)
 
             # Load data
             ent_geo_y += 3.3 * delta_y
-            # self._lab_shell_loads.place(relx=hor_start, rely=ent_geo_y - delta_y*1.5)
-            self._ent_shell_stress_input.place(relx=hor_start, rely=ent_geo_y)
+            # self._pgrid(self._lab_shell_loads, relx=hor_start, rely=ent_geo_y - delta_y*1.5)
+            self._pgrid(self._ent_shell_stress_input, relx=hor_start, rely=ent_geo_y)
             if 'shell' in self._new_calculation_domain.get():
-                self._ent_shell_force_input.place(relx=hor_start + 2 * delta_x, rely=ent_geo_y)
+                self._pgrid(self._ent_shell_force_input, relx=hor_start + 2 * delta_x, rely=ent_geo_y)
             else:
                 self._new_shell_stress_or_force.set(2)
 
@@ -3357,48 +3453,48 @@ class Application():
              for val in lab_to_use[1]]
 
             for idx, lab in enumerate(tmp_unit_info):
-                lab.place(relx=hor_start, rely=ent_geo_y + (idx + 1) * delta_y)
+                self._pgrid(lab, relx=hor_start, rely=ent_geo_y + (idx + 1) * delta_y)
                 self._unit_informations_dimensions.append(lab)
 
             for idx, entry in enumerate(to_use):
-                entry.place(relx=hor_start + 1.5 * delta_x,
+                self._pgrid(entry, relx=hor_start + 1.5 * delta_x,
                             rely=ent_geo_y + (idx + 1) * delta_y, relwidth=geo_ent_width)
 
             for idx, lab in enumerate(tmp_unit_info_unit):
-                lab.place(relx=hor_start + 2.5 * delta_x,
+                self._pgrid(lab, relx=hor_start + 2.5 * delta_x,
                           rely=ent_geo_y + (idx + 1) * delta_y)
                 self._unit_informations_dimensions.append(lab)
 
-            self._shell_btn_load_info.place(relx=hor_start + 5 * delta_x,
+            self._pgrid(self._shell_btn_load_info, relx=hor_start + 5 * delta_x,
                                             rely=ent_geo_y + 1 * delta_y)
 
             # Various
             end_y = ent_geo_y + (idx + 1) * delta_y
             other_count = 1
 
-            self._lab_yield.place(relx=hor_start,
+            self._pgrid(self._lab_yield, relx=hor_start,
                                   rely=end_y + delta_y * other_count)
-            self._ent_shell_yield.place(relx=hor_start + 4 * delta_x,
+            self._pgrid(self._ent_shell_yield, relx=hor_start + 4 * delta_x,
                                         rely=end_y + delta_y * other_count, relwidth=geo_ent_width)
             other_count += 1
 
             if ring_stf:
-                self._lab_shell_fab_stf.place(relx=hor_start,
+                self._pgrid(self._lab_shell_fab_stf, relx=hor_start,
                                               rely=end_y + delta_y * other_count)
-                self._ent_shell_fab_ring_stf.place(relx=hor_start + 4 * delta_x,
+                self._pgrid(self._ent_shell_fab_ring_stf, relx=hor_start + 4 * delta_x,
                                                    rely=end_y + delta_y * other_count)
                 other_count += 1
 
             if ring_frame:
-                self._lab_shell_fab_frame.place(relx=hor_start, rely=end_y + delta_y * other_count)
-                self._ent_shell_fab_ring_frame.place(relx=hor_start + 4 * delta_x,
+                self._pgrid(self._lab_shell_fab_frame, relx=hor_start, rely=end_y + delta_y * other_count)
+                self._pgrid(self._ent_shell_fab_ring_frame, relx=hor_start + 4 * delta_x,
                                                      rely=end_y + delta_y * other_count, relwidth=geo_ent_width * 1.9)
                 other_count += 1
 
             if api_helpers.geometry_id_for_domain(self._new_calculation_domain.get()) in [1, 5]:
-                self._lab_shell_en_cap_pressure.place(relx=hor_start,
+                self._pgrid(self._lab_shell_en_cap_pressure, relx=hor_start,
                                                       rely=end_y + delta_y * other_count)
-                self._ent_shell_end_cap_pressure_included.place(relx=3 * delta_x,
+                self._pgrid(self._ent_shell_end_cap_pressure_included, relx=3 * delta_x,
                                                                 rely=end_y + delta_y * other_count)
                 other_count += 1
 
@@ -3408,12 +3504,12 @@ class Application():
                         'cylinder']:
                 for btn, placement in zip(self._optimization_buttons[dom],
                                           self._optimization_buttons[dom + ' place']):
-                    btn.place_forget()
+                    self._pgrid_forget(btn)
 
             if not any([ring_stf, ring_frame]):  # TODO optmizing not implemented yet for ring stf and frame.
                 for btn, placement in zip(self._optimization_buttons['cylinder'],
                                           self._optimization_buttons['cylinder' + ' place']):
-                    btn.place(relx=placement[0], rely=placement[1], relheight=placement[2], relwidth=placement[3])
+                    self._mgrid(btn, relx=placement[0], rely=placement[1], relheight=placement[2], relwidth=placement[3], lift=True)
 
     def calculation_domain_selected(self, event=None, sync_cylinder_inputs=True):
         '''
@@ -3449,7 +3545,7 @@ class Application():
                      self._flat_gui_buc_lab_common + self._flat_gui_buc_common_opt + self._flat_gui_buc_girder_opt + \
                      self._flat_gui_buc_lab_stf_girder + self._flat_gui_buc_stf_opt + self._flat_gui_girder_moment_factor
         for item in to_process:
-            item.place_forget()
+            self._pgrid_forget(item)
 
         if event is not None:
             self._new_shell_exclude_ring_stf.set(False)
@@ -3652,12 +3748,12 @@ class Application():
             shift_x = delta_x * 4
             lab_place = delta_y * 13
 
-            self._lab_puls_up_supp.place(relx=hor_start, rely=vert_start + lab_place + 2 * delta_y)
-            self._ent_puls_up_boundary.place(relx=hor_start + shift_x, rely=vert_start + lab_place + 2 * delta_y,
+            self._mgrid(self._lab_puls_up_supp, relx=hor_start, rely=vert_start + lab_place + 2 * delta_y)
+            self._mgrid(self._ent_puls_up_boundary, relx=hor_start + shift_x, rely=vert_start + lab_place + 2 * delta_y,
                                              relwidth=opt_width)
         else:
-            self._lab_puls_up_supp.place_forget()
-            self._ent_puls_up_boundary.place_forget()
+            self._mgrid_forget(self._lab_puls_up_supp)
+            self._mgrid_forget(self._ent_puls_up_boundary)
 
     def resize(self, event=None):
         """
@@ -3719,48 +3815,12 @@ class Application():
             pass
 
     def _apply_responsive_main_layout(self, width, height):
+        """The main window's three sections (input tabs, drawing canvas,
+        control panel) are laid out by a PanedWindow with draggable sashes, so
+        their proportions follow the user's sash positions and the window size
+        automatically.  Only the font scaling in ``resize`` remains responsive.
         """
-        Adjust the major GUI regions for smaller laptop screens.
-
-        The old layout used:
-            tab width  = 0.2585
-            main canvas start x = 0.26
-
-        That leaves too little room for the input notebook on small screens.
-        """
-
-        if width < 1350:
-            left_width = 0.34
-        elif width < 1600:
-            left_width = 0.30
-        else:
-            left_width = 0.2585
-
-        x_canvas_place = left_width + 0.005
-        remaining_width = 1.0 - x_canvas_place
-
-        self._tabControl.place(relwidth=left_width, relheight=1)
-
-        self._main_canvas.place(
-            relx=x_canvas_place,
-            rely=0,
-            relwidth=remaining_width * 0.70,
-            relheight=0.73,
-        )
-
-        self._prop_canvas.place(
-            relx=x_canvas_place,
-            rely=0.73,
-            relwidth=remaining_width * 0.52,
-            relheight=0.27,
-        )
-
-        self._result_canvas.place(
-            relx=x_canvas_place + remaining_width * 0.52,
-            rely=0.73,
-            relwidth=remaining_width * 0.48,
-            relheight=0.27,
-        )
+        return
 
     def toggle_select_multiple(self, event=None):
         if self._toggle_btn.config('relief')[-1] == 'sunken':
@@ -3856,16 +3916,16 @@ class Application():
         if self._line_to_struc[self._active_line][5] is not None:
             for item in [self._result_label_dnva, self._result_label_dnvb, self._result_label_tanktest,
                          self._result_label_manual, self._lab_pressure]:
-                item.place_forget()
+                self._mgrid_forget(item)
             return
 
         name = self._ensure_manual_pressure_combination(self._active_line, default_enabled=True)
-        self._manual_created.append(ttk.Label(self._main_fr, text='Manual pressure [Pa]',
+        self._manual_created.append(ttk.Label(self._loads_panel, text='Manual pressure [Pa]',
                                               font=self._text_size['Text 8 bold']))
-        self._manual_created.append(ttk.Entry(self._main_fr, textvariable=self._new_load_comb_dict[name][0],
+        self._manual_created.append(ttk.Entry(self._loads_panel, textvariable=self._new_load_comb_dict[name][0],
                                               width=15))
-        self._manual_created[0].place(relx=lc_x, rely=lc_y)
-        self._manual_created[1].place(relx=lc_x + 4 * lc_x_delta, rely=lc_y)
+        self._mgrid(self._manual_created[0], relx=lc_x, rely=lc_y)
+        self._mgrid(self._manual_created[1], relx=lc_x + 4 * lc_x_delta, rely=lc_y)
 
         try:
             results = self.calculate_all_load_combinations_for_line(self._active_line)
@@ -3875,11 +3935,11 @@ class Application():
             self._result_label_manual.config(text='Manual [Pa]: -', font=self._text_size['Text 8'])
 
         for item in [self._result_label_dnva, self._result_label_dnvb, self._result_label_tanktest]:
-            item.place_forget()
+            self._mgrid_forget(item)
 
         self._lab_pressure.config(text='Pressure for the single calculation line:')
-        self._lab_pressure.place(relx=0.786458333, rely=self.results_gui_start)
-        self._result_label_manual.place(relx=lc_x, rely=self.results_gui_start + 0.06)
+        self._mgrid(self._lab_pressure, relx=0.786458333, rely=self.results_gui_start)
+        self._mgrid(self._result_label_manual, relx=lc_x, rely=self.results_gui_start + 0.06)
 
     def _gui_fea_buckling_options(self):
         """Draw FEA-result buckling controls without pressure input widgets."""
@@ -3890,7 +3950,7 @@ class Application():
         for item in [self._result_label_dnva, self._result_label_dnvb, self._result_label_tanktest,
                      self._result_label_manual, self._lab_pressure]:
             try:
-                item.place_forget()
+                self._mgrid_forget(item)
             except Exception:
                 pass
 
@@ -3946,7 +4006,7 @@ class Application():
             )
 
         panel_frame = tk.Frame(self._main_fr, background=self._style.lookup('TFrame', 'background'), bd=0)
-        panel_frame.place(relx=0.785, rely=0.0, relwidth=0.215, relheight=1.0)
+        self._mgrid(panel_frame, relx=0.785, rely=0.0, relwidth=0.215, relheight=1.0)
         self._fea_right_panel_frame = panel_frame
         panel_frame.columnconfigure(0, weight=1)
         panel_frame.columnconfigure(1, weight=1)
@@ -4200,9 +4260,9 @@ class Application():
             self._lc_comb_created, self._comp_comb_created, self._manual_created, self._info_created = [], [], [], []
 
             if self._line_to_struc[self._active_line][0].Plate.get_structure_type() == '':
-                self._info_created.append(ttk.Label(self._main_fr, text='No structure type selected',
+                self._info_created.append(ttk.Label(self._loads_panel, text='No structure type selected',
                                                     font=self._text_size["Text 10 bold"], ))
-                self._info_created[0].place(relx=lc_x, y=lc_y + 3 * lc_y_delta)
+                self._mgrid(self._info_created[0], relx=lc_x, y=lc_y + 3 * lc_y_delta)
             elif self._line_to_struc[self._active_line][5] is not None:
                 pass
             elif combination != 'Cylinder':
@@ -4214,27 +4274,27 @@ class Application():
                     for load, data in self._load_dict.items():
                         if self._active_line in self._load_dict[load][1] and data[0].get_limit_state() == 'ULS':
                             name = (combination, self._active_line, str(load))  # tuple to identify combinations on line
-                            self._lc_comb_created.append(ttk.Label(self._main_fr, text=load,
+                            self._lc_comb_created.append(ttk.Label(self._loads_panel, text=load,
                                                                    font=self._text_size['Text 8 bold'],
                                                                    ))
-                            self._lc_comb_created.append(ttk.Entry(self._main_fr,
+                            self._lc_comb_created.append(ttk.Entry(self._loads_panel,
                                                                    textvariable=self._new_load_comb_dict[name][0],
                                                                    width=5,
                                                                    ))
-                            self._lc_comb_created.append(ttk.Entry(self._main_fr,
+                            self._lc_comb_created.append(ttk.Entry(self._loads_panel,
                                                                    textvariable=self._new_load_comb_dict[name][1],
                                                                    width=5,
                                                                    ))
-                            self._lc_comb_created.append(ttk.Checkbutton(self._main_fr,
+                            self._lc_comb_created.append(ttk.Checkbutton(self._loads_panel,
                                                                          variable=self._new_load_comb_dict[name][2]))
 
                     for load_no in range(int(len(self._lc_comb_created) / 4)):
-                        self._lc_comb_created[0 + load_no * 4].place(relx=lc_x, rely=lc_y + lc_y_delta * load_no)
-                        self._lc_comb_created[1 + load_no * 4].place(relx=lc_x + 5 * lc_x_delta,
+                        self._mgrid(self._lc_comb_created[0 + load_no * 4], relx=lc_x, rely=lc_y + lc_y_delta * load_no)
+                        self._mgrid(self._lc_comb_created[1 + load_no * 4], relx=lc_x + 5 * lc_x_delta,
                                                                      rely=lc_y + lc_y_delta * load_no)
-                        self._lc_comb_created[2 + load_no * 4].place(relx=lc_x + 6 * lc_x_delta,
+                        self._mgrid(self._lc_comb_created[2 + load_no * 4], relx=lc_x + 6 * lc_x_delta,
                                                                      rely=lc_y + lc_y_delta * load_no)
-                        self._lc_comb_created[3 + load_no * 4].place(relx=lc_x + 7 * lc_x_delta,
+                        self._mgrid(self._lc_comb_created[3 + load_no * 4], relx=lc_x + 7 * lc_x_delta,
                                                                      rely=lc_y + lc_y_delta * load_no)
                         counter += 1
 
@@ -4245,26 +4305,26 @@ class Application():
                     for compartment in self.get_compartments_for_line(self._active_line):
                         name = (combination, self._active_line,
                                 'comp' + str(compartment))  # tuple to identify combinations on line
-                        self._comp_comb_created.append(ttk.Label(self._main_fr, text='Compartment' + str(compartment),
+                        self._comp_comb_created.append(ttk.Label(self._loads_panel, text='Compartment' + str(compartment),
                                                                  ))
-                        self._comp_comb_created.append(ttk.Entry(self._main_fr,
+                        self._comp_comb_created.append(ttk.Entry(self._loads_panel,
                                                                  textvariable=self._new_load_comb_dict[name][0],
                                                                  width=5,
                                                                  ))
-                        self._comp_comb_created.append(ttk.Entry(self._main_fr,
+                        self._comp_comb_created.append(ttk.Entry(self._loads_panel,
                                                                  textvariable=self._new_load_comb_dict[name][1],
                                                                  width=5,
                                                                  ))
-                        self._comp_comb_created.append(ttk.Checkbutton(self._main_fr,
+                        self._comp_comb_created.append(ttk.Checkbutton(self._loads_panel,
                                                                        variable=self._new_load_comb_dict[name][2]))
 
                     for comp_no in range(int(len(self._comp_comb_created) / 4)):
-                        self._comp_comb_created[0 + comp_no * 4].place(relx=lc_x, rely=lc_y + lc_y_delta * comp_no)
-                        self._comp_comb_created[1 + comp_no * 4].place(relx=lc_x + 5 * lc_x_delta,
+                        self._mgrid(self._comp_comb_created[0 + comp_no * 4], relx=lc_x, rely=lc_y + lc_y_delta * comp_no)
+                        self._mgrid(self._comp_comb_created[1 + comp_no * 4], relx=lc_x + 5 * lc_x_delta,
                                                                        rely=lc_y + lc_y_delta * comp_no)
-                        self._comp_comb_created[2 + comp_no * 4].place(relx=lc_x + 6 * lc_x_delta,
+                        self._mgrid(self._comp_comb_created[2 + comp_no * 4], relx=lc_x + 6 * lc_x_delta,
                                                                        rely=lc_y + lc_y_delta * comp_no)
-                        self._comp_comb_created[3 + comp_no * 4].place(relx=lc_x + 7 * lc_x_delta,
+                        self._mgrid(self._comp_comb_created[3 + comp_no * 4], relx=lc_x + 7 * lc_x_delta,
                                                                        rely=lc_y + lc_y_delta * comp_no)
                         counter += 1
 
@@ -4273,7 +4333,7 @@ class Application():
 
                 name = ('manual', self._active_line, 'manual')  # tuple to identify combinations on line
                 if name in self._new_load_comb_dict.keys():
-                    self._manual_created.append(ttk.Label(self._main_fr, text='Manual (pressure/LF)',
+                    self._manual_created.append(ttk.Label(self._loads_panel, text='Manual (pressure/LF)',
                                                           ))
                     self._manual_created.append(
                         ttk.Entry(self._main_fr, textvariable=self._new_load_comb_dict[name][0], width=15,
@@ -4283,10 +4343,10 @@ class Application():
                                   ))
                     self._manual_created.append(
                         ttk.Checkbutton(self._main_fr, variable=self._new_load_comb_dict[name][2]))
-                    self._manual_created[0].place(relx=lc_x, rely=lc_y)
-                    self._manual_created[1].place(relx=lc_x + 4 * lc_x_delta, rely=lc_y)
-                    self._manual_created[2].place(relx=lc_x + 6 * lc_x_delta, rely=lc_y)
-                    self._manual_created[3].place(relx=lc_x + 7 * lc_x_delta, rely=lc_y)
+                    self._mgrid(self._manual_created[0], relx=lc_x, rely=lc_y)
+                    self._mgrid(self._manual_created[1], relx=lc_x + 4 * lc_x_delta, rely=lc_y)
+                    self._mgrid(self._manual_created[2], relx=lc_x + 6 * lc_x_delta, rely=lc_y)
+                    self._mgrid(self._manual_created[3], relx=lc_x + 7 * lc_x_delta, rely=lc_y)
 
             if self._line_to_struc[self._active_line][5] is None:
                 results = self.calculate_all_load_combinations_for_line(self._active_line)
@@ -4301,16 +4361,16 @@ class Application():
                 self._result_label_manual.config(text='Manual [Pa]: ' + str(results['manual']))
 
                 lc_y = self.results_gui_start + 0.01
-                self._result_label_dnva.place(relx=lc_x + 0 * lc_x_delta, rely=lc_y + lc_y_delta * 1.5)
-                self._result_label_dnvb.place(relx=lc_x + 4 * lc_x_delta, rely=lc_y + lc_y_delta * 1.5)
-                self._result_label_tanktest.place(relx=lc_x + 0 * lc_x_delta, rely=lc_y + 2.4 * lc_y_delta)
+                self._mgrid(self._result_label_dnva, relx=lc_x + 0 * lc_x_delta, rely=lc_y + lc_y_delta * 1.5)
+                self._mgrid(self._result_label_dnvb, relx=lc_x + 4 * lc_x_delta, rely=lc_y + lc_y_delta * 1.5)
+                self._mgrid(self._result_label_tanktest, relx=lc_x + 0 * lc_x_delta, rely=lc_y + 2.4 * lc_y_delta)
 
-                self._result_label_manual.place(relx=lc_x + 4 * lc_x_delta, rely=lc_y + 2.4 * lc_y_delta)
-                self._lab_pressure.place(relx=0.786458333, rely=self.results_gui_start)
+                self._mgrid(self._result_label_manual, relx=lc_x + 4 * lc_x_delta, rely=lc_y + 2.4 * lc_y_delta)
+                self._mgrid(self._lab_pressure, relx=0.786458333, rely=self.results_gui_start)
             else:
                 for item in [self._result_label_dnva, self._result_label_dnvb,
                              self._result_label_tanktest, self._result_label_manual, self._lab_pressure]:
-                    item.place_forget()
+                    self._mgrid_forget(item)
                     # self._combination_slider.set(4)
 
     def slider_used(self, event):
@@ -5989,13 +6049,12 @@ class Application():
             'relheight': self._place_info_float(self._main_canvas, 'relheight', 0.73),
         }
         self._prop_3d_frame = tk.Frame(
-            self._main_fr,
+            self._canvas_frame,
             background=self._style.lookup('TFrame', 'background'),
             bd=0,
             highlightthickness=0,
         )
-        self._prop_3d_frame.place(**place)
-        tk.Misc.lift(self._prop_3d_frame)
+        self._grid_prop_3d(place)
 
         toolbar_row = tk.Frame(
             self._prop_3d_frame,
@@ -6238,13 +6297,12 @@ class Application():
             'relheight': self._place_info_float(self._main_canvas, 'relheight', 0.73),
         }
         self._prop_3d_frame = tk.Frame(
-            self._main_fr,
+            self._canvas_frame,
             background=self._style.lookup('TFrame', 'background'),
             bd=0,
             highlightthickness=0,
         )
-        self._prop_3d_frame.place(**place)
-        tk.Misc.lift(self._prop_3d_frame)
+        self._grid_prop_3d(place)
 
         toolbar_row = tk.Frame(
             self._prop_3d_frame,
@@ -8508,9 +8566,8 @@ class Application():
 
         place = self._get_prop_3d_bottom_place()
         background = self._style.lookup('TFrame', 'background')
-        self._prop_3d_frame = tk.Frame(self._main_fr, background=background, bd=0, highlightthickness=0)
-        self._prop_3d_frame.place(**place)
-        tk.Misc.lift(self._prop_3d_frame)
+        self._prop_3d_frame = tk.Frame(self._canvas_frame, background=background, bd=0, highlightthickness=0)
+        self._grid_prop_3d(place)
 
         toolbar_row = tk.Frame(self._prop_3d_frame, background=background, bd=0, highlightthickness=0)
         toolbar_row.pack(side=tk.TOP, fill=tk.X)
@@ -8773,13 +8830,12 @@ class Application():
 
         place = self._get_prop_3d_bottom_place()
         self._prop_3d_frame = tk.Frame(
-            self._main_fr,
+            self._canvas_frame,
             background=self._style.lookup('TFrame', 'background'),
             bd=0,
             highlightthickness=0,
         )
-        self._prop_3d_frame.place(**place)
-        tk.Misc.lift(self._prop_3d_frame)
+        self._grid_prop_3d(place)
 
         toolbar_row = tk.Frame(
             self._prop_3d_frame,
@@ -12930,12 +12986,12 @@ class Application():
                 for dom in ['Flat plate, unstiffened', 'Flat plate, stiffened', 'Flat plate, stiffened with girder']:
                     for btn, placement in zip(self._optimization_buttons[dom],
                                               self._optimization_buttons[dom + ' place']):
-                        btn.place_forget()
+                        self._mgrid_forget(btn)
                 for btn, placement in zip(self._optimization_buttons['cylinder'],
                                           self._optimization_buttons['cylinder place']):
                     if self._gui_functional_look == 'cylinder':
                         placement = self._gui_functional_look_cylinder_opt
-                    btn.place(relx=placement[0], rely=placement[1], relheight=placement[2], relwidth=placement[3])
+                    self._mgrid(btn, relx=placement[0], rely=placement[1], relheight=placement[2], relwidth=placement[3])
 
             else:
                 self._new_calculation_domain.set(self._line_to_struc[self._active_line][0].calculation_domain)
@@ -12943,11 +12999,11 @@ class Application():
                 dom = self._line_to_struc[self._active_line][0].calculation_domain
                 for btn, placement in zip(self._optimization_buttons['cylinder'],
                                           self._optimization_buttons['cylinder place']):
-                    btn.place_forget()
+                    self._mgrid_forget(btn)
 
                 for btn, placement in zip(self._optimization_buttons[dom],
                                           self._optimization_buttons[dom + ' place']):
-                    btn.place(relx=placement[0], rely=placement[1], relheight=placement[2], relwidth=placement[3])
+                    self._mgrid(btn, relx=placement[0], rely=placement[1], relheight=placement[2], relwidth=placement[3])
 
     def button_1_click_comp_box(self, event):
         '''
@@ -12986,7 +13042,7 @@ class Application():
 
         click_x = self._main_canvas.winfo_pointerx() - self._main_canvas.winfo_rootx()
         click_y = self._main_canvas.winfo_pointery() - self._main_canvas.winfo_rooty()
-        self._pt_frame.place_forget()
+        self._mgrid_forget(self._pt_frame)
         self._point_is_active = False
         margin = 10
         self._active_point = ''
@@ -13015,7 +13071,7 @@ class Application():
         ''' Frame to define brackets on selected point. '''
         pt_canvas = tk.Canvas(self._pt_frame, height=100, width=100,
                               background=self._style.lookup('TFrame', 'background'))
-        pt_canvas.place(relx=0, rely=0)
+        self._mgrid(pt_canvas, relx=0, rely=0)
         pt_canvas.create_oval(45, 45, 55, 55, fill='red')
         new_left_br = tk.IntVar()
         new_right_br = tk.IntVar()
@@ -13030,10 +13086,10 @@ class Application():
                               )
         ent_lower = ttk.Entry(self._pt_frame, textvariable=new_lower_br, width=wid,
                               )
-        ent_lower.place(relx=0.018229167, rely=0.009259259)
-        ent_upper.place(relx=0.018229167, rely=0.069444444)
-        ent_left.place(relx=0.002604167, rely=0.037037037)
-        ent_right.place(relx=0.03125, rely=0.037037037)
+        self._mgrid(ent_lower, relx=0.018229167, rely=0.009259259)
+        self._mgrid(ent_upper, relx=0.018229167, rely=0.069444444)
+        self._mgrid(ent_left, relx=0.002604167, rely=0.037037037)
+        self._mgrid(ent_right, relx=0.03125, rely=0.037037037)
 
     def save_no_dialogue(self, event=None, backup=False):
         if backup:
