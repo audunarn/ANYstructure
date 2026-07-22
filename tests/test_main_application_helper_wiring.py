@@ -2,7 +2,8 @@ from pathlib import Path
 import math
 import re
 from types import SimpleNamespace
-from anystruct import fe_solver, representation_geometry
+from anysolver import runtime as fe_solver
+from anystruct import representation_geometry
 from anystruct.main_application import Application
 
 
@@ -821,7 +822,7 @@ def test_3d_preview_can_export_prepomax_stl_mesh():
     source = main_source.read_text(encoding="utf-8")
 
     assert "import anystruct.solid_export as solid_export" in source
-    assert "import anystruct.fe_runtime_solver as fe_runtime_solver" in source
+    assert "import anystruct.fem_integration as fe_runtime_solver" in source
     assert "ttk.Button(view_row, text='Solid export'" in source
     assert "ttk.Button(view_row, text='Shell export'" in source
     assert "ttk.Button(view_row, text='FE buckling'" not in source

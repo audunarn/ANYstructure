@@ -550,8 +550,8 @@ def _default_fea_result_path(
 def read_sesam_shell_model(path: str | os.PathLike[str]) -> FeShellModel:
     """Read SESAM FEM/SIF shell geometry into the FE-results interpreter model."""
 
-    from anystruct.fe_solver_backend.sesam_fem.importer import import_sesam_fem, _beam_section
-    from anystruct.fe_solver_backend.sesam_fem.schema import get_element_spec
+    from anysolver.sesam_fem.importer import import_sesam_fem, _beam_section
+    from anysolver.sesam_fem.schema import get_element_spec
 
     path_text = str(path)
     result = import_sesam_fem(path_text, strict=False, build_model=False)
@@ -621,7 +621,7 @@ def read_sesam_shell_model(path: str | os.PathLike[str]) -> FeShellModel:
 def read_sesam_sif_stress_result(path: str | os.PathLike[str]) -> FrdStressResult:
     """Read SESAM SIF RVSTRESS as the FRD-like stress object used here."""
 
-    from anystruct.fe_solver_backend.sesam_fem.sif_importer import read_sesam_sif_stress
+    from anysolver.sesam_fem.sif_importer import read_sesam_sif_stress
 
     stress = read_sesam_sif_stress(path)
     return FrdStressResult(
@@ -646,7 +646,7 @@ def read_fea_result_summary(path: str | os.PathLike[str]) -> dict[str, Any]:
     """Return lightweight result metadata for FRD or SIF files."""
 
     if _is_sesam_result_path(path):
-        from anystruct.fe_solver_backend.sesam_fem.sif_importer import read_sesam_sif_summary
+        from anysolver.sesam_fem.sif_importer import read_sesam_sif_summary
 
         return read_sesam_sif_summary(path)
     return read_calculix_frd_summary(path)

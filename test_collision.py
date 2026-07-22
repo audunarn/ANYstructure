@@ -1,5 +1,5 @@
 import traceback
-from anystruct import fe_solver
+from anysolver import runtime as fe_solver
 import numpy as np
 
 flat = {

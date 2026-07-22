@@ -12,7 +12,7 @@ from collections import Counter
 import numpy as np
 import pytest
 
-from anystruct.fe_solver import (
+from anysolver.runtime import (
     LightweightFEMConfig,
     build_generated_geometry,
     run_production_fem,
@@ -290,7 +290,7 @@ def test_axial_cylinder_stress_is_mesh_style_invariant() -> None:
     to turn the clustered graded end rings into a global bending moment
     (81-484 MPa), and true-surface node placement used to bulge the local
     patch proud of the chordal base facets (222-447 MPa stress dimple)."""
-    from anystruct import fe_solver as fs
+    from anysolver import runtime as fs
 
     captured = {}
     original = fs._backend_solve_linear
@@ -367,7 +367,7 @@ def test_local_patch_buckling_has_no_spurious_flat_facet_modes() -> None:
     shell load factor (spiky single-element modes, LF ~3 vs classical ~7).
     With the curvature-adequate base ring + blended node placement the first
     buckling factor must stay at shell level, above the classical value."""
-    from anystruct import fe_solver as fs
+    from anysolver import runtime as fs
 
     cylinder = {
         "geometry": "cylinder",
@@ -410,7 +410,7 @@ def test_axial_flat_plate_stress_is_mesh_style_invariant() -> None:
     must leave flat panels exact.  Unstiffened plate L=4 m, W=3 m, t=12 mm
     under 10 MN balanced axial force: sigma = F/(W t) = 277.8 MPa uniform and
     the plate stays exactly planar for every mesh style."""
-    from anystruct import fe_solver as fs
+    from anysolver import runtime as fs
 
     captured = {}
     original = fs._backend_solve_linear
@@ -484,7 +484,7 @@ def test_stiffened_cylinder_keeps_mesh_style_invariance_with_beams() -> None:
     segments are split inside blended patches, and the curvature floor is
     raised to a stiffener-count multiple.  Statics and buckling must stay
     mesh-style invariant on the stiffened cylinder."""
-    from anystruct import fe_solver as fs
+    from anysolver import runtime as fs
 
     captured = {}
     original = fs._backend_solve_linear

@@ -19,7 +19,7 @@ def readme():
     with open(path.join(here, 'README.md'), encoding='utf-8') as file:
         return file.read()
 
-core_requires = ['matplotlib', 'meshio', 'numpy', 'numpy-stl', 'Pillow', 'reportlab', 'scipy']
+core_requires = ['ANYsolver>=0.1,<0.2', 'matplotlib', 'meshio', 'numpy', 'numpy-stl', 'Pillow', 'reportlab', 'scipy']
 excel_requires = ['xlwings']
 ml_requires = ['scikit-learn']
 dev_requires = ['build', 'pytest']

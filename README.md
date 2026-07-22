@@ -51,10 +51,15 @@ Recommended local setup:
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
+python -m pip install -e C:\Github\ANYsolver
 python -m pip install -r requirements-dev.txt
 python -m pip install -e .
 python -m pytest
 ```
+
+`ANYsolver>=0.1,<0.2` is a required runtime dependency. The editable sibling
+install above is used when developing both repositories; released installs
+resolve the same version range from PyPI.
 
 Launch the desktop app after installation:
 
