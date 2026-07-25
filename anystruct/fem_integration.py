@@ -1,9 +1,8 @@
-"""Experimental runtime FEM solver window for active ANYstructure lines.
+"""ANYstructure integration and UI for the external ANYsolver package.
 
-The module owns the active-line handoff, user options and result visualization
-for the experimental full-geometry FEM mode.  It calls the ANYstructure-local
-``anystruct.fe_solver`` module; solver development happens in ANYintelligent
-and can later be copied into that local module without changing this GUI layer.
+This module owns application-state extraction, option mapping, Tk controls,
+and result presentation.  Meshing and numerical analysis live exclusively in
+``anysolver.runtime``.
 """
 
 from __future__ import annotations
@@ -35,10 +34,7 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 if __package__ in (None, ""):
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-try:
-    from anystruct import fe_solver
-except ModuleNotFoundError:
-    from ANYstructure.anystruct import fe_solver
+from anysolver import runtime as fe_solver
 
 try:
     from anystruct import representation_geometry
@@ -3473,7 +3469,7 @@ def format_runtime_fem_result(result: RuntimeFEMRunResult) -> str:
                     _safe_int(prestress.get("buckling_mesh_estimated_half_waves"), 0)))
         capacity_status = str(prestress.get("capacity_workflow_status", "") or "")
         if capacity_status:
-            lines.extend(["", "ANYintelligent capacity workflow:"])
+            lines.extend(["", "ANYsolver capacity workflow:"])
             lines.append(" - status: " + capacity_status.replace("_", " "))
             lines.append(
                 " - capacity factor: " + str(round(_safe_float(prestress.get("capacity_workflow_capacity_factor")), 4)))
@@ -3765,7 +3761,7 @@ FEM_OPTION_INFO: dict[str, dict[str, str]] = {
     },
     "custom_time_domain_enabled": {
         "title": "Custom Time-Domain Load",
-        "purpose": "Runs the synced ANYintelligent linear time-domain pressure-patch solver for a custom load pulse.",
+        "purpose": "Runs the synced ANYsolver linear time-domain pressure-patch solver for a custom load pulse.",
         "use": "When enabled, a prescribed shell-normal pressure pulse is applied to the selected shell patch and advanced with Newmark average acceleration. This is a separate transient response calculation after the normal static solve.",
         "output": "Adds custom load status, selected shell count, peak transient displacement and peak transient von Mises stress to the result print.",
         "caution": "This is prescribed structural response only: no fluid-structure interaction, added mass, water entry, cavitation or pressure feedback is included.",
@@ -4111,7 +4107,7 @@ FEM_OPTION_INFO: dict[str, dict[str, str]] = {
     "runtime_solver": {
         "title": "Runtime Solver",
         "purpose": "Selects the high-level runtime path used after the FE model and loads are generated.",
-        "use": "Stepwise keeps the familiar ANYstructure sequence: linear static, prestress recovery, optional nonlinear solve and buckling. ANYintelligent capacity workflow runs the new traceable solver-wide sequence: linear static, eigenvalue buckling, stress-free imperfection and nonlinear static capacity in one workflow.",
+        "use": "Stepwise keeps the familiar ANYstructure sequence: linear static, prestress recovery, optional nonlinear solve and buckling. ANYsolver capacity workflow runs the new traceable solver-wide sequence: linear static, eigenvalue buckling, stress-free imperfection and nonlinear static capacity in one workflow.",
         "output": "The result print records the selected path, workflow status, capacity factor and mesh-mode adequacy when the capacity workflow is selected.",
         "caution": "The capacity workflow is intentionally opt-in because it can be slower and applies a different capacity interpretation than the default static/eigenvalue result.",
     },
@@ -4168,7 +4164,7 @@ FEM_OPTION_INFO: dict[str, dict[str, str]] = {
         "title": "Capacity Mode Number",
         "purpose": "Selects which eigenmode seeds the capacity workflow imperfection.",
         "use": "Mode 1 normally means the lowest positive buckling factor. Higher values can be used to study a known local/global mode.",
-        "output": "Affects the stress-free imperfection used by the ANYintelligent capacity workflow.",
+        "output": "Affects the stress-free imperfection used by the ANYsolver capacity workflow.",
         "caution": "Choosing a non-governing mode can produce a non-conservative or misleading capacity estimate.",
     },
     "capacity_mesh_min_elements_per_half_wave": {
@@ -5467,7 +5463,7 @@ class RuntimeFEMWindow:
         if bool(self.collision_enabled.get()):
             return False
         if self._choice_key(self.runtime_solver.get()) in {
-            "anyintelligent capacity workflow",
+            "anysolver capacity workflow",
             "capacity workflow",
             "nonlinear capacity workflow",
         }:
@@ -6277,7 +6273,7 @@ class RuntimeFEMWindow:
             "runtime_solver",
             "Runtime path",
             self.runtime_solver,
-            ("stepwise", "static only", "nonlinear static", "ANYintelligent capacity workflow"),
+            ("stepwise", "static only", "nonlinear static", "ANYsolver capacity workflow"),
         )
         self._add_option_row(solver_options, 1, "shell_element_order", "Shell element", self.shell_element_order,
                              ("S4", "S3", "S6", "S8", "S8R"))
@@ -6442,7 +6438,7 @@ class RuntimeFEMWindow:
         self._add_entry_row(general_loads, 3, "top_bottom_moment_nm", "Bending moment [Nm]", self.top_bottom_moment_nm)
         self._add_entry_row(general_loads, 4, "torsional_moment_nm", "Torsional moment [Nm]", self.torsional_moment_nm)
         self._add_entry_row(general_loads, 5, "shear_force_n", "Shear force [N]", self.shear_force_n)
-        
+
         self._add_option_row(general_loads, 6, "pressure_direction", "Pressure side", self.pressure_direction,
                              ("front", "back"))
 
@@ -6500,7 +6496,7 @@ class RuntimeFEMWindow:
         self._add_check_row(custom_loads, 0, "custom_load_bc_enabled", "Use custom load/BC mode", self.custom_load_bc_enabled)
         self._add_check_row(custom_loads, 1, "custom_loads_add_to_imported", "Add custom loads to imported/generated loads", self.custom_loads_add_to_imported)
         self._add_check_row(custom_loads, 2, "allow_unbalanced_free_free", "Allow unbalanced free-free loads", self.allow_unbalanced_free_free)
-        
+
         selection_loads = ttk.LabelFrame(custom_loads, text="Panel and edge selection")
         selection_loads.grid(row=3, column=0, columnspan=4, sticky=tk.EW, padx=8, pady=(4, 8))
         self._configure_option_grid(selection_loads)
@@ -6558,7 +6554,7 @@ class RuntimeFEMWindow:
         self._custom_load_tree_scrollbar = ttk.Scrollbar(load_list, orient=tk.VERTICAL, command=self._custom_load_tree.yview)
         self._custom_load_tree_scrollbar.pack(side=tk.RIGHT, fill=tk.Y, padx=(0, 8), pady=(0, 8))
         self._custom_load_tree.configure(yscrollcommand=self._custom_load_tree_scrollbar.set)
-        
+
         bc_list = ttk.LabelFrame(tab_bc, text="Applied boundary conditions")
         bc_list.pack(fill=tk.BOTH, expand=True, padx=8, pady=(0, 8))
         actions_bc = ttk.Frame(bc_list)
@@ -6770,16 +6766,16 @@ class RuntimeFEMWindow:
         self._add_check_row(vis_group, 1, "show_stiffeners", "Show stiffeners", self.show_stiffener_vis)
         self._add_check_row(vis_group, 2, "show_girders", "Show girders/frames", self.show_girder_vis)
         self._add_check_row(vis_group, 3, "show_collision_sphere", "Show rigid sphere", self.show_collision_sphere_vis)
-        
+
         def update_canvas_options():
             for canvas_ref in [self.result_canvas, self.geometry_preview_canvas, self.mesh_preview_canvas]:
                 if canvas_ref:
                     canvas_ref.set_mesh_lines(self.show_mesh_lines_vis.get())
                     canvas_ref.set_axis_ruler(self.show_axis_ruler_vis.get())
-                    
+
         self._add_check_row(vis_group, 4, "show_mesh_lines", "Show mesh lines", self.show_mesh_lines_vis).configure(command=update_canvas_options)
         self._add_check_row(vis_group, 5, "show_axis_ruler", "Show axis ruler", self.show_axis_ruler_vis).configure(command=update_canvas_options)
-        
+
         self._add_entry_row(vis_group, 6, "plate_alpha", "Plate alpha [0-1]", self.plate_alpha_vis, width=8)
         self._add_entry_row(vis_group, 7, "plate_front_color", "Plate front", self.plate_front_color_vis, width=10)
         self._add_entry_row(vis_group, 8, "plate_back_color", "Plate back", self.plate_back_color_vis, width=10)
@@ -6837,7 +6833,7 @@ class RuntimeFEMWindow:
         scrollbar = ttk.Scrollbar(self.upper_result_frame, orient=tk.VERTICAL, command=self.upper_result_text.yview)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y, padx=(0, 8), pady=8)
         self.upper_result_text.configure(yscrollcommand=scrollbar.set)
-        
+
         button_frame = ttk.Frame(self.upper_result_frame)
         button_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=8, pady=(0, 8))
         ttk.Button(button_frame, text="Copy to Clipboard", command=self._copy_results_to_clipboard).pack(side=tk.RIGHT)
@@ -8325,14 +8321,14 @@ class RuntimeFEMWindow:
                             draw_overlay=False)
             canvas.add_text(Point3D(0.0, y, z), "D1 " + _format_dimension(2.0 * radius), color=color,
                             font=("Segoe UI", 8, "normal"), layer=42, draw_overlay=False)
-            
+
             y_top = -1.18 * radius_top
             z_top = length + 0.18 * radius_top
             canvas.add_line(Point3D(-radius_top, y_top, z_top), Point3D(radius_top, y_top, z_top), color=color, width=1, layer=2,
                             draw_overlay=False)
             canvas.add_text(Point3D(0.0, y_top, z_top), "D2 " + _format_dimension(2.0 * radius_top), color=color,
                             font=("Segoe UI", 8, "normal"), layer=42, draw_overlay=False)
-            
+
             x = 1.18 * max(radius, radius_top)
             y2 = 1.18 * max(radius, radius_top)
             canvas.add_line(Point3D(x, y2, 0.0), Point3D(x, y2, length), color=color, width=1, layer=2,
@@ -8427,7 +8423,7 @@ class RuntimeFEMWindow:
             else:
                 base_radius = max(_safe_float(visualization.get("radius_m"), _safe_float(geometry.get("radius_m"), 1.0)), 1.0e-9)
                 base_radius_top = base_radius
-            
+
             cyl_len = max(_safe_float(geometry.get("length_m"), 1.0), 1.0e-9)
 
             def get_r(z_val):
@@ -9799,12 +9795,12 @@ class RuntimeFEMWindow:
             flags.append("nullspace")
         if bool(self.allow_unbalanced_free_free.get()):
             flags.append("allow free-free")
-            
+
         try:
             constraints = json.loads(self._collect_boundary_constraint_json())
         except Exception:
             constraints = {}
-            
+
         if not constraints:
             supports = "free"
         else:
@@ -9921,7 +9917,7 @@ class RuntimeFEMWindow:
                     self._custom_load_entry_selection_text(entry), notes))
             if selected_iid and tree.exists(selected_iid):
                 tree.selection_set(selected_iid)
-        
+
         # Update BC tree
         bc_tree = getattr(self, "_custom_bc_tree", None)
         if bc_tree is not None:
@@ -11216,9 +11212,9 @@ class RuntimeFEMWindow:
             else:
                 base_radius = max(_safe_float(geometry.get("radius_m"), 1.0), 1.0e-9)
                 base_radius_top = base_radius
-            
+
             cyl_len = max(_safe_float(geometry.get("length_m"), 1.0), 1.0e-9)
-            
+
             def get_r(z_val):
                 t = z_val / cyl_len if cyl_len > 0 else 0.0
                 return base_radius + t * (base_radius_top - base_radius)
@@ -11227,15 +11223,15 @@ class RuntimeFEMWindow:
             theta_1 = max_b / base_radius
             arc_steps = max(2, int(math.ceil(abs(theta_1 - theta_0) / (math.pi / 24.0))))
             angles = [theta_0 + (theta_1 - theta_0) * index / arc_steps for index in range(arc_steps + 1)]
-            
+
             r_lower = get_r(min_a) + surface_offset
             lower = [Point3D(r_lower * math.cos(theta), r_lower * math.sin(theta), min_a)
                      for theta in angles]
-                     
+
             r_upper = get_r(max_a) + surface_offset
             upper = [Point3D(r_upper * math.cos(theta), r_upper * math.sin(theta), max_a)
                      for theta in reversed(angles)]
-                     
+
             return lower + upper
 
         return [
@@ -12112,7 +12108,3 @@ if __name__ == "__main__":
     my_app.window.protocol("WM_DELETE_WINDOW", root.destroy)
     my_app.window.focus_force()
     root.mainloop()
-
-
-
-

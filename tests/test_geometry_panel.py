@@ -4,7 +4,7 @@ import json
 import math
 from collections import Counter
 
-from anystruct.fe_solver import (
+from anysolver.runtime import (
     LightweightFEMConfig,
     build_generated_geometry,
     run_production_fem,

@@ -43,7 +43,7 @@ try:
     import anystruct.project_services as project_services
     import anystruct.solid_export as solid_export
     import anystruct.fe_plate_fields as fe_plate_fields
-    import anystruct.fe_runtime_solver as fe_runtime_solver
+    import anystruct.fem_integration as fe_runtime_solver
     import anystruct.representation_geometry as representation_geometry
     import anystruct.tkinter_3d_canvas_thickness_v6 as tkinter_3d_canvas
 except ModuleNotFoundError:
@@ -69,7 +69,7 @@ except ModuleNotFoundError:
     import ANYstructure.anystruct.project_services as project_services
     import ANYstructure.anystruct.solid_export as solid_export
     import ANYstructure.anystruct.fe_plate_fields as fe_plate_fields
-    import ANYstructure.anystruct.fe_runtime_solver as fe_runtime_solver
+    import ANYstructure.anystruct.fem_integration as fe_runtime_solver
     import ANYstructure.anystruct.representation_geometry as representation_geometry
     import ANYstructure.anystruct.tkinter_3d_canvas_thickness_v6 as tkinter_3d_canvas
 
@@ -2339,7 +2339,7 @@ class Application():
                 messagebox.showerror("FEM Import Error", "Failed to parse FEM file into a valid model.")
                 return
 
-            from anystruct.fe_runtime_solver import open_runtime_fem_window
+            from anystruct.fem_integration import open_runtime_fem_window
             open_runtime_fem_window(self._parent, self, imported_fem_model=import_result.model, imported_path=inp_path)
         except Exception as e:
             messagebox.showerror("FEM Import Error", f"An error occurred while importing FEM:\n{e}")
@@ -2385,7 +2385,7 @@ class Application():
         )
         if not launch:
             return
-        from anystruct.fe_runtime_solver import open_runtime_fem_window
+        from anystruct.fem_integration import open_runtime_fem_window
         open_runtime_fem_window(self._parent, self, imported_fem_model=model, imported_path=inp_path)
 
     def open_fea_buckling_files(self):

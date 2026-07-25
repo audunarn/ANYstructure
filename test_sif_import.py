@@ -6,7 +6,7 @@ from pathlib import Path
 sys.path.insert(0, "c:\\Github\\ANYstructure")
 
 from anystruct.fe_plate_fields import read_sesam_shell_model, infer_plate_fields, detect_surface_patches, detect_cylinder_geometry
-from anystruct.fe_solver_backend.sesam_fem.sif_importer import import_sesam_fem
+from anysolver.sesam_fem.sif_importer import import_sesam_fem
 
 sif_path = "c:\\Github\\ANYstructure\\ref_cases\\20250926_134848__set_ANY_res_set_R1.SIF"
 

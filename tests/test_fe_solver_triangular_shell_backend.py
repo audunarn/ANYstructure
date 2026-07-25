@@ -1,12 +1,12 @@
-﻿"""Triangular shell topology checks for SESAM/GeniE-style meshes."""
+"""Triangular shell topology checks for SESAM/GeniE-style meshes."""
 
 from __future__ import annotations
 
 import numpy as np
 import pytest
 
-from anystruct import fe_solver as runtime_fe_solver
-from anystruct.fe_solver_backend import (
+from anysolver import runtime as runtime_fe_solver
+from anysolver import (
     AnyStructureFEMConfig,
     FEModel,
     LoadCase,

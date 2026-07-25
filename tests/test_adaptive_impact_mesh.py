@@ -11,13 +11,13 @@ matplotlib.use("Agg")
 import numpy as np
 import pytest
 
-from anystruct.fe_solver import (
+from anysolver.runtime import (
     LightweightFEMConfig,
     _collision_impact_point,
     _graded_axis_breaks,
     build_generated_geometry,
 )
-from anystruct.fe_runtime_solver import (
+from anystruct.fem_integration import (
     RuntimeFEMOptions,
     _solver_config_from_options,
     create_runtime_fem_mesh_preview_figure,
@@ -226,10 +226,10 @@ def test_mesh_preview_figure_builds_from_options() -> None:
 
 def test_acceleration_and_added_mass_load_resolution() -> None:
     """Frontend resolves plate edges/rings and applies acceleration + added mass loads."""
-    from anystruct.fe_solver import _apply_acceleration_and_masses, _resolve_added_mass_nodes
-    from anystruct.fe_solver_backend.anystructure_fem_mode import build_fe_model_from_generated_geometry
-    from anystruct.fe_solver_backend.boundary import LoadCase
-    from anystruct.fe_solver_backend.matrix_assembly import assemble_load_vector
+    from anysolver.runtime import _apply_acceleration_and_masses, _resolve_added_mass_nodes
+    from anysolver.anystructure_fem_mode import build_fe_model_from_generated_geometry
+    from anysolver.boundary import LoadCase
+    from anysolver.matrix_assembly import assemble_load_vector
 
     geom = {"geometry": "flat panel", "length_m": 4.0, "width_m": 2.0, "thickness_m": 0.01, "has_stiffener": False, "has_girder": False}
     cfg = LightweightFEMConfig(mesh_fidelity="coarse", acceleration_z_m_s2=-9.81, added_mass_kg=500.0, added_mass_location="plate edge x0")
@@ -255,7 +255,7 @@ def test_acceleration_and_added_mass_load_resolution() -> None:
 
 
 def test_added_mass_location_none_is_noop() -> None:
-    from anystruct.fe_solver import _resolve_added_mass_nodes
+    from anysolver.runtime import _resolve_added_mass_nodes
 
     geom = {"geometry": "flat panel", "length_m": 3.0, "width_m": 2.0, "thickness_m": 0.01, "has_stiffener": False, "has_girder": False}
     generated = build_generated_geometry(geom, LightweightFEMConfig())
