@@ -2004,11 +2004,9 @@ def test_runtime_fem_popup_wires_preview_canvas_in_upper_right():
 
 
 def test_tkinter_3d_canvas_supports_plate_front_back_colours():
-    source = (
-        Path(__file__).resolve().parents[1]
-        / "anystruct"
-        / "tkinter_3d_canvas_thickness_v6.py"
-    ).read_text(encoding="utf-8")
+    from anystruct import tkinter_3d_canvas_thickness_v6 as tk3d_canvas_module
+
+    source = Path(tk3d_canvas_module.__file__).read_text(encoding="utf-8")
 
     assert "back_color: str = \"\"" in source
     assert "\"back_color\": back_color" in source

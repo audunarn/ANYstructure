@@ -1,3 +1,4 @@
+ANYtk3D>=0.1,<0.2
 ANYbuckling>=0.1,<0.2
 ANYsolver>=0.1,<0.2
 matplotlib
