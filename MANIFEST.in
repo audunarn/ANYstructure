@@ -1,6 +1,5 @@
 include LICENSE
 include README.md
-include README.rst
 include anystruct\images\ANYicon.ico
 include anystruct\images\fls_button.gif
 include anystruct\images\img_axial_stresses.gif
