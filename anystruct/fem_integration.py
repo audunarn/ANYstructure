@@ -1621,21 +1621,6 @@ def _clamped_alpha(value: Any, default: float = 1.0) -> float:
     return min(max(_safe_float(value, default), 0.0), 1.0)
 
 
-def _alpha_to_stipple(alpha: float) -> str:
-    """Approximate alpha in Tk Canvas, which has no polygon alpha channel."""
-
-    alpha = _clamped_alpha(alpha, 1.0)
-    if alpha >= 0.94:
-        return ""
-    if alpha >= 0.68:
-        return "gray75"
-    if alpha >= 0.43:
-        return "gray50"
-    if alpha >= 0.18:
-        return "gray25"
-    return "gray12"
-
-
 def _crisp_canvas_alpha(value: Any, default: float = 1.0) -> float:
     """Avoid soft-looking near-opaque Tk canvas surfaces."""
 
@@ -5033,6 +5018,88 @@ FEM_OPTION_INFO.update({
         "output": "Visualization only; the underlying values and limits are unchanged.",
         "caution": "Diverging maps can suggest a false zero point for quantities that are strictly positive.",
     },
+    "shading": {
+        "title": "Lighting",
+        "purpose": "Shades every surface with a directional light so curvature and member orientation read as 3D.",
+        "use": "Keep on for geometry and mesh inspection. Turn off to read contour colours as literal values.",
+        "output": "Visualization only.",
+        "caution": (
+            "Shading only darkens a surface - a face turned toward the light keeps its exact contour colour - "
+            "but a shadowed face still reads darker than its legend entry."
+        ),
+    },
+    "light_azimuth": {
+        "title": "Light Azimuth",
+        "purpose": "Compass direction the light comes from, in degrees about the global Z axis.",
+        "use": "Rotate the light when a feature of interest falls in shadow. Press Enter to apply.",
+        "output": "Visualization only.",
+        "caution": "Lighting the model straight down the view direction flattens it; keep the light off to one side.",
+    },
+    "light_elevation": {
+        "title": "Light Elevation",
+        "purpose": "Height of the light above the horizon, in degrees.",
+        "use": "High values light top surfaces, low values rake across the model and emphasise plate curvature.",
+        "output": "Visualization only.",
+        "caution": "Negative elevations light the model from below, which can read as inverted geometry.",
+    },
+    "light_ambient": {
+        "title": "Ambient Light",
+        "purpose": "Brightness of surfaces that face away from the light (0 black, 1 unshaded).",
+        "use": "Raise it to keep shadowed members readable, lower it for more three-dimensional contrast.",
+        "output": "Visualization only.",
+        "caution": "Low ambient values make contour colours on shadowed faces hard to compare with the legend.",
+    },
+    "light_specular": {
+        "title": "Highlight",
+        "purpose": "Strength of the specular highlight, the bright glint where the surface mirrors the light.",
+        "use": "A small amount helps read curvature on shells; set to 0 for flat, purely value-based colours.",
+        "output": "Visualization only.",
+        "caution": "Highlights brighten a surface past its base colour, so keep it low when reading contours.",
+    },
+    "light_follow_camera": {
+        "title": "Light Follows Camera",
+        "purpose": "Attaches the light to the viewpoint, like a head lamp, instead of fixing it in the model.",
+        "use": "Useful while orbiting: whatever faces you never goes dark.",
+        "output": "Visualization only.",
+        "caution": "Shading then changes as you rotate, so it is a poorer cue for comparing two orientations.",
+    },
+    "show_axis_indicator": {
+        "title": "Show Axis Indicator",
+        "purpose": "Draws the small X/Y/Z orientation triad in the corner of the 3D view.",
+        "use": "Keep on to confirm which way the global axes point (matches the fx/fy/fz load axes).",
+        "output": "Visualization only.",
+        "caution": "None.",
+    },
+    "occlude_lines": {
+        "title": "Hide Lines Behind Geometry",
+        "purpose": "Lets 3D lines - beam elements, member outlines, grids - be hidden by surfaces in front of them.",
+        "use": (
+            "Keep on for a solid, correctly ordered view. Turn off to keep beam elements and markers "
+            "visible through the plating, as an X-ray view."
+        ),
+        "output": "Visualization only.",
+        "caution": "Dimension annotations and labels stay on top either way.",
+    },
+    "interactive_detail": {
+        "title": "Interactive Detail",
+        "purpose": "Face budget used while orbiting, panning or zooming; full detail returns on mouse release.",
+        "use": "Lower it if dragging a large model feels sluggish, raise it if interaction already feels smooth.",
+        "output": "Visualization only; the released view is always drawn at full detail.",
+        "caution": (
+            "The budget self-tunes from measured frame times, so this is the starting point rather than a "
+            "hard limit."
+        ),
+    },
+    "animation_detail": {
+        "title": "Animation Detail",
+        "purpose": "Render quality used during animation playback.",
+        "use": (
+            "'auto' starts at full detail and drops to reduced detail as soon as a frame misses its slot; "
+            "'full' keeps every face, stipple and outline; 'fast' always uses the reduced path."
+        ),
+        "output": "Visualization only; the frames themselves are unchanged and the view is redrawn in full on stop.",
+        "caution": "Reduced detail drops transparency stippling and element outlines while playing.",
+    },
 })
 
 
@@ -5379,7 +5446,20 @@ class RuntimeFEMWindow:
         self.show_axis_ruler_vis = tk.BooleanVar(value=False)
         self.show_imperfections_vis = tk.BooleanVar(value=False)
         self.imperfection_preview_scale = tk.DoubleVar(value=0.0)
+        # 3D view options handled by the canvas itself rather than by the
+        # geometry we hand it; all of them go through
+        # _apply_canvas_view_options so every canvas stays consistent.
+        self.show_axis_indicator_vis = tk.BooleanVar(value=True)
+        self.shading_vis = tk.BooleanVar(value=True)
+        self.light_azimuth_vis = tk.DoubleVar(value=300.0)
+        self.light_elevation_vis = tk.DoubleVar(value=50.0)
+        self.light_ambient_vis = tk.StringVar(value="0.45")
+        self.light_specular_vis = tk.StringVar(value="0.12")
+        self.light_follow_camera_vis = tk.BooleanVar(value=False)
+        self.occlude_lines_vis = tk.BooleanVar(value=True)
+        self.interactive_detail_vis = tk.IntVar(value=4000)
         self.animation_fast_mode = tk.BooleanVar(value=False)
+        self.animation_detail_vis = tk.StringVar(value="auto")
         self.animation_interval_ms = tk.IntVar(value=80)
         self.animation_speed_multiplier = tk.DoubleVar(value=1.0)
         self.time_step_slider_value = tk.DoubleVar(value=0.0)
@@ -5633,6 +5713,96 @@ class RuntimeFEMWindow:
             self.window.geometry(str(screen_width - 80) + "x" + str(screen_height - 100) + "+20+20")
         except Exception:
             pass
+
+    def _canvas_view_targets(self) -> tuple:
+        """Every Tkinter3DCanvas the visualization options apply to."""
+        return tuple(
+            canvas
+            for canvas in (
+                getattr(self, "result_canvas", None),
+                getattr(self, "geometry_preview_canvas", None),
+                getattr(self, "mesh_preview_canvas", None),
+            )
+            if canvas is not None
+        )
+
+    def _apply_canvas_view_options(self, canvas: Any) -> None:
+        """
+        Push the Visualization-tab display settings onto one 3D canvas.
+
+        These are the options the canvas applies itself - mesh lines, rulers,
+        lighting, line occlusion, interactive detail - as opposed to the ones
+        that change the geometry we build (alpha, colours, deformation
+        scale), which are read while populating the scene.  Routing them all
+        through here keeps the result view, the geometry preview and the mesh
+        preview in step, and keeps working against an ANYtk3D build that
+        predates any individual setting.
+        """
+        if canvas is None:
+            return
+
+        def call(name: str, *args: Any, **kwargs: Any) -> None:
+            method = getattr(canvas, name, None)
+            if callable(method):
+                try:
+                    method(*args, **kwargs)
+                except Exception:
+                    pass
+
+        call("set_mesh_lines", bool(self.show_mesh_lines_vis.get()))
+        call("set_axis_ruler", bool(self.show_axis_ruler_vis.get()))
+        call("set_axis_indicator", bool(self.show_axis_indicator_vis.get()))
+        call("set_occlude_lines", bool(self.occlude_lines_vis.get()))
+        call("set_interactive_detail", max(200, _tk_var_int(self.interactive_detail_vis, 4000)))
+        call("set_shading", bool(self.shading_vis.get()))
+
+        direction = None
+        sun = getattr(_tk3d_canvas_module, "sun_direction", None)
+        if callable(sun):
+            try:
+                direction = sun(
+                    _tk_var_float(self.light_azimuth_vis, 300.0),
+                    _tk_var_float(self.light_elevation_vis, 50.0),
+                )
+            except Exception:
+                direction = None
+        call(
+            "set_light",
+            direction=direction,
+            ambient=_clamped_alpha(self.light_ambient_vis.get(), 0.45),
+            specular=max(0.0, min(1.0, _safe_float(self.light_specular_vis.get(), 0.12))),
+            follow_camera=bool(self.light_follow_camera_vis.get()),
+        )
+
+    def _refresh_canvas_view_options(self) -> None:
+        """Re-apply the display options to every live canvas and redraw."""
+        for canvas in self._canvas_view_targets():
+            self._apply_canvas_view_options(canvas)
+            redraw = getattr(canvas, "redraw", None)
+            if callable(redraw):
+                try:
+                    redraw()
+                except Exception:
+                    pass
+
+    def _reset_lighting_defaults(self) -> None:
+        """Restore the shipped lighting setup."""
+        self.shading_vis.set(True)
+        self.light_azimuth_vis.set(300.0)
+        self.light_elevation_vis.set(50.0)
+        self.light_ambient_vis.set("0.45")
+        self.light_specular_vis.set("0.12")
+        self.light_follow_camera_vis.set(False)
+        self.show_axis_indicator_vis.set(True)
+        self.occlude_lines_vis.set(True)
+        self.interactive_detail_vis.set(4000)
+        self._refresh_canvas_view_options()
+
+    def _animation_playback_detail(self) -> bool | None:
+        """Map the detail choice onto ANYtk3D's play_animation(fast=...)."""
+        return {"auto": None, "full": False, "fast": True}.get(
+            str(self.animation_detail_vis.get()).strip().lower(), None
+        )
 
     def _info_button(self, parent: Any, key: str) -> ttk.Button:
         return ttk.Button(parent, text="i", width=2, command=lambda info_key=key: self._show_solver_info(info_key))
@@ -6767,11 +6937,7 @@ class RuntimeFEMWindow:
         self._add_check_row(vis_group, 2, "show_girders", "Show girders/frames", self.show_girder_vis)
         self._add_check_row(vis_group, 3, "show_collision_sphere", "Show rigid sphere", self.show_collision_sphere_vis)
 
-        def update_canvas_options():
-            for canvas_ref in [self.result_canvas, self.geometry_preview_canvas, self.mesh_preview_canvas]:
-                if canvas_ref:
-                    canvas_ref.set_mesh_lines(self.show_mesh_lines_vis.get())
-                    canvas_ref.set_axis_ruler(self.show_axis_ruler_vis.get())
+        update_canvas_options = self._refresh_canvas_view_options
 
         self._add_check_row(vis_group, 4, "show_mesh_lines", "Show mesh lines", self.show_mesh_lines_vis).configure(command=update_canvas_options)
         self._add_check_row(vis_group, 5, "show_axis_ruler", "Show axis ruler", self.show_axis_ruler_vis).configure(command=update_canvas_options)
@@ -6793,6 +6959,15 @@ class RuntimeFEMWindow:
         ttk.Button(vis_actions, text="Stop", command=self._stop_animation).pack(side=tk.LEFT, padx=(4, 0))
         ttk.Checkbutton(vis_actions, text="Fast animation", variable=self.animation_fast_mode).pack(side=tk.LEFT,
                                                                                                     padx=(8, 0))
+        self._info_button(vis_actions, "animation_detail").pack(side=tk.LEFT, padx=(10, 2))
+        ttk.Label(vis_actions, text="detail").pack(side=tk.LEFT, padx=(0, 4))
+        ttk.Combobox(
+            vis_actions,
+            textvariable=self.animation_detail_vis,
+            values=("auto", "full", "fast"),
+            state="readonly",
+            width=6,
+        ).pack(side=tk.LEFT)
         ttk.Label(vis_actions, text="x").pack(side=tk.RIGHT, padx=(4, 0))
         ttk.Entry(vis_actions, textvariable=self.animation_speed_multiplier, width=5).pack(side=tk.RIGHT)
         ttk.Label(vis_actions, text="speed").pack(side=tk.RIGHT, padx=(8, 0))
@@ -6825,6 +7000,51 @@ class RuntimeFEMWindow:
         ttk.Button(view_actions, text="Side", command=lambda: self._set_runtime_3d_view("side")).pack(side=tk.LEFT,
                                                                                                       padx=(0, 4))
         ttk.Button(view_actions, text="Top", command=lambda: self._set_runtime_3d_view("top")).pack(side=tk.LEFT)
+
+        # --- 3D view and lighting -------------------------------------
+        # These settings are applied by the canvas itself, so they take effect
+        # immediately on every open view without rebuilding the geometry.
+        light_group = ttk.LabelFrame(tab_visualization, text="3D view and lighting")
+        light_group.pack(fill=tk.X, padx=8, pady=(0, 8))
+        self._configure_option_grid(light_group)
+
+        self._add_check_row(
+            light_group, 0, "shading", "Lighting (shaded surfaces)", self.shading_vis,
+        ).configure(command=update_canvas_options)
+        self._add_entry_row(
+            light_group, 1, "light_azimuth", "Light azimuth [deg]", self.light_azimuth_vis, width=8,
+        ).bind("<Return>", lambda _event: update_canvas_options())
+        self._add_entry_row(
+            light_group, 2, "light_elevation", "Light elevation [deg]", self.light_elevation_vis, width=8,
+        ).bind("<Return>", lambda _event: update_canvas_options())
+        self._add_entry_row(
+            light_group, 3, "light_ambient", "Ambient light [0-1]", self.light_ambient_vis, width=8,
+        ).bind("<Return>", lambda _event: update_canvas_options())
+        self._add_entry_row(
+            light_group, 4, "light_specular", "Highlight [0-1]", self.light_specular_vis, width=8,
+        ).bind("<Return>", lambda _event: update_canvas_options())
+        self._add_check_row(
+            light_group, 5, "light_follow_camera", "Light follows camera", self.light_follow_camera_vis,
+        ).configure(command=update_canvas_options)
+        self._add_check_row(
+            light_group, 6, "show_axis_indicator", "Show axis indicator", self.show_axis_indicator_vis,
+        ).configure(command=update_canvas_options)
+        self._add_check_row(
+            light_group, 7, "occlude_lines", "Hide lines behind geometry", self.occlude_lines_vis,
+        ).configure(command=update_canvas_options)
+        self._add_entry_row(
+            light_group, 8, "interactive_detail", "Interactive detail [faces]",
+            self.interactive_detail_vis, width=8,
+        ).bind("<Return>", lambda _event: update_canvas_options())
+
+        light_actions = ttk.Frame(light_group)
+        light_actions.grid(row=9, column=0, columnspan=4, sticky=tk.W, padx=8, pady=(0, 4))
+        ttk.Button(
+            light_actions, text="Apply view options", command=update_canvas_options,
+        ).pack(side=tk.LEFT)
+        ttk.Button(
+            light_actions, text="Reset lighting", command=self._reset_lighting_defaults,
+        ).pack(side=tk.LEFT, padx=(6, 0))
 
         self.upper_result_frame = ttk.LabelFrame(right_panel, text="Result text")
         self.upper_result_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
@@ -7201,8 +7421,7 @@ class RuntimeFEMWindow:
             fit_view = getattr(self, "_last_preview_mesh", None) is not generated
         self._last_preview_mesh = generated
         canvas = self.mesh_preview_canvas
-        canvas.set_mesh_lines(bool(self.show_mesh_lines_vis.get()))
-        canvas.set_axis_ruler(bool(self.show_axis_ruler_vis.get()))
+        self._apply_canvas_view_options(canvas)
         # Same refresh contract as the result canvas: smooth (item-reusing)
         # refresh when only view options changed, full clear for a new mesh.
         canvas.clear(keep_canvas=not fit_view)
@@ -7349,6 +7568,9 @@ class RuntimeFEMWindow:
                 float(coords[2]) + offset[2] * scale,
             )
 
+        shell_polygons = []
+        shell_colors = []
+        shell_back_colors = []
         for shell in generated.get("shells", ()) or ():
             ids = [int(i) for i in shell.get("node_ids", ()) or () if int(i) in nodes]
             if len(ids) in (3, 6):
@@ -7359,7 +7581,7 @@ class RuntimeFEMWindow:
                 corners = ids
             if len(corners) < 3:
                 continue
-            pts = [display_point(i) for i in corners]
+            shell_polygons.append([display_point(i) for i in corners])
             if offsets and max_magnitude_mm > 0.0:
                 element_magnitude = sum(magnitudes_mm.get(i, 0.0) for i in corners) / len(corners)
                 face_color = _interpolate_thickness_color(element_magnitude, 0.0, max_magnitude_mm)
@@ -7367,10 +7589,13 @@ class RuntimeFEMWindow:
             else:
                 face_color = "#dbe4f0"
                 back_color = "#c3cede"
-            canvas.add_polygon(
-                pts,
-                color=face_color,
-                back_color=back_color,
+            shell_colors.append(face_color)
+            shell_back_colors.append(back_color)
+        if shell_polygons:
+            canvas.add_faces(
+                shell_polygons,
+                colors=shell_colors,
+                back_colors=shell_back_colors,
                 outline="#334155",
                 width=1,
             )
@@ -7797,7 +8022,12 @@ class RuntimeFEMWindow:
             interval = max(int(round(max(_tk_var_int(self.animation_interval_ms, 80), 20) / speed)), 5)
             fps = 1000 // interval
             self._animation_running = True
-            self.result_canvas.play_animation(fps=fps)
+            detail = self._animation_playback_detail()
+            try:
+                self.result_canvas.play_animation(fps=fps, fast=detail)
+            except TypeError:
+                # Older ANYtk3D without the playback-detail argument.
+                self.result_canvas.play_animation(fps=fps)
             return
 
         current = str(self.result_case_choice.get())
@@ -7959,8 +8189,10 @@ class RuntimeFEMWindow:
         colormap_var = getattr(self, "colormap_vis", None)
         plate_alpha = _crisp_canvas_alpha(plate_alpha_var.get() if plate_alpha_var is not None else 1.0, 1.0)
         member_alpha = _crisp_canvas_alpha(member_alpha_var.get() if member_alpha_var is not None else 1.0, 1.0)
-        plate_stipple = _alpha_to_stipple(plate_alpha)
-        member_stipple = _alpha_to_stipple(member_alpha)
+        # Alpha goes straight to the canvas: ANYtk3D resolves an opacity into
+        # a 16-step dither with separate front/back patterns, so the alpha
+        # entries are proportional across their whole range and a surface
+        # behind a transparent one still shows through.
         plate_front_color = _tk_color_value(
             getattr(getattr(self, "plate_front_color_vis", None), "get", lambda: "#d1d5db")(),
             "#d1d5db",
@@ -7973,18 +8205,13 @@ class RuntimeFEMWindow:
 
         if hasattr(self, "imported_fem_model") and self.imported_fem_model is not None:
             get_node = self.imported_fem_model.mesh.get_node
+            imported_shells = []
             for element in self.imported_fem_model.mesh.elements.values():
                 if element.__class__.__name__ == "ShellElement":
                     if not show_plate: continue
                     nodes = [get_node(int(nid)) for nid in element.node_ids]
                     if all(n is not None for n in nodes):
-                        canvas.add_polygon(
-                            [Point3D(*n.coords()) for n in nodes],
-                            outline="gray",
-                            color=plate_front_color,
-                            back_color=plate_back_color,
-                            stipple=plate_stipple,
-                        )
+                        imported_shells.append([n.coords() for n in nodes])
                 elif element.__class__.__name__ == "BeamElement":
                     if not show_stiffeners: continue
                     nodes = [get_node(int(nid)) for nid in element.node_ids]
@@ -7992,6 +8219,14 @@ class RuntimeFEMWindow:
                         pts = [Point3D(*n.coords()) for n in nodes]
                         for i in range(len(pts) - 1):
                             canvas.add_line(pts[i], pts[i + 1], color="blue", width=2)
+            if imported_shells:
+                canvas.add_faces(
+                    imported_shells,
+                    colors=plate_front_color,
+                    back_colors=[plate_back_color] * len(imported_shells),
+                    outline="gray",
+                    opacity=plate_alpha,
+                )
             if fit_view:
                 canvas.fit_to_scene()
             return
@@ -8091,7 +8326,7 @@ class RuntimeFEMWindow:
                     back_color=plate_back_color,
                     outline="#64748b",
                     layer=5,
-                    stipple=plate_stipple
+                    opacity=plate_alpha
                 )
             if show_stiffeners and member_alpha > 0.0 and geometry.get("has_stiffener"):
                 spacing = _safe_float(geometry.get("stiffener_spacing_m"))
@@ -8113,7 +8348,7 @@ class RuntimeFEMWindow:
                             b=b,
                             color="#94a3b8",
                             outline="#1f2937",
-                            stipple=member_stipple,
+                            opacity=member_alpha,
                         )
             if show_girders and member_alpha > 0.0 and geometry.get("has_girder"):
                 gir_sec = geometry.get("girder_section") or {}
@@ -8134,7 +8369,7 @@ class RuntimeFEMWindow:
                         gb=gb,
                         color="#fca5a5",
                         outline="#991b1b",
-                        stipple=member_stipple,
+                        opacity=member_alpha,
                     )
         if callable(getattr(canvas, "add_line", None)) and callable(getattr(canvas, "add_text", None)):
             self._draw_base_dimension_annotations(canvas, geometry)
@@ -8378,8 +8613,10 @@ class RuntimeFEMWindow:
         component = self._selected_component()
         plate_alpha = _crisp_canvas_alpha(self.plate_alpha_vis.get(), 1.0)
         member_alpha = _crisp_canvas_alpha(self.member_alpha_vis.get(), 1.0)
-        plate_stipple = _alpha_to_stipple(plate_alpha)
-        member_stipple = _alpha_to_stipple(member_alpha)
+        # Alpha goes straight to the canvas: ANYtk3D resolves an opacity into
+        # a 16-step dither with separate front/back patterns, so the alpha
+        # entries are proportional across their whole range and a surface
+        # behind a transparent one still shows through.
         _configure_tk_canvas_colormap(str(self.colormap_vis.get()))
         visualization_payload = ((self.current_result.visualization if self.current_result is not None else {}) or {})
         has_explicit_shell_surfaces = bool(
@@ -8475,50 +8712,55 @@ class RuntimeFEMWindow:
         show_plate_var = getattr(self, "show_plate_vis", None)
         show_plate = show_plate_var.get() if show_plate_var is not None else True
         if show_plate and plate_alpha > 0.0:
+            # Result fields are handed to the canvas as one batch: a colour
+            # per element, but a single object with one flat vertex array.
+            # Adding them one polygon at a time costs a dict and a Python
+            # centroid/normal per element, which dominates on real meshes.
             skin_shell_surfaces = tuple(visualization.get("skin_shell_surfaces") or ())
             if skin_shell_surfaces:
+                polygons = []
+                colors = []
                 for surface in skin_shell_surfaces:
                     polygon = _shell_surface_points(surface, scale)
                     if len(polygon) < 3:
                         continue
                     value = _shell_surface_component_value(surface, component, is_mode=is_mode)
-                    color = _interpolate_thickness_color(value, vmin, vmax)
-                    canvas.add_polygon(
-                        [Point3D(x, y, z) for x, y, z in polygon],
-                        color=color,
+                    polygons.append(polygon)
+                    colors.append(_interpolate_thickness_color(value, vmin, vmax))
+                if polygons:
+                    canvas.add_faces(
+                        polygons,
+                        colors=colors,
                         outline="#111827",
                         width=1,
                         layer=5,
-                        stipple=plate_stipple,
+                        opacity=plate_alpha,
                     )
             else:
                 R = len(x)
                 C = len(x[0]) if R > 0 else 0
-                point_grid = [
-                    [
-                        Point3D(x[row_index][col_index], y[row_index][col_index], z[row_index][col_index])
-                        for col_index in range(C)
-                    ]
-                    for row_index in range(R)
-                ]
+                polygons = []
+                colors = []
                 for i in range(R - 1):
                     for j in range(C - 1):
-                        p1 = point_grid[i][j]
-                        p2 = point_grid[i + 1][j]
-                        p3 = point_grid[i + 1][j + 1]
-                        p4 = point_grid[i][j + 1]
-
+                        polygons.append((
+                            (x[i][j], y[i][j], z[i][j]),
+                            (x[i + 1][j], y[i + 1][j], z[i + 1][j]),
+                            (x[i + 1][j + 1], y[i + 1][j + 1], z[i + 1][j + 1]),
+                            (x[i][j + 1], y[i][j + 1], z[i][j + 1]),
+                        ))
                         avg_val = 0.25 * (
                                 color_grid[i][j] + color_grid[i + 1][j] + color_grid[i + 1][j + 1] + color_grid[i][
                             j + 1])
-                        color = _interpolate_thickness_color(avg_val, vmin, vmax)
-                        canvas.add_polygon(
-                            [p1, p2, p3, p4],
-                            color=color,
-                            outline="#64748b",
-                            layer=5,
-                            stipple=plate_stipple,
-                        )
+                        colors.append(_interpolate_thickness_color(avg_val, vmin, vmax))
+                if polygons:
+                    canvas.add_faces(
+                        polygons,
+                        colors=colors,
+                        outline="#64748b",
+                        layer=5,
+                        opacity=plate_alpha,
+                    )
 
         show_stiffeners_var = getattr(self, "show_stiffener_vis", None)
         show_stiffeners = show_stiffeners_var.get() if show_stiffeners_var is not None else True
@@ -8526,6 +8768,8 @@ class RuntimeFEMWindow:
         show_girders = show_girders_var.get() if show_girders_var is not None else True
 
         if member_alpha > 0.0:
+            polygons = []
+            colors = []
             for surface in visualization.get("shell_surfaces") or ():
                 if not _shell_surface_role_visible(surface, show_stiffeners, show_girders):
                     continue
@@ -8533,16 +8777,22 @@ class RuntimeFEMWindow:
                 if len(polygon) < 3:
                     continue
                 value = _shell_surface_component_value(surface, component, is_mode=is_mode)
-                color = _interpolate_thickness_color(value, vmin, vmax)
-                canvas.add_polygon(
-                    [Point3D(x, y, z) for x, y, z in polygon],
-                    color=color,
+                polygons.append(polygon)
+                colors.append(_interpolate_thickness_color(value, vmin, vmax))
+            if polygons:
+                canvas.add_faces(
+                    polygons,
+                    colors=colors,
                     outline="#111827",
                     width=2,
                     layer=11,
-                    stipple=member_stipple,
+                    opacity=member_alpha,
                 )
 
+        web_polygons = []
+        web_colors = []
+        flange_polygons = []
+        flange_colors = []
         for line in visualization.get("member_lines") or ():
             role = str(line.get("role", "member")).lower()
             if role == "stiffener" and (not show_stiffeners or member_alpha <= 0.0):
@@ -8596,22 +8846,9 @@ class RuntimeFEMWindow:
                 pBk = pB + z_start * wB
                 pBk1 = pB + z_end * wB
 
-                q1 = Point3D(pAk[0], pAk[1], pAk[2])
-                q2 = Point3D(pBk[0], pBk[1], pBk[2])
-                q3 = Point3D(pBk1[0], pBk1[1], pBk1[2])
-                q4 = Point3D(pAk1[0], pAk1[1], pAk1[2])
-
+                web_polygons.append((pAk, pBk, pBk1, pAk1))
                 val = _member_component_value(line, component, is_mode=is_mode, flange=False)
-
-                color = _interpolate_thickness_color(val, vmin, vmax)
-                canvas.add_polygon(
-                    [q1, q2, q3, q4],
-                    color=color,
-                    outline="#000000",
-                    width=2,
-                    layer=12,
-                    stipple=member_stipple,
-                )
+                web_colors.append(_interpolate_thickness_color(val, vmin, vmax))
 
             if b_f > 0.0:
                 pA_top = pA + hw * wA
@@ -8625,21 +8862,24 @@ class RuntimeFEMWindow:
                 fB1 = pB_top - 0.5 * b_f * v_flange_B
                 fB2 = pB_top + 0.5 * b_f * v_flange_B
 
-                qf1 = Point3D(fA1[0], fA1[1], fA1[2])
-                qf2 = Point3D(fB1[0], fB1[1], fB1[2])
-                qf3 = Point3D(fB2[0], fB2[1], fB2[2])
-                qf4 = Point3D(fA2[0], fA2[1], fA2[2])
-
+                flange_polygons.append((fA1, fB1, fB2, fA2))
                 val = _member_component_value(line, component, is_mode=is_mode, flange=True)
+                flange_colors.append(_interpolate_thickness_color(val, vmin, vmax))
 
-                color = _interpolate_thickness_color(val, vmin, vmax)
-                canvas.add_polygon(
-                    [qf1, qf2, qf3, qf4],
-                    color=color,
+        # Member webs and flanges sit on their own layers, so they go over as
+        # two batches rather than a polygon per member.
+        for polygons, colors, layer in (
+            (web_polygons, web_colors, 12),
+            (flange_polygons, flange_colors, 13),
+        ):
+            if polygons:
+                canvas.add_faces(
+                    polygons,
+                    colors=colors,
                     outline="#000000",
                     width=2,
-                    layer=13,
-                    stipple=member_stipple,
+                    layer=layer,
+                    opacity=member_alpha,
                 )
 
         self._draw_base_dimension_annotations(canvas, geometry)
@@ -8685,7 +8925,7 @@ class RuntimeFEMWindow:
         base_color = "#9ca3af"
         light_color = _blend_hex_color(base_color, 0.30)
         outline_color = _blend_hex_color("#4b5563", 0.42)
-        sphere_stipple = _alpha_to_stipple(0.45)
+        sphere_opacity = 0.45
         light = np.asarray((-0.35, -0.55, 0.76), dtype=float)
         light /= max(float(np.linalg.norm(light)), 1.0e-12)
 
@@ -8697,6 +8937,8 @@ class RuntimeFEMWindow:
                 center[2] + radius * math.sin(latitude),
             )
 
+        sphere_polygons = []
+        sphere_colors = []
         for ring in range(rings):
             lat0 = -0.5 * math.pi + math.pi * ring / rings
             lat1 = -0.5 * math.pi + math.pi * (ring + 1) / rings
@@ -8736,19 +8978,22 @@ class RuntimeFEMWindow:
                 normal = centroid - center
                 normal /= max(float(np.linalg.norm(normal)), 1.0e-12)
                 shade = 0.44 + 0.38 * max(float(np.dot(normal, light)), 0.0)
-                color = _blend_hex_color(base_color, shade)
-                canvas.add_polygon(
-                    vertices,
-                    color=color,
-                    outline=outline_color,
-                    width=1,
-                    cull_backface=False,
-                    layer=39,
-                    back_color=light_color,
-                    stipple=sphere_stipple,
-                    tags="rigid_sphere",
-                    two_sided_shell=True,
-                )
+                sphere_polygons.append(vertices)
+                sphere_colors.append(_blend_hex_color(base_color, shade))
+
+        if sphere_polygons:
+            canvas.add_faces(
+                sphere_polygons,
+                colors=sphere_colors,
+                back_colors=[light_color] * len(sphere_polygons),
+                outline=outline_color,
+                width=1,
+                cull_backface=False,
+                layer=39,
+                opacity=sphere_opacity,
+                tags="rigid_sphere",
+                two_sided_shell=True,
+            )
 
         marker = max(radius * 0.025, 1.0e-3)
         canvas.add_line(
@@ -9229,9 +9474,8 @@ class RuntimeFEMWindow:
             if canvas_created:
                 self.result_canvas = Tkinter3DCanvas(self.figure_parent, bg="white")
                 self.result_canvas.pack(fill=tk.BOTH, expand=True)
-                self.result_canvas.set_mesh_lines(bool(self.show_mesh_lines_vis.get()))
-                self.result_canvas.set_axis_ruler(bool(self.show_axis_ruler_vis.get()))
                 self._bind_custom_load_canvas_selection(self.result_canvas)
+            self._apply_canvas_view_options(self.result_canvas)
 
             try:
                 self.result_canvas.canvas.configure(
@@ -10333,8 +10577,7 @@ class RuntimeFEMWindow:
             self.geometry_preview_canvas = Tkinter3DCanvas(parent, bg="white")
             self.geometry_preview_canvas.pack(fill=tk.BOTH, expand=True)
         canvas = self.geometry_preview_canvas
-        canvas.set_mesh_lines(bool(self.show_mesh_lines_vis.get()))
-        canvas.set_axis_ruler(bool(self.show_axis_ruler_vis.get()))
+        self._apply_canvas_view_options(canvas)
         canvas.clear()
         self._populate_canvas_with_thickness(canvas, generated)
         canvas.fit_to_scene()
@@ -10362,15 +10605,24 @@ class RuntimeFEMWindow:
         values = sorted({round(t, 3) for t in thicknesses if t > 0.0})
         if values:
             canvas.set_thickness_legend(values, unit="mm", title="Plate thickness")
+        shell_polygons = []
+        shell_colors = []
         for shell in generated.get("shells", ()) or ():
             ids = [int(i) for i in shell.get("node_ids", ()) or () if int(i) in nodes]
             corners = ids[:3] if len(ids) in (3, 6) else ids[:4]
             if len(corners) < 3:
                 continue
-            pts = [Point3D(*[float(c) for c in nodes[i]]) for i in corners]
+            shell_polygons.append([nodes[i] for i in corners])
             thickness_mm = _safe_float(shell.get("thickness"), 0.0) * 1000.0
-            color = canvas.thickness_color(thickness_mm) if values else "#dbe4f0"
-            canvas.add_polygon(pts, color=color, back_color=color, outline="#334155", width=1)
+            shell_colors.append(canvas.thickness_color(thickness_mm) if values else "#dbe4f0")
+        if shell_polygons:
+            canvas.add_faces(
+                shell_polygons,
+                colors=shell_colors,
+                back_colors=shell_colors,
+                outline="#334155",
+                width=1,
+            )
         for beam in generated.get("beams", ()) or ():
             ids = [int(i) for i in beam.get("node_ids", ()) or () if int(i) in nodes]
             if len(ids) < 2:

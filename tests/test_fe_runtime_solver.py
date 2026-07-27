@@ -2018,20 +2018,70 @@ def test_runtime_fem_popup_wires_preview_canvas_in_upper_right():
 
 
 def test_tkinter_3d_canvas_supports_plate_front_back_colours():
-    from anystruct import tkinter_3d_canvas_thickness_v6 as tk3d_canvas_module
+    # The FE views rely on ANYtk3D giving a plate a separate colour for its
+    # far side, keeping both halves of a see-through shell, and bracketing a
+    # two-sided shell around the members inside it.  These are checked
+    # through the compiled scene rather than the module source, so ANYtk3D
+    # stays free to change how it renders.
+    from anystruct.tkinter_3d_canvas_thickness_v6 import Point3D, Tkinter3DCanvas
 
-    source = Path(tk3d_canvas_module.__file__).read_text(encoding="utf-8")
+    canvas = Tkinter3DCanvas.__new__(Tkinter3DCanvas)
+    canvas.objects = []
+    canvas._explicit_opaque_cylinder_occluders = []
+    canvas._thickness_legend = None
+    canvas._world_primitive_cache = {}
+    canvas._scene_cache = {}
+    canvas.show_axis_ruler = False
+    canvas._occlude_lines = True
 
-    assert "back_color: str = \"\"" in source
-    assert "\"back_color\": back_color" in source
-    assert "fill_color = primitive[\"color\"]" in source
-    assert "fill_color = primitive.get(\"back_color\") or fill_color" in source
-    assert "needs_facing = (" in source
-    assert "show_backfaces = bool(back_color) or opacity < 0.90" in source
-    assert "render_phase = 1" in source
-    assert "render_phase = 2 if primitive.get(\"_front_facing\", True) else 0" in source
-    assert "primitive[\"two_sided_shell\"] = bool(back_color)" in source
-    assert "if bool(show_backfaces):" in source
+    canvas.objects = [
+        {
+            "type": "polygon",
+            "vertices": [Point3D(0.0, 0.0, 0.0), Point3D(1.0, 0.0, 0.0), Point3D(1.0, 1.0, 0.0)],
+            "color": "#1f77b4",
+            "back_color": "#8b5e3c",
+            "outline": "black",
+            "width": 1,
+            "two_sided_shell": True,
+        }
+    ]
+    scene = canvas._compile(canvas._get_world_primitives("full"))
+
+    assert scene.base_front == ["#1f77b4"]
+    assert scene.base_back == ["#8b5e3c"]
+    assert not scene.face_cull[0]
+    # Phase 0 marks a two-sided shell: its back half paints before everything
+    # else and its front half after, so internal members stay inside it.
+    assert scene.face_phase[0] == 0
+
+    # A transparent or back-coloured cylinder keeps its back faces; a plain
+    # opaque one only needs the camera-facing half.
+    def cylinder_primitives(**overrides):
+        obj = {
+            "type": "cylinder",
+            "radius": 1.0,
+            "height": 2.0,
+            "center": Point3D(0.0, 0.0, 0.0),
+            "color": "#1f77b4",
+            "opacity": 1.0,
+            "segments": 8,
+            "height_segments": 2,
+        }
+        obj.update(overrides)
+        canvas.objects = [obj]
+        canvas._world_primitive_cache.clear()
+        canvas._scene_cache.clear()
+        return canvas._object_to_primitives(obj, "full")
+
+    assert all(p["cull_backface"] for p in cylinder_primitives())
+    assert not any(p["cull_backface"] for p in cylinder_primitives(opacity=0.78))
+
+    back_coloured = cylinder_primitives(back_color="#8b5e3c")
+    assert not any(p["cull_backface"] for p in back_coloured)
+    # Layer 0 is the shell surface itself; the end caps are not two-sided.
+    shell_patches = [p for p in back_coloured if p["layer"] == 0]
+    assert shell_patches and all(p["two_sided_shell"] for p in shell_patches)
+    assert all(p["back_color"] == "#8b5e3c" for p in shell_patches)
 
 
 def test_tkinter_3d_two_sided_cylinder_shell_does_not_occlude_backside_members():
