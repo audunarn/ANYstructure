@@ -2,11 +2,8 @@ name: Tests
 
 on:
   push:
-    branches:
-      - modern_dev
   pull_request:
-    branches:
-      - modern_dev
+  workflow_dispatch:
 
 jobs:
   pytest:
@@ -16,6 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [windows-latest, ubuntu-latest]
+        python-version: ['3.13', '3.14']
 
     steps:
       - name: Check out repository
@@ -24,7 +22,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: ${{ matrix.python-version }}
           cache: pip
 
       - name: Install dependencies
@@ -34,15 +32,25 @@ jobs:
           python -m pip install -e .
 
       - name: Import package
-        run: python -c "import anystruct; print('anystruct import OK')"
+        run: >-
+          python -c "import anystruct, anysolver;
+          from importlib.metadata import version;
+          v = tuple(map(int, version('ANYsolver').split('.')[:3]));
+          assert (0, 1, 3) <= v < (0, 2, 0);
+          assert anysolver.__version__ == version('ANYsolver');
+          print('anystruct import OK with ANYsolver', anysolver.__version__)"
 
       - name: Run pytest
         run: python -m pytest
 
       - name: Run GUI smoke on Windows
         if: runner.os == 'Windows'
-        run: python -m tests.gui_automatic_run
+        run: |
+          python -m tests.gui_automatic_run
+          python -m tests.gui_fe_runtime_smoke
 
       - name: Run GUI smoke on Linux
         if: runner.os == 'Linux'
-        run: xvfb-run -a python -m tests.gui_automatic_run
+        run: |
+          xvfb-run -a python -m tests.gui_automatic_run
+          xvfb-run -a python -m tests.gui_fe_runtime_smoke

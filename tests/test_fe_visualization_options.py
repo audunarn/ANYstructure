@@ -162,3 +162,78 @@ def test_reset_restores_the_shipped_lighting(source):
         if name == "animation_detail_vis":
             continue
         assert name in assigned, f"reset does not restore {name}"
+
+
+# ----------------------------------------------------------------------
+# Colormap selection
+# ----------------------------------------------------------------------
+
+#: The values offered by the Visualization tab's colormap option menu.
+COLORMAP_CHOICES = ("jet", "viridis", "plasma", "inferno", "coolwarm", "greys")
+
+
+@pytest.fixture
+def restored_colormap():
+    reset = getattr(tk3d, "reset_color_stops", None)
+    yield
+    if callable(reset):
+        reset()
+
+
+def _scale_sample():
+    return tuple(
+        fe._interpolate_thickness_color(value, 0.0, 1.0)
+        for value in (0.0, 0.2, 0.4, 0.6, 0.8, 1.0)
+    )
+
+
+def test_colormap_option_menu_offers_the_expected_names(source):
+    assert str(COLORMAP_CHOICES) in source or all(
+        f'"{name}"' in source for name in COLORMAP_CHOICES
+    )
+
+
+def test_every_colormap_choice_produces_a_distinct_scale(restored_colormap):
+    # The scale is shared module state, so selecting a map has to actually
+    # reach the interpolation the canvas and the legend both call.
+    seen = {}
+    for name in COLORMAP_CHOICES:
+        fe._configure_tk_canvas_colormap(name)
+        sample = _scale_sample()
+        assert sample not in seen, f"{name!r} renders the same as {seen.get(sample)!r}"
+        seen[sample] = name
+    assert len(seen) == len(COLORMAP_CHOICES)
+
+
+def test_colormap_lookup_ignores_case(restored_colormap):
+    # Matplotlib names `Greys` with a capital G; the menu offers "greys".
+    fe._configure_tk_canvas_colormap("greys")
+    lowercase = _scale_sample()
+    fe._configure_tk_canvas_colormap("Greys")
+    assert _scale_sample() == lowercase
+
+    fe._configure_tk_canvas_colormap("jet")
+    assert _scale_sample() != lowercase
+
+
+def test_unknown_colormap_falls_back_to_jet(restored_colormap):
+    fe._configure_tk_canvas_colormap("jet")
+    jet = _scale_sample()
+    fe._configure_tk_canvas_colormap("no-such-colormap")
+    assert _scale_sample() == jet
+
+
+def test_colormap_reaches_the_canvas_through_its_public_api(restored_colormap):
+    # Patching a private module constant is what silently stopped working
+    # when the interpolation moved between modules.
+    assert callable(getattr(tk3d, "set_color_stops", None))
+    assert callable(getattr(tk3d, "get_color_stops", None))
+
+    fe._configure_tk_canvas_colormap("viridis")
+    stops = tk3d.get_color_stops()
+    assert len(stops) >= 2
+    assert stops[0][1].lower() == "#440154"  # viridis starts dark purple
+
+
+def test_colormap_is_sampled_densely_enough_to_be_smooth():
+    assert fe._CANVAS_COLORMAP_SAMPLES >= 9

@@ -42,6 +42,20 @@ An entry point to the GUI is also installed with PIP:
 
 ANYstructure.exe in your python installation (Scripts).
 
+Finite-element GUI
+------------------
+
+The finite-element workflow uses ``ANYsolver>=0.1.3,<0.2``. Its load controls
+route axial force, bending moment, shear force, torsional moment, and pressure
+to the production solver. Follower pressure is enabled only for supported
+nonlinear static and arc-length analyses using the Static only or Nonlinear
+static runtime path. Unsupported configurations and solver failures are
+reported directly rather than replaced by an estimate.
+
+Raised horizontal dividers resize the input, model, and result sections. A
+raised vertical divider between result text and the result canvas makes the
+canvas height adjustable.
+
 
 
 Windows executable

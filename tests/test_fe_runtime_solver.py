@@ -1,5 +1,6 @@
 from matplotlib.figure import Figure
 from pathlib import Path
+from dataclasses import fields, replace
 import json
 import math
 
@@ -480,11 +481,21 @@ def test_runtime_fem_state_save_load_round_trip(tmp_path):
         mesh_fidelity="medium",
         pressure_pa=100_000.0,
         load_scale=1.2,
+        torsional_moment_nm=4321.0,
+        shear_force_n=8765.0,
+        follower_pressure=True,
         num_buckling_modes=4,
         include_end_lids=False,
         boundary_constraint_json='{"all": {"uz": 0.0}}',
+        collision_damage_criterion="fixed",
+        collision_penalty_scale=0.625,
     )
-    result = fe_runtime_solver.run_runtime_fem(snapshot, options)
+    # Follower pressure is deliberately present in the state being tested,
+    # but the representative result remains a quick linear-eigenvalue run.
+    # Options and results are independent records in the saved-state format.
+    result = fe_runtime_solver.run_runtime_fem(
+        snapshot, replace(options, follower_pressure=False)
+    )
     assert result.status == "ok"
     original_session = fe_plate_fields.create_runtime_fea_buckling_session(
         result, run_buckling=False, geometry_type="flat"
@@ -590,6 +601,9 @@ def test_run_runtime_fem_passes_phase_five_options_to_solver(monkeypatch):
     result = fe_runtime_solver.run_runtime_fem(
         snapshot,
         fe_runtime_solver.RuntimeFEMOptions(
+            torsional_moment_nm=12_345.0,
+            shear_force_n=-6_789.0,
+            follower_pressure=True,
             nonlinear_static_kinematics="Corotational",
             collision_nonlinear_kinematics="Corotational",
             collision_beam_contact_enabled=True,
@@ -607,12 +621,17 @@ def test_run_runtime_fem_passes_phase_five_options_to_solver(monkeypatch):
             point_refinement_growth_factor=1.25,
             collision_adaptive_extent_m=0.45,
             collision_adaptive_growth_factor=1.3,
+            collision_damage_criterion="mesh_scaled_gl",
+            collision_penalty_scale=0.725,
         ),
     )
 
     config = captured["config"]
 
     assert result.status == "ok"
+    assert config.torsional_moment_nm == pytest.approx(12_345.0)
+    assert config.shear_force_n == pytest.approx(-6_789.0)
+    assert config.follower_pressure is True
     assert config.nonlinear_static_kinematics == "corotational"
     assert config.collision_nonlinear_kinematics == "corotational"
     assert config.collision_beam_contact_enabled is True
@@ -629,6 +648,9 @@ def test_run_runtime_fem_passes_phase_five_options_to_solver(monkeypatch):
     assert config.point_refinement_growth_factor == pytest.approx(1.25)
     assert config.collision_adaptive_extent_m == pytest.approx(0.45)
     assert config.collision_adaptive_growth_factor == pytest.approx(1.3)
+    assert config.collision_damage_criterion == "mesh_scaled_gl"
+    assert config.collision_penalty_scale == pytest.approx(0.725)
+    assert result.summary["follower_pressure"] is True
     assert result.summary["nonlinear_static_kinematics"] == "corotational"
     assert result.summary["collision_nonlinear_kinematics"] == "corotational"
     assert result.summary["collision_beam_contact_enabled"] is True
@@ -638,6 +660,79 @@ def test_run_runtime_fem_passes_phase_five_options_to_solver(monkeypatch):
     assert result.summary["point_refinement_enabled"] is True
     assert result.summary["collision_adaptive_extent_m"] == pytest.approx(0.45)
     assert result.summary["collision_adaptive_growth_factor"] == pytest.approx(1.3)
+    assert result.summary["collision_damage_criterion"] == "mesh_scaled_gl"
+    assert result.summary["collision_penalty_scale"] == pytest.approx(0.725)
+
+
+def test_runtime_options_cover_every_anysolver_runtime_config_field():
+    option_names = {item.name for item in fields(fe_runtime_solver.RuntimeFEMOptions)}
+    solver_names = {item.name for item in fields(fe_solver.LightweightFEMConfig)}
+
+    assert solver_names <= option_names
+
+
+def test_run_runtime_fem_preserves_failed_production_status(monkeypatch):
+    def fake_failed_production(
+        geometry,
+        config,
+        status_callback=None,
+        imported_fem_model=None,
+        precomputed_generated_geometry=None,
+    ):
+        return fe_solver.LightweightFEMResult(
+            status="nonlinear_not_converged",
+            stress_max_pa=0.0,
+            stress_p95_pa=0.0,
+            displacement_max_m=0.0,
+            diagnostics=("production solve did not converge",),
+            mesh_info={"nodes": 4, "shells": 1, "beams": 0},
+            prestress_summary={"nonlinear_status": "not_converged"},
+            load_resultant={},
+            visualization={},
+            solver_name="ANYsolver production",
+        )
+
+    def forbidden_lightweight_fallback(*args, **kwargs):
+        raise AssertionError("a failed production solve must not run the lightweight fallback")
+
+    monkeypatch.setattr(
+        fe_runtime_solver.fe_solver, "run_production_fem", fake_failed_production
+    )
+    monkeypatch.setattr(
+        fe_runtime_solver.fe_solver,
+        "run_lightweight_fem",
+        forbidden_lightweight_fallback,
+    )
+
+    snapshot = fe_runtime_solver.active_line_snapshot(_FakeApp())
+    result = fe_runtime_solver.run_runtime_fem(
+        snapshot, fe_runtime_solver.RuntimeFEMOptions()
+    )
+
+    assert result.status == "nonlinear_not_converged"
+    assert result.summary["solver"] == "ANYsolver production"
+    assert result.summary["prestress_summary"]["nonlinear_status"] == "not_converged"
+    assert "production solve did not converge" in result.diagnostics
+    assert not any("compact fallback" in item.lower() for item in result.diagnostics)
+
+
+def test_anysolver_version_guard_accepts_0_1_3(monkeypatch):
+    monkeypatch.setattr(fe_runtime_solver._anysolver_package, "__version__", "0.1.3")
+
+    assert fe_runtime_solver._require_supported_anysolver() == "0.1.3"
+    config = fe_runtime_solver._solver_config_from_options(
+        fe_runtime_solver.RuntimeFEMOptions(shear_force_n=321.0)
+    )
+    assert config.shear_force_n == pytest.approx(321.0)
+
+
+def test_anysolver_version_guard_rejects_older_runtime(monkeypatch):
+    monkeypatch.setattr(fe_runtime_solver._anysolver_package, "__version__", "0.1.2")
+
+    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.1\.3,<0\.2"):
+        fe_runtime_solver._solver_config_from_options(
+            fe_runtime_solver.RuntimeFEMOptions()
+        )
 
 
 def test_fe_solver_kernel_warmup_manager_reports_runtime_state(monkeypatch):
@@ -1373,42 +1468,45 @@ def test_dnv_c208_steel_properties_use_grade_and_thickness_class():
 
 
 def test_nonlinear_shell_display_stresses_use_committed_plastic_state():
-    class ShellElement:
-        material_name = "steel"
-        gauss_points = ((0.0, 0.0),)
-
-    class Mesh:
-        def __init__(self):
-            self._element = ShellElement()
-
-        def get_element(self, element_id):
-            return self._element if element_id == 1 else None
-
-    class Material:
-        elastic_modulus = 210.0e9
-        poisson_ratio = 0.3
-
-    class Model:
-        mesh = Mesh()
-
-        def get_material(self, _name):
-            return Material()
-
+    backend = fe_solver.full_backend_api()
+    model = backend.generate_simple_panel_mesh(
+        1.0,
+        1.0,
+        0.01,
+        num_divisions_x=1,
+        num_divisions_y=1,
+    )
+    element = model.mesh.elements[1]
+    layer_count = 3
+    integration_point_count = len(element.gauss_points) * layer_count
+    layer_strain = np.tile(
+        np.asarray([0.003, 0.0, 0.0004], dtype=float),
+        (integration_point_count, 1),
+    )
+    plastic_strain = np.tile(
+        np.asarray([0.002, 0.0, 0.0001], dtype=float),
+        (integration_point_count, 1),
+    )
     states = {
         1: {
-            "layer_strain": np.asarray([[0.003, 0.0, 0.0004]], dtype=float),
-            "plastic_strain": np.asarray([[0.002, 0.0, 0.0001]], dtype=float),
-            "alpha": np.asarray([0.002], dtype=float),
+            "layer_strain": layer_strain,
+            "plastic_strain": plastic_strain,
+            "alpha": np.full(integration_point_count, 0.002, dtype=float),
         }
     }
-
-    stresses = fe_solver._nonlinear_shell_stresses_from_states(Model(), states)
+    recovery = backend.recover_stress_result(
+        model,
+        np.zeros(model.mesh.dof_manager.total_dofs, dtype=float),
+        element_states=states,
+    )
+    stresses = recovery.element_stresses
 
     elastic_overstress = 210.0e9 / (1.0 - 0.3**2) * 0.003
     assert stresses[1]["membrane_strain_xx"][0] == pytest.approx(0.003)
     assert stresses[1]["membrane_strain_xy"][0] == pytest.approx(0.0004)
     assert stresses[1]["membrane_xx"][0] < elastic_overstress
     assert stresses[1]["von_mises"][0] > 0.0
+    assert recovery.provenance.per_element_source[1] == "committed_shell_layer_state"
 
 
 def test_production_solver_runs_incremental_material_nonlinear_static_path():
@@ -1444,7 +1542,10 @@ def test_production_solver_runs_incremental_material_nonlinear_static_path():
     assert prestress["nonlinear_static_layers"] in {3.0, 5.0}
     assert result.visualization["plastic_strain"]
     assert result.visualization["plastic_strain_label"] == "equiv. engineering plastic strain [-]"
-    assert "Ran incremental geometric/material nonlinear static solve: completed." in result.diagnostics
+    assert (
+        "Ran newton force control geometric/material nonlinear static solve: completed."
+        in result.diagnostics
+    )
 
 
 def test_collision_nonlinear_config_normalizes_corotational_kinematics():
@@ -1842,10 +1943,24 @@ def test_runtime_fem_popup_wires_preview_canvas_in_upper_right():
 
     assert "import queue" in source
     assert "import threading" in source
-    assert "body = ttk.Panedwindow(outer, orient=tk.HORIZONTAL)" in source
-    assert "body.add(left_panel, weight=2)" in source
-    assert "body.add(mid_panel, weight=2)" in source
-    assert "body.add(right_panel, weight=3)" in source
+    # Classic PanedWindow exposes cross-theme sash width and resize cursors;
+    # a flat blue-gray divider keeps the resize affordance visible without the
+    # dated raised handle, and highlights on hover. The main panes resize
+    # horizontally and the result text/canvas panes resize vertically.
+    assert "def _visible_paned_window(parent: Any, orient: str) -> tk.PanedWindow:" in source
+    assert "panes = tk.PanedWindow(" in source
+    assert 'divider_color = "#475569"' in source
+    assert 'divider_hover_color = "#38bdf8"' in source
+    assert "sashwidth=6" in source
+    assert "sashpad=2" in source
+    assert "sashrelief=tk.FLAT" in source
+    assert "showhandle=False" in source
+    assert 'panes.bind("<Motion>", highlight_divider, add="+")' in source
+    assert 'cursor = "sb_h_double_arrow" if orient == tk.HORIZONTAL else "sb_v_double_arrow"' in source
+    assert "self.body_panes = self._visible_paned_window(outer, tk.HORIZONTAL)" in source
+    assert 'self.body_panes.add(left_panel, minsize=260, width=300, stretch="always")' in source
+    assert 'self.body_panes.add(mid_panel, minsize=340, width=390, stretch="always")' in source
+    assert 'self.body_panes.add(right_panel, minsize=360, width=470, stretch="always")' in source
     assert "FEM_OPTION_INFO: dict[str, dict[str, str]]" in source
     assert "def _info_button(self, parent: Any, key: str) -> ttk.Button:" in source
     assert "def _show_solver_info(self, key: str) -> None:" in source
@@ -1880,8 +1995,11 @@ def test_runtime_fem_popup_wires_preview_canvas_in_upper_right():
     assert "solver_options = ttk.LabelFrame(tab_general, text=\"Solver\")" in source
     assert "members = ttk.LabelFrame(tab_properties, text=\"Member modelling\")" in source
     assert "material = ttk.LabelFrame(tab_properties, text=\"Material and recovery\")" in source
-    assert "self.upper_result_frame = ttk.LabelFrame(right_panel, text=\"Result text\")" in source
-    assert "self.upper_result_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))" in source
+    assert "self.result_panes = self._visible_paned_window(right_panel, tk.VERTICAL)" in source
+    assert 'self.upper_result_frame = ttk.LabelFrame(self.result_panes, text="Result text")' in source
+    assert 'result_frame = ttk.LabelFrame(self.result_panes, text="Run visualization")' in source
+    assert 'self.result_panes.add(self.upper_result_frame, minsize=120, height=190, stretch="always")' in source
+    assert 'self.result_panes.add(result_frame, minsize=260, height=430, stretch="always")' in source
     assert "self.upper_result_text = tk.Text(" in source
     assert "self.result_canvas = Tkinter3DCanvas(" in source
     # Left-panel live run graph below the status text.
@@ -2181,7 +2299,12 @@ def test_production_solver_runs_full_cylinder_mesh_with_beams_and_buckling():
             "has_stiffener": True,
             "has_girder": True,
         },
-        fe_solver.LightweightFEMConfig(pressure_pa=10_000.0, mesh_fidelity="coarse", num_buckling_modes=2),
+        fe_solver.LightweightFEMConfig(
+            pressure_pa=10_000.0,
+            mesh_fidelity="coarse",
+            num_buckling_modes=2,
+            include_end_lids=True,
+        ),
     )
 
     assert result.status == "ok"
@@ -3131,13 +3254,21 @@ def test_auto_set_parameter_notes_report_solver_overrides():
     assert any("post-buckling continuation always runs with steel plasticity" in note for note in notes)
     assert any("-> 'arc length'" in note for note in notes)
 
-    # Arc length forces Von Karman kinematics over a corotational choice.
+    # ANYsolver 0.1.2 qualifies corotational arc-length continuation, so the
+    # selected kinematics is preserved and no auto-set note is emitted.
     notes = fe_solver._auto_set_parameter_notes(fe_solver.LightweightFEMConfig(
         analysis_type="geometric nonlinear static",
         nonlinear_solution_control="arc length",
         nonlinear_static_kinematics="corotational",
     ))
-    assert any("kinematics 'corotational' -> 'Von Karman'" in note for note in notes)
+    assert not any("kinematics" in note for note in notes)
+    assert fe_solver._effective_nonlinear_static_kinematics(
+        fe_solver.LightweightFEMConfig(
+            analysis_type="geometric nonlinear static",
+            nonlinear_solution_control="arc length",
+            nonlinear_static_kinematics="corotational",
+        )
+    ) == "corotational"
 
     # Unsupported layer counts snap to the nearest supported value.
     notes = fe_solver._auto_set_parameter_notes(fe_solver.LightweightFEMConfig(
@@ -4413,6 +4544,42 @@ def test_post_buckling_field_sync_sets_dependent_inputs():
     window.analysis_type = Var("linear eigenvalue")
     window._apply_post_buckling_field_sync()
     assert window.analysis_type.get() == "linear eigenvalue"
+
+
+def test_arc_length_keeps_corotational_and_follower_controls_selectable():
+    """The 0.1.2 arc-length path accepts corotational kinematics and follower
+    pressure, so the GUI must not disable either control merely because arc
+    length is selected."""
+    import types
+
+    class Var:
+        def __init__(self, value):
+            self._value = value
+
+        def get(self):
+            return self._value
+
+    window = types.SimpleNamespace(
+        collision_enabled=Var(False),
+        runtime_solver=Var("nonlinear static"),
+        analysis_type=Var("geometric nonlinear static"),
+        nonlinear_solution_control=Var("arc length"),
+        nonlinear_static_kinematics=Var("Corotational"),
+        custom_time_domain_enabled=Var(False),
+    )
+    window._choice_key = fe_runtime_solver.RuntimeFEMWindow._choice_key
+    window._static_kinematics_selector_enabled = types.MethodType(
+        fe_runtime_solver.RuntimeFEMWindow._static_kinematics_selector_enabled,
+        window,
+    )
+    window._follower_pressure_selector_enabled = types.MethodType(
+        fe_runtime_solver.RuntimeFEMWindow._follower_pressure_selector_enabled,
+        window,
+    )
+
+    assert window._static_kinematics_selector_enabled() is True
+    assert window._follower_pressure_selector_enabled() is True
+    assert window.nonlinear_static_kinematics.get() == "Corotational"
 
 
 def test_live_graph_axis_split_moves_large_series_to_secondary_axis():

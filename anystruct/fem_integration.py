@@ -11,6 +11,7 @@ from dataclasses import dataclass, field, fields as dataclass_fields
 from typing import Any, Iterable, Sequence
 import argparse
 import gzip
+import inspect
 import json
 import queue
 import math
@@ -34,6 +35,7 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 if __package__ in (None, ""):
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import anysolver as _anysolver_package
 from anysolver import runtime as fe_solver
 
 try:
@@ -49,6 +51,37 @@ except ModuleNotFoundError:
 Tkinter3DCanvas = _tk3d_canvas_module.Tkinter3DCanvas
 Point3D = _tk3d_canvas_module.Point3D
 _interpolate_thickness_color = _tk3d_canvas_module._interpolate_thickness_color
+
+
+MINIMUM_ANYSOLVER_VERSION = "0.1.3"
+MAXIMUM_EXCLUSIVE_ANYSOLVER_VERSION = "0.2.0"
+
+
+def _numeric_version(value: Any) -> tuple[int, int, int]:
+    """Return the first three numeric version components for a local gate."""
+
+    parts = [int(item) for item in re.findall(r"\d+", str(value or ""))[:3]]
+    return tuple((parts + [0, 0, 0])[:3])
+
+
+def _require_supported_anysolver() -> str:
+    """Fail clearly when an old editable/runtime ANYsolver shadows the requirement."""
+
+    installed = str(getattr(_anysolver_package, "__version__", "0"))
+    installed_numeric = _numeric_version(installed)
+    if (
+        installed_numeric < _numeric_version(MINIMUM_ANYSOLVER_VERSION)
+        or installed_numeric >= _numeric_version(MAXIMUM_EXCLUSIVE_ANYSOLVER_VERSION)
+    ):
+        raise RuntimeError(
+            "ANYstructure FEM requires ANYsolver>="
+            + MINIMUM_ANYSOLVER_VERSION
+            + ",<0.2; imported "
+            + installed
+            + " from "
+            + str(getattr(_anysolver_package, "__file__", "unknown location"))
+        )
+    return installed
 
 
 def _normalise_pressure_side(value: Any) -> str:
@@ -300,6 +333,10 @@ class RuntimeFEMOptions:
     collision_damage_min_contact_area_m2: float = 1.0e-6
     collision_damage_max_deleted_fraction: float = 0.25
     collision_damage_neighbor_smoothing: bool = False
+    # Append 0.1.3 integration fields so existing positional construction of
+    # RuntimeFEMOptions retains its historical field order.
+    follower_pressure: bool = False
+    collision_penalty_scale: float = 1.0
 
 
 @dataclass(frozen=True)
@@ -1155,6 +1192,7 @@ def _runtime_custom_edges(options: RuntimeFEMOptions) -> list[dict[str, float | 
 
 def _solver_config_from_options(options: RuntimeFEMOptions):
     """Build the LightweightFEMConfig from runtime options (shared by run and preview)."""
+    _require_supported_anysolver()
     pressure_side = _normalise_pressure_side(options.pressure_direction)
     return fe_solver.LightweightFEMConfig(
         mesh_fidelity=options.mesh_fidelity,
@@ -1166,6 +1204,8 @@ def _solver_config_from_options(options: RuntimeFEMOptions):
         num_buckling_modes=options.num_buckling_modes,
         mesh_size_m=options.mesh_size_m,
         top_bottom_moment_nm=options.top_bottom_moment_nm,
+        torsional_moment_nm=options.torsional_moment_nm,
+        shear_force_n=options.shear_force_n,
         acceleration_x_m_s2=options.acceleration_x_m_s2,
         acceleration_y_m_s2=options.acceleration_y_m_s2,
         acceleration_z_m_s2=options.acceleration_z_m_s2,
@@ -1181,6 +1221,7 @@ def _solver_config_from_options(options: RuntimeFEMOptions):
         analysis_type=options.analysis_type,
         buckling_analysis_type=options.buckling_analysis_type,
         pressure_direction=pressure_side,
+        follower_pressure=bool(options.follower_pressure),
         axial_force_n=options.axial_force_n,
         enforced_displacement_x_m=options.enforced_displacement_x_m,
         enforced_displacement_y_m=options.enforced_displacement_y_m,
@@ -1293,6 +1334,7 @@ def _solver_config_from_options(options: RuntimeFEMOptions):
         collision_nonlinear_tolerance=options.collision_nonlinear_tolerance,
         collision_nonlinear_cutbacks=options.collision_nonlinear_cutbacks,
         collision_plastic_damage_threshold=options.collision_plastic_damage_threshold,
+        collision_damage_criterion=options.collision_damage_criterion,
         collision_mass_kg=options.collision_mass_kg,
         collision_radius_m=options.collision_radius_m,
         collision_start_x_m=options.collision_start_x_m,
@@ -1310,6 +1352,7 @@ def _solver_config_from_options(options: RuntimeFEMOptions):
         collision_dt_s=options.collision_dt_s,
         collision_result_interval_s=options.collision_result_interval_s,
         collision_penalty_stiffness_n_per_m=options.collision_penalty_stiffness_n_per_m,
+        collision_penalty_scale=options.collision_penalty_scale,
         collision_auto_precondition=bool(options.collision_auto_precondition),
         collision_contact_damping=options.collision_contact_damping,
         collision_max_iterations=options.collision_max_iterations,
@@ -1332,7 +1375,7 @@ def _solver_config_from_options(options: RuntimeFEMOptions):
 def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions,
                     status_callback=None, imported_fem_model=None,
                     precomputed_generated_geometry=None) -> RuntimeFEMRunResult:
-    """Run the ANYstructure-owned lightweight FEM solver."""
+    """Run the external ANYsolver production runtime for an ANYstructure model."""
 
     geometry = runtime_geometry_summary(snapshot, options)
     diagnostics = list(snapshot.diagnostics)
@@ -1364,20 +1407,16 @@ def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions
                                       include_nonlinear_impact=True)
 
     solver_config = _solver_config_from_options(options)
-    if fe_solver.full_backend_available():
-        solver_result = fe_solver.run_production_fem(geometry, solver_config, status_callback=status_callback,
-                                                     imported_fem_model=imported_fem_model,
-                                                     precomputed_generated_geometry=precomputed_generated_geometry)
-        if solver_result.status in {"backend_unavailable", "invalid", "static_failed", "production_failed"}:
-            fallback = fe_solver.run_lightweight_fem(geometry, solver_config, status_callback=status_callback)
-            diagnostics.extend(solver_result.diagnostics)
-            diagnostics.append("Production FE mesh failed; using compact fallback result.")
-            if solver_result.visualization:
-                # Preserve the fine mesh visualization even though we use the fallback result values
-                fallback = fallback._replace(visualization=solver_result.visualization)
-            solver_result = fallback
-    else:
-        solver_result = fe_solver.run_lightweight_fem(geometry, solver_config, status_callback=status_callback)
+    # The GUI is a production ANYsolver client. Preserve fail-closed backend
+    # statuses instead of replacing an invalid/nonconverged solve with the
+    # compact estimator and presenting that estimate as a successful FE run.
+    solver_result = fe_solver.run_production_fem(
+        geometry,
+        solver_config,
+        status_callback=status_callback,
+        imported_fem_model=imported_fem_model,
+        precomputed_generated_geometry=precomputed_generated_geometry,
+    )
     diagnostics.extend(solver_result.diagnostics)
     diagnostics.extend(_warmup_diagnostics())
 
@@ -1411,6 +1450,7 @@ def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions
         "buckling_analysis_type": str(options.buckling_analysis_type),
         "pressure_direction": pressure_side,
         "pressure_side": pressure_side,
+        "follower_pressure": bool(options.follower_pressure),
         "axial_force_n": float(options.axial_force_n),
         "acceleration_m_s2": [float(options.acceleration_x_m_s2), float(options.acceleration_y_m_s2),
                               float(options.acceleration_z_m_s2)],
@@ -1543,6 +1583,7 @@ def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions
         "collision_nonlinear_tolerance": float(options.collision_nonlinear_tolerance),
         "collision_nonlinear_cutbacks": int(options.collision_nonlinear_cutbacks),
         "collision_plastic_damage_threshold": float(options.collision_plastic_damage_threshold),
+        "collision_damage_criterion": str(options.collision_damage_criterion),
         "collision_mass_kg": float(options.collision_mass_kg),
         "collision_radius_m": float(options.collision_radius_m),
         "collision_start_m": (
@@ -1564,6 +1605,7 @@ def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions
         "collision_dt_s": float(options.collision_dt_s),
         "collision_result_interval_s": float(options.collision_result_interval_s),
         "collision_penalty_stiffness_n_per_m": float(options.collision_penalty_stiffness_n_per_m),
+        "collision_penalty_scale": float(options.collision_penalty_scale),
         "collision_auto_precondition": bool(options.collision_auto_precondition),
         "collision_contact_damping": float(options.collision_contact_damping),
         "collision_max_iterations": int(options.collision_max_iterations),
@@ -1587,6 +1629,7 @@ def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions
         "kernel_warmup_parallel_threads": warmup_state.get("parallel_threads"),
         "kernel_warmup_max_matrix_difference_norm": _safe_float(warmup_state.get("max_matrix_difference_norm"), 0.0),
         "solver": solver_result.solver_name,
+        "anysolver_version": _require_supported_anysolver(),
         "mesh_info": dict(solver_result.mesh_info),
         "max_displacement_m": solver_result.displacement_max_m,
         "prestress_summary": dict(solver_result.prestress_summary),
@@ -1653,20 +1696,62 @@ def _tk_color_value(value: Any, default: str) -> str:
     return color
 
 
+#: Positions at which a matplotlib colormap is sampled for the Tk canvas.
+#: The canvas interpolates linearly between stops, so an even, reasonably
+#: dense set reproduces a smooth map such as viridis or turbo faithfully.
+_CANVAS_COLORMAP_SAMPLES = 17
+
+
+def _resolve_colormap(name: str) -> Any:
+    """
+    Look a colormap up by name, ignoring case.
+
+    Matplotlib's registry is case-sensitive, so the "greys" entry in the
+    Visualization tab used to miss `Greys` and silently fall back to jet.
+    """
+    text = str(name or "jet").strip()
+    try:
+        return colormaps[text]
+    except (KeyError, ValueError, TypeError):
+        pass
+    lowered = text.lower()
+    try:
+        for candidate in colormaps:
+            if str(candidate).lower() == lowered:
+                return colormaps[candidate]
+    except TypeError:
+        pass
+    return colormaps["jet"]
+
+
 def _configure_tk_canvas_colormap(colormap: str) -> None:
     """Keep the interactive canvas surface colours and legend in sync."""
 
-    name = str(colormap or "jet")
-    cmap = colormaps.get(name, colormaps["jet"])
-    existing = getattr(_tk3d_canvas_module, "_THICKNESS_COLOR_STOPS", ())
-    positions = tuple(float(item[0]) for item in existing if isinstance(item, (tuple, list)) and len(item) >= 2)
-    if len(positions) < 2:
-        positions = (0.0, 0.18, 0.36, 0.52, 0.66, 0.78, 0.88, 0.95, 1.0)
+    cmap = _resolve_colormap(colormap)
+    positions = tuple(
+        index / (_CANVAS_COLORMAP_SAMPLES - 1) for index in range(_CANVAS_COLORMAP_SAMPLES)
+    )
     stops = tuple((position, mcolors.to_hex(cmap(position), keep_alpha=False)) for position in positions)
-    try:
-        setattr(_tk3d_canvas_module, "_THICKNESS_COLOR_STOPS", stops)
-    except Exception:
-        pass
+
+    setter = getattr(_tk3d_canvas_module, "set_color_stops", None)
+    if callable(setter):
+        try:
+            setter(stops)
+            return
+        except Exception:
+            pass
+
+    # ANYtk3D before the public colour-scale API read a module constant.
+    # Patch it wherever the interpolation actually lives - the function moved
+    # between modules once, and a stale target silently disables the setting.
+    targets = {_tk3d_canvas_module, inspect.getmodule(_interpolate_thickness_color)}
+    for target in targets:
+        if target is None:
+            continue
+        try:
+            setattr(target, "_THICKNESS_COLOR_STOPS", stops)
+        except Exception:
+            pass
 
 
 def _finite_values(values: Iterable[float]) -> list[float]:
@@ -4247,6 +4332,13 @@ FEM_OPTION_INFO: dict[str, dict[str, str]] = {
         "output": "Changes load resultant, stress signs and buckling prestress.",
         "caution": "The 3D side markers follow generated element ordering. Verify the active side using the red pressure arrows in the preview.",
     },
+    "follower_pressure": {
+        "title": "Current-area Follower Pressure",
+        "purpose": "Updates shell-pressure directions and loaded area as the nonlinear model deforms.",
+        "use": "Enable it for nonlinear static or arc-length pressure loading when the pressure follows the moving shell surface. Select the Static only or Nonlinear static runtime path.",
+        "output": "Uses ANYsolver's exact external-load tangent; corotational runs automatically select the consistent tangent.",
+        "caution": "Disabled for linear, stepwise eigenvalue-buckling, transient, collision and capacity-workflow paths. It is a nonconservative load and is not a general linear eigenvalue-buckling input.",
+    },
     "axial_force_n": {
         "title": "Axial Force",
         "purpose": "Adds a balanced axial force to the generated model.",
@@ -4703,6 +4795,13 @@ FEM_OPTION_INFO.update({
         "use": "Leave zero for automatic recommendation. Enter a positive N/m value to force a penalty.",
         "output": "Higher values reduce penetration but can require smaller dt and more iterations.",
         "caution": "Too high can make contact numerically stiff; too low permits excessive penetration.",
+    },
+    "collision_penalty_scale": {
+        "title": "Automatic Penalty Scale",
+        "purpose": "Scales ANYsolver's automatically estimated contact penalty without replacing it.",
+        "use": "Leave at 1.0 normally. Values below 1 soften stubborn contact iterations; values above 1 reduce penetration but increase numerical stiffness.",
+        "output": "Changes the resolved automatic contact penalty and its provenance. A positive manual penalty overrides this scale.",
+        "caution": "Use positive values only. Excessively high values can make nonlinear contact convergence worse.",
     },
     "collision_auto_precondition": {
         "title": "Extra-conservative contact",
@@ -5186,6 +5285,7 @@ class RuntimeFEMWindow:
         self.analysis_type = tk.StringVar(value="linear eigenvalue")
         self.buckling_analysis_type = tk.StringVar(value="linear eigenvalue")
         self.pressure_direction = tk.StringVar(value="front")
+        self.follower_pressure = tk.BooleanVar(value=False)
         self.axial_force_n = tk.DoubleVar(value=_safe_float(self.snapshot.axial_force_n, 0.0))
         self.acceleration_x_m_s2 = tk.DoubleVar(value=0.0)
         self.acceleration_y_m_s2 = tk.DoubleVar(value=0.0)
@@ -5372,6 +5472,7 @@ class RuntimeFEMWindow:
         self.collision_dt_s = tk.DoubleVar(value=0.0005)
         self.collision_result_interval_s = tk.DoubleVar(value=0.0)
         self.collision_penalty_stiffness_n_per_m = tk.DoubleVar(value=0.0)
+        self.collision_penalty_scale = tk.DoubleVar(value=1.0)
         self.collision_auto_precondition = tk.BooleanVar(value=False)
         self.collision_contact_damping = tk.DoubleVar(value=0.0)
         self.collision_max_iterations = tk.IntVar(value=25)
@@ -5390,7 +5491,7 @@ class RuntimeFEMWindow:
         self.collision_damage_neighbor_smoothing = tk.BooleanVar(value=False)
         self.result_case_choice = tk.StringVar(value="Static displacement/stress")
         self.result_case_labels: dict[str, str] = {"Static displacement/stress": "static"}
-        self.component_choice = tk.StringVar(value="von_mises_pa")
+        self.component_choice = tk.StringVar(value="Stress von Mises")
         self.component_labels: dict[str, str] = {
             "Stress von Mises": "von_mises_pa",
             "Displacement Magnitude": "disp_mag",
@@ -5484,9 +5585,12 @@ class RuntimeFEMWindow:
         self._animation_running = False
         self._animation_index = 0
         self._nonlinear_static_kinematics_control = None
+        self._follower_pressure_control = None
         self._collision_nonlinear_kinematics_control = None
         self._collision_damage_beam_hint = None
         self._option_state_trace_ids: list[tuple[tk.Variable, str]] = []
+        self.body_panes = None
+        self.result_panes = None
 
         self._build()
         self._bind_option_state_traces()
@@ -5548,8 +5652,6 @@ class RuntimeFEMWindow:
             "nonlinear capacity workflow",
         }:
             return False
-        if self._choice_key(self.nonlinear_solution_control.get()) == "arc length":
-            return False
         analysis = self._choice_key(self.analysis_type.get())
         runtime = self._choice_key(self.runtime_solver.get())
         return runtime == "nonlinear static" or analysis in {
@@ -5559,6 +5661,17 @@ class RuntimeFEMWindow:
             "geom + material nonlinear static",
             "geometric and material nonlinear static",
         }
+
+    def _follower_pressure_selector_enabled(self) -> bool:
+        """Follower pressure is meaningful only on supported nonlinear paths."""
+
+        runtime = self._choice_key(self.runtime_solver.get())
+        return (
+            self._static_kinematics_selector_enabled()
+            and runtime in {"static only", "nonlinear static"}
+            and not bool(self.custom_time_domain_enabled.get())
+            and not bool(self.collision_enabled.get())
+        )
 
     def _collision_kinematics_selector_enabled(self) -> bool:
         return bool(self.collision_enabled.get()) and bool(self.collision_material_nonlinear_enabled.get())
@@ -5592,6 +5705,11 @@ class RuntimeFEMWindow:
         elif static_enabled:
             self.nonlinear_static_kinematics.set(_kinematics_label(self.nonlinear_static_kinematics.get()))
         self._set_control_state(self._nonlinear_static_kinematics_control, static_enabled)
+
+        follower_enabled = self._follower_pressure_selector_enabled()
+        if not follower_enabled and bool(self.follower_pressure.get()):
+            self.follower_pressure.set(False)
+        self._set_control_state(self._follower_pressure_control, follower_enabled)
 
         collision_enabled = self._collision_kinematics_selector_enabled()
         if not collision_enabled and _normalise_kinematics(self.collision_nonlinear_kinematics.get()) != "von_karman":
@@ -5633,6 +5751,7 @@ class RuntimeFEMWindow:
             self.material_model,
             self.post_buckling_enabled,
             self.collision_enabled,
+            self.custom_time_domain_enabled,
             self.collision_material_nonlinear_enabled,
             self.collision_beam_contact_enabled,
             self.collision_damage_enabled,
@@ -6135,6 +6254,40 @@ class RuntimeFEMWindow:
         except Exception:
             pass
 
+    @staticmethod
+    def _visible_paned_window(parent: Any, orient: str) -> tk.PanedWindow:
+        """Create a clean cross-theme pane with a discoverable resize divider."""
+
+        cursor = "sb_h_double_arrow" if orient == tk.HORIZONTAL else "sb_v_double_arrow"
+        divider_color = "#475569"
+        divider_hover_color = "#38bdf8"
+        panes = tk.PanedWindow(
+            parent,
+            orient=orient,
+            background=divider_color,
+            borderwidth=0,
+            relief=tk.FLAT,
+            sashwidth=6,
+            sashpad=2,
+            sashrelief=tk.FLAT,
+            showhandle=False,
+            opaqueresize=True,
+            cursor=cursor,
+        )
+
+        def highlight_divider(event: Any) -> None:
+            hit = panes.identify(event.x, event.y)
+            over_divider = bool(hit and len(hit) > 1 and hit[1] in {"sash", "handle"})
+            panes.configure(background=divider_hover_color if over_divider else divider_color)
+
+        def restore_divider(_event: Any) -> None:
+            panes.configure(background=divider_color)
+
+        panes.bind("<Motion>", highlight_divider, add="+")
+        panes.bind("<Leave>", restore_divider, add="+")
+        panes.bind("<ButtonRelease-1>", restore_divider, add="+")
+        return panes
+
     def _build(self) -> None:
         outer = ttk.Frame(self.window, padding=12)
         outer.pack(fill=tk.BOTH, expand=True)
@@ -6152,7 +6305,7 @@ class RuntimeFEMWindow:
         ).pack(side=tk.LEFT)
         tk.Label(
             header_inner,
-            text="ANYstructure local solver",
+            text="ANYsolver " + _require_supported_anysolver(),
             background="#2563eb",
             foreground="white",
             font=("Segoe UI", 9, "bold"),
@@ -6161,21 +6314,24 @@ class RuntimeFEMWindow:
         ).pack(side=tk.RIGHT)
         tk.Label(
             header,
-            text="Active-line analysis with shell plating, stiffener/girder beams, symmetric pressure and eigenvalue-style buckling factors.",
+            text=(
+                "Active-line shell/beam analysis. Drag the blue-gray dividers to resize sections; "
+                "they highlight blue on hover, and the result divider moves vertically."
+            ),
             background="#172033",
             foreground="#d7deeb",
             font=("Segoe UI", 9),
         ).pack(anchor=tk.W, padx=16, pady=(0, 12))
 
-        body = ttk.Panedwindow(outer, orient=tk.HORIZONTAL)
-        body.pack(fill=tk.BOTH, expand=True)
+        self.body_panes = self._visible_paned_window(outer, tk.HORIZONTAL)
+        self.body_panes.pack(fill=tk.BOTH, expand=True)
 
-        left_panel = ttk.Frame(body)
-        mid_panel = ttk.Frame(body)
-        right_panel = ttk.Frame(body)
-        body.add(left_panel, weight=2)
-        body.add(mid_panel, weight=2)
-        body.add(right_panel, weight=3)
+        left_panel = ttk.Frame(self.body_panes)
+        mid_panel = ttk.Frame(self.body_panes)
+        right_panel = ttk.Frame(self.body_panes)
+        self.body_panes.add(left_panel, minsize=260, width=300, stretch="always")
+        self.body_panes.add(mid_panel, minsize=340, width=390, stretch="always")
+        self.body_panes.add(right_panel, minsize=360, width=470, stretch="always")
 
         summary = ttk.LabelFrame(left_panel, text="Active line")
         summary.pack(fill=tk.X, pady=(0, 10))
@@ -6611,6 +6767,13 @@ class RuntimeFEMWindow:
 
         self._add_option_row(general_loads, 6, "pressure_direction", "Pressure side", self.pressure_direction,
                              ("front", "back"))
+        self._follower_pressure_control = self._add_check_row(
+            general_loads,
+            7,
+            "follower_pressure",
+            "Current-area follower pressure (nonlinear only)",
+            self.follower_pressure,
+        )
 
         # --- Boundary conditions tab ---
         whole_bc = ttk.LabelFrame(tab_bc, text="Whole-boundary supports (per edge)")
@@ -6881,6 +7044,8 @@ class RuntimeFEMWindow:
                                 self.collision_bounce_back_time_s)
         self._add_compact_check(collision_stop, 4, 0, "collision_auto_precondition", "Auto-precondition (scout)",
                                 self.collision_auto_precondition)
+        self._add_compact_entry(collision_stop, 4, 1, "collision_penalty_scale", "Auto penalty scale",
+                                self.collision_penalty_scale)
 
         collision_damage = ttk.LabelFrame(collision_body, text="Impact damage")
         collision_damage.pack(fill=tk.X, padx=8, pady=(0, 6))
@@ -7046,8 +7211,13 @@ class RuntimeFEMWindow:
             light_actions, text="Reset lighting", command=self._reset_lighting_defaults,
         ).pack(side=tk.LEFT, padx=(6, 0))
 
-        self.upper_result_frame = ttk.LabelFrame(right_panel, text="Result text")
-        self.upper_result_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+        self.result_panes = self._visible_paned_window(right_panel, tk.VERTICAL)
+        self.result_panes.pack(fill=tk.BOTH, expand=True)
+        self.upper_result_frame = ttk.LabelFrame(self.result_panes, text="Result text")
+        result_frame = ttk.LabelFrame(self.result_panes, text="Run visualization")
+        self.result_panes.add(self.upper_result_frame, minsize=120, height=190, stretch="always")
+        self.result_panes.add(result_frame, minsize=260, height=430, stretch="always")
+
         self.upper_result_text = tk.Text(self.upper_result_frame, wrap=tk.WORD, height=10)
         self.upper_result_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(8, 0), pady=8)
         scrollbar = ttk.Scrollbar(self.upper_result_frame, orient=tk.VERTICAL, command=self.upper_result_text.yview)
@@ -7057,12 +7227,14 @@ class RuntimeFEMWindow:
         button_frame = ttk.Frame(self.upper_result_frame)
         button_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=8, pady=(0, 8))
         ttk.Button(button_frame, text="Copy to Clipboard", command=self._copy_results_to_clipboard).pack(side=tk.RIGHT)
-        result_frame = ttk.LabelFrame(right_panel, text="Run visualization")
-        result_frame.pack(fill=tk.BOTH, expand=True)
-
         plot_holder = ttk.Frame(result_frame)
         plot_holder.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
         self.figure_parent = plot_holder
+        ttk.Label(
+            plot_holder,
+            text="Drag divider to resize  |  Left-drag move  |  Right-drag rotate  |  Wheel zoom",
+            foreground="#475569",
+        ).pack(side=tk.TOP, fill=tk.X, pady=(0, 4))
         selector_bar = ttk.Frame(plot_holder)
         selector_bar.pack(side=tk.TOP, fill=tk.X, pady=(0, 4))
         self._info_button(selector_bar, "display_choice").pack(side=tk.LEFT, padx=(0, 4))
@@ -9827,6 +9999,7 @@ class RuntimeFEMWindow:
             analysis_type=str(self.analysis_type.get()),
             buckling_analysis_type=str(self.buckling_analysis_type.get()),
             pressure_direction=_normalise_pressure_side(self.pressure_direction.get()),
+            follower_pressure=bool(self.follower_pressure.get()),
             axial_force_n=_tk_var_float(self.axial_force_n, 0.0),
             enforced_displacement_x_m=_tk_var_float(self.enforced_displacement_x_m, 0.0),
             enforced_displacement_y_m=_tk_var_float(self.enforced_displacement_y_m, 0.0),
@@ -9965,6 +10138,7 @@ class RuntimeFEMWindow:
             collision_result_interval_s=max(_tk_var_float(self.collision_result_interval_s, 0.0), 0.0),
             collision_penalty_stiffness_n_per_m=max(_tk_var_float(self.collision_penalty_stiffness_n_per_m, 0.0),
                                                     0.0),
+            collision_penalty_scale=max(_tk_var_float(self.collision_penalty_scale, 1.0), 1.0e-9),
             collision_auto_precondition=bool(self.collision_auto_precondition.get()),
             collision_contact_damping=max(_tk_var_float(self.collision_contact_damping, 0.0), 0.0),
             collision_max_iterations=max(_tk_var_int(self.collision_max_iterations, 25), 1),
@@ -10722,25 +10896,26 @@ class RuntimeFEMWindow:
         """
         changes: list[str] = []
         config = _solver_config_from_options(self._options())
+        selection = fe_solver.resolve_runtime_analysis(config)
         material_choice = str(self.material_model.get() or "linear elastic")
         if (
-                fe_solver._wants_material_nonlinear_analysis(config)
+                selection.material_nonlinear
                 and material_choice.strip().lower() != "dnv-rp-c208 steel"
         ):
             self.material_model.set("DNV-RP-C208 steel")
             changes.append("Material model set to 'DNV-RP-C208 steel' (material-nonlinear run).")
-        if fe_solver._wants_static_nonlinear_analysis(config):
+        if selection.static_nonlinear:
             if (
-                    fe_solver._nonlinear_solution_control(config) == "arc length"
+                    selection.solution_control == "arc length"
                     and str(self.nonlinear_solution_control.get()).strip().lower() != "arc length"
             ):
                 self.nonlinear_solution_control.set("arc length")
                 changes.append("Nonlinear control set to 'arc length' (post-buckling continuation).")
-            effective_kinematics = fe_solver._effective_nonlinear_static_kinematics(config)
+            effective_kinematics = selection.kinematics
             if effective_kinematics != _normalise_kinematics(self.nonlinear_static_kinematics.get()):
                 self.nonlinear_static_kinematics.set(_kinematics_label(effective_kinematics))
                 changes.append("Kinematics set to '" + _kinematics_label(effective_kinematics) + "'.")
-        if fe_solver._wants_material_nonlinear_analysis(config):
+        if selection.material_nonlinear:
             requested_layers = max(_tk_var_int(self.nonlinear_layers, 5), 1)
             effective_layers = _nearest_nonlinear_layer_count(requested_layers)
             if effective_layers != requested_layers:

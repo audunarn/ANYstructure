@@ -31,6 +31,26 @@ Calculations are based on DNV standards and recommended practices.
 * Addressed some calculation bugs.
 * Updated API.
 
+### Finite-element GUI integration ###
+
+The FE GUI requires `ANYsolver>=0.1.3,<0.2`. Axial force, bending moment,
+shear force, torsional moment, pressure, and the supported collision controls
+are mapped directly to the external solver runtime. Current-area follower
+pressure is available for nonlinear static and arc-length runs on the Static
+only or Nonlinear static runtime path; incompatible analysis paths are disabled
+in the GUI and rejected by the solver. Arc-length runs retain the selected von
+Karman or corotational kinematics, and nonlinear prestress/buckling recovery
+retains committed-state provenance.
+
+The main FE sections use raised, contrasting horizontal dividers, and the
+result text and visualization have a vertical divider. Drag either divider to
+resize its panes. Solver errors and unsupported configurations remain visible;
+the GUI does not replace them with a lightweight estimate.
+
+The GUI reflects solver-normalized analysis choices through ANYsolver's public
+`resolve_runtime_analysis()` contract; it does not depend on private solver
+helpers.
+
 ------------------------------------------------------------------------
 
 For documentation:
@@ -57,7 +77,7 @@ python -m pip install -e .
 python -m pytest
 ```
 
-`ANYsolver>=0.1,<0.2` is a required runtime dependency. The editable sibling
+`ANYsolver>=0.1.3,<0.2` is a required runtime dependency. The editable sibling
 install above is used when developing both repositories; released installs
 resolve the same version range from PyPI.
 

@@ -1,4 +1,3 @@
 sphinx-autoapi
 sphinx-rtd-theme
 autodocsumm
-anystructure
