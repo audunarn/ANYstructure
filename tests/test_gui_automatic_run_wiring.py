@@ -19,6 +19,10 @@ def test_gui_automatic_run_patches_dialogs_for_unattended_execution():
     assert "configure_noninteractive_dialogs()" in source
     assert "messagebox.askquestion = lambda *args, **kwargs: \"no\"" in source
     assert "messagebox.showwarning = lambda *args, **kwargs: \"ok\"" in source
+    assert (
+        'main_application.Application._show_startup_calculation_mode_dialog = lambda _self: "multiple"'
+        in source
+    )
     assert "root.destroy()" in source
 
 

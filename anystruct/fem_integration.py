@@ -1,8 +1,8 @@
 """ANYstructure integration and UI for the external ANYsolver package.
 
 This module owns application-state extraction, option mapping, Tk controls,
-and result presentation.  Meshing and numerical analysis live exclusively in
-``anysolver.runtime``.
+and result presentation. Neutral meshing comes from ANYmesher through the
+runtime adapter; numerical analysis lives in ``anysolver.runtime``.
 """
 
 from __future__ import annotations
@@ -39,9 +39,9 @@ import anysolver as _anysolver_package
 from anysolver import runtime as fe_solver
 
 try:
-    from anystruct import representation_geometry
+    from anystruct import ecosystem_gui, representation_geometry
 except ModuleNotFoundError:
-    from ANYstructure.anystruct import representation_geometry
+    from ANYstructure.anystruct import ecosystem_gui, representation_geometry
 
 try:
     from anystruct import tkinter_3d_canvas_thickness_v6 as _tk3d_canvas_module
@@ -53,8 +53,8 @@ Point3D = _tk3d_canvas_module.Point3D
 _interpolate_thickness_color = _tk3d_canvas_module._interpolate_thickness_color
 
 
-MINIMUM_ANYSOLVER_VERSION = "0.1.3"
-MAXIMUM_EXCLUSIVE_ANYSOLVER_VERSION = "0.2.0"
+MINIMUM_ANYSOLVER_VERSION = "0.2.0"
+MAXIMUM_EXCLUSIVE_ANYSOLVER_VERSION = "0.3.0"
 
 
 def _numeric_version(value: Any) -> tuple[int, int, int]:
@@ -76,7 +76,7 @@ def _require_supported_anysolver() -> str:
         raise RuntimeError(
             "ANYstructure FEM requires ANYsolver>="
             + MINIMUM_ANYSOLVER_VERSION
-            + ",<0.2; imported "
+            + ",<0.3; imported "
             + installed
             + " from "
             + str(getattr(_anysolver_package, "__file__", "unknown location"))
@@ -5300,6 +5300,11 @@ class RuntimeFEMWindow:
         self.member_orientation = tk.StringVar(value="auto")
         self.solver_type = tk.StringVar(value="direct")
         self.stress_percentile = tk.DoubleVar(value=95.0)
+        self.material_library_names = ecosystem_gui.material_library_names()
+        self.material_library_name = tk.StringVar(
+            value=ecosystem_gui.default_material_name(self.material_library_names)
+        )
+        self._last_isotropic_material_name = self.material_library_name.get()
         self.elastic_modulus_gpa = tk.DoubleVar(value=210.0)
         self.poisson_ratio = tk.DoubleVar(value=0.3)
         self.yield_stress_mpa = tk.DoubleVar(value=355.0)
@@ -5949,8 +5954,15 @@ class RuntimeFEMWindow:
             variable: tk.Variable,
             values: tuple[str, ...],
             width: int | None = None,
+            command: Any = None,
     ) -> ttk.OptionMenu:
-        control = ttk.OptionMenu(parent, variable, variable.get(), *values)
+        control = ttk.OptionMenu(
+            parent,
+            variable,
+            variable.get(),
+            *values,
+            command=command,
+        )
         if width is not None:
             try:
                 control.configure(width=width)
@@ -6288,6 +6300,64 @@ class RuntimeFEMWindow:
         panes.bind("<ButtonRelease-1>", restore_divider, add="+")
         return panes
 
+    def _apply_material_spec(self, spec: Any) -> bool:
+        """Map an ANYmaterial specification onto the solver's scalar controls."""
+        try:
+            selected = ecosystem_gui.isotropic_material_selection(spec)
+        except ecosystem_gui.UnsupportedMaterialSelection as error:
+            self.material_library_name.set(self._last_isotropic_material_name)
+            messagebox.showerror("Unsupported material", str(error), parent=self.window)
+            return False
+
+        self.material_library_name.set(selected.name)
+        self._last_isotropic_material_name = selected.name
+        self.elastic_modulus_gpa.set(selected.elastic_modulus_gpa)
+        self.poisson_ratio.set(selected.poisson_ratio)
+        self.yield_stress_mpa.set(selected.yield_stress_mpa)
+        self.material_model.set(selected.material_model)
+        self.steel_grade.set(selected.steel_grade)
+        self.steel_thickness_class.set(selected.steel_thickness_class)
+        if selected.unsupported_hardening_kind:
+            messagebox.showwarning(
+                "Material curve simplified",
+                "ANYstructure applied the selected elastic constants and yield stress, but the "
+                f"{selected.unsupported_hardening_kind!r} hardening curve is not exposed by the "
+                "current runtime controls. The FEM material was set to linear elastic.",
+                parent=self.window,
+            )
+        return True
+
+    def _on_material_library_selected(self, name: str | None = None) -> bool:
+        """Apply a public ANYmaterial library entry selected in the dropdown."""
+        selected_name = str(name or self.material_library_name.get())
+        try:
+            spec = ecosystem_gui.material_spec_from_library(selected_name)
+        except (KeyError, ValueError) as error:
+            self.material_library_name.set(self._last_isotropic_material_name)
+            messagebox.showerror("Material library", str(error), parent=self.window)
+            return False
+        return self._apply_material_spec(spec)
+
+    def _open_material_editor(self) -> tuple[Any, Any]:
+        """Open ANYmaterial in a child of the runtime FEM window."""
+        try:
+            initial_spec = ecosystem_gui.material_spec_from_library(self.material_library_name.get())
+        except (KeyError, ValueError):
+            initial_spec = None
+        return ecosystem_gui.open_material_editor(
+            self.window,
+            initial_spec=initial_spec,
+            on_apply=self._apply_material_spec,
+        )
+
+    def _open_anymesher(self) -> tuple[Any, Any]:
+        """Open the extracted neutral mesher without starting another mainloop."""
+        return ecosystem_gui.open_mesher(self.window)
+
+    def _open_file_inspector(self) -> tuple[Any, Any]:
+        """Open the extracted interchange-file inspector."""
+        return ecosystem_gui.open_file_inspector(self.window)
+
     def _build(self) -> None:
         outer = ttk.Frame(self.window, padding=12)
         outer.pack(fill=tk.BOTH, expand=True)
@@ -6358,6 +6428,9 @@ class RuntimeFEMWindow:
         self.use_for_buckling_button.pack(side=tk.LEFT, padx=(4, 0))
         ttk.Button(buttons, text="Save FEM...", command=self._save_fem_state).pack(side=tk.LEFT, padx=(4, 0))
         ttk.Button(buttons, text="Load FEM...", command=self._load_fem_state).pack(side=tk.LEFT, padx=(4, 0))
+        ttk.Button(buttons, text="Inspect FE file...", command=self._open_file_inspector).pack(
+            side=tk.LEFT, padx=(4, 0)
+        )
         self.progress_bar = ttk.Progressbar(buttons, mode="indeterminate", length=140)
         self.progress_bar.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(10, 0))
         ttk.Button(buttons, text="Close", command=self.window.destroy).pack(side=tk.RIGHT)
@@ -6490,6 +6563,9 @@ class RuntimeFEMWindow:
         preview_actions.pack(fill=tk.X, padx=8, pady=(8, 4))
         self._mesh_preview_button = ttk.Button(preview_actions, text="Generate mesh", command=self._generate_mesh)
         self._mesh_preview_button.pack(side=tk.LEFT)
+        ttk.Button(preview_actions, text="Open ANYmesher...", command=self._open_anymesher).pack(
+            side=tk.LEFT, padx=(4, 0)
+        )
         ttk.Checkbutton(
             preview_actions,
             text="Show imperfections",
@@ -6701,22 +6777,34 @@ class RuntimeFEMWindow:
         material.pack(fill=tk.X, padx=8, pady=(0, 8))
         self._configure_option_grid(material)
         self._add_entry_row(material, 0, "stress_percentile", "Stress pct.", self.stress_percentile)
-        self._add_option_row(material, 1, "material_model", "Material", self.material_model,
+        self._add_option_row(
+            material,
+            1,
+            "material_library",
+            "Library material",
+            self.material_library_name,
+            self.material_library_names,
+            command=self._on_material_library_selected,
+        )
+        self._add_option_row(material, 2, "material_model", "Constitutive", self.material_model,
                              ("linear elastic", "DNV-RP-C208 steel"))
-        self._add_option_row(material, 2, "steel_grade", "Steel grade", self.steel_grade,
+        self._add_option_row(material, 3, "steel_grade", "Steel grade", self.steel_grade,
                              ("S235", "S275", "S355", "S420", "S460"))
         self._add_option_row(
             material,
-            3,
+            4,
             "steel_thickness_class",
             "Steel class",
             self.steel_thickness_class,
             ("auto", "t <= 16", "16 < t <= 40", "40 < t <= 63", "63 < t <= 100"),
         )
-        self._add_entry_row(material, 4, "elastic_modulus_gpa", "E [GPa]", self.elastic_modulus_gpa)
-        self._add_entry_row(material, 5, "poisson_ratio", "Poisson", self.poisson_ratio)
-        self._add_entry_row(material, 6, "yield_stress_mpa", "Yield [MPa]", self.yield_stress_mpa)
-        self._add_entry_row(material, 7, "nonlinear_layers", "NL layers", self.nonlinear_layers, width=8)
+        self._add_entry_row(material, 5, "elastic_modulus_gpa", "E [GPa]", self.elastic_modulus_gpa)
+        self._add_entry_row(material, 6, "poisson_ratio", "Poisson", self.poisson_ratio)
+        self._add_entry_row(material, 7, "yield_stress_mpa", "Yield [MPa]", self.yield_stress_mpa)
+        self._add_entry_row(material, 8, "nonlinear_layers", "NL layers", self.nonlinear_layers, width=8)
+        ttk.Button(material, text="Choose/edit in ANYmaterial...", command=self._open_material_editor).grid(
+            row=9, column=1, columnspan=2, sticky=tk.W, padx=(0, 8), pady=(2, 6)
+        )
 
         imperfections = ttk.LabelFrame(tab_properties, text="Imperfections")
         imperfections.pack(fill=tk.X, padx=8, pady=(0, 8))

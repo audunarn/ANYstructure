@@ -8,15 +8,20 @@ Install from PyPI
 
    pip install anystructure
 
-The finite-element GUI requires ``ANYsolver>=0.1.3,<0.2``. A normal PyPI
-install resolves that dependency automatically.
+The finite-element GUI requires ``ANYsolver>=0.2,<0.3`` together with
+``ANYmaterial``, ``ANYmesher``, and ``ANYfileio``. The new ecosystem packages
+are installed from their source repositories until their first compatible PyPI
+releases are available.
 
-For coordinated local development, install the solver sibling before the
-ANYstructure checkout:
+For coordinated local development, install the siblings before the ANYstructure
+checkout:
 
 .. code-block:: powershell
 
-   python -m pip install -e C:\Github\ANYsolver
+   python -m pip install --no-deps -e C:\Github\ANYmaterial
+   python -m pip install --no-deps -e C:\Github\ANYmesh
+   python -m pip install --no-deps -e C:\Github\ANYio
+   python -m pip install --no-deps -e C:\Github\ANYsolver
    python -m pip install -e .
 
 Use the API

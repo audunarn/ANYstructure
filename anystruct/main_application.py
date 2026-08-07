@@ -42,6 +42,7 @@ try:
     import anystruct.project_application as project_application
     import anystruct.project_services as project_services
     import anystruct.solid_export as solid_export
+    import anystruct.ecosystem_gui as ecosystem_gui
     import anystruct.fe_plate_fields as fe_plate_fields
     import anystruct.fem_integration as fe_runtime_solver
     import anystruct.representation_geometry as representation_geometry
@@ -68,6 +69,7 @@ except ModuleNotFoundError:
     import ANYstructure.anystruct.project_application as project_application
     import ANYstructure.anystruct.project_services as project_services
     import ANYstructure.anystruct.solid_export as solid_export
+    import ANYstructure.anystruct.ecosystem_gui as ecosystem_gui
     import ANYstructure.anystruct.fe_plate_fields as fe_plate_fields
     import ANYstructure.anystruct.fem_integration as fe_runtime_solver
     import ANYstructure.anystruct.representation_geometry as representation_geometry
@@ -210,6 +212,7 @@ class Application():
         self._file_menu = sub_menu
         sub_menu.add_command(label='Open FEA result buckling files...', command=self.open_fea_buckling_files)
         sub_menu.add_command(label='Import FEM and run in fe-solver', command=self.on_import_fem_and_run_solver)
+        sub_menu.add_command(label='Inspect FE/interchange file...', command=self.on_open_file_inspector)
         file_export_menu = tk.Menu(sub_menu)
         sub_menu.add_cascade(label='Export', menu=file_export_menu)
         file_export_menu.add_command(label='Geometry to SESAM GeniE JS...', command=self.export_to_js)
@@ -266,6 +269,10 @@ class Application():
         menu.add_cascade(label='Interfaces', menu=sub_sesam)
         sub_sesam.add_command(label='Export geometry to SESAM GeniE JS', command=self.export_to_js)
         sub_sesam.add_command(label='Import excel file', command=self.open_excel_file)
+        sub_sesam.add_separator()
+        sub_sesam.add_command(label='Choose/edit material (ANYmaterial)...', command=self.on_open_material_editor)
+        sub_sesam.add_command(label='Open mesher (ANYmesher)...', command=self.on_open_mesher)
+        sub_sesam.add_command(label='Inspect FE file (ANYfileio)...', command=self.on_open_file_inspector)
 
         sub_help = tk.Menu(menu)
         menu.add_cascade(label='Help', menu=sub_help)
@@ -815,6 +822,10 @@ class Application():
         ent_fdwn.place(relx=hor_start, rely=vert_start + 8 * delta_y, relwidth=0.1)
 
         # --- main variable to define the structural properties ---
+        self._material_library_names = ecosystem_gui.material_library_names()
+        self._new_material_name = tk.StringVar()
+        self._new_material_name.set(ecosystem_gui.default_material_name(self._material_library_names))
+        self._last_isotropic_material_name = self._new_material_name.get()
         self._new_material = tk.DoubleVar()
         self._new_material_factor = tk.DoubleVar()
         self._new_field_len = tk.DoubleVar()
@@ -1020,6 +1031,21 @@ class Application():
         self._ent_sigma_x1 = ttk.Entry(self._tab_prop, textvariable=self._new_sigma_x1, width=int(10))
         self._ent_sigma_x2 = ttk.Entry(self._tab_prop, textvariable=self._new_sigma_x2, width=int(10))
         self._ent_tauxy = ttk.Entry(self._tab_prop, textvariable=self._new_tauxy, width=int(10))
+        self._material_picker = ttk.Frame(self._tab_prop)
+        self._ent_material_name = ttk.Combobox(
+            self._material_picker,
+            textvariable=self._new_material_name,
+            values=self._material_library_names,
+            state='readonly',
+            width=20,
+        )
+        self._ent_material_name.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self._ent_material_name.bind('<<ComboboxSelected>>', self._on_material_library_selected)
+        ttk.Button(
+            self._material_picker,
+            text='Edit...',
+            command=self.on_open_material_editor,
+        ).pack(side=tk.LEFT, padx=(4, 0))
         self._ent_mat = ttk.Entry(self._tab_prop, textvariable=self._new_material, width=int(10))
         self._ent_mat_factor = ttk.Entry(self._tab_prop, textvariable=self._new_material_factor, width=int(10))
         self._ent_structure_type = ttk.OptionMenu(self._tab_prop, self._new_stucture_type, self._options_type[0],
@@ -1031,6 +1057,7 @@ class Application():
         self._lab_sig_y1 = ttk.Label(self._tab_prop, text='Trans. stress 1,sig_y1')
         self._lab_sig_y2 = ttk.Label(self._tab_prop, text='Trans. stress 2,sig_y2')
         self._lab_tau_y1 = ttk.Label(self._tab_prop, text='Shear Stres,tau_y1')
+        self._lab_material_library = ttk.Label(self._tab_prop, text='Material library')
         self._lab_yield = ttk.Label(self._tab_prop, text='Material yield stress [MPa]:', font=self._text_size['Text 9'])
         self._lab_mat_fac = ttk.Label(self._tab_prop, text='Mat. factor', font=self._text_size['Text 9'])
         self._lab_structure_type = ttk.Label(self._tab_prop, text='Select structure type:',
@@ -1038,11 +1065,11 @@ class Application():
 
         self._flat_gui_lab_loads = [self._lab_press_side, self._lab_sig_x1,
                                     self._lab_sig_x2, self._lab_sig_y1, self._lab_sig_y2,
-                                    self._lab_tau_y1, self._lab_yield, self._lab_mat_fac,
+                                    self._lab_tau_y1, self._lab_material_library, self._lab_yield, self._lab_mat_fac,
                                     self._lab_structure_type]
         self._flat_gui_loads = [self._ent_pressure_side, self._ent_sigma_x1,
                                 self._ent_sigma_x2, self._ent_sigma_y1, self._ent_sigma_y2, self._ent_tauxy,
-                                self._ent_mat, self._ent_mat_factor,
+                                self._material_picker, self._ent_mat, self._ent_mat_factor,
                                 self._ent_structure_type]
 
         self._new_buckling_method = tk.StringVar()
@@ -3427,6 +3454,13 @@ class Application():
             # Various
             end_y = ent_geo_y + (idx + 1) * delta_y
             other_count = 1
+
+            self._lab_material_library.place(relx=hor_start,
+                                             rely=end_y + delta_y * other_count)
+            self._material_picker.place(relx=hor_start + 4 * delta_x,
+                                        rely=end_y + delta_y * other_count,
+                                        relwidth=geo_ent_width * 3)
+            other_count += 1
 
             self._lab_yield.place(relx=hor_start,
                                   rely=end_y + delta_y * other_count)
@@ -13507,6 +13541,53 @@ class Application():
         self.__previous_load_data = copy.deepcopy(self._load_dict)
         top = tk.Toplevel(self._parent, background=self._general_color)
         load_window.CreateLoadWindow(top, self)
+
+    def _apply_material_spec(self, spec):
+        """Apply an ANYmaterial specification to the legacy scalar inputs."""
+        try:
+            selected = ecosystem_gui.isotropic_material_selection(spec)
+        except ecosystem_gui.UnsupportedMaterialSelection as error:
+            self._new_material_name.set(self._last_isotropic_material_name)
+            messagebox.showerror(title='Unsupported material', message=str(error), parent=self._parent)
+            return False
+
+        self._new_material_name.set(selected.name)
+        self._last_isotropic_material_name = selected.name
+        self._new_material.set(selected.yield_stress_mpa)
+        self._new_shell_yield.set(selected.yield_stress_mpa)
+        self._new_shell_e_module.set(selected.elastic_modulus_gpa * 1.0e9)
+        self._new_shell_poisson.set(selected.poisson_ratio)
+        return True
+
+    def _on_material_library_selected(self, event=None):
+        """Load the material chosen in the shared library dropdown."""
+        try:
+            spec = ecosystem_gui.material_spec_from_library(self._new_material_name.get())
+        except (KeyError, ValueError) as error:
+            self._new_material_name.set(self._last_isotropic_material_name)
+            messagebox.showerror(title='Material library', message=str(error), parent=self._parent)
+            return False
+        return self._apply_material_spec(spec)
+
+    def on_open_material_editor(self):
+        """Open ANYmaterial in this application's Tk event loop."""
+        try:
+            initial_spec = ecosystem_gui.material_spec_from_library(self._new_material_name.get())
+        except (KeyError, ValueError):
+            initial_spec = None
+        return ecosystem_gui.open_material_editor(
+            self._parent,
+            initial_spec=initial_spec,
+            on_apply=self._apply_material_spec,
+        )
+
+    def on_open_mesher(self):
+        """Open the standalone neutral-mesh editor without a nested mainloop."""
+        return ecosystem_gui.open_mesher(self._parent)
+
+    def on_open_file_inspector(self):
+        """Open the structural interchange-file inspector."""
+        return ecosystem_gui.open_file_inspector(self._parent)
 
     def on_open_runtime_fem_solver(self):
         """Open the runtime FEM solver for the current active line."""

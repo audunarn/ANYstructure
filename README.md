@@ -1,39 +1,26 @@
 ![picture](https://github.com/audunarn/ANYstructure/blob/master/anystruct/images/ANYstructure_logo.jpg)
 
-# ANYstructure #
-ANYstructure is the ultimate steel structure design tool for plate fields and cylinders! 
-Weight, weld and cost optimization.
-Calculations are based on DNV standards and recommended practices.
+# ANYstructure
 
-### What's new in 6.1.1 ### 
-* Urgent fix for cylindrical shell updates where hidden cone defaults could overwrite radius, ring spacing and shell lengths.
-* 3D CAD export dialog now includes a transformation scale input and keeps intermediate IFC files unchecked by default.
-* 3D solid export can write one joined IFC product without building a heavy global boolean union.
+ANYstructure is a desktop steel-structure design application for plate fields
+and cylinders, including weight, weld, and cost optimization. Calculations are
+based on DNV standards and recommended practices.
 
-### What's new in 6.1.0 ###
-* Simplified GUI input option.
-* Weld/weight optimization.
-* Cost optimization.
-* 3D representation of panels/cylinders.
-* Improved Semi-analytical buckling implementation.
-* Optimization of stiffened plate with girder.
-* Bug fixing.
-* Export 3D shell model.
-* SciPy Differential Evolution Optimizer added.
+## Current release: 6.1.1
 
-### What's new in 6.0.3 ###
-* New buckling method: Semi-analytical buckling for flat plates.
-* Updated ML buckling to numerical instead of classification. Improved accuracy of the neural network.
-* Updated color coding option.
-* Implemented extended testing regime.
-* Started work on separating calculation code from the GUI.
-* Python 3.14 supported.
-* Addressed some calculation bugs.
-* Updated API.
+- Fixes cylindrical-shell updates so hidden cone defaults cannot overwrite
+  radius, ring spacing, or shell lengths.
+- Adds a transformation-scale control to 3D CAD export and leaves intermediate
+  IFC files unchecked by default.
+- Supports one joined IFC product without constructing a heavy global Boolean
+  union.
 
-### Finite-element GUI integration ###
+Earlier release history remains available in Git tags and release notes rather
+than being duplicated in this README.
 
-The FE GUI requires `ANYsolver>=0.1.3,<0.2`. Axial force, bending moment,
+## Finite-element GUI integration
+
+The FE GUI requires `ANYsolver>=0.2,<0.3`. Axial force, bending moment,
 shear force, torsional moment, pressure, and the supported collision controls
 are mapped directly to the external solver runtime. Current-area follower
 pressure is available for nonlinear static and arc-length runs on the Static
@@ -50,6 +37,12 @@ the GUI does not replace them with a lightweight estimate.
 The GUI reflects solver-normalized analysis choices through ANYsolver's public
 `resolve_runtime_analysis()` contract; it does not depend on private solver
 helpers.
+
+The material dropdowns are backed by ANYmaterial and include a
+**Choose/edit material** button. The Interfaces menu opens ANYmesher and the
+ANYfileio inspector inside the existing Tk event loop. Orthotropic selections
+are refused explicitly until the legacy scalar material controls can represent
+them without losing directional properties.
 
 ------------------------------------------------------------------------
 
@@ -71,20 +64,30 @@ Recommended local setup:
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install -e C:\Github\ANYsolver
+python -m pip install --no-deps -e C:\Github\ANYmaterial
+python -m pip install --no-deps -e C:\Github\ANYmesh
+python -m pip install --no-deps -e C:\Github\ANYio
+python -m pip install --no-deps -e C:\Github\ANYsolver
 python -m pip install -r requirements-dev.txt
 python -m pip install -e .
 python -m pytest
 ```
 
-`ANYsolver>=0.1.3,<0.2` is a required runtime dependency. The editable sibling
-install above is used when developing both repositories; released installs
-resolve the same version range from PyPI.
+`ANYsolver>=0.2,<0.3`, `ANYmaterial`, `ANYmesher`, and `ANYfileio` are required
+runtime dependencies. The latter three distributions are developed in the
+`ANYmaterial`, `ANYmesh`, and `ANYio` repositories. Install the editable siblings
+above until compatible releases are available from PyPI.
 
 Launch the desktop app after installation:
 
 ```powershell
 ANYstructure
+```
+
+From a source checkout, the same GUI can be launched with:
+
+```powershell
+python run_gui.py
 ```
 
 Dependency groups are also available for focused installs:
@@ -100,15 +103,16 @@ Equivalent package extras are exposed as `core`, `ml`, `excel`, `dev`, and `all`
 Excel project import requires a local Excel installation and is not expected to run in basic automated tests.
 The external Excel-sheet DNV PULS calculation workflow has been removed from this release; ML-CL remains available.
 
-## The following is calculated: ##
-* Minimum plate thickness (DNV-OS-C101)
-* Minimum section modulus of stiffener/plate (DNVGL-OS-C101)
-* Minimum shear area (DNVGL-OS-C101)
-* Buckling (DNVGL-RP-C201)
-* Buckling strength of shells DNV-RP-C202
-* Machine learning buckling, PULS based
-* Semi-analytical buckling
-* Fatigue for plate/stiffener connection (DNVGL-RP-C203)
+## Calculation scope
+
+- Minimum plate thickness (DNV-OS-C101)
+- Minimum section modulus of stiffener/plate (DNVGL-OS-C101)
+- Minimum shear area (DNVGL-OS-C101)
+- Plate buckling (DNVGL-RP-C201)
+- Shell buckling (DNV-RP-C202)
+- Machine-learning buckling predictions based on PULS data
+- Semi-analytical buckling through ANYbuckling
+- Fatigue for plate/stiffener connections (DNVGL-RP-C203)
 
 
 Compartments (tank pressures) are created automatically.
@@ -117,12 +121,8 @@ Pressures on external hull (or any other generic location) is defined by specify
 
 You can optimize cylinders, single plate/stiffener field or multiple. Geometry of double bottom can be optimized.
 
-PLEASE CONTRIBUTE. REPORT BUGS ERRORS ETC.
-For windows executable (.exe) version for non-coders, use the link below.
-
-Feedback: audunarn@gmail.com or discuss on github.
-
-Please like, share or comment on LinkedIn: https://www.linkedin.com/in/audun-arnesen-nyhus-6aa17118/
+Contributions and bug reports are welcome through GitHub. General feedback can
+also be sent to audunarn@gmail.com.
 
 Screenshot (this example can be loaded from file "ship_section_example.txt"):
 

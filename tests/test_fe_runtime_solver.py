@@ -716,20 +716,19 @@ def test_run_runtime_fem_preserves_failed_production_status(monkeypatch):
     assert not any("compact fallback" in item.lower() for item in result.diagnostics)
 
 
-def test_anysolver_version_guard_accepts_0_1_3(monkeypatch):
+def test_anysolver_version_guard_rejects_pre_extraction_runtime(monkeypatch):
     monkeypatch.setattr(fe_runtime_solver._anysolver_package, "__version__", "0.1.3")
 
-    assert fe_runtime_solver._require_supported_anysolver() == "0.1.3"
-    config = fe_runtime_solver._solver_config_from_options(
-        fe_runtime_solver.RuntimeFEMOptions(shear_force_n=321.0)
-    )
-    assert config.shear_force_n == pytest.approx(321.0)
+    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.2\.0,<0\.3"):
+        fe_runtime_solver._solver_config_from_options(
+            fe_runtime_solver.RuntimeFEMOptions(shear_force_n=321.0)
+        )
 
 
 def test_anysolver_version_guard_rejects_older_runtime(monkeypatch):
     monkeypatch.setattr(fe_runtime_solver._anysolver_package, "__version__", "0.1.2")
 
-    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.1\.3,<0\.2"):
+    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.2\.0,<0\.3"):
         fe_runtime_solver._solver_config_from_options(
             fe_runtime_solver.RuntimeFEMOptions()
         )

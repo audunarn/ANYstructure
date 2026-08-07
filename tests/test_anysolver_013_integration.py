@@ -1,4 +1,4 @@
-"""Focused ANYsolver 0.1.3 application-boundary regressions.
+"""Focused extraction-era ANYsolver application-boundary regressions.
 
 This module intentionally imports only the FEM integration layer.  Keeping
 these contract checks separate from the broad GUI regression module makes
@@ -54,7 +54,7 @@ def _snapshot():
     )
 
 
-def test_runtime_options_cover_and_map_anysolver_0_1_2_fields():
+def test_runtime_options_cover_and_map_solver_fields():
     option_names = {item.name for item in fields(fem_integration.RuntimeFEMOptions)}
     solver_names = {item.name for item in fields(anysolver_runtime.LightweightFEMConfig)}
     assert solver_names <= option_names
@@ -120,35 +120,44 @@ def test_failed_production_status_is_not_replaced_by_lightweight_result(monkeypa
     assert not any("compact fallback" in item.lower() for item in result.diagnostics)
 
 
-def test_anysolver_version_guard_accepts_0_1_3(monkeypatch):
+def test_anysolver_version_guard_rejects_pre_extraction_0_1_3(monkeypatch):
     monkeypatch.setattr(fem_integration._anysolver_package, "__version__", "0.1.3")
 
-    assert fem_integration._require_supported_anysolver() == "0.1.3"
-    assert fem_integration._solver_config_from_options(
-        fem_integration.RuntimeFEMOptions(shear_force_n=321.0)
-    ).shear_force_n == pytest.approx(321.0)
+    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.2\.0,<0\.3"):
+        fem_integration._solver_config_from_options(
+            fem_integration.RuntimeFEMOptions(shear_force_n=321.0)
+        )
 
 
 def test_anysolver_version_guard_rejects_published_0_1_2(monkeypatch):
     monkeypatch.setattr(fem_integration._anysolver_package, "__version__", "0.1.2")
 
-    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.1\.3,<0\.2"):
+    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.2\.0,<0\.3"):
         fem_integration._solver_config_from_options(
             fem_integration.RuntimeFEMOptions()
         )
 
 
-def test_anysolver_version_guard_rejects_0_2_0(monkeypatch):
+def test_anysolver_version_guard_accepts_0_2_0(monkeypatch):
     monkeypatch.setattr(fem_integration._anysolver_package, "__version__", "0.2.0")
 
-    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.1\.3,<0\.2"):
+    assert fem_integration._require_supported_anysolver() == "0.2.0"
+    assert fem_integration._solver_config_from_options(
+        fem_integration.RuntimeFEMOptions()
+    )
+
+
+def test_anysolver_version_guard_rejects_0_3_0(monkeypatch):
+    monkeypatch.setattr(fem_integration._anysolver_package, "__version__", "0.3.0")
+
+    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.2\.0,<0\.3"):
         fem_integration._solver_config_from_options(
             fem_integration.RuntimeFEMOptions()
         )
 
 
 @pytest.mark.parametrize("suffix", (".fem.json", ".fem.json.gz"))
-def test_saved_state_round_trips_new_0_1_2_inputs(tmp_path, suffix):
+def test_saved_state_round_trips_solver_inputs(tmp_path, suffix):
     options = fem_integration.RuntimeFEMOptions(
         torsional_moment_nm=4321.0,
         shear_force_n=8765.0,
@@ -170,11 +179,11 @@ def test_fem_gui_uses_visible_horizontal_and_vertical_pane_handles():
     source = Path(fem_integration.__file__).read_text(encoding="utf-8")
 
     assert "def _visible_paned_window(parent: Any, orient: str) -> tk.PanedWindow:" in source
-    assert "return tk.PanedWindow(" in source
-    assert "sashwidth=10" in source
-    assert "sashrelief=tk.RAISED" in source
-    assert "showhandle=True" in source
-    assert "handlesize=14" in source
+    assert "panes = tk.PanedWindow(" in source
+    assert "sashwidth=6" in source
+    assert "sashrelief=tk.FLAT" in source
+    assert "showhandle=False" in source
+    assert 'panes.bind("<Motion>", highlight_divider, add="+")' in source
     assert "self.body_panes = self._visible_paned_window(outer, tk.HORIZONTAL)" in source
     assert 'self.body_panes.add(left_panel, minsize=260, width=300, stretch="always")' in source
     assert 'self.body_panes.add(mid_panel, minsize=340, width=390, stretch="always")' in source
