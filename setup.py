@@ -19,7 +19,22 @@ def readme():
     with open(path.join(here, 'README.md'), encoding='utf-8') as file:
         return file.read()
 
-core_requires = ['ANYbuckling>=0.1,<0.2', 'ANYsolver>=0.1,<0.2', 'ANYtk3D>=0.1,<0.2', 'matplotlib', 'meshio', 'numpy', 'numpy-stl', 'Pillow', 'reportlab', 'scipy']
+core_requires = [
+    'ANYbuckling>=0.1,<0.2',
+    'ANYfileio>=0.1,<0.2',
+    'ANYgeometry>=0.1,<0.2',
+    'ANYmaterial>=0.1,<0.2',
+    'ANYmesher>=0.1,<0.2',
+    'ANYsolver>=0.2,<0.3',
+    'ANYtk3D>=0.2,<0.3',
+    'matplotlib',
+    'meshio',
+    'numpy',
+    'numpy-stl',
+    'Pillow',
+    'reportlab',
+    'scipy',
+]
 excel_requires = ['xlwings']
 ml_requires = ['scikit-learn']
 dev_requires = ['build', 'pytest']
@@ -30,6 +45,7 @@ setup(
     entry_points={"console_scripts": ['ANYstructure = anystruct.__main__:main']},
     version='6.1.1',  # Required
     license='GPL-3.0-or-later',
+    python_requires='>=3.13',
     description='A plate field optimization tool for offshore structures calculated according to DNV standards',
     long_description = readme(),
     long_description_content_type='text/markdown',
@@ -38,6 +54,7 @@ setup(
     classifiers=[  # Optional
         'Development Status :: 5 - Production/Stable',
         'Environment :: X11 Applications',
+        'Programming Language :: Python :: 3.13',
         'Programming Language :: Python :: 3.14',
         'Topic :: Scientific/Engineering'],
     keywords='dnv-gl-os-c101 dnv-rp-c202 dnv-rp-c201 naval_architecture structural_engineering steel buckling fatigue local_scantlings optimization weight',

@@ -1,8 +1,8 @@
 """ANYstructure integration and UI for the external ANYsolver package.
 
 This module owns application-state extraction, option mapping, Tk controls,
-and result presentation.  Meshing and numerical analysis live exclusively in
-``anysolver.runtime``.
+and result presentation. Neutral meshing comes from ANYmesher through the
+runtime adapter; numerical analysis lives in ``anysolver.runtime``.
 """
 
 from __future__ import annotations
@@ -11,6 +11,7 @@ from dataclasses import dataclass, field, fields as dataclass_fields
 from typing import Any, Iterable, Sequence
 import argparse
 import gzip
+import inspect
 import json
 import queue
 import math
@@ -34,12 +35,13 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 if __package__ in (None, ""):
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import anysolver as _anysolver_package
 from anysolver import runtime as fe_solver
 
 try:
-    from anystruct import representation_geometry
+    from anystruct import ecosystem_gui, geometry_generators, representation_geometry
 except ModuleNotFoundError:
-    from ANYstructure.anystruct import representation_geometry
+    from ANYstructure.anystruct import ecosystem_gui, geometry_generators, representation_geometry
 
 try:
     from anystruct import tkinter_3d_canvas_thickness_v6 as _tk3d_canvas_module
@@ -49,6 +51,37 @@ except ModuleNotFoundError:
 Tkinter3DCanvas = _tk3d_canvas_module.Tkinter3DCanvas
 Point3D = _tk3d_canvas_module.Point3D
 _interpolate_thickness_color = _tk3d_canvas_module._interpolate_thickness_color
+
+
+MINIMUM_ANYSOLVER_VERSION = "0.2.0"
+MAXIMUM_EXCLUSIVE_ANYSOLVER_VERSION = "0.3.0"
+
+
+def _numeric_version(value: Any) -> tuple[int, int, int]:
+    """Return the first three numeric version components for a local gate."""
+
+    parts = [int(item) for item in re.findall(r"\d+", str(value or ""))[:3]]
+    return tuple((parts + [0, 0, 0])[:3])
+
+
+def _require_supported_anysolver() -> str:
+    """Fail clearly when an old editable/runtime ANYsolver shadows the requirement."""
+
+    installed = str(getattr(_anysolver_package, "__version__", "0"))
+    installed_numeric = _numeric_version(installed)
+    if (
+        installed_numeric < _numeric_version(MINIMUM_ANYSOLVER_VERSION)
+        or installed_numeric >= _numeric_version(MAXIMUM_EXCLUSIVE_ANYSOLVER_VERSION)
+    ):
+        raise RuntimeError(
+            "ANYstructure FEM requires ANYsolver>="
+            + MINIMUM_ANYSOLVER_VERSION
+            + ",<0.3; imported "
+            + installed
+            + " from "
+            + str(getattr(_anysolver_package, "__file__", "unknown location"))
+        )
+    return installed
 
 
 def _normalise_pressure_side(value: Any) -> str:
@@ -300,6 +333,10 @@ class RuntimeFEMOptions:
     collision_damage_min_contact_area_m2: float = 1.0e-6
     collision_damage_max_deleted_fraction: float = 0.25
     collision_damage_neighbor_smoothing: bool = False
+    # Append 0.1.3 integration fields so existing positional construction of
+    # RuntimeFEMOptions retains its historical field order.
+    follower_pressure: bool = False
+    collision_penalty_scale: float = 1.0
 
 
 @dataclass(frozen=True)
@@ -1155,6 +1192,7 @@ def _runtime_custom_edges(options: RuntimeFEMOptions) -> list[dict[str, float | 
 
 def _solver_config_from_options(options: RuntimeFEMOptions):
     """Build the LightweightFEMConfig from runtime options (shared by run and preview)."""
+    _require_supported_anysolver()
     pressure_side = _normalise_pressure_side(options.pressure_direction)
     return fe_solver.LightweightFEMConfig(
         mesh_fidelity=options.mesh_fidelity,
@@ -1166,6 +1204,8 @@ def _solver_config_from_options(options: RuntimeFEMOptions):
         num_buckling_modes=options.num_buckling_modes,
         mesh_size_m=options.mesh_size_m,
         top_bottom_moment_nm=options.top_bottom_moment_nm,
+        torsional_moment_nm=options.torsional_moment_nm,
+        shear_force_n=options.shear_force_n,
         acceleration_x_m_s2=options.acceleration_x_m_s2,
         acceleration_y_m_s2=options.acceleration_y_m_s2,
         acceleration_z_m_s2=options.acceleration_z_m_s2,
@@ -1181,6 +1221,7 @@ def _solver_config_from_options(options: RuntimeFEMOptions):
         analysis_type=options.analysis_type,
         buckling_analysis_type=options.buckling_analysis_type,
         pressure_direction=pressure_side,
+        follower_pressure=bool(options.follower_pressure),
         axial_force_n=options.axial_force_n,
         enforced_displacement_x_m=options.enforced_displacement_x_m,
         enforced_displacement_y_m=options.enforced_displacement_y_m,
@@ -1293,6 +1334,7 @@ def _solver_config_from_options(options: RuntimeFEMOptions):
         collision_nonlinear_tolerance=options.collision_nonlinear_tolerance,
         collision_nonlinear_cutbacks=options.collision_nonlinear_cutbacks,
         collision_plastic_damage_threshold=options.collision_plastic_damage_threshold,
+        collision_damage_criterion=options.collision_damage_criterion,
         collision_mass_kg=options.collision_mass_kg,
         collision_radius_m=options.collision_radius_m,
         collision_start_x_m=options.collision_start_x_m,
@@ -1310,6 +1352,7 @@ def _solver_config_from_options(options: RuntimeFEMOptions):
         collision_dt_s=options.collision_dt_s,
         collision_result_interval_s=options.collision_result_interval_s,
         collision_penalty_stiffness_n_per_m=options.collision_penalty_stiffness_n_per_m,
+        collision_penalty_scale=options.collision_penalty_scale,
         collision_auto_precondition=bool(options.collision_auto_precondition),
         collision_contact_damping=options.collision_contact_damping,
         collision_max_iterations=options.collision_max_iterations,
@@ -1329,10 +1372,42 @@ def _solver_config_from_options(options: RuntimeFEMOptions):
     )
 
 
+def runtime_geometry_projection(
+    geometry: dict[str, Any],
+    config: Any | None = None,
+) -> geometry_generators.GeometryBackedProjection:
+    """Return the unchanged runtime mapping backed by one exact owner model."""
+
+    authority = geometry_generators.build_runtime_geometry_authority(
+        geometry,
+        include_stiffeners=bool(getattr(config, "include_stiffeners", True)),
+        include_girders=bool(getattr(config, "include_girders", True)),
+    )
+    return geometry_generators.project_runtime_geometry(authority)
+
+
+def build_runtime_generated_geometry(
+    geometry: dict[str, Any] | geometry_generators.GeometryBackedProjection,
+    config: Any,
+) -> geometry_generators.GeometryBackedProjection:
+    """Build the legacy FE/render payload from a geometry-backed projection."""
+
+    projection = (
+        geometry_generators.project_runtime_geometry(geometry.geometry_authority)
+        if isinstance(geometry, geometry_generators.GeometryBackedProjection)
+        else runtime_geometry_projection(geometry, config)
+    )
+    generated = fe_solver.build_generated_geometry(projection, config)
+    return geometry_generators.project_runtime_payload(
+        generated,
+        projection.geometry_authority,
+    )
+
+
 def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions,
                     status_callback=None, imported_fem_model=None,
                     precomputed_generated_geometry=None) -> RuntimeFEMRunResult:
-    """Run the ANYstructure-owned lightweight FEM solver."""
+    """Run the external ANYsolver production runtime for an ANYstructure model."""
 
     geometry = runtime_geometry_summary(snapshot, options)
     diagnostics = list(snapshot.diagnostics)
@@ -1364,20 +1439,17 @@ def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions
                                       include_nonlinear_impact=True)
 
     solver_config = _solver_config_from_options(options)
-    if fe_solver.full_backend_available():
-        solver_result = fe_solver.run_production_fem(geometry, solver_config, status_callback=status_callback,
-                                                     imported_fem_model=imported_fem_model,
-                                                     precomputed_generated_geometry=precomputed_generated_geometry)
-        if solver_result.status in {"backend_unavailable", "invalid", "static_failed", "production_failed"}:
-            fallback = fe_solver.run_lightweight_fem(geometry, solver_config, status_callback=status_callback)
-            diagnostics.extend(solver_result.diagnostics)
-            diagnostics.append("Production FE mesh failed; using compact fallback result.")
-            if solver_result.visualization:
-                # Preserve the fine mesh visualization even though we use the fallback result values
-                fallback = fallback._replace(visualization=solver_result.visualization)
-            solver_result = fallback
-    else:
-        solver_result = fe_solver.run_lightweight_fem(geometry, solver_config, status_callback=status_callback)
+    # The GUI is a production ANYsolver client. Preserve fail-closed backend
+    # statuses instead of replacing an invalid/nonconverged solve with the
+    # compact estimator and presenting that estimate as a successful FE run.
+    geometry_projection = runtime_geometry_projection(geometry, solver_config)
+    solver_result = fe_solver.run_production_fem(
+        geometry_projection,
+        solver_config,
+        status_callback=status_callback,
+        imported_fem_model=imported_fem_model,
+        precomputed_generated_geometry=precomputed_generated_geometry,
+    )
     diagnostics.extend(solver_result.diagnostics)
     diagnostics.extend(_warmup_diagnostics())
 
@@ -1411,6 +1483,7 @@ def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions
         "buckling_analysis_type": str(options.buckling_analysis_type),
         "pressure_direction": pressure_side,
         "pressure_side": pressure_side,
+        "follower_pressure": bool(options.follower_pressure),
         "axial_force_n": float(options.axial_force_n),
         "acceleration_m_s2": [float(options.acceleration_x_m_s2), float(options.acceleration_y_m_s2),
                               float(options.acceleration_z_m_s2)],
@@ -1543,6 +1616,7 @@ def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions
         "collision_nonlinear_tolerance": float(options.collision_nonlinear_tolerance),
         "collision_nonlinear_cutbacks": int(options.collision_nonlinear_cutbacks),
         "collision_plastic_damage_threshold": float(options.collision_plastic_damage_threshold),
+        "collision_damage_criterion": str(options.collision_damage_criterion),
         "collision_mass_kg": float(options.collision_mass_kg),
         "collision_radius_m": float(options.collision_radius_m),
         "collision_start_m": (
@@ -1564,6 +1638,7 @@ def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions
         "collision_dt_s": float(options.collision_dt_s),
         "collision_result_interval_s": float(options.collision_result_interval_s),
         "collision_penalty_stiffness_n_per_m": float(options.collision_penalty_stiffness_n_per_m),
+        "collision_penalty_scale": float(options.collision_penalty_scale),
         "collision_auto_precondition": bool(options.collision_auto_precondition),
         "collision_contact_damping": float(options.collision_contact_damping),
         "collision_max_iterations": int(options.collision_max_iterations),
@@ -1587,6 +1662,7 @@ def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions
         "kernel_warmup_parallel_threads": warmup_state.get("parallel_threads"),
         "kernel_warmup_max_matrix_difference_norm": _safe_float(warmup_state.get("max_matrix_difference_norm"), 0.0),
         "solver": solver_result.solver_name,
+        "anysolver_version": _require_supported_anysolver(),
         "mesh_info": dict(solver_result.mesh_info),
         "max_displacement_m": solver_result.displacement_max_m,
         "prestress_summary": dict(solver_result.prestress_summary),
@@ -1621,21 +1697,6 @@ def _clamped_alpha(value: Any, default: float = 1.0) -> float:
     return min(max(_safe_float(value, default), 0.0), 1.0)
 
 
-def _alpha_to_stipple(alpha: float) -> str:
-    """Approximate alpha in Tk Canvas, which has no polygon alpha channel."""
-
-    alpha = _clamped_alpha(alpha, 1.0)
-    if alpha >= 0.94:
-        return ""
-    if alpha >= 0.68:
-        return "gray75"
-    if alpha >= 0.43:
-        return "gray50"
-    if alpha >= 0.18:
-        return "gray25"
-    return "gray12"
-
-
 def _crisp_canvas_alpha(value: Any, default: float = 1.0) -> float:
     """Avoid soft-looking near-opaque Tk canvas surfaces."""
 
@@ -1668,20 +1729,62 @@ def _tk_color_value(value: Any, default: str) -> str:
     return color
 
 
+#: Positions at which a matplotlib colormap is sampled for the Tk canvas.
+#: The canvas interpolates linearly between stops, so an even, reasonably
+#: dense set reproduces a smooth map such as viridis or turbo faithfully.
+_CANVAS_COLORMAP_SAMPLES = 17
+
+
+def _resolve_colormap(name: str) -> Any:
+    """
+    Look a colormap up by name, ignoring case.
+
+    Matplotlib's registry is case-sensitive, so the "greys" entry in the
+    Visualization tab used to miss `Greys` and silently fall back to jet.
+    """
+    text = str(name or "jet").strip()
+    try:
+        return colormaps[text]
+    except (KeyError, ValueError, TypeError):
+        pass
+    lowered = text.lower()
+    try:
+        for candidate in colormaps:
+            if str(candidate).lower() == lowered:
+                return colormaps[candidate]
+    except TypeError:
+        pass
+    return colormaps["jet"]
+
+
 def _configure_tk_canvas_colormap(colormap: str) -> None:
     """Keep the interactive canvas surface colours and legend in sync."""
 
-    name = str(colormap or "jet")
-    cmap = colormaps.get(name, colormaps["jet"])
-    existing = getattr(_tk3d_canvas_module, "_THICKNESS_COLOR_STOPS", ())
-    positions = tuple(float(item[0]) for item in existing if isinstance(item, (tuple, list)) and len(item) >= 2)
-    if len(positions) < 2:
-        positions = (0.0, 0.18, 0.36, 0.52, 0.66, 0.78, 0.88, 0.95, 1.0)
+    cmap = _resolve_colormap(colormap)
+    positions = tuple(
+        index / (_CANVAS_COLORMAP_SAMPLES - 1) for index in range(_CANVAS_COLORMAP_SAMPLES)
+    )
     stops = tuple((position, mcolors.to_hex(cmap(position), keep_alpha=False)) for position in positions)
-    try:
-        setattr(_tk3d_canvas_module, "_THICKNESS_COLOR_STOPS", stops)
-    except Exception:
-        pass
+
+    setter = getattr(_tk3d_canvas_module, "set_color_stops", None)
+    if callable(setter):
+        try:
+            setter(stops)
+            return
+        except Exception:
+            pass
+
+    # ANYtk3D before the public colour-scale API read a module constant.
+    # Patch it wherever the interpolation actually lives - the function moved
+    # between modules once, and a stale target silently disables the setting.
+    targets = {_tk3d_canvas_module, inspect.getmodule(_interpolate_thickness_color)}
+    for target in targets:
+        if target is None:
+            continue
+        try:
+            setattr(target, "_THICKNESS_COLOR_STOPS", stops)
+        except Exception:
+            pass
 
 
 def _finite_values(values: Iterable[float]) -> list[float]:
@@ -2771,6 +2874,8 @@ def create_runtime_fem_result_figure(
 
     geometry_ax = figure.add_subplot(111, projection="3d")
     geometry = runtime_geometry_summary(snapshot, options) if result is None else result.summary
+    if result is None:
+        geometry = runtime_geometry_projection(geometry)
 
     if result is None or not result.visualization:
         _plot_base_geometry_surface(
@@ -2896,7 +3001,7 @@ def create_runtime_fem_geometry_preview_figure(
         except Exception:
             pass
 
-    geometry = runtime_geometry_summary(snapshot, options)
+    geometry = runtime_geometry_projection(runtime_geometry_summary(snapshot, options))
     figure = Figure(figsize=(3.0, 2.05), dpi=100)
     axis = figure.add_subplot(111, projection="3d")
 
@@ -4262,6 +4367,13 @@ FEM_OPTION_INFO: dict[str, dict[str, str]] = {
         "output": "Changes load resultant, stress signs and buckling prestress.",
         "caution": "The 3D side markers follow generated element ordering. Verify the active side using the red pressure arrows in the preview.",
     },
+    "follower_pressure": {
+        "title": "Current-area Follower Pressure",
+        "purpose": "Updates shell-pressure directions and loaded area as the nonlinear model deforms.",
+        "use": "Enable it for nonlinear static or arc-length pressure loading when the pressure follows the moving shell surface. Select the Static only or Nonlinear static runtime path.",
+        "output": "Uses ANYsolver's exact external-load tangent; corotational runs automatically select the consistent tangent.",
+        "caution": "Disabled for linear, stepwise eigenvalue-buckling, transient, collision and capacity-workflow paths. It is a nonconservative load and is not a general linear eigenvalue-buckling input.",
+    },
     "axial_force_n": {
         "title": "Axial Force",
         "purpose": "Adds a balanced axial force to the generated model.",
@@ -4719,6 +4831,13 @@ FEM_OPTION_INFO.update({
         "output": "Higher values reduce penetration but can require smaller dt and more iterations.",
         "caution": "Too high can make contact numerically stiff; too low permits excessive penetration.",
     },
+    "collision_penalty_scale": {
+        "title": "Automatic Penalty Scale",
+        "purpose": "Scales ANYsolver's automatically estimated contact penalty without replacing it.",
+        "use": "Leave at 1.0 normally. Values below 1 soften stubborn contact iterations; values above 1 reduce penetration but increase numerical stiffness.",
+        "output": "Changes the resolved automatic contact penalty and its provenance. A positive manual penalty overrides this scale.",
+        "caution": "Use positive values only. Excessively high values can make nonlinear contact convergence worse.",
+    },
     "collision_auto_precondition": {
         "title": "Extra-conservative contact",
         "purpose": "Softens the contact penalty further for stubborn high-energy impacts that still fail to "
@@ -5033,6 +5152,88 @@ FEM_OPTION_INFO.update({
         "output": "Visualization only; the underlying values and limits are unchanged.",
         "caution": "Diverging maps can suggest a false zero point for quantities that are strictly positive.",
     },
+    "shading": {
+        "title": "Lighting",
+        "purpose": "Shades every surface with a directional light so curvature and member orientation read as 3D.",
+        "use": "Keep on for geometry and mesh inspection. Turn off to read contour colours as literal values.",
+        "output": "Visualization only.",
+        "caution": (
+            "Shading only darkens a surface - a face turned toward the light keeps its exact contour colour - "
+            "but a shadowed face still reads darker than its legend entry."
+        ),
+    },
+    "light_azimuth": {
+        "title": "Light Azimuth",
+        "purpose": "Compass direction the light comes from, in degrees about the global Z axis.",
+        "use": "Rotate the light when a feature of interest falls in shadow. Press Enter to apply.",
+        "output": "Visualization only.",
+        "caution": "Lighting the model straight down the view direction flattens it; keep the light off to one side.",
+    },
+    "light_elevation": {
+        "title": "Light Elevation",
+        "purpose": "Height of the light above the horizon, in degrees.",
+        "use": "High values light top surfaces, low values rake across the model and emphasise plate curvature.",
+        "output": "Visualization only.",
+        "caution": "Negative elevations light the model from below, which can read as inverted geometry.",
+    },
+    "light_ambient": {
+        "title": "Ambient Light",
+        "purpose": "Brightness of surfaces that face away from the light (0 black, 1 unshaded).",
+        "use": "Raise it to keep shadowed members readable, lower it for more three-dimensional contrast.",
+        "output": "Visualization only.",
+        "caution": "Low ambient values make contour colours on shadowed faces hard to compare with the legend.",
+    },
+    "light_specular": {
+        "title": "Highlight",
+        "purpose": "Strength of the specular highlight, the bright glint where the surface mirrors the light.",
+        "use": "A small amount helps read curvature on shells; set to 0 for flat, purely value-based colours.",
+        "output": "Visualization only.",
+        "caution": "Highlights brighten a surface past its base colour, so keep it low when reading contours.",
+    },
+    "light_follow_camera": {
+        "title": "Light Follows Camera",
+        "purpose": "Attaches the light to the viewpoint, like a head lamp, instead of fixing it in the model.",
+        "use": "Useful while orbiting: whatever faces you never goes dark.",
+        "output": "Visualization only.",
+        "caution": "Shading then changes as you rotate, so it is a poorer cue for comparing two orientations.",
+    },
+    "show_axis_indicator": {
+        "title": "Show Axis Indicator",
+        "purpose": "Draws the small X/Y/Z orientation triad in the corner of the 3D view.",
+        "use": "Keep on to confirm which way the global axes point (matches the fx/fy/fz load axes).",
+        "output": "Visualization only.",
+        "caution": "None.",
+    },
+    "occlude_lines": {
+        "title": "Hide Lines Behind Geometry",
+        "purpose": "Lets 3D lines - beam elements, member outlines, grids - be hidden by surfaces in front of them.",
+        "use": (
+            "Keep on for a solid, correctly ordered view. Turn off to keep beam elements and markers "
+            "visible through the plating, as an X-ray view."
+        ),
+        "output": "Visualization only.",
+        "caution": "Dimension annotations and labels stay on top either way.",
+    },
+    "interactive_detail": {
+        "title": "Interactive Detail",
+        "purpose": "Face budget used while orbiting, panning or zooming; full detail returns on mouse release.",
+        "use": "Lower it if dragging a large model feels sluggish, raise it if interaction already feels smooth.",
+        "output": "Visualization only; the released view is always drawn at full detail.",
+        "caution": (
+            "The budget self-tunes from measured frame times, so this is the starting point rather than a "
+            "hard limit."
+        ),
+    },
+    "animation_detail": {
+        "title": "Animation Detail",
+        "purpose": "Render quality used during animation playback.",
+        "use": (
+            "'auto' starts at full detail and drops to reduced detail as soon as a frame misses its slot; "
+            "'full' keeps every face, stipple and outline; 'fast' always uses the reduced path."
+        ),
+        "output": "Visualization only; the frames themselves are unchanged and the view is redrawn in full on stop.",
+        "caution": "Reduced detail drops transparency stippling and element outlines while playing.",
+    },
 })
 
 
@@ -5119,6 +5320,7 @@ class RuntimeFEMWindow:
         self.analysis_type = tk.StringVar(value="linear eigenvalue")
         self.buckling_analysis_type = tk.StringVar(value="linear eigenvalue")
         self.pressure_direction = tk.StringVar(value="front")
+        self.follower_pressure = tk.BooleanVar(value=False)
         self.axial_force_n = tk.DoubleVar(value=_safe_float(self.snapshot.axial_force_n, 0.0))
         self.acceleration_x_m_s2 = tk.DoubleVar(value=0.0)
         self.acceleration_y_m_s2 = tk.DoubleVar(value=0.0)
@@ -5133,6 +5335,11 @@ class RuntimeFEMWindow:
         self.member_orientation = tk.StringVar(value="auto")
         self.solver_type = tk.StringVar(value="direct")
         self.stress_percentile = tk.DoubleVar(value=95.0)
+        self.material_library_names = ecosystem_gui.material_library_names()
+        self.material_library_name = tk.StringVar(
+            value=ecosystem_gui.default_material_name(self.material_library_names)
+        )
+        self._last_isotropic_material_name = self.material_library_name.get()
         self.elastic_modulus_gpa = tk.DoubleVar(value=210.0)
         self.poisson_ratio = tk.DoubleVar(value=0.3)
         self.yield_stress_mpa = tk.DoubleVar(value=355.0)
@@ -5305,6 +5512,7 @@ class RuntimeFEMWindow:
         self.collision_dt_s = tk.DoubleVar(value=0.0005)
         self.collision_result_interval_s = tk.DoubleVar(value=0.0)
         self.collision_penalty_stiffness_n_per_m = tk.DoubleVar(value=0.0)
+        self.collision_penalty_scale = tk.DoubleVar(value=1.0)
         self.collision_auto_precondition = tk.BooleanVar(value=False)
         self.collision_contact_damping = tk.DoubleVar(value=0.0)
         self.collision_max_iterations = tk.IntVar(value=25)
@@ -5323,7 +5531,7 @@ class RuntimeFEMWindow:
         self.collision_damage_neighbor_smoothing = tk.BooleanVar(value=False)
         self.result_case_choice = tk.StringVar(value="Static displacement/stress")
         self.result_case_labels: dict[str, str] = {"Static displacement/stress": "static"}
-        self.component_choice = tk.StringVar(value="von_mises_pa")
+        self.component_choice = tk.StringVar(value="Stress von Mises")
         self.component_labels: dict[str, str] = {
             "Stress von Mises": "von_mises_pa",
             "Displacement Magnitude": "disp_mag",
@@ -5379,7 +5587,20 @@ class RuntimeFEMWindow:
         self.show_axis_ruler_vis = tk.BooleanVar(value=False)
         self.show_imperfections_vis = tk.BooleanVar(value=False)
         self.imperfection_preview_scale = tk.DoubleVar(value=0.0)
+        # 3D view options handled by the canvas itself rather than by the
+        # geometry we hand it; all of them go through
+        # _apply_canvas_view_options so every canvas stays consistent.
+        self.show_axis_indicator_vis = tk.BooleanVar(value=True)
+        self.shading_vis = tk.BooleanVar(value=True)
+        self.light_azimuth_vis = tk.DoubleVar(value=300.0)
+        self.light_elevation_vis = tk.DoubleVar(value=50.0)
+        self.light_ambient_vis = tk.StringVar(value="0.45")
+        self.light_specular_vis = tk.StringVar(value="0.12")
+        self.light_follow_camera_vis = tk.BooleanVar(value=False)
+        self.occlude_lines_vis = tk.BooleanVar(value=True)
+        self.interactive_detail_vis = tk.IntVar(value=4000)
         self.animation_fast_mode = tk.BooleanVar(value=False)
+        self.animation_detail_vis = tk.StringVar(value="auto")
         self.animation_interval_ms = tk.IntVar(value=80)
         self.animation_speed_multiplier = tk.DoubleVar(value=1.0)
         self.time_step_slider_value = tk.DoubleVar(value=0.0)
@@ -5404,9 +5625,12 @@ class RuntimeFEMWindow:
         self._animation_running = False
         self._animation_index = 0
         self._nonlinear_static_kinematics_control = None
+        self._follower_pressure_control = None
         self._collision_nonlinear_kinematics_control = None
         self._collision_damage_beam_hint = None
         self._option_state_trace_ids: list[tuple[tk.Variable, str]] = []
+        self.body_panes = None
+        self.result_panes = None
 
         self._build()
         self._bind_option_state_traces()
@@ -5468,8 +5692,6 @@ class RuntimeFEMWindow:
             "nonlinear capacity workflow",
         }:
             return False
-        if self._choice_key(self.nonlinear_solution_control.get()) == "arc length":
-            return False
         analysis = self._choice_key(self.analysis_type.get())
         runtime = self._choice_key(self.runtime_solver.get())
         return runtime == "nonlinear static" or analysis in {
@@ -5479,6 +5701,17 @@ class RuntimeFEMWindow:
             "geom + material nonlinear static",
             "geometric and material nonlinear static",
         }
+
+    def _follower_pressure_selector_enabled(self) -> bool:
+        """Follower pressure is meaningful only on supported nonlinear paths."""
+
+        runtime = self._choice_key(self.runtime_solver.get())
+        return (
+            self._static_kinematics_selector_enabled()
+            and runtime in {"static only", "nonlinear static"}
+            and not bool(self.custom_time_domain_enabled.get())
+            and not bool(self.collision_enabled.get())
+        )
 
     def _collision_kinematics_selector_enabled(self) -> bool:
         return bool(self.collision_enabled.get()) and bool(self.collision_material_nonlinear_enabled.get())
@@ -5512,6 +5745,11 @@ class RuntimeFEMWindow:
         elif static_enabled:
             self.nonlinear_static_kinematics.set(_kinematics_label(self.nonlinear_static_kinematics.get()))
         self._set_control_state(self._nonlinear_static_kinematics_control, static_enabled)
+
+        follower_enabled = self._follower_pressure_selector_enabled()
+        if not follower_enabled and bool(self.follower_pressure.get()):
+            self.follower_pressure.set(False)
+        self._set_control_state(self._follower_pressure_control, follower_enabled)
 
         collision_enabled = self._collision_kinematics_selector_enabled()
         if not collision_enabled and _normalise_kinematics(self.collision_nonlinear_kinematics.get()) != "von_karman":
@@ -5553,6 +5791,7 @@ class RuntimeFEMWindow:
             self.material_model,
             self.post_buckling_enabled,
             self.collision_enabled,
+            self.custom_time_domain_enabled,
             self.collision_material_nonlinear_enabled,
             self.collision_beam_contact_enabled,
             self.collision_damage_enabled,
@@ -5634,6 +5873,96 @@ class RuntimeFEMWindow:
         except Exception:
             pass
 
+    def _canvas_view_targets(self) -> tuple:
+        """Every Tkinter3DCanvas the visualization options apply to."""
+        return tuple(
+            canvas
+            for canvas in (
+                getattr(self, "result_canvas", None),
+                getattr(self, "geometry_preview_canvas", None),
+                getattr(self, "mesh_preview_canvas", None),
+            )
+            if canvas is not None
+        )
+
+    def _apply_canvas_view_options(self, canvas: Any) -> None:
+        """
+        Push the Visualization-tab display settings onto one 3D canvas.
+
+        These are the options the canvas applies itself - mesh lines, rulers,
+        lighting, line occlusion, interactive detail - as opposed to the ones
+        that change the geometry we build (alpha, colours, deformation
+        scale), which are read while populating the scene.  Routing them all
+        through here keeps the result view, the geometry preview and the mesh
+        preview in step, and keeps working against an ANYtk3D build that
+        predates any individual setting.
+        """
+        if canvas is None:
+            return
+
+        def call(name: str, *args: Any, **kwargs: Any) -> None:
+            method = getattr(canvas, name, None)
+            if callable(method):
+                try:
+                    method(*args, **kwargs)
+                except Exception:
+                    pass
+
+        call("set_mesh_lines", bool(self.show_mesh_lines_vis.get()))
+        call("set_axis_ruler", bool(self.show_axis_ruler_vis.get()))
+        call("set_axis_indicator", bool(self.show_axis_indicator_vis.get()))
+        call("set_occlude_lines", bool(self.occlude_lines_vis.get()))
+        call("set_interactive_detail", max(200, _tk_var_int(self.interactive_detail_vis, 4000)))
+        call("set_shading", bool(self.shading_vis.get()))
+
+        direction = None
+        sun = getattr(_tk3d_canvas_module, "sun_direction", None)
+        if callable(sun):
+            try:
+                direction = sun(
+                    _tk_var_float(self.light_azimuth_vis, 300.0),
+                    _tk_var_float(self.light_elevation_vis, 50.0),
+                )
+            except Exception:
+                direction = None
+        call(
+            "set_light",
+            direction=direction,
+            ambient=_clamped_alpha(self.light_ambient_vis.get(), 0.45),
+            specular=max(0.0, min(1.0, _safe_float(self.light_specular_vis.get(), 0.12))),
+            follow_camera=bool(self.light_follow_camera_vis.get()),
+        )
+
+    def _refresh_canvas_view_options(self) -> None:
+        """Re-apply the display options to every live canvas and redraw."""
+        for canvas in self._canvas_view_targets():
+            self._apply_canvas_view_options(canvas)
+            redraw = getattr(canvas, "redraw", None)
+            if callable(redraw):
+                try:
+                    redraw()
+                except Exception:
+                    pass
+
+    def _reset_lighting_defaults(self) -> None:
+        """Restore the shipped lighting setup."""
+        self.shading_vis.set(True)
+        self.light_azimuth_vis.set(300.0)
+        self.light_elevation_vis.set(50.0)
+        self.light_ambient_vis.set("0.45")
+        self.light_specular_vis.set("0.12")
+        self.light_follow_camera_vis.set(False)
+        self.show_axis_indicator_vis.set(True)
+        self.occlude_lines_vis.set(True)
+        self.interactive_detail_vis.set(4000)
+        self._refresh_canvas_view_options()
+
+    def _animation_playback_detail(self) -> bool | None:
+        """Map the detail choice onto ANYtk3D's play_animation(fast=...)."""
+        return {"auto": None, "full": False, "fast": True}.get(
+            str(self.animation_detail_vis.get()).strip().lower(), None
+        )
+
     def _info_button(self, parent: Any, key: str) -> ttk.Button:
         return ttk.Button(parent, text="i", width=2, command=lambda info_key=key: self._show_solver_info(info_key))
 
@@ -5660,8 +5989,15 @@ class RuntimeFEMWindow:
             variable: tk.Variable,
             values: tuple[str, ...],
             width: int | None = None,
+            command: Any = None,
     ) -> ttk.OptionMenu:
-        control = ttk.OptionMenu(parent, variable, variable.get(), *values)
+        control = ttk.OptionMenu(
+            parent,
+            variable,
+            variable.get(),
+            *values,
+            command=command,
+        )
         if width is not None:
             try:
                 control.configure(width=width)
@@ -5965,6 +6301,98 @@ class RuntimeFEMWindow:
         except Exception:
             pass
 
+    @staticmethod
+    def _visible_paned_window(parent: Any, orient: str) -> tk.PanedWindow:
+        """Create a clean cross-theme pane with a discoverable resize divider."""
+
+        cursor = "sb_h_double_arrow" if orient == tk.HORIZONTAL else "sb_v_double_arrow"
+        divider_color = "#475569"
+        divider_hover_color = "#38bdf8"
+        panes = tk.PanedWindow(
+            parent,
+            orient=orient,
+            background=divider_color,
+            borderwidth=0,
+            relief=tk.FLAT,
+            sashwidth=6,
+            sashpad=2,
+            sashrelief=tk.FLAT,
+            showhandle=False,
+            opaqueresize=True,
+            cursor=cursor,
+        )
+
+        def highlight_divider(event: Any) -> None:
+            hit = panes.identify(event.x, event.y)
+            over_divider = bool(hit and len(hit) > 1 and hit[1] in {"sash", "handle"})
+            panes.configure(background=divider_hover_color if over_divider else divider_color)
+
+        def restore_divider(_event: Any) -> None:
+            panes.configure(background=divider_color)
+
+        panes.bind("<Motion>", highlight_divider, add="+")
+        panes.bind("<Leave>", restore_divider, add="+")
+        panes.bind("<ButtonRelease-1>", restore_divider, add="+")
+        return panes
+
+    def _apply_material_spec(self, spec: Any) -> bool:
+        """Map an ANYmaterial specification onto the solver's scalar controls."""
+        try:
+            selected = ecosystem_gui.isotropic_material_selection(spec)
+        except ecosystem_gui.UnsupportedMaterialSelection as error:
+            self.material_library_name.set(self._last_isotropic_material_name)
+            messagebox.showerror("Unsupported material", str(error), parent=self.window)
+            return False
+
+        self.material_library_name.set(selected.name)
+        self._last_isotropic_material_name = selected.name
+        self.elastic_modulus_gpa.set(selected.elastic_modulus_gpa)
+        self.poisson_ratio.set(selected.poisson_ratio)
+        self.yield_stress_mpa.set(selected.yield_stress_mpa)
+        self.material_model.set(selected.material_model)
+        self.steel_grade.set(selected.steel_grade)
+        self.steel_thickness_class.set(selected.steel_thickness_class)
+        if selected.unsupported_hardening_kind:
+            messagebox.showwarning(
+                "Material curve simplified",
+                "ANYstructure applied the selected elastic constants and yield stress, but the "
+                f"{selected.unsupported_hardening_kind!r} hardening curve is not exposed by the "
+                "current runtime controls. The FEM material was set to linear elastic.",
+                parent=self.window,
+            )
+        return True
+
+    def _on_material_library_selected(self, name: str | None = None) -> bool:
+        """Apply a public ANYmaterial library entry selected in the dropdown."""
+        selected_name = str(name or self.material_library_name.get())
+        try:
+            spec = ecosystem_gui.material_spec_from_library(selected_name)
+        except (KeyError, ValueError) as error:
+            self.material_library_name.set(self._last_isotropic_material_name)
+            messagebox.showerror("Material library", str(error), parent=self.window)
+            return False
+        return self._apply_material_spec(spec)
+
+    def _open_material_editor(self) -> tuple[Any, Any]:
+        """Open ANYmaterial in a child of the runtime FEM window."""
+        try:
+            initial_spec = ecosystem_gui.material_spec_from_library(self.material_library_name.get())
+        except (KeyError, ValueError):
+            initial_spec = None
+        return ecosystem_gui.open_material_editor(
+            self.window,
+            initial_spec=initial_spec,
+            on_apply=self._apply_material_spec,
+        )
+
+    def _open_anymesher(self) -> tuple[Any, Any]:
+        """Open the extracted neutral mesher without starting another mainloop."""
+        return ecosystem_gui.open_mesher(self.window)
+
+    def _open_file_inspector(self) -> tuple[Any, Any]:
+        """Open the extracted interchange-file inspector."""
+        return ecosystem_gui.open_file_inspector(self.window)
+
     def _build(self) -> None:
         outer = ttk.Frame(self.window, padding=12)
         outer.pack(fill=tk.BOTH, expand=True)
@@ -5982,7 +6410,7 @@ class RuntimeFEMWindow:
         ).pack(side=tk.LEFT)
         tk.Label(
             header_inner,
-            text="ANYstructure local solver",
+            text="ANYsolver " + _require_supported_anysolver(),
             background="#2563eb",
             foreground="white",
             font=("Segoe UI", 9, "bold"),
@@ -5991,21 +6419,24 @@ class RuntimeFEMWindow:
         ).pack(side=tk.RIGHT)
         tk.Label(
             header,
-            text="Active-line analysis with shell plating, stiffener/girder beams, symmetric pressure and eigenvalue-style buckling factors.",
+            text=(
+                "Active-line shell/beam analysis. Drag the blue-gray dividers to resize sections; "
+                "they highlight blue on hover, and the result divider moves vertically."
+            ),
             background="#172033",
             foreground="#d7deeb",
             font=("Segoe UI", 9),
         ).pack(anchor=tk.W, padx=16, pady=(0, 12))
 
-        body = ttk.Panedwindow(outer, orient=tk.HORIZONTAL)
-        body.pack(fill=tk.BOTH, expand=True)
+        self.body_panes = self._visible_paned_window(outer, tk.HORIZONTAL)
+        self.body_panes.pack(fill=tk.BOTH, expand=True)
 
-        left_panel = ttk.Frame(body)
-        mid_panel = ttk.Frame(body)
-        right_panel = ttk.Frame(body)
-        body.add(left_panel, weight=2)
-        body.add(mid_panel, weight=2)
-        body.add(right_panel, weight=3)
+        left_panel = ttk.Frame(self.body_panes)
+        mid_panel = ttk.Frame(self.body_panes)
+        right_panel = ttk.Frame(self.body_panes)
+        self.body_panes.add(left_panel, minsize=260, width=300, stretch="always")
+        self.body_panes.add(mid_panel, minsize=340, width=390, stretch="always")
+        self.body_panes.add(right_panel, minsize=360, width=470, stretch="always")
 
         summary = ttk.LabelFrame(left_panel, text="Active line")
         summary.pack(fill=tk.X, pady=(0, 10))
@@ -6032,6 +6463,9 @@ class RuntimeFEMWindow:
         self.use_for_buckling_button.pack(side=tk.LEFT, padx=(4, 0))
         ttk.Button(buttons, text="Save FEM...", command=self._save_fem_state).pack(side=tk.LEFT, padx=(4, 0))
         ttk.Button(buttons, text="Load FEM...", command=self._load_fem_state).pack(side=tk.LEFT, padx=(4, 0))
+        ttk.Button(buttons, text="Inspect FE file...", command=self._open_file_inspector).pack(
+            side=tk.LEFT, padx=(4, 0)
+        )
         self.progress_bar = ttk.Progressbar(buttons, mode="indeterminate", length=140)
         self.progress_bar.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(10, 0))
         ttk.Button(buttons, text="Close", command=self.window.destroy).pack(side=tk.RIGHT)
@@ -6164,6 +6598,9 @@ class RuntimeFEMWindow:
         preview_actions.pack(fill=tk.X, padx=8, pady=(8, 4))
         self._mesh_preview_button = ttk.Button(preview_actions, text="Generate mesh", command=self._generate_mesh)
         self._mesh_preview_button.pack(side=tk.LEFT)
+        ttk.Button(preview_actions, text="Open ANYmesher...", command=self._open_anymesher).pack(
+            side=tk.LEFT, padx=(4, 0)
+        )
         ttk.Checkbutton(
             preview_actions,
             text="Show imperfections",
@@ -6375,22 +6812,34 @@ class RuntimeFEMWindow:
         material.pack(fill=tk.X, padx=8, pady=(0, 8))
         self._configure_option_grid(material)
         self._add_entry_row(material, 0, "stress_percentile", "Stress pct.", self.stress_percentile)
-        self._add_option_row(material, 1, "material_model", "Material", self.material_model,
+        self._add_option_row(
+            material,
+            1,
+            "material_library",
+            "Library material",
+            self.material_library_name,
+            self.material_library_names,
+            command=self._on_material_library_selected,
+        )
+        self._add_option_row(material, 2, "material_model", "Constitutive", self.material_model,
                              ("linear elastic", "DNV-RP-C208 steel"))
-        self._add_option_row(material, 2, "steel_grade", "Steel grade", self.steel_grade,
+        self._add_option_row(material, 3, "steel_grade", "Steel grade", self.steel_grade,
                              ("S235", "S275", "S355", "S420", "S460"))
         self._add_option_row(
             material,
-            3,
+            4,
             "steel_thickness_class",
             "Steel class",
             self.steel_thickness_class,
             ("auto", "t <= 16", "16 < t <= 40", "40 < t <= 63", "63 < t <= 100"),
         )
-        self._add_entry_row(material, 4, "elastic_modulus_gpa", "E [GPa]", self.elastic_modulus_gpa)
-        self._add_entry_row(material, 5, "poisson_ratio", "Poisson", self.poisson_ratio)
-        self._add_entry_row(material, 6, "yield_stress_mpa", "Yield [MPa]", self.yield_stress_mpa)
-        self._add_entry_row(material, 7, "nonlinear_layers", "NL layers", self.nonlinear_layers, width=8)
+        self._add_entry_row(material, 5, "elastic_modulus_gpa", "E [GPa]", self.elastic_modulus_gpa)
+        self._add_entry_row(material, 6, "poisson_ratio", "Poisson", self.poisson_ratio)
+        self._add_entry_row(material, 7, "yield_stress_mpa", "Yield [MPa]", self.yield_stress_mpa)
+        self._add_entry_row(material, 8, "nonlinear_layers", "NL layers", self.nonlinear_layers, width=8)
+        ttk.Button(material, text="Choose/edit in ANYmaterial...", command=self._open_material_editor).grid(
+            row=9, column=1, columnspan=2, sticky=tk.W, padx=(0, 8), pady=(2, 6)
+        )
 
         imperfections = ttk.LabelFrame(tab_properties, text="Imperfections")
         imperfections.pack(fill=tk.X, padx=8, pady=(0, 8))
@@ -6441,6 +6890,13 @@ class RuntimeFEMWindow:
 
         self._add_option_row(general_loads, 6, "pressure_direction", "Pressure side", self.pressure_direction,
                              ("front", "back"))
+        self._follower_pressure_control = self._add_check_row(
+            general_loads,
+            7,
+            "follower_pressure",
+            "Current-area follower pressure (nonlinear only)",
+            self.follower_pressure,
+        )
 
         # --- Boundary conditions tab ---
         whole_bc = ttk.LabelFrame(tab_bc, text="Whole-boundary supports (per edge)")
@@ -6711,6 +7167,8 @@ class RuntimeFEMWindow:
                                 self.collision_bounce_back_time_s)
         self._add_compact_check(collision_stop, 4, 0, "collision_auto_precondition", "Auto-precondition (scout)",
                                 self.collision_auto_precondition)
+        self._add_compact_entry(collision_stop, 4, 1, "collision_penalty_scale", "Auto penalty scale",
+                                self.collision_penalty_scale)
 
         collision_damage = ttk.LabelFrame(collision_body, text="Impact damage")
         collision_damage.pack(fill=tk.X, padx=8, pady=(0, 6))
@@ -6767,11 +7225,7 @@ class RuntimeFEMWindow:
         self._add_check_row(vis_group, 2, "show_girders", "Show girders/frames", self.show_girder_vis)
         self._add_check_row(vis_group, 3, "show_collision_sphere", "Show rigid sphere", self.show_collision_sphere_vis)
 
-        def update_canvas_options():
-            for canvas_ref in [self.result_canvas, self.geometry_preview_canvas, self.mesh_preview_canvas]:
-                if canvas_ref:
-                    canvas_ref.set_mesh_lines(self.show_mesh_lines_vis.get())
-                    canvas_ref.set_axis_ruler(self.show_axis_ruler_vis.get())
+        update_canvas_options = self._refresh_canvas_view_options
 
         self._add_check_row(vis_group, 4, "show_mesh_lines", "Show mesh lines", self.show_mesh_lines_vis).configure(command=update_canvas_options)
         self._add_check_row(vis_group, 5, "show_axis_ruler", "Show axis ruler", self.show_axis_ruler_vis).configure(command=update_canvas_options)
@@ -6793,6 +7247,15 @@ class RuntimeFEMWindow:
         ttk.Button(vis_actions, text="Stop", command=self._stop_animation).pack(side=tk.LEFT, padx=(4, 0))
         ttk.Checkbutton(vis_actions, text="Fast animation", variable=self.animation_fast_mode).pack(side=tk.LEFT,
                                                                                                     padx=(8, 0))
+        self._info_button(vis_actions, "animation_detail").pack(side=tk.LEFT, padx=(10, 2))
+        ttk.Label(vis_actions, text="detail").pack(side=tk.LEFT, padx=(0, 4))
+        ttk.Combobox(
+            vis_actions,
+            textvariable=self.animation_detail_vis,
+            values=("auto", "full", "fast"),
+            state="readonly",
+            width=6,
+        ).pack(side=tk.LEFT)
         ttk.Label(vis_actions, text="x").pack(side=tk.RIGHT, padx=(4, 0))
         ttk.Entry(vis_actions, textvariable=self.animation_speed_multiplier, width=5).pack(side=tk.RIGHT)
         ttk.Label(vis_actions, text="speed").pack(side=tk.RIGHT, padx=(8, 0))
@@ -6826,8 +7289,58 @@ class RuntimeFEMWindow:
                                                                                                       padx=(0, 4))
         ttk.Button(view_actions, text="Top", command=lambda: self._set_runtime_3d_view("top")).pack(side=tk.LEFT)
 
-        self.upper_result_frame = ttk.LabelFrame(right_panel, text="Result text")
-        self.upper_result_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+        # --- 3D view and lighting -------------------------------------
+        # These settings are applied by the canvas itself, so they take effect
+        # immediately on every open view without rebuilding the geometry.
+        light_group = ttk.LabelFrame(tab_visualization, text="3D view and lighting")
+        light_group.pack(fill=tk.X, padx=8, pady=(0, 8))
+        self._configure_option_grid(light_group)
+
+        self._add_check_row(
+            light_group, 0, "shading", "Lighting (shaded surfaces)", self.shading_vis,
+        ).configure(command=update_canvas_options)
+        self._add_entry_row(
+            light_group, 1, "light_azimuth", "Light azimuth [deg]", self.light_azimuth_vis, width=8,
+        ).bind("<Return>", lambda _event: update_canvas_options())
+        self._add_entry_row(
+            light_group, 2, "light_elevation", "Light elevation [deg]", self.light_elevation_vis, width=8,
+        ).bind("<Return>", lambda _event: update_canvas_options())
+        self._add_entry_row(
+            light_group, 3, "light_ambient", "Ambient light [0-1]", self.light_ambient_vis, width=8,
+        ).bind("<Return>", lambda _event: update_canvas_options())
+        self._add_entry_row(
+            light_group, 4, "light_specular", "Highlight [0-1]", self.light_specular_vis, width=8,
+        ).bind("<Return>", lambda _event: update_canvas_options())
+        self._add_check_row(
+            light_group, 5, "light_follow_camera", "Light follows camera", self.light_follow_camera_vis,
+        ).configure(command=update_canvas_options)
+        self._add_check_row(
+            light_group, 6, "show_axis_indicator", "Show axis indicator", self.show_axis_indicator_vis,
+        ).configure(command=update_canvas_options)
+        self._add_check_row(
+            light_group, 7, "occlude_lines", "Hide lines behind geometry", self.occlude_lines_vis,
+        ).configure(command=update_canvas_options)
+        self._add_entry_row(
+            light_group, 8, "interactive_detail", "Interactive detail [faces]",
+            self.interactive_detail_vis, width=8,
+        ).bind("<Return>", lambda _event: update_canvas_options())
+
+        light_actions = ttk.Frame(light_group)
+        light_actions.grid(row=9, column=0, columnspan=4, sticky=tk.W, padx=8, pady=(0, 4))
+        ttk.Button(
+            light_actions, text="Apply view options", command=update_canvas_options,
+        ).pack(side=tk.LEFT)
+        ttk.Button(
+            light_actions, text="Reset lighting", command=self._reset_lighting_defaults,
+        ).pack(side=tk.LEFT, padx=(6, 0))
+
+        self.result_panes = self._visible_paned_window(right_panel, tk.VERTICAL)
+        self.result_panes.pack(fill=tk.BOTH, expand=True)
+        self.upper_result_frame = ttk.LabelFrame(self.result_panes, text="Result text")
+        result_frame = ttk.LabelFrame(self.result_panes, text="Run visualization")
+        self.result_panes.add(self.upper_result_frame, minsize=120, height=190, stretch="always")
+        self.result_panes.add(result_frame, minsize=260, height=430, stretch="always")
+
         self.upper_result_text = tk.Text(self.upper_result_frame, wrap=tk.WORD, height=10)
         self.upper_result_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(8, 0), pady=8)
         scrollbar = ttk.Scrollbar(self.upper_result_frame, orient=tk.VERTICAL, command=self.upper_result_text.yview)
@@ -6837,12 +7350,14 @@ class RuntimeFEMWindow:
         button_frame = ttk.Frame(self.upper_result_frame)
         button_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=8, pady=(0, 8))
         ttk.Button(button_frame, text="Copy to Clipboard", command=self._copy_results_to_clipboard).pack(side=tk.RIGHT)
-        result_frame = ttk.LabelFrame(right_panel, text="Run visualization")
-        result_frame.pack(fill=tk.BOTH, expand=True)
-
         plot_holder = ttk.Frame(result_frame)
         plot_holder.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
         self.figure_parent = plot_holder
+        ttk.Label(
+            plot_holder,
+            text="Drag divider to resize  |  Left-drag move  |  Right-drag rotate  |  Wheel zoom",
+            foreground="#475569",
+        ).pack(side=tk.TOP, fill=tk.X, pady=(0, 4))
         selector_bar = ttk.Frame(plot_holder)
         selector_bar.pack(side=tk.TOP, fill=tk.X, pady=(0, 4))
         self._info_button(selector_bar, "display_choice").pack(side=tk.LEFT, padx=(0, 4))
@@ -7127,7 +7642,7 @@ class RuntimeFEMWindow:
             options = self._options()
             config = _solver_config_from_options(options)
             geometry = _popup_geometry_summary(self)
-            generated = fe_solver.build_generated_geometry(geometry, config)
+            generated = build_runtime_generated_geometry(geometry, config)
         except Exception as error:
             messagebox.showwarning("Mesh generation", "Could not build the mesh:\n" + str(error))
             return
@@ -7166,7 +7681,7 @@ class RuntimeFEMWindow:
             options = self._options()
             config = _solver_config_from_options(options)
             geometry = _popup_geometry_summary(self)
-            generated = fe_solver.build_generated_geometry(geometry, config)
+            generated = build_runtime_generated_geometry(geometry, config)
 
             # We need to run a buckling solve using fe_solver.
             # But the buckling is normally run in run_production_fem or lightweight.
@@ -7201,8 +7716,7 @@ class RuntimeFEMWindow:
             fit_view = getattr(self, "_last_preview_mesh", None) is not generated
         self._last_preview_mesh = generated
         canvas = self.mesh_preview_canvas
-        canvas.set_mesh_lines(bool(self.show_mesh_lines_vis.get()))
-        canvas.set_axis_ruler(bool(self.show_axis_ruler_vis.get()))
+        self._apply_canvas_view_options(canvas)
         # Same refresh contract as the result canvas: smooth (item-reusing)
         # refresh when only view options changed, full clear for a new mesh.
         canvas.clear(keep_canvas=not fit_view)
@@ -7301,7 +7815,7 @@ class RuntimeFEMWindow:
             options = self._options()
             config = _solver_config_from_options(options)
             geometry = _popup_geometry_summary(self)
-            generated = fe_solver.build_generated_geometry(geometry, config)
+            generated = build_runtime_generated_geometry(geometry, config)
         except Exception:
             return
         self._render_mesh_preview_canvas(generated)
@@ -7349,6 +7863,9 @@ class RuntimeFEMWindow:
                 float(coords[2]) + offset[2] * scale,
             )
 
+        shell_polygons = []
+        shell_colors = []
+        shell_back_colors = []
         for shell in generated.get("shells", ()) or ():
             ids = [int(i) for i in shell.get("node_ids", ()) or () if int(i) in nodes]
             if len(ids) in (3, 6):
@@ -7359,7 +7876,7 @@ class RuntimeFEMWindow:
                 corners = ids
             if len(corners) < 3:
                 continue
-            pts = [display_point(i) for i in corners]
+            shell_polygons.append([display_point(i) for i in corners])
             if offsets and max_magnitude_mm > 0.0:
                 element_magnitude = sum(magnitudes_mm.get(i, 0.0) for i in corners) / len(corners)
                 face_color = _interpolate_thickness_color(element_magnitude, 0.0, max_magnitude_mm)
@@ -7367,10 +7884,13 @@ class RuntimeFEMWindow:
             else:
                 face_color = "#dbe4f0"
                 back_color = "#c3cede"
-            canvas.add_polygon(
-                pts,
-                color=face_color,
-                back_color=back_color,
+            shell_colors.append(face_color)
+            shell_back_colors.append(back_color)
+        if shell_polygons:
+            canvas.add_faces(
+                shell_polygons,
+                colors=shell_colors,
+                back_colors=shell_back_colors,
                 outline="#334155",
                 width=1,
             )
@@ -7797,7 +8317,12 @@ class RuntimeFEMWindow:
             interval = max(int(round(max(_tk_var_int(self.animation_interval_ms, 80), 20) / speed)), 5)
             fps = 1000 // interval
             self._animation_running = True
-            self.result_canvas.play_animation(fps=fps)
+            detail = self._animation_playback_detail()
+            try:
+                self.result_canvas.play_animation(fps=fps, fast=detail)
+            except TypeError:
+                # Older ANYtk3D without the playback-detail argument.
+                self.result_canvas.play_animation(fps=fps)
             return
 
         current = str(self.result_case_choice.get())
@@ -7959,8 +8484,10 @@ class RuntimeFEMWindow:
         colormap_var = getattr(self, "colormap_vis", None)
         plate_alpha = _crisp_canvas_alpha(plate_alpha_var.get() if plate_alpha_var is not None else 1.0, 1.0)
         member_alpha = _crisp_canvas_alpha(member_alpha_var.get() if member_alpha_var is not None else 1.0, 1.0)
-        plate_stipple = _alpha_to_stipple(plate_alpha)
-        member_stipple = _alpha_to_stipple(member_alpha)
+        # Alpha goes straight to the canvas: ANYtk3D resolves an opacity into
+        # a 16-step dither with separate front/back patterns, so the alpha
+        # entries are proportional across their whole range and a surface
+        # behind a transparent one still shows through.
         plate_front_color = _tk_color_value(
             getattr(getattr(self, "plate_front_color_vis", None), "get", lambda: "#d1d5db")(),
             "#d1d5db",
@@ -7973,18 +8500,13 @@ class RuntimeFEMWindow:
 
         if hasattr(self, "imported_fem_model") and self.imported_fem_model is not None:
             get_node = self.imported_fem_model.mesh.get_node
+            imported_shells = []
             for element in self.imported_fem_model.mesh.elements.values():
                 if element.__class__.__name__ == "ShellElement":
                     if not show_plate: continue
                     nodes = [get_node(int(nid)) for nid in element.node_ids]
                     if all(n is not None for n in nodes):
-                        canvas.add_polygon(
-                            [Point3D(*n.coords()) for n in nodes],
-                            outline="gray",
-                            color=plate_front_color,
-                            back_color=plate_back_color,
-                            stipple=plate_stipple,
-                        )
+                        imported_shells.append([n.coords() for n in nodes])
                 elif element.__class__.__name__ == "BeamElement":
                     if not show_stiffeners: continue
                     nodes = [get_node(int(nid)) for nid in element.node_ids]
@@ -7992,6 +8514,14 @@ class RuntimeFEMWindow:
                         pts = [Point3D(*n.coords()) for n in nodes]
                         for i in range(len(pts) - 1):
                             canvas.add_line(pts[i], pts[i + 1], color="blue", width=2)
+            if imported_shells:
+                canvas.add_faces(
+                    imported_shells,
+                    colors=plate_front_color,
+                    back_colors=[plate_back_color] * len(imported_shells),
+                    outline="gray",
+                    opacity=plate_alpha,
+                )
             if fit_view:
                 canvas.fit_to_scene()
             return
@@ -8091,7 +8621,7 @@ class RuntimeFEMWindow:
                     back_color=plate_back_color,
                     outline="#64748b",
                     layer=5,
-                    stipple=plate_stipple
+                    opacity=plate_alpha
                 )
             if show_stiffeners and member_alpha > 0.0 and geometry.get("has_stiffener"):
                 spacing = _safe_float(geometry.get("stiffener_spacing_m"))
@@ -8113,7 +8643,7 @@ class RuntimeFEMWindow:
                             b=b,
                             color="#94a3b8",
                             outline="#1f2937",
-                            stipple=member_stipple,
+                            opacity=member_alpha,
                         )
             if show_girders and member_alpha > 0.0 and geometry.get("has_girder"):
                 gir_sec = geometry.get("girder_section") or {}
@@ -8134,7 +8664,7 @@ class RuntimeFEMWindow:
                         gb=gb,
                         color="#fca5a5",
                         outline="#991b1b",
-                        stipple=member_stipple,
+                        opacity=member_alpha,
                     )
         if callable(getattr(canvas, "add_line", None)) and callable(getattr(canvas, "add_text", None)):
             self._draw_base_dimension_annotations(canvas, geometry)
@@ -8378,8 +8908,10 @@ class RuntimeFEMWindow:
         component = self._selected_component()
         plate_alpha = _crisp_canvas_alpha(self.plate_alpha_vis.get(), 1.0)
         member_alpha = _crisp_canvas_alpha(self.member_alpha_vis.get(), 1.0)
-        plate_stipple = _alpha_to_stipple(plate_alpha)
-        member_stipple = _alpha_to_stipple(member_alpha)
+        # Alpha goes straight to the canvas: ANYtk3D resolves an opacity into
+        # a 16-step dither with separate front/back patterns, so the alpha
+        # entries are proportional across their whole range and a surface
+        # behind a transparent one still shows through.
         _configure_tk_canvas_colormap(str(self.colormap_vis.get()))
         visualization_payload = ((self.current_result.visualization if self.current_result is not None else {}) or {})
         has_explicit_shell_surfaces = bool(
@@ -8475,50 +9007,55 @@ class RuntimeFEMWindow:
         show_plate_var = getattr(self, "show_plate_vis", None)
         show_plate = show_plate_var.get() if show_plate_var is not None else True
         if show_plate and plate_alpha > 0.0:
+            # Result fields are handed to the canvas as one batch: a colour
+            # per element, but a single object with one flat vertex array.
+            # Adding them one polygon at a time costs a dict and a Python
+            # centroid/normal per element, which dominates on real meshes.
             skin_shell_surfaces = tuple(visualization.get("skin_shell_surfaces") or ())
             if skin_shell_surfaces:
+                polygons = []
+                colors = []
                 for surface in skin_shell_surfaces:
                     polygon = _shell_surface_points(surface, scale)
                     if len(polygon) < 3:
                         continue
                     value = _shell_surface_component_value(surface, component, is_mode=is_mode)
-                    color = _interpolate_thickness_color(value, vmin, vmax)
-                    canvas.add_polygon(
-                        [Point3D(x, y, z) for x, y, z in polygon],
-                        color=color,
+                    polygons.append(polygon)
+                    colors.append(_interpolate_thickness_color(value, vmin, vmax))
+                if polygons:
+                    canvas.add_faces(
+                        polygons,
+                        colors=colors,
                         outline="#111827",
                         width=1,
                         layer=5,
-                        stipple=plate_stipple,
+                        opacity=plate_alpha,
                     )
             else:
                 R = len(x)
                 C = len(x[0]) if R > 0 else 0
-                point_grid = [
-                    [
-                        Point3D(x[row_index][col_index], y[row_index][col_index], z[row_index][col_index])
-                        for col_index in range(C)
-                    ]
-                    for row_index in range(R)
-                ]
+                polygons = []
+                colors = []
                 for i in range(R - 1):
                     for j in range(C - 1):
-                        p1 = point_grid[i][j]
-                        p2 = point_grid[i + 1][j]
-                        p3 = point_grid[i + 1][j + 1]
-                        p4 = point_grid[i][j + 1]
-
+                        polygons.append((
+                            (x[i][j], y[i][j], z[i][j]),
+                            (x[i + 1][j], y[i + 1][j], z[i + 1][j]),
+                            (x[i + 1][j + 1], y[i + 1][j + 1], z[i + 1][j + 1]),
+                            (x[i][j + 1], y[i][j + 1], z[i][j + 1]),
+                        ))
                         avg_val = 0.25 * (
                                 color_grid[i][j] + color_grid[i + 1][j] + color_grid[i + 1][j + 1] + color_grid[i][
                             j + 1])
-                        color = _interpolate_thickness_color(avg_val, vmin, vmax)
-                        canvas.add_polygon(
-                            [p1, p2, p3, p4],
-                            color=color,
-                            outline="#64748b",
-                            layer=5,
-                            stipple=plate_stipple,
-                        )
+                        colors.append(_interpolate_thickness_color(avg_val, vmin, vmax))
+                if polygons:
+                    canvas.add_faces(
+                        polygons,
+                        colors=colors,
+                        outline="#64748b",
+                        layer=5,
+                        opacity=plate_alpha,
+                    )
 
         show_stiffeners_var = getattr(self, "show_stiffener_vis", None)
         show_stiffeners = show_stiffeners_var.get() if show_stiffeners_var is not None else True
@@ -8526,6 +9063,8 @@ class RuntimeFEMWindow:
         show_girders = show_girders_var.get() if show_girders_var is not None else True
 
         if member_alpha > 0.0:
+            polygons = []
+            colors = []
             for surface in visualization.get("shell_surfaces") or ():
                 if not _shell_surface_role_visible(surface, show_stiffeners, show_girders):
                     continue
@@ -8533,16 +9072,22 @@ class RuntimeFEMWindow:
                 if len(polygon) < 3:
                     continue
                 value = _shell_surface_component_value(surface, component, is_mode=is_mode)
-                color = _interpolate_thickness_color(value, vmin, vmax)
-                canvas.add_polygon(
-                    [Point3D(x, y, z) for x, y, z in polygon],
-                    color=color,
+                polygons.append(polygon)
+                colors.append(_interpolate_thickness_color(value, vmin, vmax))
+            if polygons:
+                canvas.add_faces(
+                    polygons,
+                    colors=colors,
                     outline="#111827",
                     width=2,
                     layer=11,
-                    stipple=member_stipple,
+                    opacity=member_alpha,
                 )
 
+        web_polygons = []
+        web_colors = []
+        flange_polygons = []
+        flange_colors = []
         for line in visualization.get("member_lines") or ():
             role = str(line.get("role", "member")).lower()
             if role == "stiffener" and (not show_stiffeners or member_alpha <= 0.0):
@@ -8596,22 +9141,9 @@ class RuntimeFEMWindow:
                 pBk = pB + z_start * wB
                 pBk1 = pB + z_end * wB
 
-                q1 = Point3D(pAk[0], pAk[1], pAk[2])
-                q2 = Point3D(pBk[0], pBk[1], pBk[2])
-                q3 = Point3D(pBk1[0], pBk1[1], pBk1[2])
-                q4 = Point3D(pAk1[0], pAk1[1], pAk1[2])
-
+                web_polygons.append((pAk, pBk, pBk1, pAk1))
                 val = _member_component_value(line, component, is_mode=is_mode, flange=False)
-
-                color = _interpolate_thickness_color(val, vmin, vmax)
-                canvas.add_polygon(
-                    [q1, q2, q3, q4],
-                    color=color,
-                    outline="#000000",
-                    width=2,
-                    layer=12,
-                    stipple=member_stipple,
-                )
+                web_colors.append(_interpolate_thickness_color(val, vmin, vmax))
 
             if b_f > 0.0:
                 pA_top = pA + hw * wA
@@ -8625,21 +9157,24 @@ class RuntimeFEMWindow:
                 fB1 = pB_top - 0.5 * b_f * v_flange_B
                 fB2 = pB_top + 0.5 * b_f * v_flange_B
 
-                qf1 = Point3D(fA1[0], fA1[1], fA1[2])
-                qf2 = Point3D(fB1[0], fB1[1], fB1[2])
-                qf3 = Point3D(fB2[0], fB2[1], fB2[2])
-                qf4 = Point3D(fA2[0], fA2[1], fA2[2])
-
+                flange_polygons.append((fA1, fB1, fB2, fA2))
                 val = _member_component_value(line, component, is_mode=is_mode, flange=True)
+                flange_colors.append(_interpolate_thickness_color(val, vmin, vmax))
 
-                color = _interpolate_thickness_color(val, vmin, vmax)
-                canvas.add_polygon(
-                    [qf1, qf2, qf3, qf4],
-                    color=color,
+        # Member webs and flanges sit on their own layers, so they go over as
+        # two batches rather than a polygon per member.
+        for polygons, colors, layer in (
+            (web_polygons, web_colors, 12),
+            (flange_polygons, flange_colors, 13),
+        ):
+            if polygons:
+                canvas.add_faces(
+                    polygons,
+                    colors=colors,
                     outline="#000000",
                     width=2,
-                    layer=13,
-                    stipple=member_stipple,
+                    layer=layer,
+                    opacity=member_alpha,
                 )
 
         self._draw_base_dimension_annotations(canvas, geometry)
@@ -8685,7 +9220,7 @@ class RuntimeFEMWindow:
         base_color = "#9ca3af"
         light_color = _blend_hex_color(base_color, 0.30)
         outline_color = _blend_hex_color("#4b5563", 0.42)
-        sphere_stipple = _alpha_to_stipple(0.45)
+        sphere_opacity = 0.45
         light = np.asarray((-0.35, -0.55, 0.76), dtype=float)
         light /= max(float(np.linalg.norm(light)), 1.0e-12)
 
@@ -8697,6 +9232,8 @@ class RuntimeFEMWindow:
                 center[2] + radius * math.sin(latitude),
             )
 
+        sphere_polygons = []
+        sphere_colors = []
         for ring in range(rings):
             lat0 = -0.5 * math.pi + math.pi * ring / rings
             lat1 = -0.5 * math.pi + math.pi * (ring + 1) / rings
@@ -8736,19 +9273,22 @@ class RuntimeFEMWindow:
                 normal = centroid - center
                 normal /= max(float(np.linalg.norm(normal)), 1.0e-12)
                 shade = 0.44 + 0.38 * max(float(np.dot(normal, light)), 0.0)
-                color = _blend_hex_color(base_color, shade)
-                canvas.add_polygon(
-                    vertices,
-                    color=color,
-                    outline=outline_color,
-                    width=1,
-                    cull_backface=False,
-                    layer=39,
-                    back_color=light_color,
-                    stipple=sphere_stipple,
-                    tags="rigid_sphere",
-                    two_sided_shell=True,
-                )
+                sphere_polygons.append(vertices)
+                sphere_colors.append(_blend_hex_color(base_color, shade))
+
+        if sphere_polygons:
+            canvas.add_faces(
+                sphere_polygons,
+                colors=sphere_colors,
+                back_colors=[light_color] * len(sphere_polygons),
+                outline=outline_color,
+                width=1,
+                cull_backface=False,
+                layer=39,
+                opacity=sphere_opacity,
+                tags="rigid_sphere",
+                two_sided_shell=True,
+            )
 
         marker = max(radius * 0.025, 1.0e-3)
         canvas.add_line(
@@ -9229,9 +9769,8 @@ class RuntimeFEMWindow:
             if canvas_created:
                 self.result_canvas = Tkinter3DCanvas(self.figure_parent, bg="white")
                 self.result_canvas.pack(fill=tk.BOTH, expand=True)
-                self.result_canvas.set_mesh_lines(bool(self.show_mesh_lines_vis.get()))
-                self.result_canvas.set_axis_ruler(bool(self.show_axis_ruler_vis.get()))
                 self._bind_custom_load_canvas_selection(self.result_canvas)
+            self._apply_canvas_view_options(self.result_canvas)
 
             try:
                 self.result_canvas.canvas.configure(
@@ -9583,6 +10122,7 @@ class RuntimeFEMWindow:
             analysis_type=str(self.analysis_type.get()),
             buckling_analysis_type=str(self.buckling_analysis_type.get()),
             pressure_direction=_normalise_pressure_side(self.pressure_direction.get()),
+            follower_pressure=bool(self.follower_pressure.get()),
             axial_force_n=_tk_var_float(self.axial_force_n, 0.0),
             enforced_displacement_x_m=_tk_var_float(self.enforced_displacement_x_m, 0.0),
             enforced_displacement_y_m=_tk_var_float(self.enforced_displacement_y_m, 0.0),
@@ -9721,6 +10261,7 @@ class RuntimeFEMWindow:
             collision_result_interval_s=max(_tk_var_float(self.collision_result_interval_s, 0.0), 0.0),
             collision_penalty_stiffness_n_per_m=max(_tk_var_float(self.collision_penalty_stiffness_n_per_m, 0.0),
                                                     0.0),
+            collision_penalty_scale=max(_tk_var_float(self.collision_penalty_scale, 1.0), 1.0e-9),
             collision_auto_precondition=bool(self.collision_auto_precondition.get()),
             collision_contact_damping=max(_tk_var_float(self.collision_contact_damping, 0.0), 0.0),
             collision_max_iterations=max(_tk_var_int(self.collision_max_iterations, 25), 1),
@@ -10322,7 +10863,7 @@ class RuntimeFEMWindow:
             options = self._options()
             config = _solver_config_from_options(options)
             geometry = _popup_geometry_summary(self)
-            generated = fe_solver.build_generated_geometry(geometry, config)
+            generated = build_runtime_generated_geometry(geometry, config)
         except Exception as error:
             messagebox.showwarning("Thickness plot", "Could not build the geometry:\n" + str(error))
             return
@@ -10333,8 +10874,7 @@ class RuntimeFEMWindow:
             self.geometry_preview_canvas = Tkinter3DCanvas(parent, bg="white")
             self.geometry_preview_canvas.pack(fill=tk.BOTH, expand=True)
         canvas = self.geometry_preview_canvas
-        canvas.set_mesh_lines(bool(self.show_mesh_lines_vis.get()))
-        canvas.set_axis_ruler(bool(self.show_axis_ruler_vis.get()))
+        self._apply_canvas_view_options(canvas)
         canvas.clear()
         self._populate_canvas_with_thickness(canvas, generated)
         canvas.fit_to_scene()
@@ -10362,15 +10902,24 @@ class RuntimeFEMWindow:
         values = sorted({round(t, 3) for t in thicknesses if t > 0.0})
         if values:
             canvas.set_thickness_legend(values, unit="mm", title="Plate thickness")
+        shell_polygons = []
+        shell_colors = []
         for shell in generated.get("shells", ()) or ():
             ids = [int(i) for i in shell.get("node_ids", ()) or () if int(i) in nodes]
             corners = ids[:3] if len(ids) in (3, 6) else ids[:4]
             if len(corners) < 3:
                 continue
-            pts = [Point3D(*[float(c) for c in nodes[i]]) for i in corners]
+            shell_polygons.append([nodes[i] for i in corners])
             thickness_mm = _safe_float(shell.get("thickness"), 0.0) * 1000.0
-            color = canvas.thickness_color(thickness_mm) if values else "#dbe4f0"
-            canvas.add_polygon(pts, color=color, back_color=color, outline="#334155", width=1)
+            shell_colors.append(canvas.thickness_color(thickness_mm) if values else "#dbe4f0")
+        if shell_polygons:
+            canvas.add_faces(
+                shell_polygons,
+                colors=shell_colors,
+                back_colors=shell_colors,
+                outline="#334155",
+                width=1,
+            )
         for beam in generated.get("beams", ()) or ():
             ids = [int(i) for i in beam.get("node_ids", ()) or () if int(i) in nodes]
             if len(ids) < 2:
@@ -10470,25 +11019,26 @@ class RuntimeFEMWindow:
         """
         changes: list[str] = []
         config = _solver_config_from_options(self._options())
+        selection = fe_solver.resolve_runtime_analysis(config)
         material_choice = str(self.material_model.get() or "linear elastic")
         if (
-                fe_solver._wants_material_nonlinear_analysis(config)
+                selection.material_nonlinear
                 and material_choice.strip().lower() != "dnv-rp-c208 steel"
         ):
             self.material_model.set("DNV-RP-C208 steel")
             changes.append("Material model set to 'DNV-RP-C208 steel' (material-nonlinear run).")
-        if fe_solver._wants_static_nonlinear_analysis(config):
+        if selection.static_nonlinear:
             if (
-                    fe_solver._nonlinear_solution_control(config) == "arc length"
+                    selection.solution_control == "arc length"
                     and str(self.nonlinear_solution_control.get()).strip().lower() != "arc length"
             ):
                 self.nonlinear_solution_control.set("arc length")
                 changes.append("Nonlinear control set to 'arc length' (post-buckling continuation).")
-            effective_kinematics = fe_solver._effective_nonlinear_static_kinematics(config)
+            effective_kinematics = selection.kinematics
             if effective_kinematics != _normalise_kinematics(self.nonlinear_static_kinematics.get()):
                 self.nonlinear_static_kinematics.set(_kinematics_label(effective_kinematics))
                 changes.append("Kinematics set to '" + _kinematics_label(effective_kinematics) + "'.")
-        if fe_solver._wants_material_nonlinear_analysis(config):
+        if selection.material_nonlinear:
             requested_layers = max(_tk_var_int(self.nonlinear_layers, 5), 1)
             effective_layers = _nearest_nonlinear_layer_count(requested_layers)
             if effective_layers != requested_layers:

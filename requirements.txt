@@ -1,6 +1,10 @@
-ANYtk3D>=0.1,<0.2
+ANYtk3D>=0.2,<0.3
 ANYbuckling>=0.1,<0.2
-ANYsolver>=0.1,<0.2
+ANYfileio>=0.1,<0.2
+ANYgeometry>=0.1,<0.2
+ANYmaterial>=0.1,<0.2
+ANYmesher>=0.1,<0.2
+ANYsolver>=0.2,<0.3
 matplotlib
 meshio
 numpy

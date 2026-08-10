@@ -25,6 +25,7 @@ def configure_noninteractive_dialogs():
     messagebox.showerror = lambda *args, **kwargs: "ok"
     messagebox.showinfo = lambda *args, **kwargs: "ok"
     messagebox.showwarning = lambda *args, **kwargs: "ok"
+    main_application.Application._show_startup_calculation_mode_dialog = lambda _self: "multiple"
 
 
 def configure_noninteractive_plots():

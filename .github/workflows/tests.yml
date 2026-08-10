@@ -2,11 +2,8 @@ name: Tests
 
 on:
   push:
-    branches:
-      - modern_dev
   pull_request:
-    branches:
-      - modern_dev
+  workflow_dispatch:
 
 jobs:
   pytest:
@@ -16,10 +13,116 @@ jobs:
       fail-fast: false
       matrix:
         os: [windows-latest, ubuntu-latest]
+        python-version: ['3.13', '3.14']
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+
+      - name: Check out ANYmaterial
+        uses: actions/checkout@v4
+        with:
+          repository: audunarn/ANYmaterial
+          path: .ecosystem/ANYmaterial
+
+      - name: Check out ANYgeometry
+        uses: actions/checkout@v4
+        with:
+          repository: audunarn/ANYgeometry
+          path: .ecosystem/ANYgeometry
+
+      - name: Check out ANYmesher
+        uses: actions/checkout@v4
+        with:
+          repository: audunarn/ANYmesh
+          path: .ecosystem/ANYmesh
+
+      - name: Check out ANYfileio
+        uses: actions/checkout@v4
+        with:
+          repository: audunarn/ANYio
+          path: .ecosystem/ANYio
+
+      - name: Check out ANYsolver
+        uses: actions/checkout@v4
+        with:
+          repository: audunarn/ANYsolver
+          path: .ecosystem/ANYsolver
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --no-deps -e .ecosystem/ANYmaterial -e .ecosystem/ANYgeometry -e .ecosystem/ANYmesh -e .ecosystem/ANYio -e .ecosystem/ANYsolver
+          python -m pip install -r requirements-dev.txt
+          python -m pip install -e .
+
+      - name: Import package
+        run: >-
+          python -c "import anygeometry, anystruct, anysolver;
+          from importlib.metadata import version;
+          v = tuple(map(int, version('ANYsolver').split('.')[:3]));
+          assert (0, 2, 0) <= v < (0, 3, 0);
+          assert anysolver.__version__ == version('ANYsolver');
+          print('anystruct import OK with ANYsolver', anysolver.__version__)"
+
+      - name: Run pytest
+        run: python -m pytest
+
+      - name: Run GUI smoke on Windows
+        if: runner.os == 'Windows'
+        run: |
+          python -m tests.gui_automatic_run
+          python -m tests.gui_fe_runtime_smoke
+
+      - name: Run GUI smoke on Linux
+        if: runner.os == 'Linux'
+        run: |
+          xvfb-run -a python -m tests.gui_automatic_run
+          xvfb-run -a python -m tests.gui_fe_runtime_smoke
+
+  package:
+    name: Build and clean-wheel smoke
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Check out ANYmaterial
+        uses: actions/checkout@v4
+        with:
+          repository: audunarn/ANYmaterial
+          path: .ecosystem/ANYmaterial
+
+      - name: Check out ANYgeometry
+        uses: actions/checkout@v4
+        with:
+          repository: audunarn/ANYgeometry
+          path: .ecosystem/ANYgeometry
+
+      - name: Check out ANYmesher
+        uses: actions/checkout@v4
+        with:
+          repository: audunarn/ANYmesh
+          path: .ecosystem/ANYmesh
+
+      - name: Check out ANYfileio
+        uses: actions/checkout@v4
+        with:
+          repository: audunarn/ANYio
+          path: .ecosystem/ANYio
+
+      - name: Check out ANYsolver
+        uses: actions/checkout@v4
+        with:
+          repository: audunarn/ANYsolver
+          path: .ecosystem/ANYsolver
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -27,22 +130,36 @@ jobs:
           python-version: '3.13'
           cache: pip
 
-      - name: Install dependencies
+      - name: Install build dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r requirements-dev.txt
-          python -m pip install -e .
+          python -m pip install --no-deps -e .ecosystem/ANYmaterial -e .ecosystem/ANYgeometry -e .ecosystem/ANYmesh -e .ecosystem/ANYio -e .ecosystem/ANYsolver
+          python -m pip install -r requirements.txt
+          python -m pip install build twine
 
-      - name: Import package
-        run: python -c "import anystruct; print('anystruct import OK')"
+      - name: Build and check distributions
+        run: |
+          python -m build
+          python -m twine check dist/*
 
-      - name: Run pytest
-        run: python -m pytest
-
-      - name: Run GUI smoke on Windows
-        if: runner.os == 'Windows'
-        run: python -m tests.gui_automatic_run
-
-      - name: Run GUI smoke on Linux
-        if: runner.os == 'Linux'
-        run: xvfb-run -a python -m tests.gui_automatic_run
+      - name: Import wheel from a clean environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          smoke_dir="$RUNNER_TEMP/anystructure-wheel-smoke"
+          python -m venv "$smoke_dir"
+          smoke_python="$smoke_dir/bin/python"
+          "$smoke_python" -m pip install --upgrade pip
+          "$smoke_python" -m pip install --no-deps \
+            "$GITHUB_WORKSPACE/.ecosystem/ANYgeometry" \
+            "$GITHUB_WORKSPACE/.ecosystem/ANYmaterial" \
+            "$GITHUB_WORKSPACE/.ecosystem/ANYmesh" \
+            "$GITHUB_WORKSPACE/.ecosystem/ANYio" \
+            "$GITHUB_WORKSPACE/.ecosystem/ANYsolver"
+          "$smoke_python" -m pip install -r "$GITHUB_WORKSPACE/requirements.txt"
+          wheel_files=("$GITHUB_WORKSPACE"/dist/*.whl)
+          test "${#wheel_files[@]}" -eq 1
+          "$smoke_python" -m pip install --no-deps "${wheel_files[0]}"
+          "$smoke_python" -m pip check
+          cd "$RUNNER_TEMP"
+          "$smoke_python" -c "import anyfileio, anygeometry, anymaterial, anymesher, anysolver, anystruct; from importlib.metadata import version; print('clean wheel import OK', version('ANYstructure'))"
