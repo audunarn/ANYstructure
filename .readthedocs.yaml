@@ -13,6 +13,7 @@ build:
     pre_install:
       # These ecosystem packages are consumed from source until their first
       # compatible releases are available on PyPI.
+      - python -m pip install --no-deps "git+https://github.com/audunarn/ANYgeometry.git"
       - python -m pip install --no-deps "git+https://github.com/audunarn/ANYmaterial.git"
       - python -m pip install --no-deps "git+https://github.com/audunarn/ANYmesh.git"
       - python -m pip install --no-deps "git+https://github.com/audunarn/ANYio.git"

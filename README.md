@@ -64,6 +64,7 @@ Recommended local setup:
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
+python -m pip install --no-deps -e C:\Github\ANYgeometry
 python -m pip install --no-deps -e C:\Github\ANYmaterial
 python -m pip install --no-deps -e C:\Github\ANYmesh
 python -m pip install --no-deps -e C:\Github\ANYio
@@ -73,10 +74,29 @@ python -m pip install -e .
 python -m pytest
 ```
 
-`ANYsolver>=0.2,<0.3`, `ANYmaterial`, `ANYmesher`, and `ANYfileio` are required
-runtime dependencies. The latter three distributions are developed in the
-`ANYmaterial`, `ANYmesh`, and `ANYio` repositories. Install the editable siblings
-above until compatible releases are available from PyPI.
+`ANYsolver>=0.2,<0.3`, `ANYgeometry`, `ANYmaterial`, `ANYmesher`, and
+`ANYfileio` are required runtime dependencies. The latter four distributions
+are developed in the `ANYgeometry`, `ANYmaterial`, `ANYmesh`, and `ANYio`
+repositories. Install the editable siblings above until compatible releases
+are available from PyPI. ANYgeometry is the shared neutral surface-geometry
+authority; materials, structural properties, loads, mesh controls, and solver
+state remain in their owning packages.
+
+New geometry code should call `anygeometry.generators` directly. The
+`anystruct.geometry_generators` module provides thin plate, stiffened-panel,
+cylinder, and cone adapters for existing ANYstructure integrations, while
+`anystruct.representation_geometry` temporarily preserves the historical
+station-layout import path.
+
+The central runtime/FEM and mesh-preview path now establishes one lazy, cached
+`GeometryModel` through those adapters. Existing ANYsolver and GUI consumers
+receive a geometry-backed dictionary projection with unchanged keys and values;
+the owner model is built once only when a geometry-aware consumer requests it.
+Semantic groups remain available out-of-band, while thicknesses, sections,
+materials, loads, and analysis settings remain external. ANYsolver's legacy
+runtime currently still builds its FE mesh from the dictionary projection; that
+transitional payload conversion remains until ANYsolver accepts the neutral
+model directly.
 
 Launch the desktop app after installation:
 

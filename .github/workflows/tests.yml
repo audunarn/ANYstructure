@@ -25,6 +25,12 @@ jobs:
           repository: audunarn/ANYmaterial
           path: .ecosystem/ANYmaterial
 
+      - name: Check out ANYgeometry
+        uses: actions/checkout@v4
+        with:
+          repository: audunarn/ANYgeometry
+          path: .ecosystem/ANYgeometry
+
       - name: Check out ANYmesher
         uses: actions/checkout@v4
         with:
@@ -52,13 +58,13 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install --no-deps -e .ecosystem/ANYmaterial -e .ecosystem/ANYmesh -e .ecosystem/ANYio -e .ecosystem/ANYsolver
+          python -m pip install --no-deps -e .ecosystem/ANYmaterial -e .ecosystem/ANYgeometry -e .ecosystem/ANYmesh -e .ecosystem/ANYio -e .ecosystem/ANYsolver
           python -m pip install -r requirements-dev.txt
           python -m pip install -e .
 
       - name: Import package
         run: >-
-          python -c "import anystruct, anysolver;
+          python -c "import anygeometry, anystruct, anysolver;
           from importlib.metadata import version;
           v = tuple(map(int, version('ANYsolver').split('.')[:3]));
           assert (0, 2, 0) <= v < (0, 3, 0);
@@ -94,6 +100,12 @@ jobs:
           repository: audunarn/ANYmaterial
           path: .ecosystem/ANYmaterial
 
+      - name: Check out ANYgeometry
+        uses: actions/checkout@v4
+        with:
+          repository: audunarn/ANYgeometry
+          path: .ecosystem/ANYgeometry
+
       - name: Check out ANYmesher
         uses: actions/checkout@v4
         with:
@@ -121,7 +133,7 @@ jobs:
       - name: Install build dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install --no-deps -e .ecosystem/ANYmaterial -e .ecosystem/ANYmesh -e .ecosystem/ANYio -e .ecosystem/ANYsolver
+          python -m pip install --no-deps -e .ecosystem/ANYmaterial -e .ecosystem/ANYgeometry -e .ecosystem/ANYmesh -e .ecosystem/ANYio -e .ecosystem/ANYsolver
           python -m pip install -r requirements.txt
           python -m pip install build twine
 
@@ -139,6 +151,7 @@ jobs:
           smoke_python="$smoke_dir/bin/python"
           "$smoke_python" -m pip install --upgrade pip
           "$smoke_python" -m pip install --no-deps \
+            "$GITHUB_WORKSPACE/.ecosystem/ANYgeometry" \
             "$GITHUB_WORKSPACE/.ecosystem/ANYmaterial" \
             "$GITHUB_WORKSPACE/.ecosystem/ANYmesh" \
             "$GITHUB_WORKSPACE/.ecosystem/ANYio" \
@@ -149,4 +162,4 @@ jobs:
           "$smoke_python" -m pip install --no-deps "${wheel_files[0]}"
           "$smoke_python" -m pip check
           cd "$RUNNER_TEMP"
-          "$smoke_python" -c "import anyfileio, anymaterial, anymesher, anysolver, anystruct; from importlib.metadata import version; print('clean wheel import OK', version('ANYstructure'))"
+          "$smoke_python" -c "import anyfileio, anygeometry, anymaterial, anymesher, anysolver, anystruct; from importlib.metadata import version; print('clean wheel import OK', version('ANYstructure'))"

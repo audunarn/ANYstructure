@@ -253,7 +253,7 @@ def test_dependency_and_gui_wiring_is_declared_in_release_surfaces():
     app_source = (REPOSITORY_ROOT / "anystruct" / "main_application.py").read_text(encoding="utf-8")
     runtime_source = (REPOSITORY_ROOT / "anystruct" / "fem_integration.py").read_text(encoding="utf-8")
 
-    for distribution in ("ANYmaterial", "ANYmesher", "ANYfileio"):
+    for distribution in ("ANYgeometry", "ANYmaterial", "ANYmesher", "ANYfileio"):
         assert distribution in setup_source
         assert distribution in requirements
     assert "ANYsolver>=0.2,<0.3" in setup_source
@@ -261,9 +261,11 @@ def test_dependency_and_gui_wiring_is_declared_in_release_surfaces():
     assert "Programming Language :: Python :: 3.13" in setup_source
     assert "Programming Language :: Python :: 3.14" in setup_source
     assert "repository: audunarn/ANYmaterial" in workflow
+    assert "repository: audunarn/ANYgeometry" in workflow
     assert "repository: audunarn/ANYmesh" in workflow
     assert "repository: audunarn/ANYio" in workflow
     assert "python -m pip install --no-deps -e .ecosystem/ANYmaterial" in workflow
+    assert ".ecosystem/ANYgeometry" in workflow
     assert "python -m build" in workflow
     assert "python -m twine check dist/*" in workflow
     assert 'python -m venv "$smoke_dir"' in workflow

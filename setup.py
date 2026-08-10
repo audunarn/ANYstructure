@@ -22,6 +22,7 @@ def readme():
 core_requires = [
     'ANYbuckling>=0.1,<0.2',
     'ANYfileio>=0.1,<0.2',
+    'ANYgeometry>=0.1,<0.2',
     'ANYmaterial>=0.1,<0.2',
     'ANYmesher>=0.1,<0.2',
     'ANYsolver>=0.2,<0.3',

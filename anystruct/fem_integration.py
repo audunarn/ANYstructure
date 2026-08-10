@@ -39,9 +39,9 @@ import anysolver as _anysolver_package
 from anysolver import runtime as fe_solver
 
 try:
-    from anystruct import ecosystem_gui, representation_geometry
+    from anystruct import ecosystem_gui, geometry_generators, representation_geometry
 except ModuleNotFoundError:
-    from ANYstructure.anystruct import ecosystem_gui, representation_geometry
+    from ANYstructure.anystruct import ecosystem_gui, geometry_generators, representation_geometry
 
 try:
     from anystruct import tkinter_3d_canvas_thickness_v6 as _tk3d_canvas_module
@@ -1372,6 +1372,38 @@ def _solver_config_from_options(options: RuntimeFEMOptions):
     )
 
 
+def runtime_geometry_projection(
+    geometry: dict[str, Any],
+    config: Any | None = None,
+) -> geometry_generators.GeometryBackedProjection:
+    """Return the unchanged runtime mapping backed by one exact owner model."""
+
+    authority = geometry_generators.build_runtime_geometry_authority(
+        geometry,
+        include_stiffeners=bool(getattr(config, "include_stiffeners", True)),
+        include_girders=bool(getattr(config, "include_girders", True)),
+    )
+    return geometry_generators.project_runtime_geometry(authority)
+
+
+def build_runtime_generated_geometry(
+    geometry: dict[str, Any] | geometry_generators.GeometryBackedProjection,
+    config: Any,
+) -> geometry_generators.GeometryBackedProjection:
+    """Build the legacy FE/render payload from a geometry-backed projection."""
+
+    projection = (
+        geometry_generators.project_runtime_geometry(geometry.geometry_authority)
+        if isinstance(geometry, geometry_generators.GeometryBackedProjection)
+        else runtime_geometry_projection(geometry, config)
+    )
+    generated = fe_solver.build_generated_geometry(projection, config)
+    return geometry_generators.project_runtime_payload(
+        generated,
+        projection.geometry_authority,
+    )
+
+
 def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions,
                     status_callback=None, imported_fem_model=None,
                     precomputed_generated_geometry=None) -> RuntimeFEMRunResult:
@@ -1410,8 +1442,9 @@ def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions
     # The GUI is a production ANYsolver client. Preserve fail-closed backend
     # statuses instead of replacing an invalid/nonconverged solve with the
     # compact estimator and presenting that estimate as a successful FE run.
+    geometry_projection = runtime_geometry_projection(geometry, solver_config)
     solver_result = fe_solver.run_production_fem(
-        geometry,
+        geometry_projection,
         solver_config,
         status_callback=status_callback,
         imported_fem_model=imported_fem_model,
@@ -2841,6 +2874,8 @@ def create_runtime_fem_result_figure(
 
     geometry_ax = figure.add_subplot(111, projection="3d")
     geometry = runtime_geometry_summary(snapshot, options) if result is None else result.summary
+    if result is None:
+        geometry = runtime_geometry_projection(geometry)
 
     if result is None or not result.visualization:
         _plot_base_geometry_surface(
@@ -2966,7 +3001,7 @@ def create_runtime_fem_geometry_preview_figure(
         except Exception:
             pass
 
-    geometry = runtime_geometry_summary(snapshot, options)
+    geometry = runtime_geometry_projection(runtime_geometry_summary(snapshot, options))
     figure = Figure(figsize=(3.0, 2.05), dpi=100)
     axis = figure.add_subplot(111, projection="3d")
 
@@ -7607,7 +7642,7 @@ class RuntimeFEMWindow:
             options = self._options()
             config = _solver_config_from_options(options)
             geometry = _popup_geometry_summary(self)
-            generated = fe_solver.build_generated_geometry(geometry, config)
+            generated = build_runtime_generated_geometry(geometry, config)
         except Exception as error:
             messagebox.showwarning("Mesh generation", "Could not build the mesh:\n" + str(error))
             return
@@ -7646,7 +7681,7 @@ class RuntimeFEMWindow:
             options = self._options()
             config = _solver_config_from_options(options)
             geometry = _popup_geometry_summary(self)
-            generated = fe_solver.build_generated_geometry(geometry, config)
+            generated = build_runtime_generated_geometry(geometry, config)
 
             # We need to run a buckling solve using fe_solver.
             # But the buckling is normally run in run_production_fem or lightweight.
@@ -7780,7 +7815,7 @@ class RuntimeFEMWindow:
             options = self._options()
             config = _solver_config_from_options(options)
             geometry = _popup_geometry_summary(self)
-            generated = fe_solver.build_generated_geometry(geometry, config)
+            generated = build_runtime_generated_geometry(geometry, config)
         except Exception:
             return
         self._render_mesh_preview_canvas(generated)
@@ -10828,7 +10863,7 @@ class RuntimeFEMWindow:
             options = self._options()
             config = _solver_config_from_options(options)
             geometry = _popup_geometry_summary(self)
-            generated = fe_solver.build_generated_geometry(geometry, config)
+            generated = build_runtime_generated_geometry(geometry, config)
         except Exception as error:
             messagebox.showwarning("Thickness plot", "Could not build the geometry:\n" + str(error))
             return

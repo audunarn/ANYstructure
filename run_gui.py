@@ -10,6 +10,7 @@ from typing import Sequence
 
 _ROOT = Path(__file__).resolve().parent
 _SOURCE_TREES = (
+    _ROOT.parent / "ANYgeometry" / "src",
     _ROOT.parent / "ANYsolver" / "src",
     _ROOT.parent / "ANYmaterial" / "src",
     _ROOT.parent / "ANYmesh" / "src",
