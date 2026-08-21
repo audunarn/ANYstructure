@@ -21,6 +21,7 @@ import sys
 import threading
 import time
 import types
+import weakref
 
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
@@ -40,8 +41,32 @@ from anysolver import runtime as fe_solver
 
 try:
     from anystruct import ecosystem_gui, geometry_generators, representation_geometry
+    from anystruct.viewer_backend import (
+        BACKEND_LABELS,
+        BACKEND_NAMES,
+        active_backend,
+        apply_view_state,
+        backend_diagnostic,
+        create_3d_viewer,
+        event_widget,
+        export_view_state,
+        normalize_backend,
+        viewport_size,
+    )
 except ModuleNotFoundError:
     from ANYstructure.anystruct import ecosystem_gui, geometry_generators, representation_geometry
+    from ANYstructure.anystruct.viewer_backend import (
+        BACKEND_LABELS,
+        BACKEND_NAMES,
+        active_backend,
+        apply_view_state,
+        backend_diagnostic,
+        create_3d_viewer,
+        event_widget,
+        export_view_state,
+        normalize_backend,
+        viewport_size,
+    )
 
 try:
     from anystruct import tkinter_3d_canvas_thickness_v6 as _tk3d_canvas_module
@@ -53,8 +78,8 @@ Point3D = _tk3d_canvas_module.Point3D
 _interpolate_thickness_color = _tk3d_canvas_module._interpolate_thickness_color
 
 
-MINIMUM_ANYSOLVER_VERSION = "0.2.0"
-MAXIMUM_EXCLUSIVE_ANYSOLVER_VERSION = "0.3.0"
+MINIMUM_ANYSOLVER_VERSION = "0.3.0"
+MAXIMUM_EXCLUSIVE_ANYSOLVER_VERSION = "0.4.0"
 
 
 def _numeric_version(value: Any) -> tuple[int, int, int]:
@@ -76,7 +101,9 @@ def _require_supported_anysolver() -> str:
         raise RuntimeError(
             "ANYstructure FEM requires ANYsolver>="
             + MINIMUM_ANYSOLVER_VERSION
-            + ",<0.3; imported "
+            + ",<"
+            + MAXIMUM_EXCLUSIVE_ANYSOLVER_VERSION.rsplit(".", 1)[0]
+            + "; imported "
             + installed
             + " from "
             + str(getattr(_anysolver_package, "__file__", "unknown location"))
@@ -341,7 +368,7 @@ class RuntimeFEMOptions:
 
 @dataclass(frozen=True)
 class RuntimeFEMRunResult:
-    """Structured runtime FEM result used by text and Matplotlib visualization."""
+    """Structured runtime FEM result used by text, viewers, and exports."""
 
     status: str
     summary: dict[str, Any]
@@ -1457,6 +1484,15 @@ def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions
     custom_edges = _runtime_custom_edges(options)
     local_refinement_patches = _runtime_local_refinement_patches(options)
     warmup_state = fe_solver_kernel_warmup_status()
+    solve_outcome = solver_result.outcome.to_dict()
+    quantity_descriptors = tuple(
+        descriptor.to_dict() for descriptor in solver_result.quantity_metadata
+    )
+    reaction_descriptors = tuple(
+        descriptor
+        for descriptor in quantity_descriptors
+        if str(descriptor.get("quantity_id", "")).startswith("reaction")
+    )
 
     summary = {
         **geometry,
@@ -1662,6 +1698,9 @@ def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions
         "kernel_warmup_parallel_threads": warmup_state.get("parallel_threads"),
         "kernel_warmup_max_matrix_difference_norm": _safe_float(warmup_state.get("max_matrix_difference_norm"), 0.0),
         "solver": solver_result.solver_name,
+        "solve_outcome": solve_outcome,
+        "result_quantities": quantity_descriptors,
+        "reaction_quantities": reaction_descriptors,
         "anysolver_version": _require_supported_anysolver(),
         "mesh_info": dict(solver_result.mesh_info),
         "max_displacement_m": solver_result.displacement_max_m,
@@ -2863,7 +2902,12 @@ def create_runtime_fem_result_figure(
         base_sphere: dict[str, Any] | None = None,
         options: RuntimeFEMOptions | None = None,
 ) -> Figure:
-    """Create the Matplotlib result visualization used in the runtime popup."""
+    """Create an export figure or the runtime popup's 2D history plot.
+
+    Maintained interactive 3D result views are rendered through the shared
+    ANY3dView backend factory.  The non-history branch remains public for
+    report/export compatibility and is not selected by the desktop viewer.
+    """
 
     figure = Figure(figsize=(8.0, 4.1), dpi=100)
     if display_mode == "time_history":
@@ -5577,8 +5621,21 @@ class RuntimeFEMWindow:
         self._cancel_requested = False
         self.progress_bar = None
         self.result_canvas = None
+        initial_renderer = normalize_backend(
+            getattr(app, "_renderer_requested", "auto")
+        )
+        self.renderer_backend_choice = tk.StringVar(
+            value=BACKEND_NAMES[initial_renderer]
+        )
+        self.renderer_backend_status = tk.StringVar(value="Renderer: starting")
+        self._renderer_requested = initial_renderer
+        self._renderer_switching = False
         self._live_collision_sphere_visualization: dict[str, Any] = {}
+        # Kept for integrations that inspect the historical flag. Maintained
+        # 3D results always use the shared viewer; only 2D histories use
+        # Matplotlib in the desktop.
         self.use_interactive_3d = tk.BooleanVar(value=True)
+        self.interactive_3d_checkbox = None
         self.show_plate_vis = tk.BooleanVar(value=True)
         self.show_stiffener_vis = tk.BooleanVar(value=True)
         self.show_girder_vis = tk.BooleanVar(value=True)
@@ -5624,6 +5681,7 @@ class RuntimeFEMWindow:
         self._animation_after_id: str | None = None
         self._animation_running = False
         self._animation_index = 0
+        self._animation_cache_origin = 0
         self._nonlinear_static_kinematics_control = None
         self._follower_pressure_control = None
         self._collision_nonlinear_kinematics_control = None
@@ -5637,6 +5695,9 @@ class RuntimeFEMWindow:
         self._bind_plot_configuration_traces()
         self._show_as_normal_maximizable_window()
         self._start_kernel_warmup()
+        register = getattr(app, "_register_runtime_fem_window", None)
+        if callable(register):
+            register(self)
 
     def _bind_plot_configuration_traces(self) -> None:
         """Redraw both the base model and solved result when plot options change."""
@@ -5872,6 +5933,284 @@ class RuntimeFEMWindow:
             self.window.geometry(str(screen_width - 80) + "x" + str(screen_height - 100) + "+20+20")
         except Exception:
             pass
+
+    def _requested_renderer_backend(self) -> str:
+        return normalize_backend(getattr(self, "_renderer_requested", "auto"))
+
+    def _create_3d_canvas(self, parent: Any, **options: Any) -> Any:
+        """Create one viewer using the application-wide renderer policy."""
+
+        viewer = create_3d_viewer(
+            parent,
+            backend=self._requested_renderer_backend(),
+            **options,
+        )
+        self.renderer_backend_status.set("Renderer: " + backend_diagnostic(viewer))
+        return viewer
+
+    @staticmethod
+    def _viewer_dimensions(viewer: Any) -> tuple[int, int]:
+        return viewport_size(viewer)
+
+    def _populate_result_switch_candidate(self, canvas: Any) -> None:
+        self._apply_canvas_view_options(canvas)
+        canvas.clear(keep_canvas=False)
+        canvas.clear_thickness_legend()
+        show_base = self.current_result is None or self._display_base_geometry
+        if show_base:
+            self._populate_canvas_with_geometry(canvas, fit_view=False)
+        else:
+            self._populate_canvas_with_results(canvas, fit_view=False)
+
+    def _renderer_switch_specs(self) -> list[tuple[str, Any, Any, bool]]:
+        specs: list[tuple[str, Any, Any, bool]] = []
+        if self.result_canvas is not None and self.figure_parent is not None:
+            specs.append(
+                (
+                    "result_canvas",
+                    self.figure_parent,
+                    self._populate_result_switch_candidate,
+                    True,
+                )
+            )
+        generated = getattr(self, "_last_preview_mesh", None)
+        if self.mesh_preview_canvas is not None and self.mesh_preview_parent is not None:
+            specs.append(
+                (
+                    "mesh_preview_canvas",
+                    self.mesh_preview_parent,
+                    lambda canvas, value=generated: (
+                        self._apply_canvas_view_options(canvas),
+                        canvas.clear(keep_canvas=False),
+                        self._populate_canvas_with_mesh(canvas, value)
+                        if value is not None
+                        else None,
+                    ),
+                    False,
+                )
+            )
+        geometry = getattr(self, "_last_geometry_preview", None)
+        if (
+            self.geometry_preview_canvas is not None
+            and self.geometry_preview_parent is not None
+        ):
+            specs.append(
+                (
+                    "geometry_preview_canvas",
+                    self.geometry_preview_parent,
+                    lambda canvas, value=geometry: (
+                        self._apply_canvas_view_options(canvas),
+                        canvas.clear(keep_canvas=False),
+                        self._populate_canvas_with_thickness(canvas, value)
+                        if value is not None
+                        else None,
+                    ),
+                    False,
+                )
+            )
+        return specs
+
+    def _animation_state_for_renderer_switch(self) -> dict[str, Any]:
+        """Snapshot the logical animation frame before replacing a viewer."""
+
+        labels = self._time_result_labels()
+        current_label = str(self.result_case_choice.get())
+        current_index = labels.index(current_label) if current_label in labels else 0
+        next_index = int(getattr(self, "_animation_index", current_index))
+        canvas = getattr(self, "result_canvas", None)
+        viewer_playing = getattr(canvas, "is_playing_animation", False)
+        if callable(viewer_playing):
+            viewer_playing = viewer_playing()
+        running = bool(getattr(self, "_animation_running", False) or viewer_playing)
+        fast = bool(self.animation_fast_mode.get()) and canvas is not None
+
+        if labels:
+            current_index %= len(labels)
+            next_index %= len(labels)
+            if running and canvas is not None:
+                frame_count = getattr(canvas, "animation_frames", 0)
+                if callable(frame_count):
+                    frame_count = frame_count()
+                if bool(viewer_playing) and int(frame_count or 0) > 0:
+                    cache_index = getattr(canvas, "animation_frame_index", 0)
+                    if callable(cache_index):
+                        cache_index = cache_index()
+                    origin = int(getattr(self, "_animation_cache_origin", 0))
+                    current_index = (origin + int(cache_index) - 1) % len(labels)
+                    next_index = (current_index + 1) % len(labels)
+            current_label = labels[current_index]
+
+        return {
+            "running": running,
+            "fast": fast,
+            "current_index": current_index,
+            "next_index": next_index,
+            "current_label": current_label,
+        }
+
+    def _pause_animation_for_renderer_switch(self) -> dict[str, Any]:
+        """Pause playback without losing the displayed or next frame."""
+
+        state = self._animation_state_for_renderer_switch()
+        if state["running"]:
+            self._stop_animation()
+        self._animation_index = int(state["next_index"])
+        if state["current_label"]:
+            self.result_case_choice.set(str(state["current_label"]))
+            self._sync_time_slider(index=int(state["current_index"]))
+        return state
+
+    def _resume_animation_after_renderer_switch(
+        self,
+        state: dict[str, Any],
+    ) -> None:
+        """Restore playback on either the candidate or the retained old viewer."""
+
+        labels = self._time_result_labels()
+        if not labels:
+            return
+        current_index = int(state.get("current_index", 0)) % len(labels)
+        next_index = int(state.get("next_index", current_index)) % len(labels)
+        self._animation_index = next_index
+        self.result_case_choice.set(labels[current_index])
+        self._sync_time_slider(index=current_index)
+        if not bool(state.get("running", False)):
+            return
+
+        try:
+            if bool(state.get("fast", False)) and self.result_canvas is not None:
+                self._play_animation(start_index=current_index)
+                return
+
+            self._animation_running = True
+            speed = max(_tk_var_float(self.animation_speed_multiplier, 1.0), 0.05)
+            interval = max(
+                int(
+                    round(
+                        max(_tk_var_int(self.animation_interval_ms, 80), 20)
+                        / speed
+                    )
+                ),
+                5,
+            )
+            self._animation_after_id = self.window.after(
+                interval, self._advance_animation_frame
+            )
+        except Exception as error:
+            self._animation_running = False
+            self._animation_after_id = None
+            try:
+                self._write_status(
+                    "3D renderer switched, but animation playback could not be "
+                    + "resumed: "
+                    + str(error),
+                    keep_run_results=True,
+                )
+            except Exception:
+                pass
+
+    def _switch_renderer_backend(
+        self,
+        _event: Any = None,
+        *,
+        _application_coordinated: bool = False,
+    ) -> bool:
+        """Transactionally replace all live 3D canvases."""
+
+        if self._renderer_switching:
+            return False
+        previous = self._requested_renderer_backend()
+        requested = normalize_backend(self.renderer_backend_choice.get())
+        if requested == previous:
+            return True
+        if not _application_coordinated:
+            coordinate = getattr(
+                self.app, "_switch_renderer_backend_from_runtime", None
+            )
+            if callable(coordinate):
+                return bool(coordinate(self, requested))
+
+        specs = self._renderer_switch_specs()
+        if not specs:
+            self._renderer_requested = requested
+            try:
+                self.app._renderer_requested = requested
+                self.app._renderer_backend_choice.set(BACKEND_NAMES[requested])
+            except Exception:
+                pass
+            self.renderer_backend_status.set(
+                "Renderer: " + BACKEND_NAMES[requested] + " (used by the next 3D view)"
+            )
+            return True
+
+        self._renderer_switching = True
+        candidates: list[tuple[str, Any, Any, bool]] = []
+        animation_state: dict[str, Any] = {}
+        try:
+            animation_state = self._pause_animation_for_renderer_switch()
+            for attribute, parent, populate, needs_selection in specs:
+                old = getattr(self, attribute)
+                width, height = self._viewer_dimensions(old)
+                candidate = create_3d_viewer(
+                    parent,
+                    backend=requested,
+                    width=width,
+                    height=height,
+                    bg=str(getattr(old, "bg", "white")),
+                )
+                try:
+                    state = export_view_state(old)
+                    populate(candidate)
+                    apply_view_state(candidate, state, redraw=False)
+                    candidate.redraw()
+                except Exception:
+                    candidate.destroy()
+                    raise
+                candidates.append((attribute, old, candidate, needs_selection))
+
+            # Commit only after every candidate has accepted its scene/state.
+            for attribute, old, candidate, needs_selection in candidates:
+                old.pack_forget()
+                candidate.pack(fill=tk.BOTH, expand=True)
+                setattr(self, attribute, candidate)
+                if needs_selection:
+                    self._bind_custom_load_canvas_selection(candidate)
+                old.destroy()
+
+            self._renderer_requested = requested
+            actual = ", ".join(
+                sorted({backend_diagnostic(candidate) for _, _, candidate, _ in candidates})
+            )
+            if self.app is not None:
+                try:
+                    self.app._renderer_requested = requested
+                    self.app._renderer_backend_choice.set(BACKEND_NAMES[requested])
+                    self.app._renderer_backend_status.set("Renderer: " + actual)
+                except Exception:
+                    pass
+            self.renderer_backend_status.set("Renderer: " + actual)
+            self._write_status("3D renderer switched to " + actual + ".", keep_run_results=True)
+            if animation_state:
+                self._resume_animation_after_renderer_switch(animation_state)
+            return True
+        except Exception as error:
+            for _attribute, _old, candidate, _needs_selection in candidates:
+                try:
+                    candidate.destroy()
+                except Exception:
+                    pass
+            if animation_state:
+                self._resume_animation_after_renderer_switch(animation_state)
+            self.renderer_backend_choice.set(BACKEND_NAMES[previous])
+            self.renderer_backend_status.set("Renderer switch failed: " + str(error))
+            messagebox.showerror(
+                "Renderer unavailable",
+                "The working 3D view was kept unchanged.\n\n" + str(error),
+                parent=self.window,
+            )
+            return False
+        finally:
+            self._renderer_switching = False
 
     def _canvas_view_targets(self) -> tuple:
         """Every Tkinter3DCanvas the visualization options apply to."""
@@ -7217,6 +7556,25 @@ class RuntimeFEMWindow:
         self._collision_damage_beam_hint = ttk.Label(collision_damage, text="", foreground="#7f1d1d")
         self._collision_damage_beam_hint.grid(row=8, column=0, columnspan=6, sticky=tk.W, padx=6, pady=(0, 4))
 
+        renderer_group = ttk.LabelFrame(tab_visualization, text="3D renderer")
+        renderer_group.pack(fill=tk.X, padx=8, pady=(8, 0))
+        ttk.Label(renderer_group, text="Renderer").pack(
+            side=tk.LEFT, padx=(8, 6), pady=6
+        )
+        renderer_selector = ttk.Combobox(
+            renderer_group,
+            textvariable=self.renderer_backend_choice,
+            values=tuple(BACKEND_LABELS),
+            state="readonly",
+            width=18,
+        )
+        renderer_selector.pack(side=tk.LEFT, pady=6)
+        renderer_selector.bind("<<ComboboxSelected>>", self._switch_renderer_backend)
+        ttk.Label(
+            renderer_group,
+            textvariable=self.renderer_backend_status,
+        ).pack(side=tk.LEFT, padx=10, pady=6)
+
         vis_group = ttk.LabelFrame(tab_visualization, text="Plot configuration")
         vis_group.pack(fill=tk.X, padx=8, pady=(8, 8))
         self._configure_option_grid(vis_group)
@@ -7382,14 +7740,6 @@ class RuntimeFEMWindow:
         )
         self.component_selector.pack(side=tk.LEFT, fill=tk.X, expand=True)
         self.component_selector.bind("<<ComboboxSelected>>", self._on_visualization_choice_changed)
-        self.interactive_3d_checkbox = ttk.Checkbutton(
-            selector_bar,
-            text="Interactive 3D",
-            variable=self.use_interactive_3d,
-            command=self._refresh_figure,
-        )
-        self.interactive_3d_checkbox.pack(side=tk.RIGHT, padx=6)
-
         probe_bar = ttk.Frame(plot_holder)
         probe_bar.pack(side=tk.TOP, fill=tk.X, pady=(0, 4))
         ttk.Label(probe_bar, text="Node:").pack(side=tk.LEFT, padx=(0, 4))
@@ -7710,7 +8060,7 @@ class RuntimeFEMWindow:
         if parent is None:
             return
         if self.mesh_preview_canvas is None:
-            self.mesh_preview_canvas = Tkinter3DCanvas(parent, bg="white")
+            self.mesh_preview_canvas = self._create_3d_canvas(parent, bg="white")
             self.mesh_preview_canvas.pack(fill=tk.BOTH, expand=True)
         if fit_view is None:
             fit_view = getattr(self, "_last_preview_mesh", None) is not generated
@@ -8288,12 +8638,16 @@ class RuntimeFEMWindow:
     def _next_time_step(self) -> None:
         self._step_time_result(1)
 
-    def _play_animation(self) -> None:
+    def _play_animation(self, *, start_index: int | None = None) -> None:
         labels = self._time_result_labels()
         if not labels:
             self._write_status("No saved time-domain result steps are available for animation.", keep_run_results=True)
             return
 
+        current = str(self.result_case_choice.get())
+        if start_index is None:
+            start_index = labels.index(current) if current in labels else 0
+        start_index = int(start_index) % len(labels)
         self._stop_animation()
 
         if bool(self.animation_fast_mode.get()) and self.result_canvas is not None:
@@ -8302,7 +8656,12 @@ class RuntimeFEMWindow:
             self.window.update_idletasks()
 
             self.result_canvas.begin_animation_cache()
-            for index, label in enumerate(labels):
+            frame_indices = [
+                (start_index + offset) % len(labels)
+                for offset in range(len(labels))
+            ]
+            for index in frame_indices:
+                label = labels[index]
                 self.result_case_choice.set(label)
                 self._sync_time_slider(index=index)
 
@@ -8317,16 +8676,20 @@ class RuntimeFEMWindow:
             interval = max(int(round(max(_tk_var_int(self.animation_interval_ms, 80), 20) / speed)), 5)
             fps = 1000 // interval
             self._animation_running = True
+            self._animation_cache_origin = start_index
+            self._animation_index = (start_index + 1) % len(labels)
             detail = self._animation_playback_detail()
             try:
                 self.result_canvas.play_animation(fps=fps, fast=detail)
             except TypeError:
                 # Older ANYtk3D without the playback-detail argument.
                 self.result_canvas.play_animation(fps=fps)
+            self.result_case_choice.set(labels[start_index])
+            self._sync_time_slider(index=start_index)
             return
 
-        current = str(self.result_case_choice.get())
-        self._animation_index = labels.index(current) if current in labels else 0
+        self._animation_cache_origin = 0
+        self._animation_index = start_index
         self._animation_running = True
         self._advance_animation_frame()
 
@@ -9745,7 +10108,7 @@ class RuntimeFEMWindow:
                 pass
             self.preview_canvas = None
 
-        if self.use_interactive_3d.get() and display_mode != "time_history":
+        if display_mode != "time_history":
             if self.figure_canvas is not None:
                 try:
                     self.figure_canvas.get_tk_widget().destroy()
@@ -9767,13 +10130,13 @@ class RuntimeFEMWindow:
 
             canvas_created = self.result_canvas is None
             if canvas_created:
-                self.result_canvas = Tkinter3DCanvas(self.figure_parent, bg="white")
+                self.result_canvas = self._create_3d_canvas(self.figure_parent, bg="white")
                 self.result_canvas.pack(fill=tk.BOTH, expand=True)
                 self._bind_custom_load_canvas_selection(self.result_canvas)
             self._apply_canvas_view_options(self.result_canvas)
 
             try:
-                self.result_canvas.canvas.configure(
+                event_widget(self.result_canvas).configure(
                     cursor="crosshair" if self._custom_load_selection_active else ""
                 )
             except Exception:
@@ -10544,7 +10907,7 @@ class RuntimeFEMWindow:
             self._mesh_point_selection_button.configure(text="Finish selection" if active else "Start selection")
         if self.result_canvas is not None:
             try:
-                self.result_canvas.canvas.configure(
+                event_widget(self.result_canvas).configure(
                     cursor="crosshair" if (
                                 self._mesh_point_selection_active or self._custom_load_selection_active) else ""
                 )
@@ -10870,8 +11233,9 @@ class RuntimeFEMWindow:
         parent = getattr(self, "geometry_preview_parent", None)
         if parent is None:
             return
+        self._last_geometry_preview = generated
         if self.geometry_preview_canvas is None:
-            self.geometry_preview_canvas = Tkinter3DCanvas(parent, bg="white")
+            self.geometry_preview_canvas = self._create_3d_canvas(parent, bg="white")
             self.geometry_preview_canvas.pack(fill=tk.BOTH, expand=True)
         canvas = self.geometry_preview_canvas
         self._apply_canvas_view_options(canvas)
@@ -11049,7 +11413,7 @@ class RuntimeFEMWindow:
         return changes
 
     def run(self) -> None:
-        """Prepare/run the runtime FEM request and render Matplotlib results."""
+        """Prepare/run the runtime FEM request and render shared-viewer results."""
 
         if self.solver_thread is not None and self.solver_thread.is_alive():
             return
@@ -11462,7 +11826,7 @@ class RuntimeFEMWindow:
                     pass
         if self.result_canvas is not None:
             try:
-                self.result_canvas.canvas.configure(
+                event_widget(self.result_canvas).configure(
                     cursor="crosshair" if (
                                 self._custom_load_selection_active or self._mesh_point_selection_active) else ""
                 )
@@ -11489,10 +11853,11 @@ class RuntimeFEMWindow:
         self._refresh_figure(preserve_view=True)
 
     def _bind_custom_load_canvas_selection(self, canvas: Tkinter3DCanvas) -> None:
-        canvas.canvas.bind("<ButtonPress-1>", self._on_custom_load_canvas_press, add="+")
-        canvas.canvas.bind("<ButtonRelease-1>", self._on_custom_load_canvas_release, add="+")
-        canvas.canvas.bind("<ButtonPress-3>", self._on_custom_load_edge_canvas_press, add="+")
-        canvas.canvas.bind("<ButtonRelease-3>", self._on_custom_load_edge_canvas_release, add="+")
+        widget = event_widget(canvas)
+        widget.bind("<ButtonPress-1>", self._on_custom_load_canvas_press, add="+")
+        widget.bind("<ButtonRelease-1>", self._on_custom_load_canvas_release, add="+")
+        widget.bind("<ButtonPress-3>", self._on_custom_load_edge_canvas_press, add="+")
+        widget.bind("<ButtonRelease-3>", self._on_custom_load_edge_canvas_release, add="+")
 
     def _on_custom_load_canvas_press(self, event: Any) -> None:
         if self._mesh_point_selection_active:
@@ -11800,39 +12165,17 @@ class RuntimeFEMWindow:
         if not self._custom_load_patches:
             return None
 
-        try:
-            plot_width = max(1, int(canvas._plot_width()))
-        except Exception:
-            plot_width = max(1, int(canvas.width))
-        height = max(1, int(canvas.height))
-        right, camera_up, forward = canvas.camera.basis()
-        position = canvas.camera.position
-        scale = 1.0 / math.tan(canvas.camera.fov / 2.0)
-        aspect = plot_width / height
-        x_scale = scale / aspect
-        half_width = 0.5 * plot_width
-        half_height = 0.5 * height
-
         best_index: int | None = None
         best_depth = float("inf")
         for index, patch in enumerate(self._custom_load_patches):
-            projected: list[tuple[float, float]] = []
-            depths: list[float] = []
-            for point in self._custom_load_patch_boundary_points(patch):
-                relative = point - position
-                depth = relative.dot(forward)
-                if depth <= canvas.camera.near or depth >= canvas.camera.far:
-                    projected = []
-                    break
-                camera_x = relative.dot(right)
-                camera_y = relative.dot(camera_up)
-                projected.append((
-                    (camera_x * x_scale / depth + 1.0) * half_width,
-                    (1.0 - camera_y * scale / depth) * half_height,
-                ))
-                depths.append(depth)
-            if projected and self._point_in_polygon_2d(screen_x, screen_y, projected):
-                mean_depth = sum(depths) / len(depths)
+            projected = self._project_custom_load_points(
+                canvas, self._custom_load_patch_boundary_points(patch)
+            )
+            projected_xy = [(x, y) for x, y, _depth in projected]
+            if projected and self._point_in_polygon_2d(
+                screen_x, screen_y, projected_xy
+            ):
+                mean_depth = sum(item[2] for item in projected) / len(projected)
                 if mean_depth < best_depth:
                     best_depth = mean_depth
                     best_index = index
@@ -11895,11 +12238,18 @@ class RuntimeFEMWindow:
             canvas: Tkinter3DCanvas,
             points: list[Point3D],
     ) -> list[tuple[float, float, float]]:
-        try:
-            plot_width = max(1, int(canvas._plot_width()))
-        except Exception:
-            plot_width = max(1, int(canvas.width))
-        height = max(1, int(canvas.height))
+        projector = getattr(canvas, "project_points", None)
+        if callable(projector):
+            projected = projector(points)
+            if any(item is None for item in projected):
+                return []
+            return [
+                (float(item[0]), float(item[1]), float(item[2]))
+                for item in projected
+            ]
+
+        # Compatibility fallback for viewers without bulk point projection.
+        plot_width, height = viewport_size(canvas)
         right, camera_up, forward = canvas.camera.basis()
         position = canvas.camera.position
         scale = 1.0 / math.tan(canvas.camera.fov / 2.0)
@@ -12607,6 +12957,11 @@ class _ExampleRuntimeApp:
     _simplified_calculation_mode = True
 
     def __init__(self, example: str = "girder_panel"):
+        # RuntimeFEMWindow registers with the owning application so renderer
+        # changes can be coordinated across every live viewer.  The standalone
+        # example delegates that hook to Application through __getattr__, so it
+        # needs the same registry as the real application.
+        self._runtime_fem_windows = weakref.WeakSet()
         self.example = "cylinder" if str(example).lower() == "cylinder" else "girder_panel"
         cylinder = _ExampleCylinder() if self.example == "cylinder" else None
         self._fem_default_top_bottom_moment_nm = 30_000_000.0 if self.example == "cylinder" else 0.0

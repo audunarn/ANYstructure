@@ -45,13 +45,16 @@ ANYstructure.exe in your python installation (Scripts).
 Finite-element GUI
 ------------------
 
-The finite-element workflow uses ``ANYsolver>=0.2,<0.3`` and the extracted
-``ANYmaterial``, ``ANYmesher``, and ``ANYfileio`` packages. Its load controls
+The finite-element workflow uses ``ANYsolver>=0.3,<0.4`` and the extracted
+``ANYmaterial``, ``ANYmesher>=0.2.3,<0.3``, and ``ANYfileio`` packages. Its load controls
 route axial force, bending moment, shear force, torsional moment, and pressure
 to the production solver. Follower pressure is enabled only for supported
 nonlinear static and arc-length analyses using the Static only or Nonlinear
 static runtime path. Unsupported configurations and solver failures are
 reported directly rather than replaced by an estimate.
+
+Model, mesh, and result viewports use the shared ANY3dView contract and can be
+switched live between ModernGL GPU and ANYtk3D software rendering.
 
 Raised horizontal dividers resize the input, model, and result sections. A
 raised vertical divider between result text and the result canvas makes the

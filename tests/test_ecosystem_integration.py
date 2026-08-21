@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from anystruct import ecosystem_gui, fe_plate_fields, fem_integration, main_application
+from anystruct import ecosystem_gui, fe_plate_fields, fem_integration
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -83,7 +83,13 @@ def test_isotropic_material_selection_rejects_orthotropic_without_reduction():
         ecosystem_gui.isotropic_material_selection(_material_spec(symmetry="orthotropic"))
 
 
+@pytest.mark.gui
 def test_main_application_material_callback_updates_flat_and_shell_scalars(monkeypatch):
+    # Importing the legacy monolithic desktop module loads Tk, Matplotlib and
+    # scikit-learn.  Keep that import inside the explicit GUI qualification so
+    # ordinary headless collection stays bounded.
+    from anystruct import main_application
+
     messages = _Messages()
     monkeypatch.setattr(main_application, "messagebox", messages)
     app = SimpleNamespace(
@@ -105,7 +111,10 @@ def test_main_application_material_callback_updates_flat_and_shell_scalars(monke
     assert not messages.errors
 
 
+@pytest.mark.gui
 def test_main_application_material_callback_rejects_orthotropic(monkeypatch):
+    from anystruct import main_application
+
     messages = _Messages()
     monkeypatch.setattr(main_application, "messagebox", messages)
     app = SimpleNamespace(
@@ -256,15 +265,27 @@ def test_dependency_and_gui_wiring_is_declared_in_release_surfaces():
     for distribution in ("ANYgeometry", "ANYmaterial", "ANYmesher", "ANYfileio"):
         assert distribution in setup_source
         assert distribution in requirements
-    assert "ANYsolver>=0.2,<0.3" in setup_source
+    assert "ANYfileio[semantics]>=0.2,<0.3" in setup_source
+    assert "ANYgeometry>=0.2.2,<0.3" in setup_source
+    assert "ANYmesher>=0.2.3,<0.3" in setup_source
+    pyproject = (REPOSITORY_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    assert 'anymesher = ">=0.2.3,<0.3"' in pyproject
+    assert "ANYsolver>=0.3,<0.4" in setup_source
+    assert "ANY3dView[gpu]>=0.5,<0.6" in setup_source
+    assert "ANYtk3D>=0.5,<0.6" in setup_source
     assert "python_requires='>=3.13'" in setup_source
     assert "Programming Language :: Python :: 3.13" in setup_source
     assert "Programming Language :: Python :: 3.14" in setup_source
     assert "repository: audunarn/ANYmaterial" in workflow
+    assert "repository: audunarn/ANY3dView" in workflow
     assert "repository: audunarn/ANYgeometry" in workflow
     assert "repository: audunarn/ANYmesh" in workflow
     assert "repository: audunarn/ANYio" in workflow
-    assert "python -m pip install --no-deps -e .ecosystem/ANYmaterial" in workflow
+    assert "repository: audunarn/ANYsolver" in workflow
+    assert "repository: audunarn/ANYbuckling" in workflow
+    assert "repository: audunarn/ANYtk3D" in workflow
+    assert 'python -m pip install --no-deps -e ".ecosystem/ANY3dView[gpu]"' in workflow
+    assert "-e .ecosystem/ANYmaterial" in workflow
     assert ".ecosystem/ANYgeometry" in workflow
     assert "python -m build" in workflow
     assert "python -m twine check dist/*" in workflow

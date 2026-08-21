@@ -11,6 +11,7 @@ import types
 
 import pytest
 
+import anysolver
 from anystruct import fem_integration
 from anysolver import runtime as anysolver_runtime
 
@@ -84,6 +85,17 @@ def test_failed_production_status_is_not_replaced_by_lightweight_result(monkeypa
         imported_fem_model=None,
         precomputed_generated_geometry=None,
     ):
+        native = types.SimpleNamespace(
+            outcome=anysolver.SolveOutcome.stopped(
+                "minimum_load_increment_reached",
+                control_kind="load_factor",
+                requested_control=1.0,
+                achieved_control=0.42,
+                last_converged_increment=7,
+            ),
+            displacements=[0.0] * 6,
+            reactions={1: (-3.0, 0.0, 0.0, 0.0, 0.0, 0.0)},
+        )
         return anysolver_runtime.LightweightFEMResult(
             status="nonlinear_not_converged",
             stress_max_pa=0.0,
@@ -95,6 +107,7 @@ def test_failed_production_status_is_not_replaced_by_lightweight_result(monkeypa
             load_resultant={},
             visualization={},
             solver_name="ANYsolver production",
+            result_carrier=native,
         )
 
     def forbidden_lightweight_fallback(*args, **kwargs):
@@ -116,6 +129,15 @@ def test_failed_production_status_is_not_replaced_by_lightweight_result(monkeypa
     assert result.status == "nonlinear_not_converged"
     assert result.summary["solver"] == "ANYsolver production"
     assert result.summary["prestress_summary"]["nonlinear_status"] == "not_converged"
+    assert result.summary["solve_outcome"]["disposition"] == "partial"
+    assert result.summary["solve_outcome"]["control_kind"] == "load_factor"
+    assert result.summary["solve_outcome"]["achieved_control"] == pytest.approx(0.42)
+    assert {
+        item["quantity_id"] for item in result.summary["result_quantities"]
+    } >= {"displacement", "reaction"}
+    assert [
+        item["quantity_id"] for item in result.summary["reaction_quantities"]
+    ] == ["reaction"]
     assert "production solve did not converge" in result.diagnostics
     assert not any("compact fallback" in item.lower() for item in result.diagnostics)
 
@@ -123,7 +145,7 @@ def test_failed_production_status_is_not_replaced_by_lightweight_result(monkeypa
 def test_anysolver_version_guard_rejects_pre_extraction_0_1_3(monkeypatch):
     monkeypatch.setattr(fem_integration._anysolver_package, "__version__", "0.1.3")
 
-    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.2\.0,<0\.3"):
+    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.3\.0,<0\.4"):
         fem_integration._solver_config_from_options(
             fem_integration.RuntimeFEMOptions(shear_force_n=321.0)
         )
@@ -132,28 +154,33 @@ def test_anysolver_version_guard_rejects_pre_extraction_0_1_3(monkeypatch):
 def test_anysolver_version_guard_rejects_published_0_1_2(monkeypatch):
     monkeypatch.setattr(fem_integration._anysolver_package, "__version__", "0.1.2")
 
-    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.2\.0,<0\.3"):
+    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.3\.0,<0\.4"):
         fem_integration._solver_config_from_options(
             fem_integration.RuntimeFEMOptions()
         )
 
 
-def test_anysolver_version_guard_accepts_0_2_0(monkeypatch):
-    monkeypatch.setattr(fem_integration._anysolver_package, "__version__", "0.2.0")
+def test_anysolver_version_guard_rejects_0_2_9(monkeypatch):
+    monkeypatch.setattr(fem_integration._anysolver_package, "__version__", "0.2.9")
 
-    assert fem_integration._require_supported_anysolver() == "0.2.0"
+    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.3\.0,<0\.4"):
+        fem_integration._require_supported_anysolver()
+
+
+def test_anysolver_version_guard_accepts_0_3_0(monkeypatch):
+    monkeypatch.setattr(fem_integration._anysolver_package, "__version__", "0.3.0")
+
+    assert fem_integration._require_supported_anysolver() == "0.3.0"
     assert fem_integration._solver_config_from_options(
         fem_integration.RuntimeFEMOptions()
     )
 
 
-def test_anysolver_version_guard_rejects_0_3_0(monkeypatch):
-    monkeypatch.setattr(fem_integration._anysolver_package, "__version__", "0.3.0")
+def test_anysolver_version_guard_rejects_0_4_0(monkeypatch):
+    monkeypatch.setattr(fem_integration._anysolver_package, "__version__", "0.4.0")
 
-    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.2\.0,<0\.3"):
-        fem_integration._solver_config_from_options(
-            fem_integration.RuntimeFEMOptions()
-        )
+    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.3\.0,<0\.4"):
+        fem_integration._require_supported_anysolver()
 
 
 @pytest.mark.parametrize("suffix", (".fem.json", ".fem.json.gz"))

@@ -1,7 +1,9 @@
 from pathlib import Path
 import math
 import re
+import weakref
 from types import SimpleNamespace
+import pytest
 from anysolver import runtime as fe_solver
 from anystruct import representation_geometry
 from anystruct.main_application import Application
@@ -31,6 +33,38 @@ class _FullscreenRootProbe:
 
     def geometry(self, value):
         self.calls.append(("geometry", value))
+
+
+class _ValueProbe:
+    def __init__(self, value):
+        self.value = value
+
+    def get(self):
+        return self.value
+
+    def set(self, value):
+        self.value = value
+
+
+class _RuntimeRendererProbe:
+    def __init__(self, *, fail_gpu=False):
+        self.window = SimpleNamespace(winfo_exists=lambda: 1)
+        self._renderer_requested = "auto"
+        self.renderer_backend_choice = _ValueProbe("Automatic")
+        self.fail_gpu = fail_gpu
+        self.calls = []
+
+    def _switch_renderer_backend(self, *, _application_coordinated=False):
+        requested = {
+            "Automatic": "auto",
+            "GPU (ModernGL)": "gpu",
+            "Tk (software)": "software",
+        }[self.renderer_backend_choice.get()]
+        self.calls.append((requested, _application_coordinated))
+        if requested == "gpu" and self.fail_gpu:
+            return False
+        self._renderer_requested = requested
+        return True
 
 
 def test_main_application_uses_shared_geometry_menu_helpers():
@@ -76,6 +110,37 @@ def test_start_root_fullscreen_prefers_zoomed_state_with_fallbacks():
         ("attributes", "-zoomed", True),
         ("geometry", "1920x1080+0+0"),
     ]
+
+
+def test_application_renderer_choice_updates_registered_runtime_viewers():
+    app = Application.__new__(Application)
+    app._renderer_requested = "auto"
+    app._renderer_backend_choice = _ValueProbe("GPU (ModernGL)")
+    app._renderer_backend_status = _ValueProbe("")
+    runtime = _RuntimeRendererProbe()
+    app._runtime_fem_windows = weakref.WeakSet((runtime,))
+    app._main_renderer_specs = lambda: []
+
+    assert app._switch_main_renderer_backend()
+    assert app._renderer_requested == "gpu"
+    assert runtime._renderer_requested == "gpu"
+    assert runtime.calls == [("gpu", True)]
+
+
+def test_application_renderer_choice_rolls_back_runtime_group_on_failure():
+    app = Application.__new__(Application)
+    app._renderer_requested = "auto"
+    app._renderer_backend_choice = _ValueProbe("GPU (ModernGL)")
+    app._renderer_backend_status = _ValueProbe("")
+    first = _RuntimeRendererProbe()
+    failing = _RuntimeRendererProbe(fail_gpu=True)
+    app._runtime_fem_windows = weakref.WeakSet((first, failing))
+    app._main_renderer_specs = lambda: []
+
+    assert not app._switch_main_renderer_backend()
+    assert app._renderer_requested == "auto"
+    assert app._renderer_backend_choice.get() == "Automatic"
+    assert first._renderer_requested == "auto"
 
 
 def test_file_menu_exposes_export_options():
@@ -161,7 +226,7 @@ def test_release_package_metadata_uses_current_markdown_readme():
     setup_source = Path(__file__).resolve().parents[1] / "setup.py"
     source = setup_source.read_text(encoding="utf-8")
 
-    assert "version='6.1.1'" in source
+    assert "version='6.3.0'" in source
     assert "README.md" in source[source.index("def readme"):source.index("core_requires")]
     assert "README.rst" not in source
     assert "long_description_content_type='text/markdown'" in source
@@ -417,7 +482,7 @@ def test_fea_result_buckling_mode_has_import_canvas_and_pressure_free_controls()
     assert "def _show_fea_buckling_details_popup(self):" in source
     assert "fe_plate_fields.format_panel_buckling_details" in source
 
-    # The live pure-Tk 3D canvas must honour the UF/panel text options; the
+    # The live shared 3D viewer must honour the UF/panel text options; the
     # legacy matplotlib block is unreachable and must not be the only place
     # the options are read.
     populate_block = source[
@@ -429,15 +494,22 @@ def test_fea_result_buckling_mode_has_import_canvas_and_pressure_free_controls()
     assert "tk3d.add_text(" in populate_block
 
 
-def test_prop_3d_preview_defaults_to_tk3d_with_matplotlib_fallback():
+def test_prop_3d_preview_uses_shared_viewer_without_matplotlib_fallback():
     main_source = Path(__file__).resolve().parents[1] / "anystruct" / "main_application.py"
     source = main_source.read_text(encoding="utf-8")
 
     assert "def _embed_prop_3d(self, fig, ax, default_view=(22, -55)):" in source
-    assert "self._embed_prop_3d_tk3d(ax, default_view=default_view)" in source
-    assert "self._embed_prop_3d_figure(fig, ax, default_view=default_view)" in source
+    dispatcher = source[
+        source.index("def _embed_prop_3d(self, fig, ax, default_view=(22, -55)):"):
+        source.index("def _prop_3d_face_fill")
+    ]
+    assert "self._embed_prop_3d_tk3d(ax, default_view=default_view)" in dispatcher
+    assert "self._embed_prop_3d_figure(" not in dispatcher
+    assert "Renderer preview unavailable:" in dispatcher
+    assert "def _embed_prop_3d_figure(" in source
+    assert "text='3D preview unavailable: ' + str(error)" in source
     # Both single-object previews (flat panel and cylinder) go through the
-    # dispatcher so the pure-Tk canvas is the default renderer.
+    # dispatcher so the selected shared backend is the only live renderer.
     assert source.count("self._embed_prop_3d(fig, ax, default_view=(22, -55))") == 2
 
     embed_block = source[
@@ -454,6 +526,24 @@ def test_prop_3d_preview_defaults_to_tk3d_with_matplotlib_fallback():
     assert "face_colors" in embed_block
     assert "export_prop_3d_ifc_model" in embed_block
     assert "export_prop_3d_ifc_shell_model" in embed_block
+
+
+def test_prop_3d_initial_renderer_failure_cleans_partial_view_and_surfaces_status():
+    app = SimpleNamespace()
+    app._renderer_backend_status = _ValueProbe("")
+    app.cleared = 0
+    app.clear_prop_3d = lambda: setattr(app, "cleared", app.cleared + 1)
+    app._embed_prop_3d_tk3d = lambda *_args, **_kwargs: (_ for _ in ()).throw(
+        RuntimeError("OpenGL 3.3 is unavailable")
+    )
+
+    with pytest.raises(RuntimeError, match="OpenGL 3.3"):
+        Application._embed_prop_3d(app, object(), object())
+
+    assert app.cleared == 1
+    assert app._renderer_backend_status.get() == (
+        "Renderer preview unavailable: OpenGL 3.3 is unavailable"
+    )
 
 
 def test_prop_3d_tk3d_uses_native_thickness_primitives():

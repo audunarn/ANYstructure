@@ -5,4 +5,11 @@ build-backend = "setuptools.build_meta"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
-addopts = ["-ra", "--basetemp=.pytest_tmp"]
+addopts = ["-ra", "-p", "no:cacheprovider"]
+
+[tool.anystructure.ecosystem]
+# setup.py remains the package-metadata authority; this mirrors the exact
+# source-generation floor enforced by run_gui.py for release tooling.
+anymesher = ">=0.2.3,<0.3"
+any3dview = ">=0.5,<0.6"
+anytk3d = ">=0.5,<0.6"
