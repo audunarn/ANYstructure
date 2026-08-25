@@ -18,13 +18,31 @@ def main() -> None:
 
     root = tk.Tk()
     root.geometry("1280x820+20+20")
+    runtime_app = fem_integration.example_runtime_app()
+    requested_backend = os.environ.get("ANYSTRUCTURE_VIEWER_BACKEND", "auto")
+    runtime_app._renderer_requested = requested_backend
     window = fem_integration.RuntimeFEMWindow(
         root,
-        fem_integration.example_runtime_app(),
+        runtime_app,
         use_parent_as_window=True,
     )
     root.update_idletasks()
     root.update()
+
+    viewers = [
+        getattr(window, attribute)
+        for attribute, _parent, _populate, _fit in window._renderer_switch_specs()
+    ]
+    if not viewers:
+        raise RuntimeError("Runtime FEM smoke did not create a shared 3D viewer")
+    expected_backend = os.environ.get("ANYSTRUCTURE_EXPECT_BACKEND")
+    active_backends = {
+        str(getattr(viewer, "backend_name", "")).casefold() for viewer in viewers
+    }
+    if expected_backend and active_backends != {expected_backend.casefold()}:
+        raise RuntimeError(
+            f"expected {expected_backend!r} viewer, got {sorted(active_backends)!r}"
+        )
 
     if str(window.body_panes.cget("orient")) != "horizontal":
         raise RuntimeError("FE body panes are not horizontally resizable")
@@ -53,7 +71,8 @@ def main() -> None:
 
     print(
         "gui_fe_runtime_smoke: passed "
-        f"(vertical sash {sash_y}->{moved_y}, height {pane_height})",
+        f"(backend {','.join(sorted(active_backends))}; "
+        f"vertical sash {sash_y}->{moved_y}, height {pane_height})",
         flush=True,
     )
     root.destroy()

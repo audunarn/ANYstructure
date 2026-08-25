@@ -719,16 +719,16 @@ def test_run_runtime_fem_preserves_failed_production_status(monkeypatch):
 def test_anysolver_version_guard_rejects_pre_extraction_runtime(monkeypatch):
     monkeypatch.setattr(fe_runtime_solver._anysolver_package, "__version__", "0.1.3")
 
-    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.2\.0,<0\.3"):
+    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.3\.0,<0\.4"):
         fe_runtime_solver._solver_config_from_options(
             fe_runtime_solver.RuntimeFEMOptions(shear_force_n=321.0)
         )
 
 
 def test_anysolver_version_guard_rejects_older_runtime(monkeypatch):
-    monkeypatch.setattr(fe_runtime_solver._anysolver_package, "__version__", "0.1.2")
+    monkeypatch.setattr(fe_runtime_solver._anysolver_package, "__version__", "0.2.9")
 
-    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.2\.0,<0\.3"):
+    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.3\.0,<0\.4"):
         fe_runtime_solver._solver_config_from_options(
             fe_runtime_solver.RuntimeFEMOptions()
         )
@@ -2000,14 +2000,16 @@ def test_runtime_fem_popup_wires_preview_canvas_in_upper_right():
     assert 'self.result_panes.add(self.upper_result_frame, minsize=120, height=190, stretch="always")' in source
     assert 'self.result_panes.add(result_frame, minsize=260, height=430, stretch="always")' in source
     assert "self.upper_result_text = tk.Text(" in source
-    assert "self.result_canvas = Tkinter3DCanvas(" in source
+    assert "self.result_canvas = self._create_3d_canvas(" in source
     # Left-panel live run graph below the status text.
     assert "self._live_graph_canvas = FigureCanvasTkAgg(self._live_graph_figure, master=status_frame)" in source
     assert "self._live_graph_reset(\"idle\")" in source
     # Post-buckling continuation inputs on the General tab.
     assert "post_buckling = ttk.LabelFrame(tab_general, text=\"Post-buckling continuation\")" in source
     assert "\"post_buckling_enabled\", \"Trace post-buckling response\"" in source
-    assert "self.interactive_3d_checkbox = ttk.Checkbutton(" in source
+    assert "self.interactive_3d_checkbox = None" in source
+    assert 'if display_mode != "time_history":' in source
+    assert 'self.use_interactive_3d.get() and display_mode != "time_history"' not in source
     assert "def _populate_canvas_with_geometry(" in source
     assert "def _populate_canvas_with_results(" in source
     assert "self.run_button = ttk.Button(buttons, text=\"Run FEM\", command=self.run)" in source
@@ -2074,7 +2076,8 @@ def test_runtime_fem_popup_wires_preview_canvas_in_upper_right():
     assert "ttk.Button(actions_loads, text=\"Add load\", command=self._add_custom_load_from_selection)" in source
     assert "ttk.Button(actions_loads, text=\"Delete load\", command=self._delete_selected_custom_load)" in source
     assert "self._custom_load_tree = ttk.Treeview(" in source
-    assert "canvas.canvas.bind(\"<ButtonRelease-3>\", self._on_custom_load_edge_canvas_release, add=\"+\")" in source
+    assert "widget = event_widget(canvas)" in source
+    assert "widget.bind(\"<ButtonRelease-3>\", self._on_custom_load_edge_canvas_release, add=\"+\")" in source
     assert "def _custom_load_selection_visual_offset(self) -> float:" in source
     assert "draw_overlay=True" in source
     assert "custom_loads_add_to_imported=bool(self.custom_loads_add_to_imported.get())" in source
@@ -4175,6 +4178,19 @@ def test_runtime_fem_file_can_be_run_directly_from_pycharm():
     assert "argparse.ArgumentParser" in source
     assert "choices=(\"girder_panel\", \"cylinder\")" in source
     assert "RuntimeFEMWindow(root, example_runtime_app(args.example), use_parent_as_window=True)" in source
+
+
+def test_standalone_runtime_app_accepts_viewer_registration():
+    """The standalone FEM launcher participates in renderer coordination."""
+
+    class RuntimeWindow:
+        pass
+
+    app = fe_runtime_solver.example_runtime_app()
+    runtime_window = RuntimeWindow()
+    app._register_runtime_fem_window(runtime_window)
+
+    assert runtime_window in app._runtime_fem_windows
 
 
 def test_active_line_snapshot_rejects_missing_structure():

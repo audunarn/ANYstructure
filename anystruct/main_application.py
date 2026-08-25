@@ -1,5 +1,6 @@
 import math
 import os  # -*- coding: utf-8 -*-
+import weakref
 from dataclasses import dataclass
 from importlib import metadata as importlib_metadata
 from typing import Any
@@ -47,6 +48,17 @@ try:
     import anystruct.fem_integration as fe_runtime_solver
     import anystruct.representation_geometry as representation_geometry
     import anystruct.tkinter_3d_canvas_thickness_v6 as tkinter_3d_canvas
+    from anystruct.viewer_backend import (
+        BACKEND_LABELS,
+        BACKEND_NAMES,
+        apply_view_state,
+        backend_diagnostic,
+        create_3d_viewer,
+        event_widget,
+        export_view_state,
+        normalize_backend,
+        viewport_size,
+    )
 except ModuleNotFoundError:
     # This is due to pyinstaller issues.
     from ANYstructure.anystruct.calc_structure import *
@@ -74,6 +86,17 @@ except ModuleNotFoundError:
     import ANYstructure.anystruct.fem_integration as fe_runtime_solver
     import ANYstructure.anystruct.representation_geometry as representation_geometry
     import ANYstructure.anystruct.tkinter_3d_canvas_thickness_v6 as tkinter_3d_canvas
+    from ANYstructure.anystruct.viewer_backend import (
+        BACKEND_LABELS,
+        BACKEND_NAMES,
+        apply_view_state,
+        backend_diagnostic,
+        create_3d_viewer,
+        event_widget,
+        export_view_state,
+        normalize_backend,
+        viewport_size,
+    )
 
 
 def _round_calculated(value, decimals: int = 3):
@@ -139,6 +162,10 @@ class Application():
         parent.wm_title('| ANYstructure |')
         self._start_root_fullscreen(parent)
         self._parent = parent
+        self._renderer_requested = "auto"
+        self._renderer_backend_choice = tk.StringVar(value="Automatic")
+        self._renderer_backend_status = tk.StringVar(value="Renderer: Automatic")
+        self._runtime_fem_windows = weakref.WeakSet()
         self._resize_after_id = None
         self._last_resize_size = (0, 0)
         parent.protocol("WM_DELETE_WINDOW", self.close_main_window)
@@ -6056,8 +6083,208 @@ class Application():
             upper = lower + 1.0
         return lower, upper
 
+    def _create_main_3d_viewer(self, parent, **options):
+        viewer = create_3d_viewer(
+            parent,
+            backend=self._renderer_requested,
+            **options,
+        )
+        self._renderer_backend_status.set("Renderer: " + backend_diagnostic(viewer))
+        return viewer
+
+    def _add_renderer_selector(self, parent):
+        selector = ttk.Combobox(
+            parent,
+            textvariable=self._renderer_backend_choice,
+            values=tuple(BACKEND_LABELS),
+            state="readonly",
+            width=17,
+        )
+        selector.pack(side=tk.LEFT, padx=(8, 3))
+        selector.bind("<<ComboboxSelected>>", self._switch_main_renderer_backend)
+        return selector
+
+    def _main_renderer_specs(self):
+        specs = []
+        fea = getattr(self, '_fea_tk3d_canvas', None)
+        if fea is not None and getattr(self, '_prop_3d_frame', None) is not None:
+            specs.append((
+                '_fea_tk3d_canvas',
+                self._prop_3d_frame,
+                lambda canvas: self._populate_fea_buckling_tk3d_canvas(
+                    fit_view=False, canvas=canvas
+                ),
+                True,
+            ))
+        prop = getattr(self, '_prop_3d_tk3d_canvas', None)
+        if prop is not None and getattr(self, '_prop_3d_frame', None) is not None:
+            items = list(getattr(self, '_prop_3d_tk3d_items', ()) or ())
+            mesh = getattr(self, '_prop_3d_export_mesh', None)
+
+            def populate(candidate, values=items, fallback_mesh=mesh):
+                candidate.set_axis_ruler(True)
+                candidate.set_mesh_lines(True)
+                if values:
+                    self._populate_prop_3d_tk3d_native(candidate, values)
+                elif fallback_mesh:
+                    self._populate_prop_3d_tk3d_faces(candidate, fallback_mesh)
+
+            specs.append((
+                '_prop_3d_tk3d_canvas', self._prop_3d_frame, populate, False
+            ))
+        return specs
+
+    def _register_runtime_fem_window(self, runtime_window):
+        """Register a live FEM popup for application-wide renderer changes."""
+
+        self._runtime_fem_windows.add(runtime_window)
+
+    def _live_runtime_fem_windows(self):
+        windows = []
+        for runtime_window in tuple(self._runtime_fem_windows):
+            native = getattr(runtime_window, 'window', None)
+            try:
+                if native is not None and not bool(native.winfo_exists()):
+                    continue
+            except Exception:
+                pass
+            windows.append(runtime_window)
+        return windows
+
+    def _switch_runtime_fem_viewers(self, requested, previous):
+        """Switch registered FEM popups, rolling back the group on failure."""
+
+        switched = []
+        for runtime_window in self._live_runtime_fem_windows():
+            current = normalize_backend(
+                getattr(runtime_window, '_renderer_requested', previous)
+            )
+            if current == requested:
+                continue
+            runtime_window.renderer_backend_choice.set(BACKEND_NAMES[requested])
+            if not runtime_window._switch_renderer_backend(
+                _application_coordinated=True
+            ):
+                for completed, original in reversed(switched):
+                    completed.renderer_backend_choice.set(BACKEND_NAMES[original])
+                    completed._switch_renderer_backend(
+                        _application_coordinated=True
+                    )
+                raise RuntimeError(
+                    "a Runtime FEM viewer could not switch renderer"
+                )
+            switched.append((runtime_window, current))
+        return switched
+
+    @staticmethod
+    def _rollback_runtime_fem_viewers(switched):
+        for runtime_window, original in reversed(switched):
+            try:
+                runtime_window.renderer_backend_choice.set(BACKEND_NAMES[original])
+                runtime_window._switch_renderer_backend(
+                    _application_coordinated=True
+                )
+            except Exception:
+                pass
+
+    def _switch_renderer_backend_from_runtime(self, _source, requested):
+        """Route a popup selector through the application-wide transaction."""
+
+        previous_label = self._renderer_backend_choice.get()
+        self._renderer_backend_choice.set(BACKEND_NAMES[normalize_backend(requested)])
+        if self._switch_main_renderer_backend():
+            return True
+        self._renderer_backend_choice.set(previous_label)
+        return False
+
+    def _switch_main_renderer_backend(self, _event=None):
+        previous = self._renderer_requested
+        requested = normalize_backend(self._renderer_backend_choice.get())
+        if requested == previous:
+            return True
+        switched_runtime = []
+        try:
+            switched_runtime = self._switch_runtime_fem_viewers(
+                requested, previous
+            )
+        except Exception as error:
+            self._renderer_requested = previous
+            self._renderer_backend_choice.set(BACKEND_NAMES[previous])
+            self._renderer_backend_status.set(
+                "Renderer switch failed: " + str(error)
+            )
+            return False
+        specs = self._main_renderer_specs()
+        if not specs:
+            self._renderer_requested = requested
+            self._renderer_backend_status.set(
+                "Renderer: " + BACKEND_NAMES[requested] + " (next 3D view)"
+            )
+            return True
+
+        candidates = []
+        try:
+            for attribute, parent, populate, bind_fea in specs:
+                old = getattr(self, attribute)
+                width, height = viewport_size(old)
+                candidate = create_3d_viewer(
+                    parent,
+                    backend=requested,
+                    width=width,
+                    height=height,
+                    bg=str(getattr(old, 'bg', 'white')),
+                )
+                try:
+                    state = export_view_state(old)
+                    populate(candidate)
+                    apply_view_state(candidate, state, redraw=False)
+                    candidate.redraw()
+                except Exception:
+                    candidate.destroy()
+                    raise
+                candidates.append((attribute, old, candidate, bind_fea))
+
+            for attribute, old, candidate, bind_fea in candidates:
+                old.pack_forget()
+                candidate.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+                setattr(self, attribute, candidate)
+                if attribute == '_fea_tk3d_canvas':
+                    self._fea_tk3d_canvas = candidate
+                    self._prop_3d_canvas_widget = event_widget(candidate)
+                elif attribute == '_prop_3d_tk3d_canvas':
+                    self._prop_3d_tk3d_canvas = candidate
+                    self._prop_3d_canvas_widget = event_widget(candidate)
+                if bind_fea:
+                    native = event_widget(candidate)
+                    native.bind('<ButtonPress-1>', self._on_fea_tk3d_mouse_press, add='+')
+                    native.bind('<ButtonRelease-1>', self._on_fea_tk3d_mouse_release, add='+')
+                old.destroy()
+            self._renderer_requested = requested
+            actual = ', '.join(sorted({
+                backend_diagnostic(candidate)
+                for _attribute, _old, candidate, _bind in candidates
+            }))
+            self._renderer_backend_status.set("Renderer: " + actual)
+            return True
+        except Exception as error:
+            for _attribute, _old, candidate, _bind in candidates:
+                try:
+                    candidate.destroy()
+                except Exception:
+                    pass
+            self._rollback_runtime_fem_viewers(switched_runtime)
+            self._renderer_requested = previous
+            self._renderer_backend_choice.set(BACKEND_NAMES[previous])
+            self._renderer_backend_status.set("Renderer switch failed: " + str(error))
+            messagebox.showerror(
+                "Renderer unavailable",
+                "The working 3D view was kept unchanged.\n\n" + str(error),
+                parent=self._parent,
+            )
+            return False
+
     def _embed_fea_buckling_tk3d_canvas(self, records, default_view='iso'):
-        """Embed the pure-Tk 3D FE buckling panel viewer in the main drawing pane."""
+        """Embed the selected shared FE buckling viewer in the main drawing pane."""
         self._prop_3d_axes = None
         self._prop_3d_fig_canvas = None
         self._prop_3d_toolbar = None
@@ -6094,6 +6321,7 @@ class Application():
         view_row = tk.Frame(toolbar_row, background=self._style.lookup('TFrame', 'background'), bd=0,
                             highlightthickness=0)
         view_row.pack(side=tk.RIGHT)
+        self._add_renderer_selector(view_row)
         ttk.Button(view_row, text='Iso', width=4,
                    command=lambda: self._set_fea_tk3d_view('iso')).pack(side=tk.LEFT)
         ttk.Button(view_row, text='Top', width=4,
@@ -6108,17 +6336,17 @@ class Application():
 
         width = max(int(self._main_canvas.winfo_width() or 900), 300)
         height = max(int(self._main_canvas.winfo_height() or 600), 220)
-        tk3d = tkinter_3d_canvas.Tkinter3DCanvas(
+        tk3d = self._create_main_3d_viewer(
             self._prop_3d_frame,
             width=width,
             height=height,
             bg='white',
         )
         self._fea_tk3d_canvas = tk3d
-        self._prop_3d_canvas_widget = tk3d.canvas
+        self._prop_3d_canvas_widget = event_widget(tk3d)
         tk3d.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-        tk3d.canvas.bind('<ButtonPress-1>', self._on_fea_tk3d_mouse_press, add='+')
-        tk3d.canvas.bind('<ButtonRelease-1>', self._on_fea_tk3d_mouse_release, add='+')
+        event_widget(tk3d).bind('<ButtonPress-1>', self._on_fea_tk3d_mouse_press, add='+')
+        event_widget(tk3d).bind('<ButtonRelease-1>', self._on_fea_tk3d_mouse_release, add='+')
         self._populate_fea_buckling_tk3d_canvas(fit_view=True)
 
     def _set_fea_tk3d_view(self, view_name):
@@ -6144,8 +6372,8 @@ class Application():
         except Exception:
             pass
 
-    def _populate_fea_buckling_tk3d_canvas(self, fit_view=False):
-        tk3d = getattr(self, '_fea_tk3d_canvas', None)
+    def _populate_fea_buckling_tk3d_canvas(self, fit_view=False, canvas=None):
+        tk3d = canvas if canvas is not None else getattr(self, '_fea_tk3d_canvas', None)
         session = self._fea_buckling_session
         if tk3d is None or session is None:
             return
@@ -6168,8 +6396,9 @@ class Application():
         except Exception:
             pass
 
-        original_request_redraw = tk3d._request_redraw
-        tk3d._request_redraw = lambda: None
+        original_request_redraw = getattr(tk3d, '_request_redraw', None)
+        if callable(original_request_redraw):
+            tk3d._request_redraw = lambda: None
 
         for field_id, record in getattr(self, '_fea_tk3d_panel_records', {}).items():
             try:
@@ -6210,11 +6439,14 @@ class Application():
                     color='#111111',
                     layer=60,
                 )
-            self._add_fea_tk3d_local_axes(record)
+            self._add_fea_tk3d_local_axes(record, canvas=tk3d)
 
-        tk3d._request_redraw = original_request_redraw
-        tk3d._invalidate_geometry_cache()
-        tk3d._request_redraw()
+        if callable(original_request_redraw):
+            tk3d._request_redraw = original_request_redraw
+        invalidate = getattr(tk3d, '_invalidate_geometry_cache', None)
+        if callable(invalidate):
+            invalidate()
+        tk3d.redraw()
 
         if fit_view:
             try:
@@ -6222,8 +6454,8 @@ class Application():
             except Exception:
                 self._fit_fea_tk3d_canvas()
 
-    def _add_fea_tk3d_local_axes(self, record):
-        tk3d = getattr(self, '_fea_tk3d_canvas', None)
+    def _add_fea_tk3d_local_axes(self, record, canvas=None):
+        tk3d = canvas if canvas is not None else getattr(self, '_fea_tk3d_canvas', None)
         if tk3d is None:
             return
         show_x = bool(self._fea_show_local_x_arrow.get())
@@ -6286,9 +6518,16 @@ class Application():
         tk3d = getattr(self, '_fea_tk3d_canvas', None)
         if tk3d is None:
             return None
-        item_ids = tk3d.canvas.find_overlapping(x, y, x, y)
+        picker = getattr(tk3d, 'pick_at', None)
+        if callable(picker):
+            tag = picker(int(x), int(y))
+            if tag and str(tag).startswith('feapanel_'):
+                return str(tag).replace('feapanel_', '')
+            return None
+        widget = event_widget(tk3d)
+        item_ids = widget.find_overlapping(x, y, x, y)
         for item_id in reversed(item_ids):
-            tags = tk3d.canvas.gettags(item_id)
+            tags = widget.gettags(item_id)
             for tag in tags:
                 if tag.startswith('feapanel_'):
                     return tag.replace('feapanel_', '')
@@ -8408,7 +8647,7 @@ class Application():
                     y_location += 1
 
     def clear_prop_3d(self):
-        """Remove any embedded Matplotlib 3D preview from the lower drawing area."""
+        """Remove any embedded 3D preview from the lower drawing area."""
         if getattr(self, '_fea_pick_after_id', None) is not None:
             try:
                 self._parent.after_cancel(self._fea_pick_after_id)
@@ -8546,12 +8785,22 @@ class Application():
         self._prop_3d_resize_after_id = self._parent.after(80, self._resize_prop_3d_figure)
 
     def _embed_prop_3d(self, fig, ax, default_view=(22, -55)):
-        """Embed the 3D property preview; pure-Tk 3D by default, Matplotlib fallback."""
+        """Embed a property preview through the application-wide viewer factory."""
+
         try:
             self._embed_prop_3d_tk3d(ax, default_view=default_view)
-        except Exception:
+        except Exception as error:
+            # Automatic fallback (GPU -> Tk) belongs to any3dview.create_viewer.
+            # A Matplotlib fallback here would silently introduce a third
+            # backend and hide an explicit GPU diagnostic from the user.
             self.clear_prop_3d()
-            self._embed_prop_3d_figure(fig, ax, default_view=default_view)
+            try:
+                self._renderer_backend_status.set(
+                    "Renderer preview unavailable: " + str(error)
+                )
+            except Exception:
+                pass
+            raise
 
     @staticmethod
     def _prop_3d_face_fill(color, alpha):
@@ -8572,7 +8821,7 @@ class Application():
         return fill, stipple
 
     def _embed_prop_3d_tk3d(self, ax, default_view=(22, -55)):
-        """Embed the property preview on the pure-Tk 3D canvas.
+        """Embed the property preview on the selected shared 3D backend.
 
         Draws the same solids that are recorded for IFC export and preserves
         the Matplotlib text: title, axis names and the SELECTED line, with the
@@ -8615,18 +8864,33 @@ class Application():
         if axis_names:
             ttk.Label(header, text=axis_names, font=self._text_size['Text 8']).pack(side=tk.LEFT)
 
-        tk3d = tkinter_3d_canvas.Tkinter3DCanvas(self._prop_3d_frame, bg='white')
+        tk3d = self._create_main_3d_viewer(self._prop_3d_frame, bg='white')
         self._prop_3d_tk3d_canvas = tk3d
-        self._prop_3d_canvas_widget = tk3d.canvas
+        self._prop_3d_canvas_widget = event_widget(tk3d)
 
         view_row = tk.Frame(toolbar_row, background=background, bd=0, highlightthickness=0)
         view_row.pack(side=tk.RIGHT)
-        ttk.Button(view_row, text='Iso', width=4, command=tk3d.set_iso_view).pack(side=tk.LEFT)
-        ttk.Button(view_row, text='Top', width=4, command=tk3d.set_top_view).pack(side=tk.LEFT)
-        ttk.Button(view_row, text='Side', width=5, command=tk3d.set_side_view).pack(side=tk.LEFT)
-        ttk.Button(view_row, text='End', width=4, command=tk3d.set_front_view).pack(side=tk.LEFT)
+        self._add_renderer_selector(view_row)
+        ttk.Button(
+            view_row, text='Iso', width=4,
+            command=lambda: self._prop_3d_tk3d_canvas.set_iso_view(),
+        ).pack(side=tk.LEFT)
+        ttk.Button(
+            view_row, text='Top', width=4,
+            command=lambda: self._prop_3d_tk3d_canvas.set_top_view(),
+        ).pack(side=tk.LEFT)
+        ttk.Button(
+            view_row, text='Side', width=5,
+            command=lambda: self._prop_3d_tk3d_canvas.set_side_view(),
+        ).pack(side=tk.LEFT)
+        ttk.Button(
+            view_row, text='End', width=4,
+            command=lambda: self._prop_3d_tk3d_canvas.set_front_view(),
+        ).pack(side=tk.LEFT)
         ttk.Button(view_row, text='Fit', width=4,
-                   command=lambda: tk3d.fit_to_scene(padding=1.18)).pack(side=tk.LEFT)
+                   command=lambda: self._prop_3d_tk3d_canvas.fit_to_scene(
+                       padding=1.18
+                   )).pack(side=tk.LEFT)
         ttk.Checkbutton(view_row, text='Opposite side', variable=self._new_prop_3d_opposite_side,
                         command=self.update_frame).pack(side=tk.LEFT, padx=(8, 0))
         ttk.Button(view_row, text='Solid export', width=10,
@@ -8639,18 +8903,26 @@ class Application():
         tk3d.set_mesh_lines(True)
 
         items = list(getattr(ax, '_anystruct_tk3d_items', ()) or ())
-        original_request_redraw = tk3d._request_redraw
-        tk3d._request_redraw = lambda: None
+        self._prop_3d_tk3d_items = items
+        original_request_redraw = getattr(tk3d, '_request_redraw', None)
+        if callable(original_request_redraw):
+            tk3d._request_redraw = lambda: None
         try:
             if items:
                 self._populate_prop_3d_tk3d_native(tk3d, items)
             else:
                 self._populate_prop_3d_tk3d_faces(tk3d, mesh)
         finally:
-            tk3d._request_redraw = original_request_redraw
-        tk3d._invalidate_geometry_cache()
+            if callable(original_request_redraw):
+                tk3d._request_redraw = original_request_redraw
+        invalidate = getattr(tk3d, '_invalidate_geometry_cache', None)
+        if callable(invalidate):
+            invalidate()
+        tk3d.redraw()
         tk3d.set_iso_view()
-        tk3d.after_idle(lambda: tk3d.fit_to_scene(padding=1.18))
+        tk3d.after_idle(
+            lambda: self._prop_3d_tk3d_canvas.fit_to_scene(padding=1.18)
+        )
 
     def _populate_prop_3d_tk3d_native(self, tk3d, items):
         """Draw the preview with the canvas's native primitives.
@@ -8838,10 +9110,11 @@ class Application():
             tk3d.add_polygon(points, color=fill, outline='#4b5563', width=1, stipple=stipple)
 
     def _embed_prop_3d_figure(self, fig, ax, default_view=(22, -55)):
-        """Embed a Matplotlib 3D figure with navigation tools.
+        """Embed a legacy Matplotlib 3D figure for compatibility callers.
 
-        In 3D mode the preview fills the lower-left property drawing area while
-        leaving the lower-right result canvas visible.
+        Maintained application previews do not route here; they use the shared
+        viewer factory. External integrations that called this historical
+        helper directly retain it for the 0.5 transition.
         """
         self._prop_3d_axes = ax
         self._prop_3d_export_mesh = getattr(ax, '_anystruct_export_mesh', None)

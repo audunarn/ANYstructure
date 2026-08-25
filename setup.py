@@ -20,13 +20,14 @@ def readme():
         return file.read()
 
 core_requires = [
+    'ANY3dView[gpu]>=0.5,<0.6',
     'ANYbuckling>=0.1,<0.2',
-    'ANYfileio>=0.1,<0.2',
-    'ANYgeometry>=0.1,<0.2',
+    'ANYfileio[semantics]>=0.2,<0.3',
+    'ANYgeometry>=0.2.4,<0.3',
     'ANYmaterial>=0.1,<0.2',
-    'ANYmesher>=0.1,<0.2',
-    'ANYsolver>=0.2,<0.3',
-    'ANYtk3D>=0.2,<0.3',
+    'ANYmesher>=0.2.5,<0.3',
+    'ANYsolver>=0.3,<0.4',
+    'ANYtk3D>=0.5,<0.6',
     'matplotlib',
     'meshio',
     'numpy',
@@ -43,7 +44,7 @@ setup(
     name='ANYstructure',  # Required
     url = 'https://github.com/audunarn/ANYstructure',
     entry_points={"console_scripts": ['ANYstructure = anystruct.__main__:main']},
-    version='6.1.1',  # Required
+    version='6.3.1',  # Required
     license='GPL-3.0-or-later',
     python_requires='>=3.13',
     description='A plate field optimization tool for offshore structures calculated according to DNV standards',
