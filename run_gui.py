@@ -346,7 +346,7 @@ def editable_repair_command() -> str:
     """Return a copy/paste repair command for this sibling-checkout layout."""
 
     editables = " ".join(f'-e "{project}"' for project in EDITABLE_BOOTSTRAP_PROJECTS)
-    return f'"{sys.executable}" -m pip install --upgrade {editables}'
+    return f'"{sys.executable}" -m pip install --upgrade --no-deps {editables}'
 
 
 def require_compatible_ecosystem(

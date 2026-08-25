@@ -142,7 +142,9 @@ def test_repair_command_has_one_dependency_ordered_editable_graph():
     command = namespace["editable_repair_command"]()
     projects = namespace["EDITABLE_BOOTSTRAP_PROJECTS"]
 
-    assert command.startswith(f'"{namespace["sys"].executable}" -m pip install --upgrade ')
+    assert command.startswith(
+        f'"{namespace["sys"].executable}" -m pip install --upgrade --no-deps '
+    )
     positions = [command.index(f'-e "{project}"') for project in projects]
     assert positions == sorted(positions)
     assert str(namespace["_ANY3DVIEW_ROOT"]) + "[gpu]" in projects

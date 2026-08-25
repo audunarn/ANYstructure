@@ -18,7 +18,11 @@ checkout:
 
 .. code-block:: powershell
 
-   python -m pip install --upgrade -e "C:\Github\ANY3dView[gpu]" -e "C:\Github\ANYmaterial" -e "C:\Github\ANYgeometry" -e "C:\Github\ANYmesh" -e "C:\Github\ANYio[semantics]" -e "C:\Github\ANYsolver" -e "C:\Github\ANYbuckling" -e "C:\Github\ANYtk3D" -e "C:\Github\ANYstructure"
+   python -m pip install --upgrade --no-deps -e "C:\Github\ANY3dView[gpu]" -e "C:\Github\ANYmaterial" -e "C:\Github\ANYgeometry" -e "C:\Github\ANYmesh" -e "C:\Github\ANYio[semantics]" -e "C:\Github\ANYsolver" -e "C:\Github\ANYbuckling" -e "C:\Github\ANYtk3D" -e "C:\Github\ANYstructure"
+
+``--no-deps`` is intentional for this coordinated source checkout: it refreshes
+the editable distributions without asking pip to resolve legacy transitive
+upper bounds from older sibling releases.
 
 ``run_gui.py`` accepts ``C:\Github\ANYmesh`` when that checkout declares
 ANYmesher 0.2.5 or newer. Otherwise it uses

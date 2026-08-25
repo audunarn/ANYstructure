@@ -64,7 +64,7 @@ Recommended local setup:
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install --upgrade -e "C:\Github\ANY3dView[gpu]" -e "C:\Github\ANYmaterial" -e "C:\Github\ANYgeometry" -e "C:\Github\ANYmesh" -e "C:\Github\ANYio[semantics]" -e "C:\Github\ANYsolver" -e "C:\Github\ANYbuckling" -e "C:\Github\ANYtk3D" -e "C:\Github\ANYstructure"
+python -m pip install --upgrade --no-deps -e "C:\Github\ANY3dView[gpu]" -e "C:\Github\ANYmaterial" -e "C:\Github\ANYgeometry" -e "C:\Github\ANYmesh" -e "C:\Github\ANYio[semantics]" -e "C:\Github\ANYsolver" -e "C:\Github\ANYbuckling" -e "C:\Github\ANYtk3D" -e "C:\Github\ANYstructure"
 python -m pip install -r requirements-dev.txt
 python -m pytest
 ```
@@ -73,7 +73,9 @@ The editable bootstrap is intentionally ordered by dependency: viewer core,
 material and geometry, meshing, semantic file I/O, solver, independent
 buckling and Tk rendering, then ANYstructure. `run_gui.py` prints the same
 graph with the exact active Python executable if metadata or an import origin
-is stale.
+is stale. The coordinated editable refresh uses `--no-deps` so pip updates
+the sibling metadata without trying to resolve older packages' narrow
+transitive constraints.
 
 ANYstructure 6.3.1 supports ANY3dView and ANYtk3D source checkouts at version
 0.5.1 or newer. The launcher accepts shared checkouts whose `pyproject.toml`
