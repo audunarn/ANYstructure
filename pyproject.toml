@@ -11,5 +11,5 @@ addopts = ["-ra", "-p", "no:cacheprovider"]
 # setup.py remains the package-metadata authority; these mirror the minimum
 # source versions enforced by run_gui.py for release tooling.
 anymesher = ">=0.2.5"
-any3dview = ">=0.5"
-anytk3d = ">=0.5"
+any3dview = ">=0.5.1"
+anytk3d = ">=0.5.1"

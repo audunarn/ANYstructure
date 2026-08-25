@@ -20,14 +20,14 @@ def readme():
         return file.read()
 
 core_requires = [
-    'ANY3dView[gpu]>=0.5',
-    'ANYbuckling>=0.1',
-    'ANYfileio[semantics]>=0.2',
+    'ANY3dView[gpu]>=0.5.1',
+    'ANYbuckling>=0.1.1',
+    'ANYfileio[semantics]>=0.2.1',
     'ANYgeometry>=0.2.4',
-    'ANYmaterial>=0.1',
+    'ANYmaterial>=0.1.1',
     'ANYmesher>=0.2.5',
     'ANYsolver>=0.3',
-    'ANYtk3D>=0.5',
+    'ANYtk3D>=0.5.1',
     'matplotlib',
     'meshio',
     'numpy',

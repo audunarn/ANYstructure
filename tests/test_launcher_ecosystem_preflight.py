@@ -112,7 +112,7 @@ def test_missing_semantics_distribution_has_actionable_repair_guidance():
         namespace["require_compatible_ecosystem"](read_version, find_spec)
 
     message = str(raised.value)
-    assert "ANYfileio[semantics]>=0.2: distribution metadata is missing" in message
+    assert "ANYfileio[semantics]>=0.2.1: distribution metadata is missing" in message
     assert "ANYio[semantics]" in message
     assert "pip install --upgrade" in message
     assert "ANYstructure" in message

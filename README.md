@@ -91,10 +91,10 @@ qualified checkout at `C:\Github\ANYsolver\.compat_anymesher_025`. Set
 `$env:ANYSTRUCTURE_ANYMESHER_ROOT = "C:\path\to\ANYmesher-0.2.5"` to select a
 different compatible checkout; an invalid override blocks startup.
 
-`ANYsolver>=0.3`, `ANYgeometry>=0.2.4`, `ANYmaterial>=0.1`,
-`ANYmesher>=0.2.5`, `ANYfileio[semantics]>=0.2`,
-`ANYbuckling>=0.1`, `ANY3dView[gpu]>=0.5`, and
-`ANYtk3D>=0.5` are required runtime dependencies. These minimum-only
+`ANYsolver>=0.3`, `ANYgeometry>=0.2.4`, `ANYmaterial>=0.1.1`,
+`ANYmesher>=0.2.5`, `ANYfileio[semantics]>=0.2.1`,
+`ANYbuckling>=0.1.1`, `ANY3dView[gpu]>=0.5.1`, and
+`ANYtk3D>=0.5.1` are required runtime dependencies. These minimum-only
 constraints allow newer coordinated ecosystem releases. Install the editable sibling checkouts above until compatible
 releases are available from PyPI. ANYgeometry is the shared neutral surface-geometry
 authority; materials, structural properties, loads, mesh controls, and solver
