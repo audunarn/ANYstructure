@@ -54,15 +54,24 @@ def _source_project_identity(root: Path) -> tuple[str | None, str | None]:
     return values.get("name"), values.get("version")
 
 
+def _numeric_version(value: object) -> tuple[int, int, int]:
+    """Return the first three numeric release components."""
+
+    import re
+
+    parts = [int(item) for item in re.findall(r"\d+", str(value or ""))[:3]]
+    return tuple((parts + [0, 0, 0])[:3])
+
+
 def _anytk3d_source_problem(root: Path) -> str | None:
     name, version = _source_project_identity(root)
     if name != "ANYtk3D":
         return f"{root / 'pyproject.toml'} does not declare project name ANYtk3D"
-    if version != ANYTK3D_REQUIRED_SOURCE_VERSION:
+    if _numeric_version(version) < _numeric_version(ANYTK3D_REQUIRED_SOURCE_VERSION):
         shown = version if version is not None else "no static version"
         return (
             f"{root / 'pyproject.toml'} declares {shown}; "
-            f"exactly {ANYTK3D_REQUIRED_SOURCE_VERSION} is required"
+            f"at least {ANYTK3D_REQUIRED_SOURCE_VERSION} is required"
         )
     package = root / "src" / "anytk3d" / "__init__.py"
     if not package.is_file():
@@ -74,11 +83,11 @@ def _any3dview_source_problem(root: Path) -> str | None:
     name, version = _source_project_identity(root)
     if name != "ANY3dView":
         return f"{root / 'pyproject.toml'} does not declare project name ANY3dView"
-    if version != ANY3DVIEW_REQUIRED_SOURCE_VERSION:
+    if _numeric_version(version) < _numeric_version(ANY3DVIEW_REQUIRED_SOURCE_VERSION):
         shown = version if version is not None else "no static version"
         return (
             f"{root / 'pyproject.toml'} declares {shown}; "
-            f"exactly {ANY3DVIEW_REQUIRED_SOURCE_VERSION} is required"
+            f"at least {ANY3DVIEW_REQUIRED_SOURCE_VERSION} is required"
         )
     package = root / "src" / "any3dview" / "__init__.py"
     if not package.is_file():
@@ -90,11 +99,11 @@ def _anymesher_source_problem(root: Path) -> str | None:
     name, version = _source_project_identity(root)
     if name != "ANYmesher":
         return f"{root / 'pyproject.toml'} does not declare project name ANYmesher"
-    if version != ANYMESHER_REQUIRED_SOURCE_VERSION:
+    if _numeric_version(version) < _numeric_version(ANYMESHER_REQUIRED_SOURCE_VERSION):
         shown = version if version is not None else "no static version"
         return (
             f"{root / 'pyproject.toml'} declares {shown}; "
-            f"exactly {ANYMESHER_REQUIRED_SOURCE_VERSION} is required"
+            f"at least {ANYMESHER_REQUIRED_SOURCE_VERSION} is required"
         )
     package = root / "src" / "anymesher" / "__init__.py"
     if not package.is_file():
@@ -108,7 +117,7 @@ def select_anymesher_source_root(
     shared_root: Path | None = None,
     safe_root: Path | None = None,
 ) -> Path:
-    """Select an exact 0.2.5 source checkout without importing ANYmesher."""
+    """Select a supported ANYmesher source checkout without importing it."""
 
     environment = os.environ if environ is None else environ
     override = str(environment.get(ANYMESHER_SOURCE_ROOT_ENV, "")).strip()
@@ -130,7 +139,7 @@ def select_anymesher_source_root(
             return candidate.resolve()
         rejected.append(f"{label}: {problem}")
     raise RuntimeError(
-        "ANYstructure 6.3.1 needs an exact ANYmesher 0.2.5 source checkout. "
+        "ANYstructure 6.3.1 needs an ANYmesher source checkout at version 0.2.5 or newer. "
         f"Set {ANYMESHER_SOURCE_ROOT_ENV} to one. Checked:\n- "
         + "\n- ".join(rejected)
     )
@@ -142,7 +151,7 @@ def select_anytk3d_source_root(
     shared_root: Path | None = None,
     safe_root: Path | None = None,
 ) -> Path:
-    """Select an exact 0.5.1 source checkout without importing ANYtk3D."""
+    """Select a supported ANYtk3D source checkout without importing it."""
 
     environment = os.environ if environ is None else environ
     override = str(environment.get(ANYTK3D_SOURCE_ROOT_ENV, "")).strip()
@@ -164,7 +173,7 @@ def select_anytk3d_source_root(
             return candidate.resolve()
         rejected.append(f"{label}: {problem}")
     raise RuntimeError(
-        "ANYstructure 6.3.1 needs an exact ANYtk3D 0.5.1 source checkout. "
+        "ANYstructure 6.3.1 needs an ANYtk3D source checkout at version 0.5.1 or newer. "
         f"Set {ANYTK3D_SOURCE_ROOT_ENV} to one. Checked:\n- "
         + "\n- ".join(rejected)
     )
@@ -176,7 +185,7 @@ def select_any3dview_source_root(
     shared_root: Path | None = None,
     safe_root: Path | None = None,
 ) -> Path:
-    """Select an exact 0.5.1 source checkout without importing ANY3dView."""
+    """Select a supported ANY3dView source checkout without importing it."""
 
     environment = os.environ if environ is None else environ
     override = str(environment.get(ANY3DVIEW_SOURCE_ROOT_ENV, "")).strip()
@@ -198,7 +207,7 @@ def select_any3dview_source_root(
             return candidate.resolve()
         rejected.append(f"{label}: {problem}")
     raise RuntimeError(
-        "ANYstructure 6.3.1 needs an exact ANY3dView 0.5.1 source checkout. "
+        "ANYstructure 6.3.1 needs an ANY3dView source checkout at version 0.5.1 or newer. "
         f"Set {ANY3DVIEW_SOURCE_ROOT_ENV} to one. Checked:\n- "
         + "\n- ".join(rejected)
     )
@@ -227,14 +236,14 @@ for _source in reversed(_SOURCE_TREES):
 # can therefore provide stale metadata while newer Python modules are imported.
 # That split state is particularly unsafe for schema/semantics integrations.
 ECOSYSTEM_REQUIREMENTS = (
-    ("ANY3dView", "ANY3dView[gpu]>=0.5,<0.6", "0.5.1", "0.6.0"),
-    ("ANYbuckling", "ANYbuckling>=0.1,<0.2", "0.1.1", "0.2.0"),
-    ("ANYfileio", "ANYfileio[semantics]>=0.2,<0.3", "0.2.1", "0.3.0"),
-    ("ANYgeometry", "ANYgeometry>=0.2.4,<0.3", "0.2.4", "0.3.0"),
-    ("ANYmaterial", "ANYmaterial>=0.1,<0.2", "0.1.1", "0.2.0"),
-    ("ANYmesher", "ANYmesher>=0.2.5,<0.3", "0.2.5", "0.3.0"),
-    ("ANYsolver", "ANYsolver>=0.3,<0.4", "0.3.0", "0.4.0"),
-    ("ANYtk3D", "ANYtk3D>=0.5,<0.6", "0.5.1", "0.6.0"),
+    ("ANY3dView", "ANY3dView[gpu]>=0.5", "0.5.1"),
+    ("ANYbuckling", "ANYbuckling>=0.1", "0.1.1"),
+    ("ANYfileio", "ANYfileio[semantics]>=0.2", "0.2.1"),
+    ("ANYgeometry", "ANYgeometry>=0.2.4", "0.2.4"),
+    ("ANYmaterial", "ANYmaterial>=0.1", "0.1.1"),
+    ("ANYmesher", "ANYmesher>=0.2.5", "0.2.5"),
+    ("ANYsolver", "ANYsolver>=0.3", "0.3.0"),
+    ("ANYtk3D", "ANYtk3D>=0.5", "0.5.1"),
 )
 
 # Import names and the sibling source roots they must resolve from.  This is
@@ -264,15 +273,6 @@ EDITABLE_BOOTSTRAP_PROJECTS = (
 )
 
 
-def _numeric_version(value: object) -> tuple[int, int, int]:
-    """Return the first three numeric release components."""
-
-    import re
-
-    parts = [int(item) for item in re.findall(r"\d+", str(value or ""))[:3]]
-    return tuple((parts + [0, 0, 0])[:3])
-
-
 def ecosystem_compatibility_problems(
     version_reader: Callable[[str], str] | None = None,
 ) -> tuple[str, ...]:
@@ -280,14 +280,14 @@ def ecosystem_compatibility_problems(
 
     read_version = metadata.version if version_reader is None else version_reader
     problems: list[str] = []
-    for distribution, requirement, minimum, maximum in ECOSYSTEM_REQUIREMENTS:
+    for distribution, requirement, minimum in ECOSYSTEM_REQUIREMENTS:
         try:
             installed = str(read_version(distribution))
         except metadata.PackageNotFoundError:
             problems.append(f"{requirement}: distribution metadata is missing")
             continue
         numeric = _numeric_version(installed)
-        if numeric < _numeric_version(minimum) or numeric >= _numeric_version(maximum):
+        if numeric < _numeric_version(minimum):
             problems.append(f"{requirement}: installed metadata reports {installed}")
     return tuple(problems)
 

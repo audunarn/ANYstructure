@@ -91,6 +91,13 @@ def test_compatible_latest_release_graph_passes_without_importing_tk():
     )
 
 
+def test_newer_ecosystem_release_graph_is_not_artificially_capped():
+    namespace = _launcher_namespace()
+    versions = {name: "1.0.0" for name in _compatible_versions()}
+
+    assert namespace["ecosystem_compatibility_problems"](versions.__getitem__) == ()
+
+
 def test_missing_semantics_distribution_has_actionable_repair_guidance():
     namespace = _launcher_namespace()
     versions = _compatible_versions()
@@ -105,7 +112,7 @@ def test_missing_semantics_distribution_has_actionable_repair_guidance():
         namespace["require_compatible_ecosystem"](read_version, find_spec)
 
     message = str(raised.value)
-    assert "ANYfileio[semantics]>=0.2,<0.3: distribution metadata is missing" in message
+    assert "ANYfileio[semantics]>=0.2: distribution metadata is missing" in message
     assert "ANYio[semantics]" in message
     assert "pip install --upgrade" in message
     assert "ANYstructure" in message
@@ -141,8 +148,7 @@ def test_repair_command_has_one_dependency_ordered_editable_graph():
     assert str(namespace["_ANY3DVIEW_ROOT"]) + "[gpu]" in projects
     mesher_project = str(namespace["_ANYMESHER_ROOT"])
     assert mesher_project in projects
-    assert mesher_project.endswith(".compat_anymesher_025")
-    assert str(namespace["_ROOT"].parent / "ANYmesh") not in projects
+    assert mesher_project == str(namespace["_ROOT"].parent / "ANYmesh")
     assert any(project.endswith("ANYio[semantics]") for project in projects)
     assert str(namespace["_ANYTK3D_ROOT"]) in projects
     assert projects[-1].endswith("ANYstructure")
@@ -157,7 +163,7 @@ def test_stale_solver_metadata_is_rejected_before_gui_import():
 
     problems = namespace["ecosystem_compatibility_problems"](versions.__getitem__)
 
-    assert problems == ("ANYsolver>=0.3,<0.4: installed metadata reports 0.2.9",)
+    assert problems == ("ANYsolver>=0.3: installed metadata reports 0.2.9",)
 
 
 def test_stale_mesher_metadata_is_rejected_before_gui_import():
@@ -168,7 +174,7 @@ def test_stale_mesher_metadata_is_rejected_before_gui_import():
     problems = namespace["ecosystem_compatibility_problems"](versions.__getitem__)
 
     assert problems == (
-        "ANYmesher>=0.2.5,<0.3: installed metadata reports 0.2.2",
+        "ANYmesher>=0.2.5: installed metadata reports 0.2.2",
     )
 
 
@@ -186,7 +192,7 @@ def test_old_shared_anymesher_is_rejected_in_favour_of_qualified_fallback(
     assert selected == safe.resolve()
 
 
-def test_any3dview_source_must_be_exact_051(tmp_path):
+def test_any3dview_source_must_meet_minimum_051(tmp_path):
     namespace = _launcher_namespace()
     shared = _write_any3dview_checkout(tmp_path / "shared", "0.4.0")
     safe = _write_any3dview_checkout(tmp_path / "safe", "0.5.1")
@@ -204,7 +210,7 @@ def test_any3dview_environment_override_is_fail_closed(tmp_path):
     safe = _write_any3dview_checkout(tmp_path / "safe", "0.5.1")
     override = _write_any3dview_checkout(tmp_path / "override", "0.4.0")
 
-    with pytest.raises(RuntimeError, match="exactly 0.5.1 is required"):
+    with pytest.raises(RuntimeError, match="at least 0.5.1 is required"):
         namespace["select_any3dview_source_root"](
             {namespace["ANY3DVIEW_SOURCE_ROOT_ENV"]: str(override)},
             shared_root=shared,
@@ -212,7 +218,7 @@ def test_any3dview_environment_override_is_fail_closed(tmp_path):
         )
 
 
-def test_shared_anymesher_is_used_only_when_it_declares_exact_025(tmp_path):
+def test_shared_anymesher_is_used_when_it_meets_minimum_025(tmp_path):
     namespace = _launcher_namespace()
     shared = _write_anymesher_checkout(tmp_path / "shared", "0.2.5")
     safe = _write_anymesher_checkout(tmp_path / "safe", "0.2.5")
@@ -238,14 +244,14 @@ def test_anymesher_environment_override_is_explicit_and_fail_closed(tmp_path):
 
     message = str(raised.value)
     assert namespace["ANYMESHER_SOURCE_ROOT_ENV"] in message
-    assert "declares 0.2.2; exactly 0.2.5 is required" in message
+    assert "declares 0.2.2; at least 0.2.5 is required" in message
 
 
 def test_valid_anymesher_environment_override_wins(tmp_path):
     namespace = _launcher_namespace()
     shared = _write_anymesher_checkout(tmp_path / "shared", "0.2.5")
     safe = _write_anymesher_checkout(tmp_path / "safe", "0.2.5")
-    override = _write_anymesher_checkout(tmp_path / "override", "0.2.5")
+    override = _write_anymesher_checkout(tmp_path / "override", "0.3.0")
     environment = {namespace["ANYMESHER_SOURCE_ROOT_ENV"]: str(override)}
 
     selected = namespace["select_anymesher_source_root"](
@@ -267,7 +273,7 @@ def test_dirty_shared_anytk3d_is_rejected_in_favour_of_qualified_fallback(tmp_pa
     assert selected == safe.resolve()
 
 
-def test_shared_anytk3d_is_used_only_when_it_declares_exact_051(tmp_path):
+def test_shared_anytk3d_is_used_when_it_meets_minimum_051(tmp_path):
     namespace = _launcher_namespace()
     shared = _write_anytk3d_checkout(tmp_path / "shared", "0.5.1")
     safe = _write_anytk3d_checkout(tmp_path / "safe", "0.5.1")
@@ -293,14 +299,14 @@ def test_anytk3d_environment_override_is_explicit_and_fail_closed(tmp_path):
 
     message = str(raised.value)
     assert namespace["ANYTK3D_SOURCE_ROOT_ENV"] in message
-    assert "declares 0.3.0; exactly 0.5.1 is required" in message
+    assert "declares 0.3.0; at least 0.5.1 is required" in message
 
 
 def test_valid_anytk3d_environment_override_wins(tmp_path):
     namespace = _launcher_namespace()
     shared = _write_anytk3d_checkout(tmp_path / "shared", "0.5.1")
     safe = _write_anytk3d_checkout(tmp_path / "safe", "0.5.1")
-    override = _write_anytk3d_checkout(tmp_path / "override", "0.5.1")
+    override = _write_anytk3d_checkout(tmp_path / "override", "0.6.0")
     environment = {namespace["ANYTK3D_SOURCE_ROOT_ENV"]: str(override)}
 
     selected = namespace["select_anytk3d_source_root"](

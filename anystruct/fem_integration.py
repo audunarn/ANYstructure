@@ -79,7 +79,6 @@ _interpolate_thickness_color = _tk3d_canvas_module._interpolate_thickness_color
 
 
 MINIMUM_ANYSOLVER_VERSION = "0.3.0"
-MAXIMUM_EXCLUSIVE_ANYSOLVER_VERSION = "0.4.0"
 
 
 def _numeric_version(value: Any) -> tuple[int, int, int]:
@@ -94,15 +93,10 @@ def _require_supported_anysolver() -> str:
 
     installed = str(getattr(_anysolver_package, "__version__", "0"))
     installed_numeric = _numeric_version(installed)
-    if (
-        installed_numeric < _numeric_version(MINIMUM_ANYSOLVER_VERSION)
-        or installed_numeric >= _numeric_version(MAXIMUM_EXCLUSIVE_ANYSOLVER_VERSION)
-    ):
+    if installed_numeric < _numeric_version(MINIMUM_ANYSOLVER_VERSION):
         raise RuntimeError(
             "ANYstructure FEM requires ANYsolver>="
             + MINIMUM_ANYSOLVER_VERSION
-            + ",<"
-            + MAXIMUM_EXCLUSIVE_ANYSOLVER_VERSION.rsplit(".", 1)[0]
             + "; imported "
             + installed
             + " from "

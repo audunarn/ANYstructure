@@ -20,7 +20,7 @@ than being duplicated in this README.
 
 ## Finite-element GUI integration
 
-The FE GUI requires `ANYsolver>=0.3,<0.4`. Axial force, bending moment,
+The FE GUI requires `ANYsolver>=0.3`. Axial force, bending moment,
 shear force, torsional moment, pressure, and the supported collision controls
 are mapped directly to the external solver runtime. Current-area follower
 pressure is available for nonlinear static and arc-length runs on the Static
@@ -64,7 +64,7 @@ Recommended local setup:
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install --upgrade -e "C:\Github\ANY3dView[gpu]" -e "C:\Github\ANYmaterial" -e "C:\Github\ANYgeometry" -e "C:\Github\ANYsolver\.compat_anymesher_025" -e "C:\Github\ANYio[semantics]" -e "C:\Github\ANYsolver" -e "C:\Github\ANYbuckling" -e "C:\Github\ANYtk3D" -e "C:\Github\ANYstructure"
+python -m pip install --upgrade -e "C:\Github\ANY3dView[gpu]" -e "C:\Github\ANYmaterial" -e "C:\Github\ANYgeometry" -e "C:\Github\ANYmesh" -e "C:\Github\ANYio[semantics]" -e "C:\Github\ANYsolver" -e "C:\Github\ANYbuckling" -e "C:\Github\ANYtk3D" -e "C:\Github\ANYstructure"
 python -m pip install -r requirements-dev.txt
 python -m pytest
 ```
@@ -75,25 +75,25 @@ buckling and Tk rendering, then ANYstructure. `run_gui.py` prints the same
 graph with the exact active Python executable if metadata or an import origin
 is stale.
 
-ANYstructure 6.3.1 uses exact 0.5.1 source checkouts of ANY3dView and ANYtk3D.
-The launcher accepts the shared checkouts while their `pyproject.toml` files
-declare that version. To select different qualified checkouts explicitly, set
+ANYstructure 6.3.1 supports ANY3dView and ANYtk3D source checkouts at version
+0.5.1 or newer. The launcher accepts shared checkouts whose `pyproject.toml`
+files meet that minimum. To select different qualified checkouts explicitly, set
 `$env:ANYSTRUCTURE_ANY3DVIEW_ROOT = "C:\path\to\ANY3dView-0.5.1"` and/or
 `$env:ANYSTRUCTURE_ANYTK3D_ROOT = "C:\path\to\ANYtk3D-0.5.1"` before running
 `run_gui.py`. Invalid overrides block startup instead of falling back silently.
 
 ANYmesher is selected with the same fail-closed rule. The shared
 `C:\Github\ANYmesh` checkout is used only while its `pyproject.toml` declares
-exactly version 0.2.5. Otherwise the launcher and its repair command use the
+version 0.2.5 or newer. Otherwise the launcher and its repair command use the
 qualified checkout at `C:\Github\ANYsolver\.compat_anymesher_025`. Set
 `$env:ANYSTRUCTURE_ANYMESHER_ROOT = "C:\path\to\ANYmesher-0.2.5"` to select a
-different exact 0.2.5 checkout; an invalid override blocks startup.
+different compatible checkout; an invalid override blocks startup.
 
-`ANYsolver>=0.3,<0.4`, `ANYgeometry>=0.2.4,<0.3`, `ANYmaterial`,
-`ANYmesher>=0.2.5,<0.3`, `ANYfileio[semantics]>=0.2,<0.3`,
-`ANYbuckling>=0.1,<0.2`, `ANY3dView[gpu]>=0.5,<0.6`, and
-`ANYtk3D>=0.5,<0.6` are required runtime
-dependencies. Install the editable sibling checkouts above until compatible
+`ANYsolver>=0.3`, `ANYgeometry>=0.2.4`, `ANYmaterial>=0.1`,
+`ANYmesher>=0.2.5`, `ANYfileio[semantics]>=0.2`,
+`ANYbuckling>=0.1`, `ANY3dView[gpu]>=0.5`, and
+`ANYtk3D>=0.5` are required runtime dependencies. These minimum-only
+constraints allow newer coordinated ecosystem releases. Install the editable sibling checkouts above until compatible
 releases are available from PyPI. ANYgeometry is the shared neutral surface-geometry
 authority; materials, structural properties, loads, mesh controls, and solver
 state remain in their owning packages.
