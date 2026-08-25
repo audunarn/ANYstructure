@@ -13,15 +13,15 @@ from typing import Any, Callable, Mapping, Sequence
 
 _ROOT = Path(__file__).resolve().parent
 ANYMESHER_SOURCE_ROOT_ENV = "ANYSTRUCTURE_ANYMESHER_ROOT"
-ANYMESHER_REQUIRED_SOURCE_VERSION = "0.2.3"
+ANYMESHER_REQUIRED_SOURCE_VERSION = "0.2.5"
 _SHARED_ANYMESHER_ROOT = _ROOT.parent / "ANYmesh"
-_SAFE_ANYMESHER_ROOT = _ROOT.parent / "ANYsolver" / ".compat_anymesher_023"
+_SAFE_ANYMESHER_ROOT = _ROOT.parent / "ANYsolver" / ".compat_anymesher_025"
 ANYTK3D_SOURCE_ROOT_ENV = "ANYSTRUCTURE_ANYTK3D_ROOT"
-ANYTK3D_REQUIRED_SOURCE_VERSION = "0.5.0"
+ANYTK3D_REQUIRED_SOURCE_VERSION = "0.5.1"
 _SHARED_ANYTK3D_ROOT = _ROOT.parent / "ANYtk3D"
 _SAFE_ANYTK3D_ROOT = _ROOT.parent / "ANYsolver" / ".compat_anytk3d_050"
 ANY3DVIEW_SOURCE_ROOT_ENV = "ANYSTRUCTURE_ANY3DVIEW_ROOT"
-ANY3DVIEW_REQUIRED_SOURCE_VERSION = "0.5.0"
+ANY3DVIEW_REQUIRED_SOURCE_VERSION = "0.5.1"
 _SHARED_ANY3DVIEW_ROOT = _ROOT.parent / "ANY3dView"
 _SAFE_ANY3DVIEW_ROOT = _ROOT.parent / "ANYsolver" / ".compat_any3dview_050"
 
@@ -108,7 +108,7 @@ def select_anymesher_source_root(
     shared_root: Path | None = None,
     safe_root: Path | None = None,
 ) -> Path:
-    """Select an exact 0.2.3 source checkout without importing ANYmesher."""
+    """Select an exact 0.2.5 source checkout without importing ANYmesher."""
 
     environment = os.environ if environ is None else environ
     override = str(environment.get(ANYMESHER_SOURCE_ROOT_ENV, "")).strip()
@@ -130,7 +130,7 @@ def select_anymesher_source_root(
             return candidate.resolve()
         rejected.append(f"{label}: {problem}")
     raise RuntimeError(
-        "ANYstructure 6.3.0 needs an exact ANYmesher 0.2.3 source checkout. "
+        "ANYstructure 6.3.1 needs an exact ANYmesher 0.2.5 source checkout. "
         f"Set {ANYMESHER_SOURCE_ROOT_ENV} to one. Checked:\n- "
         + "\n- ".join(rejected)
     )
@@ -142,7 +142,7 @@ def select_anytk3d_source_root(
     shared_root: Path | None = None,
     safe_root: Path | None = None,
 ) -> Path:
-    """Select an exact 0.5.0 source checkout without importing ANYtk3D."""
+    """Select an exact 0.5.1 source checkout without importing ANYtk3D."""
 
     environment = os.environ if environ is None else environ
     override = str(environment.get(ANYTK3D_SOURCE_ROOT_ENV, "")).strip()
@@ -164,7 +164,7 @@ def select_anytk3d_source_root(
             return candidate.resolve()
         rejected.append(f"{label}: {problem}")
     raise RuntimeError(
-        "ANYstructure 6.3.0 needs an exact ANYtk3D 0.5.0 source checkout. "
+        "ANYstructure 6.3.1 needs an exact ANYtk3D 0.5.1 source checkout. "
         f"Set {ANYTK3D_SOURCE_ROOT_ENV} to one. Checked:\n- "
         + "\n- ".join(rejected)
     )
@@ -176,7 +176,7 @@ def select_any3dview_source_root(
     shared_root: Path | None = None,
     safe_root: Path | None = None,
 ) -> Path:
-    """Select an exact 0.5.0 source checkout without importing ANY3dView."""
+    """Select an exact 0.5.1 source checkout without importing ANY3dView."""
 
     environment = os.environ if environ is None else environ
     override = str(environment.get(ANY3DVIEW_SOURCE_ROOT_ENV, "")).strip()
@@ -198,7 +198,7 @@ def select_any3dview_source_root(
             return candidate.resolve()
         rejected.append(f"{label}: {problem}")
     raise RuntimeError(
-        "ANYstructure 6.3.0 needs an exact ANY3dView 0.5.0 source checkout. "
+        "ANYstructure 6.3.1 needs an exact ANY3dView 0.5.1 source checkout. "
         f"Set {ANY3DVIEW_SOURCE_ROOT_ENV} to one. Checked:\n- "
         + "\n- ".join(rejected)
     )
@@ -227,14 +227,14 @@ for _source in reversed(_SOURCE_TREES):
 # can therefore provide stale metadata while newer Python modules are imported.
 # That split state is particularly unsafe for schema/semantics integrations.
 ECOSYSTEM_REQUIREMENTS = (
-    ("ANY3dView", "ANY3dView[gpu]>=0.5,<0.6", "0.5.0", "0.6.0"),
-    ("ANYbuckling", "ANYbuckling>=0.1,<0.2", "0.1.0", "0.2.0"),
-    ("ANYfileio", "ANYfileio[semantics]>=0.2,<0.3", "0.2.0", "0.3.0"),
-    ("ANYgeometry", "ANYgeometry>=0.2.2,<0.3", "0.2.2", "0.3.0"),
-    ("ANYmaterial", "ANYmaterial>=0.1,<0.2", "0.1.0", "0.2.0"),
-    ("ANYmesher", "ANYmesher>=0.2.3,<0.3", "0.2.3", "0.3.0"),
+    ("ANY3dView", "ANY3dView[gpu]>=0.5,<0.6", "0.5.1", "0.6.0"),
+    ("ANYbuckling", "ANYbuckling>=0.1,<0.2", "0.1.1", "0.2.0"),
+    ("ANYfileio", "ANYfileio[semantics]>=0.2,<0.3", "0.2.1", "0.3.0"),
+    ("ANYgeometry", "ANYgeometry>=0.2.4,<0.3", "0.2.4", "0.3.0"),
+    ("ANYmaterial", "ANYmaterial>=0.1,<0.2", "0.1.1", "0.2.0"),
+    ("ANYmesher", "ANYmesher>=0.2.5,<0.3", "0.2.5", "0.3.0"),
     ("ANYsolver", "ANYsolver>=0.3,<0.4", "0.3.0", "0.4.0"),
-    ("ANYtk3D", "ANYtk3D>=0.5,<0.6", "0.5.0", "0.6.0"),
+    ("ANYtk3D", "ANYtk3D>=0.5,<0.6", "0.5.1", "0.6.0"),
 )
 
 # Import names and the sibling source roots they must resolve from.  This is
@@ -361,7 +361,7 @@ def require_compatible_ecosystem(
     )
     if problems:
         raise RuntimeError(
-            "ANYstructure 6.3.0 cannot start with this mixed ecosystem:\n- "
+            "ANYstructure 6.3.1 cannot start with this mixed ecosystem:\n- "
             + "\n- ".join(problems)
             + "\nRepair the sibling editable installs, then restart:\n"
             + editable_repair_command()

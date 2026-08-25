@@ -6,7 +6,7 @@ ANYstructure is a desktop steel-structure design application for plate fields
 and cylinders, including weight, weld, and cost optimization. Calculations are
 based on DNV standards and recommended practices.
 
-## Current release: 6.3.0
+## Current release: 6.3.1
 
 - Adds live Automatic, ModernGL GPU, and Tk software renderer selection to the
   maintained 3D model, mesh, and result views.
@@ -64,7 +64,7 @@ Recommended local setup:
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install --upgrade -e "C:\Github\ANY3dView[gpu]" -e "C:\Github\ANYmaterial" -e "C:\Github\ANYgeometry" -e "C:\Github\ANYsolver\.compat_anymesher_023" -e "C:\Github\ANYio[semantics]" -e "C:\Github\ANYsolver" -e "C:\Github\ANYbuckling" -e "C:\Github\ANYtk3D" -e "C:\Github\ANYstructure"
+python -m pip install --upgrade -e "C:\Github\ANY3dView[gpu]" -e "C:\Github\ANYmaterial" -e "C:\Github\ANYgeometry" -e "C:\Github\ANYsolver\.compat_anymesher_025" -e "C:\Github\ANYio[semantics]" -e "C:\Github\ANYsolver" -e "C:\Github\ANYbuckling" -e "C:\Github\ANYtk3D" -e "C:\Github\ANYstructure"
 python -m pip install -r requirements-dev.txt
 python -m pytest
 ```
@@ -75,22 +75,22 @@ buckling and Tk rendering, then ANYstructure. `run_gui.py` prints the same
 graph with the exact active Python executable if metadata or an import origin
 is stale.
 
-ANYstructure 6.3.0 uses exact 0.5.0 source checkouts of ANY3dView and ANYtk3D.
+ANYstructure 6.3.1 uses exact 0.5.1 source checkouts of ANY3dView and ANYtk3D.
 The launcher accepts the shared checkouts while their `pyproject.toml` files
 declare that version. To select different qualified checkouts explicitly, set
-`$env:ANYSTRUCTURE_ANY3DVIEW_ROOT = "C:\path\to\ANY3dView-0.5.0"` and/or
-`$env:ANYSTRUCTURE_ANYTK3D_ROOT = "C:\path\to\ANYtk3D-0.5.0"` before running
+`$env:ANYSTRUCTURE_ANY3DVIEW_ROOT = "C:\path\to\ANY3dView-0.5.1"` and/or
+`$env:ANYSTRUCTURE_ANYTK3D_ROOT = "C:\path\to\ANYtk3D-0.5.1"` before running
 `run_gui.py`. Invalid overrides block startup instead of falling back silently.
 
 ANYmesher is selected with the same fail-closed rule. The shared
 `C:\Github\ANYmesh` checkout is used only while its `pyproject.toml` declares
-exactly version 0.2.3. Otherwise the launcher and its repair command use the
-qualified checkout at `C:\Github\ANYsolver\.compat_anymesher_023`. Set
-`$env:ANYSTRUCTURE_ANYMESHER_ROOT = "C:\path\to\ANYmesher-0.2.3"` to select a
-different exact 0.2.3 checkout; an invalid override blocks startup.
+exactly version 0.2.5. Otherwise the launcher and its repair command use the
+qualified checkout at `C:\Github\ANYsolver\.compat_anymesher_025`. Set
+`$env:ANYSTRUCTURE_ANYMESHER_ROOT = "C:\path\to\ANYmesher-0.2.5"` to select a
+different exact 0.2.5 checkout; an invalid override blocks startup.
 
-`ANYsolver>=0.3,<0.4`, `ANYgeometry>=0.2.2,<0.3`, `ANYmaterial`,
-`ANYmesher>=0.2.3,<0.3`, `ANYfileio[semantics]>=0.2,<0.3`,
+`ANYsolver>=0.3,<0.4`, `ANYgeometry>=0.2.4,<0.3`, `ANYmaterial`,
+`ANYmesher>=0.2.5,<0.3`, `ANYfileio[semantics]>=0.2,<0.3`,
 `ANYbuckling>=0.1,<0.2`, `ANY3dView[gpu]>=0.5,<0.6`, and
 `ANYtk3D>=0.5,<0.6` are required runtime
 dependencies. Install the editable sibling checkouts above until compatible

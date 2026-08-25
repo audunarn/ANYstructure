@@ -266,10 +266,10 @@ def test_dependency_and_gui_wiring_is_declared_in_release_surfaces():
         assert distribution in setup_source
         assert distribution in requirements
     assert "ANYfileio[semantics]>=0.2,<0.3" in setup_source
-    assert "ANYgeometry>=0.2.2,<0.3" in setup_source
-    assert "ANYmesher>=0.2.3,<0.3" in setup_source
+    assert "ANYgeometry>=0.2.4,<0.3" in setup_source
+    assert "ANYmesher>=0.2.5,<0.3" in setup_source
     pyproject = (REPOSITORY_ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    assert 'anymesher = ">=0.2.3,<0.3"' in pyproject
+    assert 'anymesher = ">=0.2.5,<0.3"' in pyproject
     assert "ANYsolver>=0.3,<0.4" in setup_source
     assert "ANY3dView[gpu]>=0.5,<0.6" in setup_source
     assert "ANYtk3D>=0.5,<0.6" in setup_source

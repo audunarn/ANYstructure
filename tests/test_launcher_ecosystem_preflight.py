@@ -19,14 +19,14 @@ def _launcher_namespace():
 
 def _compatible_versions() -> dict[str, str]:
     return {
-        "ANY3dView": "0.5.0",
-        "ANYbuckling": "0.1.0",
-        "ANYfileio": "0.2.0",
-        "ANYgeometry": "0.2.2",
-        "ANYmaterial": "0.1.0",
-        "ANYmesher": "0.2.3",
+        "ANY3dView": "0.5.1",
+        "ANYbuckling": "0.1.1",
+        "ANYfileio": "0.2.1",
+        "ANYgeometry": "0.2.4",
+        "ANYmaterial": "0.1.1",
+        "ANYmesher": "0.2.5",
         "ANYsolver": "0.3.0",
-        "ANYtk3D": "0.5.0",
+        "ANYtk3D": "0.5.1",
     }
 
 
@@ -141,7 +141,7 @@ def test_repair_command_has_one_dependency_ordered_editable_graph():
     assert str(namespace["_ANY3DVIEW_ROOT"]) + "[gpu]" in projects
     mesher_project = str(namespace["_ANYMESHER_ROOT"])
     assert mesher_project in projects
-    assert mesher_project.endswith(".compat_anymesher_023")
+    assert mesher_project.endswith(".compat_anymesher_025")
     assert str(namespace["_ROOT"].parent / "ANYmesh") not in projects
     assert any(project.endswith("ANYio[semantics]") for project in projects)
     assert str(namespace["_ANYTK3D_ROOT"]) in projects
@@ -168,7 +168,7 @@ def test_stale_mesher_metadata_is_rejected_before_gui_import():
     problems = namespace["ecosystem_compatibility_problems"](versions.__getitem__)
 
     assert problems == (
-        "ANYmesher>=0.2.3,<0.3: installed metadata reports 0.2.2",
+        "ANYmesher>=0.2.5,<0.3: installed metadata reports 0.2.2",
     )
 
 
@@ -177,7 +177,7 @@ def test_old_shared_anymesher_is_rejected_in_favour_of_qualified_fallback(
 ):
     namespace = _launcher_namespace()
     shared = _write_anymesher_checkout(tmp_path / "shared", "0.2.1")
-    safe = _write_anymesher_checkout(tmp_path / "safe", "0.2.3")
+    safe = _write_anymesher_checkout(tmp_path / "safe", "0.2.5")
 
     selected = namespace["select_anymesher_source_root"](
         {}, shared_root=shared, safe_root=safe
@@ -186,10 +186,10 @@ def test_old_shared_anymesher_is_rejected_in_favour_of_qualified_fallback(
     assert selected == safe.resolve()
 
 
-def test_any3dview_source_must_be_exact_050(tmp_path):
+def test_any3dview_source_must_be_exact_051(tmp_path):
     namespace = _launcher_namespace()
     shared = _write_any3dview_checkout(tmp_path / "shared", "0.4.0")
-    safe = _write_any3dview_checkout(tmp_path / "safe", "0.5.0")
+    safe = _write_any3dview_checkout(tmp_path / "safe", "0.5.1")
 
     selected = namespace["select_any3dview_source_root"](
         {}, shared_root=shared, safe_root=safe
@@ -200,11 +200,11 @@ def test_any3dview_source_must_be_exact_050(tmp_path):
 
 def test_any3dview_environment_override_is_fail_closed(tmp_path):
     namespace = _launcher_namespace()
-    shared = _write_any3dview_checkout(tmp_path / "shared", "0.5.0")
-    safe = _write_any3dview_checkout(tmp_path / "safe", "0.5.0")
+    shared = _write_any3dview_checkout(tmp_path / "shared", "0.5.1")
+    safe = _write_any3dview_checkout(tmp_path / "safe", "0.5.1")
     override = _write_any3dview_checkout(tmp_path / "override", "0.4.0")
 
-    with pytest.raises(RuntimeError, match="exactly 0.5.0 is required"):
+    with pytest.raises(RuntimeError, match="exactly 0.5.1 is required"):
         namespace["select_any3dview_source_root"](
             {namespace["ANY3DVIEW_SOURCE_ROOT_ENV"]: str(override)},
             shared_root=shared,
@@ -212,10 +212,10 @@ def test_any3dview_environment_override_is_fail_closed(tmp_path):
         )
 
 
-def test_shared_anymesher_is_used_only_when_it_declares_exact_023(tmp_path):
+def test_shared_anymesher_is_used_only_when_it_declares_exact_025(tmp_path):
     namespace = _launcher_namespace()
-    shared = _write_anymesher_checkout(tmp_path / "shared", "0.2.3")
-    safe = _write_anymesher_checkout(tmp_path / "safe", "0.2.3")
+    shared = _write_anymesher_checkout(tmp_path / "shared", "0.2.5")
+    safe = _write_anymesher_checkout(tmp_path / "safe", "0.2.5")
 
     selected = namespace["select_anymesher_source_root"](
         {}, shared_root=shared, safe_root=safe
@@ -226,8 +226,8 @@ def test_shared_anymesher_is_used_only_when_it_declares_exact_023(tmp_path):
 
 def test_anymesher_environment_override_is_explicit_and_fail_closed(tmp_path):
     namespace = _launcher_namespace()
-    shared = _write_anymesher_checkout(tmp_path / "shared", "0.2.3")
-    safe = _write_anymesher_checkout(tmp_path / "safe", "0.2.3")
+    shared = _write_anymesher_checkout(tmp_path / "shared", "0.2.5")
+    safe = _write_anymesher_checkout(tmp_path / "safe", "0.2.5")
     override = _write_anymesher_checkout(tmp_path / "override", "0.2.2")
     environment = {namespace["ANYMESHER_SOURCE_ROOT_ENV"]: str(override)}
 
@@ -238,14 +238,14 @@ def test_anymesher_environment_override_is_explicit_and_fail_closed(tmp_path):
 
     message = str(raised.value)
     assert namespace["ANYMESHER_SOURCE_ROOT_ENV"] in message
-    assert "declares 0.2.2; exactly 0.2.3 is required" in message
+    assert "declares 0.2.2; exactly 0.2.5 is required" in message
 
 
 def test_valid_anymesher_environment_override_wins(tmp_path):
     namespace = _launcher_namespace()
-    shared = _write_anymesher_checkout(tmp_path / "shared", "0.2.3")
-    safe = _write_anymesher_checkout(tmp_path / "safe", "0.2.3")
-    override = _write_anymesher_checkout(tmp_path / "override", "0.2.3")
+    shared = _write_anymesher_checkout(tmp_path / "shared", "0.2.5")
+    safe = _write_anymesher_checkout(tmp_path / "safe", "0.2.5")
+    override = _write_anymesher_checkout(tmp_path / "override", "0.2.5")
     environment = {namespace["ANYMESHER_SOURCE_ROOT_ENV"]: str(override)}
 
     selected = namespace["select_anymesher_source_root"](
@@ -258,7 +258,7 @@ def test_valid_anymesher_environment_override_wins(tmp_path):
 def test_dirty_shared_anytk3d_is_rejected_in_favour_of_qualified_fallback(tmp_path):
     namespace = _launcher_namespace()
     shared = _write_anytk3d_checkout(tmp_path / "shared", "0.3.0")
-    safe = _write_anytk3d_checkout(tmp_path / "safe", "0.5.0")
+    safe = _write_anytk3d_checkout(tmp_path / "safe", "0.5.1")
 
     selected = namespace["select_anytk3d_source_root"](
         {}, shared_root=shared, safe_root=safe
@@ -267,10 +267,10 @@ def test_dirty_shared_anytk3d_is_rejected_in_favour_of_qualified_fallback(tmp_pa
     assert selected == safe.resolve()
 
 
-def test_shared_anytk3d_is_used_only_when_it_declares_exact_050(tmp_path):
+def test_shared_anytk3d_is_used_only_when_it_declares_exact_051(tmp_path):
     namespace = _launcher_namespace()
-    shared = _write_anytk3d_checkout(tmp_path / "shared", "0.5.0")
-    safe = _write_anytk3d_checkout(tmp_path / "safe", "0.5.0")
+    shared = _write_anytk3d_checkout(tmp_path / "shared", "0.5.1")
+    safe = _write_anytk3d_checkout(tmp_path / "safe", "0.5.1")
 
     selected = namespace["select_anytk3d_source_root"](
         {}, shared_root=shared, safe_root=safe
@@ -281,8 +281,8 @@ def test_shared_anytk3d_is_used_only_when_it_declares_exact_050(tmp_path):
 
 def test_anytk3d_environment_override_is_explicit_and_fail_closed(tmp_path):
     namespace = _launcher_namespace()
-    shared = _write_anytk3d_checkout(tmp_path / "shared", "0.5.0")
-    safe = _write_anytk3d_checkout(tmp_path / "safe", "0.5.0")
+    shared = _write_anytk3d_checkout(tmp_path / "shared", "0.5.1")
+    safe = _write_anytk3d_checkout(tmp_path / "safe", "0.5.1")
     override = _write_anytk3d_checkout(tmp_path / "override", "0.3.0")
     environment = {namespace["ANYTK3D_SOURCE_ROOT_ENV"]: str(override)}
 
@@ -293,14 +293,14 @@ def test_anytk3d_environment_override_is_explicit_and_fail_closed(tmp_path):
 
     message = str(raised.value)
     assert namespace["ANYTK3D_SOURCE_ROOT_ENV"] in message
-    assert "declares 0.3.0; exactly 0.5.0 is required" in message
+    assert "declares 0.3.0; exactly 0.5.1 is required" in message
 
 
 def test_valid_anytk3d_environment_override_wins(tmp_path):
     namespace = _launcher_namespace()
-    shared = _write_anytk3d_checkout(tmp_path / "shared", "0.5.0")
-    safe = _write_anytk3d_checkout(tmp_path / "safe", "0.5.0")
-    override = _write_anytk3d_checkout(tmp_path / "override", "0.5.0")
+    shared = _write_anytk3d_checkout(tmp_path / "shared", "0.5.1")
+    safe = _write_anytk3d_checkout(tmp_path / "safe", "0.5.1")
+    override = _write_anytk3d_checkout(tmp_path / "override", "0.5.1")
     environment = {namespace["ANYTK3D_SOURCE_ROOT_ENV"]: str(override)}
 
     selected = namespace["select_anytk3d_source_root"](
