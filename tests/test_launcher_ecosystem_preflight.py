@@ -202,6 +202,26 @@ def test_anyfileio_uses_only_the_canonical_repository_and_source_path():
     assert '("ANYfileio", "anyfileio",' in launcher
 
 
+def test_ci_binds_exact_release_graph_revisions_and_fails_closed_for_solver():
+    workflow = (ROOT / ".github" / "workflows" / "tests.yml").read_text(
+        encoding="utf-8"
+    )
+    expected_refs = {
+        "2b6431c291c8f571803484f69d08807875996b72",
+        "ebe8245538504633b2b5a6579e16c4fd321d2f0e",
+        "97b06b0cfc72179c4f6522f9077d8a1d91911d61",
+        "c06c8fa9ca58f282941a921548bf8303a8ddd084",
+        "07124405ce0160437928e9b0c3c7a0d530c1f5de",
+        "242901005930e0f840d162c67ee86f54daecd261",
+        "516aa46ec8affaa737fd165efad7c7b45a2b852a",
+    }
+    for revision in expected_refs:
+        assert workflow.count(f"ref: {revision}") == 2
+    assert workflow.count("ref: REBIND_FINAL_ANYSOLVER_COMMIT") == 2
+    assert workflow.count("repository: audunarn/") == 16
+    assert workflow.count("          ref: ") == 16
+
+
 def test_checkout_locator_prefers_actions_ecosystem_graph(tmp_path):
     namespace = _launcher_namespace()
     repository_root = tmp_path / "ANYstructure"

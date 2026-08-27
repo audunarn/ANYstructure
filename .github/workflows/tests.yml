@@ -23,48 +23,57 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: audunarn/ANYmaterial
+          ref: 2b6431c291c8f571803484f69d08807875996b72
           path: .ecosystem/ANYmaterial
 
       - name: Check out ANY3dView
         uses: actions/checkout@v4
         with:
           repository: audunarn/ANY3dView
+          ref: ebe8245538504633b2b5a6579e16c4fd321d2f0e
           path: .ecosystem/ANY3dView
 
       - name: Check out ANYgeometry
         uses: actions/checkout@v4
         with:
           repository: audunarn/ANYgeometry
+          ref: 97b06b0cfc72179c4f6522f9077d8a1d91911d61
           path: .ecosystem/ANYgeometry
 
       - name: Check out ANYmesher
         uses: actions/checkout@v4
         with:
           repository: audunarn/ANYmesh
+          ref: c06c8fa9ca58f282941a921548bf8303a8ddd084
           path: .ecosystem/ANYmesh
 
       - name: Check out ANYfileio
         uses: actions/checkout@v4
         with:
           repository: audunarn/ANYfileIO
+          ref: 07124405ce0160437928e9b0c3c7a0d530c1f5de
           path: .ecosystem/ANYfileIO
 
       - name: Check out ANYsolver
         uses: actions/checkout@v4
         with:
           repository: audunarn/ANYsolver
+          # Fail closed until the frozen 0.4.0 solver candidate is available.
+          ref: REBIND_FINAL_ANYSOLVER_COMMIT
           path: .ecosystem/ANYsolver
 
       - name: Check out ANYbuckling
         uses: actions/checkout@v4
         with:
           repository: audunarn/ANYbuckling
+          ref: 242901005930e0f840d162c67ee86f54daecd261
           path: .ecosystem/ANYbuckling
 
       - name: Check out ANYtk3D
         uses: actions/checkout@v4
         with:
           repository: audunarn/ANYtk3D
+          ref: 516aa46ec8affaa737fd165efad7c7b45a2b852a
           path: .ecosystem/ANYtk3D
 
       - name: Set up Python
@@ -116,48 +125,57 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: audunarn/ANYmaterial
+          ref: 2b6431c291c8f571803484f69d08807875996b72
           path: .ecosystem/ANYmaterial
 
       - name: Check out ANY3dView
         uses: actions/checkout@v4
         with:
           repository: audunarn/ANY3dView
+          ref: ebe8245538504633b2b5a6579e16c4fd321d2f0e
           path: .ecosystem/ANY3dView
 
       - name: Check out ANYgeometry
         uses: actions/checkout@v4
         with:
           repository: audunarn/ANYgeometry
+          ref: 97b06b0cfc72179c4f6522f9077d8a1d91911d61
           path: .ecosystem/ANYgeometry
 
       - name: Check out ANYmesher
         uses: actions/checkout@v4
         with:
           repository: audunarn/ANYmesh
+          ref: c06c8fa9ca58f282941a921548bf8303a8ddd084
           path: .ecosystem/ANYmesh
 
       - name: Check out ANYfileio
         uses: actions/checkout@v4
         with:
           repository: audunarn/ANYfileIO
+          ref: 07124405ce0160437928e9b0c3c7a0d530c1f5de
           path: .ecosystem/ANYfileIO
 
       - name: Check out ANYsolver
         uses: actions/checkout@v4
         with:
           repository: audunarn/ANYsolver
+          # Fail closed until the frozen 0.4.0 solver candidate is available.
+          ref: REBIND_FINAL_ANYSOLVER_COMMIT
           path: .ecosystem/ANYsolver
 
       - name: Check out ANYbuckling
         uses: actions/checkout@v4
         with:
           repository: audunarn/ANYbuckling
+          ref: 242901005930e0f840d162c67ee86f54daecd261
           path: .ecosystem/ANYbuckling
 
       - name: Check out ANYtk3D
         uses: actions/checkout@v4
         with:
           repository: audunarn/ANYtk3D
+          ref: 516aa46ec8affaa737fd165efad7c7b45a2b852a
           path: .ecosystem/ANYtk3D
 
       - name: Set up Python

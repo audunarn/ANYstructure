@@ -257,17 +257,34 @@ def test_sesam_shell_model_uses_anyfileio_public_document_layer(monkeypatch):
 
 def test_dependency_and_gui_wiring_is_declared_in_release_surfaces():
     setup_source = (REPOSITORY_ROOT / "setup.py").read_text(encoding="utf-8")
-    requirements = (REPOSITORY_ROOT / "requirements-core.txt").read_text(encoding="utf-8")
+    core_requirements = (REPOSITORY_ROOT / "requirements-core.txt").read_text(
+        encoding="utf-8"
+    )
+    requirements = (REPOSITORY_ROOT / "requirements.txt").read_text(
+        encoding="utf-8"
+    )
     workflow = (REPOSITORY_ROOT / ".github" / "workflows" / "tests.yml").read_text(encoding="utf-8")
     app_source = (REPOSITORY_ROOT / "anystruct" / "main_application.py").read_text(encoding="utf-8")
     runtime_source = (REPOSITORY_ROOT / "anystruct" / "fem_integration.py").read_text(encoding="utf-8")
 
     for distribution in ("ANYgeometry", "ANYmaterial", "ANYmesher", "ANYfileio"):
         assert distribution in setup_source
+        assert distribution in core_requirements
         assert distribution in requirements
-    assert "ANYfileio[semantics]>=0.2.1,<0.3'" in setup_source
-    assert "ANYgeometry>=0.4.1,<0.5'" in setup_source
-    assert "ANYmesher>=0.3.2,<0.4'" in setup_source
+    exact_ecosystem_requirements = {
+        "ANY3dView[gpu]>=0.5.4,<0.6",
+        "ANYtk3D>=0.5.3,<0.6",
+        "ANYbuckling>=0.1.1,<0.2",
+        "ANYfileio[semantics]>=0.2.1,<0.3",
+        "ANYgeometry>=0.4.1,<0.5",
+        "ANYmaterial>=0.1.1,<0.2",
+        "ANYmesher>=0.3.2,<0.4",
+        "ANYsolver>=0.4.0,<0.5",
+    }
+    for requirement in exact_ecosystem_requirements:
+        assert requirement in core_requirements.splitlines()
+        assert requirement in requirements.splitlines()
+        assert f"'{requirement}'" in setup_source
     pyproject = (REPOSITORY_ROOT / "pyproject.toml").read_text(encoding="utf-8")
     assert 'anymesher = ">=0.3.2,<0.4"' in pyproject
     assert 'anysolver = ">=0.4.0,<0.5"' in pyproject
