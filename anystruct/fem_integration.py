@@ -78,7 +78,7 @@ Point3D = _tk3d_canvas_module.Point3D
 _interpolate_thickness_color = _tk3d_canvas_module._interpolate_thickness_color
 
 
-MINIMUM_ANYSOLVER_VERSION = "0.3.0"
+MINIMUM_ANYSOLVER_VERSION = "0.4.0"
 
 
 def _numeric_version(value: Any) -> tuple[int, int, int]:
@@ -411,7 +411,42 @@ def _tk_var_int(variable: Any, default: int = 0) -> int:
         return int(default)
 
 
-RUNTIME_FEM_STATE_FORMAT = "anystructure-runtime-fem-state-v1"
+RUNTIME_FEM_STATE_FORMAT_V1 = "anystructure-runtime-fem-state-v1"
+RUNTIME_FEM_STATE_FORMAT = "anystructure-runtime-fem-state-v2"
+RUNTIME_SHELL_AUTHORITY_SCHEMA = "anystructure-runtime-shell-authority-v2"
+
+
+def _runtime_shell_authority(*, migrated_v1: bool = False) -> dict[str, Any]:
+    """Return the closed formulation/normal authority for a runtime state."""
+
+    if migrated_v1:
+        return {
+            "schema": RUNTIME_SHELL_AUTHORITY_SCHEMA,
+            "q4_formulation": "e4-pl",
+            "q4_formulation_id": "E4_PL_QUALIFIED_Q4_HYBRID_V2",
+            "s3_formulation": "legacy-s3",
+            "s3_formulation_id": "LEGACY_SHELL_ELEMENT_TRI3",
+            "physical_normal_authority": "ABSENT_HISTORICAL_V1",
+            "migration_disposition": "EXPLICIT_LEGACY_S3_NO_HOT_RESTART",
+        }
+    return {
+        "schema": RUNTIME_SHELL_AUTHORITY_SCHEMA,
+        "q4_formulation": "e4-pl",
+        "q4_formulation_id": "E4_PL_QUALIFIED_Q4_HYBRID_V2",
+        "s3_formulation": "e4-pl-s3",
+        "s3_formulation_id": "E4_PL_QUALIFIED_S3_COMPANION_V1",
+        "physical_normal_authority": "PHYSICAL_SURFACE_OWNER_NORMAL_V1",
+        "migration_disposition": "CURRENT_POLICY",
+    }
+
+
+def _validated_runtime_shell_authority(value: Any) -> dict[str, Any]:
+    expected = _runtime_shell_authority()
+    if not isinstance(value, dict) or set(value) != set(expected):
+        raise ValueError("runtime FEM state has malformed shell authority")
+    if value != expected:
+        raise ValueError("runtime FEM state shell authority is incompatible")
+    return dict(expected)
 
 
 def _jsonable_state_value(value: Any) -> Any:
@@ -446,6 +481,7 @@ def runtime_fem_state_to_dict(
     state: dict[str, Any] = {
         "format": RUNTIME_FEM_STATE_FORMAT,
         "saved_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "shell_authority": _runtime_shell_authority(),
         "options": {
             item.name: _jsonable_state_value(getattr(options, item.name))
             for item in dataclass_fields(RuntimeFEMOptions)
@@ -487,7 +523,12 @@ def save_runtime_fem_state(
     ``*.gz`` paths are gzip-compressed; anything else is plain JSON.
     """
 
-    text = json.dumps(runtime_fem_state_to_dict(options, result=result, snapshot=snapshot))
+    text = json.dumps(
+        runtime_fem_state_to_dict(options, result=result, snapshot=snapshot),
+        allow_nan=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    )
     path_text = str(path)
     if path_text.lower().endswith(".gz"):
         with gzip.open(path_text, "wt", encoding="utf-8") as handle:
@@ -545,18 +586,54 @@ def load_runtime_fem_state(path: Any) -> dict[str, Any]:
     path_text = str(path)
     if path_text.lower().endswith(".gz"):
         with gzip.open(path_text, "rt", encoding="utf-8") as handle:
-            state = json.load(handle)
+            text = handle.read()
     else:
         with open(path_text, "r", encoding="utf-8") as handle:
-            state = json.load(handle)
-    if not isinstance(state, dict) or state.get("format") != RUNTIME_FEM_STATE_FORMAT:
+            text = handle.read()
+
+    def closed_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        made: dict[str, Any] = {}
+        for key, value in pairs:
+            if key in made:
+                raise ValueError(f"duplicate JSON key in runtime FEM state: {key}")
+            made[key] = value
+        return made
+
+    state = json.loads(
+        text,
+        object_pairs_hook=closed_object,
+        parse_constant=lambda value: (_ for _ in ()).throw(
+            ValueError(f"nonfinite JSON value in runtime FEM state: {value}")
+        ),
+    )
+    if not isinstance(state, dict) or state.get("format") not in {
+        RUNTIME_FEM_STATE_FORMAT,
+        RUNTIME_FEM_STATE_FORMAT_V1,
+    }:
         raise ValueError(
             "not an ANYstructure runtime FEM state file "
-            f"(expected format tag {RUNTIME_FEM_STATE_FORMAT!r})"
+            f"(expected {RUNTIME_FEM_STATE_FORMAT!r} or "
+            f"{RUNTIME_FEM_STATE_FORMAT_V1!r})"
         )
+    migrated_v1 = state.get("format") == RUNTIME_FEM_STATE_FORMAT_V1
+    shell_authority = (
+        _runtime_shell_authority(migrated_v1=True)
+        if migrated_v1
+        else _validated_runtime_shell_authority(state.get("shell_authority"))
+    )
     return {
-        "format": str(state.get("format")),
+        "format": RUNTIME_FEM_STATE_FORMAT,
+        "source_format": str(state.get("format")),
         "saved_utc": str(state.get("saved_utc", "")),
+        "shell_authority": shell_authority,
+        "migration_diagnostics": (
+            [
+                "RUNTIME_FEM_V1_S3_MIGRATED_TO_EXPLICIT_LEGACY: qualified-S3 "
+                "hot restart is forbidden; replay full load history to change formulation"
+            ]
+            if migrated_v1
+            else []
+        ),
         "options": runtime_fem_options_from_dict(state.get("options", {})),
         "result": runtime_fem_result_from_dict(state.get("result")),
         "snapshot": state.get("snapshot", {}) or {},
