@@ -20,7 +20,7 @@ than being duplicated in this README.
 
 ## Finite-element GUI integration
 
-The FE GUI requires `ANYsolver>=0.3`. Axial force, bending moment,
+The FE GUI requires `ANYsolver>=0.4.0`. Axial force, bending moment,
 shear force, torsional moment, pressure, and the supported collision controls
 are mapped directly to the external solver runtime. Current-area follower
 pressure is available for nonlinear static and arc-length runs on the Static
@@ -64,7 +64,7 @@ Recommended local setup:
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install --upgrade --no-deps -e "C:\Github\ANY3dView[gpu]" -e "C:\Github\ANYmaterial" -e "C:\Github\ANYgeometry" -e "C:\Github\ANYmesh" -e "C:\Github\ANYio[semantics]" -e "C:\Github\ANYsolver" -e "C:\Github\ANYbuckling" -e "C:\Github\ANYtk3D" -e "C:\Github\ANYstructure"
+python -m pip install --upgrade --no-deps -e "C:\Github\ANY3dView[gpu]" -e "C:\Github\ANYmaterial" -e "C:\Github\ANYgeometry" -e "C:\Github\ANYmesh" -e "C:\Github\ANYfileIO[semantics]" -e "C:\Github\ANYsolver" -e "C:\Github\ANYbuckling" -e "C:\Github\ANYtk3D" -e "C:\Github\ANYstructure"
 python -m pip install -r requirements-dev.txt
 python -m pytest
 ```
@@ -86,13 +86,13 @@ files meet that minimum. To select different qualified checkouts explicitly, set
 
 ANYmesher is selected with the same fail-closed rule. The shared
 `C:\Github\ANYmesh` checkout is used only while its `pyproject.toml` declares
-version 0.2.5 or newer. Otherwise the launcher and its repair command use the
+version 0.3.2 or newer. Otherwise the launcher and its repair command use the
 qualified checkout at `C:\Github\ANYsolver\.compat_anymesher_025`. Set
 `$env:ANYSTRUCTURE_ANYMESHER_ROOT = "C:\path\to\ANYmesher-0.2.5"` to select a
 different compatible checkout; an invalid override blocks startup.
 
-`ANYsolver>=0.3`, `ANYgeometry>=0.2.4`, `ANYmaterial>=0.1.1`,
-`ANYmesher>=0.2.5`, `ANYfileio[semantics]>=0.2.1`,
+`ANYsolver>=0.4.0`, `ANYgeometry>=0.2.4`, `ANYmaterial>=0.1.1`,
+`ANYmesher>=0.3.2`, `ANYfileio[semantics]>=0.2.1`,
 `ANYbuckling>=0.1.1`, `ANY3dView[gpu]>=0.5.1`, and
 `ANYtk3D>=0.5.1` are required runtime dependencies. These minimum-only
 constraints allow newer coordinated ecosystem releases. Install the editable sibling checkouts above until compatible

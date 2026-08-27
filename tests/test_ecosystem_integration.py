@@ -267,10 +267,11 @@ def test_dependency_and_gui_wiring_is_declared_in_release_surfaces():
         assert distribution in requirements
     assert "ANYfileio[semantics]>=0.2.1'" in setup_source
     assert "ANYgeometry>=0.2.4'" in setup_source
-    assert "ANYmesher>=0.2.5'" in setup_source
+    assert "ANYmesher>=0.3.2'" in setup_source
     pyproject = (REPOSITORY_ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    assert 'anymesher = ">=0.2.5"' in pyproject
-    assert "ANYsolver>=0.3'" in setup_source
+    assert 'anymesher = ">=0.3.2"' in pyproject
+    assert 'anysolver = ">=0.4.0"' in pyproject
+    assert "ANYsolver>=0.4.0'" in setup_source
     assert "ANY3dView[gpu]>=0.5.1'" in setup_source
     assert "ANYbuckling>=0.1.1'" in setup_source
     assert "ANYmaterial>=0.1.1'" in setup_source
@@ -283,7 +284,12 @@ def test_dependency_and_gui_wiring_is_declared_in_release_surfaces():
     assert "repository: audunarn/ANY3dView" in workflow
     assert "repository: audunarn/ANYgeometry" in workflow
     assert "repository: audunarn/ANYmesh" in workflow
-    assert "repository: audunarn/ANYio" in workflow
+    assert "repository: audunarn/ANYfileIO" in workflow
+    assert "path: .ecosystem/ANYfileIO" in workflow
+    assert ".ecosystem/ANYfileIO[semantics]" in workflow
+    assert "repository: audunarn/ANYio" not in workflow
+    assert ".ecosystem/ANYio" not in workflow
+    assert "import any3dview, anybuckling, anyfileio" in workflow
     assert "repository: audunarn/ANYsolver" in workflow
     assert "repository: audunarn/ANYbuckling" in workflow
     assert "repository: audunarn/ANYtk3D" in workflow

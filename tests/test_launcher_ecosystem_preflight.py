@@ -24,8 +24,8 @@ def _compatible_versions() -> dict[str, str]:
         "ANYfileio": "0.2.1",
         "ANYgeometry": "0.2.4",
         "ANYmaterial": "0.1.1",
-        "ANYmesher": "0.2.5",
-        "ANYsolver": "0.3.0",
+        "ANYmesher": "0.3.2",
+        "ANYsolver": "0.4.0",
         "ANYtk3D": "0.5.1",
     }
 
@@ -113,7 +113,7 @@ def test_missing_semantics_distribution_has_actionable_repair_guidance():
 
     message = str(raised.value)
     assert "ANYfileio[semantics]>=0.2.1: distribution metadata is missing" in message
-    assert "ANYio[semantics]" in message
+    assert "ANYfileIO[semantics]" in message
     assert "pip install --upgrade" in message
     assert "ANYstructure" in message
 
@@ -151,11 +151,34 @@ def test_repair_command_has_one_dependency_ordered_editable_graph():
     mesher_project = str(namespace["_ANYMESHER_ROOT"])
     assert mesher_project in projects
     assert mesher_project == str(namespace["_ROOT"].parent / "ANYmesh")
-    assert any(project.endswith("ANYio[semantics]") for project in projects)
+    assert any(project.endswith("ANYfileIO[semantics]") for project in projects)
+    assert all("ANYio" not in project for project in projects)
+    fileio_source = next(
+        source
+        for distribution, module, source in namespace["ECOSYSTEM_SOURCES"]
+        if distribution == "ANYfileio" and module == "anyfileio"
+    )
+    assert fileio_source == namespace["_ROOT"].parent / "ANYfileIO" / "src"
     assert str(namespace["_ANYTK3D_ROOT"]) in projects
     assert projects[-1].endswith("ANYstructure")
     documented = "python -m " + command.partition(" -m ")[2]
     assert documented in (ROOT / "README.md").read_text(encoding="utf-8")
+
+
+def test_anyfileio_uses_only_the_canonical_repository_and_source_path():
+    launcher = (ROOT / "run_gui.py").read_text(encoding="utf-8")
+    workflow = (ROOT / ".github" / "workflows" / "tests.yml").read_text(
+        encoding="utf-8"
+    )
+
+    assert 'repository: audunarn/ANYfileIO' in workflow
+    assert 'path: .ecosystem/ANYfileIO' in workflow
+    assert '.ecosystem/ANYfileIO[semantics]' in workflow
+    assert 'repository: audunarn/ANYio' not in workflow
+    assert '.ecosystem/ANYio' not in workflow
+    assert '_ROOT.parent / "ANYfileIO" / "src"' in launcher
+    assert '_ROOT.parent / "ANYio"' not in launcher
+    assert '("ANYfileio", "anyfileio",' in launcher
 
 
 def test_stale_solver_metadata_is_rejected_before_gui_import():
@@ -165,7 +188,7 @@ def test_stale_solver_metadata_is_rejected_before_gui_import():
 
     problems = namespace["ecosystem_compatibility_problems"](versions.__getitem__)
 
-    assert problems == ("ANYsolver>=0.3: installed metadata reports 0.2.9",)
+    assert problems == ("ANYsolver>=0.4.0: installed metadata reports 0.2.9",)
 
 
 def test_stale_mesher_metadata_is_rejected_before_gui_import():
@@ -176,7 +199,7 @@ def test_stale_mesher_metadata_is_rejected_before_gui_import():
     problems = namespace["ecosystem_compatibility_problems"](versions.__getitem__)
 
     assert problems == (
-        "ANYmesher>=0.2.5: installed metadata reports 0.2.2",
+        "ANYmesher>=0.3.2: installed metadata reports 0.2.2",
     )
 
 
@@ -185,7 +208,7 @@ def test_old_shared_anymesher_is_rejected_in_favour_of_qualified_fallback(
 ):
     namespace = _launcher_namespace()
     shared = _write_anymesher_checkout(tmp_path / "shared", "0.2.1")
-    safe = _write_anymesher_checkout(tmp_path / "safe", "0.2.5")
+    safe = _write_anymesher_checkout(tmp_path / "safe", "0.3.2")
 
     selected = namespace["select_anymesher_source_root"](
         {}, shared_root=shared, safe_root=safe
@@ -220,10 +243,10 @@ def test_any3dview_environment_override_is_fail_closed(tmp_path):
         )
 
 
-def test_shared_anymesher_is_used_when_it_meets_minimum_025(tmp_path):
+def test_shared_anymesher_is_used_when_it_meets_minimum_032(tmp_path):
     namespace = _launcher_namespace()
-    shared = _write_anymesher_checkout(tmp_path / "shared", "0.2.5")
-    safe = _write_anymesher_checkout(tmp_path / "safe", "0.2.5")
+    shared = _write_anymesher_checkout(tmp_path / "shared", "0.3.2")
+    safe = _write_anymesher_checkout(tmp_path / "safe", "0.3.2")
 
     selected = namespace["select_anymesher_source_root"](
         {}, shared_root=shared, safe_root=safe
@@ -234,8 +257,8 @@ def test_shared_anymesher_is_used_when_it_meets_minimum_025(tmp_path):
 
 def test_anymesher_environment_override_is_explicit_and_fail_closed(tmp_path):
     namespace = _launcher_namespace()
-    shared = _write_anymesher_checkout(tmp_path / "shared", "0.2.5")
-    safe = _write_anymesher_checkout(tmp_path / "safe", "0.2.5")
+    shared = _write_anymesher_checkout(tmp_path / "shared", "0.3.2")
+    safe = _write_anymesher_checkout(tmp_path / "safe", "0.3.2")
     override = _write_anymesher_checkout(tmp_path / "override", "0.2.2")
     environment = {namespace["ANYMESHER_SOURCE_ROOT_ENV"]: str(override)}
 
@@ -246,14 +269,14 @@ def test_anymesher_environment_override_is_explicit_and_fail_closed(tmp_path):
 
     message = str(raised.value)
     assert namespace["ANYMESHER_SOURCE_ROOT_ENV"] in message
-    assert "declares 0.2.2; at least 0.2.5 is required" in message
+    assert "declares 0.2.2; at least 0.3.2 is required" in message
 
 
 def test_valid_anymesher_environment_override_wins(tmp_path):
     namespace = _launcher_namespace()
-    shared = _write_anymesher_checkout(tmp_path / "shared", "0.2.5")
-    safe = _write_anymesher_checkout(tmp_path / "safe", "0.2.5")
-    override = _write_anymesher_checkout(tmp_path / "override", "0.3.0")
+    shared = _write_anymesher_checkout(tmp_path / "shared", "0.3.2")
+    safe = _write_anymesher_checkout(tmp_path / "safe", "0.3.2")
+    override = _write_anymesher_checkout(tmp_path / "override", "0.4.0")
     environment = {namespace["ANYMESHER_SOURCE_ROOT_ENV"]: str(override)}
 
     selected = namespace["select_anymesher_source_root"](
@@ -316,3 +339,24 @@ def test_valid_anytk3d_environment_override_wins(tmp_path):
     )
 
     assert selected == override.resolve()
+
+
+def test_production_publish_uses_verified_prebuilt_release_assets() -> None:
+    workflow = (ROOT / ".github" / "workflows" / "publish.yml").read_text(
+        encoding="utf-8"
+    )
+    production = workflow.split("  publish-production:\n", 1)[1]
+
+    assert "release:\n    types: [published]" in workflow
+    assert "workflow_dispatch:" in workflow
+    assert "if: github.event_name == 'workflow_dispatch'" in workflow
+    assert 'test "$RELEASE_TAG" = "v6.3.1"' in production
+    assert 'gh release download "$RELEASE_TAG"' in production
+    assert "ANYstructure-6.3.1-SHA256SUMS.txt" in production
+    assert "checksum manifest does not exactly cover distributions" in production
+    assert "unexpected ANYstructure distribution asset" in production
+    assert "release checksum mismatch" in production
+    assert "pypa/gh-action-pypi-publish@release/v1" in production
+    assert "packages-dir: dist/" in production
+    assert "python -m build" not in production
+    assert "timeout-minutes:" not in workflow

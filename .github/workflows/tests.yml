@@ -46,8 +46,8 @@ jobs:
       - name: Check out ANYfileio
         uses: actions/checkout@v4
         with:
-          repository: audunarn/ANYio
-          path: .ecosystem/ANYio
+          repository: audunarn/ANYfileIO
+          path: .ecosystem/ANYfileIO
 
       - name: Check out ANYsolver
         uses: actions/checkout@v4
@@ -76,7 +76,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install --no-deps -e ".ecosystem/ANY3dView[gpu]" -e .ecosystem/ANYmaterial -e .ecosystem/ANYgeometry -e .ecosystem/ANYmesh -e ".ecosystem/ANYio[semantics]" -e .ecosystem/ANYsolver -e .ecosystem/ANYbuckling -e .ecosystem/ANYtk3D
+          python -m pip install --no-deps -e ".ecosystem/ANY3dView[gpu]" -e .ecosystem/ANYmaterial -e .ecosystem/ANYgeometry -e .ecosystem/ANYmesh -e ".ecosystem/ANYfileIO[semantics]" -e .ecosystem/ANYsolver -e .ecosystem/ANYbuckling -e .ecosystem/ANYtk3D
           python -m pip install -r requirements-dev.txt
           python -m pip install -e .
 
@@ -85,7 +85,7 @@ jobs:
           python -c "import anygeometry, anystruct, anysolver;
           from importlib.metadata import version;
           v = tuple(map(int, version('ANYsolver').split('.')[:3]));
-          assert (0, 3, 0) <= v < (0, 4, 0);
+          assert v >= (0, 4, 0);
           assert anysolver.__version__ == version('ANYsolver');
           print('anystruct import OK with ANYsolver', anysolver.__version__)"
 
@@ -139,8 +139,8 @@ jobs:
       - name: Check out ANYfileio
         uses: actions/checkout@v4
         with:
-          repository: audunarn/ANYio
-          path: .ecosystem/ANYio
+          repository: audunarn/ANYfileIO
+          path: .ecosystem/ANYfileIO
 
       - name: Check out ANYsolver
         uses: actions/checkout@v4
@@ -169,7 +169,7 @@ jobs:
       - name: Install build dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install --no-deps -e ".ecosystem/ANY3dView[gpu]" -e .ecosystem/ANYmaterial -e .ecosystem/ANYgeometry -e .ecosystem/ANYmesh -e ".ecosystem/ANYio[semantics]" -e .ecosystem/ANYsolver -e .ecosystem/ANYbuckling -e .ecosystem/ANYtk3D
+          python -m pip install --no-deps -e ".ecosystem/ANY3dView[gpu]" -e .ecosystem/ANYmaterial -e .ecosystem/ANYgeometry -e .ecosystem/ANYmesh -e ".ecosystem/ANYfileIO[semantics]" -e .ecosystem/ANYsolver -e .ecosystem/ANYbuckling -e .ecosystem/ANYtk3D
           python -m pip install -r requirements.txt
           python -m pip install build twine
 
@@ -191,7 +191,7 @@ jobs:
             "$GITHUB_WORKSPACE/.ecosystem/ANYgeometry" \
             "$GITHUB_WORKSPACE/.ecosystem/ANYmaterial" \
             "$GITHUB_WORKSPACE/.ecosystem/ANYmesh" \
-            "$GITHUB_WORKSPACE/.ecosystem/ANYio[semantics]" \
+            "$GITHUB_WORKSPACE/.ecosystem/ANYfileIO[semantics]" \
             "$GITHUB_WORKSPACE/.ecosystem/ANYsolver" \
             "$GITHUB_WORKSPACE/.ecosystem/ANYbuckling" \
             "$GITHUB_WORKSPACE/.ecosystem/ANYtk3D"

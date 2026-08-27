@@ -1,9 +1,8 @@
 name: Publish to PyPI
 
 on:
-  push:
-    tags:
-      - "v*"
+  release:
+    types: [published]
   workflow_dispatch:
 
 permissions:
@@ -14,11 +13,12 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
-    name: Build and validate distributions
+  build-manual:
+    name: Build candidate artifacts manually
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
-      - name: Check out the tagged source
+      - name: Check out candidate source
         uses: actions/checkout@v6
         with:
           persist-credentials: false
@@ -26,34 +26,18 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.x"
-      - name: Verify that the tag matches the package version
-        if: startsWith(github.ref, 'refs/tags/')
-        shell: bash
-        run: |
-          python - <<'PY'
-          import os
-          import re
-          from pathlib import Path
-
-          setup_text = Path("setup.py").read_text(encoding="utf-8")
-          match = re.search(r"^\s*version\s*=\s*['\"]([^'\"]+)['\"]", setup_text, re.MULTILINE)
-          if match is None:
-              raise SystemExit("Could not read the package version from setup.py")
-          version = match.group(1)
-          tag_version = os.environ["GITHUB_REF_NAME"].removeprefix("v")
-          if version != tag_version:
-              raise SystemExit(
-                  f"Tag {os.environ['GITHUB_REF_NAME']!r} does not match "
-                  f"project version {version!r}."
-              )
-          PY
       - name: Install release tooling
         run: python -m pip install --upgrade build twine
       - name: Build wheel and source distribution
         run: python -m build --outdir dist
       - name: Check distribution metadata
         run: python -m twine check dist/*
-      - name: Store distributions for the publishing job
+      - name: Write release checksums
+        shell: bash
+        run: |
+          cd dist
+          sha256sum *.whl *.tar.gz > ANYstructure-6.3.1-SHA256SUMS.txt
+      - name: Store candidate release assets
         uses: actions/upload-artifact@v5
         with:
           name: python-package-distributions
@@ -61,22 +45,74 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  publish:
-    name: Publish distributions to PyPI
-    if: startsWith(github.ref, 'refs/tags/')
-    needs: build
+  publish-production:
+    name: Publish verified release assets to PyPI
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
     environment:
       name: pypi
       url: https://pypi.org/p/ANYstructure
     permissions:
-      id-token: write
       contents: read
+      id-token: write
     steps:
-      - name: Download validated distributions
-        uses: actions/download-artifact@v6
-        with:
-          name: python-package-distributions
-          path: dist/
-      - name: Publish distributions using Trusted Publishing
+      - name: Download prebuilt GitHub release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        shell: bash
+        run: |
+          test "$RELEASE_TAG" = "v6.3.1"
+          mkdir release-assets
+          gh release download "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --dir release-assets \
+            --pattern "*.whl" \
+            --pattern "*.tar.gz" \
+            --pattern "ANYstructure-6.3.1-SHA256SUMS.txt"
+      - name: Verify release checksums and select distributions
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib
+          import shutil
+          from pathlib import Path
+
+          source = Path("release-assets")
+          checksum_path = source / "ANYstructure-6.3.1-SHA256SUMS.txt"
+          if not checksum_path.is_file() or checksum_path.is_symlink():
+              raise SystemExit("missing regular ANYstructure checksum asset")
+          expected = {}
+          for line in checksum_path.read_text(encoding="ascii").splitlines():
+              digest, separator, filename = line.partition("  ")
+              if not separator or len(digest) != 64 or Path(filename).name != filename:
+                  raise SystemExit(f"malformed checksum row: {line!r}")
+              if filename in expected:
+                  raise SystemExit(f"duplicate checksum row: {filename}")
+              expected[filename] = digest.lower()
+          artifacts = sorted((*source.glob("*.whl"), *source.glob("*.tar.gz")))
+          if not artifacts or set(expected) != {item.name for item in artifacts}:
+              raise SystemExit("checksum manifest does not exactly cover distributions")
+          if any(
+              item.name != "anystructure-6.3.1.tar.gz"
+              and not (
+                  item.name.startswith("anystructure-6.3.1-")
+                  and item.name.endswith(".whl")
+              )
+              for item in artifacts
+          ):
+              raise SystemExit("unexpected ANYstructure distribution asset")
+          target = Path("dist")
+          target.mkdir()
+          for artifact in artifacts:
+              if not artifact.is_file() or artifact.is_symlink():
+                  raise SystemExit(f"release asset is not a regular file: {artifact.name}")
+              actual = hashlib.sha256(artifact.read_bytes()).hexdigest()
+              if actual != expected[artifact.name]:
+                  raise SystemExit(f"release checksum mismatch: {artifact.name}")
+              shutil.copy2(artifact, target / artifact.name)
+          PY
+      - name: Publish exact distributions using Trusted Publishing
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/

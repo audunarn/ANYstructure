@@ -10,6 +10,7 @@ addopts = ["-ra", "-p", "no:cacheprovider"]
 [tool.anystructure.ecosystem]
 # setup.py remains the package-metadata authority; these mirror the minimum
 # source versions enforced by run_gui.py for release tooling.
-anymesher = ">=0.2.5"
+anymesher = ">=0.3.2"
+anysolver = ">=0.4.0"
 any3dview = ">=0.5.1"
 anytk3d = ">=0.5.1"

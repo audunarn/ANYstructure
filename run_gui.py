@@ -13,9 +13,9 @@ from typing import Any, Callable, Mapping, Sequence
 
 _ROOT = Path(__file__).resolve().parent
 ANYMESHER_SOURCE_ROOT_ENV = "ANYSTRUCTURE_ANYMESHER_ROOT"
-ANYMESHER_REQUIRED_SOURCE_VERSION = "0.2.5"
+ANYMESHER_REQUIRED_SOURCE_VERSION = "0.3.2"
 _SHARED_ANYMESHER_ROOT = _ROOT.parent / "ANYmesh"
-_SAFE_ANYMESHER_ROOT = _ROOT.parent / "ANYsolver" / ".compat_anymesher_025"
+_SAFE_ANYMESHER_ROOT = _ROOT.parent / "ANYsolver" / ".compat_anymesher_032"
 ANYTK3D_SOURCE_ROOT_ENV = "ANYSTRUCTURE_ANYTK3D_ROOT"
 ANYTK3D_REQUIRED_SOURCE_VERSION = "0.5.1"
 _SHARED_ANYTK3D_ROOT = _ROOT.parent / "ANYtk3D"
@@ -139,7 +139,8 @@ def select_anymesher_source_root(
             return candidate.resolve()
         rejected.append(f"{label}: {problem}")
     raise RuntimeError(
-        "ANYstructure 6.3.1 needs an ANYmesher source checkout at version 0.2.5 or newer. "
+        "ANYstructure 6.3.1 needs an ANYmesher source checkout at version "
+        f"{ANYMESHER_REQUIRED_SOURCE_VERSION} or newer. "
         f"Set {ANYMESHER_SOURCE_ROOT_ENV} to one. Checked:\n- "
         + "\n- ".join(rejected)
     )
@@ -222,7 +223,7 @@ _SOURCE_TREES = (
     _ROOT.parent / "ANYsolver" / "src",
     _ROOT.parent / "ANYmaterial" / "src",
     _ANYMESHER_ROOT / "src",
-    _ROOT.parent / "ANYio" / "src",
+    _ROOT.parent / "ANYfileIO" / "src",
     _ROOT.parent / "ANYbuckling" / "src",
     _ANYTK3D_ROOT / "src",
 )
@@ -241,8 +242,8 @@ ECOSYSTEM_REQUIREMENTS = (
     ("ANYfileio", "ANYfileio[semantics]>=0.2.1", "0.2.1"),
     ("ANYgeometry", "ANYgeometry>=0.2.4", "0.2.4"),
     ("ANYmaterial", "ANYmaterial>=0.1.1", "0.1.1"),
-    ("ANYmesher", "ANYmesher>=0.2.5", "0.2.5"),
-    ("ANYsolver", "ANYsolver>=0.3", "0.3.0"),
+    ("ANYmesher", "ANYmesher>=0.3.2", "0.3.2"),
+    ("ANYsolver", "ANYsolver>=0.4.0", "0.4.0"),
     ("ANYtk3D", "ANYtk3D>=0.5.1", "0.5.1"),
 )
 
@@ -252,7 +253,7 @@ ECOSYSTEM_REQUIREMENTS = (
 ECOSYSTEM_SOURCES = (
     ("ANY3dView", "any3dview", _ANY3DVIEW_ROOT / "src"),
     ("ANYbuckling", "anybuckling", _ROOT.parent / "ANYbuckling" / "src"),
-    ("ANYfileio", "anyfileio", _ROOT.parent / "ANYio" / "src"),
+    ("ANYfileio", "anyfileio", _ROOT.parent / "ANYfileIO" / "src"),
     ("ANYgeometry", "anygeometry", _ROOT.parent / "ANYgeometry" / "src"),
     ("ANYmaterial", "anymaterial", _ROOT.parent / "ANYmaterial" / "src"),
     ("ANYmesher", "anymesher", _ANYMESHER_ROOT / "src"),
@@ -265,7 +266,7 @@ EDITABLE_BOOTSTRAP_PROJECTS = (
     str(_ROOT.parent / "ANYmaterial"),
     str(_ROOT.parent / "ANYgeometry"),
     str(_ANYMESHER_ROOT),
-    str(_ROOT.parent / "ANYio") + "[semantics]",
+    str(_ROOT.parent / "ANYfileIO") + "[semantics]",
     str(_ROOT.parent / "ANYsolver"),
     str(_ROOT.parent / "ANYbuckling"),
     str(_ANYTK3D_ROOT),
