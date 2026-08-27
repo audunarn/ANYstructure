@@ -51,6 +51,64 @@ def test_runtime_fem_v1_migrates_s3_to_explicit_legacy_without_hot_restart(
     )
     assert "NO_HOT_RESTART" in state["shell_authority"]["migration_disposition"]
     assert state["migration_diagnostics"]
+    assert not fem_integration.runtime_shell_authority_allows_hot_restart(
+        state["shell_authority"]
+    )
+
+
+def test_migrated_v1_authority_round_trips_as_legacy_v2(tmp_path) -> None:
+    original = tmp_path / "historical-v1.fem.json"
+    original.write_text(
+        json.dumps(
+            {
+                "format": "anystructure-runtime-fem-state-v1",
+                "saved_utc": "2026-01-01T00:00:00Z",
+                "options": {},
+            }
+        ),
+        encoding="utf-8",
+    )
+    migrated = fem_integration.load_runtime_fem_state(original)
+    saved = tmp_path / "migrated-v2.fem.json"
+
+    fem_integration.save_runtime_fem_state(
+        saved,
+        migrated["options"],
+        shell_authority=migrated["shell_authority"],
+    )
+    restored = fem_integration.load_runtime_fem_state(saved)
+
+    assert restored["source_format"] == "anystructure-runtime-fem-state-v2"
+    assert restored["shell_authority"] == migrated["shell_authority"]
+    assert restored["migration_diagnostics"]
+    assert not fem_integration.runtime_shell_authority_allows_hot_restart(
+        restored["shell_authority"]
+    )
+
+
+def test_runtime_window_refuses_migrated_v1_hot_restart(monkeypatch) -> None:
+    window = object.__new__(fem_integration.RuntimeFEMWindow)
+    window.solver_thread = None
+    window._loaded_shell_authority = fem_integration._runtime_shell_authority(
+        migrated_v1=True
+    )
+    statuses: list[tuple[str, bool]] = []
+    errors: list[tuple[str, str]] = []
+    window._write_status = lambda text, keep_run_results=False: statuses.append(
+        (text, keep_run_results)
+    )
+    monkeypatch.setattr(
+        fem_integration.messagebox,
+        "showerror",
+        lambda title, text: errors.append((title, text)),
+    )
+
+    window.run()
+
+    assert len(statuses) == 1
+    assert statuses[0][1] is True
+    assert "cannot be hot-restarted" in statuses[0][0]
+    assert errors == [("FEM solver", statuses[0][0])]
 
 
 @pytest.mark.parametrize(

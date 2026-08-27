@@ -93,6 +93,14 @@ jobs:
           artifacts = sorted((*source.glob("*.whl"), *source.glob("*.tar.gz")))
           if not artifacts or set(expected) != {item.name for item in artifacts}:
               raise SystemExit("checksum manifest does not exactly cover distributions")
+          exact_artifact_names = {
+              "anystructure-6.3.1-py3-none-any.whl",
+              "anystructure-6.3.1.tar.gz",
+          }
+          if {item.name for item in artifacts} != exact_artifact_names:
+              raise SystemExit(
+                  "release does not contain the exact ANYstructure artifact set"
+              )
           if any(
               item.name != "anystructure-6.3.1.tar.gz"
               and not (

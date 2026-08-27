@@ -441,12 +441,22 @@ def _runtime_shell_authority(*, migrated_v1: bool = False) -> dict[str, Any]:
 
 
 def _validated_runtime_shell_authority(value: Any) -> dict[str, Any]:
-    expected = _runtime_shell_authority()
-    if not isinstance(value, dict) or set(value) != set(expected):
+    current = _runtime_shell_authority()
+    migrated = _runtime_shell_authority(migrated_v1=True)
+    if not isinstance(value, dict) or set(value) != set(current):
         raise ValueError("runtime FEM state has malformed shell authority")
-    if value != expected:
+    if value == current:
+        return dict(current)
+    if value == migrated:
+        return dict(migrated)
+    else:
         raise ValueError("runtime FEM state shell authority is incompatible")
-    return dict(expected)
+
+
+def runtime_shell_authority_allows_hot_restart(value: Any) -> bool:
+    """Return whether a stored authority may rerun under the current policy."""
+
+    return _validated_runtime_shell_authority(value) == _runtime_shell_authority()
 
 
 def _jsonable_state_value(value: Any) -> Any:
@@ -469,6 +479,7 @@ def runtime_fem_state_to_dict(
     options: RuntimeFEMOptions,
     result: RuntimeFEMRunResult | None = None,
     snapshot: RuntimeFEMLineSnapshot | None = None,
+    shell_authority: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Serialize FE-GUI settings and the solver result (mesh included) to plain data.
 
@@ -481,7 +492,9 @@ def runtime_fem_state_to_dict(
     state: dict[str, Any] = {
         "format": RUNTIME_FEM_STATE_FORMAT,
         "saved_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "shell_authority": _runtime_shell_authority(),
+        "shell_authority": _validated_runtime_shell_authority(
+            _runtime_shell_authority() if shell_authority is None else shell_authority
+        ),
         "options": {
             item.name: _jsonable_state_value(getattr(options, item.name))
             for item in dataclass_fields(RuntimeFEMOptions)
@@ -517,6 +530,7 @@ def save_runtime_fem_state(
     options: RuntimeFEMOptions,
     result: RuntimeFEMRunResult | None = None,
     snapshot: RuntimeFEMLineSnapshot | None = None,
+    shell_authority: dict[str, Any] | None = None,
 ) -> None:
     """Write settings and (optionally) results including the mesh to ``path``.
 
@@ -524,7 +538,12 @@ def save_runtime_fem_state(
     """
 
     text = json.dumps(
-        runtime_fem_state_to_dict(options, result=result, snapshot=snapshot),
+        runtime_fem_state_to_dict(
+            options,
+            result=result,
+            snapshot=snapshot,
+            shell_authority=shell_authority,
+        ),
         allow_nan=False,
         separators=(",", ":"),
         sort_keys=True,
@@ -621,6 +640,7 @@ def load_runtime_fem_state(path: Any) -> dict[str, Any]:
         if migrated_v1
         else _validated_runtime_shell_authority(state.get("shell_authority"))
     )
+    legacy_s3 = not runtime_shell_authority_allows_hot_restart(shell_authority)
     return {
         "format": RUNTIME_FEM_STATE_FORMAT,
         "source_format": str(state.get("format")),
@@ -631,7 +651,7 @@ def load_runtime_fem_state(path: Any) -> dict[str, Any]:
                 "RUNTIME_FEM_V1_S3_MIGRATED_TO_EXPLICIT_LEGACY: qualified-S3 "
                 "hot restart is forbidden; replay full load history to change formulation"
             ]
-            if migrated_v1
+            if migrated_v1 or legacy_s3
             else []
         ),
         "options": runtime_fem_options_from_dict(state.get("options", {})),
@@ -5358,6 +5378,7 @@ class RuntimeFEMWindow:
     def __init__(self, parent: Any, app: Any, use_parent_as_window: bool = False, imported_fem_model=None,
                  imported_path=None):
         self.app = app
+        self._loaded_shell_authority = _runtime_shell_authority()
         self.imported_fem_model = imported_fem_model
         if self.imported_fem_model is not None:
             self.snapshot = RuntimeFEMLineSnapshot(
@@ -10407,6 +10428,7 @@ class RuntimeFEMWindow:
                 self._options(),
                 result=self.current_result,
                 snapshot=self.snapshot,
+                shell_authority=self._loaded_shell_authority,
             )
         except Exception as error:
             messagebox.showerror("Save FEM state", str(error))
@@ -10433,12 +10455,17 @@ class RuntimeFEMWindow:
             messagebox.showerror("Load FEM state", str(error))
             return
         self._apply_options_to_controls(state["options"])
+        self._loaded_shell_authority = dict(state["shell_authority"])
         result = state["result"]
         if result is not None:
             self._adopt_loaded_result(result, source=os.path.basename(path))
         else:
             self._write_status(
                 f"Loaded FEM settings from {os.path.basename(path)} (file holds no stored results)."
+            )
+        if state["migration_diagnostics"]:
+            self._write_status(
+                "\n".join(state["migration_diagnostics"]), keep_run_results=True
             )
 
     def _apply_options_to_controls(self, options: RuntimeFEMOptions) -> None:
@@ -11487,6 +11514,17 @@ class RuntimeFEMWindow:
         """Prepare/run the runtime FEM request and render shared-viewer results."""
 
         if self.solver_thread is not None and self.solver_thread.is_alive():
+            return
+        if not runtime_shell_authority_allows_hot_restart(
+            getattr(self, "_loaded_shell_authority", _runtime_shell_authority())
+        ):
+            message = (
+                "This migrated runtime state uses explicit legacy-s3 and cannot be "
+                "hot-restarted with the qualified S3 default. Replay the full load "
+                "history in a new current-policy model before running FEM."
+            )
+            self._write_status(message, keep_run_results=True)
+            messagebox.showerror("FEM solver", message)
             return
         self._stop_animation()
         self._refresh_option_states()

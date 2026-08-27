@@ -265,18 +265,17 @@ def test_dependency_and_gui_wiring_is_declared_in_release_surfaces():
     for distribution in ("ANYgeometry", "ANYmaterial", "ANYmesher", "ANYfileio"):
         assert distribution in setup_source
         assert distribution in requirements
-    assert "ANYfileio[semantics]>=0.2.1'" in setup_source
-    assert "ANYgeometry>=0.2.4'" in setup_source
-    assert "ANYmesher>=0.3.2'" in setup_source
+    assert "ANYfileio[semantics]>=0.2.1,<0.3'" in setup_source
+    assert "ANYgeometry>=0.4.1,<0.5'" in setup_source
+    assert "ANYmesher>=0.3.2,<0.4'" in setup_source
     pyproject = (REPOSITORY_ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    assert 'anymesher = ">=0.3.2"' in pyproject
-    assert 'anysolver = ">=0.4.0"' in pyproject
-    assert "ANYsolver>=0.4.0'" in setup_source
-    assert "ANY3dView[gpu]>=0.5.1'" in setup_source
-    assert "ANYbuckling>=0.1.1'" in setup_source
-    assert "ANYmaterial>=0.1.1'" in setup_source
-    assert "ANYtk3D>=0.5.1'" in setup_source
-    assert "<0." not in setup_source
+    assert 'anymesher = ">=0.3.2,<0.4"' in pyproject
+    assert 'anysolver = ">=0.4.0,<0.5"' in pyproject
+    assert "ANYsolver>=0.4.0,<0.5'" in setup_source
+    assert "ANY3dView[gpu]>=0.5.4,<0.6'" in setup_source
+    assert "ANYbuckling>=0.1.1,<0.2'" in setup_source
+    assert "ANYmaterial>=0.1.1,<0.2'" in setup_source
+    assert "ANYtk3D>=0.5.3,<0.6'" in setup_source
     assert "python_requires='>=3.13'" in setup_source
     assert "Programming Language :: Python :: 3.13" in setup_source
     assert "Programming Language :: Python :: 3.14" in setup_source

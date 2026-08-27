@@ -15,5 +15,5 @@ def test_run_gui_exposes_and_calls_main() -> None:
     source = script.read_text(encoding="utf-8")
 
     assert callable(namespace["main"])
-    assert '_ROOT.parent / "ANYgeometry" / "src"' in source
+    assert '_ANYGEOMETRY_ROOT / "src"' in source
     assert 'if __name__ == "__main__":\n    main()' in source
