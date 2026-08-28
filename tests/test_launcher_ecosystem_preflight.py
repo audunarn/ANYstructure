@@ -291,14 +291,14 @@ def test_ci_binds_exact_release_graph_revisions_and_fails_closed_for_solver():
         encoding="utf-8"
     )
     expected_refs = {
-        "2b6431c291c8f571803484f69d08807875996b72",
-        "ebe8245538504633b2b5a6579e16c4fd321d2f0e",
-        "97b06b0cfc72179c4f6522f9077d8a1d91911d61",
-        "c06c8fa9ca58f282941a921548bf8303a8ddd084",
-        "07124405ce0160437928e9b0c3c7a0d530c1f5de",
-        "242901005930e0f840d162c67ee86f54daecd261",
-        "516aa46ec8affaa737fd165efad7c7b45a2b852a",
-        "c9115d91bbf4856b9a6cb4d5450aab98c8c3c53e",
+        "0591d4833806ee95bdd710c352a1f836af7b910e",
+        "8b899b7a9d08a51d7899c34265b6b0b6e13da554",
+        "6a8b023ef6f65805519c96b56e025b4e3b457a1f",
+        "e79d14a03ef605afd947948e8588ccb8428eb52f",
+        "da8bff840128ac1e183c77be9e5a53b2bb5c0834",
+        "2521db19031ea00053018ad09bb8474bf8a0671a",
+        "4980ba75584c6e3ddec9d39a3d76fc215d691c09",
+        "94fe0e0cf31faeeab182e0a51e3ead94849418f3",
     }
     for revision in expected_refs:
         assert workflow.count(f"ref: {revision}") == 2
@@ -542,21 +542,46 @@ def test_production_publish_uses_verified_prebuilt_release_assets() -> None:
     workflow = (ROOT / ".github" / "workflows" / "publish.yml").read_text(
         encoding="utf-8"
     )
+    manual = workflow.split("  publish-production:\n", 1)[0]
     production = workflow.split("  publish-production:\n", 1)[1]
 
     assert "release:\n    types: [published]" in workflow
     assert "workflow_dispatch:" in workflow
     assert "if: github.event_name == 'workflow_dispatch'" in workflow
-    assert 'test "$RELEASE_TAG" = "v6.3.1"' in production
+    assert (
+        "actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+        in manual
+    )
+    assert (
+        "actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1"
+        in manual
+    )
+    assert (
+        "actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4"
+        in manual
+    )
+    assert "@v6" not in workflow
+    assert "@v5" not in workflow
+    assert "@v4" not in workflow
+    assert "github.event.release.prerelease == false" in production
+    assert "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" in production
+    assert "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97" in production
+    assert "ref: ${{ github.event.release.tag_name }}" in production
+    assert "fetch-depth: 0" in production
     assert 'gh release download "$RELEASE_TAG"' in production
+    assert "--pattern" not in production
+    assert "tools/verify_release_authority.py" in production
+    assert "docs/release/anystructure-6.3.1-ledger.json" in production
+    assert "--protected-ref refs/remotes/origin/master" in production
+    assert "--expected-terminal ACCEPTED_ANYSTRUCTURE_6_3_1_RELEASE" in production
     assert "ANYstructure-6.3.1-SHA256SUMS.txt" in production
-    assert "checksum manifest does not exactly cover distributions" in production
-    assert '"anystructure-6.3.1-py3-none-any.whl"' in production
-    assert '"anystructure-6.3.1.tar.gz"' in production
-    assert "release does not contain the exact ANYstructure artifact set" in production
-    assert "unexpected ANYstructure distribution asset" in production
-    assert "release checksum mismatch" in production
-    assert "pypa/gh-action-pypi-publish@release/v1" in production
+    assert "--artifact anystructure-6.3.1-py3-none-any.whl" in production
+    assert "--artifact anystructure-6.3.1.tar.gz" in production
+    assert (
+        "pypa/gh-action-pypi-publish@"
+        "dc37677b2e1c63e2034f94d8a5b11f265b73ba33"
+    ) in production
+    assert "@release/v1" not in production
     assert "packages-dir: dist/" in production
     assert "python -m build" not in production
     assert "timeout-minutes:" not in workflow
