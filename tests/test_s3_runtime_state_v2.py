@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import json
+from types import SimpleNamespace
 
 import pytest
+from anysolver import LegacyShellElement, create_shell_element
 
 from anystruct import fem_integration
 
@@ -138,3 +140,66 @@ def test_runtime_state_rejects_forged_current_s3_identity(tmp_path) -> None:
 
     with pytest.raises(ValueError, match="shell authority is incompatible"):
         fem_integration.load_runtime_fem_state(path)
+
+
+def _imported_model_with(element):
+    return SimpleNamespace(mesh=SimpleNamespace(elements={1: element}))
+
+
+def test_imported_qualified_s3_with_physical_normal_retains_current_authority() -> None:
+    element = create_shell_element(
+        1,
+        [1, 2, 3],
+        formulation="e4-pl-s3",
+        reference_normal=(0.0, 0.0, 1.0),
+    )
+
+    authority = fem_integration._imported_model_shell_authority(
+        _imported_model_with(element)
+    )
+
+    assert authority == fem_integration._runtime_shell_authority()
+    assert fem_integration.runtime_shell_authority_allows_hot_restart(authority)
+
+
+def test_imported_missing_id_s3_saves_and_reloads_as_no_restart_legacy(
+    tmp_path,
+) -> None:
+    legacy = LegacyShellElement(1, [1, 2, 3])
+    # Formulation-like instance fields cannot turn the wrong concrete class
+    # into qualified authority.
+    legacy.formulation_id = "E4_PL_QUALIFIED_S3_COMPANION_V1"
+    legacy.reference_normal = (0.0, 0.0, 1.0)
+    authority = fem_integration._imported_model_shell_authority(
+        _imported_model_with(legacy)
+    )
+    path = tmp_path / "imported-legacy.fem.json"
+
+    fem_integration.save_runtime_fem_state(
+        path,
+        fem_integration.RuntimeFEMOptions(),
+        shell_authority=authority,
+    )
+    restored = fem_integration.load_runtime_fem_state(path)
+
+    assert restored["shell_authority"]["s3_formulation"] == "legacy-s3"
+    assert restored["shell_authority"]["physical_normal_authority"] == (
+        "UNPROVEN_IMPORTED_MODEL"
+    )
+    assert restored["migration_diagnostics"] == [
+        "IMPORTED_MODEL_S3_RETAINED_AS_EXPLICIT_LEGACY: qualified-S3 "
+        "physical-normal authority was not proven; hot restart is forbidden"
+    ]
+    assert not fem_integration.runtime_shell_authority_allows_hot_restart(
+        restored["shell_authority"]
+    )
+
+
+def test_malformed_imported_model_cannot_claim_current_shell_authority() -> None:
+    authority = fem_integration._imported_model_shell_authority(
+        SimpleNamespace(mesh=SimpleNamespace(elements=None))
+    )
+
+    assert authority == fem_integration._runtime_shell_authority(
+        imported_legacy=True
+    )

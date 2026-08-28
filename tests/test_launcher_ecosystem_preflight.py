@@ -78,6 +78,61 @@ def _write_anymesher_checkout(root: Path, version: str) -> Path:
     )
 
 
+@pytest.mark.parametrize(
+    ("environment_constant", "project", "package_name", "minimum", "maximum"),
+    (
+        ("ANYMATERIAL_SOURCE_ROOT_ENV", "ANYmaterial", "anymaterial", "0.1.1", "0.2.0"),
+        ("ANYGEOMETRY_SOURCE_ROOT_ENV", "ANYgeometry", "anygeometry", "0.4.1", "0.5.0"),
+        ("ANYSOLVER_SOURCE_ROOT_ENV", "ANYsolver", "anysolver", "0.4.0", "0.5.0"),
+        ("ANYFILEIO_SOURCE_ROOT_ENV", "ANYfileio", "anyfileio", "0.2.1", "0.3.0"),
+        ("ANYBUCKLING_SOURCE_ROOT_ENV", "ANYbuckling", "anybuckling", "0.1.1", "0.2.0"),
+    ),
+)
+def test_bound_source_environment_overrides_are_validated(
+    tmp_path,
+    environment_constant,
+    project,
+    package_name,
+    minimum,
+    maximum,
+):
+    namespace = _launcher_namespace()
+    shared = _write_checkout(
+        tmp_path / "shared", project=project, package_name=package_name, version=minimum
+    )
+    override = _write_checkout(
+        tmp_path / "override", project=project, package_name=package_name, version=minimum
+    )
+    environment_name = namespace[environment_constant]
+
+    assert namespace["select_bound_source_root"](
+        environment_name,
+        project=project,
+        package_name=package_name,
+        minimum=minimum,
+        maximum=maximum,
+        environ={environment_name: str(override)},
+        shared_root=shared,
+    ) == override.resolve()
+
+    incompatible = _write_checkout(
+        tmp_path / "incompatible",
+        project=project,
+        package_name=package_name,
+        version=maximum,
+    )
+    with pytest.raises(RuntimeError, match=f"Invalid {environment_name} override"):
+        namespace["select_bound_source_root"](
+            environment_name,
+            project=project,
+            package_name=package_name,
+            minimum=minimum,
+            maximum=maximum,
+            environ={environment_name: str(incompatible)},
+            shared_root=shared,
+        )
+
+
 def test_compatible_latest_release_graph_passes_without_importing_tk():
     namespace = _launcher_namespace()
     versions = _compatible_versions()
@@ -146,6 +201,29 @@ def test_wrong_source_origin_is_rejected_without_importing_the_module(tmp_path):
     assert str(namespace["_ANYSOLVER_ROOT"] / "src") in problems[0]
 
 
+def test_mixed_trusted_namespace_and_untrusted_executable_origin_is_rejected(
+    tmp_path,
+):
+    namespace = _launcher_namespace()
+    expected = _sibling_specs(namespace)
+
+    def find_spec(module_name: str):
+        if module_name == "anysolver":
+            return SimpleNamespace(
+                origin=str(tmp_path / "untrusted" / "anysolver" / "__init__.py"),
+                submodule_search_locations=(
+                    str(namespace["_ANYSOLVER_ROOT"] / "src" / "anysolver"),
+                ),
+            )
+        return expected(module_name)
+
+    problems = namespace["ecosystem_source_problems"](find_spec)
+
+    assert len(problems) == 1
+    assert problems[0].startswith("ANYsolver: anysolver resolves from ")
+    assert str(tmp_path / "untrusted") in problems[0]
+
+
 def test_repair_command_has_one_dependency_ordered_editable_graph():
     namespace = _launcher_namespace()
     command = namespace["editable_repair_command"]()
@@ -160,7 +238,7 @@ def test_repair_command_has_one_dependency_ordered_editable_graph():
     mesher_project = str(namespace["_ANYMESHER_ROOT"])
     assert mesher_project in projects
     assert mesher_project == str(namespace["_ANYMESHER_ROOT"])
-    assert any(project.endswith("ANYfileIO[semantics]") for project in projects)
+    assert str(namespace["_ANYFILEIO_ROOT"]) + "[semantics]" in projects
     assert all("ANYio" not in project for project in projects)
     fileio_source = next(
         source
@@ -175,14 +253,20 @@ def test_repair_command_has_one_dependency_ordered_editable_graph():
         str(namespace["_ROOT"]),
         str(namespace["_checkout_root"]("ANYstructure")),
     )
-    documented = documented.replace(
-        str(namespace["_ANYMESHER_ROOT"]),
-        str(namespace["_checkout_root"]("ANYmesh")),
-    )
-    documented = documented.replace(
-        str(namespace["_ANY3DVIEW_ROOT"]),
-        str(namespace["_checkout_root"]("ANY3dView")),
-    )
+    for selected_name, repository in (
+        ("_ANY3DVIEW_ROOT", "ANY3dView"),
+        ("_ANYMATERIAL_ROOT", "ANYmaterial"),
+        ("_ANYGEOMETRY_ROOT", "ANYgeometry"),
+        ("_ANYMESHER_ROOT", "ANYmesh"),
+        ("_ANYFILEIO_ROOT", "ANYfileIO"),
+        ("_ANYSOLVER_ROOT", "ANYsolver"),
+        ("_ANYBUCKLING_ROOT", "ANYbuckling"),
+        ("_ANYTK3D_ROOT", "ANYtk3D"),
+    ):
+        documented = documented.replace(
+            str(namespace[selected_name]),
+            str(namespace["_checkout_root"](repository)),
+        )
     assert documented in (ROOT / "README.md").read_text(encoding="utf-8")
 
 
@@ -254,6 +338,16 @@ def test_stale_solver_metadata_is_rejected_before_gui_import():
 
     assert problems == (
         "ANYsolver>=0.4.0,<0.5: installed metadata reports 0.2.9",
+    )
+
+
+def test_solver_prerelease_does_not_satisfy_final_release_floor():
+    namespace = _launcher_namespace()
+    versions = _compatible_versions()
+    versions["ANYsolver"] = "0.4.0rc1"
+
+    assert namespace["ecosystem_compatibility_problems"](versions.__getitem__) == (
+        "ANYsolver>=0.4.0,<0.5: installed metadata reports 0.4.0rc1",
     )
 
 

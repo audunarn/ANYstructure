@@ -6,6 +6,7 @@ version, option-wiring, and fail-closed failures quick to isolate.
 """
 
 from dataclasses import fields
+import json
 from pathlib import Path
 import types
 
@@ -197,6 +198,29 @@ def test_saved_state_round_trips_solver_inputs(tmp_path, suffix):
     assert state["options"] == options
     assert state["snapshot"]["torsional_moment_nm"] == pytest.approx(222.0)
     assert state["snapshot"]["shear_force_n"] == pytest.approx(333.0)
+
+
+@pytest.mark.parametrize(
+    ("container", "field"),
+    (("options", "pressure_pa"), ("result", "displacement_scale")),
+)
+def test_saved_state_rejects_finite_syntax_numeric_overflow(
+    tmp_path, container, field
+):
+    state = fem_integration.runtime_fem_state_to_dict(
+        fem_integration.RuntimeFEMOptions(),
+        result=fem_integration.RuntimeFEMRunResult(
+            status="ok", summary={}, displacement_scale=0.0
+        ),
+    )
+    state[container][field] = "OVERFLOW_SENTINEL"
+    text = json.dumps(state, allow_nan=False, separators=(",", ":"), sort_keys=True)
+    text = text.replace('"OVERFLOW_SENTINEL"', "1e999", 1)
+    path = tmp_path / "overflow.fem.json"
+    path.write_text(text, encoding="utf-8")
+
+    with pytest.raises(ValueError, match="nonfinite JSON number"):
+        fem_integration.load_runtime_fem_state(path)
 
 
 def test_fem_gui_uses_visible_horizontal_and_vertical_pane_handles():

@@ -36,26 +36,31 @@ def _checkout_root(
     return candidates[0].resolve()
 
 
-_ANYMATERIAL_ROOT = _checkout_root("ANYmaterial")
-_ANYGEOMETRY_ROOT = _checkout_root("ANYgeometry")
-_ANYSOLVER_ROOT = _checkout_root("ANYsolver")
-_ANYFILEIO_ROOT = _checkout_root("ANYfileIO")
-_ANYBUCKLING_ROOT = _checkout_root("ANYbuckling")
+ANYMATERIAL_SOURCE_ROOT_ENV = "ANYSTRUCTURE_ANYMATERIAL_ROOT"
+ANYGEOMETRY_SOURCE_ROOT_ENV = "ANYSTRUCTURE_ANYGEOMETRY_ROOT"
+ANYSOLVER_SOURCE_ROOT_ENV = "ANYSTRUCTURE_ANYSOLVER_ROOT"
+ANYFILEIO_SOURCE_ROOT_ENV = "ANYSTRUCTURE_ANYFILEIO_ROOT"
+ANYBUCKLING_SOURCE_ROOT_ENV = "ANYSTRUCTURE_ANYBUCKLING_ROOT"
+_SHARED_ANYMATERIAL_ROOT = _checkout_root("ANYmaterial")
+_SHARED_ANYGEOMETRY_ROOT = _checkout_root("ANYgeometry")
+_SHARED_ANYSOLVER_ROOT = _checkout_root("ANYsolver")
+_SHARED_ANYFILEIO_ROOT = _checkout_root("ANYfileIO")
+_SHARED_ANYBUCKLING_ROOT = _checkout_root("ANYbuckling")
 ANYMESHER_SOURCE_ROOT_ENV = "ANYSTRUCTURE_ANYMESHER_ROOT"
 ANYMESHER_REQUIRED_SOURCE_VERSION = "0.3.2"
 ANYMESHER_MAXIMUM_SOURCE_VERSION = "0.4.0"
 _SHARED_ANYMESHER_ROOT = _checkout_root("ANYmesh")
-_SAFE_ANYMESHER_ROOT = _ANYSOLVER_ROOT / ".compat_anymesher_032"
+_SAFE_ANYMESHER_ROOT = _SHARED_ANYSOLVER_ROOT / ".compat_anymesher_032"
 ANYTK3D_SOURCE_ROOT_ENV = "ANYSTRUCTURE_ANYTK3D_ROOT"
 ANYTK3D_REQUIRED_SOURCE_VERSION = "0.5.3"
 ANYTK3D_MAXIMUM_SOURCE_VERSION = "0.6.0"
 _SHARED_ANYTK3D_ROOT = _checkout_root("ANYtk3D")
-_SAFE_ANYTK3D_ROOT = _ANYSOLVER_ROOT / ".compat_anytk3d_050"
+_SAFE_ANYTK3D_ROOT = _SHARED_ANYSOLVER_ROOT / ".compat_anytk3d_050"
 ANY3DVIEW_SOURCE_ROOT_ENV = "ANYSTRUCTURE_ANY3DVIEW_ROOT"
 ANY3DVIEW_REQUIRED_SOURCE_VERSION = "0.5.4"
 ANY3DVIEW_MAXIMUM_SOURCE_VERSION = "0.6.0"
 _SHARED_ANY3DVIEW_ROOT = _checkout_root("ANY3dView")
-_SAFE_ANY3DVIEW_ROOT = _ANYSOLVER_ROOT / ".compat_any3dview_050"
+_SAFE_ANY3DVIEW_ROOT = _SHARED_ANYSOLVER_ROOT / ".compat_any3dview_050"
 
 
 def _source_project_identity(root: Path) -> tuple[str | None, str | None]:
@@ -87,12 +92,71 @@ def _source_project_identity(root: Path) -> tuple[str | None, str | None]:
 
 
 def _numeric_version(value: object) -> tuple[int, int, int]:
-    """Return the first three numeric release components."""
+    """Return one final three-component release, rejecting pre/dev releases."""
 
     import re
 
-    parts = [int(item) for item in re.findall(r"\d+", str(value or ""))[:3]]
-    return tuple((parts + [0, 0, 0])[:3])
+    match = re.fullmatch(
+        r"\s*(\d+)\.(\d+)\.(\d+)(?:\+[A-Za-z0-9]+(?:[._-][A-Za-z0-9]+)*)?\s*",
+        str(value or ""),
+    )
+    if match is None:
+        return (-1, -1, -1)
+    return tuple(int(match.group(index)) for index in (1, 2, 3))
+
+
+def _bound_source_problem(
+    root: Path,
+    *,
+    project: str,
+    package_name: str,
+    minimum: str,
+    maximum: str,
+) -> str | None:
+    """Validate one explicitly selectable ecosystem source checkout."""
+
+    name, version = _source_project_identity(root)
+    if name != project:
+        return f"{root / 'pyproject.toml'} does not declare project name {project}"
+    if _numeric_version(version) < _numeric_version(minimum):
+        shown = version if version is not None else "no static version"
+        return f"{root / 'pyproject.toml'} declares {shown}; at least {minimum} is required"
+    if _numeric_version(version) >= _numeric_version(maximum):
+        return f"{root / 'pyproject.toml'} declares {version}; it must remain below {maximum}"
+    package = root / "src" / package_name / "__init__.py"
+    if not package.is_file():
+        return f"qualified package source is missing: {package}"
+    return None
+
+
+def select_bound_source_root(
+    environment_name: str,
+    *,
+    project: str,
+    package_name: str,
+    minimum: str,
+    maximum: str,
+    environ: Mapping[str, str] | None = None,
+    shared_root: Path,
+) -> Path:
+    """Select a validated source root, giving an explicit override authority."""
+
+    environment = os.environ if environ is None else environ
+    override = str(environment.get(environment_name, "")).strip()
+    candidate = Path(override).expanduser() if override else Path(shared_root)
+    problem = _bound_source_problem(
+        candidate,
+        project=project,
+        package_name=package_name,
+        minimum=minimum,
+        maximum=maximum,
+    )
+    if problem:
+        qualifier = f"Invalid {environment_name} override" if override else "Invalid shared source checkout"
+        raise RuntimeError(
+            f"{qualifier}: {problem}. Set {environment_name} to a compatible checkout."
+        )
+    return candidate.resolve()
 
 
 def _anytk3d_source_problem(root: Path) -> str | None:
@@ -264,6 +328,46 @@ def select_any3dview_source_root(
     )
 
 
+_ANYMATERIAL_ROOT = select_bound_source_root(
+    ANYMATERIAL_SOURCE_ROOT_ENV,
+    project="ANYmaterial",
+    package_name="anymaterial",
+    minimum="0.1.1",
+    maximum="0.2.0",
+    shared_root=_SHARED_ANYMATERIAL_ROOT,
+)
+_ANYGEOMETRY_ROOT = select_bound_source_root(
+    ANYGEOMETRY_SOURCE_ROOT_ENV,
+    project="ANYgeometry",
+    package_name="anygeometry",
+    minimum="0.4.1",
+    maximum="0.5.0",
+    shared_root=_SHARED_ANYGEOMETRY_ROOT,
+)
+_ANYSOLVER_ROOT = select_bound_source_root(
+    ANYSOLVER_SOURCE_ROOT_ENV,
+    project="ANYsolver",
+    package_name="anysolver",
+    minimum="0.4.0",
+    maximum="0.5.0",
+    shared_root=_SHARED_ANYSOLVER_ROOT,
+)
+_ANYFILEIO_ROOT = select_bound_source_root(
+    ANYFILEIO_SOURCE_ROOT_ENV,
+    project="ANYfileio",
+    package_name="anyfileio",
+    minimum="0.2.1",
+    maximum="0.3.0",
+    shared_root=_SHARED_ANYFILEIO_ROOT,
+)
+_ANYBUCKLING_ROOT = select_bound_source_root(
+    ANYBUCKLING_SOURCE_ROOT_ENV,
+    project="ANYbuckling",
+    package_name="anybuckling",
+    minimum="0.1.1",
+    maximum="0.2.0",
+    shared_root=_SHARED_ANYBUCKLING_ROOT,
+)
 _ANYMESHER_ROOT = select_anymesher_source_root()
 _ANY3DVIEW_ROOT = select_any3dview_source_root()
 _ANYTK3D_ROOT = select_anytk3d_source_root()
@@ -382,7 +486,7 @@ def ecosystem_source_problems(
             candidates.append(Path(origin))
         locations = getattr(spec, "submodule_search_locations", None) or ()
         candidates.extend(Path(value) for value in locations)
-        if not candidates or not any(
+        if not candidates or not all(
             _path_is_within(candidate, expected_root) for candidate in candidates
         ):
             shown = ", ".join(str(value) for value in candidates) or "unknown origin"
@@ -414,7 +518,8 @@ def require_compatible_ecosystem(
         raise RuntimeError(
             "ANYstructure 6.3.1 cannot start with this mixed ecosystem:\n- "
             + "\n- ".join(problems)
-            + "\nRepair the sibling editable installs, then restart:\n"
+            + "\nCanonical interchange extra: ANYfileIO[semantics]."
+            + "\nRepair the selected editable installs, then restart:\n"
             + editable_repair_command()
         )
 
