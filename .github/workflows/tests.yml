@@ -58,8 +58,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: audunarn/ANYsolver
-          # Fail closed until the frozen 0.4.0 solver candidate is available.
-          ref: REBIND_FINAL_ANYSOLVER_COMMIT
+          # Exact S3/Q4 qualification candidate; update only through review.
+          ref: c9115d91bbf4856b9a6cb4d5450aab98c8c3c53e
           path: .ecosystem/ANYsolver
 
       - name: Check out ANYbuckling
@@ -160,8 +160,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: audunarn/ANYsolver
-          # Fail closed until the frozen 0.4.0 solver candidate is available.
-          ref: REBIND_FINAL_ANYSOLVER_COMMIT
+          # Exact S3/Q4 qualification candidate; update only through review.
+          ref: c9115d91bbf4856b9a6cb4d5450aab98c8c3c53e
           path: .ecosystem/ANYsolver
 
       - name: Check out ANYbuckling
