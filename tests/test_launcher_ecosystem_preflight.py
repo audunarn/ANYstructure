@@ -251,7 +251,7 @@ def test_repair_command_has_one_dependency_ordered_editable_graph():
     documented = "python -m " + command.partition(" -m ")[2]
     documented = documented.replace(
         str(namespace["_ROOT"]),
-        str(namespace["_checkout_root"]("ANYstructure")),
+        r"C:\Github\ANYstructure",
     )
     for selected_name, repository in (
         ("_ANY3DVIEW_ROOT", "ANY3dView"),
@@ -265,7 +265,7 @@ def test_repair_command_has_one_dependency_ordered_editable_graph():
     ):
         documented = documented.replace(
             str(namespace[selected_name]),
-            str(namespace["_checkout_root"](repository)),
+            rf"C:\Github\{repository}",
         )
     assert documented in (ROOT / "README.md").read_text(encoding="utf-8")
 
