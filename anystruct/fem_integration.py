@@ -414,6 +414,18 @@ def _tk_var_int(variable: Any, default: int = 0) -> int:
 RUNTIME_FEM_STATE_FORMAT_V1 = "anystructure-runtime-fem-state-v1"
 RUNTIME_FEM_STATE_FORMAT = "anystructure-runtime-fem-state-v2"
 RUNTIME_SHELL_AUTHORITY_SCHEMA = "anystructure-runtime-shell-authority-v2"
+RUNTIME_Q4_FORMULATION = "legacy"
+RUNTIME_S3_FORMULATION = "legacy-s3"
+
+
+def _runtime_formulation_for_node_count(node_count: int) -> str:
+    """Resolve the application policy without inheriting solver defaults."""
+
+    if node_count == 3:
+        return RUNTIME_S3_FORMULATION
+    if node_count in {4, 6, 8}:
+        return RUNTIME_Q4_FORMULATION if node_count == 4 else "legacy"
+    raise ValueError(f"unsupported runtime shell topology with {node_count} nodes")
 
 
 def _runtime_shell_authority(
@@ -428,8 +440,8 @@ def _runtime_shell_authority(
     if migrated_v1 or imported_legacy:
         return {
             "schema": RUNTIME_SHELL_AUTHORITY_SCHEMA,
-            "q4_formulation": "e4-pl",
-            "q4_formulation_id": "E4_PL_QUALIFIED_Q4_HYBRID_V2",
+            "q4_formulation": "legacy",
+            "q4_formulation_id": "LEGACY_SHELL_ELEMENT_Q4",
             "s3_formulation": "legacy-s3",
             "s3_formulation_id": "LEGACY_SHELL_ELEMENT_TRI3",
             "physical_normal_authority": (
@@ -437,8 +449,22 @@ def _runtime_shell_authority(
                 if migrated_v1
                 else "UNPROVEN_IMPORTED_MODEL"
             ),
-            "migration_disposition": "EXPLICIT_LEGACY_S3_NO_HOT_RESTART",
+            "migration_disposition": "EXPLICIT_LEGACY_SHELLS_NO_HOT_RESTART",
         }
+    return {
+        "schema": RUNTIME_SHELL_AUTHORITY_SCHEMA,
+        "q4_formulation": RUNTIME_Q4_FORMULATION,
+        "q4_formulation_id": "LEGACY_SHELL_ELEMENT_Q4",
+        "s3_formulation": RUNTIME_S3_FORMULATION,
+        "s3_formulation_id": "LEGACY_SHELL_ELEMENT_TRI3",
+        "physical_normal_authority": "NOT_REQUIRED_LEGACY_SHELL_POLICY",
+        "migration_disposition": "CURRENT_EXPLICIT_LEGACY_POLICY",
+    }
+
+
+def _historical_qualified_v1_shell_authority() -> dict[str, Any]:
+    """Return the exact superseded authority emitted by ANYstructure 6.3.1."""
+
     return {
         "schema": RUNTIME_SHELL_AUTHORITY_SCHEMA,
         "q4_formulation": "e4-pl",
@@ -454,6 +480,7 @@ def _validated_runtime_shell_authority(value: Any) -> dict[str, Any]:
     current = _runtime_shell_authority()
     migrated = _runtime_shell_authority(migrated_v1=True)
     imported = _runtime_shell_authority(imported_legacy=True)
+    historical_qualified = _historical_qualified_v1_shell_authority()
     if not isinstance(value, dict) or set(value) != set(current):
         raise ValueError("runtime FEM state has malformed shell authority")
     if value == current:
@@ -462,6 +489,8 @@ def _validated_runtime_shell_authority(value: Any) -> dict[str, Any]:
         return dict(migrated)
     if value == imported:
         return dict(imported)
+    if value == historical_qualified:
+        return dict(historical_qualified)
     raise ValueError("runtime FEM state shell authority is incompatible")
 
 
@@ -472,14 +501,7 @@ def runtime_shell_authority_allows_hot_restart(value: Any) -> bool:
 
 
 def _imported_model_shell_authority(model: Any) -> dict[str, Any]:
-    """Derive S3 restart authority from an imported model without guessing.
-
-    Only an exact qualified-S3 element carrying its constructor-validated
-    physical reference normal proves current-policy authority.  Historical
-    direct ``ShellElement`` instances, forged formulation markers, malformed
-    imported models, and every other unproven three-node shell are retained as
-    explicit legacy S3 and may not be hot-restarted under the qualified default.
-    """
+    """Accept only exact legacy shell classes under the current hold policy."""
 
     if model is None:
         return _runtime_shell_authority()
@@ -489,10 +511,7 @@ def _imported_model_shell_authority(model: Any) -> dict[str, Any]:
         return _runtime_shell_authority(imported_legacy=True)
 
     shell_type = getattr(_anysolver_package, "ShellElement", None)
-    qualified_type = getattr(
-        _anysolver_package, "QualifiedE4PLS3ShellElement", None
-    )
-    if not isinstance(shell_type, type) or not isinstance(qualified_type, type):
+    if not isinstance(shell_type, type):
         return _runtime_shell_authority(imported_legacy=True)
 
     try:
@@ -506,29 +525,7 @@ def _imported_model_shell_authority(model: Any) -> dict[str, Any]:
             node_count = len(element.node_ids)
         except Exception:
             return _runtime_shell_authority(imported_legacy=True)
-        if node_count != 3:
-            continue
-        if type(element) is not qualified_type:
-            return _runtime_shell_authority(imported_legacy=True)
-        if (
-            getattr(type(element), "formulation_id", None)
-            != "E4_PL_QUALIFIED_S3_COMPANION_V1"
-        ):
-            return _runtime_shell_authority(imported_legacy=True)
-        try:
-            reference_normal = np.asarray(
-                object.__getattribute__(element, "reference_normal"), dtype=float
-            )
-            normal_magnitude = float(np.linalg.norm(reference_normal))
-        except Exception:
-            return _runtime_shell_authority(imported_legacy=True)
-        if (
-            reference_normal.shape != (3,)
-            or not np.all(np.isfinite(reference_normal))
-            or not math.isclose(
-                normal_magnitude, 1.0, rel_tol=0.0, abs_tol=1.0e-12
-            )
-        ):
+        if node_count in {3, 4, 6, 8} and type(element) is not shell_type:
             return _runtime_shell_authority(imported_legacy=True)
     return _runtime_shell_authority()
 
@@ -728,29 +725,35 @@ def load_runtime_fem_state(path: Any) -> dict[str, Any]:
         if migrated_v1
         else _validated_runtime_shell_authority(state.get("shell_authority"))
     )
-    legacy_s3 = not runtime_shell_authority_allows_hot_restart(shell_authority)
-    imported_legacy_s3 = shell_authority == _runtime_shell_authority(
+    legacy_migration = not runtime_shell_authority_allows_hot_restart(shell_authority)
+    imported_legacy = shell_authority == _runtime_shell_authority(
         imported_legacy=True
     )
+    historical_qualified = (
+        shell_authority == _historical_qualified_v1_shell_authority()
+    )
+    migration_diagnostics: list[str] = []
+    if imported_legacy:
+        migration_diagnostics.append(
+            "IMPORTED_MODEL_SHELLS_RETAINED_AS_UNPROVEN_LEGACY: exact "
+            "application policy authority was not proven; hot restart is forbidden"
+        )
+    elif historical_qualified:
+        migration_diagnostics.append(
+            "RUNTIME_FEM_V2_QUALIFIED_V1_POLICY_RETAINED_READ_ONLY: S3 V1 was "
+            "rejected and downstream qualified Q4 is on hold; hot restart is forbidden"
+        )
+    elif migrated_v1 or legacy_migration:
+        migration_diagnostics.append(
+            "RUNTIME_FEM_V1_SHELLS_MIGRATED_TO_EXPLICIT_LEGACY: hot restart "
+            "is forbidden; replay full load history to change formulation"
+        )
     return {
         "format": RUNTIME_FEM_STATE_FORMAT,
         "source_format": str(state.get("format")),
         "saved_utc": str(state.get("saved_utc", "")),
         "shell_authority": shell_authority,
-        "migration_diagnostics": (
-            [
-                (
-                    "IMPORTED_MODEL_S3_RETAINED_AS_EXPLICIT_LEGACY: qualified-S3 "
-                    "physical-normal authority was not proven; hot restart is forbidden"
-                    if imported_legacy_s3
-                    else
-                    "RUNTIME_FEM_V1_S3_MIGRATED_TO_EXPLICIT_LEGACY: qualified-S3 "
-                    "hot restart is forbidden; replay full load history to change formulation"
-                )
-            ]
-            if migrated_v1 or legacy_s3
-            else []
-        ),
+        "migration_diagnostics": migration_diagnostics,
         "options": runtime_fem_options_from_dict(state.get("options", {})),
         "result": runtime_fem_result_from_dict(state.get("result")),
         "snapshot": state.get("snapshot", {}) or {},
@@ -1613,6 +1616,23 @@ def build_runtime_generated_geometry(
         else runtime_geometry_projection(geometry, config)
     )
     generated = fe_solver.build_generated_geometry(projection, config)
+    for collection_name in ("shells", "shell_faces", "faces", "plates"):
+        records = generated.get(collection_name)
+        if not isinstance(records, list):
+            continue
+        for record in records:
+            if not isinstance(record, dict):
+                raise ValueError(
+                    f"runtime {collection_name} formulation record must be an object"
+                )
+            node_ids = record.get("node_ids", record.get("nodes", ()))
+            try:
+                node_count = len(node_ids)
+            except TypeError as error:
+                raise ValueError(
+                    f"runtime {collection_name} formulation record has invalid nodes"
+                ) from error
+            record["formulation"] = _runtime_formulation_for_node_count(node_count)
     return geometry_generators.project_runtime_payload(
         generated,
         projection.geometry_authority,
@@ -1658,12 +1678,18 @@ def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions
     # statuses instead of replacing an invalid/nonconverged solve with the
     # compact estimator and presenting that estimate as a successful FE run.
     geometry_projection = runtime_geometry_projection(geometry, solver_config)
+    effective_generated_geometry = precomputed_generated_geometry
+    if imported_fem_model is None and effective_generated_geometry is None:
+        effective_generated_geometry = build_runtime_generated_geometry(
+            geometry_projection,
+            solver_config,
+        )
     solver_result = fe_solver.run_production_fem(
         geometry_projection,
         solver_config,
         status_callback=status_callback,
         imported_fem_model=imported_fem_model,
-        precomputed_generated_geometry=precomputed_generated_geometry,
+        precomputed_generated_geometry=effective_generated_geometry,
     )
     diagnostics.extend(solver_result.diagnostics)
     diagnostics.extend(_warmup_diagnostics())
@@ -11618,10 +11644,9 @@ class RuntimeFEMWindow:
             getattr(self, "_loaded_shell_authority", _runtime_shell_authority())
         ):
             message = (
-                "This loaded or imported model uses explicit legacy-s3, or lacks "
-                "qualified S3 physical-normal authority, and cannot be hot-restarted "
-                "with the qualified S3 default. Replay the full load history in a new "
-                "current-policy model before running FEM."
+                "This loaded or imported model does not carry the current explicit "
+                "legacy Q4/S3 application policy and cannot be hot-restarted. Replay "
+                "the full load history in a new current-policy model before running FEM."
             )
             self._write_status(message, keep_run_results=True)
             messagebox.showerror("FEM solver", message)

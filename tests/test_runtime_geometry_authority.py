@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -100,6 +101,16 @@ _CASES = (
 )
 
 
+def _without_shell_formulations(payload: dict[str, Any]) -> dict[str, Any]:
+    return {
+        **payload,
+        "shells": [
+            {key: value for key, value in shell.items() if key != "formulation"}
+            for shell in payload["shells"]
+        ],
+    }
+
+
 def test_projection_materializes_owner_once_only_on_geometry_access(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -148,7 +159,14 @@ def test_runtime_projection_preserves_legacy_fe_payload_and_owner_groups(
     model = projection.geometry_model
 
     assert dict(projection) == summary
-    assert generated == legacy
+    assert len(generated["shells"]) == len(legacy["shells"])
+    assert all(
+        shell["formulation"] == (
+            "legacy-s3" if len(shell["node_ids"]) == 3 else "legacy"
+        )
+        for shell in generated["shells"]
+    )
+    assert _without_shell_formulations(generated) == legacy
     assert set(generated) == set(legacy)
     assert type(model) is GeometryModel
     assert generated.geometry_model is model
@@ -165,7 +183,7 @@ def test_runtime_projection_preserves_legacy_fe_payload_and_owner_groups(
         assert all(model.resolve_ref(reference) == (reference,) for reference in references)
 
     remeshed = fem_integration.build_runtime_generated_geometry(generated, config)
-    assert remeshed == legacy
+    assert _without_shell_formulations(remeshed) == legacy
     assert remeshed.geometry_model is model
 
 
@@ -194,8 +212,12 @@ def test_runtime_solver_handoff_receives_geometry_backed_projection(
         precomputed_generated_geometry: Any = None,
     ) -> Any:
         captured["geometry"] = geometry
-        return solver_runtime.LightweightFEMResult(
+        captured["generated"] = precomputed_generated_geometry
+        return SimpleNamespace(
             status="ok",
+            outcome=SimpleNamespace(to_dict=lambda: {"status": "ok"}),
+            quantity_metadata=(),
+            diagnostics=(),
             stress_max_pa=0.0,
             stress_p95_pa=0.0,
             displacement_max_m=0.0,
@@ -203,6 +225,7 @@ def test_runtime_solver_handoff_receives_geometry_backed_projection(
             prestress_summary={},
             load_resultant={},
             visualization={},
+            buckling_factors=(),
             solver_name="geometry authority test",
         )
 
@@ -215,6 +238,11 @@ def test_runtime_solver_handoff_receives_geometry_backed_projection(
         fem_integration.fe_solver,
         "run_production_fem",
         fake_run_production,
+    )
+    monkeypatch.setattr(
+        fem_integration,
+        "_require_supported_anysolver",
+        lambda: "0.4.0",
     )
     snapshot = fem_integration.RuntimeFEMLineSnapshot(
         line_name="line1",
@@ -234,3 +262,8 @@ def test_runtime_solver_handoff_receives_geometry_backed_projection(
     assert type(handed_off.geometry_model) is GeometryModel
     assert handed_off.geometry_model.group("longitudinal_stiffeners")
     assert handed_off.geometry_model.group("transverse_stiffeners")
+    assert captured["generated"] is not None
+    assert all(
+        shell["formulation"] in {"legacy", "legacy-s3"}
+        for shell in captured["generated"]["shells"]
+    )
