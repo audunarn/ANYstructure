@@ -1,0 +1,28 @@
+{
+  "artifact_source": {
+    "commit": "8c46ed84fcb2197f9391bec9f1e951076366fe45",
+    "tree": "0fb263dc4d0e9d6c48aad9be0de6206e1c2758b9"
+  },
+  "artifacts": [
+    {
+      "bytes": 31776947,
+      "filename": "anystructure-6.3.1-py3-none-any.whl",
+      "sha256": "7757280F545392C9F991EAECD4F4B761BD27B48A251B57D4187DF691C584F319"
+    },
+    {
+      "bytes": 31806135,
+      "filename": "anystructure-6.3.1.tar.gz",
+      "sha256": "BCF57444A2983335E3187A592FB3BB19E63899EC955B7056CE1A768F7BFFDD00"
+    }
+  ],
+  "distribution": "ANYstructure",
+  "publication_authorized": true,
+  "qualification": {
+    "accepted_terminal": "ACCEPTED_ANYSTRUCTURE_6_3_1_RELEASE",
+    "evidence_sha256": "3A2E4C26848563F62701804D0392B448826CA3D381193B01C5E93779348DC359",
+    "independent_review_sha256": "1095CE08B4DDDE5E834F16A3659FA26F4310A6D5952453545A90B231791DCE77"
+  },
+  "schema": "anyecosystem.release-ledger-v1",
+  "tag": "v6.3.1",
+  "version": "6.3.1"
+}
