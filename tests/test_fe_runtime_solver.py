@@ -506,6 +506,18 @@ def test_runtime_fem_state_save_load_round_trip(tmp_path):
         fe_runtime_solver.save_runtime_fem_state(path, options, result=result, snapshot=snapshot)
         state = fe_runtime_solver.load_runtime_fem_state(path)
 
+        assert state["format"] == "anystructure-runtime-fem-state-v2"
+        assert state["source_format"] == "anystructure-runtime-fem-state-v2"
+        assert state["migration_diagnostics"] == []
+        assert state["shell_authority"] == {
+            "schema": "anystructure-runtime-shell-authority-v2",
+            "q4_formulation": "e4-pl",
+            "q4_formulation_id": "E4_PL_QUALIFIED_Q4_HYBRID_V2",
+            "s3_formulation": "e4-pl-s3",
+            "s3_formulation_id": "E4_PL_QUALIFIED_S3_COMPANION_V1",
+            "physical_normal_authority": "PHYSICAL_SURFACE_OWNER_NORMAL_V1",
+            "migration_disposition": "CURRENT_POLICY",
+        }
         assert state["options"] == options
         assert state["snapshot"]["line_name"] == snapshot.line_name
 
@@ -719,7 +731,7 @@ def test_run_runtime_fem_preserves_failed_production_status(monkeypatch):
 def test_anysolver_version_guard_rejects_pre_extraction_runtime(monkeypatch):
     monkeypatch.setattr(fe_runtime_solver._anysolver_package, "__version__", "0.1.3")
 
-    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.3\.0"):
+    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.4\.0"):
         fe_runtime_solver._solver_config_from_options(
             fe_runtime_solver.RuntimeFEMOptions(shear_force_n=321.0)
         )
@@ -728,7 +740,7 @@ def test_anysolver_version_guard_rejects_pre_extraction_runtime(monkeypatch):
 def test_anysolver_version_guard_rejects_older_runtime(monkeypatch):
     monkeypatch.setattr(fe_runtime_solver._anysolver_package, "__version__", "0.2.9")
 
-    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.3\.0"):
+    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.4\.0"):
         fe_runtime_solver._solver_config_from_options(
             fe_runtime_solver.RuntimeFEMOptions()
         )
@@ -3943,6 +3955,10 @@ def test_production_solver_can_use_anyintelligent_capacity_workflow_path():
             mesh_fidelity="coarse",
             num_buckling_modes=1,
             include_end_lids=True,
+            # The structured capacity path requires a supported equilibrium
+            # model; a free cylinder under dead pressure correctly fails the
+            # rigid-quotient buckling guard.
+            boundary_condition="clamped",
             runtime_solver="ANYsolver capacity workflow",
             imperfection_enabled=True,
             imperfection_amplitude_m=0.0001,

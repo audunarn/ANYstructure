@@ -257,25 +257,49 @@ def test_sesam_shell_model_uses_anyfileio_public_document_layer(monkeypatch):
 
 def test_dependency_and_gui_wiring_is_declared_in_release_surfaces():
     setup_source = (REPOSITORY_ROOT / "setup.py").read_text(encoding="utf-8")
-    requirements = (REPOSITORY_ROOT / "requirements-core.txt").read_text(encoding="utf-8")
+    core_requirements = (REPOSITORY_ROOT / "requirements-core.txt").read_text(
+        encoding="utf-8"
+    )
+    requirements = (REPOSITORY_ROOT / "requirements.txt").read_text(
+        encoding="utf-8"
+    )
     workflow = (REPOSITORY_ROOT / ".github" / "workflows" / "tests.yml").read_text(encoding="utf-8")
+    documentation = (REPOSITORY_ROOT / "docs" / "index.rst").read_text(
+        encoding="utf-8"
+    )
     app_source = (REPOSITORY_ROOT / "anystruct" / "main_application.py").read_text(encoding="utf-8")
     runtime_source = (REPOSITORY_ROOT / "anystruct" / "fem_integration.py").read_text(encoding="utf-8")
 
     for distribution in ("ANYgeometry", "ANYmaterial", "ANYmesher", "ANYfileio"):
         assert distribution in setup_source
+        assert distribution in core_requirements
         assert distribution in requirements
-    assert "ANYfileio[semantics]>=0.2.1'" in setup_source
-    assert "ANYgeometry>=0.2.4'" in setup_source
-    assert "ANYmesher>=0.2.5'" in setup_source
+    exact_ecosystem_requirements = {
+        "ANY3dView[gpu]>=0.5.4,<0.6",
+        "ANYtk3D>=0.5.3,<0.6",
+        "ANYbuckling>=0.1.1,<0.2",
+        "ANYfileio[semantics]>=0.2.1,<0.3",
+        "ANYgeometry>=0.4.1,<0.5",
+        "ANYmaterial>=0.1.1,<0.2",
+        "ANYmesher>=0.3.2,<0.4",
+        "ANYsolver>=0.4.0,<0.5",
+    }
+    for requirement in exact_ecosystem_requirements:
+        assert requirement in core_requirements.splitlines()
+        assert requirement in requirements.splitlines()
+        assert f"'{requirement}'" in setup_source
     pyproject = (REPOSITORY_ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    assert 'anymesher = ">=0.2.5"' in pyproject
-    assert "ANYsolver>=0.3'" in setup_source
-    assert "ANY3dView[gpu]>=0.5.1'" in setup_source
-    assert "ANYbuckling>=0.1.1'" in setup_source
-    assert "ANYmaterial>=0.1.1'" in setup_source
-    assert "ANYtk3D>=0.5.1'" in setup_source
-    assert "<0." not in setup_source
+    assert 'anymesher = ">=0.3.2,<0.4"' in pyproject
+    assert 'anysolver = ">=0.4.0,<0.5"' in pyproject
+    assert "ANYsolver>=0.4.0,<0.5" in documentation
+    assert "ANYsolver>=0.3" not in documentation
+    assert "ANYmesher>=0.3.2,<0.4" in documentation
+    assert "ANYmesher>=0.2.5" not in documentation
+    assert "ANYsolver>=0.4.0,<0.5'" in setup_source
+    assert "ANY3dView[gpu]>=0.5.4,<0.6'" in setup_source
+    assert "ANYbuckling>=0.1.1,<0.2'" in setup_source
+    assert "ANYmaterial>=0.1.1,<0.2'" in setup_source
+    assert "ANYtk3D>=0.5.3,<0.6'" in setup_source
     assert "python_requires='>=3.13'" in setup_source
     assert "Programming Language :: Python :: 3.13" in setup_source
     assert "Programming Language :: Python :: 3.14" in setup_source
@@ -283,10 +307,43 @@ def test_dependency_and_gui_wiring_is_declared_in_release_surfaces():
     assert "repository: audunarn/ANY3dView" in workflow
     assert "repository: audunarn/ANYgeometry" in workflow
     assert "repository: audunarn/ANYmesh" in workflow
-    assert "repository: audunarn/ANYio" in workflow
+    assert "repository: audunarn/ANYfileIO" in workflow
+    assert "path: .ecosystem/ANYfileIO" in workflow
+    assert ".ecosystem/ANYfileIO[semantics]" in workflow
+    assert "repository: audunarn/ANYio" not in workflow
+    assert ".ecosystem/ANYio" not in workflow
+    assert "import any3dview, anybuckling, anyfileio" in workflow
     assert "repository: audunarn/ANYsolver" in workflow
     assert "repository: audunarn/ANYbuckling" in workflow
     assert "repository: audunarn/ANYtk3D" in workflow
+    final_graph_refs = {
+        "0591d4833806ee95bdd710c352a1f836af7b910e": "ANYmaterial",
+        "8b899b7a9d08a51d7899c34265b6b0b6e13da554": "ANY3dView",
+        "6a8b023ef6f65805519c96b56e025b4e3b457a1f": "ANYgeometry",
+        "e79d14a03ef605afd947948e8588ccb8428eb52f": "ANYmesh",
+        "da8bff840128ac1e183c77be9e5a53b2bb5c0834": "ANYfileIO",
+        "2521db19031ea00053018ad09bb8474bf8a0671a": "ANYsolver",
+        "4980ba75584c6e3ddec9d39a3d76fc215d691c09": "ANYbuckling",
+        "94fe0e0cf31faeeab182e0a51e3ead94849418f3": "ANYtk3D",
+    }
+    for ref, repository in final_graph_refs.items():
+        assert workflow.count(f"repository: audunarn/{repository}") == 2
+        assert workflow.count(f"ref: {ref}") == 2
+    checkout = "actions/checkout@11d5960a326750d5838078e36cf38b85af677262"
+    setup_python = (
+        "actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065"
+    )
+    workflow_uses = [
+        line.split("uses:", 1)[1].strip().split(" #", 1)[0]
+        for line in workflow.splitlines()
+        if "uses:" in line
+    ]
+    assert workflow_uses == [
+        *([checkout] * 9),
+        setup_python,
+        *([checkout] * 9),
+        setup_python,
+    ]
     assert 'python -m pip install --no-deps -e ".ecosystem/ANY3dView[gpu]"' in workflow
     assert "-e .ecosystem/ANYmaterial" in workflow
     assert ".ecosystem/ANYgeometry" in workflow

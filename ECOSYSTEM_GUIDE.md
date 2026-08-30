@@ -26,7 +26,7 @@
 | Geometry, topology, identity, tolerances, spatial/intersection truth | `ANYgeometry` |
 | Discretization and mesh generation | `ANYmesh` (distribution: `ANYmesher`) |
 | Material definitions and material provenance | `ANYmaterial` |
-| Interchange and file semantics | `ANYfileIO` / `ANYio` during their migration |
+| Interchange and file semantics | `ANYfileIO` |
 | Optional OCCT interchange backend | `ANYfileio-occt` |
 | Solver mathematics, elements, assembly and numerical results | `ANYsolver` |
 | Prescriptive and semi-analytical buckling rules | `ANYbuckling` |
@@ -41,10 +41,10 @@
 | Experimental/reserved repositories | `ANYtrade`, `anyfea3d` |
 
 Dependencies point from owners to consumers. A consumer must use a public owner
-contract, not copy its algorithms, constants, schemas or data. During the
-`ANYfileIO`/`ANYio` transition, each task must name one authoritative line and
-provide an explicit compatibility path. Headless contracts precede GUI work. SI
-units and provenance are required at repository boundaries.
+contract, not copy its algorithms, constants, schemas or data. `ANYfileIO` is
+the canonical repository; the retired duplicate `ANYio` line must not be used
+as a source dependency. Headless contracts precede GUI work. SI units and
+provenance are required at repository boundaries.
 
 ### Engineering doctrine
 

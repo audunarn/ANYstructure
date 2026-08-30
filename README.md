@@ -20,7 +20,7 @@ than being duplicated in this README.
 
 ## Finite-element GUI integration
 
-The FE GUI requires `ANYsolver>=0.3`. Axial force, bending moment,
+The FE GUI requires `ANYsolver>=0.4.0`. Axial force, bending moment,
 shear force, torsional moment, pressure, and the supported collision controls
 are mapped directly to the external solver runtime. Current-area follower
 pressure is available for nonlinear static and arc-length runs on the Static
@@ -64,7 +64,7 @@ Recommended local setup:
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install --upgrade --no-deps -e "C:\Github\ANY3dView[gpu]" -e "C:\Github\ANYmaterial" -e "C:\Github\ANYgeometry" -e "C:\Github\ANYmesh" -e "C:\Github\ANYio[semantics]" -e "C:\Github\ANYsolver" -e "C:\Github\ANYbuckling" -e "C:\Github\ANYtk3D" -e "C:\Github\ANYstructure"
+python -m pip install --upgrade --no-deps -e "C:\Github\ANY3dView[gpu]" -e "C:\Github\ANYmaterial" -e "C:\Github\ANYgeometry" -e "C:\Github\ANYmesh" -e "C:\Github\ANYfileIO[semantics]" -e "C:\Github\ANYsolver" -e "C:\Github\ANYbuckling" -e "C:\Github\ANYtk3D" -e "C:\Github\ANYstructure"
 python -m pip install -r requirements-dev.txt
 python -m pytest
 ```
@@ -77,28 +77,31 @@ is stale. The coordinated editable refresh uses `--no-deps` so pip updates
 the sibling metadata without trying to resolve older packages' narrow
 transitive constraints.
 
-ANYstructure 6.3.1 supports ANY3dView and ANYtk3D source checkouts at version
-0.5.1 or newer. The launcher accepts shared checkouts whose `pyproject.toml`
-files meet that minimum. To select different qualified checkouts explicitly, set
-`$env:ANYSTRUCTURE_ANY3DVIEW_ROOT = "C:\path\to\ANY3dView-0.5.1"` and/or
-`$env:ANYSTRUCTURE_ANYTK3D_ROOT = "C:\path\to\ANYtk3D-0.5.1"` before running
+ANYstructure 6.3.1 supports ANY3dView source checkouts in `>=0.5.4,<0.6` and
+ANYtk3D checkouts in `>=0.5.3,<0.6`. The launcher accepts shared checkouts only
+inside those ranges. To select qualified checkouts explicitly, set
+`ANYSTRUCTURE_ANY3DVIEW_ROOT` and `ANYSTRUCTURE_ANYTK3D_ROOT` before running
 `run_gui.py`. Invalid overrides block startup instead of falling back silently.
 
 ANYmesher is selected with the same fail-closed rule. The shared
 `C:\Github\ANYmesh` checkout is used only while its `pyproject.toml` declares
-version 0.2.5 or newer. Otherwise the launcher and its repair command use the
-qualified checkout at `C:\Github\ANYsolver\.compat_anymesher_025`. Set
-`$env:ANYSTRUCTURE_ANYMESHER_ROOT = "C:\path\to\ANYmesher-0.2.5"` to select a
-different compatible checkout; an invalid override blocks startup.
+a version in `>=0.3.2,<0.4`. Otherwise the launcher and its repair command use the
+qualified checkout at `C:\Github\ANYsolver\.compat_anymesher_032`. Set
+`ANYSTRUCTURE_ANYMESHER_ROOT` to a checkout in `>=0.3.2,<0.4`; an invalid
+override blocks startup.
 
-`ANYsolver>=0.3`, `ANYgeometry>=0.2.4`, `ANYmaterial>=0.1.1`,
-`ANYmesher>=0.2.5`, `ANYfileio[semantics]>=0.2.1`,
-`ANYbuckling>=0.1.1`, `ANY3dView[gpu]>=0.5.1`, and
-`ANYtk3D>=0.5.1` are required runtime dependencies. These minimum-only
-constraints allow newer coordinated ecosystem releases. Install the editable sibling checkouts above until compatible
-releases are available from PyPI. ANYgeometry is the shared neutral surface-geometry
-authority; materials, structural properties, loads, mesh controls, and solver
-state remain in their owning packages.
+The complete coordinated ranges are `ANYsolver>=0.4.0,<0.5`,
+`ANYgeometry>=0.4.1,<0.5`, `ANYmaterial>=0.1.1,<0.2`,
+`ANYmesher>=0.3.2,<0.4`, `ANYfileio[semantics]>=0.2.1,<0.3`,
+`ANYbuckling>=0.1.1,<0.2`, `ANY3dView[gpu]>=0.5.4,<0.6`, and
+`ANYtk3D>=0.5.3,<0.6`. Exact source authority can also be selected with the
+corresponding `ANYSTRUCTURE_ANYSOLVER_ROOT`, `ANYSTRUCTURE_ANYGEOMETRY_ROOT`,
+`ANYSTRUCTURE_ANYMATERIAL_ROOT`, `ANYSTRUCTURE_ANYFILEIO_ROOT`, and
+`ANYSTRUCTURE_ANYBUCKLING_ROOT` variables. Install the editable sibling
+checkouts above until compatible releases are available from PyPI. ANYgeometry
+is the shared neutral surface-geometry authority; materials, structural
+properties, loads, mesh controls, and solver state remain in their owning
+packages.
 
 New geometry code should call `anygeometry.generators` directly. The
 `anystruct.geometry_generators` module provides thin plate, stiffened-panel,

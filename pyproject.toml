@@ -8,8 +8,9 @@ python_files = ["test_*.py"]
 addopts = ["-ra", "-p", "no:cacheprovider"]
 
 [tool.anystructure.ecosystem]
-# setup.py remains the package-metadata authority; these mirror the minimum
-# source versions enforced by run_gui.py for release tooling.
-anymesher = ">=0.2.5"
-any3dview = ">=0.5.1"
-anytk3d = ">=0.5.1"
+# setup.py remains the package-metadata authority; these mirror the compatible
+# source ranges enforced by run_gui.py for release tooling.
+anymesher = ">=0.3.2,<0.4"
+anysolver = ">=0.4.0,<0.5"
+any3dview = ">=0.5.4,<0.6"
+anytk3d = ">=0.5.3,<0.6"

@@ -6,6 +6,7 @@ version, option-wiring, and fail-closed failures quick to isolate.
 """
 
 from dataclasses import fields
+import json
 from pathlib import Path
 import types
 
@@ -145,7 +146,7 @@ def test_failed_production_status_is_not_replaced_by_lightweight_result(monkeypa
 def test_anysolver_version_guard_rejects_pre_extraction_0_1_3(monkeypatch):
     monkeypatch.setattr(fem_integration._anysolver_package, "__version__", "0.1.3")
 
-    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.3\.0"):
+    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.4\.0"):
         fem_integration._solver_config_from_options(
             fem_integration.RuntimeFEMOptions(shear_force_n=321.0)
         )
@@ -154,7 +155,7 @@ def test_anysolver_version_guard_rejects_pre_extraction_0_1_3(monkeypatch):
 def test_anysolver_version_guard_rejects_published_0_1_2(monkeypatch):
     monkeypatch.setattr(fem_integration._anysolver_package, "__version__", "0.1.2")
 
-    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.3\.0"):
+    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.4\.0"):
         fem_integration._solver_config_from_options(
             fem_integration.RuntimeFEMOptions()
         )
@@ -163,17 +164,15 @@ def test_anysolver_version_guard_rejects_published_0_1_2(monkeypatch):
 def test_anysolver_version_guard_rejects_0_2_9(monkeypatch):
     monkeypatch.setattr(fem_integration._anysolver_package, "__version__", "0.2.9")
 
-    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.3\.0"):
+    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.4\.0"):
         fem_integration._require_supported_anysolver()
 
 
-def test_anysolver_version_guard_accepts_0_3_0(monkeypatch):
+def test_anysolver_version_guard_rejects_pre_activation_0_3_0(monkeypatch):
     monkeypatch.setattr(fem_integration._anysolver_package, "__version__", "0.3.0")
 
-    assert fem_integration._require_supported_anysolver() == "0.3.0"
-    assert fem_integration._solver_config_from_options(
-        fem_integration.RuntimeFEMOptions()
-    )
+    with pytest.raises(RuntimeError, match=r"ANYsolver>=0\.4\.0"):
+        fem_integration._require_supported_anysolver()
 
 
 def test_anysolver_version_guard_accepts_newer_0_4_0(monkeypatch):
@@ -199,6 +198,29 @@ def test_saved_state_round_trips_solver_inputs(tmp_path, suffix):
     assert state["options"] == options
     assert state["snapshot"]["torsional_moment_nm"] == pytest.approx(222.0)
     assert state["snapshot"]["shear_force_n"] == pytest.approx(333.0)
+
+
+@pytest.mark.parametrize(
+    ("container", "field"),
+    (("options", "pressure_pa"), ("result", "displacement_scale")),
+)
+def test_saved_state_rejects_finite_syntax_numeric_overflow(
+    tmp_path, container, field
+):
+    state = fem_integration.runtime_fem_state_to_dict(
+        fem_integration.RuntimeFEMOptions(),
+        result=fem_integration.RuntimeFEMRunResult(
+            status="ok", summary={}, displacement_scale=0.0
+        ),
+    )
+    state[container][field] = "OVERFLOW_SENTINEL"
+    text = json.dumps(state, allow_nan=False, separators=(",", ":"), sort_keys=True)
+    text = text.replace('"OVERFLOW_SENTINEL"', "1e999", 1)
+    path = tmp_path / "overflow.fem.json"
+    path.write_text(text, encoding="utf-8")
+
+    with pytest.raises(ValueError, match="nonfinite JSON number"):
+        fem_integration.load_runtime_fem_state(path)
 
 
 def test_fem_gui_uses_visible_horizontal_and_vertical_pane_handles():
