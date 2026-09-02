@@ -102,10 +102,20 @@ _CASES = (
 
 
 def _without_shell_formulations(payload: dict[str, Any]) -> dict[str, Any]:
+    authority_fields = {
+        "formulation",
+        "formulation_id",
+        "owner_normal_authority",
+        "reference_normal",
+    }
     return {
         **payload,
         "shells": [
-            {key: value for key, value in shell.items() if key != "formulation"}
+            {
+                key: value
+                for key, value in shell.items()
+                if key not in authority_fields
+            }
             for shell in payload["shells"]
         ],
     }
@@ -162,7 +172,7 @@ def test_runtime_projection_preserves_legacy_fe_payload_and_owner_groups(
     assert len(generated["shells"]) == len(legacy["shells"])
     assert all(
         shell["formulation"] == (
-            "legacy-s3" if len(shell["node_ids"]) == 3 else "legacy"
+            "e4-pl-s3-v2d" if len(shell["node_ids"]) == 3 else "e4-pl"
         )
         for shell in generated["shells"]
     )
@@ -264,6 +274,6 @@ def test_runtime_solver_handoff_receives_geometry_backed_projection(
     assert handed_off.geometry_model.group("transverse_stiffeners")
     assert captured["generated"] is not None
     assert all(
-        shell["formulation"] in {"legacy", "legacy-s3"}
+        shell["formulation"] in {"e4-pl", "e4-pl-s3-v2d"}
         for shell in captured["generated"]["shells"]
     )
