@@ -414,8 +414,8 @@ def _tk_var_int(variable: Any, default: int = 0) -> int:
 RUNTIME_FEM_STATE_FORMAT_V1 = "anystructure-runtime-fem-state-v1"
 RUNTIME_FEM_STATE_FORMAT = "anystructure-runtime-fem-state-v2"
 RUNTIME_SHELL_AUTHORITY_SCHEMA = "anystructure-runtime-shell-authority-v2"
-RUNTIME_Q4_FORMULATION = "legacy"
-RUNTIME_S3_FORMULATION = "legacy-s3"
+RUNTIME_Q4_FORMULATION = "e4-pl"
+RUNTIME_S3_FORMULATION = "e4-pl-s3-v2d"
 
 
 def _runtime_formulation_for_node_count(node_count: int) -> str:
@@ -454,11 +454,11 @@ def _runtime_shell_authority(
     return {
         "schema": RUNTIME_SHELL_AUTHORITY_SCHEMA,
         "q4_formulation": RUNTIME_Q4_FORMULATION,
-        "q4_formulation_id": "LEGACY_SHELL_ELEMENT_Q4",
+        "q4_formulation_id": "E4_PL_QUALIFIED_Q4_HYBRID_V2",
         "s3_formulation": RUNTIME_S3_FORMULATION,
-        "s3_formulation_id": "LEGACY_SHELL_ELEMENT_TRI3",
-        "physical_normal_authority": "NOT_REQUIRED_LEGACY_SHELL_POLICY",
-        "migration_disposition": "CURRENT_EXPLICIT_LEGACY_POLICY",
+        "s3_formulation_id": "CANDIDATE_E4_PL_S3_V2D_NATIVE_PARITY_V1",
+        "physical_normal_authority": "PHYSICAL_SURFACE_OWNER_NORMAL_V2D_V1",
+        "migration_disposition": "CURRENT_QUALIFIED_Q4_S3_V2D_POLICY",
     }
 
 
@@ -501,7 +501,7 @@ def runtime_shell_authority_allows_hot_restart(value: Any) -> bool:
 
 
 def _imported_model_shell_authority(model: Any) -> dict[str, Any]:
-    """Accept only exact legacy shell classes under the current hold policy."""
+    """Accept current authority only for exact qualified shell classes."""
 
     if model is None:
         return _runtime_shell_authority()
@@ -511,7 +511,16 @@ def _imported_model_shell_authority(model: Any) -> dict[str, Any]:
         return _runtime_shell_authority(imported_legacy=True)
 
     shell_type = getattr(_anysolver_package, "ShellElement", None)
-    if not isinstance(shell_type, type):
+    qualified_q4_type = getattr(
+        _anysolver_package, "QualifiedE4PLShellElement", None
+    )
+    qualified_s3_type = getattr(
+        _anysolver_package, "NativeParityE4PLS3V2DShellElement", None
+    )
+    if not all(
+        isinstance(item, type)
+        for item in (shell_type, qualified_q4_type, qualified_s3_type)
+    ):
         return _runtime_shell_authority(imported_legacy=True)
 
     try:
@@ -525,7 +534,35 @@ def _imported_model_shell_authority(model: Any) -> dict[str, Any]:
             node_count = len(element.node_ids)
         except Exception:
             return _runtime_shell_authority(imported_legacy=True)
-        if node_count in {3, 4, 6, 8} and type(element) is not shell_type:
+        if node_count == 3:
+            if (
+                type(element) is not qualified_s3_type
+                or getattr(type(element), "formulation_id", None)
+                != "CANDIDATE_E4_PL_S3_V2D_NATIVE_PARITY_V1"
+            ):
+                return _runtime_shell_authority(imported_legacy=True)
+            try:
+                reference_normal = np.asarray(
+                    object.__getattribute__(element, "reference_normal"),
+                    dtype=float,
+                )
+            except Exception:
+                return _runtime_shell_authority(imported_legacy=True)
+            if (
+                reference_normal.shape != (3,)
+                or not np.all(np.isfinite(reference_normal))
+                or not math.isclose(
+                    float(np.linalg.norm(reference_normal)),
+                    1.0,
+                    rel_tol=0.0,
+                    abs_tol=1.0e-12,
+                )
+            ):
+                return _runtime_shell_authority(imported_legacy=True)
+        elif node_count == 4:
+            if type(element) is not qualified_q4_type:
+                return _runtime_shell_authority(imported_legacy=True)
+        elif node_count in {6, 8} and type(element) is not shell_type:
             return _runtime_shell_authority(imported_legacy=True)
     return _runtime_shell_authority()
 
@@ -741,7 +778,7 @@ def load_runtime_fem_state(path: Any) -> dict[str, Any]:
     elif historical_qualified:
         migration_diagnostics.append(
             "RUNTIME_FEM_V2_QUALIFIED_V1_POLICY_RETAINED_READ_ONLY: S3 V1 was "
-            "rejected and downstream qualified Q4 is on hold; hot restart is forbidden"
+            "superseded by qualified V2D; hot restart is forbidden"
         )
     elif migrated_v1 or legacy_migration:
         migration_diagnostics.append(
@@ -1608,7 +1645,7 @@ def build_runtime_generated_geometry(
     geometry: dict[str, Any] | geometry_generators.GeometryBackedProjection,
     config: Any,
 ) -> geometry_generators.GeometryBackedProjection:
-    """Build the legacy FE/render payload from a geometry-backed projection."""
+    """Build a formulation-authorized FE/render payload."""
 
     projection = (
         geometry_generators.project_runtime_geometry(geometry.geometry_authority)
@@ -1632,7 +1669,26 @@ def build_runtime_generated_geometry(
                 raise ValueError(
                     f"runtime {collection_name} formulation record has invalid nodes"
                 ) from error
-            record["formulation"] = _runtime_formulation_for_node_count(node_count)
+            formulation = _runtime_formulation_for_node_count(node_count)
+            record["formulation"] = formulation
+            if node_count == 4:
+                record["formulation_id"] = "E4_PL_QUALIFIED_Q4_HYBRID_V2"
+            elif node_count == 3:
+                normal = record.get(
+                    "reference_normal",
+                    record.get("owner_normal", record.get("physical_normal")),
+                )
+                if normal is None:
+                    raise ValueError(
+                        "runtime qualified S3 record lacks physical owner-normal authority"
+                    )
+                record["reference_normal"] = normal
+                record["owner_normal_authority"] = (
+                    "PHYSICAL_SURFACE_OWNER_NORMAL_V2D_V1"
+                )
+                record["formulation_id"] = (
+                    "CANDIDATE_E4_PL_S3_V2D_NATIVE_PARITY_V1"
+                )
     return geometry_generators.project_runtime_payload(
         generated,
         projection.geometry_authority,
@@ -1698,9 +1754,21 @@ def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions
     custom_edges = _runtime_custom_edges(options)
     local_refinement_patches = _runtime_local_refinement_patches(options)
     warmup_state = fe_solver_kernel_warmup_status()
-    solve_outcome = solver_result.outcome.to_dict()
+    # The public runtime facade intentionally returns a lightweight result;
+    # normalize it through ANYsolver's common outcome adapter instead of
+    # assuming every result class stores an ``outcome`` attribute directly.
+    try:
+        solve_outcome = _anysolver_package.solve_outcome(solver_result).to_dict()
+    except TypeError:
+        # Retain the narrow adapter seam used by tests and older external
+        # result providers that already expose a canonical outcome object.
+        raw_outcome = getattr(solver_result, "outcome", None)
+        if raw_outcome is None or not callable(getattr(raw_outcome, "to_dict", None)):
+            raise
+        solve_outcome = raw_outcome.to_dict()
     quantity_descriptors = tuple(
-        descriptor.to_dict() for descriptor in solver_result.quantity_metadata
+        descriptor.to_dict()
+        for descriptor in _anysolver_package.describe_result_quantities(solver_result)
     )
     reaction_descriptors = tuple(
         descriptor
@@ -11644,8 +11712,8 @@ class RuntimeFEMWindow:
             getattr(self, "_loaded_shell_authority", _runtime_shell_authority())
         ):
             message = (
-                "This loaded or imported model does not carry the current explicit "
-                "legacy Q4/S3 application policy and cannot be hot-restarted. Replay "
+                "This loaded or imported model does not carry the current qualified "
+                "Q4/S3 V2D application policy and cannot be hot-restarted. Replay "
                 "the full load history in a new current-policy model before running FEM."
             )
             self._write_status(message, keep_run_results=True)

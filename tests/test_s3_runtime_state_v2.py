@@ -11,7 +11,7 @@ from anysolver import LegacyShellElement, create_shell_element
 from anystruct import fem_integration
 
 
-def test_new_runtime_state_binds_explicit_legacy_q4_and_s3() -> None:
+def test_new_runtime_state_binds_qualified_q4_and_v2d_s3() -> None:
     state = fem_integration.runtime_fem_state_to_dict(
         fem_integration.RuntimeFEMOptions()
     )
@@ -19,12 +19,12 @@ def test_new_runtime_state_binds_explicit_legacy_q4_and_s3() -> None:
     assert state["format"] == "anystructure-runtime-fem-state-v2"
     assert state["shell_authority"] == {
         "schema": "anystructure-runtime-shell-authority-v2",
-        "q4_formulation": "legacy",
-        "q4_formulation_id": "LEGACY_SHELL_ELEMENT_Q4",
-        "s3_formulation": "legacy-s3",
-        "s3_formulation_id": "LEGACY_SHELL_ELEMENT_TRI3",
-        "physical_normal_authority": "NOT_REQUIRED_LEGACY_SHELL_POLICY",
-        "migration_disposition": "CURRENT_EXPLICIT_LEGACY_POLICY",
+        "q4_formulation": "e4-pl",
+        "q4_formulation_id": "E4_PL_QUALIFIED_Q4_HYBRID_V2",
+        "s3_formulation": "e4-pl-s3-v2d",
+        "s3_formulation_id": "CANDIDATE_E4_PL_S3_V2D_NATIVE_PARITY_V1",
+        "physical_normal_authority": "PHYSICAL_SURFACE_OWNER_NORMAL_V2D_V1",
+        "migration_disposition": "CURRENT_QUALIFIED_Q4_S3_V2D_POLICY",
     }
 
 
@@ -159,7 +159,7 @@ def test_superseded_631_qualified_policy_remains_readable_but_not_restartable(
     assert restored["shell_authority"] == state["shell_authority"]
     assert restored["migration_diagnostics"] == [
         "RUNTIME_FEM_V2_QUALIFIED_V1_POLICY_RETAINED_READ_ONLY: S3 V1 was "
-        "rejected and downstream qualified Q4 is on hold; hot restart is forbidden"
+        "superseded by qualified V2D; hot restart is forbidden"
     ]
     assert not fem_integration.runtime_shell_authority_allows_hot_restart(
         restored["shell_authority"]
@@ -170,11 +170,11 @@ def _imported_model_with(element):
     return SimpleNamespace(mesh=SimpleNamespace(elements={1: element}))
 
 
-def test_imported_qualified_s3_is_incompatible_with_legacy_hold_policy() -> None:
+def test_imported_exact_v2d_s3_retains_current_authority() -> None:
     element = create_shell_element(
         1,
         [1, 2, 3],
-        formulation="e4-pl-s3",
+        formulation="e4-pl-s3-v2d",
         reference_normal=(0.0, 0.0, 1.0),
     )
 
@@ -182,13 +182,11 @@ def test_imported_qualified_s3_is_incompatible_with_legacy_hold_policy() -> None
         _imported_model_with(element)
     )
 
-    assert authority == fem_integration._runtime_shell_authority(
-        imported_legacy=True
-    )
-    assert not fem_integration.runtime_shell_authority_allows_hot_restart(authority)
+    assert authority == fem_integration._runtime_shell_authority()
+    assert fem_integration.runtime_shell_authority_allows_hot_restart(authority)
 
 
-def test_imported_exact_legacy_s3_saves_and_reloads_as_current_policy(
+def test_imported_legacy_s3_saves_and_reloads_as_nonrestartable_legacy(
     tmp_path,
 ) -> None:
     legacy = LegacyShellElement(1, [1, 2, 3])
@@ -210,10 +208,13 @@ def test_imported_exact_legacy_s3_saves_and_reloads_as_current_policy(
 
     assert restored["shell_authority"]["s3_formulation"] == "legacy-s3"
     assert restored["shell_authority"]["physical_normal_authority"] == (
-        "NOT_REQUIRED_LEGACY_SHELL_POLICY"
+        "UNPROVEN_IMPORTED_MODEL"
     )
-    assert restored["migration_diagnostics"] == []
-    assert fem_integration.runtime_shell_authority_allows_hot_restart(
+    assert restored["migration_diagnostics"] == [
+        "IMPORTED_MODEL_SHELLS_RETAINED_AS_UNPROVEN_LEGACY: exact "
+        "application policy authority was not proven; hot restart is forbidden"
+    ]
+    assert not fem_integration.runtime_shell_authority_allows_hot_restart(
         restored["shell_authority"]
     )
 

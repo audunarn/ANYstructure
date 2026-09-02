@@ -511,12 +511,12 @@ def test_runtime_fem_state_save_load_round_trip(tmp_path):
         assert state["migration_diagnostics"] == []
         assert state["shell_authority"] == {
             "schema": "anystructure-runtime-shell-authority-v2",
-            "q4_formulation": "legacy",
-            "q4_formulation_id": "LEGACY_SHELL_ELEMENT_Q4",
-            "s3_formulation": "legacy-s3",
-            "s3_formulation_id": "LEGACY_SHELL_ELEMENT_TRI3",
-            "physical_normal_authority": "NOT_REQUIRED_LEGACY_SHELL_POLICY",
-            "migration_disposition": "CURRENT_EXPLICIT_LEGACY_POLICY",
+            "q4_formulation": "e4-pl",
+            "q4_formulation_id": "E4_PL_QUALIFIED_Q4_HYBRID_V2",
+            "s3_formulation": "e4-pl-s3-v2d",
+            "s3_formulation_id": "CANDIDATE_E4_PL_S3_V2D_NATIVE_PARITY_V1",
+            "physical_normal_authority": "PHYSICAL_SURFACE_OWNER_NORMAL_V2D_V1",
+            "migration_disposition": "CURRENT_QUALIFIED_Q4_S3_V2D_POLICY",
         }
         assert state["options"] == options
         assert state["snapshot"]["line_name"] == snapshot.line_name
