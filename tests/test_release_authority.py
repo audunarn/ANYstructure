@@ -15,13 +15,16 @@ import zipfile
 import pytest
 
 
+pytestmark = pytest.mark.release_authority
+
+
 ROOT = Path(__file__).resolve().parents[1]
 RELEASE_VERIFIER = ROOT / "tools" / "verify_release_authority.py"
 RELEASE_DISTRIBUTION = "ANYstructure"
 RELEASE_NORMALIZED = "anystructure"
-RELEASE_VERSION = "6.3.1"
+RELEASE_VERSION = "6.4.0"
 RELEASE_TAG = f"v{RELEASE_VERSION}"
-RELEASE_TERMINAL = "ACCEPTED_ANYSTRUCTURE_6_3_1_RELEASE"
+RELEASE_TERMINAL = "ACCEPTED_ANYSTRUCTURE_6_4_0_RELEASE"
 RELEASE_WHEEL = f"{RELEASE_NORMALIZED}-{RELEASE_VERSION}-py3-none-any.whl"
 RELEASE_SDIST = f"{RELEASE_NORMALIZED}-{RELEASE_VERSION}.tar.gz"
 RELEASE_LEDGER = (
@@ -95,7 +98,7 @@ def _write_release_checksums(assets: Path) -> None:
         f"{hashlib.sha256((assets / name).read_bytes()).hexdigest()}  {name}\n"
         for name in sorted((RELEASE_WHEEL, RELEASE_SDIST))
     )
-    (assets / "ANYstructure-6.3.1-SHA256SUMS.txt").write_text(
+    (assets / "ANYstructure-6.4.0-SHA256SUMS.txt").write_text(
         text,
         encoding="ascii",
         newline="\n",
@@ -373,7 +376,7 @@ def _run_release_verifier(
         )
         _write_release_checksums(assets)
     elif mutation == "checksum":
-        (assets / "ANYstructure-6.3.1-SHA256SUMS.txt").write_text(
+        (assets / "ANYstructure-6.4.0-SHA256SUMS.txt").write_text(
             "0" * 64
             + f"  {RELEASE_WHEEL}\n"
             + hashlib.sha256((assets / RELEASE_SDIST).read_bytes()).hexdigest()
@@ -412,7 +415,7 @@ def _run_release_verifier(
             "--version",
             RELEASE_VERSION,
             "--checksum-name",
-            "ANYstructure-6.3.1-SHA256SUMS.txt",
+            "ANYstructure-6.4.0-SHA256SUMS.txt",
             "--artifact",
             RELEASE_WHEEL,
             "--artifact",
@@ -443,7 +446,7 @@ def test_production_workflow_uses_immutable_ledger_authority() -> None:
     assert "--pattern" not in production
     assert "tools/verify_release_authority.py" in production
     assert RELEASE_LEDGER.as_posix() in production
-    assert "--checksum-name ANYstructure-6.3.1-SHA256SUMS.txt" in production
+    assert "--checksum-name ANYstructure-6.4.0-SHA256SUMS.txt" in production
     assert "--artifact " + RELEASE_WHEEL in production
     assert "--artifact " + RELEASE_SDIST in production
     assert "python -m build" not in production
@@ -457,7 +460,7 @@ def test_manual_candidate_build_path_remains_separate() -> None:
     assert "python -m build --outdir dist" in manual
     assert (
         "sha256sum *.whl *.tar.gz > "
-        "ANYstructure-6.3.1-SHA256SUMS.txt"
+        "ANYstructure-6.4.0-SHA256SUMS.txt"
     ) in manual
 
 

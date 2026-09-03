@@ -36,7 +36,7 @@ jobs:
         shell: bash
         run: |
           cd dist
-          sha256sum *.whl *.tar.gz > ANYstructure-6.3.1-SHA256SUMS.txt
+          sha256sum *.whl *.tar.gz > ANYstructure-6.4.0-SHA256SUMS.txt
       - name: Store candidate release assets
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
@@ -82,17 +82,17 @@ jobs:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
           python tools/verify_release_authority.py \
-            --ledger docs/release/anystructure-6.3.1-ledger.json \
+            --ledger docs/release/anystructure-6.4.0-ledger.json \
             --assets release-assets \
             --output dist \
             --tag "$RELEASE_TAG" \
             --protected-ref refs/remotes/origin/master \
-            --expected-terminal ACCEPTED_ANYSTRUCTURE_6_3_1_RELEASE \
+            --expected-terminal ACCEPTED_ANYSTRUCTURE_6_4_0_RELEASE \
             --distribution ANYstructure \
-            --version 6.3.1 \
-            --checksum-name ANYstructure-6.3.1-SHA256SUMS.txt \
-            --artifact anystructure-6.3.1-py3-none-any.whl \
-            --artifact anystructure-6.3.1.tar.gz
+            --version 6.4.0 \
+            --checksum-name ANYstructure-6.4.0-SHA256SUMS.txt \
+            --artifact anystructure-6.4.0-py3-none-any.whl \
+            --artifact anystructure-6.4.0.tar.gz
       - name: Publish exact ledger-authorized distributions
         uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
         with:

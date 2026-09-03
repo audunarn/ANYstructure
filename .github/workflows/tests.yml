@@ -4,6 +4,12 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+    inputs:
+      run_slow_tests:
+        description: Run long solver and large-format qualification tests
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   pytest:
@@ -23,57 +29,57 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANYmaterial
-          ref: 0591d4833806ee95bdd710c352a1f836af7b910e
+          ref: d8a233ef4c5e38d25dbba0eb20e6cfa8d44ec5a2
           path: .ecosystem/ANYmaterial
 
       - name: Check out ANY3dView
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANY3dView
-          ref: 8b899b7a9d08a51d7899c34265b6b0b6e13da554
+          ref: 7d36c97dd0dbec8884f8894a4258ece83ad61271
           path: .ecosystem/ANY3dView
 
       - name: Check out ANYgeometry
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANYgeometry
-          ref: 6a8b023ef6f65805519c96b56e025b4e3b457a1f
+          ref: dd954f088a4cb95e267280cc4777b09e16232bd9
           path: .ecosystem/ANYgeometry
 
       - name: Check out ANYmesher
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANYmesh
-          ref: e79d14a03ef605afd947948e8588ccb8428eb52f
+          ref: 27e428188a891705288fef82bab0b166e330aff2
           path: .ecosystem/ANYmesh
 
       - name: Check out ANYfileio
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANYfileIO
-          ref: da8bff840128ac1e183c77be9e5a53b2bb5c0834
+          ref: b48ba51c7b79e6d64b3f99c1fb131b9b602e7e1d
           path: .ecosystem/ANYfileIO
 
       - name: Check out ANYsolver
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANYsolver
-          # Exact S3/Q4 qualification candidate; update only through review.
-          ref: 2521db19031ea00053018ad09bb8474bf8a0671a
+          # Released ANYsolver 0.4.1 source identity.
+          ref: 5017827b0e88b4b52d7fee0fad6a1f405e2d33cf
           path: .ecosystem/ANYsolver
 
       - name: Check out ANYbuckling
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANYbuckling
-          ref: 4980ba75584c6e3ddec9d39a3d76fc215d691c09
+          ref: a871d5a3c466666b79f3ce3a015a2cfd7534376b
           path: .ecosystem/ANYbuckling
 
       - name: Check out ANYtk3D
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANYtk3D
-          ref: 94fe0e0cf31faeeab182e0a51e3ead94849418f3
+          ref: 2caa92325885938c594f27145ed16069d807e364
           path: .ecosystem/ANYtk3D
 
       - name: Set up Python
@@ -94,21 +100,33 @@ jobs:
           python -c "import anygeometry, anystruct, anysolver;
           from importlib.metadata import version;
           v = tuple(map(int, version('ANYsolver').split('.')[:3]));
-          assert v >= (0, 4, 0);
+          assert v >= (0, 4, 1);
           assert anysolver.__version__ == version('ANYsolver');
           print('anystruct import OK with ANYsolver', anysolver.__version__)"
 
-      - name: Run pytest
+      - name: Run fast pytest suite
         run: python -m pytest
 
+      - name: Run FEM integration suite
+        if: runner.os == 'Windows' && matrix.python-version == '3.14'
+        run: python -m pytest -m "fem_integration and not slow"
+
+      - name: Run release-authority qualification
+        if: runner.os == 'Linux' && matrix.python-version == '3.13'
+        run: python -m pytest -m release_authority
+
+      - name: Run opt-in slow FEM qualification
+        if: runner.os == 'Windows' && matrix.python-version == '3.14' && inputs.run_slow_tests
+        run: python -m pytest -m slow
+
       - name: Run GUI smoke on Windows
-        if: runner.os == 'Windows'
+        if: runner.os == 'Windows' && matrix.python-version == '3.14'
         run: |
           python -m tests.gui_automatic_run
           python -m tests.gui_fe_runtime_smoke
 
       - name: Run GUI smoke on Linux
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && matrix.python-version == '3.14'
         run: |
           xvfb-run -a python -m tests.gui_automatic_run
           xvfb-run -a python -m tests.gui_fe_runtime_smoke
@@ -125,57 +143,57 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANYmaterial
-          ref: 0591d4833806ee95bdd710c352a1f836af7b910e
+          ref: d8a233ef4c5e38d25dbba0eb20e6cfa8d44ec5a2
           path: .ecosystem/ANYmaterial
 
       - name: Check out ANY3dView
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANY3dView
-          ref: 8b899b7a9d08a51d7899c34265b6b0b6e13da554
+          ref: 7d36c97dd0dbec8884f8894a4258ece83ad61271
           path: .ecosystem/ANY3dView
 
       - name: Check out ANYgeometry
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANYgeometry
-          ref: 6a8b023ef6f65805519c96b56e025b4e3b457a1f
+          ref: dd954f088a4cb95e267280cc4777b09e16232bd9
           path: .ecosystem/ANYgeometry
 
       - name: Check out ANYmesher
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANYmesh
-          ref: e79d14a03ef605afd947948e8588ccb8428eb52f
+          ref: 27e428188a891705288fef82bab0b166e330aff2
           path: .ecosystem/ANYmesh
 
       - name: Check out ANYfileio
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANYfileIO
-          ref: da8bff840128ac1e183c77be9e5a53b2bb5c0834
+          ref: b48ba51c7b79e6d64b3f99c1fb131b9b602e7e1d
           path: .ecosystem/ANYfileIO
 
       - name: Check out ANYsolver
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANYsolver
-          # Exact S3/Q4 qualification candidate; update only through review.
-          ref: 2521db19031ea00053018ad09bb8474bf8a0671a
+          # Released ANYsolver 0.4.1 source identity.
+          ref: 5017827b0e88b4b52d7fee0fad6a1f405e2d33cf
           path: .ecosystem/ANYsolver
 
       - name: Check out ANYbuckling
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANYbuckling
-          ref: 4980ba75584c6e3ddec9d39a3d76fc215d691c09
+          ref: a871d5a3c466666b79f3ce3a015a2cfd7534376b
           path: .ecosystem/ANYbuckling
 
       - name: Check out ANYtk3D
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANYtk3D
-          ref: 94fe0e0cf31faeeab182e0a51e3ead94849418f3
+          ref: 2caa92325885938c594f27145ed16069d807e364
           path: .ecosystem/ANYtk3D
 
       - name: Set up Python

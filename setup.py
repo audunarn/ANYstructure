@@ -20,14 +20,14 @@ def readme():
         return file.read()
 
 core_requires = [
-    'ANY3dView[gpu]>=0.5.4,<0.6',
+    'ANY3dView[gpu]>=0.5.5,<0.6',
     'ANYbuckling>=0.1.1,<0.2',
-    'ANYfileio[semantics]>=0.2.1,<0.3',
-    'ANYgeometry>=0.4.1,<0.5',
-    'ANYmaterial>=0.1.1,<0.2',
-    'ANYmesher>=0.3.2,<0.4',
-    'ANYsolver>=0.4.0,<0.5',
-    'ANYtk3D>=0.5.3,<0.6',
+    'ANYfileio[semantics]>=0.3.1,<0.4',
+    'ANYgeometry>=0.4.2,<0.5',
+    'ANYmaterial>=0.2.0,<0.3',
+    'ANYmesher>=0.4.0,<0.5',
+    'ANYsolver>=0.4.1,<0.5',
+    'ANYtk3D>=0.5.5,<0.6',
     'matplotlib',
     'meshio',
     'numpy',
@@ -44,8 +44,9 @@ setup(
     name='ANYstructure',  # Required
     url = 'https://github.com/audunarn/ANYstructure',
     entry_points={"console_scripts": ['ANYstructure = anystruct.__main__:main']},
-    version='6.3.1',  # Required
-    license='GPL-3.0-or-later',
+    version='6.4.0',  # Required
+    license='MPL-2.0',
+    license_files=['LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md', 'docs/LICENSE.md'],
     python_requires='>=3.13',
     description='A plate field optimization tool for offshore structures calculated according to DNV standards',
     long_description = readme(),
@@ -55,6 +56,7 @@ setup(
     classifiers=[  # Optional
         'Development Status :: 5 - Production/Stable',
         'Environment :: X11 Applications',
+        'License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)',
         'Programming Language :: Python :: 3.13',
         'Programming Language :: Python :: 3.14',
         'Topic :: Scientific/Engineering'],

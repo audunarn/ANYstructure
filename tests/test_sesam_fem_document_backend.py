@@ -17,6 +17,9 @@ from anysolver.sesam_fem import (
 from anysolver.sesam_fem.sif_importer import read_sesam_sif_stress
 
 
+pytestmark = pytest.mark.fem_integration
+
+
 REF_CASES = Path(__file__).resolve().parents[1] / "ref_Cases"
 
 
@@ -832,8 +835,16 @@ def test_highload_sif_cylinder_maps_sesam_sigyy_to_axial_stress() -> None:
 @pytest.mark.parametrize(
     ("filename", "shell_count"),
     [
-        ("allTriLinear_pressure_force_gravity_girder_stiffners.SIF", 1412),
-        ("allTri2ndorder_pressure_force_gravity_girder_stiffners.SIF", 1412),
+        pytest.param(
+            "allTriLinear_pressure_force_gravity_girder_stiffners.SIF",
+            1412,
+            marks=pytest.mark.slow,
+        ),
+        pytest.param(
+            "allTri2ndorder_pressure_force_gravity_girder_stiffners.SIF",
+            1412,
+            marks=pytest.mark.slow,
+        ),
         ("mixed2ndOrder_pressure_force_gravity_girder_stiffner.SIF", 630),
     ],
 )

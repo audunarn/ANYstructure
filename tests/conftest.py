@@ -18,9 +18,6 @@ def pytest_configure(config):
     if getattr(config.option, "basetemp", None) is None:
         root = Path(__file__).resolve().parents[1]
         config.option.basetemp = str(root / f".pytest_tmp_{uuid4().hex}")
-    config.addinivalue_line(
-        "markers", "gui: opt-in test that creates a real Tk desktop window"
-    )
 
 
 def pytest_collection_modifyitems(items):
@@ -47,15 +44,16 @@ def pytest_collection_modifyitems(items):
 
 
 @pytest.fixture(autouse=True)
-def _finalize_tk_garbage_on_main_thread():
-    '''Collect garbage on the main thread after every test.
+def _finalize_tk_garbage_on_main_thread(request):
+    '''Collect GUI garbage on the main thread after real Tk tests.
 
     Several GUI tests create Tk roots and canvases; Tcl objects that
     survive in reference cycles crash the interpreter with an access
     violation when the garbage collector later finalizes them on a
-    worker thread (for example the multiprocessing pool result-handler
-    thread inside the optimizer tests). Collecting after each test keeps
-    Tcl finalization on the main thread.
+    worker thread. The collection hook marks every real Tk test ``gui``,
+    so ordinary unit and source-contract tests do not need this relatively
+    expensive full collection.
     '''
     yield
-    gc.collect()
+    if request.node.get_closest_marker("gui") is not None:
+        gc.collect()

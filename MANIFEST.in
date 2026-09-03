@@ -1,5 +1,9 @@
 include LICENSE
+include NOTICE
+include THIRD_PARTY_NOTICES.md
 include README.md
+include TRADEMARKS.md
+include docs/LICENSE.md
 include run_gui.py
 include anystruct/images/ANYicon.ico
 include anystruct/images/fls_button.gif

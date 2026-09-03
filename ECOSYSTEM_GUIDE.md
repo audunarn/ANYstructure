@@ -117,13 +117,13 @@ Claims must not exceed the executed matrix or reference quality.
 
 Versions use `MAJOR.MINOR.PATCH`.
 
-> **Current release rule:** increment **PATCH only** until this policy is
-> explicitly replaced.
+Version components follow semantic intent:
 
-- repository releases increment `A.B.X -> A.B.(X+1)`;
-- major and minor increments are reserved and require a new ecosystem decision;
-- patch releases must remain backward compatible; incompatible work is deferred
-  or protected by a compatible migration/shim;
+- major releases may contain explicitly approved breaking changes and require a
+  migration path;
+- minor releases add backward-compatible functionality or advance a coordinated
+  ecosystem baseline; and
+- patch releases contain backward-compatible fixes and documentation updates;
 - package metadata, runtime `__version__`, tests, manifests and release
   documentation must agree;
 - tags are `vA.B.X` and must match the built artifact version exactly;

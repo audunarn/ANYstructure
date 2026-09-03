@@ -192,6 +192,7 @@ def test_runtime_geometry_summary_imports_flat_stiffener_and_girder_sections():
     assert summary["girder_section"]["area"] == pytest.approx(0.016 + 0.006)
 
 
+@pytest.mark.fem_integration
 def test_run_runtime_fem_returns_backend_status_and_visualization_payload():
     snapshot = fe_runtime_solver.active_line_snapshot(_FakeApp())
     options = fe_runtime_solver.RuntimeFEMOptions(
@@ -231,6 +232,8 @@ def test_run_runtime_fem_returns_backend_status_and_visualization_payload():
     assert result.buckling_factors == tuple(sorted(result.buckling_factors))
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_production_result_carries_buckling_modes_for_imperfections():
     if fe_solver._full_backend is None:
         pytest.skip("production FE backend unavailable")
@@ -266,6 +269,8 @@ def test_production_result_carries_buckling_modes_for_imperfections():
     assert max_offset > 1.0e-9
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_runtime_run_uses_mode_shape_imperfection_mesh():
     if fe_solver._full_backend is None:
         pytest.skip("production FE backend unavailable")
@@ -310,6 +315,8 @@ def test_runtime_run_uses_mode_shape_imperfection_mesh():
     assert 'if getattr(options, "imperfection_enabled", False):' not in worker_block
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_material_nonlinear_display_stresses_respect_material_curve():
     if fe_solver._full_backend is None:
         pytest.skip("production FE backend unavailable")
@@ -368,6 +375,17 @@ def test_material_nonlinear_display_stresses_respect_material_curve():
     assert max(beam_values) < curve_cap_pa
 
 
+def test_runtime_does_not_rewrite_qualified_q4_to_legacy():
+    source = Path(fe_runtime_solver.__file__).read_text(encoding="utf-8")
+
+    # ANYsolver 0.4.1 repairs accepted-state replay.  ANYstructure must pass
+    # qualified Q4 records through unchanged instead of applying a hidden
+    # legacy formulation fallback.
+    assert "_anysolver_040_material_nonlinear_geometry" not in source
+    assert 'record["formulation"] = "legacy"' not in source
+    assert 'record["formulation_id"] = "LEGACY_SHELL_ELEMENT"' not in source
+
+
 def test_fiber_section_grid_is_profile_shaped_for_t_sections():
     if fe_solver._full_backend is None:
         pytest.skip("production FE backend unavailable")
@@ -424,6 +442,8 @@ def test_fiber_section_grid_is_profile_shaped_for_t_sections():
     assert abs(extent_high - extent_low) / max(extent_high, extent_low) > 0.15
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_member_shell_material_nonlinear_display_respects_material_curve():
     if fe_solver._full_backend is None:
         pytest.skip("production FE backend unavailable")
@@ -475,6 +495,8 @@ def test_member_shell_material_nonlinear_display_respects_material_curve():
     assert max(beam_values) < curve_cap_pa
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_runtime_fem_state_save_load_round_trip(tmp_path):
     snapshot = fe_runtime_solver.active_line_snapshot(_FakeApp())
     options = fe_runtime_solver.RuntimeFEMOptions(
@@ -731,7 +753,7 @@ def test_run_runtime_fem_preserves_failed_production_status(monkeypatch):
 def test_anysolver_version_guard_rejects_pre_extraction_runtime(monkeypatch):
     monkeypatch.setattr(fe_runtime_solver._anysolver_package, "__version__", "0.1.3")
 
-    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.4\.0"):
+    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.4\.1"):
         fe_runtime_solver._solver_config_from_options(
             fe_runtime_solver.RuntimeFEMOptions(shear_force_n=321.0)
         )
@@ -740,7 +762,7 @@ def test_anysolver_version_guard_rejects_pre_extraction_runtime(monkeypatch):
 def test_anysolver_version_guard_rejects_older_runtime(monkeypatch):
     monkeypatch.setattr(fe_runtime_solver._anysolver_package, "__version__", "0.2.9")
 
-    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.4\.0"):
+    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.4\.1"):
         fe_runtime_solver._solver_config_from_options(
             fe_runtime_solver.RuntimeFEMOptions()
         )
@@ -807,6 +829,8 @@ def test_runtime_result_print_includes_kernel_warmup_summary():
     assert " - threads: 4" in text
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_run_runtime_fem_flat_member_geometry_matches_generated_fe_model():
     snapshot = fe_runtime_solver.active_line_snapshot(_FakeAppFlatMembers())
     summary = fe_runtime_solver.runtime_geometry_summary(snapshot)
@@ -897,6 +921,8 @@ def test_flat_stiffened_panel_without_girder_uses_girder_length_by_default():
     assert default_geometry["stiffener_spacing_m"] == pytest.approx(0.75)
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_flat_end_moment_matches_constant_moment_strip_theory():
     class _NoMembersStructure(_AllStructureWithFlatMembers):
         Stiffener = None
@@ -1238,6 +1264,8 @@ def test_standalone_girder_panel_centers_cut_bays_for_symmetric_stress_model():
     )
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_standalone_girder_pressure_static_deflection_is_dominantly_downward_not_nullspace_balanced():
     snapshot = fe_runtime_solver.active_line_snapshot(fe_runtime_solver.example_runtime_app())
     result = fe_runtime_solver.run_runtime_fem(
@@ -1265,6 +1293,8 @@ def test_standalone_girder_pressure_static_deflection_is_dominantly_downward_not
     assert upward_peak <= max(1.0e-3, 5.0e-3 * downward_peak)
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_runtime_fem_matplotlib_figure_contains_geometry_axis():
     snapshot = fe_runtime_solver.active_line_snapshot(_FakeApp())
     result = fe_runtime_solver.run_runtime_fem(
@@ -1520,6 +1550,8 @@ def test_nonlinear_shell_display_stresses_use_committed_plastic_state():
     assert recovery.provenance.per_element_source[1] == "committed_shell_layer_state"
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_production_solver_runs_incremental_material_nonlinear_static_path():
     result = fe_solver.run_production_fem(
         {
@@ -1571,6 +1603,8 @@ def test_collision_nonlinear_config_normalizes_corotational_kinematics():
     assert nonlinear_config.kinematics == "corotational"
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_direct_nonlinear_static_records_corotational_kinematics():
     result = fe_solver.run_production_fem(
         {
@@ -1622,6 +1656,8 @@ def test_corotational_static_with_fracture_is_rejected_before_backend_execution(
     assert any("Corotational nonlinear static does not support fracture/erosion" in item for item in result.diagnostics)
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_flat_automatic_nullspace_keeps_physical_edge_pressure_supports():
     geometry = {
         "geometry": "flat panel",
@@ -1674,6 +1710,8 @@ def test_flat_automatic_supports_use_imported_line_property_pattern():
     assert supports["plate_y1_fixed"] == {"ux": 0.0, "uy": 0.0, "uz": 0.0, "rx": 0.0, "ry": 0.0, "rz": 0.0}
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_custom_manual_pressure_replaces_imported_flat_pressure():
     result = fe_solver.run_production_fem(
         {
@@ -1701,6 +1739,8 @@ def test_custom_manual_pressure_replaces_imported_flat_pressure():
     assert "Applied custom manual pressure: 500.0 Pa." in result.diagnostics
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_imported_flat_force_and_moment_are_balanced_on_opposite_edges():
     result = fe_solver.run_production_fem(
         {
@@ -1719,6 +1759,8 @@ def test_imported_flat_force_and_moment_are_balanced_on_opposite_edges():
     assert result.load_resultant["moment_nm"] == pytest.approx((0.0, 0.0, 0.0))
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_runtime_fem_plots_engineering_plastic_strain_and_uses_deformation_scale():
     snapshot = fe_runtime_solver.active_line_snapshot(_FakeApp())
     result = fe_runtime_solver.run_runtime_fem(
@@ -2279,6 +2321,7 @@ def test_lightweight_solver_returns_positive_fast_panel_results():
     assert len(result.visualization["stress_pa"]) == 9
 
 
+@pytest.mark.fem_integration
 def test_production_solver_runs_full_panel_mesh_backend():
     result = fe_solver.run_production_fem(
         {
@@ -2303,6 +2346,7 @@ def test_production_solver_runs_full_panel_mesh_backend():
     assert result.visualization["stress_pa"]
 
 
+@pytest.mark.fem_integration
 def test_production_solver_runs_full_cylinder_mesh_with_beams_and_buckling():
     result = fe_solver.run_production_fem(
         {
@@ -2521,6 +2565,8 @@ def test_runtime_generated_mesh_supports_b2_and_b3_beam_elements():
     assert fe_solver._mesh_size_diagnostics(b3)["beam_order"] == "B3"
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_runtime_generated_mesh_supports_member_shell_modelling_modes():
     geometry = {
         "geometry": "flat panel",
@@ -2780,6 +2826,8 @@ def test_all_shell_web_depth_subdivision_follows_mesh_fidelity(mesh_fidelity, ex
 
 
 @pytest.mark.parametrize("member_model", ("webs as shells, flanges as beams", "all shell"))
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_runtime_cylinder_member_shell_modes_solve_and_visualize_member_surfaces(member_model):
     if fe_solver._full_backend is None:
         pytest.skip("production FE backend unavailable")
@@ -3091,6 +3139,8 @@ def test_cylinder_member_shell_boundary_conditions_cover_generated_end_shell_nod
     assert support_nodes == lid_reference_nodes
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_custom_plate_supports_and_edge_loads_are_applied():
     geometry = {
         "geometry": "flat panel",
@@ -3123,6 +3173,8 @@ def test_custom_plate_supports_and_edge_loads_are_applied():
     assert any("replace imported/generated" in item.lower() for item in result.diagnostics)
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_custom_selected_internal_edge_load_adds_mesh_breaks_and_resultant():
     geometry = {
         "geometry": "flat panel",
@@ -3154,6 +3206,8 @@ def test_custom_selected_internal_edge_load_adds_mesh_breaks_and_resultant():
     assert any("selected edge segments" in item.lower() for item in result.diagnostics)
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_whole_edge_component_loads_apply_global_forces_and_moments():
     geometry = {
         "geometry": "flat panel",
@@ -3190,6 +3244,8 @@ def test_whole_edge_component_loads_apply_global_forces_and_moments():
     assert any("whole-edge component loads" in item.lower() for item in result.diagnostics)
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_selected_edge_component_loads_apply_global_forces_and_moments():
     geometry = {
         "geometry": "flat panel",
@@ -3300,6 +3356,8 @@ def test_auto_set_parameter_notes_report_solver_overrides():
     assert not any("material model" in note for note in notes)
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_material_nonlinear_run_reports_auto_set_material_model():
     geometry = {
         "geometry": "flat panel",
@@ -3328,6 +3386,8 @@ def test_material_nonlinear_run_reports_auto_set_material_model():
     assert any("Using DNV-RP-C208 material curve" in item for item in result.diagnostics)
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_linear_run_reports_no_auto_set_and_no_plasticity_claims():
     geometry = {
         "geometry": "flat panel",
@@ -3482,6 +3542,8 @@ def test_centered_cylinder_custom_pressure_patch_selects_matching_axial_location
     assert set(load_case.pressure_loads) == set(selected)
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_custom_plate_loads_can_be_added_to_imported_pressure():
     geometry = {
         "geometry": "flat panel",
@@ -3507,6 +3569,8 @@ def test_custom_plate_loads_can_be_added_to_imported_pressure():
     assert any("added to the imported/generated" in item.lower() for item in result.diagnostics)
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_custom_nullspace_boundary_balances_free_body_loads():
     geometry = {
         "geometry": "flat panel",
@@ -3533,6 +3597,8 @@ def test_custom_nullspace_boundary_balances_free_body_loads():
     assert any("automatic generalized load balancing" in item.lower() for item in result.diagnostics)
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_custom_cylinder_lid_support_and_edge_loads_constrain_reference_node_kinematics():
     geometry = {
         "geometry": "cylinder",
@@ -3783,6 +3849,8 @@ def test_cylinder_end_lids_are_stress_free_rigid_diaphragms():
     assert uz_bottom == pytest.approx(-uz_top, rel=1.0e-6)
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_runtime_solver_records_new_analysis_material_and_load_options():
     result = fe_solver.run_production_fem(
         {
@@ -3825,6 +3893,8 @@ def test_runtime_solver_records_new_analysis_material_and_load_options():
     }
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_cylinder_s8_lids_and_eccentric_members_solve_without_mpc_id_collision():
     result = fe_solver.run_production_fem(
         {
@@ -3889,6 +3959,8 @@ def test_generated_cylinder_mesh_honors_mesh_size_and_middle_t_ring_girder():
     assert all(beam["section"]["area"] == 0.007 for beam in generated["beams"] if beam["role"] == "girder")
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_runtime_fem_figure_can_display_cylinder_buckling_modes():
     result = fe_solver.run_production_fem(
         {
@@ -3940,6 +4012,8 @@ def test_anystructure_uses_external_anysolver_backend():
     assert callable(backend.solve_free_vibration)
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_production_solver_can_use_anyintelligent_capacity_workflow_path():
     result = fe_solver.run_production_fem(
         {
@@ -3980,6 +4054,8 @@ def test_production_solver_can_use_anyintelligent_capacity_workflow_path():
     assert any("capacity workflow completed" in item.lower() for item in result.diagnostics)
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_production_solver_runs_custom_time_domain_response_and_stress_free_imperfection():
     result = fe_solver.run_production_fem(
         {
@@ -4157,6 +4233,8 @@ def test_runtime_fem_module_keeps_cylinder_standalone_example_option():
     assert summary["girder_section"]["label"] == "T400x10+150x20"
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_startup_cylinder_example_runs_near_200_mpa_with_buckling_modes():
     app = fe_runtime_solver.example_runtime_app("cylinder")
     snapshot = fe_runtime_solver.active_line_snapshot(app)
@@ -4636,6 +4714,8 @@ def test_live_graph_axis_split_moves_large_series_to_secondary_axis():
     assert split({}) == set()
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_nonlinear_collision_snapshots_keep_refined_skin_surfaces():
     """Regression: nonlinear collision snapshots hid the entire refined skin
     because per-element damage-state records (no timestamp) were fed to the
@@ -4686,6 +4766,8 @@ def test_nonlinear_collision_snapshots_keep_refined_skin_surfaces():
         assert len(surfaces) > 0.9 * skin_count, "refined skin must stay visible in snapshots"
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_collision_penalty_scale_multiplies_auto_penalty():
     """collision_penalty_scale must scale the auto contact penalty so the
     scout preconditioner can carry a convergence-friendly stiffness into the
@@ -4775,6 +4857,8 @@ def test_collision_contact_stiffness_scale_uses_thinnest_skin():
     assert scale == pytest.approx(200.0e9 * 0.012)  # thinnest skin, member ignored
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_collision_auto_precondition_softens_penalty_further():
     """The opt-in extra-conservative mode multiplies the (capped) penalty by
     the extra softening factor."""
@@ -4864,6 +4948,8 @@ def test_selected_edge_per_dof_segment_additive():
     assert fs._runtime_collision_has_fixed_support(cfg, flat) is True
 
 
+@pytest.mark.fem_integration
+@pytest.mark.slow
 def test_selected_edge_overrides_whole_boundary_on_shared_dof():
     """When a selected-edge segment enforces a DOF that the whole-boundary
     grid also constrains, the edge value wins: the whole-boundary support

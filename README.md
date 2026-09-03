@@ -1,64 +1,113 @@
-![picture](https://github.com/audunarn/ANYstructure/blob/master/anystruct/images/ANYstructure_logo.jpg)
+![ANYstructure logo](https://github.com/audunarn/ANYstructure/blob/master/anystruct/images/ANYstructure_logo.jpg)
 
 # ANYstructure
 
 ANYstructure is a desktop steel-structure design application for plate fields
-and cylinders, including weight, weld, and cost optimization. Calculations are
-based on DNV standards and recommended practices.
+and cylinders. It combines DNV-based rule calculations with structural
+modelling, load definition, reporting, and weight, weld, and cost optimization.
 
-## Current release: 6.3.1
+## Core structural design
 
-- Adds live Automatic, ModernGL GPU, and Tk software renderer selection to the
-  maintained 3D model, mesh, and result views.
-- Preserves the current scene and camera when a renderer is replaced; a failed
-  explicit GPU switch keeps the working viewer intact.
-- Uses the shared ANY3dView 0.5 contract while retaining the historical
-  ANYtk3D compatibility module.
+The original ANYstructure workflow remains the primary way to model and assess
+a structure. It supports:
 
-Earlier release history remains available in Git tags and release notes rather
-than being duplicated in this README.
+- minimum plate thickness, stiffener section modulus, and shear-area checks
+  based on DNV-OS-C101;
+- plate buckling based on DNV-RP-C201 and shell buckling based on DNV-RP-C202;
+- fatigue assessment of plate and stiffener connections based on DNV-RP-C203;
+- semi-analytical buckling through ANYbuckling and machine-learning buckling
+  predictions based on PULS data;
+- automatic compartment and tank-pressure generation, plus equation-defined
+  external pressures;
+- single and multiple plate/stiffener-field optimization, cylinder
+  optimization, and double-bottom geometry optimization; and
+- weight, weld, cost, report, spreadsheet, and 3D shell-model workflows.
 
-## Finite-element GUI integration
+Projects can be created and edited graphically, saved for later work, and used
+to compare structural alternatives. The example below can be opened from
+`anystruct/ship_section_example.txt`.
 
-The FE GUI requires `ANYsolver>=0.4.0`. Axial force, bending moment,
-shear force, torsional moment, pressure, and the supported collision controls
-are mapped directly to the external solver runtime. Current-area follower
-pressure is available for nonlinear static and arc-length runs on the Static
-only or Nonlinear static runtime path; incompatible analysis paths are disabled
-in the GUI and rejected by the solver. Arc-length runs retain the selected von
-Karman or corotational kinematics, and nonlinear prestress/buckling recovery
-retains committed-state provenance.
+![ANYstructure structural model](https://github.com/audunarn/ANYstructure/blob/master/anystruct/images/ANYstructure%20screenshot.png)
 
-The main FE sections use raised, contrasting horizontal dividers, and the
-result text and visualization have a vertical divider. Drag either divider to
-resize its panes. Solver errors and unsupported configurations remain visible;
-the GUI does not replace them with a lightweight estimate.
+Documentation: https://anystructure.readthedocs.io/en/latest/
 
-The GUI reflects solver-normalized analysis choices through ANYsolver's public
-`resolve_runtime_analysis()` contract; it does not depend on private solver
-helpers.
+Tutorials: https://www.youtube.com/@ANYopenSoft
 
-The material dropdowns are backed by ANYmaterial and include a
-**Choose/edit material** button. The Interfaces menu opens ANYmesher and the
-ANYfileio inspector inside the existing Tk event loop. Orthotropic selections
-are refused explicitly until the legacy scalar material controls can represent
-them without losing directional properties.
+## Current release: 6.4.0
 
-------------------------------------------------------------------------
+Version 6.4.0 keeps the established structural calculation and optimization
+workflow at the front of the application while adding the integrated finite-
+element workflow described below. The coordinated release uses ANYfileio 0.3,
+ANYmaterial 0.2, and ANYmesher 0.4 without artificial package downgrades.
 
-For documentation:
+Project-owned source code is distributed under the Mozilla Public License 2.0
+starting with this release. Earlier releases retain the license terms that
+accompanied them.
 
-https://anystructure.readthedocs.io/en/latest/
+## Finite-element integration
 
-For tutorials:
+The optional FE workflow requires `ANYsolver>=0.4.1,<0.5`. Axial force,
+bending moment, shear force, torsional moment, pressure, and supported
+collision controls are mapped directly to the external solver runtime.
+Current-area follower pressure is available for nonlinear static and
+arc-length runs on the Static only or Nonlinear static path. Incompatible
+analysis paths are disabled in the GUI and rejected by the solver.
 
-https://www.youtube.com/@ANYopenSoft
+Arc-length runs retain the selected von Karman or corotational kinematics, and
+nonlinear prestress/buckling recovery retains committed-state provenance.
+Solver errors and unsupported configurations remain visible; the GUI does not
+replace them with a lightweight estimate. Analysis choices are normalized by
+ANYsolver's public `resolve_runtime_analysis()` contract.
 
-## Development setup ##
+ANYsolver 0.4.1 repairs qualified-Q4 final-state replay after plastic
+increments. ANYstructure preserves the qualified Q4 formulation throughout
+material-nonlinear runs; explicit legacy selection remains available to users.
 
-ANYstructure is currently maintained as a Python package named `anystruct`. The GUI can still be launched through the `ANYstructure` console command after an editable install.
+Model, mesh, and result views support live Automatic, ModernGL GPU, and Tk
+software renderer selection. The current scene and camera are retained during
+a renderer change, and a failed explicit GPU switch leaves the working viewer
+intact. Raised horizontal and vertical dividers allow the input, model, result
+text, and visualization panes to be resized.
 
-Recommended local setup:
+Material controls are backed by ANYmaterial. The Interfaces menu opens
+ANYmesher and the ANYfileio inspector in the existing Tk event loop.
+Orthotropic selections are rejected until the legacy scalar material controls
+can represent their directional properties without loss.
+
+## Install and run
+
+Install the published package and start the desktop application:
+
+```powershell
+python -m pip install --upgrade ANYstructure
+ANYstructure
+```
+
+From a source checkout, use the active Python environment:
+
+```powershell
+python run_gui.py
+```
+
+The default install includes Excel and machine-learning dependencies for
+backwards compatibility. Focused dependency groups are available as the
+`core`, `excel`, `ml`, `dev`, and `all` extras, and as requirement files:
+
+```powershell
+python -m pip install -r requirements-core.txt
+python -m pip install -r requirements-ml.txt
+python -m pip install -r requirements-excel.txt
+```
+
+Excel project import requires a local Excel installation and is not exercised
+by basic automated tests. The external Excel-sheet DNV PULS calculation
+workflow has been removed; ML-CL remains available.
+
+## Coordinated development setup
+
+ANYstructure is published as the Python package `anystruct`. For a sibling
+checkout layout, install each editable project into one environment in
+dependency order:
 
 ```powershell
 python -m venv .venv
@@ -69,102 +118,59 @@ python -m pip install -r requirements-dev.txt
 python -m pytest
 ```
 
-The editable bootstrap is intentionally ordered by dependency: viewer core,
-material and geometry, meshing, semantic file I/O, solver, independent
-buckling and Tk rendering, then ANYstructure. `run_gui.py` prints the same
-graph with the exact active Python executable if metadata or an import origin
-is stale. The coordinated editable refresh uses `--no-deps` so pip updates
-the sibling metadata without trying to resolve older packages' narrow
-transitive constraints.
-
-ANYstructure 6.3.1 supports ANY3dView source checkouts in `>=0.5.4,<0.6` and
-ANYtk3D checkouts in `>=0.5.3,<0.6`. The launcher accepts shared checkouts only
-inside those ranges. To select qualified checkouts explicitly, set
-`ANYSTRUCTURE_ANY3DVIEW_ROOT` and `ANYSTRUCTURE_ANYTK3D_ROOT` before running
-`run_gui.py`. Invalid overrides block startup instead of falling back silently.
-
-ANYmesher is selected with the same fail-closed rule. The shared
-`C:\Github\ANYmesh` checkout is used only while its `pyproject.toml` declares
-a version in `>=0.3.2,<0.4`. Otherwise the launcher and its repair command use the
-qualified checkout at `C:\Github\ANYsolver\.compat_anymesher_032`. Set
-`ANYSTRUCTURE_ANYMESHER_ROOT` to a checkout in `>=0.3.2,<0.4`; an invalid
-override blocks startup.
-
-The complete coordinated ranges are `ANYsolver>=0.4.0,<0.5`,
-`ANYgeometry>=0.4.1,<0.5`, `ANYmaterial>=0.1.1,<0.2`,
-`ANYmesher>=0.3.2,<0.4`, `ANYfileio[semantics]>=0.2.1,<0.3`,
-`ANYbuckling>=0.1.1,<0.2`, `ANY3dView[gpu]>=0.5.4,<0.6`, and
-`ANYtk3D>=0.5.3,<0.6`. Exact source authority can also be selected with the
-corresponding `ANYSTRUCTURE_ANYSOLVER_ROOT`, `ANYSTRUCTURE_ANYGEOMETRY_ROOT`,
-`ANYSTRUCTURE_ANYMATERIAL_ROOT`, `ANYSTRUCTURE_ANYFILEIO_ROOT`, and
-`ANYSTRUCTURE_ANYBUCKLING_ROOT` variables. Install the editable sibling
-checkouts above until compatible releases are available from PyPI. ANYgeometry
-is the shared neutral surface-geometry authority; materials, structural
-properties, loads, mesh controls, and solver state remain in their owning
-packages.
-
-New geometry code should call `anygeometry.generators` directly. The
-`anystruct.geometry_generators` module provides thin plate, stiffened-panel,
-cylinder, and cone adapters for existing ANYstructure integrations, while
-`anystruct.representation_geometry` temporarily preserves the historical
-station-layout import path.
-
-The central runtime/FEM and mesh-preview path now establishes one lazy, cached
-`GeometryModel` through those adapters. Existing ANYsolver and GUI consumers
-receive a geometry-backed dictionary projection with unchanged keys and values;
-the owner model is built once only when a geometry-aware consumer requests it.
-Semantic groups remain available out-of-band, while thicknesses, sections,
-materials, loads, and analysis settings remain external. ANYsolver's legacy
-runtime currently still builds its FE mesh from the dictionary projection; that
-transitional payload conversion remains until ANYsolver accepts the neutral
-model directly.
-
-Launch the desktop app after installation:
+The default command runs the fast compatibility suite. Run the focused tiers
+explicitly when changing their owning code:
 
 ```powershell
-ANYstructure
+python -m pytest -m "fem_integration and not slow"
+python -m pytest -m release_authority
+python -m pytest -m slow
 ```
 
-From a source checkout, the same GUI can be launched with:
+The slow tier contains nonlinear, collision, transient, mode-imperfection, and
+large external-format qualification and is intentionally opt-in during
+ordinary development.
 
-```powershell
-python run_gui.py
-```
+`--no-deps` refreshes editable metadata without forcing pip to resolve stale
+transitive upper bounds from older sibling releases. `run_gui.py` reports the
+exact repair command for its active interpreter when selected source and
+installed metadata do not agree.
 
-Dependency groups are also available for focused installs:
+The coordinated compatibility ranges are:
 
-```powershell
-python -m pip install -r requirements-core.txt
-python -m pip install -r requirements-ml.txt
-python -m pip install -r requirements-excel.txt
-```
+- `ANY3dView[gpu]>=0.5.5,<0.6`
+- `ANYbuckling>=0.1.1,<0.2`
+- `ANYfileio[semantics]>=0.3.1,<0.4`
+- `ANYgeometry>=0.4.2,<0.5`
+- `ANYmaterial>=0.2.0,<0.3`
+- `ANYmesher>=0.4.0,<0.5`
+- `ANYsolver>=0.4.1,<0.5`
+- `ANYtk3D>=0.5.5,<0.6`
 
-Equivalent package extras are exposed as `core`, `ml`, `excel`, `dev`, and `all`. The default package install still includes Excel and ML dependencies for backwards compatibility.
+To select a particular checkout, set the corresponding
+`ANYSTRUCTURE_ANY3DVIEW_ROOT`, `ANYSTRUCTURE_ANYTK3D_ROOT`,
+`ANYSTRUCTURE_ANYBUCKLING_ROOT`, `ANYSTRUCTURE_ANYFILEIO_ROOT`,
+`ANYSTRUCTURE_ANYGEOMETRY_ROOT`, `ANYSTRUCTURE_ANYMATERIAL_ROOT`,
+`ANYSTRUCTURE_ANYMESHER_ROOT`, or `ANYSTRUCTURE_ANYSOLVER_ROOT` environment
+variable. Invalid explicit roots fail before application imports.
 
-Excel project import requires a local Excel installation and is not expected to run in basic automated tests.
-The external Excel-sheet DNV PULS calculation workflow has been removed from this release; ML-CL remains available.
+ANYgeometry owns neutral surface geometry. New geometry code should call
+`anygeometry.generators` directly. The `anystruct.geometry_generators` and
+`anystruct.representation_geometry` modules retain adapters for established
+ANYstructure integrations. Structural properties, loads, mesh controls, and
+solver state remain in their owning packages.
 
-## Calculation scope
+## License and contributions
 
-- Minimum plate thickness (DNV-OS-C101)
-- Minimum section modulus of stiffener/plate (DNVGL-OS-C101)
-- Minimum shear area (DNVGL-OS-C101)
-- Plate buckling (DNVGL-RP-C201)
-- Shell buckling (DNV-RP-C202)
-- Machine-learning buckling predictions based on PULS data
-- Semi-analytical buckling through ANYbuckling
-- Fatigue for plate/stiffener connections (DNVGL-RP-C203)
-
-
-Compartments (tank pressures) are created automatically.
-
-Pressures on external hull (or any other generic location) is defined by specifying equations.
-
-You can optimize cylinders, single plate/stiffener field or multiple. Geometry of double bottom can be optimized.
+Project-owned source code in release 6.4.0 and later is licensed under the
+[Mozilla Public License 2.0](https://github.com/audunarn/ANYstructure/blob/master/LICENSE).
+Original project documentation is licensed under
+[CC BY 4.0](https://github.com/audunarn/ANYstructure/blob/master/docs/LICENSE.md).
+Third-party software, models, figures, standards material, and other
+attributed content retain their own terms; see the
+[third-party notices](https://github.com/audunarn/ANYstructure/blob/master/THIRD_PARTY_NOTICES.md).
+Project branding is covered by the
+[trademark policy](https://github.com/audunarn/ANYstructure/blob/master/TRADEMARKS.md).
 
 Contributions and bug reports are welcome through GitHub. General feedback can
 also be sent to audunarn@gmail.com.
-
-Screenshot (this example can be loaded from file "ship_section_example.txt"):
-
-![picture](https://github.com/audunarn/ANYstructure/blob/master/anystruct/images/ANYstructure%20screenshot.png)
