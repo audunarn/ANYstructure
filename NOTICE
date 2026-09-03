@@ -1,0 +1,16 @@
+ANYstructure
+Copyright (c) Audun Arnesen Nyhus
+
+Project-owned source code, tests, examples, and build configuration are
+licensed under the Mozilla Public License 2.0 starting with version 6.4.0.
+See LICENSE.
+
+Original project documentation is licensed under the Creative Commons
+Attribution 4.0 International license. See docs/LICENSE.md.
+
+Earlier published ANYstructure versions retain the license terms that
+accompanied those versions. Repository history has not been rewritten.
+
+Third-party software and material retain their own terms. See
+THIRD_PARTY_NOTICES.md. The ANYstructure name and branding are governed by
+TRADEMARKS.md.

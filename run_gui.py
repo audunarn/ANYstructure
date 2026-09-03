@@ -47,17 +47,17 @@ _SHARED_ANYSOLVER_ROOT = _checkout_root("ANYsolver")
 _SHARED_ANYFILEIO_ROOT = _checkout_root("ANYfileIO")
 _SHARED_ANYBUCKLING_ROOT = _checkout_root("ANYbuckling")
 ANYMESHER_SOURCE_ROOT_ENV = "ANYSTRUCTURE_ANYMESHER_ROOT"
-ANYMESHER_REQUIRED_SOURCE_VERSION = "0.3.2"
-ANYMESHER_MAXIMUM_SOURCE_VERSION = "0.4.0"
+ANYMESHER_REQUIRED_SOURCE_VERSION = "0.4.0"
+ANYMESHER_MAXIMUM_SOURCE_VERSION = "0.5.0"
 _SHARED_ANYMESHER_ROOT = _checkout_root("ANYmesh")
 _SAFE_ANYMESHER_ROOT = _SHARED_ANYSOLVER_ROOT / ".compat_anymesher_032"
 ANYTK3D_SOURCE_ROOT_ENV = "ANYSTRUCTURE_ANYTK3D_ROOT"
-ANYTK3D_REQUIRED_SOURCE_VERSION = "0.5.3"
+ANYTK3D_REQUIRED_SOURCE_VERSION = "0.5.5"
 ANYTK3D_MAXIMUM_SOURCE_VERSION = "0.6.0"
 _SHARED_ANYTK3D_ROOT = _checkout_root("ANYtk3D")
 _SAFE_ANYTK3D_ROOT = _SHARED_ANYSOLVER_ROOT / ".compat_anytk3d_050"
 ANY3DVIEW_SOURCE_ROOT_ENV = "ANYSTRUCTURE_ANY3DVIEW_ROOT"
-ANY3DVIEW_REQUIRED_SOURCE_VERSION = "0.5.4"
+ANY3DVIEW_REQUIRED_SOURCE_VERSION = "0.5.5"
 ANY3DVIEW_MAXIMUM_SOURCE_VERSION = "0.6.0"
 _SHARED_ANY3DVIEW_ROOT = _checkout_root("ANY3dView")
 _SAFE_ANY3DVIEW_ROOT = _SHARED_ANYSOLVER_ROOT / ".compat_any3dview_050"
@@ -250,7 +250,7 @@ def select_anymesher_source_root(
             return candidate.resolve()
         rejected.append(f"{label}: {problem}")
     raise RuntimeError(
-        "ANYstructure 6.3.1 needs an ANYmesher source checkout at version "
+        "ANYstructure 6.4.0 needs an ANYmesher source checkout at version "
         f">={ANYMESHER_REQUIRED_SOURCE_VERSION},"
         f"<{ANYMESHER_MAXIMUM_SOURCE_VERSION}. "
         f"Set {ANYMESHER_SOURCE_ROOT_ENV} to one. Checked:\n- "
@@ -286,7 +286,7 @@ def select_anytk3d_source_root(
             return candidate.resolve()
         rejected.append(f"{label}: {problem}")
     raise RuntimeError(
-        "ANYstructure 6.3.1 needs an ANYtk3D source checkout at version "
+        "ANYstructure 6.4.0 needs an ANYtk3D source checkout at version "
         f">={ANYTK3D_REQUIRED_SOURCE_VERSION},<{ANYTK3D_MAXIMUM_SOURCE_VERSION}. "
         f"Set {ANYTK3D_SOURCE_ROOT_ENV} to one. Checked:\n- "
         + "\n- ".join(rejected)
@@ -321,7 +321,7 @@ def select_any3dview_source_root(
             return candidate.resolve()
         rejected.append(f"{label}: {problem}")
     raise RuntimeError(
-        "ANYstructure 6.3.1 needs an ANY3dView source checkout at version "
+        "ANYstructure 6.4.0 needs an ANY3dView source checkout at version "
         f">={ANY3DVIEW_REQUIRED_SOURCE_VERSION},<{ANY3DVIEW_MAXIMUM_SOURCE_VERSION}. "
         f"Set {ANY3DVIEW_SOURCE_ROOT_ENV} to one. Checked:\n- "
         + "\n- ".join(rejected)
@@ -332,15 +332,15 @@ _ANYMATERIAL_ROOT = select_bound_source_root(
     ANYMATERIAL_SOURCE_ROOT_ENV,
     project="ANYmaterial",
     package_name="anymaterial",
-    minimum="0.1.1",
-    maximum="0.2.0",
+    minimum="0.2.0",
+    maximum="0.3.0",
     shared_root=_SHARED_ANYMATERIAL_ROOT,
 )
 _ANYGEOMETRY_ROOT = select_bound_source_root(
     ANYGEOMETRY_SOURCE_ROOT_ENV,
     project="ANYgeometry",
     package_name="anygeometry",
-    minimum="0.4.1",
+    minimum="0.4.2",
     maximum="0.5.0",
     shared_root=_SHARED_ANYGEOMETRY_ROOT,
 )
@@ -348,7 +348,7 @@ _ANYSOLVER_ROOT = select_bound_source_root(
     ANYSOLVER_SOURCE_ROOT_ENV,
     project="ANYsolver",
     package_name="anysolver",
-    minimum="0.4.0",
+    minimum="0.4.1",
     maximum="0.5.0",
     shared_root=_SHARED_ANYSOLVER_ROOT,
 )
@@ -356,8 +356,8 @@ _ANYFILEIO_ROOT = select_bound_source_root(
     ANYFILEIO_SOURCE_ROOT_ENV,
     project="ANYfileio",
     package_name="anyfileio",
-    minimum="0.2.1",
-    maximum="0.3.0",
+    minimum="0.3.1",
+    maximum="0.4.0",
     shared_root=_SHARED_ANYFILEIO_ROOT,
 )
 _ANYBUCKLING_ROOT = select_bound_source_root(
@@ -391,14 +391,14 @@ for _source in reversed(_SOURCE_TREES):
 # can therefore provide stale metadata while newer Python modules are imported.
 # That split state is particularly unsafe for schema/semantics integrations.
 ECOSYSTEM_REQUIREMENTS = (
-    ("ANY3dView", "ANY3dView[gpu]>=0.5.4,<0.6", "0.5.4", "0.6.0"),
+    ("ANY3dView", "ANY3dView>=0.5.5,<0.6", "0.5.5", "0.6.0"),
     ("ANYbuckling", "ANYbuckling>=0.1.1,<0.2", "0.1.1", "0.2.0"),
-    ("ANYfileio", "ANYfileio[semantics]>=0.2.1,<0.3", "0.2.1", "0.3.0"),
-    ("ANYgeometry", "ANYgeometry>=0.4.1,<0.5", "0.4.1", "0.5.0"),
-    ("ANYmaterial", "ANYmaterial>=0.1.1,<0.2", "0.1.1", "0.2.0"),
-    ("ANYmesher", "ANYmesher>=0.3.2,<0.4", "0.3.2", "0.4.0"),
-    ("ANYsolver", "ANYsolver>=0.4.0,<0.5", "0.4.0", "0.5.0"),
-    ("ANYtk3D", "ANYtk3D>=0.5.3,<0.6", "0.5.3", "0.6.0"),
+    ("ANYfileio", "ANYfileio[semantics]>=0.3.1,<0.4", "0.3.1", "0.4.0"),
+    ("ANYgeometry", "ANYgeometry>=0.4.2,<0.5", "0.4.2", "0.5.0"),
+    ("ANYmaterial", "ANYmaterial>=0.2.0,<0.3", "0.2.0", "0.3.0"),
+    ("ANYmesher", "ANYmesher>=0.4.0,<0.5", "0.4.0", "0.5.0"),
+    ("ANYsolver", "ANYsolver>=0.4.1,<0.5", "0.4.1", "0.5.0"),
+    ("ANYtk3D", "ANYtk3D>=0.5.5,<0.6", "0.5.5", "0.6.0"),
 )
 
 # Import names and the sibling source roots they must resolve from.  This is
@@ -508,19 +508,27 @@ def require_compatible_ecosystem(
     version_reader: Callable[[str], str] | None = None,
     spec_finder: Callable[[str], Any] | None = None,
 ) -> None:
-    """Fail before Tk startup when editable metadata is not release-compatible."""
+    """Validate source authority and report stale editable metadata."""
 
-    problems = (
-        ecosystem_compatibility_problems(version_reader)
-        + ecosystem_source_problems(spec_finder)
-    )
-    if problems:
+    source_problems = ecosystem_source_problems(spec_finder)
+    if source_problems:
         raise RuntimeError(
-            "ANYstructure 6.3.1 cannot start with this mixed ecosystem:\n- "
-            + "\n- ".join(problems)
+            "ANYstructure 6.4.0 cannot start with this mixed ecosystem:\n- "
+            + "\n- ".join(source_problems)
             + "\nCanonical interchange extra: ANYfileIO[semantics]."
             + "\nRepair the selected editable installs, then restart:\n"
             + editable_repair_command()
+        )
+
+    metadata_problems = ecosystem_compatibility_problems(version_reader)
+    if metadata_problems:
+        print(
+            "ANYstructure 6.4.0 is using validated sibling source checkouts "
+            "despite stale editable metadata:\n- "
+            + "\n- ".join(metadata_problems)
+            + "\nThe application can continue. Refresh the metadata with:\n"
+            + editable_repair_command(),
+            file=sys.stderr,
         )
 
 

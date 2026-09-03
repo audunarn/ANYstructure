@@ -252,7 +252,7 @@ def test_runtime_solver_handoff_receives_geometry_backed_projection(
     monkeypatch.setattr(
         fem_integration,
         "_require_supported_anysolver",
-        lambda: "0.4.0",
+        lambda: "0.4.1",
     )
     snapshot = fem_integration.RuntimeFEMLineSnapshot(
         line_name="line1",

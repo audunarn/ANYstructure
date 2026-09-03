@@ -1,7 +1,7 @@
 ANYstructure Trademark Policy
 
 The ANYstructure name, logo, icons and other project branding are not
-licensed under the GNU General Public License.
+licensed under the Mozilla Public License 2.0.
 
 You may accurately state that a modified program is based on ANYstructure.
 You may not use the ANYstructure name or branding in a manner that suggests

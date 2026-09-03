@@ -275,31 +275,32 @@ def test_dependency_and_gui_wiring_is_declared_in_release_surfaces():
         assert distribution in core_requirements
         assert distribution in requirements
     exact_ecosystem_requirements = {
-        "ANY3dView[gpu]>=0.5.4,<0.6",
-        "ANYtk3D>=0.5.3,<0.6",
+        "ANY3dView>=0.5.5,<0.6",
+        "ANYtk3D>=0.5.5,<0.6",
         "ANYbuckling>=0.1.1,<0.2",
-        "ANYfileio[semantics]>=0.2.1,<0.3",
-        "ANYgeometry>=0.4.1,<0.5",
-        "ANYmaterial>=0.1.1,<0.2",
-        "ANYmesher>=0.3.2,<0.4",
-        "ANYsolver>=0.4.0,<0.5",
+        "ANYfileio[semantics]>=0.3.1,<0.4",
+        "ANYgeometry>=0.4.2,<0.5",
+        "ANYmaterial>=0.2.0,<0.3",
+        "ANYmesher>=0.4.0,<0.5",
+        "ANYsolver>=0.4.1,<0.5",
     }
     for requirement in exact_ecosystem_requirements:
         assert requirement in core_requirements.splitlines()
         assert requirement in requirements.splitlines()
         assert f"'{requirement}'" in setup_source
     pyproject = (REPOSITORY_ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    assert 'anymesher = ">=0.3.2,<0.4"' in pyproject
-    assert 'anysolver = ">=0.4.0,<0.5"' in pyproject
-    assert "ANYsolver>=0.4.0,<0.5" in documentation
+    assert 'anymesher = ">=0.4.0,<0.5"' in pyproject
+    assert 'anysolver = ">=0.4.1,<0.5"' in pyproject
+    assert "ANYsolver>=0.4.1,<0.5" in documentation
     assert "ANYsolver>=0.3" not in documentation
-    assert "ANYmesher>=0.3.2,<0.4" in documentation
+    assert "ANYmesher>=0.4.0,<0.5" in documentation
     assert "ANYmesher>=0.2.5" not in documentation
-    assert "ANYsolver>=0.4.0,<0.5'" in setup_source
-    assert "ANY3dView[gpu]>=0.5.4,<0.6'" in setup_source
+    assert "ANYsolver>=0.4.1,<0.5'" in setup_source
+    assert "ANY3dView>=0.5.5,<0.6'" in setup_source
+    assert "ANY3dView[gpu]>=0.5.5,<0.6'" in setup_source
     assert "ANYbuckling>=0.1.1,<0.2'" in setup_source
-    assert "ANYmaterial>=0.1.1,<0.2'" in setup_source
-    assert "ANYtk3D>=0.5.3,<0.6'" in setup_source
+    assert "ANYmaterial>=0.2.0,<0.3'" in setup_source
+    assert "ANYtk3D>=0.5.5,<0.6'" in setup_source
     assert "python_requires='>=3.13'" in setup_source
     assert "Programming Language :: Python :: 3.13" in setup_source
     assert "Programming Language :: Python :: 3.14" in setup_source
@@ -317,14 +318,14 @@ def test_dependency_and_gui_wiring_is_declared_in_release_surfaces():
     assert "repository: audunarn/ANYbuckling" in workflow
     assert "repository: audunarn/ANYtk3D" in workflow
     final_graph_refs = {
-        "0591d4833806ee95bdd710c352a1f836af7b910e": "ANYmaterial",
-        "8b899b7a9d08a51d7899c34265b6b0b6e13da554": "ANY3dView",
-        "6a8b023ef6f65805519c96b56e025b4e3b457a1f": "ANYgeometry",
-        "e79d14a03ef605afd947948e8588ccb8428eb52f": "ANYmesh",
-        "da8bff840128ac1e183c77be9e5a53b2bb5c0834": "ANYfileIO",
-        "2521db19031ea00053018ad09bb8474bf8a0671a": "ANYsolver",
-        "4980ba75584c6e3ddec9d39a3d76fc215d691c09": "ANYbuckling",
-        "94fe0e0cf31faeeab182e0a51e3ead94849418f3": "ANYtk3D",
+        "d8a233ef4c5e38d25dbba0eb20e6cfa8d44ec5a2": "ANYmaterial",
+        "7d36c97dd0dbec8884f8894a4258ece83ad61271": "ANY3dView",
+        "dd954f088a4cb95e267280cc4777b09e16232bd9": "ANYgeometry",
+        "27e428188a891705288fef82bab0b166e330aff2": "ANYmesh",
+        "b48ba51c7b79e6d64b3f99c1fb131b9b602e7e1d": "ANYfileIO",
+        "5017827b0e88b4b52d7fee0fad6a1f405e2d33cf": "ANYsolver",
+        "a871d5a3c466666b79f3ce3a015a2cfd7534376b": "ANYbuckling",
+        "2caa92325885938c594f27145ed16069d807e364": "ANYtk3D",
     }
     for ref, repository in final_graph_refs.items():
         assert workflow.count(f"repository: audunarn/{repository}") == 2

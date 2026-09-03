@@ -469,6 +469,7 @@ def test_cylinder_panel_3d_records_include_local_axes() -> None:
     not (CYLINDER_SAMPLE_INP.exists() and CYLINDER_SAMPLE_FRD.exists()),
     reason="Provided PrePoMax cylinder sample is not available",
 )
+@pytest.mark.fem_integration
 def test_provided_prepomax_cylinder_import_calculates_panel_ufs() -> None:
     session = create_fea_buckling_session(CYLINDER_SAMPLE_INP, CYLINDER_SAMPLE_FRD, run_buckling=True)
 

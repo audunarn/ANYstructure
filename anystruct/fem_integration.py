@@ -78,7 +78,7 @@ Point3D = _tk3d_canvas_module.Point3D
 _interpolate_thickness_color = _tk3d_canvas_module._interpolate_thickness_color
 
 
-MINIMUM_ANYSOLVER_VERSION = "0.4.0"
+MINIMUM_ANYSOLVER_VERSION = "0.4.1"
 
 
 def _numeric_version(value: Any) -> tuple[int, int, int]:

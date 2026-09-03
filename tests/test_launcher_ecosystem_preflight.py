@@ -19,14 +19,14 @@ def _launcher_namespace():
 
 def _compatible_versions() -> dict[str, str]:
     return {
-        "ANY3dView": "0.5.4",
+        "ANY3dView": "0.5.5",
         "ANYbuckling": "0.1.1",
-        "ANYfileio": "0.2.1",
-        "ANYgeometry": "0.4.1",
-        "ANYmaterial": "0.1.1",
-        "ANYmesher": "0.3.2",
-        "ANYsolver": "0.4.0",
-        "ANYtk3D": "0.5.3",
+        "ANYfileio": "0.3.1",
+        "ANYgeometry": "0.4.2",
+        "ANYmaterial": "0.2.0",
+        "ANYmesher": "0.4.0",
+        "ANYsolver": "0.4.1",
+        "ANYtk3D": "0.5.5",
     }
 
 
@@ -81,10 +81,10 @@ def _write_anymesher_checkout(root: Path, version: str) -> Path:
 @pytest.mark.parametrize(
     ("environment_constant", "project", "package_name", "minimum", "maximum"),
     (
-        ("ANYMATERIAL_SOURCE_ROOT_ENV", "ANYmaterial", "anymaterial", "0.1.1", "0.2.0"),
-        ("ANYGEOMETRY_SOURCE_ROOT_ENV", "ANYgeometry", "anygeometry", "0.4.1", "0.5.0"),
-        ("ANYSOLVER_SOURCE_ROOT_ENV", "ANYsolver", "anysolver", "0.4.0", "0.5.0"),
-        ("ANYFILEIO_SOURCE_ROOT_ENV", "ANYfileio", "anyfileio", "0.2.1", "0.3.0"),
+        ("ANYMATERIAL_SOURCE_ROOT_ENV", "ANYmaterial", "anymaterial", "0.2.0", "0.3.0"),
+        ("ANYGEOMETRY_SOURCE_ROOT_ENV", "ANYgeometry", "anygeometry", "0.4.2", "0.5.0"),
+        ("ANYSOLVER_SOURCE_ROOT_ENV", "ANYsolver", "anysolver", "0.4.1", "0.5.0"),
+        ("ANYFILEIO_SOURCE_ROOT_ENV", "ANYfileio", "anyfileio", "0.3.1", "0.4.0"),
         ("ANYBUCKLING_SOURCE_ROOT_ENV", "ANYbuckling", "anybuckling", "0.1.1", "0.2.0"),
     ),
 )
@@ -151,18 +151,18 @@ def test_incompatible_major_release_graph_is_rejected_by_declared_caps():
     versions = {name: "1.0.0" for name in _compatible_versions()}
 
     assert namespace["ecosystem_compatibility_problems"](versions.__getitem__) == (
-        "ANY3dView[gpu]>=0.5.4,<0.6: installed metadata reports 1.0.0",
+        "ANY3dView>=0.5.5,<0.6: installed metadata reports 1.0.0",
         "ANYbuckling>=0.1.1,<0.2: installed metadata reports 1.0.0",
-        "ANYfileio[semantics]>=0.2.1,<0.3: installed metadata reports 1.0.0",
-        "ANYgeometry>=0.4.1,<0.5: installed metadata reports 1.0.0",
-        "ANYmaterial>=0.1.1,<0.2: installed metadata reports 1.0.0",
-        "ANYmesher>=0.3.2,<0.4: installed metadata reports 1.0.0",
-        "ANYsolver>=0.4.0,<0.5: installed metadata reports 1.0.0",
-        "ANYtk3D>=0.5.3,<0.6: installed metadata reports 1.0.0",
+        "ANYfileio[semantics]>=0.3.1,<0.4: installed metadata reports 1.0.0",
+        "ANYgeometry>=0.4.2,<0.5: installed metadata reports 1.0.0",
+        "ANYmaterial>=0.2.0,<0.3: installed metadata reports 1.0.0",
+        "ANYmesher>=0.4.0,<0.5: installed metadata reports 1.0.0",
+        "ANYsolver>=0.4.1,<0.5: installed metadata reports 1.0.0",
+        "ANYtk3D>=0.5.5,<0.6: installed metadata reports 1.0.0",
     )
 
 
-def test_missing_semantics_distribution_has_actionable_repair_guidance():
+def test_missing_semantics_metadata_warns_without_blocking_valid_sources(capsys):
     namespace = _launcher_namespace()
     versions = _compatible_versions()
     find_spec = _sibling_specs(namespace)
@@ -172,12 +172,11 @@ def test_missing_semantics_distribution_has_actionable_repair_guidance():
             raise metadata.PackageNotFoundError(name)
         return versions[name]
 
-    with pytest.raises(RuntimeError) as raised:
-        namespace["require_compatible_ecosystem"](read_version, find_spec)
+    namespace["require_compatible_ecosystem"](read_version, find_spec)
 
-    message = str(raised.value)
-    assert "ANYfileio[semantics]>=0.2.1,<0.3: distribution metadata is missing" in message
-    assert "ANYfileIO[semantics]" in message
+    message = capsys.readouterr().err
+    assert "ANYfileio[semantics]>=0.3.1,<0.4: distribution metadata is missing" in message
+    assert "validated sibling source checkouts" in message
     assert "pip install --upgrade" in message
     assert "ANYstructure" in message
 
@@ -249,10 +248,6 @@ def test_repair_command_has_one_dependency_ordered_editable_graph():
     assert str(namespace["_ANYTK3D_ROOT"]) in projects
     assert projects[-1] == str(namespace["_ROOT"])
     documented = "python -m " + command.partition(" -m ")[2]
-    documented = documented.replace(
-        str(namespace["_ROOT"]),
-        r"C:\Github\ANYstructure",
-    )
     for selected_name, repository in (
         ("_ANY3DVIEW_ROOT", "ANY3dView"),
         ("_ANYMATERIAL_ROOT", "ANYmaterial"),
@@ -267,6 +262,10 @@ def test_repair_command_has_one_dependency_ordered_editable_graph():
             str(namespace[selected_name]),
             rf"C:\Github\{repository}",
         )
+    documented = documented.replace(
+        str(namespace["_ROOT"]),
+        r"C:\Github\ANYstructure",
+    )
     assert documented in (ROOT / "README.md").read_text(encoding="utf-8")
 
 
@@ -291,14 +290,14 @@ def test_ci_binds_exact_release_graph_revisions_and_fails_closed_for_solver():
         encoding="utf-8"
     )
     expected_refs = {
-        "0591d4833806ee95bdd710c352a1f836af7b910e",
-        "8b899b7a9d08a51d7899c34265b6b0b6e13da554",
-        "6a8b023ef6f65805519c96b56e025b4e3b457a1f",
-        "e79d14a03ef605afd947948e8588ccb8428eb52f",
-        "da8bff840128ac1e183c77be9e5a53b2bb5c0834",
-        "2521db19031ea00053018ad09bb8474bf8a0671a",
-        "4980ba75584c6e3ddec9d39a3d76fc215d691c09",
-        "94fe0e0cf31faeeab182e0a51e3ead94849418f3",
+        "d8a233ef4c5e38d25dbba0eb20e6cfa8d44ec5a2",
+        "7d36c97dd0dbec8884f8894a4258ece83ad61271",
+        "dd954f088a4cb95e267280cc4777b09e16232bd9",
+        "27e428188a891705288fef82bab0b166e330aff2",
+        "b48ba51c7b79e6d64b3f99c1fb131b9b602e7e1d",
+        "5017827b0e88b4b52d7fee0fad6a1f405e2d33cf",
+        "a871d5a3c466666b79f3ce3a015a2cfd7534376b",
+        "2caa92325885938c594f27145ed16069d807e364",
     }
     for revision in expected_refs:
         assert workflow.count(f"ref: {revision}") == 2
@@ -313,7 +312,7 @@ def test_checkout_locator_prefers_actions_ecosystem_graph(tmp_path):
         repository_root / ".ecosystem" / "ANYmesh",
         project="ANYmesher",
         package_name="anymesher",
-        version="0.3.2",
+        version="0.4.0",
     )
     _write_checkout(
         tmp_path / "ANYmesh",
@@ -337,17 +336,30 @@ def test_stale_solver_metadata_is_rejected_before_gui_import():
     problems = namespace["ecosystem_compatibility_problems"](versions.__getitem__)
 
     assert problems == (
-        "ANYsolver>=0.4.0,<0.5: installed metadata reports 0.2.9",
+        "ANYsolver>=0.4.1,<0.5: installed metadata reports 0.2.9",
     )
+
+
+def test_stale_solver_metadata_does_not_block_qualified_source(capsys):
+    namespace = _launcher_namespace()
+    versions = _compatible_versions()
+    versions["ANYsolver"] = "0.2.9"
+
+    assert namespace["require_compatible_ecosystem"](
+        versions.__getitem__, _sibling_specs(namespace)
+    ) is None
+    warning = capsys.readouterr().err
+    assert "ANYsolver>=0.4.1,<0.5: installed metadata reports 0.2.9" in warning
+    assert "The application can continue" in warning
 
 
 def test_solver_prerelease_does_not_satisfy_final_release_floor():
     namespace = _launcher_namespace()
     versions = _compatible_versions()
-    versions["ANYsolver"] = "0.4.0rc1"
+    versions["ANYsolver"] = "0.4.1rc1"
 
     assert namespace["ecosystem_compatibility_problems"](versions.__getitem__) == (
-        "ANYsolver>=0.4.0,<0.5: installed metadata reports 0.4.0rc1",
+        "ANYsolver>=0.4.1,<0.5: installed metadata reports 0.4.1rc1",
     )
 
 
@@ -359,7 +371,7 @@ def test_stale_mesher_metadata_is_rejected_before_gui_import():
     problems = namespace["ecosystem_compatibility_problems"](versions.__getitem__)
 
     assert problems == (
-        "ANYmesher>=0.3.2,<0.4: installed metadata reports 0.2.2",
+        "ANYmesher>=0.4.0,<0.5: installed metadata reports 0.2.2",
     )
 
 
@@ -368,7 +380,7 @@ def test_old_shared_anymesher_is_rejected_in_favour_of_qualified_fallback(
 ):
     namespace = _launcher_namespace()
     shared = _write_anymesher_checkout(tmp_path / "shared", "0.2.1")
-    safe = _write_anymesher_checkout(tmp_path / "safe", "0.3.2")
+    safe = _write_anymesher_checkout(tmp_path / "safe", "0.4.0")
 
     selected = namespace["select_anymesher_source_root"](
         {}, shared_root=shared, safe_root=safe
@@ -377,10 +389,10 @@ def test_old_shared_anymesher_is_rejected_in_favour_of_qualified_fallback(
     assert selected == safe.resolve()
 
 
-def test_any3dview_source_must_meet_minimum_054(tmp_path):
+def test_any3dview_source_must_meet_minimum_055(tmp_path):
     namespace = _launcher_namespace()
     shared = _write_any3dview_checkout(tmp_path / "shared", "0.4.0")
-    safe = _write_any3dview_checkout(tmp_path / "safe", "0.5.4")
+    safe = _write_any3dview_checkout(tmp_path / "safe", "0.5.5")
 
     selected = namespace["select_any3dview_source_root"](
         {}, shared_root=shared, safe_root=safe
@@ -391,11 +403,11 @@ def test_any3dview_source_must_meet_minimum_054(tmp_path):
 
 def test_any3dview_environment_override_is_fail_closed(tmp_path):
     namespace = _launcher_namespace()
-    shared = _write_any3dview_checkout(tmp_path / "shared", "0.5.4")
-    safe = _write_any3dview_checkout(tmp_path / "safe", "0.5.4")
+    shared = _write_any3dview_checkout(tmp_path / "shared", "0.5.5")
+    safe = _write_any3dview_checkout(tmp_path / "safe", "0.5.5")
     override = _write_any3dview_checkout(tmp_path / "override", "0.4.0")
 
-    with pytest.raises(RuntimeError, match="at least 0.5.4 is required"):
+    with pytest.raises(RuntimeError, match="at least 0.5.5 is required"):
         namespace["select_any3dview_source_root"](
             {namespace["ANY3DVIEW_SOURCE_ROOT_ENV"]: str(override)},
             shared_root=shared,
@@ -403,10 +415,10 @@ def test_any3dview_environment_override_is_fail_closed(tmp_path):
         )
 
 
-def test_shared_anymesher_is_used_when_it_meets_minimum_032(tmp_path):
+def test_shared_anymesher_is_used_when_it_meets_minimum_040(tmp_path):
     namespace = _launcher_namespace()
-    shared = _write_anymesher_checkout(tmp_path / "shared", "0.3.2")
-    safe = _write_anymesher_checkout(tmp_path / "safe", "0.3.2")
+    shared = _write_anymesher_checkout(tmp_path / "shared", "0.4.0")
+    safe = _write_anymesher_checkout(tmp_path / "safe", "0.4.0")
 
     selected = namespace["select_anymesher_source_root"](
         {}, shared_root=shared, safe_root=safe
@@ -417,8 +429,8 @@ def test_shared_anymesher_is_used_when_it_meets_minimum_032(tmp_path):
 
 def test_anymesher_environment_override_is_explicit_and_fail_closed(tmp_path):
     namespace = _launcher_namespace()
-    shared = _write_anymesher_checkout(tmp_path / "shared", "0.3.2")
-    safe = _write_anymesher_checkout(tmp_path / "safe", "0.3.2")
+    shared = _write_anymesher_checkout(tmp_path / "shared", "0.4.0")
+    safe = _write_anymesher_checkout(tmp_path / "safe", "0.4.0")
     override = _write_anymesher_checkout(tmp_path / "override", "0.2.2")
     environment = {namespace["ANYMESHER_SOURCE_ROOT_ENV"]: str(override)}
 
@@ -429,14 +441,14 @@ def test_anymesher_environment_override_is_explicit_and_fail_closed(tmp_path):
 
     message = str(raised.value)
     assert namespace["ANYMESHER_SOURCE_ROOT_ENV"] in message
-    assert "declares 0.2.2; at least 0.3.2 is required" in message
+    assert "declares 0.2.2; at least 0.4.0 is required" in message
 
 
 def test_valid_anymesher_environment_override_wins(tmp_path):
     namespace = _launcher_namespace()
-    shared = _write_anymesher_checkout(tmp_path / "shared", "0.3.2")
-    safe = _write_anymesher_checkout(tmp_path / "safe", "0.3.2")
-    override = _write_anymesher_checkout(tmp_path / "override", "0.3.9")
+    shared = _write_anymesher_checkout(tmp_path / "shared", "0.4.0")
+    safe = _write_anymesher_checkout(tmp_path / "safe", "0.4.0")
+    override = _write_anymesher_checkout(tmp_path / "override", "0.4.0")
     environment = {namespace["ANYMESHER_SOURCE_ROOT_ENV"]: str(override)}
 
     selected = namespace["select_anymesher_source_root"](
@@ -449,7 +461,7 @@ def test_valid_anymesher_environment_override_wins(tmp_path):
 def test_dirty_shared_anytk3d_is_rejected_in_favour_of_qualified_fallback(tmp_path):
     namespace = _launcher_namespace()
     shared = _write_anytk3d_checkout(tmp_path / "shared", "0.3.0")
-    safe = _write_anytk3d_checkout(tmp_path / "safe", "0.5.3")
+    safe = _write_anytk3d_checkout(tmp_path / "safe", "0.5.5")
 
     selected = namespace["select_anytk3d_source_root"](
         {}, shared_root=shared, safe_root=safe
@@ -458,10 +470,10 @@ def test_dirty_shared_anytk3d_is_rejected_in_favour_of_qualified_fallback(tmp_pa
     assert selected == safe.resolve()
 
 
-def test_shared_anytk3d_is_used_when_it_meets_minimum_053(tmp_path):
+def test_shared_anytk3d_is_used_when_it_meets_minimum_055(tmp_path):
     namespace = _launcher_namespace()
-    shared = _write_anytk3d_checkout(tmp_path / "shared", "0.5.3")
-    safe = _write_anytk3d_checkout(tmp_path / "safe", "0.5.3")
+    shared = _write_anytk3d_checkout(tmp_path / "shared", "0.5.5")
+    safe = _write_anytk3d_checkout(tmp_path / "safe", "0.5.5")
 
     selected = namespace["select_anytk3d_source_root"](
         {}, shared_root=shared, safe_root=safe
@@ -472,8 +484,8 @@ def test_shared_anytk3d_is_used_when_it_meets_minimum_053(tmp_path):
 
 def test_anytk3d_environment_override_is_explicit_and_fail_closed(tmp_path):
     namespace = _launcher_namespace()
-    shared = _write_anytk3d_checkout(tmp_path / "shared", "0.5.3")
-    safe = _write_anytk3d_checkout(tmp_path / "safe", "0.5.3")
+    shared = _write_anytk3d_checkout(tmp_path / "shared", "0.5.5")
+    safe = _write_anytk3d_checkout(tmp_path / "safe", "0.5.5")
     override = _write_anytk3d_checkout(tmp_path / "override", "0.3.0")
     environment = {namespace["ANYTK3D_SOURCE_ROOT_ENV"]: str(override)}
 
@@ -484,13 +496,13 @@ def test_anytk3d_environment_override_is_explicit_and_fail_closed(tmp_path):
 
     message = str(raised.value)
     assert namespace["ANYTK3D_SOURCE_ROOT_ENV"] in message
-    assert "declares 0.3.0; at least 0.5.3 is required" in message
+    assert "declares 0.3.0; at least 0.5.5 is required" in message
 
 
 def test_valid_anytk3d_environment_override_wins(tmp_path):
     namespace = _launcher_namespace()
-    shared = _write_anytk3d_checkout(tmp_path / "shared", "0.5.3")
-    safe = _write_anytk3d_checkout(tmp_path / "safe", "0.5.3")
+    shared = _write_anytk3d_checkout(tmp_path / "shared", "0.5.5")
+    safe = _write_anytk3d_checkout(tmp_path / "safe", "0.5.5")
     override = _write_anytk3d_checkout(tmp_path / "override", "0.5.9")
     environment = {namespace["ANYTK3D_SOURCE_ROOT_ENV"]: str(override)}
 
@@ -503,11 +515,11 @@ def test_valid_anytk3d_environment_override_wins(tmp_path):
 
 def test_next_minor_viewer_overrides_are_rejected(tmp_path):
     namespace = _launcher_namespace()
-    view_shared = _write_any3dview_checkout(tmp_path / "view-shared", "0.5.4")
-    view_safe = _write_any3dview_checkout(tmp_path / "view-safe", "0.5.4")
+    view_shared = _write_any3dview_checkout(tmp_path / "view-shared", "0.5.5")
+    view_safe = _write_any3dview_checkout(tmp_path / "view-safe", "0.5.5")
     view_override = _write_any3dview_checkout(tmp_path / "view-override", "0.6.0")
-    tk_shared = _write_anytk3d_checkout(tmp_path / "tk-shared", "0.5.3")
-    tk_safe = _write_anytk3d_checkout(tmp_path / "tk-safe", "0.5.3")
+    tk_shared = _write_anytk3d_checkout(tmp_path / "tk-shared", "0.5.5")
+    tk_safe = _write_anytk3d_checkout(tmp_path / "tk-safe", "0.5.5")
     tk_override = _write_anytk3d_checkout(tmp_path / "tk-override", "0.6.0")
 
     with pytest.raises(RuntimeError, match="must remain below 0.6.0"):
@@ -524,13 +536,13 @@ def test_next_minor_viewer_overrides_are_rejected(tmp_path):
         )
 
 
-def test_next_minor_anymesher_override_is_rejected(tmp_path):
+def test_next_unqualified_anymesher_override_is_rejected(tmp_path):
     namespace = _launcher_namespace()
     shared = _write_anymesher_checkout(tmp_path / "shared", "0.3.2")
     safe = _write_anymesher_checkout(tmp_path / "safe", "0.3.2")
-    override = _write_anymesher_checkout(tmp_path / "override", "0.4.0")
+    override = _write_anymesher_checkout(tmp_path / "override", "0.5.0")
 
-    with pytest.raises(RuntimeError, match="must remain below 0.4.0"):
+    with pytest.raises(RuntimeError, match="must remain below 0.5.0"):
         namespace["select_anymesher_source_root"](
             {namespace["ANYMESHER_SOURCE_ROOT_ENV"]: str(override)},
             shared_root=shared,
@@ -571,12 +583,12 @@ def test_production_publish_uses_verified_prebuilt_release_assets() -> None:
     assert 'gh release download "$RELEASE_TAG"' in production
     assert "--pattern" not in production
     assert "tools/verify_release_authority.py" in production
-    assert "docs/release/anystructure-6.3.1-ledger.json" in production
+    assert "docs/release/anystructure-6.4.0-ledger.json" in production
     assert "--protected-ref refs/remotes/origin/master" in production
-    assert "--expected-terminal ACCEPTED_ANYSTRUCTURE_6_3_1_RELEASE" in production
-    assert "ANYstructure-6.3.1-SHA256SUMS.txt" in production
-    assert "--artifact anystructure-6.3.1-py3-none-any.whl" in production
-    assert "--artifact anystructure-6.3.1.tar.gz" in production
+    assert "--expected-terminal ACCEPTED_ANYSTRUCTURE_6_4_0_RELEASE" in production
+    assert "ANYstructure-6.4.0-SHA256SUMS.txt" in production
+    assert "--artifact anystructure-6.4.0-py3-none-any.whl" in production
+    assert "--artifact anystructure-6.4.0.tar.gz" in production
     assert (
         "pypa/gh-action-pypi-publish@"
         "dc37677b2e1c63e2034f94d8a5b11f265b73ba33"
