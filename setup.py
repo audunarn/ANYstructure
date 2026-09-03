@@ -20,7 +20,7 @@ def readme():
         return file.read()
 
 core_requires = [
-    'ANY3dView[gpu]>=0.5.5,<0.6',
+    'ANY3dView>=0.5.5,<0.6',
     'ANYbuckling>=0.1.1,<0.2',
     'ANYfileio[semantics]>=0.3.1,<0.4',
     'ANYgeometry>=0.4.2,<0.5',
@@ -39,6 +39,7 @@ core_requires = [
 excel_requires = ['xlwings']
 ml_requires = ['scikit-learn']
 dev_requires = ['build', 'pytest']
+gpu_requires = ['ANY3dView[gpu]>=0.5.5,<0.6']
 
 setup(
     name='ANYstructure',  # Required
@@ -68,7 +69,8 @@ setup(
         'excel': excel_requires,
         'ml': ml_requires,
         'dev': dev_requires,
-        'all': core_requires + excel_requires + ml_requires,
+        'gpu': gpu_requires,
+        'all': core_requires + excel_requires + ml_requires + gpu_requires,
     },
     packages=find_namespace_packages(include=['anystruct', 'anystruct.*'], exclude=['anystruct.calc_structure_classes*']),
     py_modules = [],

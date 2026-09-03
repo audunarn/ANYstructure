@@ -151,7 +151,7 @@ def test_incompatible_major_release_graph_is_rejected_by_declared_caps():
     versions = {name: "1.0.0" for name in _compatible_versions()}
 
     assert namespace["ecosystem_compatibility_problems"](versions.__getitem__) == (
-        "ANY3dView[gpu]>=0.5.5,<0.6: installed metadata reports 1.0.0",
+        "ANY3dView>=0.5.5,<0.6: installed metadata reports 1.0.0",
         "ANYbuckling>=0.1.1,<0.2: installed metadata reports 1.0.0",
         "ANYfileio[semantics]>=0.3.1,<0.4: installed metadata reports 1.0.0",
         "ANYgeometry>=0.4.2,<0.5: installed metadata reports 1.0.0",
@@ -248,10 +248,6 @@ def test_repair_command_has_one_dependency_ordered_editable_graph():
     assert str(namespace["_ANYTK3D_ROOT"]) in projects
     assert projects[-1] == str(namespace["_ROOT"])
     documented = "python -m " + command.partition(" -m ")[2]
-    documented = documented.replace(
-        str(namespace["_ROOT"]),
-        r"C:\Github\ANYstructure",
-    )
     for selected_name, repository in (
         ("_ANY3DVIEW_ROOT", "ANY3dView"),
         ("_ANYMATERIAL_ROOT", "ANYmaterial"),
@@ -266,6 +262,10 @@ def test_repair_command_has_one_dependency_ordered_editable_graph():
             str(namespace[selected_name]),
             rf"C:\Github\{repository}",
         )
+    documented = documented.replace(
+        str(namespace["_ROOT"]),
+        r"C:\Github\ANYstructure",
+    )
     assert documented in (ROOT / "README.md").read_text(encoding="utf-8")
 
 

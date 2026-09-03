@@ -1,4 +1,4 @@
-ANY3dView[gpu]>=0.5.5,<0.6
+ANY3dView>=0.5.5,<0.6
 ANYtk3D>=0.5.5,<0.6
 ANYbuckling>=0.1.1,<0.2
 ANYfileio[semantics]>=0.3.1,<0.4

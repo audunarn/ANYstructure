@@ -391,7 +391,7 @@ for _source in reversed(_SOURCE_TREES):
 # can therefore provide stale metadata while newer Python modules are imported.
 # That split state is particularly unsafe for schema/semantics integrations.
 ECOSYSTEM_REQUIREMENTS = (
-    ("ANY3dView", "ANY3dView[gpu]>=0.5.5,<0.6", "0.5.5", "0.6.0"),
+    ("ANY3dView", "ANY3dView>=0.5.5,<0.6", "0.5.5", "0.6.0"),
     ("ANYbuckling", "ANYbuckling>=0.1.1,<0.2", "0.1.1", "0.2.0"),
     ("ANYfileio", "ANYfileio[semantics]>=0.3.1,<0.4", "0.3.1", "0.4.0"),
     ("ANYgeometry", "ANYgeometry>=0.4.2,<0.5", "0.4.2", "0.5.0"),

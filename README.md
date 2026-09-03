@@ -138,7 +138,7 @@ installed metadata do not agree.
 
 The coordinated compatibility ranges are:
 
-- `ANY3dView[gpu]>=0.5.5,<0.6`
+- `ANY3dView>=0.5.5,<0.6` (`ANYstructure[gpu]` adds ModernGL)
 - `ANYbuckling>=0.1.1,<0.2`
 - `ANYfileio[semantics]>=0.3.1,<0.4`
 - `ANYgeometry>=0.4.2,<0.5`

@@ -275,7 +275,7 @@ def test_dependency_and_gui_wiring_is_declared_in_release_surfaces():
         assert distribution in core_requirements
         assert distribution in requirements
     exact_ecosystem_requirements = {
-        "ANY3dView[gpu]>=0.5.5,<0.6",
+        "ANY3dView>=0.5.5,<0.6",
         "ANYtk3D>=0.5.5,<0.6",
         "ANYbuckling>=0.1.1,<0.2",
         "ANYfileio[semantics]>=0.3.1,<0.4",
@@ -296,6 +296,7 @@ def test_dependency_and_gui_wiring_is_declared_in_release_surfaces():
     assert "ANYmesher>=0.4.0,<0.5" in documentation
     assert "ANYmesher>=0.2.5" not in documentation
     assert "ANYsolver>=0.4.1,<0.5'" in setup_source
+    assert "ANY3dView>=0.5.5,<0.6'" in setup_source
     assert "ANY3dView[gpu]>=0.5.5,<0.6'" in setup_source
     assert "ANYbuckling>=0.1.1,<0.2'" in setup_source
     assert "ANYmaterial>=0.2.0,<0.3'" in setup_source
