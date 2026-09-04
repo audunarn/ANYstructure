@@ -6220,6 +6220,7 @@ class RuntimeFEMWindow:
             "Impact Damage Utilization": "impact_damage_utilization",
         }
         self.current_result: RuntimeFEMRunResult | None = None
+        self._runtime_visualization_data_cache = None
         self.result_text = None
         self.figure_canvas = None
         self.figure_toolbar = None
@@ -9926,19 +9927,22 @@ class RuntimeFEMWindow:
                     center=Point3D(0.0, 0.0, 0.5 * max(_safe_float(geometry.get("length_m"), 1.0), 1.0e-9)),
                 )
 
-        visualization, title, is_mode = _selected_visualization(result, display_mode, component)
-
         show_stiffeners_for_range = self.show_stiffener_vis.get() if getattr(self, "show_stiffener_vis",
                                                                              None) is not None else True
         show_girders_for_range = self.show_girder_vis.get() if getattr(self, "show_girder_vis",
                                                                        None) is not None else True
-        all_vals, color_grid, colorbar_label = _visualization_color_values(
+        (
             visualization,
-            component,
+            title,
             is_mode,
-            geometry,
-            show_stiffeners_for_range,
-            show_girders_for_range,
+            all_vals,
+            color_grid,
+            colorbar_label,
+        ) = self._runtime_visualization_color_data(
+            display_mode,
+            component,
+            show_stiffeners=show_stiffeners_for_range,
+            show_girders=show_girders_for_range,
             include_members=member_alpha > 0.0,
         )
         vmin, vmax = _resolved_color_limits(all_vals, self._manual_color_limits())
@@ -10463,17 +10467,81 @@ class RuntimeFEMWindow:
         if display_mode == "time_history":
             return (0.0, 1.0)
         component = self._selected_component()
-        visualization, _title, is_mode = _selected_visualization(self.current_result, display_mode, component)
-        values, _grid, _label = _visualization_color_values(
+        values = self._runtime_visualization_color_data(
+            display_mode,
+            component,
+            show_stiffeners=(
+                self.show_stiffener_vis.get()
+                if getattr(self, "show_stiffener_vis", None) is not None
+                else True
+            ),
+            show_girders=(
+                self.show_girder_vis.get()
+                if getattr(self, "show_girder_vis", None) is not None
+                else True
+            ),
+            include_members=_tk_var_float(self.member_alpha_vis, 1.0) > 0.0,
+        )[3]
+        return _finite_value_range(values)
+
+    def _runtime_visualization_color_data(
+        self,
+        display_mode: str,
+        component: str,
+        *,
+        show_stiffeners: bool,
+        show_girders: bool,
+        include_members: bool,
+    ) -> tuple[
+        dict[str, Any],
+        str,
+        bool,
+        list[float],
+        list[list[float]],
+        str,
+    ]:
+        """Reuse one recovered-field traversal for a display refresh."""
+
+        result = self.current_result
+        if result is None:
+            return ({}, "", False, [], [], "")
+        key = (
+            str(display_mode),
+            str(component),
+            bool(show_stiffeners),
+            bool(show_girders),
+            bool(include_members),
+        )
+        cached = getattr(self, "_runtime_visualization_data_cache", None)
+        if (
+            isinstance(cached, tuple)
+            and len(cached) == 3
+            and cached[0] is result
+            and cached[1] == key
+        ):
+            return cached[2]
+        visualization, title, is_mode = _selected_visualization(
+            result, display_mode, component
+        )
+        values, color_grid, colorbar_label = _visualization_color_values(
             visualization,
             component,
             is_mode,
-            self.current_result.summary,
-            self.show_stiffener_vis.get() if getattr(self, "show_stiffener_vis", None) is not None else True,
-            self.show_girder_vis.get() if getattr(self, "show_girder_vis", None) is not None else True,
-            include_members=_tk_var_float(self.member_alpha_vis, 1.0) > 0.0,
+            result.summary,
+            bool(show_stiffeners),
+            bool(show_girders),
+            include_members=bool(include_members),
         )
-        return _finite_value_range(values)
+        payload = (
+            visualization,
+            title,
+            is_mode,
+            values,
+            color_grid,
+            colorbar_label,
+        )
+        self._runtime_visualization_data_cache = (result, key, payload)
+        return payload
 
     def _sync_color_limit_controls(self, force: bool = False) -> None:
         signature = (self._selected_display_mode(), self._selected_component())
@@ -11082,6 +11150,7 @@ class RuntimeFEMWindow:
     def _adopt_loaded_result(self, result: RuntimeFEMRunResult, source: str = "") -> None:
         """Show a loaded solver result exactly like a freshly finished run."""
         self.current_result = result
+        self._runtime_visualization_data_cache = None
         self._live_collision_sphere_visualization = {}
         self._display_base_geometry = False
         try:
@@ -12216,6 +12285,7 @@ class RuntimeFEMWindow:
                 return
 
             self.current_result = result
+            self._runtime_visualization_data_cache = None
             self._live_collision_sphere_visualization = {}
             self._display_base_geometry = False
             self._set_custom_load_selection_active(False, refresh=False)
@@ -12469,6 +12539,7 @@ class RuntimeFEMWindow:
             displacement_scale=max(_safe_float(payload.get("displacement_max_m"), 0.0), 1.0e-12),
             visualization=visualization,
         )
+        self._runtime_visualization_data_cache = None
         self._display_base_geometry = False
         self.result_case_labels = {"Live collision t=" + f"{time_value:.6g}" + " s": "static"}
         self.result_case_choice.set(next(iter(self.result_case_labels)))
