@@ -775,7 +775,12 @@ def test_fe_solver_kernel_warmup_manager_reports_runtime_state(monkeypatch):
             {"status": "not_started", "shell_orders": (), "total_seconds": 0.0, "message": ""}
         )
 
-    def fake_warmup(shell_orders, *, include_nonlinear_impact=False):
+    def fake_warmup(
+        shell_orders,
+        *,
+        include_nonlinear_static=False,
+        include_nonlinear_impact=False,
+    ):
         return {
             "status": "completed",
             "total_seconds": 0.25,
@@ -784,17 +789,29 @@ def test_fe_solver_kernel_warmup_manager_reports_runtime_state(monkeypatch):
                 str(order): {"matrix_difference_norm": 0.0}
                 for order in shell_orders
             },
+            "nonlinear_static": (
+                {"status": "completed", "seconds": 0.05}
+                if include_nonlinear_static
+                else None
+            ),
         }
 
     monkeypatch.setattr(fe_runtime_solver.fe_solver, "warm_fe_solver_kernels", fake_warmup)
     try:
-        state = fe_runtime_solver.start_fe_solver_kernel_warmup(("S4", "Q8"), background=False)
+        state = fe_runtime_solver.start_fe_solver_kernel_warmup(
+            ("S4", "Q8"),
+            background=False,
+            include_nonlinear_static=True,
+        )
         assert state["status"] == "completed"
         assert state["shell_orders"] == ("S4", "Q8")
         assert state["jit_enabled"] is True
         assert state["parallel_threads"] == 4
         assert state["max_matrix_difference_norm"] == pytest.approx(0.0)
+        assert state["nonlinear_static"] is True
+        assert state["nonlinear_static_status"] == "completed"
         assert "completed" in fe_runtime_solver._warmup_diagnostics()[0]
+        assert "nonlinear static warmed" in fe_runtime_solver._warmup_diagnostics()[0]
     finally:
         with fe_runtime_solver._FE_KERNEL_WARMUP_LOCK:
             fe_runtime_solver._FE_KERNEL_WARMUP_STATE.clear()
@@ -827,6 +844,125 @@ def test_runtime_result_print_includes_kernel_warmup_summary():
     assert " - status: completed" in text
     assert " - shell orders: S4, Q8R" in text
     assert " - threads: 4" in text
+
+
+def test_runtime_result_names_actual_qualified_shell_and_beam_formulations():
+    result = fe_runtime_solver.RuntimeFEMRunResult(
+        status="ok",
+        summary={
+            "line": "line1",
+            "geometry": "cylinder",
+            "mesh_fidelity": "fine",
+            "shell_element_order": "S4",
+            "beam_element_order": "B2",
+            "shell_formulations": (
+                {
+                    "formulation_id": "E4_PL_QUALIFIED_Q4_HYBRID_V2",
+                    "selector": "e4-pl",
+                    "node_count": 4,
+                    "count": 120,
+                    "label": "E4-PL Q4 hybrid (MITC4 shear + PL drilling)",
+                },
+                {
+                    "formulation_id": "CANDIDATE_E4_PL_S3_V2D_NATIVE_PARITY_V1",
+                    "selector": "e4-pl-s3-v2d",
+                    "node_count": 3,
+                    "count": 8,
+                    "label": "E4-PL S3 V2D (MIN3/CST + PL drilling)",
+                },
+            ),
+            "beam_formulations": (
+                {
+                    "formulation_id": "",
+                    "selector": "",
+                    "node_count": 2,
+                    "count": 24,
+                    "label": "B2 (2-node Timoshenko beam)",
+                },
+            ),
+            "mesh_info": {},
+            "prestress_summary": {},
+            "load_resultant": {},
+        },
+    )
+
+    text = fe_runtime_solver.format_runtime_fem_result(result)
+
+    assert (
+        "Shell elements: E4-PL Q4 hybrid (MITC4 shear + PL drilling) × 120; "
+        "E4-PL S3 V2D (MIN3/CST + PL drilling) × 8"
+        in text
+    )
+    assert "Beam elements: B2 (2-node Timoshenko beam) × 24" in text
+
+
+def test_runtime_element_usage_is_derived_from_generated_records():
+    generated = {
+        "shells": [
+            {
+                "node_ids": [1, 2, 3, 4],
+                "formulation": "e4-pl",
+                "formulation_id": "E4_PL_QUALIFIED_Q4_HYBRID_V2",
+            },
+            {
+                "node_ids": [1, 2, 3],
+                "formulation": "e4-pl-s3-v2d",
+                "formulation_id": "CANDIDATE_E4_PL_S3_V2D_NATIVE_PARITY_V1",
+            },
+        ],
+        "beams": [{"node_ids": [1, 2]}],
+    }
+
+    shells, beams = fe_runtime_solver._element_usage_records(generated)
+
+    assert [record["node_count"] for record in shells] == [4, 3]
+    assert shells[0]["label"] == "E4-PL Q4 hybrid (MITC4 shear + PL drilling)"
+    assert shells[1]["label"] == "E4-PL S3 V2D (MIN3/CST + PL drilling)"
+    assert beams[0]["label"] == "B2 (2-node Timoshenko beam)"
+
+
+def test_runtime_mesh_cache_reuses_analysis_only_changes_and_invalidates_mesh_changes(
+    monkeypatch,
+):
+    calls = []
+
+    def build(geometry, config):
+        calls.append((dict(geometry), config.mesh_fidelity))
+        return {"mesh": len(calls)}
+
+    class Owner:
+        pass
+
+    owner = Owner()
+    geometry = {"geometry": "flat panel", "length_m": 2.0, "width_m": 1.0}
+    first = fe_solver.LightweightFEMConfig(
+        mesh_fidelity="coarse",
+        analysis_type="linear eigenvalue",
+    )
+    second = replace(
+        first,
+        analysis_type="geometric nonlinear static",
+        runtime_solver="nonlinear static",
+    )
+    changed_mesh = replace(second, mesh_fidelity="fine")
+    monkeypatch.setattr(fe_runtime_solver, "build_runtime_generated_geometry", build)
+
+    generated_1, hit_1 = fe_runtime_solver._build_or_reuse_runtime_generated_geometry(
+        owner, geometry, first
+    )
+    generated_2, hit_2 = fe_runtime_solver._build_or_reuse_runtime_generated_geometry(
+        owner, geometry, second
+    )
+    generated_3, hit_3 = fe_runtime_solver._build_or_reuse_runtime_generated_geometry(
+        owner, geometry, changed_mesh
+    )
+
+    assert hit_1 is False
+    assert hit_2 is True
+    assert generated_2 is generated_1
+    assert hit_3 is False
+    assert generated_3 is not generated_1
+    assert len(calls) == 2
 
 
 @pytest.mark.fem_integration
@@ -4946,6 +5082,60 @@ def test_selected_edge_per_dof_segment_additive():
     # Collision support check accepts a selected-edge segment as valid restraint.
     cfg = fs.LightweightFEMConfig(boundary_auto_supports=True, custom_bc_segments_json=json.dumps(seg))
     assert fs._runtime_collision_has_fixed_support(cfg, flat) is True
+
+
+def test_collision_preflight_accepts_checked_automatic_supports():
+    class Var:
+        def __init__(self, value):
+            self.value = value
+
+        def get(self):
+            return self.value
+
+    window = type("Window", (), {})()
+    window.boundary_condition = Var("auto")
+    window.boundary_auto_supports = Var(True)
+    window._custom_bc_entries = []
+    window.snapshot = type("Snapshot", (), {"is_cylinder": True})()
+    window.cylinder_lower_support = Var("free")
+    window.cylinder_upper_support = Var("free")
+    window._collect_boundary_constraint_json = lambda: "{}"
+
+    assert (
+        fe_runtime_solver.RuntimeFEMWindow._collision_support_is_valid(window)
+        is True
+    )
+
+    window.boundary_auto_supports = Var(False)
+    assert (
+        fe_runtime_solver.RuntimeFEMWindow._collision_support_is_valid(window)
+        is False
+    )
+
+
+def test_collision_preflight_accepts_visible_per_edge_dof_constraints():
+    class Var:
+        def __init__(self, value):
+            self.value = value
+
+        def get(self):
+            return self.value
+
+    window = type("Window", (), {})()
+    window.boundary_condition = Var("auto")
+    window.boundary_auto_supports = Var(False)
+    window._custom_bc_entries = []
+    window.snapshot = type("Snapshot", (), {"is_cylinder": True})()
+    window.cylinder_lower_support = Var("free")
+    window.cylinder_upper_support = Var("free")
+    window._collect_boundary_constraint_json = lambda: json.dumps(
+        {"lower": {"UX": 0.0, "UY": 0.0, "UZ": 0.0}}
+    )
+
+    assert (
+        fe_runtime_solver.RuntimeFEMWindow._collision_support_is_valid(window)
+        is True
+    )
 
 
 @pytest.mark.fem_integration
