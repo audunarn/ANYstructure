@@ -921,6 +921,65 @@ def test_runtime_element_usage_is_derived_from_generated_records():
     assert beams[0]["label"] == "B2 (2-node Timoshenko beam)"
 
 
+def test_runtime_visualization_color_data_reuses_one_recovered_field_scan(
+    monkeypatch,
+):
+    calls = {"select": 0, "scan": 0}
+    result = fe_runtime_solver.RuntimeFEMRunResult(
+        status="ok",
+        summary={},
+        visualization={"fields": {"von_mises_pa": [[1.0]]}},
+    )
+    window = type("Window", (), {})()
+    window.current_result = result
+    window._runtime_visualization_data_cache = None
+
+    def select(selected_result, display_mode, component):
+        assert selected_result is result
+        calls["select"] += 1
+        return ({"component": component}, display_mode, False)
+
+    def scan(visualization, component, is_mode, summary, *args, **kwargs):
+        assert visualization["component"] == component
+        assert is_mode is False
+        assert summary == {}
+        calls["scan"] += 1
+        return ([1.0, 2.0], [[1.0, 2.0]], "stress [MPa]")
+
+    monkeypatch.setattr(fe_runtime_solver, "_selected_visualization", select)
+    monkeypatch.setattr(fe_runtime_solver, "_visualization_color_values", scan)
+
+    first = fe_runtime_solver.RuntimeFEMWindow._runtime_visualization_color_data(
+        window,
+        "static",
+        "von_mises_pa",
+        show_stiffeners=True,
+        show_girders=True,
+        include_members=True,
+    )
+    second = fe_runtime_solver.RuntimeFEMWindow._runtime_visualization_color_data(
+        window,
+        "static",
+        "von_mises_pa",
+        show_stiffeners=True,
+        show_girders=True,
+        include_members=True,
+    )
+
+    assert second is first
+    assert calls == {"select": 1, "scan": 1}
+
+    fe_runtime_solver.RuntimeFEMWindow._runtime_visualization_color_data(
+        window,
+        "static",
+        "disp_mag",
+        show_stiffeners=True,
+        show_girders=True,
+        include_members=True,
+    )
+    assert calls == {"select": 2, "scan": 2}
+
+
 def test_runtime_mesh_cache_reuses_analysis_only_changes_and_invalidates_mesh_changes(
     monkeypatch,
 ):
