@@ -417,6 +417,150 @@ RUNTIME_SHELL_AUTHORITY_SCHEMA = "anystructure-runtime-shell-authority-v2"
 RUNTIME_Q4_FORMULATION = "e4-pl"
 RUNTIME_S3_FORMULATION = "e4-pl-s3-v2d"
 
+_SHELL_FORMULATION_LABELS = {
+    "E4_PL_QUALIFIED_Q4_HYBRID_V2": (
+        "E4-PL Q4 hybrid (MITC4 shear + PL drilling)"
+    ),
+    "CANDIDATE_E4_PL_S3_V2D_NATIVE_PARITY_V1": (
+        "E4-PL S3 V2D (MIN3/CST + PL drilling)"
+    ),
+    "E4_PL_QUALIFIED_S3_COMPANION_V1": (
+        "E4-PL S3 companion (MITC3+ + PL drilling)"
+    ),
+    "LEGACY_SHELL_ELEMENT_Q4": "Legacy Q4 shell (MITC4 shear)",
+    "LEGACY_SHELL_ELEMENT_TRI3": "Legacy TRI3 shell",
+}
+
+_SHELL_TOPOLOGY_LABELS = {
+    3: "TRI3 shell",
+    4: "Q4 shell",
+    6: "TRI6 shell",
+    8: "Q8 Mindlin-Reissner shell",
+}
+
+_BEAM_TOPOLOGY_LABELS = {
+    2: "B2 (2-node Timoshenko beam)",
+    3: "B3 (3-node quadratic Timoshenko beam)",
+}
+
+
+def _element_usage_records(
+    generated_geometry: Any,
+    imported_fem_model: Any = None,
+) -> tuple[tuple[dict[str, Any], ...], tuple[dict[str, Any], ...]]:
+    """Return deterministic actual shell/beam formulation counts."""
+
+    shells: list[tuple[str, str, int]] = []
+    beams: list[tuple[str, str, int]] = []
+    if isinstance(generated_geometry, dict):
+        for record in generated_geometry.get("shells", ()) or ():
+            if not isinstance(record, dict):
+                continue
+            nodes = tuple(record.get("node_ids", ()) or ())
+            shells.append(
+                (
+                    str(record.get("formulation_id", "")),
+                    str(record.get("formulation", "")),
+                    len(nodes),
+                )
+            )
+        for record in generated_geometry.get("beams", ()) or ():
+            if not isinstance(record, dict):
+                continue
+            nodes = tuple(record.get("node_ids", ()) or ())
+            beams.append(("", str(record.get("formulation", "")), len(nodes)))
+    elif imported_fem_model is not None:
+        elements = getattr(getattr(imported_fem_model, "mesh", None), "elements", {})
+        for element in getattr(elements, "values", lambda: ())():
+            nodes = tuple(getattr(element, "node_ids", ()) or ())
+            name = type(element).__name__
+            formulation_id = str(
+                getattr(element, "formulation_id", "")
+                or getattr(type(element), "formulation_id", "")
+            )
+            if "Beam" in name and "Shell" not in name:
+                beams.append((formulation_id, name, len(nodes)))
+            elif "Shell" in name:
+                shells.append((formulation_id, name, len(nodes)))
+
+    def summarize(
+        entries: list[tuple[str, str, int]],
+        labels: dict[int, str],
+        *,
+        shell: bool,
+    ) -> tuple[dict[str, Any], ...]:
+        counts: dict[tuple[str, str, int], int] = {}
+        for entry in entries:
+            counts[entry] = counts.get(entry, 0) + 1
+        records: list[dict[str, Any]] = []
+        for (formulation_id, selector, node_count), count in sorted(
+            counts.items(), key=lambda item: (-item[0][2], item[0][0], item[0][1])
+        ):
+            if shell:
+                label = _SHELL_FORMULATION_LABELS.get(formulation_id)
+            else:
+                label = None
+            if not label:
+                label = labels.get(node_count, selector or "Unknown element")
+            records.append(
+                {
+                    "formulation_id": formulation_id,
+                    "selector": selector,
+                    "node_count": int(node_count),
+                    "count": int(count),
+                    "label": str(label),
+                }
+            )
+        return tuple(records)
+
+    return (
+        summarize(shells, _SHELL_TOPOLOGY_LABELS, shell=True),
+        summarize(beams, _BEAM_TOPOLOGY_LABELS, shell=False),
+    )
+
+
+def _element_usage_text(records: Any, fallback: str) -> str:
+    """Format actual formulation records without hiding mixed meshes."""
+
+    if not isinstance(records, (list, tuple)) or not records:
+        return str(fallback)
+    parts = []
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        label = str(record.get("label", "")).strip()
+        count = _safe_int(record.get("count"), 0)
+        if label:
+            parts.append(label + (f" × {count}" if count > 0 else ""))
+    return "; ".join(parts) or str(fallback)
+
+
+def _requested_shell_element_text(order: Any) -> str:
+    """Describe the selected topology and its current formulation policy."""
+
+    selected = str(order or "").strip().upper()
+    if selected == "S4":
+        return (
+            "S4 policy: E4-PL Q4 hybrid (MITC4 shear + PL drilling); "
+            "admitted triangles use E4-PL S3 V2D (MIN3/CST + PL drilling)"
+        )
+    if selected in {"S3", "TRI3"}:
+        return "E4-PL S3 V2D (MIN3/CST + PL drilling)"
+    return {
+        "S6": "TRI6 legacy shell",
+        "S8": "Q8 Mindlin-Reissner shell",
+        "Q8": "Q8 Mindlin-Reissner shell",
+        "Q8R": "Q8R reduced-integration Mindlin-Reissner shell",
+    }.get(selected, selected or "Unknown shell formulation")
+
+
+def _requested_beam_element_text(order: Any) -> str:
+    selected = str(order or "").strip().upper()
+    return {
+        "B2": _BEAM_TOPOLOGY_LABELS[2],
+        "B3": _BEAM_TOPOLOGY_LABELS[3],
+    }.get(selected, selected or "Unknown beam formulation")
+
 
 def _runtime_formulation_for_node_count(node_count: int) -> str:
     """Resolve the application policy without inheriting solver defaults."""
@@ -803,6 +947,7 @@ _FE_KERNEL_WARMUP_STATE: dict[str, Any] = {
     "shell_orders": (),
     "total_seconds": 0.0,
     "message": "",
+    "nonlinear_static": False,
     "nonlinear_impact": False,
 }
 
@@ -816,6 +961,7 @@ def _summarize_kernel_warmup_report(
         report: dict[str, Any],
         shell_orders: tuple[str, ...],
         *,
+        include_nonlinear_static: bool = False,
         include_nonlinear_impact: bool = False,
 ) -> dict[str, Any]:
     warmed = report.get("shell_orders") if isinstance(report, dict) else {}
@@ -824,8 +970,10 @@ def _summarize_kernel_warmup_report(
     for item in warmed.values():
         if isinstance(item, dict):
             max_difference = max(max_difference, _safe_float(item.get("matrix_difference_norm"), 0.0))
-    nonlinear = report.get("nonlinear_impact") if isinstance(report, dict) else None
-    nonlinear = nonlinear if isinstance(nonlinear, dict) else None
+    nonlinear_static = report.get("nonlinear_static") if isinstance(report, dict) else None
+    nonlinear_static = nonlinear_static if isinstance(nonlinear_static, dict) else None
+    nonlinear_impact = report.get("nonlinear_impact") if isinstance(report, dict) else None
+    nonlinear_impact = nonlinear_impact if isinstance(nonlinear_impact, dict) else None
     return {
         "status": str(report.get("status", "completed") if isinstance(report, dict) else "completed"),
         "shell_orders": tuple(str(key) for key in warmed.keys()) or shell_orders,
@@ -834,9 +982,20 @@ def _summarize_kernel_warmup_report(
         "parallel_threads": (report.get("jit") or {}).get("num_threads") if isinstance(report, dict) else None,
         "max_matrix_difference_norm": float(max_difference),
         "message": "",
-        "nonlinear_impact": bool(nonlinear is not None or include_nonlinear_impact),
-        "nonlinear_impact_status": str((nonlinear or {}).get("status", "")),
-        "nonlinear_impact_seconds": _safe_float((nonlinear or {}).get("seconds"), 0.0),
+        "nonlinear_static": bool(
+            nonlinear_static is not None or include_nonlinear_static
+        ),
+        "nonlinear_static_status": str((nonlinear_static or {}).get("status", "")),
+        "nonlinear_static_seconds": _safe_float(
+            (nonlinear_static or {}).get("seconds"), 0.0
+        ),
+        "nonlinear_impact": bool(
+            nonlinear_impact is not None or include_nonlinear_impact
+        ),
+        "nonlinear_impact_status": str((nonlinear_impact or {}).get("status", "")),
+        "nonlinear_impact_seconds": _safe_float(
+            (nonlinear_impact or {}).get("seconds"), 0.0
+        ),
     }
 
 
@@ -852,6 +1011,7 @@ def start_fe_solver_kernel_warmup(
         *,
         background: bool = True,
         status_callback=None,
+        include_nonlinear_static: bool = False,
         include_nonlinear_impact: bool = False,
 ) -> dict[str, Any]:
     """Start optional FE backend kernel warmup once per process."""
@@ -873,8 +1033,17 @@ def start_fe_solver_kernel_warmup(
         status = str(_FE_KERNEL_WARMUP_STATE.get("status", "not_started"))
         requested_set = set(requested)
         warmed_set = set(str(order) for order in _FE_KERNEL_WARMUP_STATE.get("shell_orders", ()) or ())
-        nonlinear_done = bool(_FE_KERNEL_WARMUP_STATE.get("nonlinear_impact", False))
-        request_satisfied = requested_set.issubset(warmed_set) and (not include_nonlinear_impact or nonlinear_done)
+        nonlinear_static_done = bool(
+            _FE_KERNEL_WARMUP_STATE.get("nonlinear_static", False)
+        )
+        nonlinear_impact_done = bool(
+            _FE_KERNEL_WARMUP_STATE.get("nonlinear_impact", False)
+        )
+        request_satisfied = (
+            requested_set.issubset(warmed_set)
+            and (not include_nonlinear_static or nonlinear_static_done)
+            and (not include_nonlinear_impact or nonlinear_impact_done)
+        )
         if status == "running":
             return dict(_FE_KERNEL_WARMUP_STATE)
         if status in {"completed", "failed", "backend_unavailable", "disabled"} and request_satisfied:
@@ -885,6 +1054,7 @@ def start_fe_solver_kernel_warmup(
                 "shell_orders": requested,
                 "total_seconds": 0.0,
                 "message": "FE solver kernel warmup is running.",
+                "nonlinear_static": bool(include_nonlinear_static),
                 "nonlinear_impact": bool(include_nonlinear_impact),
                 "started_at": time.time(),
             }
@@ -894,11 +1064,50 @@ def start_fe_solver_kernel_warmup(
         start = time.perf_counter()
         try:
             if status_callback is not None:
-                status_callback("Warming FE solver shell kernels" + (
-                    " and nonlinear impact kernels" if include_nonlinear_impact else "") + "...")
-            report = fe_solver.warm_fe_solver_kernels(requested, include_nonlinear_impact=include_nonlinear_impact)
-            summary = _summarize_kernel_warmup_report(report, requested,
-                                                      include_nonlinear_impact=include_nonlinear_impact)
+                extras = []
+                if include_nonlinear_static:
+                    extras.append("nonlinear static")
+                if include_nonlinear_impact:
+                    extras.append("nonlinear impact")
+                status_callback(
+                    "Warming FE solver shell kernels"
+                    + (" and " + "/".join(extras) + " kernels" if extras else "")
+                    + "..."
+                )
+            warmup_parameters = inspect.signature(
+                fe_solver.warm_fe_solver_kernels
+            ).parameters
+            accepts_extra_keywords = any(
+                parameter.kind is inspect.Parameter.VAR_KEYWORD
+                for parameter in warmup_parameters.values()
+            )
+            supports_nonlinear_static = (
+                "include_nonlinear_static" in warmup_parameters
+                or accepts_extra_keywords
+            )
+            run_nonlinear_static = bool(
+                include_nonlinear_static and supports_nonlinear_static
+            )
+            warmup_kwargs = {
+                "include_nonlinear_impact": include_nonlinear_impact,
+            }
+            if supports_nonlinear_static:
+                warmup_kwargs["include_nonlinear_static"] = run_nonlinear_static
+            report = fe_solver.warm_fe_solver_kernels(
+                requested,
+                **warmup_kwargs,
+            )
+            summary = _summarize_kernel_warmup_report(
+                report,
+                requested,
+                include_nonlinear_static=run_nonlinear_static,
+                include_nonlinear_impact=include_nonlinear_impact,
+            )
+            if include_nonlinear_static and not supports_nonlinear_static:
+                summary["message"] = (
+                    "The installed ANYsolver does not expose nonlinear-static "
+                    "kernel warmup; shell kernels were warmed normally."
+                )
             summary["total_seconds"] = summary["total_seconds"] or float(time.perf_counter() - start)
             with _FE_KERNEL_WARMUP_LOCK:
                 _FE_KERNEL_WARMUP_STATE.update(summary)
@@ -938,6 +1147,11 @@ def _warmup_diagnostics() -> list[str]:
         text += " for " + orders
     if seconds > 0.0:
         text += " in " + str(round(seconds, 3)) + " s"
+    if state.get("nonlinear_static"):
+        nl_seconds = _safe_float(state.get("nonlinear_static_seconds"), 0.0)
+        text += "; nonlinear static warmed"
+        if nl_seconds > 0.0:
+            text += " in " + str(round(nl_seconds, 3)) + " s"
     if state.get("nonlinear_impact"):
         nl_seconds = _safe_float(state.get("nonlinear_impact_seconds"), 0.0)
         text += "; nonlinear impact warmed"
@@ -1695,18 +1909,110 @@ def build_runtime_generated_geometry(
     )
 
 
+_RUNTIME_MESH_ANALYSIS_ONLY_FIELDS = frozenset(
+    {
+        "analysis_type",
+        "buckling_analysis_type",
+        "runtime_solver",
+        "num_buckling_modes",
+        "solver_type",
+        "stress_percentile",
+        "deformation_scale",
+        "nonlinear_max_load_factor",
+        "nonlinear_steps",
+        "nonlinear_max_iterations",
+        "nonlinear_tolerance",
+        "nonlinear_layers",
+        "nonlinear_solution_control",
+        "post_buckling_enabled",
+        "post_buckling_stop_load_fraction",
+        "post_buckling_max_displacement_m",
+        "nonlinear_convergence_profile",
+        "nonlinear_assembly_threads",
+        "nonlinear_static_kinematics",
+        "buckling_shift_load_factor",
+        "buckling_min_load_factor",
+        "buckling_max_load_factor",
+        "buckling_repeated_tolerance",
+        "buckling_allow_dense_fallback",
+        "recovery_history_mode",
+        "recovery_threads",
+        "memory_limit_mb",
+    }
+)
+
+
+def _runtime_mesh_cache_key(geometry: dict[str, Any], config: Any) -> str | None:
+    """Canonical key for inputs that can change generated mesh authority."""
+
+    try:
+        config_payload = {
+            item.name: getattr(config, item.name)
+            for item in dataclass_fields(config)
+            if item.name not in _RUNTIME_MESH_ANALYSIS_ONLY_FIELDS
+        }
+        return json.dumps(
+            {
+                "geometry": geometry,
+                "config": config_payload,
+                "q4_formulation": RUNTIME_Q4_FORMULATION,
+                "s3_formulation": RUNTIME_S3_FORMULATION,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=True,
+            allow_nan=False,
+        )
+    except (TypeError, ValueError):
+        # Unknown extension values disable reuse; they never weaken the key.
+        return None
+
+
+def _build_or_reuse_runtime_generated_geometry(
+    owner: Any,
+    geometry: dict[str, Any],
+    config: Any,
+) -> tuple[geometry_generators.GeometryBackedProjection, bool]:
+    """Reuse one exact immutable generated mesh for a popup instance."""
+
+    key = _runtime_mesh_cache_key(geometry, config)
+    cached = getattr(owner, "_runtime_generated_geometry_cache", None)
+    if key is not None and isinstance(cached, tuple) and len(cached) == 2:
+        if cached[0] == key:
+            return cached[1], True
+    generated = build_runtime_generated_geometry(geometry, config)
+    if key is not None:
+        owner._runtime_generated_geometry_cache = (key, generated)
+    return generated, False
+
+
 def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions,
                     status_callback=None, imported_fem_model=None,
-                    precomputed_generated_geometry=None) -> RuntimeFEMRunResult:
+                    precomputed_generated_geometry=None,
+                    precomputed_geometry_is_imperfection: bool = True,
+                    generated_geometry_cache_hit: bool = False) -> RuntimeFEMRunResult:
     """Run the external ANYsolver production runtime for an ANYstructure model."""
 
     geometry = runtime_geometry_summary(snapshot, options)
     diagnostics = list(snapshot.diagnostics)
-    if precomputed_generated_geometry is not None:
+    if (
+        precomputed_generated_geometry is not None
+        and precomputed_geometry_is_imperfection
+    ):
         diagnostics.append(
             "Using the generated custom imperfection mesh (mode shapes set to mesh) for this run."
         )
-    imperfection_active = precomputed_generated_geometry is not None or bool(options.imperfection_enabled)
+    elif precomputed_generated_geometry is not None and generated_geometry_cache_hit:
+        diagnostics.append(
+            "Reused the exact generated mesh from this runtime FEM window."
+        )
+    imperfection_active = bool(
+        (
+            precomputed_generated_geometry is not None
+            and precomputed_geometry_is_imperfection
+        )
+        or options.imperfection_enabled
+    )
     if imperfection_active and str(options.analysis_type).strip().lower() == "linear eigenvalue":
         diagnostics.append(
             "NOTE: linear eigenvalue buckling of an imperfect geometry does not include the "
@@ -1775,6 +2081,10 @@ def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions
         for descriptor in quantity_descriptors
         if str(descriptor.get("quantity_id", "")).startswith("reaction")
     )
+    shell_formulations, beam_formulations = _element_usage_records(
+        effective_generated_geometry,
+        imported_fem_model,
+    )
 
     summary = {
         **geometry,
@@ -1796,6 +2106,9 @@ def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions
         "symmetry_mode": str(options.symmetry_mode),
         "shell_element_order": str(options.shell_element_order),
         "beam_element_order": str(options.beam_element_order),
+        "shell_formulations": shell_formulations,
+        "beam_formulations": beam_formulations,
+        "generated_geometry_cache_hit": bool(generated_geometry_cache_hit),
         "member_model": str(options.member_model),
         "analysis_type": str(options.analysis_type),
         "buckling_analysis_type": str(options.buckling_analysis_type),
@@ -1979,6 +2292,15 @@ def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions
         "kernel_warmup_jit_enabled": bool(warmup_state.get("jit_enabled", False)),
         "kernel_warmup_parallel_threads": warmup_state.get("parallel_threads"),
         "kernel_warmup_max_matrix_difference_norm": _safe_float(warmup_state.get("max_matrix_difference_norm"), 0.0),
+        "kernel_warmup_nonlinear_static": bool(
+            warmup_state.get("nonlinear_static", False)
+        ),
+        "kernel_warmup_nonlinear_static_status": str(
+            warmup_state.get("nonlinear_static_status", "")
+        ),
+        "kernel_warmup_nonlinear_static_seconds": _safe_float(
+            warmup_state.get("nonlinear_static_seconds"), 0.0
+        ),
         "solver": solver_result.solver_name,
         "solve_outcome": solve_outcome,
         "result_quantities": quantity_descriptors,
@@ -3410,8 +3732,16 @@ def format_runtime_fem_result(result: RuntimeFEMRunResult) -> str:
         "Line: " + str(summary.get("line", "")),
         "Geometry: " + str(summary.get("geometry", "")),
         "Mesh fidelity: " + str(summary.get("mesh_fidelity", "")),
-        "Shell element: " + str(summary.get("shell_element_order", "")),
-        "Beam element: " + str(summary.get("beam_element_order", "")),
+        "Shell elements: "
+        + _element_usage_text(
+            summary.get("shell_formulations"),
+            _requested_shell_element_text(summary.get("shell_element_order")),
+        ),
+        "Beam elements: "
+        + _element_usage_text(
+            summary.get("beam_formulations"),
+            _requested_beam_element_text(summary.get("beam_element_order")),
+        ),
         "Member model: " + str(summary.get("member_model", "")),
         "Member side: " + ("opposite (main-app setting)" if summary.get("members_opposite_side") else "default"),
         "Boundary condition: " + str(summary.get("boundary_condition", "")),
@@ -3666,6 +3996,18 @@ def format_runtime_fem_result(result: RuntimeFEMRunResult) -> str:
             " - JIT: " + ("enabled" if bool(summary.get("kernel_warmup_jit_enabled")) else "disabled or unavailable"))
         if summary.get("kernel_warmup_parallel_threads") is not None:
             lines.append(" - threads: " + str(summary.get("kernel_warmup_parallel_threads")))
+        if bool(summary.get("kernel_warmup_nonlinear_static")):
+            nonlinear_status = str(
+                summary.get("kernel_warmup_nonlinear_static_status", "completed")
+                or "completed"
+            )
+            nonlinear_seconds = _safe_float(
+                summary.get("kernel_warmup_nonlinear_static_seconds"), 0.0
+            )
+            line = " - nonlinear static: " + nonlinear_status.replace("_", " ")
+            if nonlinear_seconds > 0.0:
+                line += " in " + str(round(nonlinear_seconds, 3)) + " s"
+            lines.append(line)
         lines.append(" - max matrix difference: " + str(
             round(_safe_float(summary.get("kernel_warmup_max_matrix_difference_norm")), 12)))
     mesh_info = summary.get("mesh_info") or {}
@@ -6152,7 +6494,10 @@ class RuntimeFEMWindow:
         self._refresh_option_states()
 
     def _start_kernel_warmup(self) -> None:
-        state = start_fe_solver_kernel_warmup(background=True)
+        state = start_fe_solver_kernel_warmup(
+            background=True,
+            include_nonlinear_static=True,
+        )
         status = str(state.get("status", "not_started"))
         if status in {"running", "completed", "disabled", "backend_unavailable", "failed"}:
             self._write_status(_warmup_diagnostics()[0], keep_run_results=True)
@@ -8277,7 +8622,9 @@ class RuntimeFEMWindow:
             options = self._options()
             config = _solver_config_from_options(options)
             geometry = _popup_geometry_summary(self)
-            generated = build_runtime_generated_geometry(geometry, config)
+            generated, _cache_hit = _build_or_reuse_runtime_generated_geometry(
+                self, geometry, config
+            )
         except Exception as error:
             messagebox.showwarning("Mesh generation", "Could not build the mesh:\n" + str(error))
             return
@@ -8316,7 +8663,9 @@ class RuntimeFEMWindow:
             options = self._options()
             config = _solver_config_from_options(options)
             geometry = _popup_geometry_summary(self)
-            generated = build_runtime_generated_geometry(geometry, config)
+            generated, _cache_hit = _build_or_reuse_runtime_generated_geometry(
+                self, geometry, config
+            )
 
             # We need to run a buckling solve using fe_solver.
             # But the buckling is normally run in run_production_fem or lightweight.
@@ -8450,7 +8799,9 @@ class RuntimeFEMWindow:
             options = self._options()
             config = _solver_config_from_options(options)
             geometry = _popup_geometry_summary(self)
-            generated = build_runtime_generated_geometry(geometry, config)
+            generated, _cache_hit = _build_or_reuse_runtime_generated_geometry(
+                self, geometry, config
+            )
         except Exception:
             return
         self._render_mesh_preview_canvas(generated)
@@ -10524,12 +10875,11 @@ class RuntimeFEMWindow:
             "",
             "Setup",
             " - analysis: " + analysis_text,
-            " - mesh: "
-            + str(options.mesh_fidelity)
-            + ", "
-            + str(options.shell_element_order)
-            + "/"
-            + str(options.beam_element_order),
+            " - mesh: " + str(options.mesh_fidelity),
+            " - shell policy: "
+            + _requested_shell_element_text(options.shell_element_order),
+            " - beam formulation: "
+            + _requested_beam_element_text(options.beam_element_order),
             " - detail mesh: " + (", ".join(detail_bits) if detail_bits else "off"),
             " - members: stiffeners="
             + str(bool(options.include_stiffeners))
@@ -11517,7 +11867,9 @@ class RuntimeFEMWindow:
             options = self._options()
             config = _solver_config_from_options(options)
             geometry = _popup_geometry_summary(self)
-            generated = build_runtime_generated_geometry(geometry, config)
+            generated, _cache_hit = _build_or_reuse_runtime_generated_geometry(
+                self, geometry, config
+            )
         except Exception as error:
             messagebox.showwarning("Thickness plot", "Could not build the geometry:\n" + str(error))
             return
@@ -11610,6 +11962,26 @@ class RuntimeFEMWindow:
         if boundary not in {"auto", "free", "none"}:
             return True
         if self._custom_bc_entries:
+            return True
+        collect_constraints = getattr(self, "_collect_boundary_constraint_json", None)
+        if callable(collect_constraints):
+            try:
+                constraints = json.loads(collect_constraints())
+            except (TypeError, ValueError):
+                constraints = {}
+            if isinstance(constraints, dict) and any(
+                isinstance(dofs, dict) and bool(dofs)
+                for dofs in constraints.values()
+            ):
+                # This is the same per-edge payload supplied to ANYsolver.  In
+                # particular, accept the checked bottom/top DOFs that are still
+                # visible in the editor but have not yet been copied elsewhere.
+                return True
+        if bool(self.boundary_auto_supports.get()):
+            # The generated runtime model installs deterministic supported
+            # boundaries when no explicit edge/end restraint is selected.
+            # Match that downstream contract instead of rejecting the same
+            # checked UI state before mesh construction.
             return True
         if self.snapshot.is_cylinder:
             supports = (self.cylinder_lower_support.get(), self.cylinder_upper_support.get())
@@ -11753,9 +12125,23 @@ class RuntimeFEMWindow:
                 # the analytic standard shape applied by the solver itself, so
                 # gating on it silently discarded the perturbed mesh.
                 precomputed = getattr(self, "_imperfection_mesh", None)
+                precomputed_is_imperfection = precomputed is not None
+                mesh_cache_hit = False
+                if precomputed is None and self.imported_fem_model is None:
+                    geometry = runtime_geometry_summary(self.snapshot, options)
+                    config = _solver_config_from_options(options)
+                    precomputed, mesh_cache_hit = (
+                        _build_or_reuse_runtime_generated_geometry(
+                            self, geometry, config
+                        )
+                    )
                 self.solver_queue.put((run_runtime_fem(self.snapshot, options, status_callback=status_cb,
                                                        imported_fem_model=self.imported_fem_model,
-                                                       precomputed_generated_geometry=precomputed), None))
+                                                       precomputed_generated_geometry=precomputed,
+                                                       precomputed_geometry_is_imperfection=(
+                                                           precomputed_is_imperfection
+                                                       ),
+                                                       generated_geometry_cache_hit=mesh_cache_hit), None))
             except Exception as error:
                 self.solver_queue.put((None, error))
 
