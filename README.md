@@ -131,6 +131,18 @@ The slow tier contains nonlinear, collision, transient, mode-imperfection, and
 large external-format qualification and is intentionally opt-in during
 ordinary development.
 
+### Windows PyInstaller bundle
+
+Build the standalone Windows directory and versioned ZIP with Python 3.14:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\build_pyinstaller.ps1
+```
+
+The script builds `dist\ANYstructure\ANYstructure.exe`, runs its
+headless packaged self-test, and writes the ZIP and matching `.sha256` file to
+`dist`.
+
 `--no-deps` refreshes editable metadata without forcing pip to resolve stale
 transitive upper bounds from older sibling releases. `run_gui.py` reports the
 exact repair command for its active interpreter when selected source and
