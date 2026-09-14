@@ -292,10 +292,10 @@ def test_ci_binds_exact_release_graph_revisions_and_fails_closed_for_solver():
     expected_refs = {
         "d8a233ef4c5e38d25dbba0eb20e6cfa8d44ec5a2",
         "7d36c97dd0dbec8884f8894a4258ece83ad61271",
-        "dd954f088a4cb95e267280cc4777b09e16232bd9",
+        "7edbb8b624d3f7d4548d2ec11b2d00c55f1265d2",
         "27e428188a891705288fef82bab0b166e330aff2",
         "b48ba51c7b79e6d64b3f99c1fb131b9b602e7e1d",
-        "5017827b0e88b4b52d7fee0fad6a1f405e2d33cf",
+        "14cdc979ac158bde20d7ecc5f940887c8684e77c",
         "a871d5a3c466666b79f3ce3a015a2cfd7534376b",
         "2caa92325885938c594f27145ed16069d807e364",
     }

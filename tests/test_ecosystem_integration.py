@@ -320,10 +320,10 @@ def test_dependency_and_gui_wiring_is_declared_in_release_surfaces():
     final_graph_refs = {
         "d8a233ef4c5e38d25dbba0eb20e6cfa8d44ec5a2": "ANYmaterial",
         "7d36c97dd0dbec8884f8894a4258ece83ad61271": "ANY3dView",
-        "dd954f088a4cb95e267280cc4777b09e16232bd9": "ANYgeometry",
+        "7edbb8b624d3f7d4548d2ec11b2d00c55f1265d2": "ANYgeometry",
         "27e428188a891705288fef82bab0b166e330aff2": "ANYmesh",
         "b48ba51c7b79e6d64b3f99c1fb131b9b602e7e1d": "ANYfileIO",
-        "5017827b0e88b4b52d7fee0fad6a1f405e2d33cf": "ANYsolver",
+        "14cdc979ac158bde20d7ecc5f940887c8684e77c": "ANYsolver",
         "a871d5a3c466666b79f3ce3a015a2cfd7534376b": "ANYbuckling",
         "2caa92325885938c594f27145ed16069d807e364": "ANYtk3D",
     }
