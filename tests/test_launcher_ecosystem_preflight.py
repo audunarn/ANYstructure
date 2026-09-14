@@ -295,7 +295,7 @@ def test_ci_binds_exact_release_graph_revisions_and_fails_closed_for_solver():
         "7edbb8b624d3f7d4548d2ec11b2d00c55f1265d2",
         "27e428188a891705288fef82bab0b166e330aff2",
         "b48ba51c7b79e6d64b3f99c1fb131b9b602e7e1d",
-        "14cdc979ac158bde20d7ecc5f940887c8684e77c",
+        "67381475e5c6ed1583d92d8fa7f0fb5d64b43c6f",
         "a871d5a3c466666b79f3ce3a015a2cfd7534376b",
         "2caa92325885938c594f27145ed16069d807e364",
     }
