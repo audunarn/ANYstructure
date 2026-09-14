@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from anystruct.ge_beam3_optin import (
     B3GERuntimeDefinition,
@@ -45,3 +46,7 @@ def test_runtime_b3_ge_is_native_explicit_and_legacy_b3_stays_default():
     assert status["selection"] == "explicit opt-in"
     assert status["legacy_b3_default"] is True and status["default_changed"] is False
     assert type(create_element("quadratic_beam", 99, [1, 2, 3])) is QuadraticBeamElement
+    oversized = B3GERuntimeDefinition((native,)).to_dict()
+    oversized["definitions"][0]["raw_base64"] = "a" * 2_800_001
+    with pytest.raises(ValueError, match="bounded"):
+        B3GERuntimeDefinition.from_dict(oversized)

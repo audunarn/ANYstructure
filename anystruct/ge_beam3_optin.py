@@ -6,8 +6,6 @@ from dataclasses import dataclass
 from typing import Any, Mapping, Sequence
 
 import numpy as np
-from anysolver import b3_ge
-from anysolver._ge_beam3_native_definition import NativeBeamDefinition
 from anysolver.beam_sections import GeneralizedBeamSection
 from anysolver.elements import create_element
 from anysolver.ge_beam3_element import GE_BEAM3_QUALIFIED_FORMULATION_ID, GeometricallyExactBeam3D3NElement
@@ -47,7 +45,7 @@ def runtime_status(definition: GeBeam3RuntimeDefinition) -> dict[str, Any]:
 B3_GE_SCHEMA = "anystructure.b3-ge-native-opt-in-v2"
 B3_GE_POLICY = {
     "selector": "b3-ge",
-    "native_profile_id": b3_ge.NATIVE_PROFILE_ID,
+    "native_profile_id": "GE_BEAM3_NATIVE_OWNED_WORKFLOWS_V1",
     "explicit_opt_in": True,
     "legacy_b3_default": True,
 }
@@ -57,9 +55,11 @@ B3_GE_POLICY = {
 class B3GERuntimeDefinition:
     """Detached native definition graph for an explicit B3-GE runtime."""
 
-    definitions: Sequence[NativeBeamDefinition]
+    definitions: Sequence[Any]
 
     def __post_init__(self) -> None:
+        from anysolver._ge_beam3_native_definition import NativeBeamDefinition
+
         rows = tuple(self.definitions)
         if not rows or any(type(row) is not NativeBeamDefinition for row in rows):
             raise ValueError("one or more exact native B3-GE definitions required")
@@ -69,6 +69,8 @@ class B3GERuntimeDefinition:
         ))
 
     def create_analysis(self, boundaries: Sequence[Any], *, retained_refinement: bool = False):
+        from anysolver import b3_ge
+
         return b3_ge.create_analysis(
             b3_ge.SELECTOR,
             self.definitions,
@@ -97,9 +99,18 @@ class B3GERuntimeDefinition:
         ):
             raise ValueError("strict ANYstructure B3-GE native opt-in record required")
         rows = []
+        from anysolver._ge_beam3_native_definition import NativeBeamDefinition
+
         for item in data["definitions"]:
             if type(item) is not dict or set(item) != {"raw_base64", "sha256"}:
                 raise ValueError("strict B3-GE definition binding required")
+            if (
+                type(item["raw_base64"]) is not str
+                or len(item["raw_base64"]) > 2_800_000
+                or type(item["sha256"]) is not str
+                or len(item["sha256"]) != 64
+            ):
+                raise ValueError("bounded B3-GE definition binding required")
             try:
                 raw = base64.b64decode(item["raw_base64"], validate=True)
             except Exception as exc:
@@ -114,7 +125,7 @@ def b3_ge_runtime_status(definition: B3GERuntimeDefinition) -> dict[str, Any]:
     return {
         "beam_element": "B3-GE — geometrically exact Simo–Reissner",
         "selector": "b3-ge",
-        "native_profile_id": b3_ge.NATIVE_PROFILE_ID,
+        "native_profile_id": B3_GE_POLICY["native_profile_id"],
         "selection": "explicit opt-in",
         "legacy_b3_default": True,
         "default_changed": False,
