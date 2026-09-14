@@ -8,7 +8,6 @@ import numpy as np
 from anysolver.beam_sections import GeneralizedBeamSection
 from anysolver.elements import create_element
 from anysolver.ge_beam3_element import GE_BEAM3_QUALIFIED_FORMULATION_ID, GeometricallyExactBeam3D3NElement
-from anysolver.ge_beam3_native import ConsumerPolicy
 
 
 @dataclass(frozen=True)
@@ -36,9 +35,8 @@ class GeBeam3RuntimeDefinition:
 def runtime_status(definition: GeBeam3RuntimeDefinition) -> dict[str, Any]:
     if type(definition) is not GeBeam3RuntimeDefinition:
         raise TypeError("exact GE-B3 runtime definition required")
-    policy = ConsumerPolicy.ge_beam3()
     return {"beam_element": "GE-B3 straight — mixed Simo–Reissner",
-            "selector": policy.selector,
+            "selector": "ge-beam3",
             "formulation_id": GE_BEAM3_QUALIFIED_FORMULATION_ID,
             "explicit_opt_in": True, "default_changed": False}
 
