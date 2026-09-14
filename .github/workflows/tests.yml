@@ -64,8 +64,8 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANYsolver
-          # Frozen G6 explicit-opt-in candidate source identity.
-          ref: 14cdc979ac158bde20d7ecc5f940887c8684e77c
+          # Frozen G7 B3-GE production opt-in implementation.
+          ref: 67381475e5c6ed1583d92d8fa7f0fb5d64b43c6f
           path: .ecosystem/ANYsolver
 
       - name: Check out ANYbuckling
@@ -178,8 +178,8 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANYsolver
-          # Frozen G6 explicit-opt-in candidate source identity.
-          ref: 14cdc979ac158bde20d7ecc5f940887c8684e77c
+          # Frozen G7 B3-GE production opt-in implementation.
+          ref: 67381475e5c6ed1583d92d8fa7f0fb5d64b43c6f
           path: .ecosystem/ANYsolver
 
       - name: Check out ANYbuckling

@@ -323,7 +323,7 @@ def test_dependency_and_gui_wiring_is_declared_in_release_surfaces():
         "7edbb8b624d3f7d4548d2ec11b2d00c55f1265d2": "ANYgeometry",
         "27e428188a891705288fef82bab0b166e330aff2": "ANYmesh",
         "b48ba51c7b79e6d64b3f99c1fb131b9b602e7e1d": "ANYfileIO",
-        "14cdc979ac158bde20d7ecc5f940887c8684e77c": "ANYsolver",
+        "67381475e5c6ed1583d92d8fa7f0fb5d64b43c6f": "ANYsolver",
         "a871d5a3c466666b79f3ce3a015a2cfd7534376b": "ANYbuckling",
         "2caa92325885938c594f27145ed16069d807e364": "ANYtk3D",
     }
