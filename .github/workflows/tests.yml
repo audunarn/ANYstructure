@@ -43,7 +43,7 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANYgeometry
-          ref: dd954f088a4cb95e267280cc4777b09e16232bd9
+          ref: 7edbb8b624d3f7d4548d2ec11b2d00c55f1265d2
           path: .ecosystem/ANYgeometry
 
       - name: Check out ANYmesher
@@ -64,8 +64,8 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANYsolver
-          # Released ANYsolver 0.4.1 source identity.
-          ref: 5017827b0e88b4b52d7fee0fad6a1f405e2d33cf
+          # Frozen G6 explicit-opt-in candidate source identity.
+          ref: 14cdc979ac158bde20d7ecc5f940887c8684e77c
           path: .ecosystem/ANYsolver
 
       - name: Check out ANYbuckling
@@ -157,7 +157,7 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANYgeometry
-          ref: dd954f088a4cb95e267280cc4777b09e16232bd9
+          ref: 7edbb8b624d3f7d4548d2ec11b2d00c55f1265d2
           path: .ecosystem/ANYgeometry
 
       - name: Check out ANYmesher
@@ -178,8 +178,8 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANYsolver
-          # Released ANYsolver 0.4.1 source identity.
-          ref: 5017827b0e88b4b52d7fee0fad6a1f405e2d33cf
+          # Frozen G6 explicit-opt-in candidate source identity.
+          ref: 14cdc979ac158bde20d7ecc5f940887c8684e77c
           path: .ecosystem/ANYsolver
 
       - name: Check out ANYbuckling
