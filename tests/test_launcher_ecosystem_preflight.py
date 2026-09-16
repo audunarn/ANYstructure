@@ -584,12 +584,12 @@ def test_production_publish_uses_verified_prebuilt_release_assets() -> None:
     assert 'gh release download "$RELEASE_TAG"' in production
     assert "--pattern" not in production
     assert "tools/verify_release_authority.py" in production
-    assert "docs/release/anystructure-6.4.0-ledger.json" in production
+    assert "docs/release/anystructure-6.4.1-ledger.json" in production
     assert "--protected-ref refs/remotes/origin/master" in production
-    assert "--expected-terminal ACCEPTED_ANYSTRUCTURE_6_4_0_RELEASE" in production
-    assert "ANYstructure-6.4.0-SHA256SUMS.txt" in production
-    assert "--artifact anystructure-6.4.0-py3-none-any.whl" in production
-    assert "--artifact anystructure-6.4.0.tar.gz" in production
+    assert "--expected-terminal ACCEPTED_ANYSTRUCTURE_6_4_1_RELEASE" in production
+    assert "ANYstructure-6.4.1-SHA256SUMS.txt" in production
+    assert "--artifact anystructure-6.4.1-py3-none-any.whl" in production
+    assert "--artifact anystructure-6.4.1.tar.gz" in production
     assert (
         "pypa/gh-action-pypi-publish@"
         "dc37677b2e1c63e2034f94d8a5b11f265b73ba33"
