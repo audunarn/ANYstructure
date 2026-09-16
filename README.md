@@ -33,20 +33,21 @@ Documentation: https://anystructure.readthedocs.io/en/latest/
 
 Tutorials: https://www.youtube.com/@ANYopenSoft
 
-## Current release: 6.4.0
+## Current release: 6.4.1
 
-Version 6.4.0 keeps the established structural calculation and optimization
+Version 6.4.1 keeps the established structural calculation and optimization
 workflow at the front of the application while adding the integrated finite-
-element workflow described below. The coordinated release uses ANYfileio 0.3,
-ANYmaterial 0.2, and ANYmesher 0.4 without artificial package downgrades.
+element workflow described below. The coordinated release uses ANYfileio 0.3.2,
+ANYgeometry 0.4.3, ANYmaterial 0.2, ANYmesher 0.4 through 0.5, and ANYsolver
+0.4.6 without artificial package downgrades.
 
 Project-owned source code is distributed under the Mozilla Public License 2.0
-starting with this release. Earlier releases retain the license terms that
+starting with version 6.4.0. Earlier releases retain the license terms that
 accompanied them.
 
 ## Finite-element integration
 
-The optional FE workflow requires `ANYsolver>=0.4.1,<0.5`. Axial force,
+The optional FE workflow requires `ANYsolver>=0.4.6,<0.5`. Axial force,
 bending moment, shear force, torsional moment, pressure, and supported
 collision controls are mapped directly to the external solver runtime.
 Current-area follower pressure is available for nonlinear static and
@@ -113,7 +114,7 @@ dependency order:
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install --upgrade --no-deps -e "C:\Github\ANY3dView[gpu]" -e "C:\Github\ANYmaterial" -e "C:\Github\ANYgeometry" -e "C:\Github\ANYmesh" -e "C:\Github\ANYfileIO[semantics]" -e "C:\Github\ANYsolver" -e "C:\Github\ANYbuckling" -e "C:\Github\ANYtk3D" -e "C:\Github\ANYstructure"
+python -m pip install --upgrade --no-deps -e "C:\Github\ANY3dView[gpu]" -e "C:\Github\ANYmaterial" -e "C:\Github\ANYgeometry" -e "C:\Github\ANYmesh" -e "C:\Github\ANYfileIO" -e "C:\Github\ANYsolver" -e "C:\Github\ANYbuckling" -e "C:\Github\ANYtk3D" -e "C:\Github\ANYstructure"
 python -m pip install -r requirements-dev.txt
 python -m pytest
 ```
@@ -152,11 +153,11 @@ The coordinated compatibility ranges are:
 
 - `ANY3dView>=0.5.5,<0.6` (`ANYstructure[gpu]` adds ModernGL)
 - `ANYbuckling>=0.1.1,<0.2`
-- `ANYfileio[semantics]>=0.3.1,<0.4`
-- `ANYgeometry>=0.4.2,<0.5`
+- `ANYfileio>=0.3.2,<0.4`
+- `ANYgeometry>=0.4.3,<0.5`
 - `ANYmaterial>=0.2.0,<0.3`
-- `ANYmesher>=0.4.0,<0.5`
-- `ANYsolver>=0.4.1,<0.5`
+- `ANYmesher>=0.4.0,<0.6`
+- `ANYsolver>=0.4.6,<0.5`
 - `ANYtk3D>=0.5.5,<0.6`
 
 To select a particular checkout, set the corresponding

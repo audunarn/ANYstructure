@@ -22,11 +22,11 @@ def readme():
 core_requires = [
     'ANY3dView>=0.5.5,<0.6',
     'ANYbuckling>=0.1.1,<0.2',
-    'ANYfileio[semantics]>=0.3.1,<0.4',
-    'ANYgeometry>=0.4.2,<0.5',
+    'ANYfileio>=0.3.2,<0.4',
+    'ANYgeometry>=0.4.3,<0.5',
     'ANYmaterial>=0.2.0,<0.3',
-    'ANYmesher>=0.4.0,<0.5',
-    'ANYsolver>=0.4.1,<0.5',
+    'ANYmesher>=0.4.0,<0.6',
+    'ANYsolver>=0.4.6,<0.5',
     'ANYtk3D>=0.5.5,<0.6',
     'matplotlib',
     'meshio',
@@ -45,7 +45,7 @@ setup(
     name='ANYstructure',  # Required
     url = 'https://github.com/audunarn/ANYstructure',
     entry_points={"console_scripts": ['ANYstructure = anystruct.__main__:main']},
-    version='6.4.0',  # Required
+    version='6.4.1',  # Required
     license='MPL-2.0',
     license_files=['LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md', 'docs/LICENSE.md'],
     python_requires='>=3.13',

@@ -278,24 +278,24 @@ def test_dependency_and_gui_wiring_is_declared_in_release_surfaces():
         "ANY3dView>=0.5.5,<0.6",
         "ANYtk3D>=0.5.5,<0.6",
         "ANYbuckling>=0.1.1,<0.2",
-        "ANYfileio[semantics]>=0.3.1,<0.4",
-        "ANYgeometry>=0.4.2,<0.5",
+        "ANYfileio>=0.3.2,<0.4",
+        "ANYgeometry>=0.4.3,<0.5",
         "ANYmaterial>=0.2.0,<0.3",
-        "ANYmesher>=0.4.0,<0.5",
-        "ANYsolver>=0.4.1,<0.5",
+        "ANYmesher>=0.4.0,<0.6",
+        "ANYsolver>=0.4.6,<0.5",
     }
     for requirement in exact_ecosystem_requirements:
         assert requirement in core_requirements.splitlines()
         assert requirement in requirements.splitlines()
         assert f"'{requirement}'" in setup_source
     pyproject = (REPOSITORY_ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    assert 'anymesher = ">=0.4.0,<0.5"' in pyproject
-    assert 'anysolver = ">=0.4.1,<0.5"' in pyproject
-    assert "ANYsolver>=0.4.1,<0.5" in documentation
+    assert 'anymesher = ">=0.4.0,<0.6"' in pyproject
+    assert 'anysolver = ">=0.4.6,<0.5"' in pyproject
+    assert "ANYsolver>=0.4.6,<0.5" in documentation
     assert "ANYsolver>=0.3" not in documentation
-    assert "ANYmesher>=0.4.0,<0.5" in documentation
+    assert "ANYmesher>=0.4.0,<0.6" in documentation
     assert "ANYmesher>=0.2.5" not in documentation
-    assert "ANYsolver>=0.4.1,<0.5'" in setup_source
+    assert "ANYsolver>=0.4.6,<0.5'" in setup_source
     assert "ANY3dView>=0.5.5,<0.6'" in setup_source
     assert "ANY3dView[gpu]>=0.5.5,<0.6'" in setup_source
     assert "ANYbuckling>=0.1.1,<0.2'" in setup_source
@@ -310,7 +310,7 @@ def test_dependency_and_gui_wiring_is_declared_in_release_surfaces():
     assert "repository: audunarn/ANYmesh" in workflow
     assert "repository: audunarn/ANYfileIO" in workflow
     assert "path: .ecosystem/ANYfileIO" in workflow
-    assert ".ecosystem/ANYfileIO[semantics]" in workflow
+    assert ".ecosystem/ANYfileIO[semantics]" not in workflow
     assert "repository: audunarn/ANYio" not in workflow
     assert ".ecosystem/ANYio" not in workflow
     assert "import any3dview, anybuckling, anyfileio" in workflow
@@ -320,10 +320,10 @@ def test_dependency_and_gui_wiring_is_declared_in_release_surfaces():
     final_graph_refs = {
         "d8a233ef4c5e38d25dbba0eb20e6cfa8d44ec5a2": "ANYmaterial",
         "7d36c97dd0dbec8884f8894a4258ece83ad61271": "ANY3dView",
-        "7edbb8b624d3f7d4548d2ec11b2d00c55f1265d2": "ANYgeometry",
-        "27e428188a891705288fef82bab0b166e330aff2": "ANYmesh",
-        "b48ba51c7b79e6d64b3f99c1fb131b9b602e7e1d": "ANYfileIO",
-        "67381475e5c6ed1583d92d8fa7f0fb5d64b43c6f": "ANYsolver",
+        "91846898b03fa02b029abde82508eddb981efdc0": "ANYgeometry",
+        "2ccef378c3efb4ba3a9957b9ab896ac8fc454b9d": "ANYmesh",
+        "db73950018e1c87dab0ca618c25c965030ba08ce": "ANYfileIO",
+        "d04199ac851c0d0f61430c2bc40136582aa8d659": "ANYsolver",
         "a871d5a3c466666b79f3ce3a015a2cfd7534376b": "ANYbuckling",
         "2caa92325885938c594f27145ed16069d807e364": "ANYtk3D",
     }

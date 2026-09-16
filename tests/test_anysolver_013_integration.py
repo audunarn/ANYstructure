@@ -144,7 +144,7 @@ def test_failed_production_status_is_not_replaced_by_lightweight_result(monkeypa
 def test_anysolver_version_guard_rejects_pre_extraction_0_1_3(monkeypatch):
     monkeypatch.setattr(fem_integration._anysolver_package, "__version__", "0.1.3")
 
-    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.4\.1"):
+    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.4\.6"):
         fem_integration._solver_config_from_options(
             fem_integration.RuntimeFEMOptions(shear_force_n=321.0)
         )
@@ -153,7 +153,7 @@ def test_anysolver_version_guard_rejects_pre_extraction_0_1_3(monkeypatch):
 def test_anysolver_version_guard_rejects_published_0_1_2(monkeypatch):
     monkeypatch.setattr(fem_integration._anysolver_package, "__version__", "0.1.2")
 
-    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.4\.1"):
+    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.4\.6"):
         fem_integration._solver_config_from_options(
             fem_integration.RuntimeFEMOptions()
         )
@@ -162,28 +162,28 @@ def test_anysolver_version_guard_rejects_published_0_1_2(monkeypatch):
 def test_anysolver_version_guard_rejects_0_2_9(monkeypatch):
     monkeypatch.setattr(fem_integration._anysolver_package, "__version__", "0.2.9")
 
-    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.4\.1"):
+    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.4\.6"):
         fem_integration._require_supported_anysolver()
 
 
 def test_anysolver_version_guard_rejects_pre_activation_0_3_0(monkeypatch):
     monkeypatch.setattr(fem_integration._anysolver_package, "__version__", "0.3.0")
 
-    with pytest.raises(RuntimeError, match=r"ANYsolver>=0\.4\.1"):
+    with pytest.raises(RuntimeError, match=r"ANYsolver>=0\.4\.6"):
         fem_integration._require_supported_anysolver()
 
 
 def test_anysolver_version_guard_rejects_replay_defect_0_4_0(monkeypatch):
     monkeypatch.setattr(fem_integration._anysolver_package, "__version__", "0.4.0")
 
-    with pytest.raises(RuntimeError, match=r"ANYsolver>=0\.4\.1"):
+    with pytest.raises(RuntimeError, match=r"ANYsolver>=0\.4\.6"):
         fem_integration._require_supported_anysolver()
 
 
-def test_anysolver_version_guard_accepts_repaired_0_4_1(monkeypatch):
-    monkeypatch.setattr(fem_integration._anysolver_package, "__version__", "0.4.1")
+def test_anysolver_version_guard_accepts_compatible_0_4_6(monkeypatch):
+    monkeypatch.setattr(fem_integration._anysolver_package, "__version__", "0.4.6")
 
-    assert fem_integration._require_supported_anysolver() == "0.4.1"
+    assert fem_integration._require_supported_anysolver() == "0.4.6"
 
 
 @pytest.mark.parametrize("suffix", (".fem.json", ".fem.json.gz"))

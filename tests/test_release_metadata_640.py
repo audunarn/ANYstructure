@@ -12,13 +12,13 @@ def test_release_version_and_license_metadata_agree() -> None:
     setup = (ROOT / "setup.py").read_text(encoding="utf-8")
     root_package = (ROOT / "__init__.py").read_text(encoding="utf-8")
 
-    assert "version='6.4.0'" in setup
+    assert "version='6.4.1'" in setup
     assert "license='MPL-2.0'" in setup
     assert "license_files=['LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md', 'docs/LICENSE.md']" in setup
     assert "Mozilla Public License 2.0 (MPL 2.0)" in setup
-    assert "__version__ = '6.4.0'" in root_package
+    assert "__version__ = '6.4.1'" in root_package
     assert "__license__ = 'MPL-2.0'" in root_package
-    assert anystruct.__version__ == "6.4.0"
+    assert anystruct.__version__ == "6.4.1"
     assert anystruct.__license__ == "MPL-2.0"
     assert (ROOT / "LICENSE").read_text(encoding="utf-8").startswith(
         "Mozilla Public License Version 2.0\n"

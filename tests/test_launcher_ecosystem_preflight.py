@@ -21,11 +21,11 @@ def _compatible_versions() -> dict[str, str]:
     return {
         "ANY3dView": "0.5.5",
         "ANYbuckling": "0.1.1",
-        "ANYfileio": "0.3.1",
-        "ANYgeometry": "0.4.2",
+        "ANYfileio": "0.3.2",
+        "ANYgeometry": "0.4.3",
         "ANYmaterial": "0.2.0",
-        "ANYmesher": "0.4.0",
-        "ANYsolver": "0.4.1",
+        "ANYmesher": "0.5.0",
+        "ANYsolver": "0.4.6",
         "ANYtk3D": "0.5.5",
     }
 
@@ -82,9 +82,9 @@ def _write_anymesher_checkout(root: Path, version: str) -> Path:
     ("environment_constant", "project", "package_name", "minimum", "maximum"),
     (
         ("ANYMATERIAL_SOURCE_ROOT_ENV", "ANYmaterial", "anymaterial", "0.2.0", "0.3.0"),
-        ("ANYGEOMETRY_SOURCE_ROOT_ENV", "ANYgeometry", "anygeometry", "0.4.2", "0.5.0"),
-        ("ANYSOLVER_SOURCE_ROOT_ENV", "ANYsolver", "anysolver", "0.4.1", "0.5.0"),
-        ("ANYFILEIO_SOURCE_ROOT_ENV", "ANYfileio", "anyfileio", "0.3.1", "0.4.0"),
+        ("ANYGEOMETRY_SOURCE_ROOT_ENV", "ANYgeometry", "anygeometry", "0.4.3", "0.5.0"),
+        ("ANYSOLVER_SOURCE_ROOT_ENV", "ANYsolver", "anysolver", "0.4.6", "0.5.0"),
+        ("ANYFILEIO_SOURCE_ROOT_ENV", "ANYfileio", "anyfileio", "0.3.2", "0.4.0"),
         ("ANYBUCKLING_SOURCE_ROOT_ENV", "ANYbuckling", "anybuckling", "0.1.1", "0.2.0"),
     ),
 )
@@ -153,16 +153,16 @@ def test_incompatible_major_release_graph_is_rejected_by_declared_caps():
     assert namespace["ecosystem_compatibility_problems"](versions.__getitem__) == (
         "ANY3dView>=0.5.5,<0.6: installed metadata reports 1.0.0",
         "ANYbuckling>=0.1.1,<0.2: installed metadata reports 1.0.0",
-        "ANYfileio[semantics]>=0.3.1,<0.4: installed metadata reports 1.0.0",
-        "ANYgeometry>=0.4.2,<0.5: installed metadata reports 1.0.0",
+        "ANYfileio>=0.3.2,<0.4: installed metadata reports 1.0.0",
+        "ANYgeometry>=0.4.3,<0.5: installed metadata reports 1.0.0",
         "ANYmaterial>=0.2.0,<0.3: installed metadata reports 1.0.0",
-        "ANYmesher>=0.4.0,<0.5: installed metadata reports 1.0.0",
-        "ANYsolver>=0.4.1,<0.5: installed metadata reports 1.0.0",
+        "ANYmesher>=0.4.0,<0.6: installed metadata reports 1.0.0",
+        "ANYsolver>=0.4.6,<0.5: installed metadata reports 1.0.0",
         "ANYtk3D>=0.5.5,<0.6: installed metadata reports 1.0.0",
     )
 
 
-def test_missing_semantics_metadata_warns_without_blocking_valid_sources(capsys):
+def test_missing_fileio_metadata_warns_without_blocking_valid_sources(capsys):
     namespace = _launcher_namespace()
     versions = _compatible_versions()
     find_spec = _sibling_specs(namespace)
@@ -175,7 +175,7 @@ def test_missing_semantics_metadata_warns_without_blocking_valid_sources(capsys)
     namespace["require_compatible_ecosystem"](read_version, find_spec)
 
     message = capsys.readouterr().err
-    assert "ANYfileio[semantics]>=0.3.1,<0.4: distribution metadata is missing" in message
+    assert "ANYfileio>=0.3.2,<0.4: distribution metadata is missing" in message
     assert "validated sibling source checkouts" in message
     assert "pip install --upgrade" in message
     assert "ANYstructure" in message
@@ -237,7 +237,8 @@ def test_repair_command_has_one_dependency_ordered_editable_graph():
     mesher_project = str(namespace["_ANYMESHER_ROOT"])
     assert mesher_project in projects
     assert mesher_project == str(namespace["_ANYMESHER_ROOT"])
-    assert str(namespace["_ANYFILEIO_ROOT"]) + "[semantics]" in projects
+    assert str(namespace["_ANYFILEIO_ROOT"]) in projects
+    assert str(namespace["_ANYFILEIO_ROOT"]) + "[semantics]" not in projects
     assert all("ANYio" not in project for project in projects)
     fileio_source = next(
         source
@@ -277,7 +278,7 @@ def test_anyfileio_uses_only_the_canonical_repository_and_source_path():
 
     assert 'repository: audunarn/ANYfileIO' in workflow
     assert 'path: .ecosystem/ANYfileIO' in workflow
-    assert '.ecosystem/ANYfileIO[semantics]' in workflow
+    assert '.ecosystem/ANYfileIO[semantics]' not in workflow
     assert 'repository: audunarn/ANYio' not in workflow
     assert '.ecosystem/ANYio' not in workflow
     assert '_ANYFILEIO_ROOT / "src"' in launcher
@@ -292,10 +293,10 @@ def test_ci_binds_exact_release_graph_revisions_and_fails_closed_for_solver():
     expected_refs = {
         "d8a233ef4c5e38d25dbba0eb20e6cfa8d44ec5a2",
         "7d36c97dd0dbec8884f8894a4258ece83ad61271",
-        "7edbb8b624d3f7d4548d2ec11b2d00c55f1265d2",
-        "27e428188a891705288fef82bab0b166e330aff2",
-        "b48ba51c7b79e6d64b3f99c1fb131b9b602e7e1d",
-        "67381475e5c6ed1583d92d8fa7f0fb5d64b43c6f",
+        "91846898b03fa02b029abde82508eddb981efdc0",
+        "2ccef378c3efb4ba3a9957b9ab896ac8fc454b9d",
+        "db73950018e1c87dab0ca618c25c965030ba08ce",
+        "d04199ac851c0d0f61430c2bc40136582aa8d659",
         "a871d5a3c466666b79f3ce3a015a2cfd7534376b",
         "2caa92325885938c594f27145ed16069d807e364",
     }
@@ -336,7 +337,7 @@ def test_stale_solver_metadata_is_rejected_before_gui_import():
     problems = namespace["ecosystem_compatibility_problems"](versions.__getitem__)
 
     assert problems == (
-        "ANYsolver>=0.4.1,<0.5: installed metadata reports 0.2.9",
+        "ANYsolver>=0.4.6,<0.5: installed metadata reports 0.2.9",
     )
 
 
@@ -349,17 +350,17 @@ def test_stale_solver_metadata_does_not_block_qualified_source(capsys):
         versions.__getitem__, _sibling_specs(namespace)
     ) is None
     warning = capsys.readouterr().err
-    assert "ANYsolver>=0.4.1,<0.5: installed metadata reports 0.2.9" in warning
+    assert "ANYsolver>=0.4.6,<0.5: installed metadata reports 0.2.9" in warning
     assert "The application can continue" in warning
 
 
 def test_solver_prerelease_does_not_satisfy_final_release_floor():
     namespace = _launcher_namespace()
     versions = _compatible_versions()
-    versions["ANYsolver"] = "0.4.1rc1"
+    versions["ANYsolver"] = "0.4.6rc1"
 
     assert namespace["ecosystem_compatibility_problems"](versions.__getitem__) == (
-        "ANYsolver>=0.4.1,<0.5: installed metadata reports 0.4.1rc1",
+        "ANYsolver>=0.4.6,<0.5: installed metadata reports 0.4.6rc1",
     )
 
 
@@ -371,7 +372,7 @@ def test_stale_mesher_metadata_is_rejected_before_gui_import():
     problems = namespace["ecosystem_compatibility_problems"](versions.__getitem__)
 
     assert problems == (
-        "ANYmesher>=0.4.0,<0.5: installed metadata reports 0.2.2",
+        "ANYmesher>=0.4.0,<0.6: installed metadata reports 0.2.2",
     )
 
 
@@ -540,9 +541,9 @@ def test_next_unqualified_anymesher_override_is_rejected(tmp_path):
     namespace = _launcher_namespace()
     shared = _write_anymesher_checkout(tmp_path / "shared", "0.3.2")
     safe = _write_anymesher_checkout(tmp_path / "safe", "0.3.2")
-    override = _write_anymesher_checkout(tmp_path / "override", "0.5.0")
+    override = _write_anymesher_checkout(tmp_path / "override", "0.6.0")
 
-    with pytest.raises(RuntimeError, match="must remain below 0.5.0"):
+    with pytest.raises(RuntimeError, match="must remain below 0.6.0"):
         namespace["select_anymesher_source_root"](
             {namespace["ANYMESHER_SOURCE_ROOT_ENV"]: str(override)},
             shared_root=shared,

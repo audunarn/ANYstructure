@@ -28,14 +28,14 @@ The directly used ANYopenSoft packages currently declare these licenses:
 
 | Package | ANYstructure range | Upstream license |
 | --- | --- | --- |
-| ANY3dView | `>=0.5.4,<0.6` | MPL-2.0 |
+| ANY3dView | `>=0.5.5,<0.6` | MPL-2.0 |
 | ANYbuckling | `>=0.1.1,<0.2` | GPL-3.0-or-later |
-| ANYfileio | `>=0.2.1,<0.4` | MPL-2.0 for the current 0.3 line; earlier releases retain their accompanying terms |
-| ANYgeometry | `>=0.4.1,<0.5` | MPL-2.0 |
-| ANYmaterial | `>=0.1.1,<0.3` | MPL-2.0 for the current 0.2 line; earlier releases retain their accompanying terms |
-| ANYmesher | `>=0.3.1,<0.5` | Refer to the installed release; the 0.4 alpha line declares MPL-2.0 |
-| ANYsolver | `>=0.4.0,<0.5` | MPL-2.0 |
-| ANYtk3D | `>=0.5.3,<0.6` | MPL-2.0 |
+| ANYfileio | `>=0.3.2,<0.4` | MPL-2.0 |
+| ANYgeometry | `>=0.4.3,<0.5` | MPL-2.0 |
+| ANYmaterial | `>=0.2.0,<0.3` | MPL-2.0 |
+| ANYmesher | `>=0.4.0,<0.6` | MPL-2.0 |
+| ANYsolver | `>=0.4.6,<0.5` | MPL-2.0 |
+| ANYtk3D | `>=0.5.5,<0.6` | MPL-2.0 |
 
 The bundled machine-learning model files and engineering images are not
 third-party Python dependencies and are not covered by the documentation

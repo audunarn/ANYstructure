@@ -43,29 +43,29 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANYgeometry
-          ref: 7edbb8b624d3f7d4548d2ec11b2d00c55f1265d2
+          ref: 91846898b03fa02b029abde82508eddb981efdc0
           path: .ecosystem/ANYgeometry
 
       - name: Check out ANYmesher
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANYmesh
-          ref: 27e428188a891705288fef82bab0b166e330aff2
+          ref: 2ccef378c3efb4ba3a9957b9ab896ac8fc454b9d
           path: .ecosystem/ANYmesh
 
       - name: Check out ANYfileio
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANYfileIO
-          ref: b48ba51c7b79e6d64b3f99c1fb131b9b602e7e1d
+          ref: db73950018e1c87dab0ca618c25c965030ba08ce
           path: .ecosystem/ANYfileIO
 
       - name: Check out ANYsolver
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANYsolver
-          # Frozen G7 B3-GE production opt-in implementation.
-          ref: 67381475e5c6ed1583d92d8fa7f0fb5d64b43c6f
+          # Production-published ANYmesher 0.5-compatible solver.
+          ref: d04199ac851c0d0f61430c2bc40136582aa8d659
           path: .ecosystem/ANYsolver
 
       - name: Check out ANYbuckling
@@ -91,7 +91,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install --no-deps -e ".ecosystem/ANY3dView[gpu]" -e .ecosystem/ANYmaterial -e .ecosystem/ANYgeometry -e .ecosystem/ANYmesh -e ".ecosystem/ANYfileIO[semantics]" -e .ecosystem/ANYsolver -e .ecosystem/ANYbuckling -e .ecosystem/ANYtk3D
+          python -m pip install --no-deps -e ".ecosystem/ANY3dView[gpu]" -e .ecosystem/ANYmaterial -e .ecosystem/ANYgeometry -e .ecosystem/ANYmesh -e .ecosystem/ANYfileIO -e .ecosystem/ANYsolver -e .ecosystem/ANYbuckling -e .ecosystem/ANYtk3D
           python -m pip install -r requirements-dev.txt
           python -m pip install -e .
 
@@ -100,7 +100,7 @@ jobs:
           python -c "import anygeometry, anystruct, anysolver;
           from importlib.metadata import version;
           v = tuple(map(int, version('ANYsolver').split('.')[:3]));
-          assert v >= (0, 4, 1);
+          assert v >= (0, 4, 6);
           assert anysolver.__version__ == version('ANYsolver');
           print('anystruct import OK with ANYsolver', anysolver.__version__)"
 
@@ -157,29 +157,29 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANYgeometry
-          ref: 7edbb8b624d3f7d4548d2ec11b2d00c55f1265d2
+          ref: 91846898b03fa02b029abde82508eddb981efdc0
           path: .ecosystem/ANYgeometry
 
       - name: Check out ANYmesher
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANYmesh
-          ref: 27e428188a891705288fef82bab0b166e330aff2
+          ref: 2ccef378c3efb4ba3a9957b9ab896ac8fc454b9d
           path: .ecosystem/ANYmesh
 
       - name: Check out ANYfileio
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANYfileIO
-          ref: b48ba51c7b79e6d64b3f99c1fb131b9b602e7e1d
+          ref: db73950018e1c87dab0ca618c25c965030ba08ce
           path: .ecosystem/ANYfileIO
 
       - name: Check out ANYsolver
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANYsolver
-          # Frozen G7 B3-GE production opt-in implementation.
-          ref: 67381475e5c6ed1583d92d8fa7f0fb5d64b43c6f
+          # Production-published ANYmesher 0.5-compatible solver.
+          ref: d04199ac851c0d0f61430c2bc40136582aa8d659
           path: .ecosystem/ANYsolver
 
       - name: Check out ANYbuckling
@@ -205,7 +205,7 @@ jobs:
       - name: Install build dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install --no-deps -e ".ecosystem/ANY3dView[gpu]" -e .ecosystem/ANYmaterial -e .ecosystem/ANYgeometry -e .ecosystem/ANYmesh -e ".ecosystem/ANYfileIO[semantics]" -e .ecosystem/ANYsolver -e .ecosystem/ANYbuckling -e .ecosystem/ANYtk3D
+          python -m pip install --no-deps -e ".ecosystem/ANY3dView[gpu]" -e .ecosystem/ANYmaterial -e .ecosystem/ANYgeometry -e .ecosystem/ANYmesh -e .ecosystem/ANYfileIO -e .ecosystem/ANYsolver -e .ecosystem/ANYbuckling -e .ecosystem/ANYtk3D
           python -m pip install -r requirements.txt
           python -m pip install build twine
 
@@ -227,7 +227,7 @@ jobs:
             "$GITHUB_WORKSPACE/.ecosystem/ANYgeometry" \
             "$GITHUB_WORKSPACE/.ecosystem/ANYmaterial" \
             "$GITHUB_WORKSPACE/.ecosystem/ANYmesh" \
-            "$GITHUB_WORKSPACE/.ecosystem/ANYfileIO[semantics]" \
+            "$GITHUB_WORKSPACE/.ecosystem/ANYfileIO" \
             "$GITHUB_WORKSPACE/.ecosystem/ANYsolver" \
             "$GITHUB_WORKSPACE/.ecosystem/ANYbuckling" \
             "$GITHUB_WORKSPACE/.ecosystem/ANYtk3D"
