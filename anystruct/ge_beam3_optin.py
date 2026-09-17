@@ -43,12 +43,57 @@ def runtime_status(definition: GeBeam3RuntimeDefinition) -> dict[str, Any]:
 
 
 B3_GE_SCHEMA = "anystructure.b3-ge-native-opt-in-v2"
+B3_GE_SELECTION_SCHEMA = "anystructure.b3-ge-selection-v1"
+LEGACY_B3_SELECTOR = "b3"
 B3_GE_POLICY = {
     "selector": "b3-ge",
     "native_profile_id": "GE_BEAM3_NATIVE_OWNED_WORKFLOWS_V1",
     "explicit_opt_in": True,
     "legacy_b3_default": True,
 }
+
+
+@dataclass(frozen=True)
+class BeamRuntimeSelection:
+    """Persisted beam-runtime choice with legacy B3 as the closed default.
+
+    ``b3-ge`` is admitted only through the dedicated, exact selector field.
+    Historical project options that do not contain that field therefore keep
+    their legacy quadratic B3 behaviour.
+    """
+
+    selector: str = LEGACY_B3_SELECTOR
+
+    def __post_init__(self) -> None:
+        if type(self.selector) is not str or self.selector not in {
+            LEGACY_B3_SELECTOR,
+            B3_GE_POLICY["selector"],
+        }:
+            raise ValueError("beam runtime selector must be 'b3' or exact 'b3-ge'")
+
+    @property
+    def explicit_b3_ge(self) -> bool:
+        return self.selector == B3_GE_POLICY["selector"]
+
+    def to_dict(self) -> dict[str, str]:
+        return {
+            "schema": B3_GE_SELECTION_SCHEMA,
+            "beam_formulation": self.selector,
+        }
+
+    @classmethod
+    def from_project_options(cls, data: Mapping[str, Any] | None) -> "BeamRuntimeSelection":
+        """Load a project choice without reinterpreting historical fields."""
+
+        if data is None:
+            return cls()
+        if not isinstance(data, Mapping):
+            raise TypeError("beam runtime project options must be a mapping")
+        if "beam_formulation" not in data:
+            return cls()
+        if data.get("schema") != B3_GE_SELECTION_SCHEMA:
+            raise ValueError("explicit beam selection requires its versioned schema")
+        return cls(data["beam_formulation"])
 
 
 @dataclass(frozen=True)
@@ -132,7 +177,47 @@ def b3_ge_runtime_status(definition: B3GERuntimeDefinition) -> dict[str, Any]:
     }
 
 
+def launch_beam_runtime(
+    selection: BeamRuntimeSelection | Mapping[str, Any] | None = None,
+    *,
+    element_id: int,
+    node_ids: Sequence[int],
+    material_name: str = "",
+    b3_ge_definition: B3GERuntimeDefinition | None = None,
+    boundaries: Sequence[Any] = (),
+    retained_refinement: bool = False,
+) -> Any:
+    """Launch the selected real solver path without aliases or fallback.
+
+    Omitted and migrated historical selections construct the established
+    quadratic B3 element.  The native B3-GE owner is reachable only when the
+    exact versioned ``b3-ge`` selection and a complete native definition are
+    both supplied.
+    """
+
+    resolved = (
+        selection
+        if type(selection) is BeamRuntimeSelection
+        else BeamRuntimeSelection.from_project_options(selection)
+    )
+    if not resolved.explicit_b3_ge:
+        from anysolver.elements import create_element
+
+        return create_element(
+            "quadratic_beam",
+            int(element_id),
+            [int(node_id) for node_id in node_ids],
+            str(material_name),
+        )
+    if type(b3_ge_definition) is not B3GERuntimeDefinition:
+        raise ValueError("explicit b3-ge selection requires a complete native definition")
+    return b3_ge_definition.create_analysis(
+        tuple(boundaries), retained_refinement=bool(retained_refinement)
+    )
+
+
 __all__ = [
     "GeBeam3RuntimeDefinition", "runtime_status", "B3GERuntimeDefinition",
-    "b3_ge_runtime_status", "B3_GE_SCHEMA",
+    "b3_ge_runtime_status", "B3_GE_SCHEMA", "B3_GE_SELECTION_SCHEMA",
+    "LEGACY_B3_SELECTOR", "BeamRuntimeSelection", "launch_beam_runtime",
 ]

@@ -31,6 +31,7 @@ for package in (
 # These imports are intentionally discovered at runtime by their owning
 # packages and therefore need explicit frozen-module entries.
 hiddenimports += [
+    "anystruct.ge_beam3_optin",
     "anymaterial",
     "anymesher",
     "anymesher._native",

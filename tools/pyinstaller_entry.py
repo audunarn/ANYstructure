@@ -41,6 +41,7 @@ def _self_test() -> int:
     for module_name in (
         "anystruct.main_application",
         "anystruct.fem_integration",
+        "anystruct.ge_beam3_optin",
         "any3dview.gpu",
         "anymaterial.gui",
         "anymesher.gui",

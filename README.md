@@ -64,6 +64,12 @@ ANYsolver 0.4.1 repairs qualified-Q4 final-state replay after plastic
 increments. ANYstructure preserves the qualified Q4 formulation throughout
 material-nonlinear runs; explicit legacy selection remains available to users.
 
+ANYsolver's native B3-GE workflow is exposed through ANYstructure's versioned
+beam-runtime API with the exact `b3-ge` selector. It is an explicit opt-in:
+omitted selections and projects saved before the selector existed continue to
+use the established quadratic B3 element, and an incomplete B3-GE request
+fails instead of falling back or changing the model silently.
+
 Model, mesh, and result views support live Automatic, ModernGL GPU, and Tk
 software renderer selection. The current scene and camera are retained during
 a renderer change, and a failed explicit GPU switch leaves the working viewer
