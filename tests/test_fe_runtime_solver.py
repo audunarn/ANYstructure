@@ -613,9 +613,10 @@ def test_run_runtime_fem_passes_phase_five_options_to_solver(monkeypatch):
     captured = {}
 
     def fake_run_production(geometry, config, status_callback=None, imported_fem_model=None,
-                            precomputed_generated_geometry=None):
+                            precomputed_generated_geometry=None, analysis_context=None):
         captured["geometry"] = geometry
         captured["config"] = config
+        captured["analysis_context"] = analysis_context
         return fe_solver.LightweightFEMResult(
             status="ok",
             stress_max_pa=0.0,
@@ -632,6 +633,7 @@ def test_run_runtime_fem_passes_phase_five_options_to_solver(monkeypatch):
     monkeypatch.setattr(fe_runtime_solver.fe_solver, "run_production_fem", fake_run_production)
 
     snapshot = fe_runtime_solver.active_line_snapshot(_FakeApp())
+    analysis_context = object()
     result = fe_runtime_solver.run_runtime_fem(
         snapshot,
         fe_runtime_solver.RuntimeFEMOptions(
@@ -658,11 +660,13 @@ def test_run_runtime_fem_passes_phase_five_options_to_solver(monkeypatch):
             collision_damage_criterion="mesh_scaled_gl",
             collision_penalty_scale=0.725,
         ),
+        analysis_context=analysis_context,
     )
 
     config = captured["config"]
 
     assert result.status == "ok"
+    assert captured["analysis_context"] is analysis_context
     assert config.torsional_moment_nm == pytest.approx(12_345.0)
     assert config.shear_force_n == pytest.approx(-6_789.0)
     assert config.follower_pressure is True
@@ -844,6 +848,39 @@ def test_runtime_result_print_includes_kernel_warmup_summary():
     assert " - status: completed" in text
     assert " - shell orders: S4, Q8R" in text
     assert " - threads: 4" in text
+
+
+def test_runtime_result_print_includes_performance_and_cache_diagnostics():
+    result = fe_runtime_solver.RuntimeFEMRunResult(
+        status="ok",
+        summary={
+            "line": "line",
+            "geometry": "flat",
+            "mesh_info": {},
+            "prestress_summary": {
+                "performance": {
+                    "phase_timings_seconds": {
+                        "geometry_preparation": 0.0123456,
+                        "linear_system": 0.1234567,
+                        "recovery": 0.2345678,
+                        "total": 0.456789,
+                    },
+                    "prepared_model_cache_hit": True,
+                    "backend": "scipy-superlu",
+                    "thread_policy": {"effective_threads": 1},
+                }
+            },
+            "load_resultant": {},
+        },
+    )
+
+    text = fe_runtime_solver.format_runtime_fem_result(result)
+
+    assert "Runtime performance:" in text
+    assert " - geometry preparation: 0.012346 s" in text
+    assert " - prepared model cache: hit" in text
+    assert " - backend: scipy-superlu" in text
+    assert " - numerical threads: 1" in text
 
 
 def test_runtime_result_names_actual_qualified_shell_and_beam_formulations():

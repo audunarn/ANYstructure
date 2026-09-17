@@ -85,6 +85,7 @@ def test_failed_production_status_is_not_replaced_by_lightweight_result(monkeypa
         status_callback=None,
         imported_fem_model=None,
         precomputed_generated_geometry=None,
+        analysis_context=None,
     ):
         return types.SimpleNamespace(
             outcome=anysolver.SolveOutcome.stopped(

@@ -1990,7 +1990,8 @@ def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions
                     status_callback=None, imported_fem_model=None,
                     precomputed_generated_geometry=None,
                     precomputed_geometry_is_imperfection: bool = True,
-                    generated_geometry_cache_hit: bool = False) -> RuntimeFEMRunResult:
+                    generated_geometry_cache_hit: bool = False,
+                    analysis_context=None) -> RuntimeFEMRunResult:
     """Run the external ANYsolver production runtime for an ANYstructure model."""
 
     geometry = runtime_geometry_summary(snapshot, options)
@@ -2046,12 +2047,20 @@ def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions
             geometry_projection,
             solver_config,
         )
+    solver_arguments = {
+        "status_callback": status_callback,
+        "imported_fem_model": imported_fem_model,
+        "precomputed_generated_geometry": effective_generated_geometry,
+    }
+    # Preserve compatibility with the current minimum ANYsolver release;
+    # context reuse is additive and is forwarded only when that release
+    # exposes the new owner.
+    if analysis_context is not None:
+        solver_arguments["analysis_context"] = analysis_context
     solver_result = fe_solver.run_production_fem(
         geometry_projection,
         solver_config,
-        status_callback=status_callback,
-        imported_fem_model=imported_fem_model,
-        precomputed_generated_geometry=effective_generated_geometry,
+        **solver_arguments,
     )
     diagnostics.extend(solver_result.diagnostics)
     diagnostics.extend(_warmup_diagnostics())
@@ -4051,6 +4060,50 @@ def format_runtime_fem_result(result: RuntimeFEMRunResult) -> str:
                 lines.append(" - " + key + ": " + str(value))
     prestress = summary.get("prestress_summary") or {}
     if prestress:
+        performance = prestress.get("performance") or {}
+        phase_timings = performance.get("phase_timings_seconds") or {}
+        if phase_timings:
+            lines.extend(["", "Runtime performance:"])
+            for phase_name in (
+                "geometry_preparation",
+                "model_and_load_preparation",
+                "linear_system",
+                "recovery",
+                "buckling",
+                "result_preparation_and_visualization",
+                "total",
+            ):
+                if phase_name in phase_timings:
+                    lines.append(
+                        " - "
+                        + phase_name.replace("_", " ")
+                        + ": "
+                        + str(round(_safe_float(phase_timings.get(phase_name)), 6))
+                        + " s"
+                    )
+            lines.append(
+                " - prepared model cache: "
+                + ("hit" if performance.get("prepared_model_cache_hit") else "miss")
+            )
+            lines.append(" - backend: " + str(performance.get("backend", "")))
+            thread_policy = performance.get("thread_policy") or {}
+            if thread_policy:
+                effective_threads = thread_policy.get("effective_threads")
+                if effective_threads is None:
+                    effective_threads = thread_policy.get("active_solver_threads")
+                if effective_threads is None:
+                    pools = thread_policy.get("runtime_pools") or ()
+                    effective_threads = ", ".join(
+                        str(pool.get("user_api", "numeric"))
+                        + "="
+                        + str(pool.get("num_threads", "?"))
+                        for pool in pools
+                        if isinstance(pool, dict)
+                    ) or "managed"
+                lines.append(
+                    " - numerical threads: "
+                    + str(effective_threads)
+                )
         constraint_method = str(prestress.get("constraint_method", "") or "")
         if constraint_method:
             lines.extend(["", "Linear constraint handling:"])
@@ -6301,6 +6354,22 @@ class RuntimeFEMWindow:
         self.upper_result_text = None
         self.solver_thread = None
         self.solver_queue = queue.Queue()
+        context_factory = getattr(fe_solver, "RuntimeAnalysisContext", None)
+        self._runtime_analysis_context = (
+            context_factory() if callable(context_factory) else None
+        )
+        self._runtime_analysis_context_released = False
+
+        def release_runtime_analysis_context(_event=None) -> None:
+            if _event is not None and getattr(_event, "widget", None) is not self.window:
+                return
+            if self._runtime_analysis_context_released:
+                return
+            self._runtime_analysis_context_released = True
+            if self._runtime_analysis_context is not None:
+                self._runtime_analysis_context.close()
+
+        self.window.bind("<Destroy>", release_runtime_analysis_context, add="+")
         self._active_run_options: RuntimeFEMOptions | None = None
         self._plot_refresh_after_id: str | None = None
         self._plot_trace_ids: list[tuple[tk.Variable, str]] = []
@@ -12208,9 +12277,10 @@ class RuntimeFEMWindow:
                                                        imported_fem_model=self.imported_fem_model,
                                                        precomputed_generated_geometry=precomputed,
                                                        precomputed_geometry_is_imperfection=(
-                                                           precomputed_is_imperfection
-                                                       ),
-                                                       generated_geometry_cache_hit=mesh_cache_hit), None))
+                                                            precomputed_is_imperfection
+                                                        ),
+                                                       generated_geometry_cache_hit=mesh_cache_hit,
+                                                       analysis_context=self._runtime_analysis_context), None))
             except Exception as error:
                 self.solver_queue.put((None, error))
 
