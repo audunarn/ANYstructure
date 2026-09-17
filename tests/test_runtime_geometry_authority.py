@@ -220,6 +220,7 @@ def test_runtime_solver_handoff_receives_geometry_backed_projection(
         status_callback: Any = None,
         imported_fem_model: Any = None,
         precomputed_generated_geometry: Any = None,
+        analysis_context: Any = None,
     ) -> Any:
         captured["geometry"] = geometry
         captured["generated"] = precomputed_generated_geometry
