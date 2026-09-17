@@ -57,9 +57,11 @@ through the actual ANYstructure adapter.  The complete 5-mode route returned
 
 ## Verification
 
-- 198 relevant ANYsolver modal, buckling, analysis-session, runtime and
-  qualified-shell tests passed; four authority-exception-precedence tests were
-  deselected after confirming they fail identically on the frozen baseline.
+- 213 relevant ANYsolver modal, buckling, analysis-session, runtime and
+  qualified-shell tests passed.  Protected CI exposed and this branch closes a
+  pre-existing trusted-scope exception-precedence defect: finalization still
+  runs, while its generic cleanup error can no longer replace the specific
+  operation-time capability rejection.
 - Dedicated regressions cover the unshifted modal zero-shift factor, elastic
   buckling inverse reuse, the singular-stiffness fallback, dense-reference
   eigenvalues/subspaces, visualization without stress recovery, and spectral
