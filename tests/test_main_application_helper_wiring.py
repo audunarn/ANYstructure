@@ -67,6 +67,32 @@ class _RuntimeRendererProbe:
         return True
 
 
+class _DestroyProbe:
+    def __init__(self, fail=False):
+        self.fail = fail
+        self.destroyed = 0
+
+    def destroy(self):
+        self.destroyed += 1
+        if self.fail:
+            raise RuntimeError("already closed")
+
+
+class _IdleParentProbe:
+    def __init__(self):
+        self.callbacks = []
+
+    def after_idle(self, callback):
+        self.callbacks.append(callback)
+        return len(self.callbacks)
+
+
+class _ViewerBackendProbe:
+    def __init__(self, backend_name):
+        self.backend_name = backend_name
+        self.backend_diagnostics = ()
+
+
 def test_main_application_uses_shared_geometry_menu_helpers():
     main_source = Path(__file__).resolve().parents[1] / "anystruct" / "main_application.py"
     source = main_source.read_text(encoding="utf-8")
@@ -125,6 +151,58 @@ def test_application_renderer_choice_updates_registered_runtime_viewers():
     assert app._renderer_requested == "gpu"
     assert runtime._renderer_requested == "gpu"
     assert runtime.calls == [("gpu", True)]
+
+
+def test_application_renderer_switch_refuses_reentrant_transaction():
+    app = Application.__new__(Application)
+    app._renderer_switching = True
+
+    assert not app._switch_main_renderer_backend()
+
+
+def test_application_defers_combobox_renderer_switch_until_tk_event_returns():
+    app = Application.__new__(Application)
+    app._renderer_switching = False
+    app._renderer_switch_scheduled = False
+    app._parent = _IdleParentProbe()
+    calls = []
+    app._switch_main_renderer_backend_transaction = lambda event: calls.append(event) or True
+
+    assert app._switch_main_renderer_backend(object())
+    assert len(app._parent.callbacks) == 1
+    assert app._renderer_switch_scheduled
+
+    app._parent.callbacks[0]()
+    assert calls == [None]
+    assert not app._renderer_switch_scheduled
+
+
+def test_application_retires_replaced_viewers_independently():
+    first = _DestroyProbe()
+    failed = _DestroyProbe(fail=True)
+    last = _DestroyProbe()
+
+    Application._destroy_replaced_viewers((first, failed, last))
+
+    assert first.destroyed == 1
+    assert failed.destroyed == 1
+    assert last.destroyed == 1
+
+
+def test_application_does_not_recreate_an_automatic_gpu_view_for_gpu_choice():
+    app = Application.__new__(Application)
+    app._renderer_requested = "auto"
+    app._renderer_backend_choice = _ValueProbe("GPU (ModernGL)")
+    app._renderer_backend_status = _ValueProbe("")
+    app._runtime_fem_windows = weakref.WeakSet()
+    app.viewer = _ViewerBackendProbe("gpu")
+    app._main_renderer_specs = lambda: [
+        ("viewer", object(), lambda _candidate: None, False),
+    ]
+
+    assert app._switch_main_renderer_backend()
+    assert app._renderer_requested == "gpu"
+    assert "ModernGL GPU" in app._renderer_backend_status.get()
 
 
 def test_application_renderer_choice_rolls_back_runtime_group_on_failure():

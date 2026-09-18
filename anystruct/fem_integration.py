@@ -6710,6 +6710,23 @@ class RuntimeFEMWindow:
             )
         return specs
 
+    @staticmethod
+    def _viewers_already_satisfy_renderer_request(
+        requested: str,
+        specs: list[tuple[str, Any, Any, bool]],
+        owner: Any,
+    ) -> bool:
+        """Avoid recreating an already-active GPU or software native viewer."""
+
+        if not specs:
+            return False
+        if requested == "auto":
+            return True
+        return all(
+            active_backend(getattr(owner, attribute)) == requested
+            for attribute, _parent, _populate, _needs_selection in specs
+        )
+
     def _animation_state_for_renderer_switch(self) -> dict[str, Any]:
         """Snapshot the logical animation frame before replacing a viewer."""
 
@@ -6841,6 +6858,22 @@ class RuntimeFEMWindow:
             self.renderer_backend_status.set(
                 "Renderer: " + BACKEND_NAMES[requested] + " (used by the next 3D view)"
             )
+            return True
+
+        if self._viewers_already_satisfy_renderer_request(requested, specs, self):
+            self._renderer_requested = requested
+            actual = ", ".join(sorted({
+                backend_diagnostic(getattr(self, attribute))
+                for attribute, _parent, _populate, _needs_selection in specs
+            }))
+            if self.app is not None:
+                try:
+                    self.app._renderer_requested = requested
+                    self.app._renderer_backend_choice.set(BACKEND_NAMES[requested])
+                    self.app._renderer_backend_status.set("Renderer: " + actual)
+                except Exception:
+                    pass
+            self.renderer_backend_status.set("Renderer: " + actual)
             return True
 
         self._renderer_switching = True

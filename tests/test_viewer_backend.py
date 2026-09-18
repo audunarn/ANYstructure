@@ -71,6 +71,9 @@ def _runtime_switch_probe(old_canvas, *, populate):
     )
     runtime._renderer_switching = False
     runtime._renderer_requested = "software"
+    # These replacement tests exercise a genuine software -> GPU change.  The
+    # probe class defaults to GPU for unrelated viewer-backend assertions.
+    old_canvas.backend_name = "software"
     runtime.renderer_backend_choice = _ValueProbe("GPU (ModernGL)")
     runtime.renderer_backend_status = _ValueProbe("")
     runtime.app = None

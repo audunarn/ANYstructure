@@ -51,6 +51,7 @@ try:
     from anystruct.viewer_backend import (
         BACKEND_LABELS,
         BACKEND_NAMES,
+        active_backend,
         apply_view_state,
         backend_diagnostic,
         create_3d_viewer,
@@ -89,6 +90,7 @@ except ModuleNotFoundError:
     from ANYstructure.anystruct.viewer_backend import (
         BACKEND_LABELS,
         BACKEND_NAMES,
+        active_backend,
         apply_view_state,
         backend_diagnostic,
         create_3d_viewer,
@@ -165,6 +167,8 @@ class Application():
         self._renderer_requested = "auto"
         self._renderer_backend_choice = tk.StringVar(value="Automatic")
         self._renderer_backend_status = tk.StringVar(value="Renderer: Automatic")
+        self._renderer_switching = False
+        self._renderer_switch_scheduled = False
         self._runtime_fem_windows = weakref.WeakSet()
         self._resize_after_id = None
         self._last_resize_size = (0, 0)
@@ -6134,6 +6138,26 @@ class Application():
             ))
         return specs
 
+    @staticmethod
+    def _viewers_already_satisfy_renderer_request(requested, specs, owner):
+        """Return whether a live backend already fulfils a selector request.
+
+        ``Automatic`` means retain the healthy backend that was selected at
+        creation time.  In particular, Automatic commonly already owns a GPU
+        view.  Replacing that TkGL surface merely to change its selector label
+        creates two native OpenGL child windows in one Tk transaction, with no
+        functional benefit and a driver-specific crash risk on Windows.
+        """
+
+        if not specs:
+            return False
+        if requested == "auto":
+            return True
+        return all(
+            active_backend(getattr(owner, attribute)) == requested
+            for attribute, _parent, _populate, _bind_fea in specs
+        )
+
     def _register_runtime_fem_window(self, runtime_window):
         """Register a live FEM popup for application-wide renderer changes."""
 
@@ -6197,7 +6221,57 @@ class Application():
         self._renderer_backend_choice.set(previous_label)
         return False
 
+    @staticmethod
+    def _destroy_replaced_viewers(viewers):
+        """Release retired widgets after the originating Tk callback returns.
+
+        Switching from a ``Canvas`` to TkGL changes the native child-window
+        implementation beneath the same parent.  Releasing the old Canvas
+        while ``<<ComboboxSelected>>`` is still on the Tk stack can race the
+        Map/Expose notifications for the new OpenGL child on Windows.  The
+        old widget is already unpacked when this runs, so deferring its
+        destruction has no visible effect while avoiding that native overlap.
+        """
+
+        for viewer in viewers:
+            try:
+                viewer.destroy()
+            except Exception:
+                pass
+
     def _switch_main_renderer_backend(self, _event=None):
+        """Run one renderer replacement transaction at a time.
+
+        A backend switch originates in a Tk combobox callback.  A second
+        callback while the first transaction is constructing or mapping native
+        GPU surfaces must not enter a competing replacement operation.
+        """
+
+        if getattr(self, "_renderer_switching", False):
+            return False
+        if _event is not None:
+            # Do not create or dispose a native child window while Tk is still
+            # dispatching <<ComboboxSelected>>.  In particular, a Tk Canvas ->
+            # TkGL change can otherwise process Map/Expose notifications on a
+            # nested Windows message stack.  Programmatic callers retain the
+            # synchronous transaction and return value below.
+            if getattr(self, "_renderer_switch_scheduled", False):
+                return False
+            self._renderer_switch_scheduled = True
+
+            def run_after_selection_event():
+                self._renderer_switch_scheduled = False
+                self._switch_main_renderer_backend()
+
+            self._parent.after_idle(run_after_selection_event)
+            return True
+        self._renderer_switching = True
+        try:
+            return self._switch_main_renderer_backend_transaction(_event)
+        finally:
+            self._renderer_switching = False
+
+    def _switch_main_renderer_backend_transaction(self, _event=None):
         previous = self._renderer_requested
         requested = normalize_backend(self._renderer_backend_choice.get())
         if requested == previous:
@@ -6222,6 +6296,15 @@ class Application():
             )
             return True
 
+        if self._viewers_already_satisfy_renderer_request(requested, specs, self):
+            self._renderer_requested = requested
+            actual = ', '.join(sorted({
+                backend_diagnostic(getattr(self, attribute))
+                for attribute, _parent, _populate, _bind in specs
+            }))
+            self._renderer_backend_status.set("Renderer: " + actual)
+            return True
+
         candidates = []
         try:
             for attribute, parent, populate, bind_fea in specs:
@@ -6244,9 +6327,11 @@ class Application():
                     raise
                 candidates.append((attribute, old, candidate, bind_fea))
 
+            retired = []
             for attribute, old, candidate, bind_fea in candidates:
                 old.pack_forget()
                 candidate.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+                retired.append(old)
                 setattr(self, attribute, candidate)
                 if attribute == '_fea_tk3d_canvas':
                     self._fea_tk3d_canvas = candidate
@@ -6258,7 +6343,11 @@ class Application():
                     native = event_widget(candidate)
                     native.bind('<ButtonPress-1>', self._on_fea_tk3d_mouse_press, add='+')
                     native.bind('<ButtonRelease-1>', self._on_fea_tk3d_mouse_release, add='+')
-                old.destroy()
+            # Complete the native-widget handoff after the combobox callback
+            # has unwound and Tk has delivered the replacement Map event.
+            self._parent.after_idle(
+                lambda values=tuple(retired): self._destroy_replaced_viewers(values)
+            )
             self._renderer_requested = requested
             actual = ', '.join(sorted({
                 backend_diagnostic(candidate)
