@@ -8,6 +8,7 @@ version, option-wiring, and fail-closed failures quick to isolate.
 from dataclasses import fields
 import json
 from pathlib import Path
+import queue
 import types
 
 import pytest
@@ -238,6 +239,9 @@ def test_fem_gui_uses_visible_horizontal_and_vertical_pane_handles():
     assert "sashrelief=tk.FLAT" in source
     assert "showhandle=False" in source
     assert 'panes.bind("<Motion>", highlight_divider, add="+")' in source
+    assert 'set_divider_cursor(cursor if over_divider else "")' in source
+    assert "pending_cursor_update: str | None = None" in source
+    assert 'panes.bind("<ButtonRelease-1>", highlight_divider, add="+")' in source
     assert "self.body_panes = self._visible_paned_window(outer, tk.HORIZONTAL)" in source
     assert 'self.body_panes.add(left_panel, minsize=260, width=300, stretch="always")' in source
     assert 'self.body_panes.add(mid_panel, minsize=340, width=390, stretch="always")' in source
@@ -245,6 +249,40 @@ def test_fem_gui_uses_visible_horizontal_and_vertical_pane_handles():
     assert "self.result_panes = self._visible_paned_window(right_panel, tk.VERTICAL)" in source
     assert 'self.result_panes.add(self.upper_result_frame, minsize=120, height=190, stretch="always")' in source
     assert 'self.result_panes.add(result_frame, minsize=260, height=430, stretch="always")' in source
+
+
+def test_solver_poll_accepts_anysolver_mapping_progress_events():
+    from anysolver.control import ProgressEvent
+
+    queued = queue.Queue()
+    queued.put(ProgressEvent(
+        event_type="nonlinear_static_step",
+        stage="nonlinear_static.force",
+        completed=0.25,
+        total=3.0,
+        iteration=4,
+        metadata={"load_factor": 0.25, "max_translation": 0.001},
+    ))
+    applied: list[dict[str, object]] = []
+    running: list[bool] = []
+    statuses: list[str] = []
+    window = types.SimpleNamespace(
+        solver_queue=queued,
+        solver_thread=None,
+        _active_run_options=types.SimpleNamespace(),
+        _run_status_history=[],
+        _apply_nonlinear_static_step=lambda payload: applied.append(payload),
+        _format_run_status_text=lambda _options, _history: "progress",
+        _write_status=lambda message: statuses.append(message),
+        _set_solver_running=lambda state: running.append(state),
+    )
+
+    fem_integration.RuntimeFEMWindow._poll_solver_result(window)
+
+    assert applied and applied[0]["type"] == "nonlinear_static_step"
+    assert applied[0]["load_factor"] == pytest.approx(0.25)
+    assert statuses == ["progress"]
+    assert running == [False]
 
 
 def test_fem_gui_uses_supported_runtime_analysis_api():

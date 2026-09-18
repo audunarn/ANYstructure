@@ -56,8 +56,21 @@ def main() -> None:
         raise RuntimeError("FE result text/canvas panes are not vertically resizable")
     if int(window.result_panes.cget("sashwidth")) < 6:
         raise RuntimeError("FE result pane divider is too narrow")
+    if str(window.result_panes.cget("cursor")):
+        raise RuntimeError("FE result pane resize cursor leaked outside its divider")
 
     sash_x, sash_y = window.result_panes.sash_coord(0)
+    window.result_panes.event_generate("<Motion>", x=sash_x + 1, y=sash_y + 1)
+    root.update_idletasks()
+    root.update()
+    if str(window.result_panes.cget("cursor")) != "sb_v_double_arrow":
+        raise RuntimeError("FE result divider does not show its vertical resize cursor")
+    window.result_panes.event_generate("<Motion>", x=30, y=30)
+    root.update_idletasks()
+    root.update()
+    if str(window.result_panes.cget("cursor")):
+        raise RuntimeError("FE result resize cursor did not reset after leaving its divider")
+
     pane_height = max(int(window.result_panes.winfo_height()), 1)
     target_y = min(max(int(pane_height * 0.45), 140), max(pane_height - 280, 140))
     if abs(target_y - sash_y) < 12:

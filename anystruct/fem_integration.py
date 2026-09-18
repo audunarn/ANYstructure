@@ -7,6 +7,7 @@ runtime adapter; numerical analysis lives in ``anysolver.runtime``.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field, fields as dataclass_fields
 from typing import Any, Iterable, Sequence
 import argparse
@@ -1659,6 +1660,27 @@ def _runtime_custom_edges(options: RuntimeFEMOptions) -> list[dict[str, float | 
     return custom_edges
 
 
+def _effective_imported_load_inputs(options: RuntimeFEMOptions) -> dict[str, float]:
+    """Return imported/generated scalar loads that are active for this run.
+
+    Custom replacement mode is a load-source policy, not a boundary-condition
+    policy.  Keep the original values available for persistence and auditing,
+    while presenting zero for imported values that are deliberately excluded.
+    """
+    include_imported = (
+        not bool(options.custom_load_bc_enabled)
+        or bool(options.custom_loads_add_to_imported)
+    )
+    factor = 1.0 if include_imported else 0.0
+    return {
+        "pressure_pa": factor * float(options.pressure_pa),
+        "axial_force_n": factor * float(options.axial_force_n),
+        "top_bottom_moment_nm": factor * float(options.top_bottom_moment_nm),
+        "torsional_moment_nm": factor * float(options.torsional_moment_nm),
+        "shear_force_n": factor * float(options.shear_force_n),
+    }
+
+
 def _solver_config_from_options(options: RuntimeFEMOptions):
     """Build the LightweightFEMConfig from runtime options (shared by run and preview)."""
     _require_supported_anysolver()
@@ -2023,13 +2045,13 @@ def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions
         )
     pressure_side = _normalise_pressure_side(options.pressure_direction)
     custom_load_entries = _runtime_custom_load_entries(options.custom_loads_json)
+    effective_imported_loads = _effective_imported_load_inputs(options)
     listed_pressure = sum(
         abs(_safe_float(entry.get("pressure_pa"), 0.0))
         for entry in custom_load_entries
         if str(entry.get("type", "")).lower() in {"pressure", "panel_pressure"}
     )
-    effective_pressure = float(
-        options.pressure_pa if (not options.custom_load_bc_enabled or options.custom_loads_add_to_imported) else 0.0)
+    effective_pressure = float(effective_imported_loads["pressure_pa"])
     if options.custom_load_bc_enabled:
         effective_pressure += float(listed_pressure if custom_load_entries else options.custom_pressure_pa)
     if bool(options.collision_enabled) and bool(options.collision_material_nonlinear_enabled):
@@ -2106,9 +2128,12 @@ def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions
         "include_end_lids": bool(options.include_end_lids),
         "num_buckling_modes": int(options.num_buckling_modes),
         "mesh_size_m": float(options.mesh_size_m),
-        "top_bottom_moment_nm": float(options.top_bottom_moment_nm),
-        "torsional_moment_nm": float(options.torsional_moment_nm),
-        "shear_force_n": float(options.shear_force_n),
+        "top_bottom_moment_nm": effective_imported_loads["top_bottom_moment_nm"],
+        "torsional_moment_nm": effective_imported_loads["torsional_moment_nm"],
+        "shear_force_n": effective_imported_loads["shear_force_n"],
+        "imported_top_bottom_moment_nm": float(options.top_bottom_moment_nm),
+        "imported_torsional_moment_nm": float(options.torsional_moment_nm),
+        "imported_shear_force_n": float(options.shear_force_n),
         "boundary_condition": str(options.boundary_condition),
         "boundary_constraint_json": str(options.boundary_constraint_json),
         "boundary_auto_supports": bool(options.boundary_auto_supports),
@@ -2124,7 +2149,8 @@ def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions
         "pressure_direction": pressure_side,
         "pressure_side": pressure_side,
         "follower_pressure": bool(options.follower_pressure),
-        "axial_force_n": float(options.axial_force_n),
+        "axial_force_n": effective_imported_loads["axial_force_n"],
+        "imported_axial_force_n": float(options.axial_force_n),
         "acceleration_m_s2": [float(options.acceleration_x_m_s2), float(options.acceleration_y_m_s2),
                               float(options.acceleration_z_m_s2)],
         "added_mass_kg": float(options.added_mass_kg),
@@ -3731,6 +3757,49 @@ def create_runtime_fem_geometry_preview_figure(
     return figure
 
 
+def _format_whole_boundary_constraints(raw_json: object) -> str:
+    try:
+        payload = json.loads(str(raw_json or "{}"))
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return "none"
+    if not isinstance(payload, dict):
+        return "none"
+    parts: list[str] = []
+    for edge, constraints in payload.items():
+        if not isinstance(constraints, dict) or not constraints:
+            continue
+        dofs = []
+        for dof, value in constraints.items():
+            numeric = _safe_float(value, 0.0)
+            dofs.append(str(dof) if abs(numeric) <= 1.0e-12 else f"{dof}={numeric:g}")
+        if dofs:
+            parts.append(f"{edge}=[{','.join(sorted(dofs))}]")
+    return "; ".join(parts) if parts else "none"
+
+
+def _format_whole_edge_load_components(raw_json: object) -> str:
+    try:
+        payload = json.loads(str(raw_json or "{}"))
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return "none"
+    if not isinstance(payload, dict):
+        return "none"
+    parts: list[str] = []
+    for edge, components in payload.items():
+        if not isinstance(components, dict):
+            continue
+        values = []
+        for component in ("fx", "fy", "fz", "mx", "my", "mz"):
+            value = _safe_float(components.get(component), 0.0)
+            if abs(value) <= 0.0:
+                continue
+            unit = "N/m" if component.startswith("f") else "Nm/m"
+            values.append(f"{component}={value:g} {unit}")
+        if values:
+            parts.append(f"{edge}=[{', '.join(values)}]")
+    return "; ".join(parts) if parts else "none"
+
+
 def format_runtime_fem_result(result: RuntimeFEMRunResult) -> str:
     """Format runtime FEM result text for the popup."""
 
@@ -3842,18 +3911,27 @@ def format_runtime_fem_result(result: RuntimeFEMRunResult) -> str:
         lines.append("Selected edge segments: " + str(_safe_int(summary.get("custom_edge_segment_count"), 0)))
         lines.append(
             "Selected edge load [N/m]: " + str(round(_safe_float(summary.get("custom_selected_edge_load_n_per_m")), 3)))
+        lines.append(
+            "Whole-boundary constraints: "
+            + _format_whole_boundary_constraints(summary.get("boundary_constraint_json"))
+        )
+        lines.append(
+            "Whole-edge load components: "
+            + _format_whole_edge_load_components(summary.get("edge_load_components_json"))
+        )
         if str(summary.get("geometry", "")).lower().startswith("cylinder"):
-            lines.extend(
-                [
-                    "Cylinder lower/upper support: "
+            if _format_whole_boundary_constraints(summary.get("boundary_constraint_json")) == "none":
+                lines.append(
+                    "Legacy cylinder lower/upper support: "
                     + str(summary.get("cylinder_lower_support", ""))
                     + " / "
-                    + str(summary.get("cylinder_upper_support", "")),
-                    "Cylinder lower/upper edge load [N/m]: "
-                    + str(round(_safe_float(summary.get("cylinder_lower_edge_load_n_per_m")), 3))
-                    + " / "
-                    + str(round(_safe_float(summary.get("cylinder_upper_edge_load_n_per_m")), 3)),
-                ]
+                    + str(summary.get("cylinder_upper_support", ""))
+                )
+            lines.append(
+                "Legacy cylinder lower/upper edge load [N/m]: "
+                + str(round(_safe_float(summary.get("cylinder_lower_edge_load_n_per_m")), 3))
+                + " / "
+                + str(round(_safe_float(summary.get("cylinder_upper_edge_load_n_per_m")), 3))
             )
         else:
             lines.extend(
@@ -7391,20 +7469,48 @@ class RuntimeFEMWindow:
             sashrelief=tk.FLAT,
             showhandle=False,
             opaqueresize=True,
-            cursor=cursor,
+            # A PanedWindow cursor applies to its complete client area, not
+            # only its sash.  Set it only while the pointer is over the
+            # divider so it cannot remain a resize cursor over form controls.
+            cursor="",
         )
+        pending_cursor_update: str | None = None
+
+        def set_divider_cursor(value: str) -> None:
+            """Apply after Tk's class sash binding has handled the event."""
+
+            nonlocal pending_cursor_update
+            if pending_cursor_update is not None:
+                try:
+                    panes.after_cancel(pending_cursor_update)
+                except tk.TclError:
+                    pass
+
+            def apply() -> None:
+                nonlocal pending_cursor_update
+                pending_cursor_update = None
+                try:
+                    panes.configure(cursor=value)
+                except tk.TclError:
+                    pass
+
+            pending_cursor_update = panes.after_idle(apply)
 
         def highlight_divider(event: Any) -> None:
             hit = panes.identify(event.x, event.y)
             over_divider = bool(hit and len(hit) > 1 and hit[1] in {"sash", "handle"})
-            panes.configure(background=divider_hover_color if over_divider else divider_color)
+            panes.configure(
+                background=divider_hover_color if over_divider else divider_color,
+            )
+            set_divider_cursor(cursor if over_divider else "")
 
         def restore_divider(_event: Any) -> None:
             panes.configure(background=divider_color)
+            set_divider_cursor("")
 
         panes.bind("<Motion>", highlight_divider, add="+")
         panes.bind("<Leave>", restore_divider, add="+")
-        panes.bind("<ButtonRelease-1>", restore_divider, add="+")
+        panes.bind("<ButtonRelease-1>", highlight_divider, add="+")
         return panes
 
     def _apply_material_spec(self, spec: Any) -> bool:
@@ -12285,10 +12391,15 @@ class RuntimeFEMWindow:
         self._live_graph_reset(self._live_graph_kind_for_options(options))
 
         def worker() -> None:
-            def status_cb(msg: str):
+            def status_cb(msg: Any) -> None:
                 if getattr(self, "_cancel_requested", False):
                     raise RuntimeError("Run stopped by user.")
-                self.solver_queue.put(msg)
+                if isinstance(msg, Mapping):
+                    self.solver_queue.put(dict(msg))
+                elif isinstance(msg, str):
+                    self.solver_queue.put(msg)
+                else:
+                    self.solver_queue.put(str(msg))
 
             try:
                 # A custom mode-shape imperfection mesh ("Set to mesh") is used
@@ -12358,25 +12469,31 @@ class RuntimeFEMWindow:
                 messages_processed += 1
                 continue
 
-            if isinstance(msg, dict) and msg.get("type") == "live_visualization":
-                self._apply_live_visualization(msg)
+            if isinstance(msg, Mapping) and msg.get("type") == "live_visualization":
+                self._apply_live_visualization(dict(msg))
                 messages_processed += 1
                 # Visualizations are slightly heavy, maybe break to yield back to UI
                 break
 
-            if isinstance(msg, dict) and msg.get("type") == "nonlinear_static_step":
-                self._apply_nonlinear_static_step(msg)
+            if isinstance(msg, Mapping) and msg.get("type") == "nonlinear_static_step":
+                self._apply_nonlinear_static_step(dict(msg))
                 needs_status_update = True
                 messages_processed += 1
                 continue
 
-            if isinstance(msg, dict):
+            if isinstance(msg, Mapping):
                 # Unknown structured payload: ignore rather than crash the
                 # result unpack below.
                 messages_processed += 1
                 continue
 
-            # If we get here, it must be the result tuple
+            if not isinstance(msg, tuple) or len(msg) != 2:
+                # Keep an unexpected observer payload from being mistaken for
+                # the terminal result envelope.  Progress reporting must never
+                # terminate an otherwise valid numerical solve.
+                messages_processed += 1
+                continue
+
             result, error = msg
             if needs_status_update:
                 self._write_status(self._format_run_status_text(options, self._run_status_history))

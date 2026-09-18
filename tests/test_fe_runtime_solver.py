@@ -233,6 +233,43 @@ def test_run_runtime_fem_returns_backend_status_and_visualization_payload():
 
 
 @pytest.mark.fem_integration
+def test_run_runtime_custom_replace_uses_only_whole_edge_load_and_visible_bc():
+    snapshot = fe_runtime_solver.active_line_snapshot(_FakeApp())
+    fixed = {dof: 0.0 for dof in ("ux", "uy", "uz", "rx", "ry", "rz")}
+    options = fe_runtime_solver.RuntimeFEMOptions(
+        mesh_fidelity="coarse",
+        pressure_pa=200_000.0,
+        axial_force_n=50_000_000.0,
+        top_bottom_moment_nm=50_000_000.0,
+        include_stiffeners=False,
+        include_girders=False,
+        include_end_lids=False,
+        analysis_type="linear static",
+        runtime_solver="static only",
+        custom_load_bc_enabled=True,
+        custom_loads_add_to_imported=False,
+        custom_use_nullspace_projection=False,
+        boundary_constraint_json=json.dumps({"x0": fixed}),
+        edge_load_components_json=json.dumps({"x1": {"fx": 1_000.0}}),
+    )
+
+    result = fe_runtime_solver.run_runtime_fem(snapshot, options)
+
+    assert result.status == "ok"
+    assert result.summary["pressure_pa"] == pytest.approx(0.0)
+    assert result.summary["axial_force_n"] == pytest.approx(0.0)
+    assert result.summary["top_bottom_moment_nm"] == pytest.approx(0.0)
+    assert result.summary["imported_pressure_pa"] == pytest.approx(200_000.0)
+    assert result.summary["imported_axial_force_n"] == pytest.approx(50_000_000.0)
+    assert result.summary["imported_top_bottom_moment_nm"] == pytest.approx(50_000_000.0)
+    # x1 has length 3.5 m in the fake panel; only the requested line load is active.
+    assert result.summary["load_resultant"]["force_n"] == pytest.approx((3_500.0, 0.0, 0.0))
+    text = fe_runtime_solver.format_runtime_fem_result(result)
+    assert "Whole-boundary constraints: x0=[rx,ry,rz,ux,uy,uz]" in text
+    assert "Whole-edge load components: x1=[fx=1000 N/m]" in text
+
+
+@pytest.mark.fem_integration
 @pytest.mark.slow
 def test_production_result_carries_buckling_modes_for_imperfections():
     if fe_solver._full_backend is None:
@@ -3535,6 +3572,63 @@ def test_runtime_options_pass_edge_load_component_payloads_to_solver_config():
     assert config.custom_selected_edge_load_components_json == '{"fz": -5.0, "mx": 2.0}'
 
 
+def test_custom_replace_mode_reports_only_effective_imported_loads():
+    options = fe_runtime_solver.RuntimeFEMOptions(
+        pressure_pa=200_000.0,
+        axial_force_n=50_000_000.0,
+        top_bottom_moment_nm=50_000_000.0,
+        torsional_moment_nm=25_000.0,
+        shear_force_n=15_000.0,
+        custom_load_bc_enabled=True,
+        custom_loads_add_to_imported=False,
+    )
+
+    effective = fe_runtime_solver._effective_imported_load_inputs(options)
+
+    assert effective == {
+        "pressure_pa": 0.0,
+        "axial_force_n": 0.0,
+        "top_bottom_moment_nm": 0.0,
+        "torsional_moment_nm": 0.0,
+        "shear_force_n": 0.0,
+    }
+    additive = fe_runtime_solver._effective_imported_load_inputs(
+        replace(options, custom_loads_add_to_imported=True)
+    )
+    assert additive["pressure_pa"] == pytest.approx(200_000.0)
+    assert additive["axial_force_n"] == pytest.approx(50_000_000.0)
+    assert additive["top_bottom_moment_nm"] == pytest.approx(50_000_000.0)
+
+
+def test_runtime_result_reports_visible_boundary_and_whole_edge_loads():
+    result = fe_runtime_solver.RuntimeFEMRunResult(
+        status="ok",
+        summary={
+            "line": "line1",
+            "geometry": "cylinder",
+            "custom_load_bc_enabled": True,
+            "custom_loads_add_to_imported": False,
+            "boundary_constraint_json": json.dumps({
+                "lower": {dof: 0.0 for dof in ("ux", "uy", "uz", "rx", "ry", "rz")}
+            }),
+            "edge_load_components_json": json.dumps({"upper": {"fx": 100_000.0}}),
+            "axial_force_n": 0.0,
+            "top_bottom_moment_nm": 0.0,
+            "mesh_info": {},
+            "prestress_summary": {},
+            "load_resultant": {},
+        },
+    )
+
+    text = fe_runtime_solver.format_runtime_fem_result(result)
+
+    assert "Axial force [N]: 0.0" in text
+    assert "Top/bottom moment [Nm]: 0.0" in text
+    assert "Whole-boundary constraints: lower=[rx,ry,rz,ux,uy,uz]" in text
+    assert "Whole-edge load components: upper=[fx=100000 N/m]" in text
+    assert "Legacy cylinder lower/upper support" not in text
+
+
 def test_auto_set_parameter_notes_report_solver_overrides():
     # A plain linear run auto-sets nothing.
     assert fe_solver._auto_set_parameter_notes(fe_solver.LightweightFEMConfig()) == []
@@ -5321,6 +5415,20 @@ def test_cylinder_bottom_only_constraint_leaves_top_free():
     constrained = {i for s in whole for i in s["node_ids"]}
     assert constrained, "bottom ring must be constrained"
     assert all(abs(float(coords[i][2])) < 1e-6 for i in constrained), "only the z=0 ring"
+
+    # The Loads-tab custom mode changes load sources only; it must preserve
+    # the exact same Boundary conditions-tab support map, including with lids.
+    fixed = {d: 0.0 for d in ("ux", "uy", "uz", "rx", "ry", "rz")}
+    custom = fs.build_generated_geometry(cyl, fs.LightweightFEMConfig(
+        mesh_fidelity="coarse", include_end_lids=True,
+        custom_load_bc_enabled=True, custom_loads_add_to_imported=False,
+        custom_use_nullspace_projection=False,
+        boundary_constraint_json=json.dumps({"lower": fixed}),
+        edge_load_components_json=json.dumps({"upper": {"fx": 100_000.0}})))
+    whole = [s for s in custom["supports"] if s["name"].startswith("whole_boundary")]
+    assert len(whole) == 1
+    assert whole[0]["constraints"] == fixed
+    assert len(whole[0]["node_ids"]) == 1, "rigid-lid lower reference node"
 
 
 def test_boundary_edge_grid_persist_and_collect():
