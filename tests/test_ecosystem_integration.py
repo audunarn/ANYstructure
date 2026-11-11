@@ -346,6 +346,12 @@ def test_dependency_and_gui_wiring_is_declared_in_release_surfaces():
         setup_python,
     ]
     assert 'python -m pip install --no-deps -e ".ecosystem/ANY3dView[gpu]"' in workflow
+    assert workflow.count("-e .ecosystem/ANYfeSolver/packages/results -e .ecosystem/ANYfeSolver ") == 2
+    assert '"$GITHUB_WORKSPACE/.ecosystem/ANYfeSolver/packages/results"' in workflow
+    rtd = (REPOSITORY_ROOT / ".readthedocs.yaml").read_text(encoding="utf-8")
+    assert "../anyfesolver-rtd/packages/results ../anyfesolver-rtd" in rtd
+    solver_pin = next(ref for ref, project in final_graph_refs.items() if project == "ANYfeSolver")
+    assert f"https://github.com/audunarn/ANYfeSolver.git {solver_pin}" in rtd
     assert "-e .ecosystem/ANYmaterial" in workflow
     assert ".ecosystem/ANYgeometry" in workflow
     assert "python -m build" in workflow

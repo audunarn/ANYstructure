@@ -91,17 +91,18 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install --no-deps -e ".ecosystem/ANY3dView[gpu]" -e .ecosystem/ANYmaterial -e .ecosystem/ANYgeometry -e .ecosystem/ANYmesh -e .ecosystem/ANYfileIO -e .ecosystem/ANYfeSolver -e .ecosystem/ANYbuckling -e .ecosystem/ANYtk3D
+          python -m pip install --no-deps -e ".ecosystem/ANY3dView[gpu]" -e .ecosystem/ANYmaterial -e .ecosystem/ANYgeometry -e .ecosystem/ANYmesh -e .ecosystem/ANYfileIO -e .ecosystem/ANYfeSolver/packages/results -e .ecosystem/ANYfeSolver -e .ecosystem/ANYbuckling -e .ecosystem/ANYtk3D
           python -m pip install -r requirements-dev.txt
           python -m pip install -e .
 
       - name: Import package
         run: >-
-          python -c "import anygeometry, anystruct, anyfesolver;
+          python -c "import anygeometry, anystruct, anyfesolver, anyfesolver_results;
           from importlib.metadata import version;
           v = tuple(map(int, version('ANYfeSolver').split('.')[:3]));
           assert (0, 5, 0) <= v < (0, 6, 0);
           assert anyfesolver.__version__ == version('ANYfeSolver');
+          assert version('ANYfeSolver-results') == '2.2.0';
           print('anystruct import OK with ANYfeSolver', anyfesolver.__version__)"
 
       - name: Run fast pytest suite
@@ -205,7 +206,7 @@ jobs:
       - name: Install build dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install --no-deps -e ".ecosystem/ANY3dView[gpu]" -e .ecosystem/ANYmaterial -e .ecosystem/ANYgeometry -e .ecosystem/ANYmesh -e .ecosystem/ANYfileIO -e .ecosystem/ANYfeSolver -e .ecosystem/ANYbuckling -e .ecosystem/ANYtk3D
+          python -m pip install --no-deps -e ".ecosystem/ANY3dView[gpu]" -e .ecosystem/ANYmaterial -e .ecosystem/ANYgeometry -e .ecosystem/ANYmesh -e .ecosystem/ANYfileIO -e .ecosystem/ANYfeSolver/packages/results -e .ecosystem/ANYfeSolver -e .ecosystem/ANYbuckling -e .ecosystem/ANYtk3D
           python -m pip install -r requirements.txt
           python -m pip install build twine
 
@@ -228,6 +229,7 @@ jobs:
             "$GITHUB_WORKSPACE/.ecosystem/ANYmaterial" \
             "$GITHUB_WORKSPACE/.ecosystem/ANYmesh" \
             "$GITHUB_WORKSPACE/.ecosystem/ANYfileIO" \
+            "$GITHUB_WORKSPACE/.ecosystem/ANYfeSolver/packages/results" \
             "$GITHUB_WORKSPACE/.ecosystem/ANYfeSolver" \
             "$GITHUB_WORKSPACE/.ecosystem/ANYbuckling" \
             "$GITHUB_WORKSPACE/.ecosystem/ANYtk3D"
@@ -237,4 +239,4 @@ jobs:
           "$smoke_python" -m pip install --no-deps "${wheel_files[0]}"
           "$smoke_python" -m pip check
           cd "$RUNNER_TEMP"
-          "$smoke_python" -c "import any3dview, anybuckling, anyfileio, anygeometry, anymaterial, anymesher, anyfesolver, anystruct, anytk3d; from importlib.metadata import version; print('clean wheel import OK', version('ANYstructure'))"
+          "$smoke_python" -c "import any3dview, anybuckling, anyfileio, anygeometry, anymaterial, anymesher, anyfesolver, anyfesolver_results, anystruct, anytk3d; from importlib.metadata import version; print('clean wheel import OK', version('ANYstructure'))"

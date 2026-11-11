@@ -246,9 +246,13 @@ def test_repair_command_has_one_dependency_ordered_editable_graph():
         if distribution == "ANYfileio" and module == "anyfileio"
     )
     assert fileio_source == namespace["_ANYFILEIO_ROOT"] / "src"
+    solver = namespace["_ANYFESOLVER_ROOT"]
+    results = str(solver / "packages" / "results")
+    assert projects.index(results) + 1 == projects.index(str(solver))
     assert str(namespace["_ANYTK3D_ROOT"]) in projects
     assert projects[-1] == str(namespace["_ROOT"])
     documented = "python -m " + command.partition(" -m ")[2]
+    documented = documented.replace(results, r"C:\Github\ANYfeSolver\packages\results")
     for selected_name, repository in (
         ("_ANY3DVIEW_ROOT", "ANY3dView"),
         ("_ANYMATERIAL_ROOT", "ANYmaterial"),

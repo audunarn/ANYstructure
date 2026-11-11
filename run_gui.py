@@ -421,6 +421,7 @@ EDITABLE_BOOTSTRAP_PROJECTS = (
     str(_ANYGEOMETRY_ROOT),
     str(_ANYMESHER_ROOT),
     str(_ANYFILEIO_ROOT),
+    str(_ANYFESOLVER_ROOT / "packages" / "results"),
     str(_ANYFESOLVER_ROOT),
     str(_ANYBUCKLING_ROOT),
     str(_ANYTK3D_ROOT),
