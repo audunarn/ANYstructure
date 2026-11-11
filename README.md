@@ -37,7 +37,7 @@ Tutorials: https://www.youtube.com/@ANYopenSoft
 
 Version 6.4.2 keeps the established structural calculation and optimization
 workflow at the front of the application while adding the integrated finite-
-element workflow described below. The candidate requires ANYfileio 0.3.2,
+element workflow described below. The candidate requires ANYfileio 0.3.3,
 ANYgeometry 0.4.3, ANYmaterial 0.2, ANYmesher 0.4 through 0.5, and ANYfeSolver
 0.5.0.
 
