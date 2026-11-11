@@ -188,7 +188,8 @@ def test_runtime_projection_fallback_uses_shared_viewport_size():
         object(), canvas, [point_type(0.0, 0.0, 5.0)]
     )
 
-    assert projected == pytest.approx([(200.0, 100.0, 5.0)])
+    assert len(projected) == 1
+    assert projected[0] == pytest.approx((200.0, 100.0, 5.0))
 
 
 def test_runtime_renderer_switch_resumes_animation_at_same_index(monkeypatch):
