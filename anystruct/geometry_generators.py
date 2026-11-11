@@ -59,7 +59,7 @@ class RuntimeGeometryAuthority:
     """An exact owner model plus external application/structural metadata.
 
     The legacy runtime mapping is retained only as a projection contract for
-    ANYsolver and existing renderers. Thicknesses, sections, loads and analysis
+    ANYfeSolver and existing renderers. Thicknesses, sections, loads and analysis
     settings live in ``structural_metadata`` and are never copied into faces.
     """
 

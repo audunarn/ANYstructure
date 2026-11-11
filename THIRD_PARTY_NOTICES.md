@@ -34,7 +34,7 @@ The directly used ANYopenSoft packages currently declare these licenses:
 | ANYgeometry | `>=0.4.3,<0.5` | MPL-2.0 |
 | ANYmaterial | `>=0.2.0,<0.3` | MPL-2.0 |
 | ANYmesher | `>=0.4.0,<0.6` | MPL-2.0 |
-| ANYsolver | `>=0.4.6,<0.5` | MPL-2.0 |
+| ANYfeSolver | `>=0.5.0,<0.6` | MPL-2.0 |
 | ANYtk3D | `>=0.5.5,<0.6` | MPL-2.0 |
 
 The bundled machine-learning model files and engineering images are not

@@ -1,4 +1,4 @@
-"""Focused extraction-era ANYsolver application-boundary regressions.
+"""Focused extraction-era ANYfeSolver application-boundary regressions.
 
 This module intentionally imports only the FEM integration layer.  Keeping
 these contract checks separate from the broad GUI regression module makes
@@ -12,9 +12,9 @@ import types
 
 import pytest
 
-import anysolver
+import anyfesolver
 from anystruct import fem_integration
-from anysolver import runtime as anysolver_runtime
+from anyfesolver import runtime as anyfesolver_runtime
 
 
 class _Plate:
@@ -58,7 +58,7 @@ def _snapshot():
 
 def test_runtime_options_cover_and_map_solver_fields():
     option_names = {item.name for item in fields(fem_integration.RuntimeFEMOptions)}
-    solver_names = {item.name for item in fields(anysolver_runtime.LightweightFEMConfig)}
+    solver_names = {item.name for item in fields(anyfesolver_runtime.LightweightFEMConfig)}
     assert solver_names <= option_names
 
     config = fem_integration._solver_config_from_options(
@@ -87,7 +87,7 @@ def test_failed_production_status_is_not_replaced_by_lightweight_result(monkeypa
         precomputed_generated_geometry=None,
     ):
         return types.SimpleNamespace(
-            outcome=anysolver.SolveOutcome.stopped(
+            outcome=anyfesolver.SolveOutcome.stopped(
                 "minimum_load_increment_reached",
                 control_kind="load_factor",
                 requested_control=1.0,
@@ -106,7 +106,7 @@ def test_failed_production_status_is_not_replaced_by_lightweight_result(monkeypa
             prestress_summary={"nonlinear_status": "not_converged"},
             load_resultant={},
             visualization={},
-            solver_name="ANYsolver production",
+            solver_name="ANYfeSolver production",
         )
 
     def forbidden_lightweight_fallback(*args, **kwargs):
@@ -126,7 +126,7 @@ def test_failed_production_status_is_not_replaced_by_lightweight_result(monkeypa
     )
 
     assert result.status == "nonlinear_not_converged"
-    assert result.summary["solver"] == "ANYsolver production"
+    assert result.summary["solver"] == "ANYfeSolver production"
     assert result.summary["prestress_summary"]["nonlinear_status"] == "not_converged"
     assert result.summary["solve_outcome"]["disposition"] == "partial"
     assert result.summary["solve_outcome"]["control_kind"] == "load_factor"
@@ -141,49 +141,49 @@ def test_failed_production_status_is_not_replaced_by_lightweight_result(monkeypa
     assert not any("compact fallback" in item.lower() for item in result.diagnostics)
 
 
-def test_anysolver_version_guard_rejects_pre_extraction_0_1_3(monkeypatch):
-    monkeypatch.setattr(fem_integration._anysolver_package, "__version__", "0.1.3")
+def test_anyfesolver_version_guard_rejects_pre_extraction_0_1_3(monkeypatch):
+    monkeypatch.setattr(fem_integration._anyfesolver_package, "__version__", "0.1.3")
 
-    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.4\.6"):
+    with pytest.raises(RuntimeError, match=r"requires ANYfeSolver>=0\.5\.0"):
         fem_integration._solver_config_from_options(
             fem_integration.RuntimeFEMOptions(shear_force_n=321.0)
         )
 
 
-def test_anysolver_version_guard_rejects_published_0_1_2(monkeypatch):
-    monkeypatch.setattr(fem_integration._anysolver_package, "__version__", "0.1.2")
+def test_anyfesolver_version_guard_rejects_published_0_1_2(monkeypatch):
+    monkeypatch.setattr(fem_integration._anyfesolver_package, "__version__", "0.1.2")
 
-    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.4\.6"):
+    with pytest.raises(RuntimeError, match=r"requires ANYfeSolver>=0\.5\.0"):
         fem_integration._solver_config_from_options(
             fem_integration.RuntimeFEMOptions()
         )
 
 
-def test_anysolver_version_guard_rejects_0_2_9(monkeypatch):
-    monkeypatch.setattr(fem_integration._anysolver_package, "__version__", "0.2.9")
+def test_anyfesolver_version_guard_rejects_0_2_9(monkeypatch):
+    monkeypatch.setattr(fem_integration._anyfesolver_package, "__version__", "0.2.9")
 
-    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.4\.6"):
-        fem_integration._require_supported_anysolver()
-
-
-def test_anysolver_version_guard_rejects_pre_activation_0_3_0(monkeypatch):
-    monkeypatch.setattr(fem_integration._anysolver_package, "__version__", "0.3.0")
-
-    with pytest.raises(RuntimeError, match=r"ANYsolver>=0\.4\.6"):
-        fem_integration._require_supported_anysolver()
+    with pytest.raises(RuntimeError, match=r"requires ANYfeSolver>=0\.5\.0"):
+        fem_integration._require_supported_anyfesolver()
 
 
-def test_anysolver_version_guard_rejects_replay_defect_0_4_0(monkeypatch):
-    monkeypatch.setattr(fem_integration._anysolver_package, "__version__", "0.4.0")
+def test_anyfesolver_version_guard_rejects_pre_activation_0_3_0(monkeypatch):
+    monkeypatch.setattr(fem_integration._anyfesolver_package, "__version__", "0.3.0")
 
-    with pytest.raises(RuntimeError, match=r"ANYsolver>=0\.4\.6"):
-        fem_integration._require_supported_anysolver()
+    with pytest.raises(RuntimeError, match=r"ANYfeSolver>=0\.5\.0"):
+        fem_integration._require_supported_anyfesolver()
 
 
-def test_anysolver_version_guard_accepts_compatible_0_4_6(monkeypatch):
-    monkeypatch.setattr(fem_integration._anysolver_package, "__version__", "0.4.6")
+def test_anyfesolver_version_guard_rejects_replay_defect_0_4_0(monkeypatch):
+    monkeypatch.setattr(fem_integration._anyfesolver_package, "__version__", "0.4.0")
 
-    assert fem_integration._require_supported_anysolver() == "0.4.6"
+    with pytest.raises(RuntimeError, match=r"ANYfeSolver>=0\.5\.0"):
+        fem_integration._require_supported_anyfesolver()
+
+
+def test_anyfesolver_version_guard_accepts_compatible_0_5_0(monkeypatch):
+    monkeypatch.setattr(fem_integration._anyfesolver_package, "__version__", "0.5.0")
+
+    assert fem_integration._require_supported_anyfesolver() == "0.5.0"
 
 
 @pytest.mark.parametrize("suffix", (".fem.json", ".fem.json.gz"))
@@ -284,8 +284,8 @@ def test_arc_length_keeps_corotational_and_follower_controls_selectable():
     assert window._static_kinematics_selector_enabled() is True
     assert window._follower_pressure_selector_enabled() is True
     assert window.nonlinear_static_kinematics.get() == "Corotational"
-    assert anysolver_runtime._effective_nonlinear_static_kinematics(
-        anysolver_runtime.LightweightFEMConfig(
+    assert anyfesolver_runtime._effective_nonlinear_static_kinematics(
+        anyfesolver_runtime.LightweightFEMConfig(
             analysis_type="geometric nonlinear static",
             nonlinear_solution_control="arc length",
             nonlinear_static_kinematics="corotational",

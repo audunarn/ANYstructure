@@ -23,6 +23,6 @@ markers = [
 # setup.py remains the package-metadata authority; these mirror the compatible
 # source ranges enforced by run_gui.py for release tooling.
 anymesher = ">=0.4.0,<0.6"
-anysolver = ">=0.4.6,<0.5"
+anyfesolver = ">=0.5.0,<0.6"
 any3dview = ">=0.5.5,<0.6"
 anytk3d = ">=0.5.5,<0.6"

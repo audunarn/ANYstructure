@@ -2,7 +2,7 @@
 Wiring guards for the extracted ANY* packages.
 
 ANYstructure delegates its calculation engines to standalone packages:
-ANYsolver (FE), ANYbuckling (prescriptive + semi-analytical buckling)
+ANYfeSolver (FE), ANYbuckling (prescriptive + semi-analytical buckling)
 and ANYtk3D (Tkinter 3D canvas). These tests pin the shim wiring so a
 refactor cannot silently reintroduce local copies or break the aliases.
 The engines' behaviour is tested in their own repositories.
@@ -54,10 +54,10 @@ def test_excel_interface_comes_from_anybuckling():
     assert ExcelInterface.__module__ == 'anybuckling.puls.excel'
 
 
-def test_fem_integration_uses_anysolver_backend():
+def test_fem_integration_uses_anyfesolver_backend():
     from anystruct import fem_integration
 
-    assert fem_integration.fe_solver.__name__ == 'anysolver.runtime'
+    assert fem_integration.fe_solver.__name__ == 'anyfesolver.runtime'
 
 
 def test_anystructure_keeps_ml_numeric_method():

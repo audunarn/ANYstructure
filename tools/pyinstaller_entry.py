@@ -16,7 +16,7 @@ _ECOSYSTEM = (
     ("ANYgeometry", "anygeometry"),
     ("ANYmaterial", "anymaterial"),
     ("ANYmesher", "anymesher"),
-    ("ANYsolver", "anysolver"),
+    ("ANYfeSolver", "anyfesolver"),
     ("ANYtk3D", "anytk3d"),
 )
 _REQUIRED_DATA = (

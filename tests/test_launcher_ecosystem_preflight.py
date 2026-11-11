@@ -25,7 +25,7 @@ def _compatible_versions() -> dict[str, str]:
         "ANYgeometry": "0.4.3",
         "ANYmaterial": "0.2.0",
         "ANYmesher": "0.5.0",
-        "ANYsolver": "0.4.6",
+        "ANYfeSolver": "0.5.0",
         "ANYtk3D": "0.5.5",
     }
 
@@ -83,7 +83,7 @@ def _write_anymesher_checkout(root: Path, version: str) -> Path:
     (
         ("ANYMATERIAL_SOURCE_ROOT_ENV", "ANYmaterial", "anymaterial", "0.2.0", "0.3.0"),
         ("ANYGEOMETRY_SOURCE_ROOT_ENV", "ANYgeometry", "anygeometry", "0.4.3", "0.5.0"),
-        ("ANYSOLVER_SOURCE_ROOT_ENV", "ANYsolver", "anysolver", "0.4.6", "0.5.0"),
+        ("ANYFESOLVER_SOURCE_ROOT_ENV", "ANYfeSolver", "anyfesolver", "0.5.0", "0.6.0"),
         ("ANYFILEIO_SOURCE_ROOT_ENV", "ANYfileio", "anyfileio", "0.3.2", "0.4.0"),
         ("ANYBUCKLING_SOURCE_ROOT_ENV", "ANYbuckling", "anybuckling", "0.1.1", "0.2.0"),
     ),
@@ -157,7 +157,7 @@ def test_incompatible_major_release_graph_is_rejected_by_declared_caps():
         "ANYgeometry>=0.4.3,<0.5: installed metadata reports 1.0.0",
         "ANYmaterial>=0.2.0,<0.3: installed metadata reports 1.0.0",
         "ANYmesher>=0.4.0,<0.6: installed metadata reports 1.0.0",
-        "ANYsolver>=0.4.6,<0.5: installed metadata reports 1.0.0",
+        "ANYfeSolver>=0.5.0,<0.6: installed metadata reports 1.0.0",
         "ANYtk3D>=0.5.5,<0.6: installed metadata reports 1.0.0",
     )
 
@@ -186,9 +186,9 @@ def test_wrong_source_origin_is_rejected_without_importing_the_module(tmp_path):
     expected = _sibling_specs(namespace)
 
     def find_spec(module_name: str):
-        if module_name == "anysolver":
+        if module_name == "anyfesolver":
             return SimpleNamespace(
-                origin=str(tmp_path / "site-packages" / "anysolver" / "__init__.py"),
+                origin=str(tmp_path / "site-packages" / "anyfesolver" / "__init__.py"),
                 submodule_search_locations=(),
             )
         return expected(module_name)
@@ -196,8 +196,8 @@ def test_wrong_source_origin_is_rejected_without_importing_the_module(tmp_path):
     problems = namespace["ecosystem_source_problems"](find_spec)
 
     assert len(problems) == 1
-    assert problems[0].startswith("ANYsolver: anysolver resolves from ")
-    assert str(namespace["_ANYSOLVER_ROOT"] / "src") in problems[0]
+    assert problems[0].startswith("ANYfeSolver: anyfesolver resolves from ")
+    assert str(namespace["_ANYFESOLVER_ROOT"] / "src") in problems[0]
 
 
 def test_mixed_trusted_namespace_and_untrusted_executable_origin_is_rejected(
@@ -207,11 +207,11 @@ def test_mixed_trusted_namespace_and_untrusted_executable_origin_is_rejected(
     expected = _sibling_specs(namespace)
 
     def find_spec(module_name: str):
-        if module_name == "anysolver":
+        if module_name == "anyfesolver":
             return SimpleNamespace(
-                origin=str(tmp_path / "untrusted" / "anysolver" / "__init__.py"),
+                origin=str(tmp_path / "untrusted" / "anyfesolver" / "__init__.py"),
                 submodule_search_locations=(
-                    str(namespace["_ANYSOLVER_ROOT"] / "src" / "anysolver"),
+                    str(namespace["_ANYFESOLVER_ROOT"] / "src" / "anyfesolver"),
                 ),
             )
         return expected(module_name)
@@ -219,7 +219,7 @@ def test_mixed_trusted_namespace_and_untrusted_executable_origin_is_rejected(
     problems = namespace["ecosystem_source_problems"](find_spec)
 
     assert len(problems) == 1
-    assert problems[0].startswith("ANYsolver: anysolver resolves from ")
+    assert problems[0].startswith("ANYfeSolver: anyfesolver resolves from ")
     assert str(tmp_path / "untrusted") in problems[0]
 
 
@@ -255,7 +255,7 @@ def test_repair_command_has_one_dependency_ordered_editable_graph():
         ("_ANYGEOMETRY_ROOT", "ANYgeometry"),
         ("_ANYMESHER_ROOT", "ANYmesh"),
         ("_ANYFILEIO_ROOT", "ANYfileIO"),
-        ("_ANYSOLVER_ROOT", "ANYsolver"),
+        ("_ANYFESOLVER_ROOT", "ANYfeSolver"),
         ("_ANYBUCKLING_ROOT", "ANYbuckling"),
         ("_ANYTK3D_ROOT", "ANYtk3D"),
     ):
@@ -296,7 +296,7 @@ def test_ci_binds_exact_release_graph_revisions_and_fails_closed_for_solver():
         "91846898b03fa02b029abde82508eddb981efdc0",
         "2ccef378c3efb4ba3a9957b9ab896ac8fc454b9d",
         "db73950018e1c87dab0ca618c25c965030ba08ce",
-        "d04199ac851c0d0f61430c2bc40136582aa8d659",
+        "2ebd6b3445a703b2e725e4ffbb2038542eac08e4",
         "a871d5a3c466666b79f3ce3a015a2cfd7534376b",
         "2caa92325885938c594f27145ed16069d807e364",
     }
@@ -332,35 +332,35 @@ def test_checkout_locator_prefers_actions_ecosystem_graph(tmp_path):
 def test_stale_solver_metadata_is_rejected_before_gui_import():
     namespace = _launcher_namespace()
     versions = _compatible_versions()
-    versions["ANYsolver"] = "0.2.9"
+    versions["ANYfeSolver"] = "0.2.9"
 
     problems = namespace["ecosystem_compatibility_problems"](versions.__getitem__)
 
     assert problems == (
-        "ANYsolver>=0.4.6,<0.5: installed metadata reports 0.2.9",
+        "ANYfeSolver>=0.5.0,<0.6: installed metadata reports 0.2.9",
     )
 
 
 def test_stale_solver_metadata_does_not_block_qualified_source(capsys):
     namespace = _launcher_namespace()
     versions = _compatible_versions()
-    versions["ANYsolver"] = "0.2.9"
+    versions["ANYfeSolver"] = "0.2.9"
 
     assert namespace["require_compatible_ecosystem"](
         versions.__getitem__, _sibling_specs(namespace)
     ) is None
     warning = capsys.readouterr().err
-    assert "ANYsolver>=0.4.6,<0.5: installed metadata reports 0.2.9" in warning
+    assert "ANYfeSolver>=0.5.0,<0.6: installed metadata reports 0.2.9" in warning
     assert "The application can continue" in warning
 
 
 def test_solver_prerelease_does_not_satisfy_final_release_floor():
     namespace = _launcher_namespace()
     versions = _compatible_versions()
-    versions["ANYsolver"] = "0.4.6rc1"
+    versions["ANYfeSolver"] = "0.5.0rc1"
 
     assert namespace["ecosystem_compatibility_problems"](versions.__getitem__) == (
-        "ANYsolver>=0.4.6,<0.5: installed metadata reports 0.4.6rc1",
+        "ANYfeSolver>=0.5.0,<0.6: installed metadata reports 0.5.0rc1",
     )
 
 
@@ -584,12 +584,12 @@ def test_production_publish_uses_verified_prebuilt_release_assets() -> None:
     assert 'gh release download "$RELEASE_TAG"' in production
     assert "--pattern" not in production
     assert "tools/verify_release_authority.py" in production
-    assert "docs/release/anystructure-6.4.1-ledger.json" in production
+    assert "docs/release/anystructure-6.4.2-ledger.json" in production
     assert "--protected-ref refs/remotes/origin/master" in production
-    assert "--expected-terminal ACCEPTED_ANYSTRUCTURE_6_4_1_RELEASE" in production
-    assert "ANYstructure-6.4.1-SHA256SUMS.txt" in production
-    assert "--artifact anystructure-6.4.1-py3-none-any.whl" in production
-    assert "--artifact anystructure-6.4.1.tar.gz" in production
+    assert "--expected-terminal ACCEPTED_ANYSTRUCTURE_6_4_2_RELEASE" in production
+    assert "ANYstructure-6.4.2-SHA256SUMS.txt" in production
+    assert "--artifact anystructure-6.4.2-py3-none-any.whl" in production
+    assert "--artifact anystructure-6.4.2.tar.gz" in production
     assert (
         "pypa/gh-action-pypi-publish@"
         "dc37677b2e1c63e2034f94d8a5b11f265b73ba33"

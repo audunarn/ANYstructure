@@ -45,7 +45,7 @@ ANYstructure.exe in your python installation (Scripts).
 Finite-element GUI
 ------------------
 
-The finite-element workflow uses ``ANYsolver>=0.4.6,<0.5`` and the extracted
+The finite-element workflow uses ``ANYfeSolver>=0.5.0,<0.6`` and the extracted
 ``ANYmaterial>=0.2.0,<0.3``, ``ANYmesher>=0.4.0,<0.6``, and
 ``ANYfileio>=0.3.2,<0.4`` packages. Its load controls
 route axial force, bending moment, shear force, torsional moment, and pressure

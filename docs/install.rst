@@ -9,7 +9,7 @@ Install from PyPI
    pip install anystructure
 
 The finite-element GUI uses the coordinated ranges
-``ANYsolver>=0.4.6,<0.5``, ``ANYgeometry>=0.4.3,<0.5``,
+``ANYfeSolver>=0.5.0,<0.6``, ``ANYgeometry>=0.4.3,<0.5``,
 ``ANYmaterial>=0.2.0,<0.3``, ``ANYmesher>=0.4.0,<0.6``,
 ``ANYfileio>=0.3.2,<0.4``, ``ANYbuckling>=0.1.1,<0.2``,
 ``ANY3dView>=0.5.5,<0.6``, and ``ANYtk3D>=0.5.5,<0.6``. Install
@@ -22,7 +22,7 @@ checkout:
 
 .. code-block:: powershell
 
-   python -m pip install --upgrade --no-deps -e "C:\Github\ANY3dView[gpu]" -e "C:\Github\ANYmaterial" -e "C:\Github\ANYgeometry" -e "C:\Github\ANYmesh" -e "C:\Github\ANYfileIO" -e "C:\Github\ANYsolver" -e "C:\Github\ANYbuckling" -e "C:\Github\ANYtk3D" -e "C:\Github\ANYstructure"
+   python -m pip install --upgrade --no-deps -e "C:\Github\ANY3dView[gpu]" -e "C:\Github\ANYmaterial" -e "C:\Github\ANYgeometry" -e "C:\Github\ANYmesh" -e "C:\Github\ANYfileIO" -e "C:\Github\ANYfeSolver" -e "C:\Github\ANYbuckling" -e "C:\Github\ANYtk3D" -e "C:\Github\ANYstructure"
 
 ``--no-deps`` is intentional for this coordinated source checkout: it refreshes
 the editable distributions without asking pip to resolve legacy transitive
@@ -39,7 +39,7 @@ selector; Automatic prefers ModernGL and reports any software fallback. Exact
 qualification roots may be supplied through ``ANYSTRUCTURE_ANY3DVIEW_ROOT``,
 ``ANYSTRUCTURE_ANYTK3D_ROOT``, ``ANYSTRUCTURE_ANYBUCKLING_ROOT``,
 ``ANYSTRUCTURE_ANYFILEIO_ROOT``, ``ANYSTRUCTURE_ANYGEOMETRY_ROOT``,
-``ANYSTRUCTURE_ANYMATERIAL_ROOT``, and ``ANYSTRUCTURE_ANYSOLVER_ROOT``. Each
+``ANYSTRUCTURE_ANYMATERIAL_ROOT``, and ``ANYSTRUCTURE_ANYFESOLVER_ROOT``. Each
 explicit root is validated before application imports.
 
 Use the API
