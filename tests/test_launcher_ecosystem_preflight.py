@@ -21,7 +21,7 @@ def _compatible_versions() -> dict[str, str]:
     return {
         "ANY3dView": "0.5.5",
         "ANYbuckling": "0.1.1",
-        "ANYfileio": "0.3.2",
+        "ANYfileio": "0.3.3",
         "ANYgeometry": "0.4.3",
         "ANYmaterial": "0.2.0",
         "ANYmesher": "0.5.0",
@@ -299,8 +299,8 @@ def test_ci_binds_exact_release_graph_revisions_and_fails_closed_for_solver():
         "7d36c97dd0dbec8884f8894a4258ece83ad61271",
         "91846898b03fa02b029abde82508eddb981efdc0",
         "2ccef378c3efb4ba3a9957b9ab896ac8fc454b9d",
-        "db73950018e1c87dab0ca618c25c965030ba08ce",
-        "2ebd6b3445a703b2e725e4ffbb2038542eac08e4",
+        "409754bd1289d635a7717179b0addd6797f9f25b",
+        "f54e3cde5abf70cb8c989eb106119eedd3e33025",
         "a871d5a3c466666b79f3ce3a015a2cfd7534376b",
         "2caa92325885938c594f27145ed16069d807e364",
     }

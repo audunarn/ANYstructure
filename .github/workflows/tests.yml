@@ -57,7 +57,7 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANYfileIO
-          ref: db73950018e1c87dab0ca618c25c965030ba08ce
+          ref: 409754bd1289d635a7717179b0addd6797f9f25b
           path: .ecosystem/ANYfileIO
 
       - name: Check out ANYfeSolver
@@ -65,7 +65,7 @@ jobs:
         with:
           repository: audunarn/ANYfeSolver
           # Production-published ANYmesher 0.5-compatible solver.
-          ref: 2ebd6b3445a703b2e725e4ffbb2038542eac08e4
+          ref: f54e3cde5abf70cb8c989eb106119eedd3e33025
           path: .ecosystem/ANYfeSolver
 
       - name: Check out ANYbuckling
@@ -172,7 +172,7 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: audunarn/ANYfileIO
-          ref: db73950018e1c87dab0ca618c25c965030ba08ce
+          ref: 409754bd1289d635a7717179b0addd6797f9f25b
           path: .ecosystem/ANYfileIO
 
       - name: Check out ANYfeSolver
@@ -180,7 +180,7 @@ jobs:
         with:
           repository: audunarn/ANYfeSolver
           # Production-published ANYmesher 0.5-compatible solver.
-          ref: 2ebd6b3445a703b2e725e4ffbb2038542eac08e4
+          ref: f54e3cde5abf70cb8c989eb106119eedd3e33025
           path: .ecosystem/ANYfeSolver
 
       - name: Check out ANYbuckling
