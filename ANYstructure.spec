@@ -22,7 +22,7 @@ for package in (
     "anygeometry",
     "anymaterial",
     "anymesher",
-    "anysolver",
+    "anyfesolver",
     "anytk3d",
 ):
     datas += collect_data_files(package, include_py_files=False)
@@ -48,7 +48,7 @@ for distribution in (
     "ANYgeometry",
     "ANYmaterial",
     "ANYmesher",
-    "ANYsolver",
+    "ANYfeSolver",
     "ANYtk3D",
 ):
     datas += copy_metadata(distribution)

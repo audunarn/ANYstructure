@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from anystruct import api, fe_plate_fields, fem_integration as fe_runtime_solver
-from anysolver import runtime as fe_solver
+from anyfesolver import runtime as fe_solver
 
 
 class _Plate:
@@ -209,7 +209,7 @@ def test_run_runtime_fem_returns_backend_status_and_visualization_payload():
     assert result.status == "ok"
     assert result.summary["pressure_pa"] == 120_000.0
     assert result.summary["mesh_fidelity"] == "medium"
-    assert result.summary["solver"] == "ANYsolver production FE mesh"
+    assert result.summary["solver"] == "ANYfeSolver production FE mesh"
     assert result.summary["mesh_info"]["shells"] > 0
     assert "kernel_warmup_status" in result.summary
     assert result.summary["prestress_summary"]
@@ -418,7 +418,7 @@ def test_runtime_does_not_rewrite_qualified_q4_to_legacy():
     # ANYsolver 0.4.1 repairs accepted-state replay.  ANYstructure must pass
     # qualified Q4 records through unchanged instead of applying a hidden
     # legacy formulation fallback.
-    assert "_anysolver_040_material_nonlinear_geometry" not in source
+    assert "_anyfesolver_040_material_nonlinear_geometry" not in source
     assert 'record["formulation"] = "legacy"' not in source
     assert 'record["formulation_id"] = "LEGACY_SHELL_ELEMENT"' not in source
 
@@ -739,7 +739,7 @@ def test_run_runtime_fem_passes_phase_five_options_to_solver(monkeypatch):
     assert result.summary["collision_penalty_scale"] == pytest.approx(0.725)
 
 
-def test_runtime_options_cover_every_anysolver_runtime_config_field():
+def test_runtime_options_cover_every_anyfesolver_runtime_config_field():
     option_names = {item.name for item in fields(fe_runtime_solver.RuntimeFEMOptions)}
     solver_names = {item.name for item in fields(fe_solver.LightweightFEMConfig)}
 
@@ -764,7 +764,7 @@ def test_run_runtime_fem_preserves_failed_production_status(monkeypatch):
             prestress_summary={"nonlinear_status": "not_converged"},
             load_resultant={},
             visualization={},
-            solver_name="ANYsolver production",
+            solver_name="ANYfeSolver production",
         )
 
     def forbidden_lightweight_fallback(*args, **kwargs):
@@ -785,25 +785,25 @@ def test_run_runtime_fem_preserves_failed_production_status(monkeypatch):
     )
 
     assert result.status == "nonlinear_not_converged"
-    assert result.summary["solver"] == "ANYsolver production"
+    assert result.summary["solver"] == "ANYfeSolver production"
     assert result.summary["prestress_summary"]["nonlinear_status"] == "not_converged"
     assert "production solve did not converge" in result.diagnostics
     assert not any("compact fallback" in item.lower() for item in result.diagnostics)
 
 
-def test_anysolver_version_guard_rejects_pre_extraction_runtime(monkeypatch):
-    monkeypatch.setattr(fe_runtime_solver._anysolver_package, "__version__", "0.1.3")
+def test_anyfesolver_version_guard_rejects_pre_extraction_runtime(monkeypatch):
+    monkeypatch.setattr(fe_runtime_solver._anyfesolver_package, "__version__", "0.1.3")
 
-    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.4\.6"):
+    with pytest.raises(RuntimeError, match=r"requires ANYfeSolver>=0\.5\.0"):
         fe_runtime_solver._solver_config_from_options(
             fe_runtime_solver.RuntimeFEMOptions(shear_force_n=321.0)
         )
 
 
-def test_anysolver_version_guard_rejects_older_runtime(monkeypatch):
-    monkeypatch.setattr(fe_runtime_solver._anysolver_package, "__version__", "0.2.9")
+def test_anyfesolver_version_guard_rejects_older_runtime(monkeypatch):
+    monkeypatch.setattr(fe_runtime_solver._anyfesolver_package, "__version__", "0.2.9")
 
-    with pytest.raises(RuntimeError, match=r"requires ANYsolver>=0\.4\.6"):
+    with pytest.raises(RuntimeError, match=r"requires ANYfeSolver>=0\.5\.0"):
         fe_runtime_solver._solver_config_from_options(
             fe_runtime_solver.RuntimeFEMOptions()
         )
@@ -2605,7 +2605,7 @@ def test_production_solver_runs_full_panel_mesh_backend():
     )
 
     assert result.status == "ok"
-    assert result.solver_name == "ANYsolver production FE mesh"
+    assert result.solver_name == "ANYfeSolver production FE mesh"
     assert result.mesh_info["nodes"] > 0
     assert result.mesh_info["shells"] > 0
     assert result.mesh_info["beams"] > 0
@@ -3650,7 +3650,7 @@ def test_auto_set_parameter_notes_report_solver_overrides():
     assert any("post-buckling continuation always runs with steel plasticity" in note for note in notes)
     assert any("-> 'arc length'" in note for note in notes)
 
-    # ANYsolver 0.1.2 qualifies corotational arc-length continuation, so the
+    # ANYfeSolver 0.1.2 qualifies corotational arc-length continuation, so the
     # selected kinematics is preserved and no auto-set note is emitted.
     notes = fe_solver._auto_set_parameter_notes(fe_solver.LightweightFEMConfig(
         analysis_type="geometric nonlinear static",
@@ -4319,7 +4319,7 @@ def test_runtime_fem_figure_can_display_cylinder_buckling_modes():
     assert figure.axes[0].get_title().startswith("Buckling mode 1")
 
 
-def test_anystructure_uses_external_anysolver_backend():
+def test_anystructure_uses_external_anyfesolver_backend():
     assert fe_solver.full_backend_available() is True
 
     backend = fe_solver.full_backend_api()
@@ -4359,7 +4359,7 @@ def test_production_solver_can_use_anyintelligent_capacity_workflow_path():
             # model; a free cylinder under dead pressure correctly fails the
             # rigid-quotient buckling guard.
             boundary_condition="clamped",
-            runtime_solver="ANYsolver capacity workflow",
+            runtime_solver="ANYfeSolver capacity workflow",
             imperfection_enabled=True,
             imperfection_amplitude_m=0.0001,
             nonlinear_max_load_factor=0.5,
@@ -4371,7 +4371,7 @@ def test_production_solver_can_use_anyintelligent_capacity_workflow_path():
     prestress = result.prestress_summary
 
     assert result.status == "ok"
-    assert prestress["runtime_solver"] == "anysolver capacity workflow"
+    assert prestress["runtime_solver"] == "anyfesolver capacity workflow"
     assert prestress["capacity_workflow_status"] == "completed"
     assert prestress["capacity_workflow_capacity_factor"] == pytest.approx(0.5)
     assert prestress["capacity_workflow_mesh_status"] == "ok"
@@ -4807,7 +4807,7 @@ def test_collision_damage_criterion_reaches_backend_config():
     Regression: the criterion was previously dropped in
     _collision_plastic_damage_config, silently running 'fixed' regardless of
     the dropdown."""
-    from anysolver import runtime as fe_solver
+    from anyfesolver import runtime as fe_solver
 
     for criterion in ("fixed", "mesh_scaled_gl", "rtcl"):
         config = fe_solver.LightweightFEMConfig(
@@ -4838,7 +4838,7 @@ def test_collision_damage_criterion_reaches_backend_config():
 def test_post_buckling_options_force_arc_length_with_automatic_stop():
     """Post-buckling enable forces arc-length control, activates the nonlinear
     static path, and configures the automatic stopping criteria."""
-    from anysolver import runtime as fe_solver
+    from anyfesolver import runtime as fe_solver
 
     config = fe_solver.LightweightFEMConfig(
         post_buckling_enabled=True,
@@ -4926,7 +4926,7 @@ def test_post_buckling_forces_material_nonlinearity_and_curve():
     """Post-buckling must run FULLY nonlinear: the DNV material curve is
     applied even when the material-model dropdown is left at linear elastic
     (an elastic post-buckling branch is non-physical for steel design)."""
-    from anysolver import runtime as fe_solver
+    from anyfesolver import runtime as fe_solver
 
     config = fe_solver.LightweightFEMConfig(
         post_buckling_enabled=True,
@@ -5047,7 +5047,7 @@ def test_nonlinear_collision_snapshots_keep_refined_skin_surfaces():
     because per-element damage-state records (no timestamp) were fed to the
     per-time deletion filter -- the GUI then fell back to the coarse plot
     grid, which only looked right for graded/uniform meshes."""
-    from anysolver import runtime as fe_solver
+    from anyfesolver import runtime as fe_solver
 
     flat = {
         "geometry": "flat panel",
@@ -5098,7 +5098,7 @@ def test_collision_penalty_scale_multiplies_auto_penalty():
     """collision_penalty_scale must scale the auto contact penalty so the
     scout preconditioner can carry a convergence-friendly stiffness into the
     real run.  A manual penalty ignores the scale."""
-    from anysolver import runtime as fs
+    from anyfesolver import runtime as fs
 
     cylinder = {
         "geometry": "cylinder", "radius_m": 1.0, "length_m": 6.0, "thickness_m": 0.02,
@@ -5135,7 +5135,7 @@ def test_collision_penalty_capped_at_shell_contact_stiffness():
     Root cause of 'nonlinear iteration failed' on high-energy runs: the
     energy/dt-based auto penalty ignored the shell stiffness and could be
     ~10x E*t, diverging the staggered contact iteration."""
-    from anysolver import runtime as fs
+    from anyfesolver import runtime as fs
 
     E = 210.0e9
     t = 0.030
@@ -5167,7 +5167,7 @@ def test_collision_penalty_capped_at_shell_contact_stiffness():
 
 def test_collision_contact_stiffness_scale_uses_thinnest_skin():
     """E*t is taken from the thinnest (most compliant) skin shell."""
-    from anysolver import runtime as fs
+    from anyfesolver import runtime as fs
 
     config = fs.LightweightFEMConfig(elastic_modulus_pa=200.0e9)
     # Generated skin shells store the plate thickness under the "thickness"
@@ -5188,7 +5188,7 @@ def test_collision_contact_stiffness_scale_uses_thinnest_skin():
 def test_collision_auto_precondition_softens_penalty_further():
     """The opt-in extra-conservative mode multiplies the (capped) penalty by
     the extra softening factor."""
-    from anysolver import runtime as fs
+    from anyfesolver import runtime as fs
 
     cylinder = {
         "geometry": "cylinder", "radius_m": 1.0, "length_m": 6.0, "thickness_m": 0.02,
@@ -5213,7 +5213,7 @@ def test_collision_auto_precondition_softens_penalty_further():
 def test_boundary_dof_constraint_map_parsing():
     """The whole-boundary / selected-edge per-DOF specs parse to {dof: value},
     accepting plain numbers, on/value dicts and bools; enforced rotations kept."""
-    from anysolver import runtime as fs
+    from anyfesolver import runtime as fs
     import json
 
     parsed = fs._dof_constraint_map(json.dumps({
@@ -5228,7 +5228,7 @@ def test_boundary_dof_constraint_map_parsing():
 def test_whole_boundary_per_dof_supports_and_free_boundary():
     """Whole-boundary DOF grid constrains all boundary nodes with enforced
     values; auto-off + empty grid gives a free boundary; default is unchanged."""
-    from anysolver import runtime as fs
+    from anyfesolver import runtime as fs
     import json
 
     flat = {"geometry": "flat panel", "length_m": 4.0, "width_m": 3.0, "thickness_m": 0.012,
@@ -5254,7 +5254,7 @@ def test_whole_boundary_per_dof_supports_and_free_boundary():
 def test_selected_edge_per_dof_segment_additive():
     """A selected-edge segment carries per-DOF constraints (incl. enforced
     rotation) and is additive on top of the automatic whole-boundary supports."""
-    from anysolver import runtime as fs
+    from anyfesolver import runtime as fs
     import json
 
     flat = {"geometry": "flat panel", "length_m": 4.0, "width_m": 3.0, "thickness_m": 0.012,
@@ -5335,7 +5335,7 @@ def test_selected_edge_overrides_whole_boundary_on_shared_dof():
     grid also constrains, the edge value wins: the whole-boundary support
     splits so overlapping nodes drop that DOF (no conflicting-prescribed
     error) and the run completes."""
-    from anysolver import runtime as fs
+    from anyfesolver import runtime as fs
     import json
 
     flat = {"geometry": "flat panel", "length_m": 4.0, "width_m": 3.0, "thickness_m": 0.012,
@@ -5363,7 +5363,7 @@ def test_selected_edge_overrides_whole_boundary_on_shared_dof():
 def test_boundary_edge_constraints_per_edge_and_legacy():
     """Per-edge whole-boundary schema {edge: {dof: value}} parses per edge;
     the legacy flat {dof: value} schema maps to the 'all' edge."""
-    from anysolver import runtime as fs
+    from anyfesolver import runtime as fs
     import json
 
     per_edge = fs._boundary_edge_constraints(fs.LightweightFEMConfig(
@@ -5380,7 +5380,7 @@ def test_boundary_edge_constraints_per_edge_and_legacy():
 def test_flat_per_edge_supports_target_correct_edges():
     """Each named flat edge receives only its own DOFs on its own nodes; the
     shared corner node takes the union of both edges' DOFs."""
-    from anysolver import runtime as fs
+    from anyfesolver import runtime as fs
     import json
 
     flat = {"geometry": "flat panel", "length_m": 4.0, "width_m": 3.0, "thickness_m": 0.012,
@@ -5402,7 +5402,7 @@ def test_flat_per_edge_supports_target_correct_edges():
 def test_cylinder_bottom_only_constraint_leaves_top_free():
     """A 'lower' whole-boundary spec constrains only the z=0 ring; the top
     ring stays free."""
-    from anysolver import runtime as fs
+    from anyfesolver import runtime as fs
     import json
 
     cyl = {"geometry": "cylinder", "radius_m": 2.0, "length_m": 8.0, "thickness_m": 0.012,

@@ -38,29 +38,29 @@ def _checkout_root(
 
 ANYMATERIAL_SOURCE_ROOT_ENV = "ANYSTRUCTURE_ANYMATERIAL_ROOT"
 ANYGEOMETRY_SOURCE_ROOT_ENV = "ANYSTRUCTURE_ANYGEOMETRY_ROOT"
-ANYSOLVER_SOURCE_ROOT_ENV = "ANYSTRUCTURE_ANYSOLVER_ROOT"
+ANYFESOLVER_SOURCE_ROOT_ENV = "ANYSTRUCTURE_ANYFESOLVER_ROOT"
 ANYFILEIO_SOURCE_ROOT_ENV = "ANYSTRUCTURE_ANYFILEIO_ROOT"
 ANYBUCKLING_SOURCE_ROOT_ENV = "ANYSTRUCTURE_ANYBUCKLING_ROOT"
 _SHARED_ANYMATERIAL_ROOT = _checkout_root("ANYmaterial")
 _SHARED_ANYGEOMETRY_ROOT = _checkout_root("ANYgeometry")
-_SHARED_ANYSOLVER_ROOT = _checkout_root("ANYsolver")
+_SHARED_ANYFESOLVER_ROOT = _checkout_root("ANYfeSolver")
 _SHARED_ANYFILEIO_ROOT = _checkout_root("ANYfileIO")
 _SHARED_ANYBUCKLING_ROOT = _checkout_root("ANYbuckling")
 ANYMESHER_SOURCE_ROOT_ENV = "ANYSTRUCTURE_ANYMESHER_ROOT"
 ANYMESHER_REQUIRED_SOURCE_VERSION = "0.4.0"
 ANYMESHER_MAXIMUM_SOURCE_VERSION = "0.6.0"
 _SHARED_ANYMESHER_ROOT = _checkout_root("ANYmesh")
-_SAFE_ANYMESHER_ROOT = _SHARED_ANYSOLVER_ROOT / ".compat_anymesher_032"
+_SAFE_ANYMESHER_ROOT = _SHARED_ANYFESOLVER_ROOT / ".compat_anymesher_032"
 ANYTK3D_SOURCE_ROOT_ENV = "ANYSTRUCTURE_ANYTK3D_ROOT"
 ANYTK3D_REQUIRED_SOURCE_VERSION = "0.5.5"
 ANYTK3D_MAXIMUM_SOURCE_VERSION = "0.6.0"
 _SHARED_ANYTK3D_ROOT = _checkout_root("ANYtk3D")
-_SAFE_ANYTK3D_ROOT = _SHARED_ANYSOLVER_ROOT / ".compat_anytk3d_050"
+_SAFE_ANYTK3D_ROOT = _SHARED_ANYFESOLVER_ROOT / ".compat_anytk3d_050"
 ANY3DVIEW_SOURCE_ROOT_ENV = "ANYSTRUCTURE_ANY3DVIEW_ROOT"
 ANY3DVIEW_REQUIRED_SOURCE_VERSION = "0.5.5"
 ANY3DVIEW_MAXIMUM_SOURCE_VERSION = "0.6.0"
 _SHARED_ANY3DVIEW_ROOT = _checkout_root("ANY3dView")
-_SAFE_ANY3DVIEW_ROOT = _SHARED_ANYSOLVER_ROOT / ".compat_any3dview_050"
+_SAFE_ANY3DVIEW_ROOT = _SHARED_ANYFESOLVER_ROOT / ".compat_any3dview_050"
 
 
 def _source_project_identity(root: Path) -> tuple[str | None, str | None]:
@@ -250,7 +250,7 @@ def select_anymesher_source_root(
             return candidate.resolve()
         rejected.append(f"{label}: {problem}")
     raise RuntimeError(
-        "ANYstructure 6.4.1 needs an ANYmesher source checkout at version "
+        "ANYstructure 6.4.2 needs an ANYmesher source checkout at version "
         f">={ANYMESHER_REQUIRED_SOURCE_VERSION},"
         f"<{ANYMESHER_MAXIMUM_SOURCE_VERSION}. "
         f"Set {ANYMESHER_SOURCE_ROOT_ENV} to one. Checked:\n- "
@@ -286,7 +286,7 @@ def select_anytk3d_source_root(
             return candidate.resolve()
         rejected.append(f"{label}: {problem}")
     raise RuntimeError(
-        "ANYstructure 6.4.1 needs an ANYtk3D source checkout at version "
+        "ANYstructure 6.4.2 needs an ANYtk3D source checkout at version "
         f">={ANYTK3D_REQUIRED_SOURCE_VERSION},<{ANYTK3D_MAXIMUM_SOURCE_VERSION}. "
         f"Set {ANYTK3D_SOURCE_ROOT_ENV} to one. Checked:\n- "
         + "\n- ".join(rejected)
@@ -321,7 +321,7 @@ def select_any3dview_source_root(
             return candidate.resolve()
         rejected.append(f"{label}: {problem}")
     raise RuntimeError(
-        "ANYstructure 6.4.1 needs an ANY3dView source checkout at version "
+        "ANYstructure 6.4.2 needs an ANY3dView source checkout at version "
         f">={ANY3DVIEW_REQUIRED_SOURCE_VERSION},<{ANY3DVIEW_MAXIMUM_SOURCE_VERSION}. "
         f"Set {ANY3DVIEW_SOURCE_ROOT_ENV} to one. Checked:\n- "
         + "\n- ".join(rejected)
@@ -344,13 +344,13 @@ _ANYGEOMETRY_ROOT = select_bound_source_root(
     maximum="0.5.0",
     shared_root=_SHARED_ANYGEOMETRY_ROOT,
 )
-_ANYSOLVER_ROOT = select_bound_source_root(
-    ANYSOLVER_SOURCE_ROOT_ENV,
-    project="ANYsolver",
-    package_name="anysolver",
-    minimum="0.4.6",
-    maximum="0.5.0",
-    shared_root=_SHARED_ANYSOLVER_ROOT,
+_ANYFESOLVER_ROOT = select_bound_source_root(
+    ANYFESOLVER_SOURCE_ROOT_ENV,
+    project="ANYfeSolver",
+    package_name="anyfesolver",
+    minimum="0.5.0",
+    maximum="0.6.0",
+    shared_root=_SHARED_ANYFESOLVER_ROOT,
 )
 _ANYFILEIO_ROOT = select_bound_source_root(
     ANYFILEIO_SOURCE_ROOT_ENV,
@@ -374,7 +374,7 @@ _ANYTK3D_ROOT = select_anytk3d_source_root()
 _SOURCE_TREES = (
     _ANY3DVIEW_ROOT / "src",
     _ANYGEOMETRY_ROOT / "src",
-    _ANYSOLVER_ROOT / "src",
+    _ANYFESOLVER_ROOT / "src",
     _ANYMATERIAL_ROOT / "src",
     _ANYMESHER_ROOT / "src",
     _ANYFILEIO_ROOT / "src",
@@ -397,7 +397,7 @@ ECOSYSTEM_REQUIREMENTS = (
     ("ANYgeometry", "ANYgeometry>=0.4.3,<0.5", "0.4.3", "0.5.0"),
     ("ANYmaterial", "ANYmaterial>=0.2.0,<0.3", "0.2.0", "0.3.0"),
     ("ANYmesher", "ANYmesher>=0.4.0,<0.6", "0.4.0", "0.6.0"),
-    ("ANYsolver", "ANYsolver>=0.4.6,<0.5", "0.4.6", "0.5.0"),
+    ("ANYfeSolver", "ANYfeSolver>=0.5.0,<0.6", "0.5.0", "0.6.0"),
     ("ANYtk3D", "ANYtk3D>=0.5.5,<0.6", "0.5.5", "0.6.0"),
 )
 
@@ -411,7 +411,7 @@ ECOSYSTEM_SOURCES = (
     ("ANYgeometry", "anygeometry", _ANYGEOMETRY_ROOT / "src"),
     ("ANYmaterial", "anymaterial", _ANYMATERIAL_ROOT / "src"),
     ("ANYmesher", "anymesher", _ANYMESHER_ROOT / "src"),
-    ("ANYsolver", "anysolver", _ANYSOLVER_ROOT / "src"),
+    ("ANYfeSolver", "anyfesolver", _ANYFESOLVER_ROOT / "src"),
     ("ANYtk3D", "anytk3d", _ANYTK3D_ROOT / "src"),
 )
 
@@ -421,7 +421,7 @@ EDITABLE_BOOTSTRAP_PROJECTS = (
     str(_ANYGEOMETRY_ROOT),
     str(_ANYMESHER_ROOT),
     str(_ANYFILEIO_ROOT),
-    str(_ANYSOLVER_ROOT),
+    str(_ANYFESOLVER_ROOT),
     str(_ANYBUCKLING_ROOT),
     str(_ANYTK3D_ROOT),
     str(_ROOT),
@@ -513,7 +513,7 @@ def require_compatible_ecosystem(
     source_problems = ecosystem_source_problems(spec_finder)
     if source_problems:
         raise RuntimeError(
-            "ANYstructure 6.4.1 cannot start with this mixed ecosystem:\n- "
+            "ANYstructure 6.4.2 cannot start with this mixed ecosystem:\n- "
             + "\n- ".join(source_problems)
             + "\nCanonical interchange package: ANYfileIO>=0.3.2,<0.4."
             + "\nRepair the selected editable installs, then restart:\n"
@@ -523,7 +523,7 @@ def require_compatible_ecosystem(
     metadata_problems = ecosystem_compatibility_problems(version_reader)
     if metadata_problems:
         print(
-            "ANYstructure 6.4.1 is using validated sibling source checkouts "
+            "ANYstructure 6.4.2 is using validated sibling source checkouts "
             "despite stale editable metadata:\n- "
             + "\n- ".join(metadata_problems)
             + "\nThe application can continue. Refresh the metadata with:\n"

@@ -6,7 +6,7 @@ import json
 from types import SimpleNamespace
 
 import pytest
-from anysolver import LegacyShellElement, create_shell_element
+from anyfesolver import LegacyShellElement, create_shell_element
 
 from anystruct import fem_integration
 

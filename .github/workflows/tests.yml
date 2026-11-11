@@ -60,13 +60,13 @@ jobs:
           ref: db73950018e1c87dab0ca618c25c965030ba08ce
           path: .ecosystem/ANYfileIO
 
-      - name: Check out ANYsolver
+      - name: Check out ANYfeSolver
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          repository: audunarn/ANYsolver
+          repository: audunarn/ANYfeSolver
           # Production-published ANYmesher 0.5-compatible solver.
-          ref: d04199ac851c0d0f61430c2bc40136582aa8d659
-          path: .ecosystem/ANYsolver
+          ref: 2ebd6b3445a703b2e725e4ffbb2038542eac08e4
+          path: .ecosystem/ANYfeSolver
 
       - name: Check out ANYbuckling
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -91,18 +91,18 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install --no-deps -e ".ecosystem/ANY3dView[gpu]" -e .ecosystem/ANYmaterial -e .ecosystem/ANYgeometry -e .ecosystem/ANYmesh -e .ecosystem/ANYfileIO -e .ecosystem/ANYsolver -e .ecosystem/ANYbuckling -e .ecosystem/ANYtk3D
+          python -m pip install --no-deps -e ".ecosystem/ANY3dView[gpu]" -e .ecosystem/ANYmaterial -e .ecosystem/ANYgeometry -e .ecosystem/ANYmesh -e .ecosystem/ANYfileIO -e .ecosystem/ANYfeSolver -e .ecosystem/ANYbuckling -e .ecosystem/ANYtk3D
           python -m pip install -r requirements-dev.txt
           python -m pip install -e .
 
       - name: Import package
         run: >-
-          python -c "import anygeometry, anystruct, anysolver;
+          python -c "import anygeometry, anystruct, anyfesolver;
           from importlib.metadata import version;
-          v = tuple(map(int, version('ANYsolver').split('.')[:3]));
-          assert v >= (0, 4, 6);
-          assert anysolver.__version__ == version('ANYsolver');
-          print('anystruct import OK with ANYsolver', anysolver.__version__)"
+          v = tuple(map(int, version('ANYfeSolver').split('.')[:3]));
+          assert (0, 5, 0) <= v < (0, 6, 0);
+          assert anyfesolver.__version__ == version('ANYfeSolver');
+          print('anystruct import OK with ANYfeSolver', anyfesolver.__version__)"
 
       - name: Run fast pytest suite
         run: python -m pytest
@@ -174,13 +174,13 @@ jobs:
           ref: db73950018e1c87dab0ca618c25c965030ba08ce
           path: .ecosystem/ANYfileIO
 
-      - name: Check out ANYsolver
+      - name: Check out ANYfeSolver
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          repository: audunarn/ANYsolver
+          repository: audunarn/ANYfeSolver
           # Production-published ANYmesher 0.5-compatible solver.
-          ref: d04199ac851c0d0f61430c2bc40136582aa8d659
-          path: .ecosystem/ANYsolver
+          ref: 2ebd6b3445a703b2e725e4ffbb2038542eac08e4
+          path: .ecosystem/ANYfeSolver
 
       - name: Check out ANYbuckling
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -205,7 +205,7 @@ jobs:
       - name: Install build dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install --no-deps -e ".ecosystem/ANY3dView[gpu]" -e .ecosystem/ANYmaterial -e .ecosystem/ANYgeometry -e .ecosystem/ANYmesh -e .ecosystem/ANYfileIO -e .ecosystem/ANYsolver -e .ecosystem/ANYbuckling -e .ecosystem/ANYtk3D
+          python -m pip install --no-deps -e ".ecosystem/ANY3dView[gpu]" -e .ecosystem/ANYmaterial -e .ecosystem/ANYgeometry -e .ecosystem/ANYmesh -e .ecosystem/ANYfileIO -e .ecosystem/ANYfeSolver -e .ecosystem/ANYbuckling -e .ecosystem/ANYtk3D
           python -m pip install -r requirements.txt
           python -m pip install build twine
 
@@ -228,7 +228,7 @@ jobs:
             "$GITHUB_WORKSPACE/.ecosystem/ANYmaterial" \
             "$GITHUB_WORKSPACE/.ecosystem/ANYmesh" \
             "$GITHUB_WORKSPACE/.ecosystem/ANYfileIO" \
-            "$GITHUB_WORKSPACE/.ecosystem/ANYsolver" \
+            "$GITHUB_WORKSPACE/.ecosystem/ANYfeSolver" \
             "$GITHUB_WORKSPACE/.ecosystem/ANYbuckling" \
             "$GITHUB_WORKSPACE/.ecosystem/ANYtk3D"
           "$smoke_python" -m pip install -r "$GITHUB_WORKSPACE/requirements.txt"
@@ -237,4 +237,4 @@ jobs:
           "$smoke_python" -m pip install --no-deps "${wheel_files[0]}"
           "$smoke_python" -m pip check
           cd "$RUNNER_TEMP"
-          "$smoke_python" -c "import any3dview, anybuckling, anyfileio, anygeometry, anymaterial, anymesher, anysolver, anystruct, anytk3d; from importlib.metadata import version; print('clean wheel import OK', version('ANYstructure'))"
+          "$smoke_python" -c "import any3dview, anybuckling, anyfileio, anygeometry, anymaterial, anymesher, anyfesolver, anystruct, anytk3d; from importlib.metadata import version; print('clean wheel import OK', version('ANYstructure'))"

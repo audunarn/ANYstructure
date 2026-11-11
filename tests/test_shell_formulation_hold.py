@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-from anysolver import (
+from anyfesolver import (
     NativeParityE4PLS3V2DShellElement,
     QualifiedE4PLShellElement,
     ShellElement,
 )
-from anysolver.anystructure_fem_mode import (
+from anyfesolver.anystructure_fem_mode import (
     AnyStructureFEMConfig,
     build_fe_model_from_generated_geometry,
 )
-from anysolver import runtime as solver_runtime
+from anyfesolver import runtime as solver_runtime
 
 from anystruct import fem_integration
 

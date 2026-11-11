@@ -111,9 +111,9 @@ def analyze_runtime_fea_result_buckling(runtime_result, **kwargs):
 
 
 def import_sesam_fem_model(path, **kwargs):
-    """Import a SESAM FEM model through ANYsolver."""
+    """Import a SESAM FEM model through ANYfeSolver."""
 
-    from anysolver.sesam_fem.importer import import_sesam_fem
+    from anyfesolver.sesam_fem.importer import import_sesam_fem
 
     return import_sesam_fem(path, **kwargs)
 
@@ -121,8 +121,8 @@ def import_sesam_fem_model(path, **kwargs):
 def run_sesam_fem_static(path, **kwargs):
     """Import a SESAM FEM model and run the linear FE solver."""
 
-    from anysolver import solve_linear
-    from anysolver.sesam_fem.importer import import_sesam_fem
+    from anyfesolver import solve_linear
+    from anyfesolver.sesam_fem.importer import import_sesam_fem
 
     imported = import_sesam_fem(path, **kwargs)
     if imported.model is None:
