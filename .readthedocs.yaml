@@ -17,7 +17,10 @@ build:
       - python -m pip install --no-deps "git+https://github.com/audunarn/ANYmaterial.git"
       - python -m pip install --no-deps "git+https://github.com/audunarn/ANYmesh.git"
       - python -m pip install --no-deps "git+https://github.com/audunarn/ANYio.git"
-      - python -m pip install --no-deps "git+https://github.com/audunarn/ANYsolver.git"
+      - git init ../anyfesolver-rtd
+      - git -C ../anyfesolver-rtd fetch --depth=1 https://github.com/audunarn/ANYfeSolver.git f54e3cde5abf70cb8c989eb106119eedd3e33025
+      - git -C ../anyfesolver-rtd checkout --detach FETCH_HEAD
+      - python -m pip install --no-deps ../anyfesolver-rtd/packages/results ../anyfesolver-rtd
 
 # Build documentation in the "docs/" directory with Sphinx
 sphinx:

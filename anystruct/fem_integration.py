@@ -1,8 +1,8 @@
-"""ANYstructure integration and UI for the external ANYsolver package.
+"""ANYstructure integration and UI for the external ANYfeSolver package.
 
 This module owns application-state extraction, option mapping, Tk controls,
 and result presentation. Neutral meshing comes from ANYmesher through the
-runtime adapter; numerical analysis lives in ``anysolver.runtime``.
+runtime adapter; numerical analysis lives in ``anyfesolver.runtime``.
 """
 
 from __future__ import annotations
@@ -37,8 +37,8 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 if __package__ in (None, ""):
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import anysolver as _anysolver_package
-from anysolver import runtime as fe_solver
+import anyfesolver as _anyfesolver_package
+from anyfesolver import runtime as fe_solver
 
 try:
     from anystruct import ecosystem_gui, geometry_generators, representation_geometry
@@ -79,7 +79,7 @@ Point3D = _tk3d_canvas_module.Point3D
 _interpolate_thickness_color = _tk3d_canvas_module._interpolate_thickness_color
 
 
-MINIMUM_ANYSOLVER_VERSION = "0.4.6"
+MINIMUM_ANYFESOLVER_VERSION = "0.5.0"
 
 
 def _numeric_version(value: Any) -> tuple[int, int, int]:
@@ -89,19 +89,19 @@ def _numeric_version(value: Any) -> tuple[int, int, int]:
     return tuple((parts + [0, 0, 0])[:3])
 
 
-def _require_supported_anysolver() -> str:
-    """Fail clearly when an old editable/runtime ANYsolver shadows the requirement."""
+def _require_supported_anyfesolver() -> str:
+    """Fail clearly when an old editable/runtime ANYfeSolver shadows the requirement."""
 
-    installed = str(getattr(_anysolver_package, "__version__", "0"))
+    installed = str(getattr(_anyfesolver_package, "__version__", "0"))
     installed_numeric = _numeric_version(installed)
-    if installed_numeric < _numeric_version(MINIMUM_ANYSOLVER_VERSION):
+    if installed_numeric < _numeric_version(MINIMUM_ANYFESOLVER_VERSION):
         raise RuntimeError(
-            "ANYstructure FEM requires ANYsolver>="
-            + MINIMUM_ANYSOLVER_VERSION
+            "ANYstructure FEM requires ANYfeSolver>="
+            + MINIMUM_ANYFESOLVER_VERSION
             + "; imported "
             + installed
             + " from "
-            + str(getattr(_anysolver_package, "__file__", "unknown location"))
+            + str(getattr(_anyfesolver_package, "__file__", "unknown location"))
         )
     return installed
 
@@ -655,12 +655,12 @@ def _imported_model_shell_authority(model: Any) -> dict[str, Any]:
     if elements is None or not callable(getattr(elements, "values", None)):
         return _runtime_shell_authority(imported_legacy=True)
 
-    shell_type = getattr(_anysolver_package, "ShellElement", None)
+    shell_type = getattr(_anyfesolver_package, "ShellElement", None)
     qualified_q4_type = getattr(
-        _anysolver_package, "QualifiedE4PLShellElement", None
+        _anyfesolver_package, "QualifiedE4PLShellElement", None
     )
     qualified_s3_type = getattr(
-        _anysolver_package, "NativeParityE4PLS3V2DShellElement", None
+        _anyfesolver_package, "NativeParityE4PLS3V2DShellElement", None
     )
     if not all(
         isinstance(item, type)
@@ -1106,7 +1106,7 @@ def start_fe_solver_kernel_warmup(
             )
             if include_nonlinear_static and not supports_nonlinear_static:
                 summary["message"] = (
-                    "The installed ANYsolver does not expose nonlinear-static "
+                    "The installed ANYfeSolver does not expose nonlinear-static "
                     "kernel warmup; shell kernels were warmed normally."
                 )
             summary["total_seconds"] = summary["total_seconds"] or float(time.perf_counter() - start)
@@ -1683,7 +1683,7 @@ def _effective_imported_load_inputs(options: RuntimeFEMOptions) -> dict[str, flo
 
 def _solver_config_from_options(options: RuntimeFEMOptions):
     """Build the LightweightFEMConfig from runtime options (shared by run and preview)."""
-    _require_supported_anysolver()
+    _require_supported_anyfesolver()
     pressure_side = _normalise_pressure_side(options.pressure_direction)
     return fe_solver.LightweightFEMConfig(
         mesh_fidelity=options.mesh_fidelity,
@@ -2014,7 +2014,7 @@ def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions
                     precomputed_geometry_is_imperfection: bool = True,
                     generated_geometry_cache_hit: bool = False,
                     analysis_context=None) -> RuntimeFEMRunResult:
-    """Run the external ANYsolver production runtime for an ANYstructure model."""
+    """Run the external ANYfeSolver production runtime for an ANYstructure model."""
 
     geometry = runtime_geometry_summary(snapshot, options)
     diagnostics = list(snapshot.diagnostics)
@@ -2059,7 +2059,7 @@ def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions
                                       include_nonlinear_impact=True)
 
     solver_config = _solver_config_from_options(options)
-    # The GUI is a production ANYsolver client. Preserve fail-closed backend
+    # The GUI is a production ANYfeSolver client. Preserve fail-closed backend
     # statuses instead of replacing an invalid/nonconverged solve with the
     # compact estimator and presenting that estimate as a successful FE run.
     geometry_projection = runtime_geometry_projection(geometry, solver_config)
@@ -2074,7 +2074,7 @@ def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions
         "imported_fem_model": imported_fem_model,
         "precomputed_generated_geometry": effective_generated_geometry,
     }
-    # Preserve compatibility with the current minimum ANYsolver release;
+    # Preserve compatibility with the current minimum ANYfeSolver release;
     # context reuse is additive and is forwarded only when that release
     # exposes the new owner.
     if analysis_context is not None:
@@ -2092,10 +2092,10 @@ def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions
     local_refinement_patches = _runtime_local_refinement_patches(options)
     warmup_state = fe_solver_kernel_warmup_status()
     # The public runtime facade intentionally returns a lightweight result;
-    # normalize it through ANYsolver's common outcome adapter instead of
+    # normalize it through ANYfeSolver's common outcome adapter instead of
     # assuming every result class stores an ``outcome`` attribute directly.
     try:
-        solve_outcome = _anysolver_package.solve_outcome(solver_result).to_dict()
+        solve_outcome = _anyfesolver_package.solve_outcome(solver_result).to_dict()
     except TypeError:
         # Retain the narrow adapter seam used by tests and older external
         # result providers that already expose a canonical outcome object.
@@ -2105,7 +2105,7 @@ def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions
         solve_outcome = raw_outcome.to_dict()
     quantity_descriptors = tuple(
         descriptor.to_dict()
-        for descriptor in _anysolver_package.describe_result_quantities(solver_result)
+        for descriptor in _anyfesolver_package.describe_result_quantities(solver_result)
     )
     reaction_descriptors = tuple(
         descriptor
@@ -2340,7 +2340,7 @@ def run_runtime_fem(snapshot: RuntimeFEMLineSnapshot, options: RuntimeFEMOptions
         "solve_outcome": solve_outcome,
         "result_quantities": quantity_descriptors,
         "reaction_quantities": reaction_descriptors,
-        "anysolver_version": _require_supported_anysolver(),
+        "anysolver_version": _require_supported_anyfesolver(),
         "mesh_info": dict(solver_result.mesh_info),
         "max_displacement_m": solver_result.displacement_max_m,
         "prestress_summary": dict(solver_result.prestress_summary),
@@ -4373,7 +4373,7 @@ def format_runtime_fem_result(result: RuntimeFEMRunResult) -> str:
                     _safe_int(prestress.get("buckling_mesh_estimated_half_waves"), 0)))
         capacity_status = str(prestress.get("capacity_workflow_status", "") or "")
         if capacity_status:
-            lines.extend(["", "ANYsolver capacity workflow:"])
+            lines.extend(["", "ANYfeSolver capacity workflow:"])
             lines.append(" - status: " + capacity_status.replace("_", " "))
             lines.append(
                 " - capacity factor: " + str(round(_safe_float(prestress.get("capacity_workflow_capacity_factor")), 4)))
@@ -4665,7 +4665,7 @@ FEM_OPTION_INFO: dict[str, dict[str, str]] = {
     },
     "custom_time_domain_enabled": {
         "title": "Custom Time-Domain Load",
-        "purpose": "Runs the synced ANYsolver linear time-domain pressure-patch solver for a custom load pulse.",
+        "purpose": "Runs the synced ANYfeSolver linear time-domain pressure-patch solver for a custom load pulse.",
         "use": "When enabled, a prescribed shell-normal pressure pulse is applied to the selected shell patch and advanced with Newmark average acceleration. This is a separate transient response calculation after the normal static solve.",
         "output": "Adds custom load status, selected shell count, peak transient displacement and peak transient von Mises stress to the result print.",
         "caution": "This is prescribed structural response only: no fluid-structure interaction, added mass, water entry, cavitation or pressure feedback is included.",
@@ -5011,7 +5011,7 @@ FEM_OPTION_INFO: dict[str, dict[str, str]] = {
     "runtime_solver": {
         "title": "Runtime Solver",
         "purpose": "Selects the high-level runtime path used after the FE model and loads are generated.",
-        "use": "Stepwise keeps the familiar ANYstructure sequence: linear static, prestress recovery, optional nonlinear solve and buckling. ANYsolver capacity workflow runs the new traceable solver-wide sequence: linear static, eigenvalue buckling, stress-free imperfection and nonlinear static capacity in one workflow.",
+        "use": "Stepwise keeps the familiar ANYstructure sequence: linear static, prestress recovery, optional nonlinear solve and buckling. ANYfeSolver capacity workflow runs the new traceable solver-wide sequence: linear static, eigenvalue buckling, stress-free imperfection and nonlinear static capacity in one workflow.",
         "output": "The result print records the selected path, workflow status, capacity factor and mesh-mode adequacy when the capacity workflow is selected.",
         "caution": "The capacity workflow is intentionally opt-in because it can be slower and applies a different capacity interpretation than the default static/eigenvalue result.",
     },
@@ -5068,7 +5068,7 @@ FEM_OPTION_INFO: dict[str, dict[str, str]] = {
         "title": "Capacity Mode Number",
         "purpose": "Selects which eigenmode seeds the capacity workflow imperfection.",
         "use": "Mode 1 normally means the lowest positive buckling factor. Higher values can be used to study a known local/global mode.",
-        "output": "Affects the stress-free imperfection used by the ANYsolver capacity workflow.",
+        "output": "Affects the stress-free imperfection used by the ANYfeSolver capacity workflow.",
         "caution": "Choosing a non-governing mode can produce a non-conservative or misleading capacity estimate.",
     },
     "capacity_mesh_min_elements_per_half_wave": {
@@ -5170,7 +5170,7 @@ FEM_OPTION_INFO: dict[str, dict[str, str]] = {
         "title": "Current-area Follower Pressure",
         "purpose": "Updates shell-pressure directions and loaded area as the nonlinear model deforms.",
         "use": "Enable it for nonlinear static or arc-length pressure loading when the pressure follows the moving shell surface. Select the Static only or Nonlinear static runtime path.",
-        "output": "Uses ANYsolver's exact external-load tangent; corotational runs automatically select the consistent tangent.",
+        "output": "Uses ANYfeSolver's exact external-load tangent; corotational runs automatically select the consistent tangent.",
         "caution": "Disabled for linear, stepwise eigenvalue-buckling, transient, collision and capacity-workflow paths. It is a nonconservative load and is not a general linear eigenvalue-buckling input.",
     },
     "axial_force_n": {
@@ -5632,7 +5632,7 @@ FEM_OPTION_INFO.update({
     },
     "collision_penalty_scale": {
         "title": "Automatic Penalty Scale",
-        "purpose": "Scales ANYsolver's automatically estimated contact penalty without replacing it.",
+        "purpose": "Scales ANYfeSolver's automatically estimated contact penalty without replacing it.",
         "use": "Leave at 1.0 normally. Values below 1 soften stubborn contact iterations; values above 1 reduce penetration but increase numerical stiffness.",
         "output": "Changes the resolved automatic contact penalty and its provenance. A positive manual penalty overrides this scale.",
         "caution": "Use positive values only. Excessively high values can make nonlinear contact convergence worse.",
@@ -6523,7 +6523,8 @@ class RuntimeFEMWindow:
         if bool(self.collision_enabled.get()):
             return False
         if self._choice_key(self.runtime_solver.get()) in {
-            "anysolver capacity workflow",
+            "anysolver capacity workflow",  # persisted selector in previous projects
+            "anyfesolver capacity workflow",
             "capacity workflow",
             "nonlinear capacity workflow",
         }:
@@ -7588,7 +7589,7 @@ class RuntimeFEMWindow:
         ).pack(side=tk.LEFT)
         tk.Label(
             header_inner,
-            text="ANYsolver " + _require_supported_anysolver(),
+            text="ANYfeSolver " + _require_supported_anyfesolver(),
             background="#2563eb",
             foreground="white",
             font=("Segoe UI", 9, "bold"),
@@ -7888,7 +7889,7 @@ class RuntimeFEMWindow:
             "runtime_solver",
             "Runtime path",
             self.runtime_solver,
-            ("stepwise", "static only", "nonlinear static", "ANYsolver capacity workflow"),
+            ("stepwise", "static only", "nonlinear static", "ANYfeSolver capacity workflow"),
         )
         self._add_option_row(solver_options, 1, "shell_element_order", "Shell element", self.shell_element_order,
                              ("S4", "S3", "S6", "S8", "S8R"))
@@ -12250,7 +12251,7 @@ class RuntimeFEMWindow:
                 isinstance(dofs, dict) and bool(dofs)
                 for dofs in constraints.values()
             ):
-                # This is the same per-edge payload supplied to ANYsolver.  In
+                # This is the same per-edge payload supplied to ANYfeSolver.  In
                 # particular, accept the checked bottom/top DOFs that are still
                 # visible in the editor but have not yet been copied elsewhere.
                 return True

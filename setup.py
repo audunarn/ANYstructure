@@ -26,7 +26,7 @@ core_requires = [
     'ANYgeometry>=0.4.3,<0.5',
     'ANYmaterial>=0.2.0,<0.3',
     'ANYmesher>=0.4.0,<0.6',
-    'ANYsolver>=0.4.6,<0.5',
+    'ANYfeSolver>=0.5.0,<0.6',
     'ANYtk3D>=0.5.5,<0.6',
     'matplotlib',
     'meshio',
@@ -45,7 +45,7 @@ setup(
     name='ANYstructure',  # Required
     url = 'https://github.com/audunarn/ANYstructure',
     entry_points={"console_scripts": ['ANYstructure = anystruct.__main__:main']},
-    version='6.4.1',  # Required
+    version='6.4.2',  # Required
     license='MPL-2.0',
     license_files=['LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md', 'docs/LICENSE.md'],
     python_requires='>=3.13',

@@ -33,13 +33,13 @@ Documentation: https://anystructure.readthedocs.io/en/latest/
 
 Tutorials: https://www.youtube.com/@ANYopenSoft
 
-## Current release: 6.4.1
+## 6.4.2 maintenance candidate
 
-Version 6.4.1 keeps the established structural calculation and optimization
+Version 6.4.2 keeps the established structural calculation and optimization
 workflow at the front of the application while adding the integrated finite-
-element workflow described below. The coordinated release uses ANYfileio 0.3.2,
-ANYgeometry 0.4.3, ANYmaterial 0.2, ANYmesher 0.4 through 0.5, and ANYsolver
-0.4.6 without artificial package downgrades.
+element workflow described below. The candidate requires ANYfileio 0.3.3,
+ANYgeometry 0.4.3, ANYmaterial 0.2, ANYmesher 0.4 through 0.5, and ANYfeSolver
+0.5.0.
 
 Project-owned source code is distributed under the Mozilla Public License 2.0
 starting with version 6.4.0. Earlier releases retain the license terms that
@@ -47,7 +47,7 @@ accompanied them.
 
 ## Finite-element integration
 
-The optional FE workflow requires `ANYsolver>=0.4.6,<0.5`. Axial force,
+The optional FE workflow requires `ANYfeSolver>=0.5.0,<0.6`. Axial force,
 bending moment, shear force, torsional moment, pressure, and supported
 collision controls are mapped directly to the external solver runtime.
 Current-area follower pressure is available for nonlinear static and
@@ -58,13 +58,13 @@ Arc-length runs retain the selected von Karman or corotational kinematics, and
 nonlinear prestress/buckling recovery retains committed-state provenance.
 Solver errors and unsupported configurations remain visible; the GUI does not
 replace them with a lightweight estimate. Analysis choices are normalized by
-ANYsolver's public `resolve_runtime_analysis()` contract.
+ANYfeSolver's public `resolve_runtime_analysis()` contract.
 
 ANYsolver 0.4.1 repairs qualified-Q4 final-state replay after plastic
 increments. ANYstructure preserves the qualified Q4 formulation throughout
 material-nonlinear runs; explicit legacy selection remains available to users.
 
-ANYsolver's native B3-GE workflow is exposed through ANYstructure's versioned
+ANYfeSolver's native B3-GE workflow is exposed through ANYstructure's versioned
 beam-runtime API with the exact `b3-ge` selector. It is an explicit opt-in:
 omitted selections and projects saved before the selector existed continue to
 use the established quadratic B3 element, and an incomplete B3-GE request
@@ -120,7 +120,7 @@ dependency order:
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install --upgrade --no-deps -e "C:\Github\ANY3dView[gpu]" -e "C:\Github\ANYmaterial" -e "C:\Github\ANYgeometry" -e "C:\Github\ANYmesh" -e "C:\Github\ANYfileIO" -e "C:\Github\ANYsolver" -e "C:\Github\ANYbuckling" -e "C:\Github\ANYtk3D" -e "C:\Github\ANYstructure"
+python -m pip install --upgrade --no-deps -e "C:\Github\ANY3dView[gpu]" -e "C:\Github\ANYmaterial" -e "C:\Github\ANYgeometry" -e "C:\Github\ANYmesh" -e "C:\Github\ANYfileIO" -e "C:\Github\ANYfeSolver\packages\results" -e "C:\Github\ANYfeSolver" -e "C:\Github\ANYbuckling" -e "C:\Github\ANYtk3D" -e "C:\Github\ANYstructure"
 python -m pip install -r requirements-dev.txt
 python -m pytest
 ```
@@ -163,14 +163,14 @@ The coordinated compatibility ranges are:
 - `ANYgeometry>=0.4.3,<0.5`
 - `ANYmaterial>=0.2.0,<0.3`
 - `ANYmesher>=0.4.0,<0.6`
-- `ANYsolver>=0.4.6,<0.5`
+- `ANYfeSolver>=0.5.0,<0.6`
 - `ANYtk3D>=0.5.5,<0.6`
 
 To select a particular checkout, set the corresponding
 `ANYSTRUCTURE_ANY3DVIEW_ROOT`, `ANYSTRUCTURE_ANYTK3D_ROOT`,
 `ANYSTRUCTURE_ANYBUCKLING_ROOT`, `ANYSTRUCTURE_ANYFILEIO_ROOT`,
 `ANYSTRUCTURE_ANYGEOMETRY_ROOT`, `ANYSTRUCTURE_ANYMATERIAL_ROOT`,
-`ANYSTRUCTURE_ANYMESHER_ROOT`, or `ANYSTRUCTURE_ANYSOLVER_ROOT` environment
+`ANYSTRUCTURE_ANYMESHER_ROOT`, or `ANYSTRUCTURE_ANYFESOLVER_ROOT` environment
 variable. Invalid explicit roots fail before application imports.
 
 ANYgeometry owns neutral surface geometry. New geometry code should call

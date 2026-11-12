@@ -13,9 +13,9 @@ import statistics
 import time
 
 from anystruct import fem_integration
-from anysolver import AnalysisSession, solve_free_vibration
-from anysolver import anystructure_fem_mode as backend
-from anysolver.runtime import RuntimeAnalysisContext
+from anyfesolver import AnalysisSession, solve_free_vibration
+from anyfesolver import anystructure_fem_mode as backend
+from anyfesolver.runtime import RuntimeAnalysisContext
 
 
 def _summary(values: list[float]) -> dict[str, object]:

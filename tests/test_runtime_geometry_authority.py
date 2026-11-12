@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 
 from anygeometry import Cone, Cylinder, EntityRef, GeometryModel, Plane
-from anysolver import runtime as solver_runtime
+from anyfesolver import runtime as solver_runtime
 
 from anystruct import fem_integration, geometry_generators
 
@@ -252,7 +252,7 @@ def test_runtime_solver_handoff_receives_geometry_backed_projection(
     )
     monkeypatch.setattr(
         fem_integration,
-        "_require_supported_anysolver",
+        "_require_supported_anyfesolver",
         lambda: "0.4.1",
     )
     snapshot = fem_integration.RuntimeFEMLineSnapshot(

@@ -10,8 +10,8 @@ from anystruct.ge_beam3_optin import (
     launch_beam_runtime,
     runtime_status,
 )
-from anysolver._ge_beam3_native_analysis import NativeBeamAnalysis
-from anysolver.ge_beam3_element import GeometricallyExactBeam3D3NElement
+from anyfesolver._ge_beam3_native_analysis import NativeBeamAnalysis
+from anyfesolver.ge_beam3_element import GeometricallyExactBeam3D3NElement
 
 
 def test_runtime_ge_beam3_is_exact_explicit_and_descriptive():
@@ -26,9 +26,9 @@ def test_runtime_ge_beam3_is_exact_explicit_and_descriptive():
 
 
 def test_runtime_b3_ge_is_native_explicit_and_legacy_b3_stays_default():
-    from anysolver import b3_ge
-    from anysolver.boundary import BoundaryCondition
-    from anysolver.elements import QuadraticBeamElement, create_element
+    from anyfesolver import b3_ge
+    from anyfesolver.boundary import BoundaryCondition
+    from anyfesolver.elements import QuadraticBeamElement, create_element
 
     section = b3_ge.EllipsoidalGeneralizedSection(
         np.diag((10.0, 11.0, 12.0, 13.0, 14.0, 15.0)), np.eye(6), 1.0e6, 1.0
@@ -57,10 +57,10 @@ def test_runtime_b3_ge_is_native_explicit_and_legacy_b3_stays_default():
 
 
 def test_bounded_launcher_distinguishes_explicit_b3_ge_from_migrated_legacy_default():
-    from anysolver import b3_ge
-    from anysolver._ge_beam3_native_definition import NativeBeamDefinition
-    from anysolver.boundary import BoundaryCondition
-    from anysolver.elements import QuadraticBeamElement
+    from anyfesolver import b3_ge
+    from anyfesolver._ge_beam3_native_definition import NativeBeamDefinition
+    from anyfesolver.boundary import BoundaryCondition
+    from anyfesolver.elements import QuadraticBeamElement
 
     default_legacy = launch_beam_runtime(
         element_id=19, node_ids=(1, 2, 3), material_name="steel"

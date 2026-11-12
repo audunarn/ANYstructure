@@ -282,7 +282,7 @@ def test_dependency_and_gui_wiring_is_declared_in_release_surfaces():
         "ANYgeometry>=0.4.3,<0.5",
         "ANYmaterial>=0.2.0,<0.3",
         "ANYmesher>=0.4.0,<0.6",
-        "ANYsolver>=0.4.6,<0.5",
+        "ANYfeSolver>=0.5.0,<0.6",
     }
     for requirement in exact_ecosystem_requirements:
         assert requirement in core_requirements.splitlines()
@@ -290,12 +290,12 @@ def test_dependency_and_gui_wiring_is_declared_in_release_surfaces():
         assert f"'{requirement}'" in setup_source
     pyproject = (REPOSITORY_ROOT / "pyproject.toml").read_text(encoding="utf-8")
     assert 'anymesher = ">=0.4.0,<0.6"' in pyproject
-    assert 'anysolver = ">=0.4.6,<0.5"' in pyproject
-    assert "ANYsolver>=0.4.6,<0.5" in documentation
-    assert "ANYsolver>=0.3" not in documentation
+    assert 'anyfesolver = ">=0.5.0,<0.6"' in pyproject
+    assert "ANYfeSolver>=0.5.0,<0.6" in documentation
+    assert "ANYfeSolver>=0.3" not in documentation
     assert "ANYmesher>=0.4.0,<0.6" in documentation
     assert "ANYmesher>=0.2.5" not in documentation
-    assert "ANYsolver>=0.4.6,<0.5'" in setup_source
+    assert "ANYfeSolver>=0.5.0,<0.6'" in setup_source
     assert "ANY3dView>=0.5.5,<0.6'" in setup_source
     assert "ANY3dView[gpu]>=0.5.5,<0.6'" in setup_source
     assert "ANYbuckling>=0.1.1,<0.2'" in setup_source
@@ -314,7 +314,7 @@ def test_dependency_and_gui_wiring_is_declared_in_release_surfaces():
     assert "repository: audunarn/ANYio" not in workflow
     assert ".ecosystem/ANYio" not in workflow
     assert "import any3dview, anybuckling, anyfileio" in workflow
-    assert "repository: audunarn/ANYsolver" in workflow
+    assert "repository: audunarn/ANYfeSolver" in workflow
     assert "repository: audunarn/ANYbuckling" in workflow
     assert "repository: audunarn/ANYtk3D" in workflow
     final_graph_refs = {
@@ -322,8 +322,8 @@ def test_dependency_and_gui_wiring_is_declared_in_release_surfaces():
         "7d36c97dd0dbec8884f8894a4258ece83ad61271": "ANY3dView",
         "91846898b03fa02b029abde82508eddb981efdc0": "ANYgeometry",
         "2ccef378c3efb4ba3a9957b9ab896ac8fc454b9d": "ANYmesh",
-        "db73950018e1c87dab0ca618c25c965030ba08ce": "ANYfileIO",
-        "d04199ac851c0d0f61430c2bc40136582aa8d659": "ANYsolver",
+        "409754bd1289d635a7717179b0addd6797f9f25b": "ANYfileIO",
+        "f54e3cde5abf70cb8c989eb106119eedd3e33025": "ANYfeSolver",
         "a871d5a3c466666b79f3ce3a015a2cfd7534376b": "ANYbuckling",
         "2caa92325885938c594f27145ed16069d807e364": "ANYtk3D",
     }
@@ -346,6 +346,12 @@ def test_dependency_and_gui_wiring_is_declared_in_release_surfaces():
         setup_python,
     ]
     assert 'python -m pip install --no-deps -e ".ecosystem/ANY3dView[gpu]"' in workflow
+    assert workflow.count("-e .ecosystem/ANYfeSolver/packages/results -e .ecosystem/ANYfeSolver ") == 2
+    assert '"$GITHUB_WORKSPACE/.ecosystem/ANYfeSolver/packages/results"' in workflow
+    rtd = (REPOSITORY_ROOT / ".readthedocs.yaml").read_text(encoding="utf-8")
+    assert "../anyfesolver-rtd/packages/results ../anyfesolver-rtd" in rtd
+    solver_pin = next(ref for ref, project in final_graph_refs.items() if project == "ANYfeSolver")
+    assert f"https://github.com/audunarn/ANYfeSolver.git {solver_pin}" in rtd
     assert "-e .ecosystem/ANYmaterial" in workflow
     assert ".ecosystem/ANYgeometry" in workflow
     assert "python -m build" in workflow

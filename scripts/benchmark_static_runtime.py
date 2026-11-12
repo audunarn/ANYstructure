@@ -10,7 +10,7 @@ import statistics
 import time
 
 from anystruct import fem_integration
-from anysolver import runtime as fe_solver
+from anyfesolver import runtime as fe_solver
 
 
 def _percentile_95(values: list[float]) -> float:

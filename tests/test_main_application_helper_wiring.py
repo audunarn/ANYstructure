@@ -4,7 +4,7 @@ import re
 import weakref
 from types import SimpleNamespace
 import pytest
-from anysolver import runtime as fe_solver
+from anyfesolver import runtime as fe_solver
 from anystruct import representation_geometry
 from anystruct.main_application import Application
 
@@ -304,7 +304,7 @@ def test_release_package_metadata_uses_current_markdown_readme():
     setup_source = Path(__file__).resolve().parents[1] / "setup.py"
     source = setup_source.read_text(encoding="utf-8")
 
-    assert "version='6.4.1'" in source
+    assert "version='6.4.2'" in source
     assert "README.md" in source[source.index("def readme"):source.index("core_requires")]
     assert "README.rst" not in source
     assert "long_description_content_type='text/markdown'" in source
